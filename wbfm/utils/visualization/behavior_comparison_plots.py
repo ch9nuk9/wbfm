@@ -378,6 +378,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         """
         Calculates a summary number for the full dataset:
             The linear model error for a) the best single neuron and b) the multivariate encoding
+            Also calculates the leifer error
 
         Parameters
         ----------
@@ -390,8 +391,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         multi_list = self.calc_multi_neuron_encoding(df_name, **kwargs)[0]
         single_list = self.calc_single_neuron_encoding(df_name, **kwargs)[0]
+        leifer_score = self.calculate_leifer_score(df_name, **kwargs)
 
         df_dict = {'best_single_neuron': np.mean(single_list), 'multi_neuron': np.mean(multi_list),
+                   'leifer_score': leifer_score,
                    'dataset_name': self.project_data.shortened_name}
         df = pd.DataFrame(df_dict, index=[0])
         return df
@@ -1011,9 +1014,9 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
 
             fig.tight_layout()
 
-            if to_save:
-                fname = f'traces_kymo_correlation_{neuron_name}.png'
-                self.project_data.save_fig_in_project(suffix=fname)
+            # if to_save:
+            #     fname = f'traces_kymo_correlation_{neuron_name}.png'
+            #     self.project_data.save_fig_in_project(suffix=fname)
 
             if max_num_plots is not None and num_open_plots >= max_num_plots:
                 break
