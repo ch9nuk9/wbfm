@@ -330,10 +330,14 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y_test = y.iloc[ind_test]
 
         # Fit; note that even though we have CV, the result is sensitive to the exact value space
-        alphas = np.logspace(-6, 6, 21)  # alpha values to be chosen from by cross-validation
-        l1_ratio = np.logspace(-7, 2, 13)
+        # alphas = np.logspace(-6, 6, 21)  # alpha values to be chosen from by cross-validation
+        # l1_ratio = np.logspace(-7, 0, 13)
+        alphas = np.logspace(-6, 2, 11)  # alpha values to be chosen from by cross-validation
+        l1_ratio = np.logspace(-6, 0, 7)
         model = ElasticNetCV(alphas=alphas, l1_ratio=l1_ratio)
-        model.fit(X=X_train, y=y_train)
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
+            model.fit(X=X_train, y=y_train)
         score = model.score(X_test, y_test)
 
         return score
