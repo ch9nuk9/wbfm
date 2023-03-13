@@ -161,6 +161,26 @@ class ProjectData:
         return global_tracks
 
     @cached_property
+    def initial_pipeline_tracks(self) -> pd.DataFrame:
+        """
+        Dataframe of tracks produced by the global tracker with tracklets
+
+        Does not include any manual annotations
+
+        Uses the initial filename in the config file, under ['final_3d_postprocessing']['output_df_fname']
+        """
+        tracking_cfg = self.project_config.get_tracking_config()
+
+        # Manual annotations take precedence by default
+        fname = tracking_cfg.config['final_3d_postprocessing']['output_df_fname']
+        fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=False)
+        self.logger.debug(f"Loading initial pipeline tracks from {fname}")
+        self.all_used_fnames.append(fname)
+
+        global_tracks = read_if_exists(fname)
+        return global_tracks
+
+    @cached_property
     def final_tracks(self) -> pd.DataFrame:
         """
         Dataframe of tracks produced by combining the global tracker and tracklets
@@ -1326,7 +1346,7 @@ class ProjectData:
         if neurons_finished_mask.dtype != bool:
             self.logger.warning("Found non-boolean entries in manual annotation column; this may be a data error: "
                                 f"{np.unique(neurons_finished_mask)}")
-            neurons_finished_mask = neurons_finished_mask.astype(bool)
+            neurons_finished_mask = neurons_finished_mask.fillna(False).astype(bool)
         if 'Neuron ID' not in df_manual_tracking[neurons_finished_mask]:
             self.logger.warning("Did not find expected column name ('Neuron ID') for the neuron ids... "
                                 "check the formatting of the manual annotation file")
