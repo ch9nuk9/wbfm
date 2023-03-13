@@ -295,7 +295,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         return model, best_neuron
 
-    def calculate_leifer_score(self, df_name, y_train=None, use_multineuron=True):
+    def calculate_leifer_score(self, df_name, y_train=None, use_multineuron=True, **kwargs):
         """
         Fits model using the Leifer settings, which does not use full cross validation
 
