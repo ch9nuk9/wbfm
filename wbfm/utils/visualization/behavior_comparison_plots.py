@@ -295,7 +295,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         return model, best_neuron
 
-    def calculate_leifer_score(self, df_name, y_train=None, use_multineuron=True, **kwargs):
+    def calc_leifer_encoding(self, df_name, y_train=None, use_multineuron=True, **kwargs):
         """
         Fits model using the Leifer settings, which does not use full cross validation
 
@@ -339,8 +339,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
             model.fit(X=X_train, y=y_train)
         score = model.score(X_test, y_test)
+        y_pred = model.predict(X)
 
-        return score
+        return [score], model, y, y_pred, y_train_name
+        # return score, y_pred
 
     def plot_sorted_correlations(self, df_name, y_train=None, to_save=False, saving_folder=None):
         """
@@ -395,7 +397,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         multi_list = self.calc_multi_neuron_encoding(df_name, **kwargs)[0]
         single_list = self.calc_single_neuron_encoding(df_name, **kwargs)[0]
-        leifer_score = self.calculate_leifer_score(df_name, **kwargs)
+        leifer_score = self.calc_leifer_encoding(df_name, **kwargs)[0]
 
         df_dict = {'best_single_neuron': np.mean(single_list), 'multi_neuron': np.mean(multi_list),
                    'leifer_score': leifer_score,
@@ -404,7 +406,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         return df
 
     def calc_prediction_or_raw_df(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
-                                  prediction_not_raw=True) -> pd.DataFrame:
+                                  prediction_not_raw=True, use_leifer_method=False) -> pd.DataFrame:
         """
         Similar to plot_model_prediction, but returns one dataframe (prediction or raw)
 
@@ -421,7 +423,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         """
         opt = dict(y_train=y_train, only_model_single_state=only_model_single_state)
         if prediction_not_raw:
-            if use_multineuron:
+            if use_leifer_method:
+                score_list, model, y_total, y_pred, y_train_name = \
+                    self.calc_leifer_encoding(df_name, **opt)
+            elif use_multineuron:
                 score_list, model, y_total, y_pred, y_train_name = \
                     self.calc_multi_neuron_encoding(df_name, **opt)
             else:

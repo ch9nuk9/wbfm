@@ -33,17 +33,23 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
 
     # Get summary dataframes
     df_opt = dict(encoder_opt=encoder_opt, constructor_kwargs=constructor_kwargs, cv_factory=cv_factory)
-    df_summary_gcamp, df_prediction_gcamp, df_raw_gcamp = calculate_all_dfs_using_encoder(all_projects_gcamp,
+    df_summary_gcamp, all_dfs_prediction_gcamp, df_raw_gcamp = calculate_all_dfs_using_encoder(all_projects_gcamp,
                                                                                           genotype='gcamp',
                                                                                           **df_opt)
-    df_summary_gfp, df_prediction_gfp, df_raw_gfp = calculate_all_dfs_using_encoder(all_projects_gfp, genotype='gfp',
+    df_summary_gfp, all_dfs_prediction_gfp, df_raw_gfp = calculate_all_dfs_using_encoder(all_projects_gfp, genotype='gfp',
                                                                                     **df_opt)
 
     # Concatenate all dictionaries into single dataframes
     df_summary = pd.concat([df_summary_gcamp, df_summary_gfp])
-    df_pred = pd.concat([df_prediction_gcamp, df_prediction_gfp], axis=1)
+    df_pred_concat = {}
+    for key in all_dfs_prediction_gcamp.keys():
+        df_prediction_gcamp = all_dfs_prediction_gcamp[key]
+        df_prediction_gfp = all_dfs_prediction_gfp[key]
+        df_pred = pd.concat([df_prediction_gcamp, df_prediction_gfp], axis=1)
+        df_pred_concat[key] = df_pred
     df_raw = pd.concat([df_raw_gcamp, df_raw_gfp], axis=1)
-    raw_dfs = {'speed': df_raw, 'prediction': df_pred}
+    raw_dfs = {'speed': df_raw}
+    raw_dfs.update(df_pred_concat)
 
     # Save
     save_folder_for_two_dataframe_dashboard(output_folder, df_summary, raw_dfs)
@@ -51,25 +57,32 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
 
 def calculate_all_dfs_using_encoder(all_projects, genotype='gcamp', only_model_single_state=None,
                                     encoder_opt=None, constructor_kwargs=None, cv_factory=None):
-    multi_encoder_gcamp = MultiProjectBehaviorPlotter(all_projects=all_projects, constructor_kwargs=constructor_kwargs,
-                                                      class_constructor=NeuronToUnivariateEncoding)
-    multi_encoder_gcamp.set_for_all_classes({'cv_factory': cv_factory})
+    multi_encoder = MultiProjectBehaviorPlotter(all_projects=all_projects, constructor_kwargs=constructor_kwargs,
+                                                class_constructor=NeuronToUnivariateEncoding)
+    multi_encoder.set_for_all_classes({'cv_factory': cv_factory})
 
     _encoder_opt = encoder_opt.copy()
     _encoder_opt['only_model_single_state'] = only_model_single_state
-    df_summary_gcamp = multi_encoder_gcamp.calc_dataset_summary_df(**_encoder_opt)
-    df_prediction_gcamp = multi_encoder_gcamp.calc_prediction_or_raw_df(**_encoder_opt, prediction_not_raw=True)
-    df_raw_gcamp = multi_encoder_gcamp.calc_prediction_or_raw_df(**_encoder_opt, prediction_not_raw=False)
+    df_summary = multi_encoder.calc_dataset_summary_df(**_encoder_opt)
+    _encoder_opt['use_multineuron'] = True
+    df_prediction_multi = multi_encoder.calc_prediction_or_raw_df(**_encoder_opt, prediction_not_raw=True)
+    _encoder_opt['use_multineuron'] = False
+    df_prediction_single = multi_encoder.calc_prediction_or_raw_df(**_encoder_opt, prediction_not_raw=True)
+    _encoder_opt['use_leifer_method'] = True
+    df_prediction_leifer = multi_encoder.calc_prediction_or_raw_df(**_encoder_opt, prediction_not_raw=True)
+    df_raw = multi_encoder.calc_prediction_or_raw_df(**_encoder_opt, prediction_not_raw=False)
 
     # Concatenate all dictionaries into single dataframes
-    df_summary_gcamp = pd.concat(df_summary_gcamp)
-    df_summary_gcamp['genotype'] = genotype
-    df_summary_gcamp.index = df_summary_gcamp.index.droplevel(1)
+    df_summary = pd.concat(df_summary)
+    df_summary['genotype'] = genotype
+    df_summary.index = df_summary.index.droplevel(1)
 
-    df_prediction_gcamp = pd.concat(df_prediction_gcamp, axis=1)
-    df_prediction_gcamp.columns = df_prediction_gcamp.columns.droplevel(1)
+    all_dfs_prediction = {'multi': df_prediction_multi, 'single': df_prediction_single, 'leifer': df_prediction_leifer}
+    for key, df_prediction in all_dfs_prediction.items():
+        df_prediction = pd.concat(df_prediction, axis=1)
+        df_prediction.columns = df_prediction.columns.droplevel(1)
 
-    df_raw_gcamp = pd.concat(df_raw_gcamp, axis=1)
-    df_raw_gcamp.columns = df_raw_gcamp.columns.droplevel(1)
+    df_raw = pd.concat(df_raw, axis=1)
+    df_raw.columns = df_raw.columns.droplevel(1)
 
-    return df_summary_gcamp, df_prediction_gcamp, df_raw_gcamp
+    return df_summary, all_dfs_prediction, df_raw
