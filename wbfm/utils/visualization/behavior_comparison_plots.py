@@ -102,12 +102,13 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
     _best_single_neuron: str = None
 
-    _last_model_calculated: callable = None
+    _best_multi_neuron_model: callable = None
+    _best_single_neuron_model: callable = None
+    _best_leifer_model: callable = None
 
     def __post_init__(self):
         self.df_kwargs['interpolate_nan'] = True
 
-    @methodtools.lru_cache(maxsize=8)
     def calc_multi_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, DEBUG=False):
         """Speed by default"""
         X = self.all_dfs[df_name]
@@ -131,7 +132,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         # score = model.score(X_test, y_test)
         # y_pred = model.predict(X)  # For entire dataset
-        self._last_model_calculated = model
+        self._best_multi_neuron_model = model
         if DEBUG:
             # plt.plot(X_test, label='X')
             plt.plot(y, label='y')
@@ -154,7 +155,6 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             model = GridSearchCV(estimator=estimator, param_grid=p_grid, cv=inner_cv)
         return model
 
-    @methodtools.lru_cache(maxsize=8)
     def calc_single_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, DEBUG=False):
         """
         Best single neuron encoding
@@ -172,13 +172,17 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             # Outer cross validation: get best neuron
             # Note that this takes a while because it has to redo the inner cross validation for each feature
             # It can be parallelized but has a pickle error on my machine
-            sfs_cv = self.cv_factory()
-            sfs = SequentialFeatureSelector(estimator=model,
-                                            n_features_to_select=1, direction='forward', cv=sfs_cv)
-            sfs.fit(X, y)
+            if self._best_single_neuron_model is None:
+                sfs_cv = self.cv_factory()
+                sfs = SequentialFeatureSelector(estimator=model,
+                                                n_features_to_select=1, direction='forward', cv=sfs_cv)
+                sfs.fit(X, y)
 
-            feature_names = get_names_from_df(X)
-            best_neuron = [feature_names[s] for s in sfs.get_support(indices=True)]
+                feature_names = get_names_from_df(X)
+                best_neuron = [feature_names[s] for s in sfs.get_support(indices=True)]
+            else:
+                best_neuron = self._best_single_neuron_model
+                model = self._best_single_neuron_model
             X_best_single_neuron = X[best_neuron].values.reshape(-1, 1)
 
             # Calculate the error using this neuron (CV again)
@@ -194,7 +198,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 y_pred = model.fit(X_best_single_neuron, y).predict(X_best_single_neuron)
             y_pred = pd.Series(y_pred, index=y.index)
 
-        self._last_model_calculated = model
+        self._best_single_neuron_model = model
         self._best_single_neuron = best_neuron
         if DEBUG:
             plt.plot(X_best_single_neuron, label='X')
@@ -299,7 +303,6 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         return model, best_neuron
 
-    @methodtools.lru_cache(maxsize=8)
     def calc_leifer_encoding(self, df_name, y_train=None, use_multineuron=True, **kwargs):
         """
         Fits model using the Leifer settings, which does not use full cross validation
@@ -339,12 +342,17 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         # l1_ratio = np.logspace(-7, 0, 13)
         alphas = np.logspace(-6, 2, 11)  # alpha values to be chosen from by cross-validation
         l1_ratio = np.logspace(-6, 0, 7)
-        model = ElasticNetCV(alphas=alphas, l1_ratio=l1_ratio)
-        with warnings.catch_warnings():
-            warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
-            model.fit(X=X_train, y=y_train)
+        if self._best_leifer_model is None:
+            model = ElasticNetCV(alphas=alphas, l1_ratio=l1_ratio)
+            with warnings.catch_warnings():
+                warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
+                model.fit(X=X_train, y=y_train)
+        else:
+            model = self._best_leifer_model
         score = model.score(X_test, y_test)
         y_pred = model.predict(X)
+
+        self._best_leifer_model = model
 
         return [score], model, y, y_pred, y_train_name
 
@@ -399,9 +407,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         """
 
-        multi_list = self.calc_multi_neuron_encoding(df_name, **kwargs)[0]
-        single_list = self.calc_single_neuron_encoding(df_name, **kwargs)[0]
-        leifer_score = self.calc_leifer_encoding(df_name, **kwargs)[0]
+        kwargs['df_name'] = df_name
+        multi_list = self.calc_multi_neuron_encoding(**kwargs)[0]
+        single_list = self.calc_single_neuron_encoding(**kwargs)[0]
+        leifer_score = self.calc_leifer_encoding(**kwargs)[0]
 
         df_dict = {'best_single_neuron': np.mean(single_list), 'multi_neuron': np.mean(multi_list),
                    'leifer_score': leifer_score,
