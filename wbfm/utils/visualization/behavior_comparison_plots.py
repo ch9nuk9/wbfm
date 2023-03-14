@@ -4,6 +4,8 @@ import warnings
 from dataclasses import dataclass, field
 from functools import reduce
 from typing import List, Dict, Tuple, Union
+
+import methodtools
 import seaborn as sns
 import numpy as np
 import pandas as pd
@@ -105,6 +107,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     def __post_init__(self):
         self.df_kwargs['interpolate_nan'] = True
 
+    @methodtools.lru_cache(maxsize=8)
     def calc_multi_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, DEBUG=False):
         """Speed by default"""
         X = self.all_dfs[df_name]
@@ -151,6 +154,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             model = GridSearchCV(estimator=estimator, param_grid=p_grid, cv=inner_cv)
         return model
 
+    @methodtools.lru_cache(maxsize=8)
     def calc_single_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, DEBUG=False):
         """
         Best single neuron encoding
@@ -295,6 +299,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         return model, best_neuron
 
+    @methodtools.lru_cache(maxsize=8)
     def calc_leifer_encoding(self, df_name, y_train=None, use_multineuron=True, **kwargs):
         """
         Fits model using the Leifer settings, which does not use full cross validation
@@ -342,7 +347,6 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y_pred = model.predict(X)
 
         return [score], model, y, y_pred, y_train_name
-        # return score, y_pred
 
     def plot_sorted_correlations(self, df_name, y_train=None, to_save=False, saving_folder=None):
         """

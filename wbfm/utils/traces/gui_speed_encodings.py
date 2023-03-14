@@ -34,10 +34,10 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
     # Get summary dataframes
     df_opt = dict(encoder_opt=encoder_opt, constructor_kwargs=constructor_kwargs, cv_factory=cv_factory)
     df_summary_gcamp, all_dfs_prediction_gcamp, df_raw_gcamp = calculate_all_dfs_using_encoder(all_projects_gcamp,
-                                                                                          genotype='gcamp',
-                                                                                          **df_opt)
+                                                                                               genotype='gcamp',
+                                                                                               **df_opt)
     df_summary_gfp, all_dfs_prediction_gfp, df_raw_gfp = calculate_all_dfs_using_encoder(all_projects_gfp, genotype='gfp',
-                                                                                    **df_opt)
+                                                                                         **df_opt)
 
     # Concatenate all dictionaries into single dataframes
     df_summary = pd.concat([df_summary_gcamp, df_summary_gfp])
