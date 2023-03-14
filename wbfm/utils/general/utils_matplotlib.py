@@ -19,7 +19,8 @@ def get_twin_axis(ax, axis='x'):
 def paired_boxplot_from_dataframes(df_before_and_after: pd.DataFrame, labels: list = None,
                                    num_rows = 2,
                                    add_median_line=True,
-                                   use_coloring=True):
+                                   use_coloring=True,
+                                   fig=None):
     """
     Plots a pair of boxplots with red (green) lines showing points that lost (gained) value between conditions
 
@@ -39,7 +40,8 @@ def paired_boxplot_from_dataframes(df_before_and_after: pd.DataFrame, labels: li
     box_opt = {}
     if labels is not None:
         box_opt['labels'] = labels
-    plt.figure(dpi=100)
+    if fig is None:
+        fig = plt.figure(dpi=100)
     x = df_before_and_after.index[:num_rows]
     y_vec_list = []
     for i in range(num_rows):
@@ -67,6 +69,8 @@ def paired_boxplot_from_dataframes(df_before_and_after: pd.DataFrame, labels: li
             y0_med, y1_med = np.median(y0_vec), np.median(y1_vec)
             col = 'green' if y1_med > y0_med else 'red'
             plt.plot([i, i+1], [y0_med, y1_med], color=col, zorder=20, linewidth=2)
+
+    return fig
 
 
 def corrfunc(x, y, ax=None, **kws):
