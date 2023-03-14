@@ -180,6 +180,23 @@ class ProjectData:
         global_tracks = read_if_exists(fname)
         return global_tracks
 
+    def single_reference_frame_tracks(self, i_frame: int = 0) -> pd.DataFrame:
+        """
+        Dataframe of tracks produced by the global tracker, but before combining with other reference frames
+
+        Assumes the filename is of the format f"df_tracks_superglue_template-{i_frame}.h5"
+        """
+        tracking_cfg = self.project_config.get_tracking_config()
+
+        # Manual annotations take precedence by default
+        fname = os.path.join('postprocessing', f"df_tracks_superglue_template-{i_frame}.h5")
+        fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        self.logger.debug(f"Loading single reference frame tracks from: {fname}")
+        self.all_used_fnames.append(fname)
+
+        global_tracks = read_if_exists(fname)
+        return global_tracks
+
     @cached_property
     def final_tracks(self) -> pd.DataFrame:
         """
