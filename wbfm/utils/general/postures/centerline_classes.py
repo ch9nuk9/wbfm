@@ -547,7 +547,7 @@ class WormFullVideoPosture:
             behavioral_annotation = self.beh_annotation(fluorescence_fps=True)
         else:
             behavioral_annotation = self.calc_behavior_from_alias(behavior_name)
-        opt = dict(behavioral_annotation,
+        opt = dict(behavioral_annotation=behavioral_annotation,
                    min_duration=min_duration,
                    ind_preceding=ind_preceding,
                    trace_len=self.num_frames,

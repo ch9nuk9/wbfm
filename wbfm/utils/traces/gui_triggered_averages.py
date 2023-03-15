@@ -126,9 +126,11 @@ def calc_all_triggered_average_dictionaries(all_projects, trace_opt, trigger_opt
     output_dict_rev = defaultdict(dict)
     output_dict_fwd = defaultdict(dict)
     output_dict_traces = dict()
+    if trigger_opt is None:
+        trigger_opt = dict()
 
     kwargs = dict(significance_calculation_method='ttest')
-    trigger_opt = dict(ind_preceding=30, state=BehaviorCodes.REV).update(trigger_opt or {})
+    trigger_opt = dict(ind_preceding=30, state=BehaviorCodes.REV).update(trigger_opt)
 
     for proj_name, proj in tqdm(all_projects.items()):
         # First, reversal triggered
