@@ -263,6 +263,8 @@ class WormFullVideoPosture:
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True)
         elif speed_alias == 'pirouette':
             y = self.calc_psuedo_pirouette_state()
+        elif speed_alias == 'plateau':
+            y = self.calc_plateau_state()
         elif speed_alias == 'signed_stage_speed_smoothed':
             y = self.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing=True)
         elif speed_alias == 'signed_speed_angular':
@@ -667,7 +669,7 @@ class WormFullVideoPosture:
 
         return predicted_pirouette_state
 
-    def calc_plateau_state(self, frames_to_remove = 5):
+    def calc_plateau_state(self, frames_to_remove=5, DEBUG=False):
         """
         Calculates a state that is high when the worm is in a "plateau", and low otherwise
         Plateau is defined in two steps:
@@ -693,17 +695,32 @@ class WormFullVideoPosture:
         speed = self.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True)
         # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
         new_starts = []
+        new_ends = []
         for start, end in zip(all_starts, all_ends):
-            if end - start < 2 * frames_to_remove:
+            # The breakpoint algorithm needs at least 3 points
+            if end - start - 2 * frames_to_remove < 3:
                 continue
             dat = speed.loc[start+frames_to_remove:end-frames_to_remove].to_numpy()
             algo = rpt.Dynp(model="l2").fit(dat)
             result = algo.predict(n_bkps=1)
-            new_starts.append(result[0] + start + frames_to_remove)
+            breakpoint_absolute_coords = result[0] + start + frames_to_remove
+            new_starts.append(breakpoint_absolute_coords)
+            new_ends.append(end)
+
+            if DEBUG:
+                fig, ax = plt.subplots()
+                plt.plot(dat)
+                for r in result:
+                    ax.axvline(x=r, color='black')
+                plt.title(f"Start: {start}, bkps: {breakpoint_absolute_coords}, End: {end}")
+                plt.show()
+        if DEBUG:
+            print(f"Original starts: {all_starts}")
+            print(f"New starts: {new_starts}")
 
         num_pts = len(beh_vec)
-        plateau_state = calc_time_series_from_starts_and_ends(new_starts, all_ends, num_pts, only_onset=False)
-        return plateau_state
+        plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
+        return pd.Series(plateau_state)
 
     def calc_fwd_counter_state(self):
         """
