@@ -20,6 +20,7 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
                                          all_projects_gfp: Dict[str, ProjectData],
                                          output_folder: str = None,
                                          trace_options=None,
+                                         trigger_options=None,
                                          **kwargs):
     """
     Builds all the dataframes needed for the GUI for triggered average style plots.
@@ -40,6 +41,8 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
     # Use same trace options for all plots
     if trace_options is None:
         trace_options = {}
+    if trigger_options is None:
+        trigger_options = {}
     opt = dict(interpolate_nan=False,
                filter_mode='rolling_mean',
                min_nonnan=0.9,
@@ -49,10 +52,10 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
     opt.update(trace_options)
 
     # Main dataframes
-    output_dict_rev, output_dict_fwd, output_dict_traces = calc_all_triggered_average_dictionaries(all_projects_gcamp,
-                                                                                                   opt)
+    output_dict_rev, output_dict_fwd, output_dict_traces = calc_all_triggered_average_dictionaries(
+        all_projects_gcamp, opt, trigger_options)
     output_dict_rev_gfp, output_dict_fwd_gfp, output_dict_traces_gfp = calc_all_triggered_average_dictionaries(
-        all_projects_gfp, opt)
+        all_projects_gfp, opt, trigger_options)
     
     # Make dictionary with fwd and rev to loop over
     all_dict_rev_fwd = dict(reversal_triggered=[output_dict_rev, output_dict_rev_gfp],
@@ -119,19 +122,19 @@ def reformat_dataframes(all_projects_gcamp, all_projects_gfp, df_gcamp_gfp_rev, 
     return df_summary, raw_dfs
 
 
-def calc_all_triggered_average_dictionaries(all_projects, opt):
+def calc_all_triggered_average_dictionaries(all_projects, trace_opt, trigger_opt=None):
     output_dict_rev = defaultdict(dict)
     output_dict_fwd = defaultdict(dict)
     output_dict_traces = dict()
 
     kwargs = dict(significance_calculation_method='ttest')
-    trigger_opt = dict(ind_preceding=30, state=BehaviorCodes.REV)
+    trigger_opt = dict(ind_preceding=30, state=BehaviorCodes.REV).update(trigger_opt or {})
 
     for proj_name, proj in tqdm(all_projects.items()):
         # First, reversal triggered
         triggered_averages_class = FullDatasetTriggeredAverages.load_from_project(proj,
                                                                                   trigger_opt=trigger_opt,
-                                                                                  trace_opt=opt,
+                                                                                  trace_opt=trace_opt,
                                                                                   **kwargs)
 
         significant_neurons, p_values, effect_sizes = triggered_averages_class.which_neurons_are_significant(

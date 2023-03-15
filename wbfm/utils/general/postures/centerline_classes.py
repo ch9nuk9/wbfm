@@ -230,15 +230,20 @@ class WormFullVideoPosture:
             BehaviorCodes.assert_all_are_valid(self._beh_annotation)
         return self._beh_annotation
 
-    def calc_behavior_from_alias(self, speed_alias: str) -> pd.Series:
+    def calc_behavior_from_alias(self, behavior_alias: str) -> pd.Series:
         """
         This calls worm_speed or summed_curvature_from_kymograph with defined key word arguments
+
+        Some strings call specific other functions:
+            'leifer_curvature' -> summed_curvature_from_kymograph
+            'pirouette' -> calc_psuedo_pirouette_state
+            'plateau' -> calc_plateau_state
 
         Note: always has fluorescence_fps=True
 
         Parameters
         ----------
-        speed_alias
+        behavior_alias
         kwargs
 
         Returns
@@ -250,31 +255,31 @@ class WormFullVideoPosture:
                            'signed_stage_speed_smoothed', 'signed_speed_angular',
                            'signed_middle_body_speed', 'worm_speed_average_all_segments',
                            'worm_speed_average_all_segments']
-        assert speed_alias in possible_values, f"Must be one of {possible_values}"
+        assert behavior_alias in possible_values, f"Must be one of {possible_values}"
 
-        if speed_alias == 'signed_stage_speed':
+        if behavior_alias == 'signed_stage_speed':
             y = self.worm_speed(fluorescence_fps=True, signed=True)
-        elif speed_alias == 'abs_stage_speed':
+        elif behavior_alias == 'abs_stage_speed':
             y = self.worm_speed(fluorescence_fps=True)
-        elif speed_alias == 'signed_middle_body_speed':
+        elif behavior_alias == 'signed_middle_body_speed':
             y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=True)
-        elif speed_alias == 'leifer_curvature' or speed_alias == 'summed_curvature':
+        elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True)
-        elif speed_alias == 'pirouette':
+        elif behavior_alias == 'pirouette':
             y = self.calc_psuedo_pirouette_state()
-        elif speed_alias == 'plateau':
+        elif behavior_alias == 'plateau':
             y = self.calc_plateau_state()
-        elif speed_alias == 'signed_stage_speed_smoothed':
+        elif behavior_alias == 'signed_stage_speed_smoothed':
             y = self.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing=True)
-        elif speed_alias == 'signed_speed_angular':
+        elif behavior_alias == 'signed_speed_angular':
             y = self.worm_angular_velocity(fluorescence_fps=True)
-        elif speed_alias == 'worm_speed_average_all_segments':
+        elif behavior_alias == 'worm_speed_average_all_segments':
             y = self.worm_speed_average_all_segments(fluorescence_fps=True)
-        elif speed_alias == 'worm_nose_residual_speed':
+        elif behavior_alias == 'worm_nose_residual_speed':
             y = self.worm_speed_average_all_segments(fluorescence_fps=True)
         else:
-            raise NotImplementedError(speed_alias)
+            raise NotImplementedError(behavior_alias)
 
         return y
 
@@ -517,11 +522,15 @@ class WormFullVideoPosture:
         c_y = self.centerlineY().iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
-    def calc_triggered_average_indices(self, state=BehaviorCodes.FWD, min_duration=5, ind_preceding=20, **kwargs):
+    def calc_triggered_average_indices(self, state=BehaviorCodes.FWD, min_duration=5, ind_preceding=20,
+                                       behavior_name=None,
+                                       **kwargs):
         """
         Calculates a list of indices that can be used to calculate triggered averages of 'state' ONSET
 
-        See BehaviorCodes for state indices
+        Default uses the behavior annotation, binarized via comparing to state
+            See BehaviorCodes for state indices
+        Alternatively, can pass a behavior_name, which will be used to look up the behavior in this class
 
         Parameters
         ----------
@@ -534,7 +543,11 @@ class WormFullVideoPosture:
         -------
 
         """
-        opt = dict(behavioral_annotation=self.beh_annotation(fluorescence_fps=True),
+        if behavior_name is None:
+            behavioral_annotation = self.beh_annotation(fluorescence_fps=True)
+        else:
+            behavioral_annotation = self.calc_behavior_from_alias(behavior_name)
+        opt = dict(behavioral_annotation,
                    min_duration=min_duration,
                    ind_preceding=ind_preceding,
                    trace_len=self.num_frames,
