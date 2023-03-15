@@ -254,8 +254,8 @@ class WormFullVideoPosture:
         possible_values = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature', 'summed_curvature', 'pirouette',
                            'signed_stage_speed_smoothed', 'signed_speed_angular',
                            'signed_middle_body_speed', 'worm_speed_average_all_segments',
-                           'worm_speed_average_all_segments']
-        assert behavior_alias in possible_values, f"Must be one of {possible_values}"
+                           'worm_speed_average_all_segments', 'plateau']
+        assert behavior_alias in possible_values, f"Must be one of {possible_values}, not {behavior_alias}"
 
         if behavior_alias == 'signed_stage_speed':
             y = self.worm_speed(fluorescence_fps=True, signed=True)

@@ -1,7 +1,7 @@
 import logging
 import warnings
 from dataclasses import dataclass
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Optional
 import numpy as np
 import pandas as pd
 import scipy
@@ -117,11 +117,12 @@ class TriggeredAverageIndices:
 
     def calc_triggered_average_matrix(self, trace, custom_ind: List[np.ndarray]=None,
                                       nan_times_with_too_few=False, max_len=None,
-                                      **ind_kwargs):
+                                      **ind_kwargs) -> Optional[np.ndarray]:
         """
         Uses triggered_average_indices to extract a matrix of traces at each index, with nan padding to equalize the
         lengths of the traces
 
+        If there are no valid indices, returns None
 
         Parameters
         ----------
@@ -139,6 +140,8 @@ class TriggeredAverageIndices:
             all_ind = self.triggered_average_indices(**ind_kwargs)
         else:
             all_ind = custom_ind
+        if len(all_ind) == 0:
+            return None
         if max_len is None:
             max_len_subset = max(map(len, all_ind))
         else:
@@ -390,6 +393,8 @@ class TriggeredAverageIndices:
 
         """
         mat = self.calc_triggered_average_matrix(trace)
+        if mat is None:
+            return 1, 0
         means_before, means_after = self.split_means_from_triggered_average_matrix(mat, gap=gap)
         p = scipy.stats.ttest_rel(means_before, means_after, nan_policy='omit').pvalue
         effect_size = np.nanmean(means_after) - np.nanmean(means_before)
