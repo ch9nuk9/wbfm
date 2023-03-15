@@ -111,7 +111,8 @@ class TriggeredAverageIndices:
         not_in_dict = lambda start, end: (dict_of_events_to_keep is not None) and \
                                          (dict_of_events_to_keep.get(start, 0) == 0)
         validity_checks = [is_too_short, is_too_long, is_at_edge, starts_with_misannotation, not_in_dict]
-        all_ind = build_time_series_from_starts_and_ends(all_ends, all_starts, ind_preceding, validity_checks, DEBUG)
+        # Build actual indices
+        all_ind = build_ind_matrix_from_starts_and_ends(all_ends, all_starts, ind_preceding, validity_checks, DEBUG)
         return all_ind
 
     def calc_triggered_average_matrix(self, trace, custom_ind: List[np.ndarray]=None,
@@ -717,9 +718,9 @@ def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets
     return dict_of_rev_with_id
 
 
-def build_time_series_from_starts_and_ends(all_ends: List[int], all_starts: List[int], ind_preceding: int,
-                                           validity_checks=None,
-                                           DEBUG=False):
+def build_ind_matrix_from_starts_and_ends(all_ends: List[int], all_starts: List[int], ind_preceding: int,
+                                          validity_checks=None,
+                                          DEBUG=False):
     if validity_checks is None:
         validity_checks = []
     all_ind = []
@@ -737,3 +738,16 @@ def build_time_series_from_starts_and_ends(all_ends: List[int], all_starts: List
         ind = np.arange(start - ind_preceding, end)
         all_ind.append(ind)
     return all_ind
+
+
+def calc_time_series_from_starts_and_ends(all_starts, all_ends, num_pts, min_duration=0, only_onset=False):
+    state_trace = np.zeros(num_pts)
+    for start, end in zip(all_starts, all_ends):
+        if end - start < min_duration:
+            continue
+
+        if not only_onset:
+            state_trace[start:end] = 1
+        else:
+            state_trace[start] = 1
+    return state_trace

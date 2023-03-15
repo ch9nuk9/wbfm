@@ -643,7 +643,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        ind_class = self.calc_triggered_average_indices(state=1, ind_preceding=0,
+        ind_class = self.calc_triggered_average_indices(state=BehaviorCodes.REV, ind_preceding=0,
                                                         min_duration=min_duration)
 
         onsets = np.array([vec[0] for vec in ind_class.triggered_average_indices() if vec[0] > 0])
@@ -666,6 +666,30 @@ class WormFullVideoPosture:
         predicted_pirouette_state = predicted_pirouette_state[pad_num:-pad_num].reset_index(drop=True)
 
         return predicted_pirouette_state
+
+    def calc_plateau_state(self):
+        from wbfm.utils.traces.triggered_averages import calc_time_series_from_starts_and_ends
+        import ruptures as rpt
+        frames_to_remove = 5
+        # Get the binary state
+        beh_vec = self.beh_annotation(fluorescence_fps=True)
+        rev_ind = beh_vec == BehaviorCodes.REV
+        all_starts, all_ends = get_contiguous_blocks_from_column(rev_ind, already_boolean=True)
+        # Also get the speed
+        speed = self.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True)
+        # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
+        new_starts = []
+        for start, end in zip(all_starts, all_ends):
+            if end - start < 2 * frames_to_remove:
+                continue
+            dat = speed.loc[start+frames_to_remove:end-frames_to_remove].to_numpy()
+            algo = rpt.Dynp(model="l2").fit(dat)
+            result = algo.predict(n_bkps=1)
+            new_starts.append(result[0] + start + frames_to_remove)
+
+        num_pts = len(beh_vec)
+        plateau_state = calc_time_series_from_starts_and_ends(new_starts, all_ends, num_pts, only_onset=False)
+        return plateau_state
 
     def calc_fwd_counter_state(self):
         """
