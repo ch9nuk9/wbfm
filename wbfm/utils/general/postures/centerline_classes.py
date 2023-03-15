@@ -371,7 +371,7 @@ class WormFullVideoPosture:
         else:
             df = get_positions(fluorescence_fps=False)
         if strong_smoothing_before_derivative:
-            df = filter_gaussian_moving_average(df, std=4)
+            df = filter_gaussian_moving_average(df, std=5)
         # Derivative, then convert to physical units (note that subsampling might not have happened yet)
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
         tdelta_s = self.get_time_delta_in_s(fluorescence_fps and subsample_before_derivative)
@@ -667,10 +667,24 @@ class WormFullVideoPosture:
 
         return predicted_pirouette_state
 
-    def calc_plateau_state(self):
+    def calc_plateau_state(self, frames_to_remove = 5):
+        """
+        Calculates a state that is high when the worm is in a "plateau", and low otherwise
+        Plateau is defined in two steps:
+            1. Find all reversals that are longer than 2 * frames_to_remove
+            2. Determine a break point, and keep all points after
+
+        Parameters
+        ----------
+        frames_to_remove
+
+        Returns
+        -------
+
+        """
         from wbfm.utils.traces.triggered_averages import calc_time_series_from_starts_and_ends
         import ruptures as rpt
-        frames_to_remove = 5
+
         # Get the binary state
         beh_vec = self.beh_annotation(fluorescence_fps=True)
         rev_ind = beh_vec == BehaviorCodes.REV
