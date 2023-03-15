@@ -1,7 +1,7 @@
 import logging
 import warnings
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 import numpy as np
 import pandas as pd
 import scipy
@@ -101,24 +101,17 @@ class TriggeredAverageIndices:
             print("All starts: ", all_starts)
             print("All ends: ", all_ends)
         # Turn into time series
-        all_ind = []
         beh_vec = self.behavioral_annotation.to_numpy()
-        for start, end in zip(all_starts, all_ends):
-            if DEBUG:
-                print("Checking block: ", start, end)
-            is_too_short = end - start < self.min_duration
-            is_too_long = (self.max_duration is not None) and (end - start > self.max_duration)
-            is_at_edge = start == 0
-            starts_with_misannotation = beh_vec[start-1] == BehaviorCodes.UNKNOWN
-            not_in_dict = (dict_of_events_to_keep is not None) and (dict_of_events_to_keep.get(start, 0) == 0)
-            if is_too_short or is_too_long or is_at_edge or starts_with_misannotation or not_in_dict:
-                if DEBUG:
-                    print("Skipping because: ", is_too_short, is_too_long, is_at_edge, starts_with_misannotation)
-                continue
-            elif DEBUG:
-                print("***Keeping***")
-            ind = np.arange(start - self.ind_preceding, end)
-            all_ind.append(ind)
+        min_duration, max_duration, ind_preceding = self.min_duration, self.max_duration, self.ind_preceding
+        # Build all validity checks as a list of callables
+        is_too_short = lambda start, end: end - start < min_duration
+        is_too_long = lambda start, end: (max_duration is not None) and (end - start > max_duration)
+        is_at_edge = lambda start, end: start == 0
+        starts_with_misannotation = lambda start, end: beh_vec[start-1] == BehaviorCodes.UNKNOWN
+        not_in_dict = lambda start, end: (dict_of_events_to_keep is not None) and \
+                                         (dict_of_events_to_keep.get(start, 0) == 0)
+        validity_checks = [is_too_short, is_too_long, is_at_edge, starts_with_misannotation, not_in_dict]
+        all_ind = build_time_series_from_starts_and_ends(all_ends, all_starts, ind_preceding, validity_checks, DEBUG)
         return all_ind
 
     def calc_triggered_average_matrix(self, trace, custom_ind: List[np.ndarray]=None,
@@ -722,3 +715,25 @@ def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets
         # Optimization: Finally, remove the used one from the fwd onset list
 
     return dict_of_rev_with_id
+
+
+def build_time_series_from_starts_and_ends(all_ends: List[int], all_starts: List[int], ind_preceding: int,
+                                           validity_checks=None,
+                                           DEBUG=False):
+    if validity_checks is None:
+        validity_checks = []
+    all_ind = []
+    for start, end in zip(all_starts, all_ends):
+        if DEBUG:
+            print("Checking block: ", start, end)
+        # Check validity
+        validity_vec = [check(start, end) for check in validity_checks]
+        if any(validity_vec):
+            if DEBUG:
+                print("Skipping because: ", validity_vec)
+            continue
+        elif DEBUG:
+            print("***Keeping***")
+        ind = np.arange(start - ind_preceding, end)
+        all_ind.append(ind)
+    return all_ind
