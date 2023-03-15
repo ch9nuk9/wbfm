@@ -22,6 +22,8 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
                                          output_folder: str = None,
                                          trace_options=None,
                                          trigger_options=None,
+                                         include_raw_behavioral_annotation=False,
+                                         include_speed=False,
                                          **kwargs):
     """
     Builds all the dataframes needed for the GUI for triggered average style plots.
@@ -88,7 +90,9 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
         # Save dataframes
         df_summary, raw_dfs = reformat_dataframes(all_projects_gcamp, all_projects_gfp, df_gcamp_gfp,
                                                   output_dict_traces, output_dict_traces_gfp,
-                                                  ind_class_dict_gcamp, ind_class_dict_gfp)
+                                                  ind_class_dict_gcamp, ind_class_dict_gfp,
+                                                  include_raw_behavioral_annotation=include_raw_behavioral_annotation,
+                                                  include_speed=include_speed)
 
         # Optionally add a raw dataframe with the exact behavioral variable
 
@@ -114,7 +118,7 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
 
 def reformat_dataframes(all_projects_gcamp, all_projects_gfp, df_gcamp_gfp_rev, output_dict_traces,
                         output_dict_traces_gfp, ind_class_dict_gcamp, ind_class_dict_gfp,
-                        include_raw_behavioral_annotation=True):
+                        include_raw_behavioral_annotation, include_speed):
     # Index of summary df must be the same as the columns of the raw df (traces)
     df_summary = df_gcamp_gfp_rev.copy()
     df_summary['index'] = df_summary['dataset_name'] + '_' + df_summary['neuron_name']
@@ -125,18 +129,28 @@ def reformat_dataframes(all_projects_gcamp, all_projects_gfp, df_gcamp_gfp_rev, 
     df_all_traces.columns = ['_'.join(col).strip() for col in df_all_traces.columns.values]
     raw_dfs = {'trace': df_all_traces}
     # Reversal (behavior)
-    df_beh = build_beh_df(df_all_traces_gcamp, all_projects_gcamp)
-    df_beh_gfp = build_beh_df(df_all_traces_gfp, all_projects_gfp)
+    opt = dict(beh_mode='reversal')
+    df_beh = build_beh_df(df_all_traces_gcamp, all_projects=all_projects_gcamp, **opt)
+    df_beh_gfp = build_beh_df(df_all_traces_gfp, all_projects=all_projects_gfp, **opt)
     df_beh = pd.concat([df_beh, df_beh_gfp], axis=1)
     df_beh.columns = ['_'.join(col).strip() for col in df_beh.columns.values]
     raw_dfs.update({'behavior': df_beh})
     if include_raw_behavioral_annotation:
         # Behavior from ind class directly
-        df_beh = build_beh_df(df_all_traces_gcamp, all_projects_gcamp, ind_class_dict=ind_class_dict_gcamp)
-        df_beh_gfp = build_beh_df(df_all_traces_gfp, all_projects_gfp, ind_class_dict=ind_class_dict_gfp)
+        opt = dict(beh_mode='individual class')
+        df_beh = build_beh_df(df_all_traces_gcamp, ind_class_dict=ind_class_dict_gcamp, **opt)
+        df_beh_gfp = build_beh_df(df_all_traces_gfp, ind_class_dict=ind_class_dict_gfp, **opt)
         df_beh = pd.concat([df_beh, df_beh_gfp], axis=1)
         df_beh.columns = ['_'.join(col).strip() for col in df_beh.columns.values]
         raw_dfs.update({'triggered behavior': df_beh})
+    if include_speed:
+        # Behavior from ind class directly
+        opt = dict(beh_mode='speed')
+        df_beh = build_beh_df(df_all_traces_gcamp, all_projects=all_projects_gcamp, **opt)
+        df_beh_gfp = build_beh_df(df_all_traces_gfp, all_projects=all_projects_gfp, **opt)
+        df_beh = pd.concat([df_beh, df_beh_gfp], axis=1)
+        df_beh.columns = ['_'.join(col).strip() for col in df_beh.columns.values]
+        raw_dfs.update({'speed': df_beh})
 
     return df_summary, raw_dfs
 
@@ -291,19 +305,23 @@ def plot_triggered_average_boxplot(df_gcamp_gfp_rev, x_effect_line, output_folde
     fig.write_image(fname)
 
 
-def build_beh_df(df_all_traces, all_projects=None, beh_code=BehaviorCodes.REV, ind_class_dict=None):
+def build_beh_df(df_all_traces, beh_mode='reversal',
+                 all_projects=None, beh_code=BehaviorCodes.REV, ind_class_dict=None):
     """
     Builds a dataframe with the same columns as the output of calc_raw_traces_df, but with the behavioral annotation
     instead of the raw traces.
 
-    This will generally have repeated columns for each neuron within a single dataset
+    This will have repeated columns for each neuron within a single dataset
 
-    By default the behavior is calculated from the project's posture class, but if ind_class_dict is provided, the
-    behavior is calculated from the individual class in that dictionary.
+    The exact behavioral time series is determined by beh_mode:
+    - 'reversal' (default): uses the reversal annotation from the posture class
+    - 'individual class': uses the individual class annotation from the posture class
+    - 'speed': uses the speed annotation from the posture class
 
     Parameters
     ----------
-    output_dict_traces
+    df_all_traces
+    beh_mode
     all_projects
     beh_code
     ind_class_dict
@@ -317,12 +335,20 @@ def build_beh_df(df_all_traces, all_projects=None, beh_code=BehaviorCodes.REV, i
     df_beh = df_all_traces.copy()
 
     for dataset_name in top_cols:
-        if ind_class_dict is None:
+        if beh_mode == 'reversal':
             p = all_projects[dataset_name]
             beh = p.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True) == beh_code
-        else:
+        elif beh_mode == 'individual class':
             triggered_average_class = ind_class_dict[dataset_name]
             beh = triggered_average_class.ind_class.behavioral_annotation
+        elif beh_mode == 'speed':
+            p = all_projects[dataset_name]
+            beh = p.worm_posture_class.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True,
+                                                  signed=True)
+            beh = beh / beh.std()
+        else:
+            raise NotImplementedError(f"Behavior mode {beh_mode} not implemented, "
+                                      f"must be 'reversal' or 'individual class' or 'speed'")
         beh = beh.apply(cast_int_or_nan)
 
         # Make dataframe of all beh, then overwrite
