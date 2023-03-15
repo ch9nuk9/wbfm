@@ -339,9 +339,10 @@ class WormFullVideoPosture:
             velocity = pd.Series(velocity).interpolate()
         return velocity
 
-    @lru_cache(maxsize=256)
+    # @lru_cache(maxsize=256)
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
-                   strong_smoothing=False, use_stage_position=True, remove_outliers=True, body_segment=50) -> pd.Series:
+                   strong_smoothing=False, use_stage_position=True, remove_outliers=True, body_segment=50,
+                   strong_smoothing_before_derivative=False) -> pd.Series:
         """
         Calculates derivative of position
 
@@ -369,7 +370,8 @@ class WormFullVideoPosture:
             df = get_positions(fluorescence_fps=fluorescence_fps)
         else:
             df = get_positions(fluorescence_fps=False)
-
+        if strong_smoothing_before_derivative:
+            df = filter_gaussian_moving_average(df, std=4)
         # Derivative, then convert to physical units (note that subsampling might not have happened yet)
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
         tdelta_s = self.get_time_delta_in_s(fluorescence_fps and subsample_before_derivative)
