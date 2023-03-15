@@ -89,7 +89,7 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
         func = partial(get_manual_annotation_from_project, all_projects)
         df_index = list(df_summary['index'])
         df_new_col = build_new_column_from_function(df_index, func)
-        df_summary['manual_id'] = df_new_col
+        df_summary['manual_id'] = df_new_col.values
 
         if output_folder is not None:
             this_output_folder = f"{output_folder}-{fname_suffix}"

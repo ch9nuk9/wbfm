@@ -181,12 +181,13 @@ def split_dataframe_name(dataframe_row_name):
     return project_name, neuron_name
 
 
-def get_manual_annotation_from_project(all_projects, project_name, neuron_name):
+def get_manual_annotation_from_project(all_projects, project_name, neuron_name,
+                                       unknown_value='unknown'):
     # Get the id'ed name for this project and this neuron, even if empty
     p = all_projects[project_name]
     mapping = p.dict_numbers_to_neuron_names
     if mapping.get(neuron_name, [0, 0])[1] == 2:
         col_value = mapping[neuron_name][0]
     else:
-        col_value = ''
+        col_value = unknown_value
     return col_value
