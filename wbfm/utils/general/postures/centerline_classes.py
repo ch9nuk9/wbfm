@@ -699,6 +699,7 @@ class WormFullVideoPosture:
         """
         from wbfm.utils.traces.triggered_averages import calc_time_series_from_starts_and_ends
         import ruptures as rpt
+        from ruptures.exceptions import BadSegmentationParameters
 
         # Get the binary state
         beh_vec = self.beh_annotation(fluorescence_fps=True)
@@ -715,7 +716,10 @@ class WormFullVideoPosture:
                 continue
             dat = speed.loc[start+frames_to_remove:end-frames_to_remove].to_numpy()
             algo = rpt.Dynp(model="l2").fit(dat)
-            result = algo.predict(n_bkps=1)
+            try:
+                result = algo.predict(n_bkps=1)
+            except BadSegmentationParameters:
+                continue
             breakpoint_absolute_coords = result[0] + start + frames_to_remove
             new_starts.append(breakpoint_absolute_coords)
             new_ends.append(end)
