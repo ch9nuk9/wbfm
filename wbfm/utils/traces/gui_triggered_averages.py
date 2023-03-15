@@ -343,13 +343,13 @@ def build_beh_df(df_all_traces, beh_mode='reversal',
             beh = triggered_average_class.ind_class.behavioral_annotation
         elif beh_mode == 'speed':
             p = all_projects[dataset_name]
-            beh = p.worm_posture_class.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True,
+            beh = p.worm_posture_class.worm_speed(fluorescence_fps=True,
+                                                  strong_smoothing_before_derivative=True,
                                                   signed=True)
             beh = beh / beh.std()
         else:
             raise NotImplementedError(f"Behavior mode {beh_mode} not implemented, "
                                       f"must be 'reversal' or 'individual class' or 'speed'")
-        beh = beh.apply(cast_int_or_nan)
 
         # Make dataframe of all beh, then overwrite
         df_one_dat = pd.DataFrame({k: beh for k in list(df_beh[dataset_name].columns)})
