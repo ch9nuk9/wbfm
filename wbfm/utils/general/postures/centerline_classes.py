@@ -739,6 +739,67 @@ class WormFullVideoPosture:
         plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
         return pd.Series(plateau_state)
 
+    def calc_semi_plateau_state(self, min_length=10, DEBUG=False):
+        """
+        Calculates a state that is high when the worm is in a "semi-plateau", and low otherwise
+        A semi-plateau is defined in two steps:
+            1. Find all reversals that are longer than min_length
+            2. Fit a piecewise regression, and keep all points between the first and last breakpoints
+
+        Parameters
+        ----------
+        min_length
+
+        Returns
+        -------
+
+        """
+        import piecewise_regression
+        from wbfm.utils.traces.triggered_averages import calc_time_series_from_starts_and_ends
+
+        # Get the binary state
+        beh_vec = self.beh_annotation(fluorescence_fps=True)
+        rev_ind = beh_vec == BehaviorCodes.REV
+        all_starts, all_ends = get_contiguous_blocks_from_column(rev_ind, already_boolean=True)
+        # Also get the speed
+        speed = self.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True)
+        # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
+        new_starts = []
+        new_ends = []
+        for start, end in zip(all_starts, all_ends):
+            if end - start < min_length:
+                continue
+            y = speed.loc[start:end].to_numpy()
+            x = np.arange(len(y))
+
+            pw_fit = piecewise_regression.Fit(x, y, n_breakpoints=3, n_boot=100)
+            results = pw_fit.get_results()['estimates']
+            # Only use first and last breakpoints
+            breakpoint1 = results['breakpoint1']['estimate']
+            breakpoint3 = results['breakpoint3']['estimate']
+
+            start_absolute_coords = int(np.round(breakpoint1 + start))
+            end_absolute_coords = int(np.round(breakpoint3 + start))
+            new_starts.append(start_absolute_coords)
+            new_ends.append(end_absolute_coords)
+
+            if DEBUG:
+                pw_fit.plot_data(color="grey", s=20)
+                # Pass in standard matplotlib keywords to control any of the plots
+                pw_fit.plot_fit(color="red", linewidth=4)
+                pw_fit.plot_breakpoints()
+                pw_fit.plot_breakpoint_confidence_intervals()
+                plt.xlabel("x")
+                plt.ylabel("y")
+                plt.show()
+        if DEBUG:
+            print(f"Original starts: {all_starts}")
+            print(f"New starts: {new_starts}")
+
+        num_pts = len(beh_vec)
+        plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
+        return pd.Series(plateau_state)
+
     def calc_fwd_counter_state(self):
         """
         Calculates an integer vector that counts the time since last reversal
