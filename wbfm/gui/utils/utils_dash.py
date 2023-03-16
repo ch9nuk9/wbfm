@@ -3,9 +3,10 @@ import pickle
 from typing import Dict
 
 import dash
+import numpy as np
 import pandas as pd
 from dash import dcc, html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -144,11 +145,30 @@ def dashboard_from_two_dataframes(df_summary: pd.DataFrame, raw_dfs: Dict[str, p
         Input("dropdown_x", "value"),
         Input("dropdown_y", "value"),
         Input("dropdown_color", "value"),
-        Input("scatter", "clickData")
+        Input("scatter", "clickData"),
+        State("scatter", "figure")
     )
-    def update_scatter(x, y, color, clickData):
+    def update_scatter(x, y, color, clickData, fig):
+        id_input_changed = dash.ctx.triggered_id
         selected_row = clickData["points"][0]["customdata"][0]
-        fig = _build_scatter_plot(df_summary, x, y, selected_row, color=color)
+        # Regenerate the full plot if the dropdown menu is changed, but not if the scatterplot is clicked
+        # Also regenerate on the first load
+        if id_input_changed == "scatter" and fig is not None:
+            # First, check in which dictionary the selected point exists
+            # Then modify that one, while resetting the others
+            all_customdata = [fig['data'][i]['customdata'] for i in range(len(fig['data']))]
+            for i, customdata in enumerate(all_customdata):
+                num_pts = len(customdata)
+                new_sz = np.ones(num_pts)
+                if [selected_row] in customdata:
+                    i_selected_row = customdata.index([selected_row])
+                    new_sz[i_selected_row] = 5
+                    fig['data'][i]['marker']['size'] = new_sz
+                else:
+                    fig['data'][i]['marker']['size'] = new_sz
+        else:
+            fig = _build_scatter_plot(df_summary, x, y, selected_row, color=color)
+
         return fig
 
     return app
