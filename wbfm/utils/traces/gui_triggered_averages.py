@@ -238,7 +238,7 @@ def plot_triggered_average_with_lines(df_gcamp_gfp_rev, x_effect_line, hline_hei
     col_sequence = [col_sequence[1], col_sequence[0]]
 
     fig = px.scatter(df_gcamp_gfp_rev, y='-log(p value)', x='effect size', color='genotype', marginal_y='histogram',
-                     title='Reversal-triggered neurons', hover_data=['neuron_name', 'dataset_name'],
+                     title=f'{suffix} neurons', hover_data=['neuron_name', 'dataset_name'],
                      color_discrete_sequence=col_sequence)
 
     opt = dict(line=dict(dash='dot'), col=1)
@@ -338,6 +338,7 @@ def build_beh_df(df_all_traces, beh_mode='reversal',
         if beh_mode == 'reversal':
             p = all_projects[dataset_name]
             beh = p.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True) == beh_code
+            beh = beh.apply(cast_int_or_nan)
         elif beh_mode == 'individual class':
             triggered_average_class = ind_class_dict[dataset_name]
             beh = triggered_average_class.ind_class.behavioral_annotation
