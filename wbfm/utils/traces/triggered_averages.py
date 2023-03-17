@@ -213,16 +213,18 @@ class TriggeredAverageIndices:
                         triggered_average_mat[i_trace, i_to_remove] = np.nan
         return triggered_average_mat
 
-    def prep_triggered_average_for_plotting(self, triggered_avg_matrix):
+    def prep_triggered_average_for_plotting(self, triggered_avg_matrix, shorten_to_last_valid=True):
         triggered_avg, triggered_std, triggered_avg_counts = self.calc_triggered_average_stats(triggered_avg_matrix)
         # Remove points where there are too few lines contributing
         to_remove = triggered_avg_counts < self.min_lines
         triggered_avg[to_remove] = np.nan
         triggered_std[to_remove] = np.nan
         xmax = pd.Series(triggered_avg).last_valid_index()
-        triggered_avg = triggered_avg[:xmax]
+        if shorten_to_last_valid:
+            # Helps with plotting individual lines, but will likely produce traces of different lengths
+            triggered_avg = triggered_avg[:xmax]
+            triggered_std = triggered_std[:xmax]
         raw_trace_mean = np.nanmean(triggered_avg)
-        triggered_std = triggered_std[:xmax]
         is_valid = len(triggered_avg) > 0 and np.count_nonzero(~np.isnan(triggered_avg)) > 0
         return raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid
 
