@@ -1,5 +1,10 @@
 """
-The top level function for getting final traces from 3d tracks and neuron masks
+Match two projects using the main tracking pipeline
+
+This doesn't work well if the postures are not very similar.
+In principle the videos should be the same individual.
+
+Saves pickle files, .h5, and .xlsx files in the visualization subfolder of the target and base projects.
 """
 
 # Experiment tracking
@@ -29,7 +34,7 @@ def cfg(project_path_base, project_path_target, DEBUG):
     cfg_base = ModularProjectConfig(project_path_base)
     check_all_needed_data_for_step(cfg_base, 4, training_data_required=False)
 
-    cfg_target = ModularProjectConfig(project_path_base)
+    cfg_target = ModularProjectConfig(project_path_target)
     cfg_target.setup_logger('step_4+.log')
     check_all_needed_data_for_step(cfg_target, 4, training_data_required=False)
 
