@@ -83,7 +83,8 @@ class NapariLayerInitializer:
 
         list_of_matches = getattr(match_object, which_matches)
         list_of_matches = [m for m in list_of_matches if -1 not in m]
-        list_of_matches = [m for m in list_of_matches if m[2] > min_confidence]
+        if min_confidence > 0.0:
+            list_of_matches = [m for m in list_of_matches if m[2] > min_confidence]
 
         all_tracks_list = napari_tracks_from_match_list(list_of_matches, n0_zxy, n1_zxy)
 
