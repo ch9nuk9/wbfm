@@ -113,6 +113,7 @@ class PreprocessingSettings:
     _camera_alignment_matrix: np.array = None
     path_to_camera_alignment_matrix: str = None
     gauss_filt_sigma: float = None
+    max_project_across_time: bool = True
 
     # Deconvolution and other things (experimental)
     do_deconvolution: bool = False
@@ -424,6 +425,11 @@ class PreprocessingSettings:
 
         red_vol_subset = np.array([np.max(dat, axis=0) for dat in red_vol_subset])
         green_vol_subset = np.array([np.max(dat, axis=0) for dat in green_vol_subset])
+
+        if self.max_project_across_time:
+            # Alignment is more stable for large misalignments if we max project across time as well as z
+            red_vol_subset = [np.max(red_vol_subset, axis=0)]
+            green_vol_subset = [np.max(green_vol_subset, axis=0)]
 
         # Calculate (average over above volumes)
         warp_mat = calculate_alignment_matrix_two_stacks(red_vol_subset, green_vol_subset,
