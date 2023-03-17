@@ -754,7 +754,6 @@ class WormFullVideoPosture:
         -------
 
         """
-        import piecewise_regression
         from wbfm.utils.traces.triggered_averages import calc_time_series_from_starts_and_ends
 
         # Get the binary state
@@ -764,37 +763,7 @@ class WormFullVideoPosture:
         # Also get the speed
         speed = self.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True)
         # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
-        new_starts = []
-        new_ends = []
-        for start, end in zip(all_starts, all_ends):
-            if end - start < min_length:
-                continue
-            y = speed.loc[start:end].to_numpy()
-            x = np.arange(len(y))
-
-            pw_fit = piecewise_regression.Fit(x, y, n_breakpoints=3, n_boot=100)
-            results = pw_fit.get_results()['estimates']
-            # Only use first and last breakpoints
-            breakpoint1 = results['breakpoint1']['estimate']
-            breakpoint3 = results['breakpoint3']['estimate']
-
-            start_absolute_coords = int(np.round(breakpoint1 + start))
-            end_absolute_coords = int(np.round(breakpoint3 + start))
-            new_starts.append(start_absolute_coords)
-            new_ends.append(end_absolute_coords)
-
-            if DEBUG:
-                pw_fit.plot_data(color="grey", s=20)
-                # Pass in standard matplotlib keywords to control any of the plots
-                pw_fit.plot_fit(color="red", linewidth=4)
-                pw_fit.plot_breakpoints()
-                pw_fit.plot_breakpoint_confidence_intervals()
-                plt.xlabel("x")
-                plt.ylabel("y")
-                plt.show()
-        if DEBUG:
-            print(f"Original starts: {all_starts}")
-            print(f"New starts: {new_starts}")
+        new_ends, new_starts = fit_3_break_piecewise_regression(speed, all_ends, all_starts, min_length, DEBUG)
 
         num_pts = len(beh_vec)
         plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
@@ -1347,3 +1316,61 @@ def plot_highest_correlations(df_traces, df_speed):
     min_vals = df_corr.min(axis=1)
     _plot(min_vals, min_names)
 
+
+def fit_3_break_piecewise_regression(dat, all_ends, all_starts, min_length=10,
+                                     end_padding=0, start_padding=0,
+                                     n_breakpoints=3,
+                                     DEBUG=False):
+    import piecewise_regression
+
+    new_starts = []
+    new_ends = []
+    for start, end in zip(all_starts, all_ends):
+        if end - start < min_length:
+            continue
+        y = dat.loc[start-start_padding:end + end_padding].to_numpy()
+        x = np.arange(len(y))
+
+        pw_fit = piecewise_regression.Fit(x, y, n_breakpoints=n_breakpoints, n_boot=25)
+        results = pw_fit.get_results()['estimates']
+        if results is None:
+            new_starts.append(np.nan)
+            new_ends.append(np.nan)
+            continue
+        # Only use first and last breakpoints, but do a quality check
+        if n_breakpoints >= 3:
+            breakpoint1 = results['breakpoint1']['estimate']
+            breakpoint2 = results['breakpoint2']['estimate']
+            breakpoint3 = results['breakpoint3']['estimate']
+            # If the amplitude at the first breakpoint is much lower than the second, use the second
+            if y[int(breakpoint1)] < y[int(breakpoint2)] / 2:
+                breakpoint1 = breakpoint2
+            # If the last breakpoint is not in the second half of the data, the fit failed
+            if breakpoint3 < len(x) / 2:
+                new_starts.append(np.nan)
+                new_ends.append(np.nan)
+                continue
+        else:
+            # No quality checks possible
+            breakpoint1 = results['breakpoint1']['estimate']
+            breakpoint3 = results['breakpoint2']['estimate']
+
+        start_absolute_coords = int(np.round(breakpoint1 + start))
+        end_absolute_coords = int(np.round(breakpoint3 + start))
+        new_starts.append(start_absolute_coords)
+        new_ends.append(end_absolute_coords)
+
+        if DEBUG:
+            pw_fit.plot_data(color="grey", s=20)
+            # Pass in standard matplotlib keywords to control any of the plots
+            pw_fit.plot_fit(color="red", linewidth=4)
+            pw_fit.plot_breakpoints()
+            pw_fit.plot_breakpoint_confidence_intervals()
+            plt.xlabel("x")
+            plt.ylabel("y")
+            plt.title(f"Difference: {end - start} vs {end_absolute_coords - start_absolute_coords}")
+            plt.show()
+    if DEBUG:
+        print(f"Original starts: {all_starts}")
+        print(f"New starts: {new_starts}")
+    return new_ends, new_starts
