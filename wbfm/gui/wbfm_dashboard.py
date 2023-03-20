@@ -10,7 +10,7 @@ import plotly.express as px
 import pandas as pd
 
 
-def correlate_return_cross_terms(df0: pd.DataFrame, df1: pd.DataFrame) -> pd.DataFrame:
+def _correlate_return_cross_terms(df0: pd.DataFrame, df1: pd.DataFrame) -> pd.DataFrame:
     """
     Like df.corr(), but acts on two dataframes, returning only the cross terms
 
@@ -46,7 +46,7 @@ def get_corner_from_corr_df(df0: pd.DataFrame, df_corr: pd.DataFrame):
     return df_corr.iloc[ind_neurons, ind_nonneuron]
 
 
-def get_names_from_df(df, level=0):
+def _get_names_from_df(df, level=0):
     """
     Simpler copy of get_names_from_df utility
     """
@@ -77,7 +77,7 @@ class DashboardDataset:
 
         if self.df_final.columns.nlevels == 4:
             # Multi dataset
-            self.dataset_names = get_names_from_df(self.df_final)
+            self.dataset_names = _get_names_from_df(self.df_final)
             self.current_dataset = self.dataset_names[0]
         elif self.df_final.columns.nlevels == 3:
             # Single dataset
@@ -153,10 +153,10 @@ class DashboardDataset:
             joinpath('ratio_integration_rolling_mean_beh_pc1-grid-.png')
 
         # Define layout
-        curvature_names = get_names_from_df(self.df_curvature)
-        behavior_names = get_names_from_df(self.df_behavior)
-        trace_names = get_names_from_df(self.df_all_traces)
-        neuron_names = get_names_from_df(self.df_all_traces[trace_names[0]])
+        curvature_names = _get_names_from_df(self.df_curvature)
+        behavior_names = _get_names_from_df(self.df_behavior)
+        trace_names = _get_names_from_df(self.df_all_traces)
+        neuron_names = _get_names_from_df(self.df_all_traces[trace_names[0]])
         if self.dataset_names is None:
             dataset_names = [None]
         else:
@@ -179,7 +179,7 @@ class DashboardDataset:
         def _update_neuron_dropdown(current_dataset):
             # Get any trace type; assume they have the same names
             self.current_dataset = current_dataset
-            new_neuron_names = get_names_from_df(self.get_trace_type('ratio'))
+            new_neuron_names = _get_names_from_df(self.get_trace_type('ratio'))
             return new_neuron_names
 
         # Main scatter plot changing callback (change axes)
@@ -457,17 +457,17 @@ def update_max_correlation_over_all_segment_plot(df_behavior, df_traces, df_curv
     df_curvature_subset = df_curvature.iloc[:, kymograph_range[0]:kymograph_range[1]]
     if regression_type == 'Rectified regression':
         rev_idx = df_behavior.reversal
-        df_corr = correlate_return_cross_terms(df_traces[rev_idx], df_curvature_subset)
+        df_corr = _correlate_return_cross_terms(df_traces[rev_idx], df_curvature_subset)
         df_max_rev = df_corr.abs().max(axis=1)
 
-        df_corr = correlate_return_cross_terms(df_traces[~rev_idx], df_curvature_subset)
+        df_corr = _correlate_return_cross_terms(df_traces[~rev_idx], df_curvature_subset)
         df_max_fwd = df_corr.abs().max(axis=1)
 
         df_dict = {'rev': df_max_rev, 'fwd': df_max_fwd}
         df_corr_max = pd.DataFrame(df_dict)
         y_names = ['fwd', 'rev']
     else:
-        df_corr = correlate_return_cross_terms(df_traces, df_curvature_subset)
+        df_corr = _correlate_return_cross_terms(df_traces, df_curvature_subset)
         df_corr_max = pd.DataFrame(df_corr.max(axis=1), columns=['correlation'])
         y_names = 'correlation'
     # For setting custom data
