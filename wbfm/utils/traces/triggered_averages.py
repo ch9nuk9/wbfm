@@ -2,16 +2,20 @@ import logging
 import warnings
 from dataclasses import dataclass
 from typing import List, Tuple, Callable, Optional
+
 import numpy as np
 import pandas as pd
 import scipy
 from matplotlib import pyplot as plt
+from scipy.cluster import hierarchy
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average, fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 
@@ -623,6 +627,96 @@ class FullDatasetTriggeredAverages:
         return triggered_averages_class
 
 
+@dataclass
+class ClusteredTriggeredAverages:
+
+    triggered_averages_class: FullDatasetTriggeredAverages
+
+    df_triggered: pd.DataFrame = None
+    df_corr: pd.DataFrame = None
+
+    def __post_init__(self):
+        # Calculate the triggered average matrix
+        neuron_names = self.triggered_averages_class.neuron_names
+
+        df_triggered = {}
+        for name in neuron_names:
+            mat = self.triggered_averages_class.triggered_average_matrix_from_name(name)
+            raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
+                self.triggered_averages_class.ind_class.prep_triggered_average_for_plotting(mat,
+                                                                                            shorten_to_last_valid=False)
+            df_triggered[name] = triggered_avg
+
+        df_triggered = pd.DataFrame(df_triggered)
+        df_triggered = df_triggered.loc[:df_triggered.last_valid_index()]
+        df_triggered = fill_nan_in_dataframe(df_triggered)
+        self.df_triggered = df_triggered
+
+        # Calculate distance matrix
+        df_corr = df_triggered.corr()
+        self.df_corr = df_corr
+
+        # Calculate clustering for further analysis
+        Z = hierarchy.linkage(df_corr, method='complete', optimal_ordering=False)
+        clust_ind = hierarchy.fcluster(Z, t=4, criterion='distance')
+        len(np.unique(clust_ind))
+
+        names = pd.Series(get_names_from_df(df_corr))
+
+        per_cluster_names = {}
+        for i_clust in np.unique(clust_ind):
+            per_cluster_names[i_clust] = names[clust_ind == i_clust]
+
+        self.per_cluster_names = per_cluster_names
+
+    def plot_clustergram(self, ):
+        df_corr = self.df_corr
+        df_triggered = self.df_triggered
+
+        dist_fun = lambda X, metric: X  # df_corr is already the distance (similarity)
+        import dash_bio
+        clustergram = dash_bio.Clustergram(df_corr,
+                                           column_labels=list(df_triggered.columns.values),
+                                           row_labels=list(df_triggered.columns.values),
+                                           dist_fun=dist_fun,
+                                           height=800,
+                                           width=800,
+                                           color_threshold={'row': 5, 'col': 5},
+                                           center_values=False)
+        clustergram.show()
+        return df_corr
+
+    def plot_all_cluster(self):
+        ind_class = self.triggered_averages_class.ind_class
+        for i_clust, name_list in self.per_cluster_names.items():
+            fig, ax = plt.subplots(dpi=200)
+            # Build a pseudo-triggered average matrix, made of the means of each neuron
+            pseudo_mat = []
+            for name in name_list:
+                triggered_avg = self.df_triggered[name].copy()
+                pseudo_mat.append(triggered_avg)
+            # Normalize the traces to be similar to the correlation, i.e. z-score them
+            pseudo_mat = np.stack(pseudo_mat)
+            pseudo_mat = pseudo_mat - np.nanmean(pseudo_mat, axis=1, keepdims=True)
+            pseudo_mat = pseudo_mat / np.nanstd(pseudo_mat, axis=1, keepdims=True)
+            # Plot
+            ind_class.plot_triggered_average_from_matrix(pseudo_mat, ax, show_individual_lines=True)
+            plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
+
+    @staticmethod
+    def load_from_project(project_data, trigger_opt):
+        default_trigger_opt = dict(min_duration=10, state=BehaviorCodes.REV, ind_preceding=30)
+        default_trigger_opt.update(trigger_opt)
+        triggered_averages_class = FullDatasetTriggeredAverages.load_from_project(project_data,
+                                                                                  trigger_opt=default_trigger_opt)
+
+        # Strongly filter to clean up the correlation matrix
+        df = triggered_averages_class.df_traces.copy()
+        triggered_averages_class.df_traces = filter_gaussian_moving_average(df, std=3)
+
+        return ClusteredTriggeredAverages(triggered_averages_class)
+
+
 def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4, **kwargs):
     """
     Designed to be used with make_grid_plot_using_project with the arg ax_plot_func=ax_plot_func
@@ -758,3 +852,4 @@ def calc_time_series_from_starts_and_ends(all_starts, all_ends, num_pts, min_dur
         else:
             state_trace[start] = 1
     return state_trace
+
