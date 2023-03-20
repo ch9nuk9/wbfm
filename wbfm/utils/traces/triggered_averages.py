@@ -454,7 +454,7 @@ class TriggeredAverageIndices:
 
         if show_individual_lines:
             for trace in triggered_avg_matrix:
-                ax.plot(trace[:xmax], 'black', alpha=0.2)
+                ax.plot(trace[:xmax], 'black', alpha=5.0/(triggered_avg_matrix.shape[0]+10.0))
 
         if not is_second_plot:
             ax.set_ylabel("Activity")
@@ -538,7 +538,7 @@ class FullDatasetTriggeredAverages:
         names.sort()
         return names
 
-    def triggered_average_matrix(self, name):
+    def triggered_average_matrix_from_name(self, name):
         return self.ind_class.calc_triggered_average_matrix(self.df_traces[name])
 
     def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100,
@@ -561,7 +561,7 @@ class FullDatasetTriggeredAverages:
                 to_keep = p < 0.05
             elif self.significance_calculation_method == 'num_points':
                 logging.warning("Number of points calculation is not statistically justified!")
-                mat = self.triggered_average_matrix(name)
+                mat = self.triggered_average_matrix_from_name(name)
                 x_significant = self.ind_class.calc_significant_points_from_triggered_matrix(mat)
                 all_p_values[name] = x_significant
                 to_keep = len(x_significant) > self.min_points_for_significance
@@ -583,9 +583,9 @@ class FullDatasetTriggeredAverages:
 
         return names_to_keep, all_p_values, all_effect_sizes
 
-    def plot_single_neuron_triggered_average(self, neuron):
+    def plot_single_neuron_triggered_average(self, neuron, ax=None):
         y = self.df_traces[neuron]
-        self.ax_plot_func_for_grid_plot(None, y, None, neuron)
+        self.ax_plot_func_for_grid_plot(None, y, ax, neuron)
 
     def ax_plot_func_for_grid_plot(self, t, y, ax, name, **kwargs):
         """Same as ax_plot_func_for_grid_plot, but can be used directly"""
