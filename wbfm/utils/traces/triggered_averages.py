@@ -635,6 +635,8 @@ class ClusteredTriggeredAverages:
     df_triggered: pd.DataFrame = None
     df_corr: pd.DataFrame = None
 
+    linkage_threshold: float = 4.0
+
     def __post_init__(self):
         # Calculate the triggered average matrix
         neuron_names = self.triggered_averages_class.neuron_names
@@ -658,7 +660,7 @@ class ClusteredTriggeredAverages:
 
         # Calculate clustering for further analysis
         Z = hierarchy.linkage(df_corr, method='complete', optimal_ordering=False)
-        clust_ind = hierarchy.fcluster(Z, t=4, criterion='distance')
+        clust_ind = hierarchy.fcluster(Z, t=self.linkage_threshold, criterion='distance')
         len(np.unique(clust_ind))
 
         names = pd.Series(get_names_from_df(df_corr))
@@ -681,12 +683,12 @@ class ClusteredTriggeredAverages:
                                            dist_fun=dist_fun,
                                            height=800,
                                            width=800,
-                                           color_threshold={'row': 5, 'col': 5},
+                                           color_threshold=
+                                           {'row': self.linkage_threshold, 'col': self.linkage_threshold},
                                            center_values=False)
         clustergram.show()
-        return df_corr
 
-    def plot_all_cluster(self):
+    def plot_all_clusters(self):
         ind_class = self.triggered_averages_class.ind_class
         for i_clust, name_list in self.per_cluster_names.items():
             fig, ax = plt.subplots(dpi=200)
@@ -704,8 +706,11 @@ class ClusteredTriggeredAverages:
             plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
 
     @staticmethod
-    def load_from_project(project_data, trigger_opt):
-        default_trigger_opt = dict(min_duration=10, state=BehaviorCodes.REV, ind_preceding=30)
+    def load_from_project(project_data, trigger_opt=None):
+        if trigger_opt is None:
+            trigger_opt = {}
+        # default_trigger_opt = dict(min_duration=10, state=BehaviorCodes.REV, ind_preceding=30)
+        default_trigger_opt = {}
         default_trigger_opt.update(trigger_opt)
         triggered_averages_class = FullDatasetTriggeredAverages.load_from_project(project_data,
                                                                                   trigger_opt=default_trigger_opt)
