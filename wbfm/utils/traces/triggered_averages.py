@@ -19,6 +19,29 @@ from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_ave
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 
+def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines,
+                                                 show_individual_lines, is_second_plot, ax, **kwargs):
+    raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
+        TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines)
+    if not is_valid:
+        logging.warning("Found invalid neuron (empty triggered average)")
+        return None, None
+    # Plot
+    ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_std, xmax, ax, **kwargs)
+    if show_individual_lines:
+        for trace in triggered_avg_matrix:
+            ax.plot(trace[:xmax], 'black', alpha=5.0 / (triggered_avg_matrix.shape[0] + 10.0))
+    if not is_second_plot:
+        ax.set_ylabel("Activity")
+        ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
+        # Reference points
+        ax.axhline(raw_trace_mean, c='black', ls='--')
+        ax.axvline(x=ind_preceding, color='r', ls='--')
+    else:
+        ax.autoscale()
+    return ax, triggered_avg
+
+
 @dataclass
 class TriggeredAverageIndices:
     """
@@ -449,27 +472,14 @@ class TriggeredAverageIndices:
         -------
 
         """
-        raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
-            TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, self.min_lines)
-        if not is_valid:
-            logging.warning("Found invalid neuron (empty triggered average)")
+
+        min_lines = self.min_lines
+        ind_preceding = self.ind_preceding
+        ax, triggered_avg = plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding,
+                                                                         min_lines, show_individual_lines,
+                                                                         is_second_plot, ax, **kwargs)
+        if ax is None:
             return
-
-        # Plot
-        ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_std, xmax, ax, **kwargs)
-
-        if show_individual_lines:
-            for trace in triggered_avg_matrix:
-                ax.plot(trace[:xmax], 'black', alpha=5.0/(triggered_avg_matrix.shape[0]+10.0))
-
-        if not is_second_plot:
-            ax.set_ylabel("Activity")
-            ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
-            # Reference points
-            ax.axhline(raw_trace_mean, c='black', ls='--')
-            ax.axvline(x=self.ind_preceding, color='r', ls='--')
-        else:
-            ax.autoscale()
         # Optional orange points
         x_significant = self.calc_significant_points_from_triggered_matrix(triggered_avg_matrix)
         if color_significant_times:
@@ -656,10 +666,15 @@ class ClusteredTriggeredAverages:
     # For plotting individual clusters
     triggered_averages_class: FullDatasetTriggeredAverages = None
     linkage_threshold: float = 4.0  # TODO: better way to get clusters
+    Z: np.ndarray = None
+    clust_ind: np.ndarray = None
 
     verbose: int = 0
 
     def __post_init__(self):
+
+        # Make sure all lists of names are aligned
+        self.df_triggered = self.df_triggered.sort_values(by=0, axis='columns')
 
         # Calculate distance matrix (correlation, which is robust to nan)
         if self.verbose >= 1:
@@ -668,32 +683,46 @@ class ClusteredTriggeredAverages:
         self.df_corr = df_corr
 
         # Calculate clustering for further analysis
-        Z = hierarchy.linkage(df_corr, method='complete', optimal_ordering=False)
+        if self.verbose >= 1:
+            print("Calculating clustering")
+        Z = hierarchy.linkage(df_corr.to_numpy(), method='complete', optimal_ordering=False)
         clust_ind = hierarchy.fcluster(Z, t=self.linkage_threshold, criterion='distance')
-        names = pd.Series(get_names_from_df(df_corr))
+        names = self.names
 
         per_cluster_names = {}
         for i_clust in np.unique(clust_ind):
             per_cluster_names[i_clust] = names[clust_ind == i_clust]
 
         self.per_cluster_names = per_cluster_names
+        self.Z = Z
+        self.clust_ind = clust_ind
+        if self.verbose >= 1:
+            print("Finished initializing!")
+
+    @property
+    def names(self):
+        # return pd.Series(get_names_from_df(self.df_corr, to_sort=False))
+        return pd.Series(list(self.df_corr.columns))
 
     def plot_clustergram(self, ):
-        df_corr = self.df_corr
-        df_triggered = self.df_triggered
+        X = self.df_corr.to_numpy()
 
         dist_fun = lambda X, metric: X  # df_corr is already the distance (similarity)
         import dash_bio
-        clustergram = dash_bio.Clustergram(df_corr,
-                                           column_labels=list(df_triggered.columns.values),
-                                           row_labels=list(df_triggered.columns.values),
+        clustergram = dash_bio.Clustergram(X,
                                            dist_fun=dist_fun,
+                                           row_labels=list(self.names),
+                                           column_labels=list(self.names),
                                            height=800,
                                            width=800,
                                            color_threshold=
                                            {'row': self.linkage_threshold, 'col': self.linkage_threshold},
                                            center_values=False)
+        # row_id = curves_dict.get('row_ids', None)
+        # print(list(curves_dict.keys()))
         clustergram.show()
+
+        return clustergram
 
     def plot_all_clusters(self):
         ind_class = self.triggered_averages_class.ind_class
@@ -712,9 +741,10 @@ class ClusteredTriggeredAverages:
             ind_class.plot_triggered_average_from_matrix(pseudo_mat, ax, show_individual_lines=True)
             plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
 
-    def plot_all_clusters_simple(self, min_lines=3, ind_preceding=20):
-        """Like plot_all_clusters, but doesn't require an triggered_averages_class to be saved"""
+    def plot_all_clusters_simple(self, min_lines=0, ind_preceding=20):
+        """Like plot_all_clusters, but doesn't require a triggered_averages_class to be saved"""
         for i_clust, name_list in self.per_cluster_names.items():
+            name_list = list(name_list)
             fig, ax = plt.subplots(dpi=200)
             # Build a pseudo-triggered average matrix, made of the means of each neuron
             pseudo_mat = []
@@ -726,12 +756,14 @@ class ClusteredTriggeredAverages:
             pseudo_mat = pseudo_mat - np.nanmean(pseudo_mat, axis=1, keepdims=True)
             pseudo_mat = pseudo_mat / np.nanstd(pseudo_mat, axis=1, keepdims=True)
             # Plot
-            raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
-                TriggeredAverageIndices.prep_triggered_average_for_plotting(pseudo_mat, min_lines)
-            ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_std, xmax, ax)
-            ax.axvline(x=ind_preceding, color='r', ls='--')
-            ax.axhline(raw_trace_mean, c='black', ls='--')
+            if np.isnan(pseudo_mat).all():
+                continue
+            # these_corr = self.df_corr.loc[name_list[0], name_list[1:]]
+            # avg_corr = these_corr.mean()
+            plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
+                                                         show_individual_lines=True, is_second_plot=False, ax=ax)
             plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
+            plt.show()
 
     @staticmethod
     def load_from_project(project_data, trigger_opt=None):
