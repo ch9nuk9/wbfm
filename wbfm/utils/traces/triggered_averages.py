@@ -217,10 +217,12 @@ class TriggeredAverageIndices:
                         triggered_average_mat[i_trace, i_to_remove] = np.nan
         return triggered_average_mat
 
-    def prep_triggered_average_for_plotting(self, triggered_avg_matrix, shorten_to_last_valid=True):
-        triggered_avg, triggered_std, triggered_avg_counts = self.calc_triggered_average_stats(triggered_avg_matrix)
+    @staticmethod
+    def prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines, shorten_to_last_valid=True):
+        triggered_avg, triggered_std, triggered_avg_counts = \
+            TriggeredAverageIndices.calc_triggered_average_stats(triggered_avg_matrix)
         # Remove points where there are too few lines contributing
-        to_remove = triggered_avg_counts < self.min_lines
+        to_remove = triggered_avg_counts < min_lines
         triggered_avg[to_remove] = np.nan
         triggered_std[to_remove] = np.nan
         xmax = pd.Series(triggered_avg).last_valid_index()
@@ -254,7 +256,7 @@ class TriggeredAverageIndices:
 
         """
         raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
-            self.prep_triggered_average_for_plotting(triggered_avg_matrix)
+            self.prep_triggered_average_for_plotting(triggered_avg_matrix, self.min_lines)
         if not is_valid:
             return []
         upper_shading = triggered_avg + triggered_std
@@ -448,7 +450,7 @@ class TriggeredAverageIndices:
 
         """
         raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
-            self.prep_triggered_average_for_plotting(triggered_avg_matrix)
+            TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, self.min_lines)
         if not is_valid:
             logging.warning("Found invalid neuron (empty triggered average)")
             return
@@ -652,7 +654,7 @@ class ClusteredTriggeredAverages:
     df_corr: pd.DataFrame = None
 
     # For plotting individual clusters
-    triggered_averages_class: TriggeredAverageIndices = None
+    triggered_averages_class: FullDatasetTriggeredAverages = None
     linkage_threshold: float = 4.0  # TODO: better way to get clusters
 
     verbose: int = 0
@@ -708,6 +710,27 @@ class ClusteredTriggeredAverages:
             pseudo_mat = pseudo_mat / np.nanstd(pseudo_mat, axis=1, keepdims=True)
             # Plot
             ind_class.plot_triggered_average_from_matrix(pseudo_mat, ax, show_individual_lines=True)
+            plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
+
+    def plot_all_clusters_simple(self, min_lines=3, ind_preceding=20):
+        """Like plot_all_clusters, but doesn't require an triggered_averages_class to be saved"""
+        for i_clust, name_list in self.per_cluster_names.items():
+            fig, ax = plt.subplots(dpi=200)
+            # Build a pseudo-triggered average matrix, made of the means of each neuron
+            pseudo_mat = []
+            for name in name_list:
+                triggered_avg = self.df_triggered[name].copy()
+                pseudo_mat.append(triggered_avg)
+            # Normalize the traces to be similar to the correlation, i.e. z-score them
+            pseudo_mat = np.stack(pseudo_mat)
+            pseudo_mat = pseudo_mat - np.nanmean(pseudo_mat, axis=1, keepdims=True)
+            pseudo_mat = pseudo_mat / np.nanstd(pseudo_mat, axis=1, keepdims=True)
+            # Plot
+            raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
+                TriggeredAverageIndices.prep_triggered_average_for_plotting(pseudo_mat, min_lines)
+            ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_std, xmax, ax)
+            ax.axvline(x=ind_preceding, color='r', ls='--')
+            ax.axhline(raw_trace_mean, c='black', ls='--')
             plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
 
     @staticmethod
