@@ -747,7 +747,8 @@ class ClusteredTriggeredAverages:
             ind_class.plot_triggered_average_from_matrix(pseudo_mat, ax, show_individual_lines=True)
             plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
 
-    def plot_all_clusters_simple(self, min_lines=0, ind_preceding=20, xlim=None, output_folder=None):
+    def plot_all_clusters_simple(self, min_lines=0, ind_preceding=20, xlim=None, z_score=False,
+                                 output_folder=None):
         """Like plot_all_clusters, but doesn't require a triggered_averages_class to be saved"""
         for i_clust, name_list in self.per_cluster_names.items():
             name_list = list(name_list)
@@ -759,8 +760,9 @@ class ClusteredTriggeredAverages:
                 pseudo_mat.append(triggered_avg)
             # Normalize the traces to be similar to the correlation, i.e. z-score them
             pseudo_mat = np.stack(pseudo_mat)
-            pseudo_mat = pseudo_mat - np.nanmean(pseudo_mat, axis=1, keepdims=True)
-            pseudo_mat = pseudo_mat / np.nanstd(pseudo_mat, axis=1, keepdims=True)
+            if z_score:
+                pseudo_mat = pseudo_mat - np.nanmean(pseudo_mat, axis=1, keepdims=True)
+                pseudo_mat = pseudo_mat / np.nanstd(pseudo_mat, axis=1, keepdims=True)
             # Plot
             if np.isnan(pseudo_mat).all():
                 continue
