@@ -1,4 +1,5 @@
 import logging
+import os
 import warnings
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
@@ -20,7 +21,7 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 
 def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines,
-                                                 show_individual_lines, is_second_plot, ax, **kwargs):
+                                                 show_individual_lines, is_second_plot, ax, xlim=None, **kwargs):
     raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
         TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines=min_lines)
     if not is_valid:
@@ -39,6 +40,8 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         ax.axvline(x=ind_preceding, color='r', ls='--')
     else:
         ax.autoscale()
+    if xlim is not None:
+        ax.set_xlim(xlim)
     return ax, triggered_avg
 
 
@@ -705,7 +708,7 @@ class ClusteredTriggeredAverages:
         # return pd.Series(get_names_from_df(self.df_corr, to_sort=False))
         return pd.Series(list(self.df_corr.columns))
 
-    def plot_clustergram(self, ):
+    def plot_clustergram(self, output_folder=None):
         X = self.df_corr.to_numpy()
 
         dist_fun = lambda X, metric: X  # df_corr is already the distance (similarity)
@@ -719,8 +722,10 @@ class ClusteredTriggeredAverages:
                                            color_threshold=
                                            {'row': self.linkage_threshold, 'col': self.linkage_threshold},
                                            center_values=False)
-        # row_id = curves_dict.get('row_ids', None)
-        # print(list(curves_dict.keys()))
+        if output_folder is not None:
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder, exist_ok=True)
+            clustergram.write_image(os.path.join(output_folder, 'clustergram.png'))
         clustergram.show()
 
         return clustergram
@@ -742,7 +747,7 @@ class ClusteredTriggeredAverages:
             ind_class.plot_triggered_average_from_matrix(pseudo_mat, ax, show_individual_lines=True)
             plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
 
-    def plot_all_clusters_simple(self, min_lines=0, ind_preceding=20):
+    def plot_all_clusters_simple(self, min_lines=0, ind_preceding=20, xlim=None, output_folder=None):
         """Like plot_all_clusters, but doesn't require a triggered_averages_class to be saved"""
         for i_clust, name_list in self.per_cluster_names.items():
             name_list = list(name_list)
@@ -762,8 +767,13 @@ class ClusteredTriggeredAverages:
             # these_corr = self.df_corr.loc[name_list[0], name_list[1:]]
             # avg_corr = these_corr.mean()
             plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
-                                                         show_individual_lines=True, is_second_plot=False, ax=ax)
+                                                         show_individual_lines=True, is_second_plot=False, ax=ax,
+                                                         xlim=xlim)
             plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
+            if output_folder is not None:
+                if not os.path.exists(output_folder):
+                    os.makedirs(output_folder, exist_ok=True)
+                plt.savefig(os.path.join(output_folder, f"cluster_{i_clust}.png"))
             plt.show()
 
     @staticmethod
