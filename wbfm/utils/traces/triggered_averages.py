@@ -22,7 +22,7 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines,
                                                  show_individual_lines, is_second_plot, ax, **kwargs):
     raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
-        TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines)
+        TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines=min_lines)
     if not is_valid:
         logging.warning("Found invalid neuron (empty triggered average)")
         return None, None
@@ -567,7 +567,8 @@ class FullDatasetTriggeredAverages:
         for name in self.neuron_names:
             mat = self.triggered_average_matrix_from_name(name)
             raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
-                self.ind_class.prep_triggered_average_for_plotting(mat, shorten_to_last_valid=False)
+                self.ind_class.prep_triggered_average_for_plotting(mat, min_lines=self.min_lines,
+                                                                   shorten_to_last_valid=False)
             df_triggered[name] = triggered_avg
 
         df_triggered = pd.DataFrame(df_triggered)
