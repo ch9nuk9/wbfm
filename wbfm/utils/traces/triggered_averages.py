@@ -545,6 +545,24 @@ class FullDatasetTriggeredAverages:
     def triggered_average_matrix_from_name(self, name):
         return self.ind_class.calc_triggered_average_matrix(self.df_traces[name])
 
+    def df_of_all_triggered_averages(self):
+        """
+        Just saves the mean of the triggered average
+
+        Fills nan by default
+        """
+        df_triggered = {}
+        for name in self.neuron_names:
+            mat = self.triggered_average_matrix_from_name(name)
+            raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
+                self.ind_class.prep_triggered_average_for_plotting(mat, shorten_to_last_valid=False)
+            df_triggered[name] = triggered_avg
+
+        df_triggered = pd.DataFrame(df_triggered)
+        df_triggered = df_triggered.loc[:df_triggered.last_valid_index()]
+        df_triggered = fill_nan_in_dataframe(df_triggered)
+        return df_triggered
+
     def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100,
                                       ttest_gap=5, DEBUG=False):
         if min_points_for_significance is not None:
@@ -630,39 +648,26 @@ class FullDatasetTriggeredAverages:
 @dataclass
 class ClusteredTriggeredAverages:
 
-    triggered_averages_class: FullDatasetTriggeredAverages
-
-    df_triggered: pd.DataFrame = None
+    df_triggered: pd.DataFrame
     df_corr: pd.DataFrame = None
 
-    linkage_threshold: float = 4.0
+    # For plotting individual clusters
+    triggered_averages_class: TriggeredAverageIndices = None
+    linkage_threshold: float = 4.0  # TODO: better way to get clusters
+
+    verbose: int = 0
 
     def __post_init__(self):
-        # Calculate the triggered average matrix
-        neuron_names = self.triggered_averages_class.neuron_names
 
-        df_triggered = {}
-        for name in neuron_names:
-            mat = self.triggered_averages_class.triggered_average_matrix_from_name(name)
-            raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
-                self.triggered_averages_class.ind_class.prep_triggered_average_for_plotting(mat,
-                                                                                            shorten_to_last_valid=False)
-            df_triggered[name] = triggered_avg
-
-        df_triggered = pd.DataFrame(df_triggered)
-        df_triggered = df_triggered.loc[:df_triggered.last_valid_index()]
-        df_triggered = fill_nan_in_dataframe(df_triggered)
-        self.df_triggered = df_triggered
-
-        # Calculate distance matrix
-        df_corr = df_triggered.corr()
+        # Calculate distance matrix (correlation, which is robust to nan)
+        if self.verbose >= 1:
+            print("Calculating correlation")
+        df_corr = self.df_triggered.corr()
         self.df_corr = df_corr
 
         # Calculate clustering for further analysis
         Z = hierarchy.linkage(df_corr, method='complete', optimal_ordering=False)
         clust_ind = hierarchy.fcluster(Z, t=self.linkage_threshold, criterion='distance')
-        len(np.unique(clust_ind))
-
         names = pd.Series(get_names_from_df(df_corr))
 
         per_cluster_names = {}
@@ -719,7 +724,12 @@ class ClusteredTriggeredAverages:
         df = triggered_averages_class.df_traces.copy()
         triggered_averages_class.df_traces = filter_gaussian_moving_average(df, std=3)
 
-        return ClusteredTriggeredAverages(triggered_averages_class)
+        return ClusteredTriggeredAverages.load_from_triggered_average_class(triggered_averages_class)
+
+    @staticmethod
+    def load_from_triggered_average_class(triggered_averages_class):
+        df_triggered = triggered_averages_class.df_of_all_triggered_averages()
+        return ClusteredTriggeredAverages(df_triggered, triggered_averages_class=triggered_averages_class)
 
 
 def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4, **kwargs):
