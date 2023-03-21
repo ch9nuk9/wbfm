@@ -6,7 +6,8 @@ from sklearn.model_selection import KFold
 
 from wbfm.gui.utils.utils_dash import save_folder_for_two_dataframe_dashboard
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.visualization.behavior_comparison_plots import MultiProjectBehaviorPlotter, NeuronToUnivariateEncoding
+from wbfm.utils.visualization.behavior_comparison_plots import NeuronToUnivariateEncoding
+from wbfm.utils.visualization.multiproject_wrappers import MultiProjectBehaviorPlotter
 
 
 def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],

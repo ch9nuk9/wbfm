@@ -15,7 +15,8 @@ from wbfm.utils.external.utils_sklearn import LastBlockForwardValidation, Rollin
 from wbfm.utils.projects.finished_project_data import load_all_projects_in_folder
 # main function
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.visualization.behavior_comparison_plots import NeuronToUnivariateEncoding, MultiProjectBehaviorPlotter
+from wbfm.utils.visualization.behavior_comparison_plots import NeuronToUnivariateEncoding
+from wbfm.utils.visualization.multiproject_wrappers import MultiProjectBehaviorPlotter
 from wbfm.utils.visualization.hardcoded_paths import load_paper_datasets, get_summary_visualization_dir
 
 # Initialize sacred experiment
