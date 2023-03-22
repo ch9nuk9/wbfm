@@ -621,9 +621,9 @@ class FullDatasetTriggeredAverages:
 
         return names_to_keep, all_p_values, all_effect_sizes
 
-    def plot_single_neuron_triggered_average(self, neuron, ax=None):
+    def plot_single_neuron_triggered_average(self, neuron, ax=None, **kwargs):
         y = self.df_traces[neuron]
-        self.ax_plot_func_for_grid_plot(None, y, ax, neuron)
+        self.ax_plot_func_for_grid_plot(None, y, ax, neuron, **kwargs)
 
     def ax_plot_func_for_grid_plot(self, t, y, ax, name, **kwargs):
         """Same as ax_plot_func_for_grid_plot, but can be used directly"""
