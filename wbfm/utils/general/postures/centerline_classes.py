@@ -1320,12 +1320,40 @@ def plot_highest_correlations(df_traces, df_speed):
 def fit_3_break_piecewise_regression(dat, all_ends, all_starts, min_length=10,
                                      end_padding=0, start_padding=0,
                                      n_breakpoints=3,
-                                     DEBUG=False):
+                                     DEBUG=False,
+                                     DEBUG_base_fname=None):
+    """
+    Within a time series (dat), fit a piecewise regression model to each segment between start and end points
+    given by zip(all_starts, all_ends)
+
+    The final output is a "score" of the plateau of the piecewise regression model, which is defined differently
+    depending on n_breakpoints:
+        n_breakpoints=2: The score is the distance between the breaks, with no checks
+        n_breakpoints=3: The score is the distance between the 1/2nd or 2/3rd break, decided in this way:
+            If the absolute amplitude at the first breakpoint is much lower than the second, use the second breakpoint
+            If the last breakpoint is not in the second half of the data, the fit failed and return np.nan
+            Otherwise, use the first and last breakpoints
+
+    Parameters
+    ----------
+    dat
+    all_ends
+    all_starts
+    min_length
+    end_padding
+    start_padding
+    n_breakpoints
+    DEBUG
+
+    Returns
+    -------
+
+    """
     import piecewise_regression
 
     new_starts = []
     new_ends = []
-    for start, end in zip(all_starts, all_ends):
+    for i_event, (start, end) in enumerate(zip(all_starts, all_ends)):
         if end - start < min_length:
             continue
         y = dat.loc[start-start_padding:end + end_padding].to_numpy()
@@ -1339,24 +1367,24 @@ def fit_3_break_piecewise_regression(dat, all_ends, all_starts, min_length=10,
             continue
         # Only use first and last breakpoints, but do a quality check
         if n_breakpoints >= 3:
-            breakpoint1 = results['breakpoint1']['estimate']
+            breakpoint_start = results['breakpoint1']['estimate']
             breakpoint2 = results['breakpoint2']['estimate']
-            breakpoint3 = results['breakpoint3']['estimate']
-            # If the amplitude at the first breakpoint is much lower than the second, use the second
-            if y[int(breakpoint1)] < y[int(breakpoint2)] / 2:
-                breakpoint1 = breakpoint2
+            breakpoint_end = results['breakpoint3']['estimate']
+            # If the absolute amplitude at the first breakpoint is much lower than the second, use the second
+            if np.abs(y[int(breakpoint_start)]) < np.abs(y[int(breakpoint2)]) / 2:
+                breakpoint_start = breakpoint2
             # If the last breakpoint is not in the second half of the data, the fit failed
-            if breakpoint3 < len(x) / 2:
+            if breakpoint_end < len(x) / 2:
                 new_starts.append(np.nan)
                 new_ends.append(np.nan)
                 continue
         else:
             # No quality checks possible
-            breakpoint1 = results['breakpoint1']['estimate']
-            breakpoint3 = results['breakpoint2']['estimate']
+            breakpoint_start = results['breakpoint1']['estimate']
+            breakpoint_end = results['breakpoint2']['estimate']
 
-        start_absolute_coords = int(np.round(breakpoint1 + start))
-        end_absolute_coords = int(np.round(breakpoint3 + start))
+        start_absolute_coords = int(np.round(breakpoint_start + start))
+        end_absolute_coords = int(np.round(breakpoint_end + start))
         new_starts.append(start_absolute_coords)
         new_ends.append(end_absolute_coords)
 
@@ -1366,9 +1394,18 @@ def fit_3_break_piecewise_regression(dat, all_ends, all_starts, min_length=10,
             pw_fit.plot_fit(color="red", linewidth=4)
             pw_fit.plot_breakpoints()
             pw_fit.plot_breakpoint_confidence_intervals()
+            plt.plot(breakpoint_start, y[int(breakpoint_start)], 'o', color='black')
+            plt.plot(breakpoint_end, y[int(breakpoint_end)], 'o', color='black')
             plt.xlabel("x")
             plt.ylabel("y")
             plt.title(f"Difference: {end - start} vs {end_absolute_coords - start_absolute_coords}")
+
+            if DEBUG_base_fname is not None:
+                if not os.path.exists(DEBUG_base_fname):
+                    os.makedirs(DEBUG_base_fname, exist_ok=True)
+                fname = os.path.join(DEBUG_base_fname, f"time_series_with_breakpoints-{i_event}.png")
+                plt.savefig(fname)
+
             plt.show()
     if DEBUG:
         print(f"Original starts: {all_starts}")
