@@ -16,7 +16,9 @@ def build_all_gui_dfs_multineuron_correlations(all_projects_gcamp: Dict[str, Pro
                                                all_projects_gfp: Dict[str, ProjectData],
                                                output_folder: str = None,
                                                trace_options=None,
-                                               posture_attribute='curvature', **kwargs):
+                                               posture_attribute='curvature',
+                                               min_manual_id_confidence=2,
+                                               **kwargs):
     """
     Builds all the dataframes needed for the GUI, including reverse and forward rectification.
 
@@ -78,7 +80,7 @@ def build_all_gui_dfs_multineuron_correlations(all_projects_gcamp: Dict[str, Pro
 
     # Additional columns: manually id'ed neuron name
     all_projects = {**all_projects_gcamp, **all_projects_gfp}
-    func = partial(get_manual_annotation_from_project, all_projects)
+    func = partial(get_manual_annotation_from_project, all_projects, min_confidence=min_manual_id_confidence)
     for df in all_dfs:
         df_index = list(df.index)
         df_new_col = build_new_column_from_function(df_index, func)
@@ -182,11 +184,13 @@ def split_dataframe_name(dataframe_row_name):
 
 
 def get_manual_annotation_from_project(all_projects, project_name, neuron_name,
-                                       unknown_value='unknown'):
+                                       unknown_value='unknown',
+                                       min_confidence=2):
     # Get the id'ed name for this project and this neuron, even if empty
     p = all_projects[project_name]
     mapping = p.dict_numbers_to_neuron_names
-    if mapping.get(neuron_name, [0, 0])[1] == 2:
+    confidence = mapping.get(neuron_name, [0, 0])[1]
+    if confidence >= min_confidence:
         col_value = mapping[neuron_name][0]
     else:
         col_value = unknown_value

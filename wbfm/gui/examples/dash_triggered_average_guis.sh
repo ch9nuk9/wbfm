@@ -38,3 +38,11 @@ Y="multi_neuron"
 C="genotype"
 PORT="8051"
 open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
+# Curvature
+SUBFOLDER="gui_volcano_plot_kymograph_curvature"
+X="manual_id"
+Y="max_corr"
+C="genotype"
+PORT="8052"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
