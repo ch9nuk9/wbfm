@@ -1,9 +1,12 @@
+from typing import Tuple
+
+import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA, NMF
 from sklearn.preprocessing import StandardScaler
 
 
-def calculate_residual_subtract_pca(df: pd.DataFrame, n_components=2) -> pd.DataFrame:
+def calculate_residual_subtract_pca(df: pd.DataFrame, n_components=2) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Note: must not contain nan"""
     pca = PCA(n_components=n_components, whiten=False)
 
@@ -17,11 +20,12 @@ def calculate_residual_subtract_pca(df: pd.DataFrame, n_components=2) -> pd.Data
 
     dat_residual = df_dat - dat_reconstructed
     df_residual = pd.DataFrame(data=dat_residual, columns=df.columns)
+    df_reconstructed = pd.DataFrame(data=dat_reconstructed, columns=df.columns)
 
-    return df_residual
+    return df_residual, df_reconstructed
 
 
-def calculate_residual_subtract_nmf(df: pd.DataFrame, n_components=2) -> pd.DataFrame:
+def calculate_residual_subtract_nmf(df: pd.DataFrame, n_components=2) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Note: must not contain nan"""
     model = NMF(n_components=n_components)
 
@@ -34,5 +38,6 @@ def calculate_residual_subtract_nmf(df: pd.DataFrame, n_components=2) -> pd.Data
 
     dat_residual = df - dat_reconstructed
     df_residual = pd.DataFrame(data=dat_residual, columns=df.columns)
+    df_reconstructed = pd.DataFrame(data=dat_reconstructed, columns=df.columns)
 
-    return df_residual
+    return df_residual, df_reconstructed
