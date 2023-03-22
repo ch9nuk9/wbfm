@@ -254,7 +254,7 @@ class WormFullVideoPosture:
         possible_values = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature', 'summed_curvature', 'pirouette',
                            'signed_stage_speed_smoothed', 'signed_speed_angular',
                            'signed_middle_body_speed', 'worm_speed_average_all_segments',
-                           'worm_speed_average_all_segments', 'plateau']
+                           'worm_speed_average_all_segments', 'plateau', 'semi_plateau']
         assert behavior_alias in possible_values, f"Must be one of {possible_values}, not {behavior_alias}"
 
         if behavior_alias == 'signed_stage_speed':
@@ -270,6 +270,8 @@ class WormFullVideoPosture:
             y = self.calc_psuedo_pirouette_state()
         elif behavior_alias == 'plateau':
             y = self.calc_plateau_state()
+        elif behavior_alias == 'semi_plateau':
+            y = self.calc_semi_plateau_state()
         elif behavior_alias == 'signed_stage_speed_smoothed':
             y = self.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing=True)
         elif behavior_alias == 'signed_speed_angular':
@@ -746,6 +748,8 @@ class WormFullVideoPosture:
             1. Find all reversals that are longer than min_length
             2. Fit a piecewise regression, and keep all points between the first and last breakpoints
 
+        See fit_3_break_piecewise_regression for more details
+
         Parameters
         ----------
         min_length
@@ -763,7 +767,10 @@ class WormFullVideoPosture:
         # Also get the speed
         speed = self.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True)
         # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
-        new_ends, new_starts = fit_3_break_piecewise_regression(speed, all_ends, all_starts, min_length, DEBUG)
+        new_ends_with_nan, new_starts_with_nan = fit_3_break_piecewise_regression(speed, all_ends, all_starts, min_length, DEBUG)
+        # Remove values that were nan in either the start or end
+        new_starts = [s for s, e in zip(new_starts_with_nan, new_ends_with_nan) if not np.isnan(s) and not np.isnan(e)]
+        new_ends = [e for s, e in zip(new_starts_with_nan, new_ends_with_nan) if not np.isnan(s) and not np.isnan(e)]
 
         num_pts = len(beh_vec)
         plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
