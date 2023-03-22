@@ -533,6 +533,8 @@ class WormFullVideoPosture:
         Default uses the behavior annotation, binarized via comparing to state
             See BehaviorCodes for state indices
         Alternatively, can pass a behavior_name, which will be used to look up the behavior in this class
+        Alternatively, can pass a behavioral_annotation, which will be used directly
+            See TriggeredAverageIndices for more details
 
         Parameters
         ----------
@@ -545,10 +547,12 @@ class WormFullVideoPosture:
         -------
 
         """
-        if behavior_name is None:
-            behavioral_annotation = self.beh_annotation(fluorescence_fps=True)
-        else:
-            behavioral_annotation = self.calc_behavior_from_alias(behavior_name)
+        behavioral_annotation = kwargs.get('behavioral_annotation', None)
+        if behavioral_annotation is None:
+            if behavior_name is None:
+                behavioral_annotation = self.beh_annotation(fluorescence_fps=True)
+            else:
+                behavioral_annotation = self.calc_behavior_from_alias(behavior_name)
         opt = dict(behavioral_annotation=behavioral_annotation,
                    min_duration=min_duration,
                    ind_preceding=ind_preceding,
