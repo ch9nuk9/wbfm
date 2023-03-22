@@ -20,4 +20,6 @@ PORT="8050"
 tmux new-session -d -s "dash_triggered_average_guis"
 tmux send-keys "conda activate wbfm38" C-m
 tmux send-keys "cd ${PARENT_FOLDER}/${SUBFOLDER}" C-m
-tmux send-keys "python ${COMMAND} -p . -x '${X}' -y '${Y}' -c ${C} --port ${PORT}" C-m
+tmux send-keys "python ${COMMAND} -p . -x '${X}' -y '${Y}' -c ${C} --port ${PORT} --allow_public_access True" C-m
+echo "Opened ${PARENT_FOLDER}/${SUBFOLDER} with port ${PORT}"
+echo "Accessible from the intranet at zimmer-ws00.neuro.univie.ac.at:${PORT}"
