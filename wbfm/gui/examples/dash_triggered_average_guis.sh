@@ -19,8 +19,9 @@ function open_tmux_and_run() {
   tmux send-keys "conda activate wbfm38" C-m
   tmux send-keys "cd ${PARENT_FOLDER}/${1}" C-m
   tmux send-keys "python ${COMMAND} -p . -x '${2}' -y '${3}' -c ${4} --port ${5} --allow_public_access True" C-m
+  echo "===================================================================================="
   echo "Opened ${PARENT_FOLDER}/${1} with port ${5}"
-  echo "Accessible from the intranet at zimmer-ws00.neuro.univie.ac.at:${5}"
+  echo "Accessible from the intranet at http://zimmer-ws00.neuro.univie.ac.at:${5}"
 }
 
 # Newest gui: semi-plateau
@@ -42,7 +43,31 @@ open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
 # Curvature
 SUBFOLDER="gui_volcano_plot_kymograph_curvature"
 X="manual_id"
-Y="max_corr"
+Y="corr_max"
 C="genotype"
-PORT="8052"
+PORT="8060"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
+# Curvature with other all confidence values
+SUBFOLDER="gui_volcano_plot_kymograph_all_conf_curvature"
+X="manual_id"
+Y="corr_max"
+C="genotype"
+PORT="8061"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
+# Curvature with pca residuals
+SUBFOLDER="gui_volcano_plot_kymograph_all_conf_pca_residual_curvature"
+X="manual_id"
+Y="corr_max"
+C="genotype"
+PORT="8062"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
+# Curvature with only fast scale
+SUBFOLDER="gui_volcano_plot_kymograph_fast_curvature"
+X="manual_id"
+Y="corr_max"
+C="genotype"
+PORT="8063"
 open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
