@@ -44,6 +44,7 @@ class WormFullVideoPosture:
     filename_x: str = None
     filename_y: str = None
     filename_beh_annotation: str = None
+    filename_manual_beh_annotation: str = None
 
     filename_hilbert_amplitude: str = None
     filename_hilbert_frequency: str = None
@@ -213,7 +214,7 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=8)
     def stage_position(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
-        """Units of mm?"""
+        """Units of mm"""
         df = self._raw_stage_position
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
@@ -249,6 +250,20 @@ class WormFullVideoPosture:
         if self._beh_annotation is not None:
             BehaviorCodes.assert_all_are_valid(self._beh_annotation)
         return self._beh_annotation
+
+    @lru_cache(maxsize=8)
+    def manual_beh_annotation(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        """Ulises' manual annotations of behavior"""
+        df = self._raw_manual_beh_annotation
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
+
+    @cached_property
+    def _raw_manual_beh_annotation(self) -> pd.Series:
+        df = read_if_exists(self.filename_manual_beh_annotation, reader=pd.read_csv)
+        # Assume we only want the Annotation column
+        df = df['Annotation']
+        return df
 
     def calc_behavior_from_alias(self, behavior_alias: str) -> pd.Series:
         """
@@ -895,7 +910,6 @@ class WormFullVideoPosture:
             behavior_subfolder = Path(behavior_fname).parent
 
         if behavior_subfolder is not None:
-
             # Second get the centerline-specific files
             all_files = dict(filename_curvature=None, filename_x=None, filename_y=None, filename_beh_annotation=None,
                              filename_hilbert_amplitude=None, filename_hilbert_phase=None,
@@ -929,10 +943,23 @@ class WormFullVideoPosture:
                 filename_table_position = fnames[0]
             all_files['filename_table_position'] = filename_table_position
 
+            # Fourth, get manually annotated behavior (if it exists)
+            # Note that these may have additional behaviors annotated that are not in the automatic annotation
+            filename_manual_beh_annotation = None
+            manual_annotation_subfolder = Path(behavior_subfolder).joinpath('ground_truth_beh_annotation')
+            if manual_annotation_subfolder.exists():
+                fnames = [fn for fn in glob.glob(os.path.join(manual_annotation_subfolder,
+                                                              '*beh_annotation_timeseries.csv'))]
+                if len(fnames) != 1:
+                    logging.warning(f"Did not find manual behavior annotation file in {manual_annotation_subfolder}")
+                else:
+                    filename_manual_beh_annotation = fnames[0]
+            all_files['filename_manual_beh_annotation'] = filename_manual_beh_annotation
+
         else:
             all_files = dict()
 
-        # Get the manual behavior annotations if automatic wasn't found
+        # Get other manual behavior annotations if automatic wasn't found
         if all_files.get('filename_beh_annotation', None) is None:
             try:
                 filename_beh_annotation, is_manual_style = get_manual_behavior_annotation_fname(project_config)

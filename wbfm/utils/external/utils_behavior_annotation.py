@@ -19,9 +19,14 @@ class BehaviorCodes(IntEnum):
     REV_DORSAL_TURN = 5  # Manually annotated
     SUPERCOIL = 6  # Manually annotated
     QUIESCENCE = 7  # Manually annotated
+
+    # These don't work properly
+    # VENTRAL_TURN = FWD_VENTRAL_TURN | REV_VENTRAL_TURN
+    # DORSAL_TURN = FWD_DORSAL_TURN | REV_DORSAL_TURN
+    # ALL_TURNS = VENTRAL_TURN | DORSAL_TURN
+
     NOT_ANNOTATED = 0
     UNKNOWN = -99
-    # UNKNOWN = NOT_ANNOTATED | GAP
 
     @classmethod
     def cmap(cls):
