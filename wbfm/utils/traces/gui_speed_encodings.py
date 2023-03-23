@@ -14,6 +14,7 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
                                      all_projects_gfp: Dict[str, ProjectData],
                                      output_folder: str = None,
                                      trace_options=None,
+                                     verbose=0,
                                      **kwargs):
 
     # Use same trace options for all plots
@@ -42,9 +43,11 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
                                                                                          **df_opt)
 
     # Concatenate all dictionaries into single dataframes
+    # Outer keys are 'multi', 'single', and 'leifer'
     df_summary = pd.concat([df_summary_gcamp, df_summary_gfp])
     df_pred_concat = {}
     for key in all_dfs_prediction_gcamp.keys():
+        # Concatenate nested dataframes; inner keys refer to each dataset
         df_prediction_gcamp = all_dfs_prediction_gcamp[key]
         df_prediction_gcamp = pd.concat(df_prediction_gcamp, axis=1)
         df_prediction_gcamp.columns = df_prediction_gcamp.columns.droplevel(1)
@@ -58,9 +61,12 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
     df_raw = pd.concat([df_raw_gcamp, df_raw_gfp], axis=1)
     raw_dfs = {'speed': df_raw}
     raw_dfs.update(df_pred_concat)
-    print("Done calculating all dataframes")
-    print("Saving the following raw dataframes:")
-    print(raw_dfs.keys())
+    if verbose >= 1:
+        print("Done calculating all dataframes")
+        print("Saving the following raw dataframes:")
+        print(raw_dfs.keys())
+        if verbose >= 2:
+            print(raw_dfs)
 
     # Save
     save_folder_for_two_dataframe_dashboard(output_folder, df_summary, raw_dfs)
