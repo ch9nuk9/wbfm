@@ -1458,6 +1458,9 @@ class ProjectData:
         return f"=======================================\n\
 Project data for directory:\n\
 {self.project_dir} \n\
+With raw data in directory:\n\
+{self.project_config.config['parent_data_folder']} \n\
+\n\
 Found the following data files:\n\
 ============Raw========================\n\
 red_data:                 {self.red_data is not None}\n\
