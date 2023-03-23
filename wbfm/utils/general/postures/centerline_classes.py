@@ -146,9 +146,29 @@ class WormFullVideoPosture:
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
+    @lru_cache(maxsize=8)
+    def head_smoothed_curvature(self, fluorescence_fps=False, start_segment=1, final_segment=20,
+                                **kwargs) -> pd.DataFrame:
+        df = self._raw_curvature
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        # Smooth the curvature by taking an expanding average
+        # Start with segment 4, which is the first segment that is not too noisy
+        # Then take the average of segments 4 and 5, then 4-6, then 4-7, etc.
+        df_new = df.copy()
+
+        for i in range(start_segment+1, final_segment):
+            df_new.iloc[:, i] = df.iloc[:, i - start_segment:i + 1].mean(axis=1)
+        # Remove the first and last few segments, which are not smoothed
+        # df_new = df_new.iloc[:, start_segment:final_segment+1]
+
+        return df_new
+
     @cached_property
     def _raw_curvature(self):
-        return read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
+        df = read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
+        # Remove the first column, which is the frame number
+        df = df.iloc[:, 1:]
+        return df
 
     @lru_cache(maxsize=8)
     def hilbert_amplitude(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
