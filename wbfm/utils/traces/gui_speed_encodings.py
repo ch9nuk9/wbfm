@@ -34,6 +34,7 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
 
     # Get summary dataframes
     df_opt = dict(encoder_opt=encoder_opt, constructor_kwargs=constructor_kwargs, cv_factory=cv_factory)
+    df_opt.update(kwargs)
     df_summary_gcamp, all_dfs_prediction_gcamp, df_raw_gcamp = calculate_all_dfs_using_encoder(all_projects_gcamp,
                                                                                                genotype='gcamp',
                                                                                                **df_opt)
