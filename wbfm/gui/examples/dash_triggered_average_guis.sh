@@ -40,6 +40,22 @@ C="genotype"
 PORT="8051"
 open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
 
+# Speed gui fwd
+SUBFOLDER="gui_speed_encodings_fwd"
+X="genotype"
+Y="multi_neuron"
+C="genotype"
+PORT="8052"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
+# Speed gui rev
+SUBFOLDER="gui_speed_encodings_rev"
+X="genotype"
+Y="multi_neuron"
+C="genotype"
+PORT="8053"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
 # Curvature
 SUBFOLDER="gui_volcano_plot_kymograph_curvature"
 X="manual_id"
@@ -70,4 +86,12 @@ X="manual_id"
 Y="corr_max"
 C="genotype"
 PORT="8063"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
+# Hilbert frequency
+SUBFOLDER="gui_volcano_plot_kymograph_hilbert_frequency"
+X="manual_id"
+Y="corr_max"
+C="genotype"
+PORT="8070"
 open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}

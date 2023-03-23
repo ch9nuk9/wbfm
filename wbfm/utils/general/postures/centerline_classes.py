@@ -321,9 +321,18 @@ class WormFullVideoPosture:
         return y
 
     @lru_cache(maxsize=8)
-    def beh_annotation(self, fluorescence_fps=False, reset_index=False) -> Optional[pd.Series]:
+    def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False) -> \
+            Optional[pd.Series]:
         """Name is shortened to avoid US-UK spelling confusion"""
-        beh = self._raw_beh_annotation
+        if not use_manual_annotation:
+            beh = self._raw_beh_annotation
+        else:
+            beh = self._raw_manual_beh_annotation
+            if beh is None:
+                logging.warning("Requested manual annotation, but none exists")
+                logging.warning("Using automatic annotation instead")
+                beh = self._raw_beh_annotation
+
         if fluorescence_fps:
             if beh is None or self.beh_annotation_already_converted_to_fluorescence_fps:
                 return beh
@@ -561,6 +570,7 @@ class WormFullVideoPosture:
 
     def calc_triggered_average_indices(self, state=BehaviorCodes.FWD, min_duration=5, ind_preceding=20,
                                        behavior_name=None,
+                                       use_manual_annotation=None,
                                        **kwargs):
         """
         Calculates a list of indices that can be used to calculate triggered averages of 'state' ONSET
@@ -582,10 +592,13 @@ class WormFullVideoPosture:
         -------
 
         """
+        if use_manual_annotation is None:
+            use_manual_annotation = BehaviorCodes.must_be_manually_annotated(state)
         behavioral_annotation = kwargs.get('behavioral_annotation', None)
         if behavioral_annotation is None:
             if behavior_name is None:
-                behavioral_annotation = self.beh_annotation(fluorescence_fps=True)
+                behavioral_annotation = self.beh_annotation(fluorescence_fps=True,
+                                                            use_manual_annotation=use_manual_annotation)
             else:
                 behavioral_annotation = self.calc_behavior_from_alias(behavior_name)
         opt = dict(behavioral_annotation=behavioral_annotation,
