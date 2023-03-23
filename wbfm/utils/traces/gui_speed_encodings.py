@@ -46,12 +46,21 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
     df_pred_concat = {}
     for key in all_dfs_prediction_gcamp.keys():
         df_prediction_gcamp = all_dfs_prediction_gcamp[key]
+        df_prediction_gcamp = pd.concat(df_prediction_gcamp, axis=1)
+        df_prediction_gcamp.columns = df_prediction_gcamp.columns.droplevel(1)
+
         df_prediction_gfp = all_dfs_prediction_gfp[key]
+        df_prediction_gfp = pd.concat(df_prediction_gfp, axis=1)
+        df_prediction_gfp.columns = df_prediction_gfp.columns.droplevel(1)
+
         df_pred = pd.concat([df_prediction_gcamp, df_prediction_gfp], axis=1)
         df_pred_concat[key] = df_pred
     df_raw = pd.concat([df_raw_gcamp, df_raw_gfp], axis=1)
     raw_dfs = {'speed': df_raw}
     raw_dfs.update(df_pred_concat)
+    print("Done calculating all dataframes")
+    print("Saving the following raw dataframes:")
+    print(raw_dfs.keys())
 
     # Save
     save_folder_for_two_dataframe_dashboard(output_folder, df_summary, raw_dfs)
@@ -80,10 +89,6 @@ def calculate_all_dfs_using_encoder(all_projects, genotype='gcamp', only_model_s
     df_summary.index = df_summary.index.droplevel(1)
 
     all_dfs_prediction = {'multi': df_prediction_multi, 'single': df_prediction_single, 'leifer': df_prediction_leifer}
-    for key, df_prediction in all_dfs_prediction.items():
-        df_prediction = pd.concat(df_prediction, axis=1)
-        df_prediction.columns = df_prediction.columns.droplevel(1)
-
     df_raw = pd.concat(df_raw, axis=1)
     df_raw.columns = df_raw.columns.droplevel(1)
 
