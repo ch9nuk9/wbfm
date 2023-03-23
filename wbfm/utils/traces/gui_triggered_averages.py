@@ -11,6 +11,7 @@ import plotly.express as px
 from wbfm.gui.utils.utils_dash import save_folder_for_two_dataframe_dashboard
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
+from wbfm.utils.general.custom_errors import NoBehaviorAnnotationsError
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.traces.gui_kymograph_correlations import get_manual_annotation_from_project, \
     build_new_column_from_function
@@ -168,10 +169,13 @@ def calc_all_triggered_average_dictionaries(all_projects, trace_opt, trigger_opt
 
     for proj_name, proj in tqdm(all_projects.items()):
         # First, reversal triggered
-        triggered_averages_class = FullDatasetTriggeredAverages.load_from_project(proj,
-                                                                                  trigger_opt=default_trigger_opt,
-                                                                                  trace_opt=trace_opt,
-                                                                                  **kwargs)
+        try:
+            triggered_averages_class = FullDatasetTriggeredAverages.load_from_project(proj,
+                                                                                      trigger_opt=default_trigger_opt,
+                                                                                      trace_opt=trace_opt,
+                                                                                      **kwargs)
+        except NoBehaviorAnnotationsError:
+            continue
 
         significant_neurons, p_values, effect_sizes = triggered_averages_class.which_neurons_are_significant(
             num_baseline_lines=1000)

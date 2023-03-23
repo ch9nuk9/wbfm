@@ -20,6 +20,7 @@ from sklearn.neighbors import NearestNeighbors
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
+from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
@@ -543,6 +544,10 @@ class WormFullVideoPosture:
         return self.filename_beh_annotation is not None and os.path.exists(self.filename_beh_annotation)
 
     @property
+    def has_manual_beh_annotation(self):
+        return self.filename_manual_beh_annotation is not None and os.path.exists(self.filename_manual_beh_annotation)
+
+    @property
     def has_full_kymograph(self):
         fnames = [self.filename_y, self.filename_x, self.filename_curvature]
         return all([f is not None for f in fnames]) and all([os.path.exists(f) for f in fnames])
@@ -593,7 +598,12 @@ class WormFullVideoPosture:
 
         """
         if use_manual_annotation is None:
-            use_manual_annotation = BehaviorCodes.must_be_manually_annotated(state)
+            if BehaviorCodes.must_be_manually_annotated(state):
+                use_manual_annotation = True
+                if not self.has_manual_beh_annotation:
+                    raise NoManualBehaviorAnnotationsError()
+            else:
+                use_manual_annotation = False
         behavioral_annotation = kwargs.get('behavioral_annotation', None)
         if behavioral_annotation is None:
             if behavior_name is None:
