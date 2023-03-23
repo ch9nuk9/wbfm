@@ -773,8 +773,8 @@ class ProjectData:
             invalid_ind = self.estimate_tracking_failures_from_project(pad_nan_points=5)
             if invalid_ind is not None:
                 df.loc[invalid_ind, :] = np.nan
-                if interpolate_nan:
-                    self.logger.warning("Requested nan interpolation, but then nan were added due to tracking failures")
+                # if interpolate_nan:
+                #     self.logger.warning("Requested nan interpolation, but then nan were added due to tracking failures")
 
         if nan_using_ppca_manifold:
             names = get_names_from_df(df)
