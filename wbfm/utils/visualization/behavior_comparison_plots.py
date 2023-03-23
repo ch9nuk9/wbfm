@@ -180,7 +180,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 feature_names = get_names_from_df(X)
                 best_neuron = [feature_names[s] for s in sfs.get_support(indices=True)]
             else:
-                best_neuron = self._best_single_neuron_model
+                best_neuron = self._best_single_neuron
                 model = self._best_single_neuron_model
             X_best_single_neuron = X[best_neuron].values.reshape(-1, 1)
 
