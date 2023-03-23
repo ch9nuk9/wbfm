@@ -284,11 +284,17 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y.reset_index(drop=True, inplace=True)
         return y, y_train_name
 
-    def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
+    def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, use_leifer_method=False,
+                              only_model_single_state=None,
                               DEBUG=False, **plot_kwargs):
         """Plots model prediction over raw data"""
         opt = dict(y_train=y_train, only_model_single_state=only_model_single_state, DEBUG=DEBUG)
-        if use_multineuron:
+        if use_leifer_method:
+            score_list, model, y_total, y_pred, y_train_name = \
+                self.calc_leifer_encoding(df_name, **opt)
+            y_name = f"leifer_{y_train_name}"
+            best_neuron = ""
+        elif use_multineuron:
             score_list, model, y_total, y_pred, y_train_name = \
                 self.calc_multi_neuron_encoding(df_name, **opt)
             y_name = f"multineuron_{y_train_name}"
