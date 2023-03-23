@@ -13,8 +13,12 @@ class BehaviorCodes(IntEnum):
     """
     FWD = -1
     REV = 1
-    TURN = 2 # Not currently used by Ulises
-    PAUSE = 3 # Not currently used by Ulises
+    FWD_VENTRAL_TURN = 2  # Manually annotated
+    FWD_DORSAL_TURN = 3  # Manually annotated
+    REV_VENTRAL_TURN = 4  # Manually annotated
+    REV_DORSAL_TURN = 5  # Manually annotated
+    SUPERCOIL = 6  # Manually annotated
+    QUIESCENCE = 7  # Manually annotated
     NOT_ANNOTATED = 0
     UNKNOWN = -99
     # UNKNOWN = NOT_ANNOTATED | GAP
