@@ -448,12 +448,14 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             else:
                 score_list, model, y_total, y_pred, y_train_name, best_neuron = \
                     self.calc_single_neuron_encoding(df_name, **opt)
-            df_summary = pd.DataFrame({self.project_data.shortened_name: y_pred})
+            y = y_pred
 
         else:
             X = self.all_dfs[df_name]
             X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train, only_model_single_state)
-            df_summary = pd.DataFrame({self.project_data.shortened_name: y})
+
+        y = y.sort_index()
+        df_summary = pd.DataFrame({self.project_data.shortened_name: y})
 
         return df_summary
 

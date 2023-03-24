@@ -203,7 +203,7 @@ def line_plot_from_dict_of_dataframes(dict_of_dfs: dict, y: str):
     #    e.g. 'ZIM2165_Gcamp7b_worm1-2022_11_28'
 
     # Build a temporary dataframe to plot
-    df = pd.DataFrame({k: df_[y] for k, df_ in dict_of_dfs.items()})
+    df = pd.DataFrame({k: df_[y].sort_index() for k, df_ in dict_of_dfs.items()})
     fig = px.line(df)
 
     fig.update_layout(xaxis_title="Time", yaxis_title="Amplitude", font=dict(size=18))
