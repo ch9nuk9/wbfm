@@ -525,3 +525,13 @@ def flatten_multiindex_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
     df.columns = ['_'.join(col).strip() for col in df.columns.values]
     return df
+
+
+def save_valid_ind_1d_or_2d(df, valid_ind):
+    if len(df.shape) == 2:
+        df = df.iloc[valid_ind, :]
+    elif len(df.shape) == 1:
+        df = df.iloc[valid_ind]
+    else:
+        raise NotImplementedError("Must be 1d or 2d")
+    return df

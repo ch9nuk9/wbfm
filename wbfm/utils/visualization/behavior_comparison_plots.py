@@ -20,7 +20,7 @@ from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
-from wbfm.utils.external.utils_pandas import correlate_return_cross_terms
+from wbfm.utils.external.utils_pandas import correlate_return_cross_terms, save_valid_ind_1d_or_2d
 from wbfm.utils.external.utils_sklearn import middle_40_cv_split
 from wbfm.utils.external.utils_statsmodels import ols_groupby
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
@@ -238,13 +238,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         # Remove nan points, if any
         valid_ind = np.where(~np.isnan(y))[0]
-        for tmp in [X, y]:
-            if len(tmp.shape) == 2:
-                tmp = tmp.iloc[valid_ind, :]
-            elif len(tmp.shape) == 1:
-                tmp = tmp.iloc[valid_ind]
-            else:
-                raise NotImplementedError("Must be 1d or 2d")
+        X = save_valid_ind_1d_or_2d(X.copy(), valid_ind)
+        y = save_valid_ind_1d_or_2d(y.copy(), valid_ind)
 
         # Also build a binary class variable; possibly used for cross validation
         worm = self.project_data.worm_posture_class
@@ -308,7 +303,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         return model, best_neuron
 
-    def calc_leifer_encoding(self, df_name, y_train=None, use_multineuron=True, **kwargs):
+    def calc_leifer_encoding(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
+                             **kwargs):
         """
         Fits model using the Leifer settings, which does not use full cross validation
 
@@ -328,10 +324,12 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         """
 
-        X = self.all_dfs[df_name].copy()
+        X = self.all_dfs[df_name]
 
         trace_len = X.shape[0]
-        y, y_train_name = self.unpack_behavioral_time_series_from_name(y_train, trace_len)
+        X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train,
+                                                                  only_model_single_state=only_model_single_state)
+        # y, y_train_name = self.unpack_behavioral_time_series_from_name(y_train, trace_len, only_model_single_state)
 
         # Get train-test split
         ind_test, ind_train = middle_40_cv_split(trace_len)

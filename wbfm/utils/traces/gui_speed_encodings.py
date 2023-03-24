@@ -71,6 +71,8 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
     # Save
     save_folder_for_two_dataframe_dashboard(output_folder, df_summary, raw_dfs)
 
+    return df_summary, raw_dfs
+
 
 def calculate_all_dfs_using_encoder(all_projects, genotype='gcamp', only_model_single_state=None,
                                     encoder_opt=None, constructor_kwargs=None, cv_factory=None):
