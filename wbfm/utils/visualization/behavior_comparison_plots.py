@@ -20,7 +20,8 @@ from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
-from wbfm.utils.external.utils_pandas import correlate_return_cross_terms, save_valid_ind_1d_or_2d
+from wbfm.utils.external.utils_pandas import correlate_return_cross_terms, save_valid_ind_1d_or_2d, \
+    fill_missing_indices_with_nan
 from wbfm.utils.external.utils_sklearn import middle_40_cv_split
 from wbfm.utils.external.utils_statsmodels import ols_groupby
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
@@ -454,6 +455,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             X = self.all_dfs[df_name]
             X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train, only_model_single_state)
 
+        y = y.sort_index()
+        y, _ = fill_missing_indices_with_nan(y, expected_max_t=self.project_data.num_frames)
         y = y.sort_index()
         df_summary = pd.DataFrame({self.project_data.shortened_name: y})
 

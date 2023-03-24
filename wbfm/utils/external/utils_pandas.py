@@ -433,7 +433,11 @@ def fill_missing_indices_with_nan(df: pd.DataFrame, expected_max_t=None) -> Tupl
     dfs_to_add = []
     if len(t) != int(t[-1]) + 1:
         add_indices = pd.Index(range(int(t[-1]))).difference(t)
-        df_interleave = pd.DataFrame(index=add_indices, columns=df.columns)
+        try:
+            df_interleave = pd.DataFrame(index=add_indices, columns=df.columns)
+        except AttributeError:
+            # If it is just a series, then it doesn't have columns
+            df_interleave = pd.DataFrame(index=add_indices)
         dfs_to_add.append(df_interleave)
         num_added = df_interleave.shape[0]
     else:
@@ -442,7 +446,10 @@ def fill_missing_indices_with_nan(df: pd.DataFrame, expected_max_t=None) -> Tupl
     current_max_t = df.shape[0] + num_added
     if expected_max_t is not None and current_max_t != expected_max_t:
         end_indices = pd.Index(range(current_max_t, expected_max_t))
-        df_nan_at_end = pd.DataFrame(index=end_indices, columns=df.columns)
+        try:
+            df_nan_at_end = pd.DataFrame(index=end_indices, columns=df.columns)
+        except AttributeError:
+            df_nan_at_end = pd.DataFrame(index=end_indices)
         dfs_to_add.append(df_nan_at_end)
         num_added += df_nan_at_end.shape[0]
 
