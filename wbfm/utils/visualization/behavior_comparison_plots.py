@@ -353,6 +353,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             model = self._best_leifer_model
         score = model.score(X_test, y_test)
         y_pred = model.predict(X)
+        y_pred = pd.Series(y_pred, index=y.index)
 
         self._best_leifer_model = model
 

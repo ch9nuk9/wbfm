@@ -204,13 +204,8 @@ def line_plot_from_dict_of_dataframes(dict_of_dfs: dict, y: str):
 
     # Build a temporary dataframe to plot
     df = pd.DataFrame({k: df_[y] for k, df_ in dict_of_dfs.items()})
-    # df.index = dict_of_dfs[list(dict_of_dfs.keys())[0]].index
-    print(df)
     fig = px.line(df)
 
-    # fig = go.Figure()
-    # for k, df in dict_of_dfs.items():
-    #     fig.add_scatter(y=df[y], name=k, )
     fig.update_layout(xaxis_title="Time", yaxis_title="Amplitude", font=dict(size=18))
     return fig
 
