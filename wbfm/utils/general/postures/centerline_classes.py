@@ -288,9 +288,10 @@ class WormFullVideoPosture:
         """
 
         possible_values = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature', 'summed_curvature', 'pirouette',
-                           'signed_stage_speed_smoothed', 'signed_speed_angular',
+                           'signed_stage_speed_strongly_smoothed', 'signed_speed_angular',
                            'signed_middle_body_speed', 'worm_speed_average_all_segments',
-                           'worm_speed_average_all_segments', 'plateau', 'semi_plateau']
+                           'worm_speed_average_all_segments', 'plateau', 'semi_plateau',
+                           'signed_middle_body_speed_smoothed']
         assert behavior_alias in possible_values, f"Must be one of {possible_values}, not {behavior_alias}"
 
         if behavior_alias == 'signed_stage_speed':
@@ -299,6 +300,9 @@ class WormFullVideoPosture:
             y = self.worm_speed(fluorescence_fps=True)
         elif behavior_alias == 'signed_middle_body_speed':
             y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=True)
+        elif behavior_alias == 'signed_middle_body_speed_smoothed':
+            y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=True,
+                                strong_smoothing_before_derivative=True)
         elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True)
@@ -308,7 +312,7 @@ class WormFullVideoPosture:
             y = self.calc_plateau_state()
         elif behavior_alias == 'semi_plateau':
             y = self.calc_semi_plateau_state()
-        elif behavior_alias == 'signed_stage_speed_smoothed':
+        elif behavior_alias == 'signed_stage_speed_strongly_smoothed':
             y = self.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing=True)
         elif behavior_alias == 'signed_speed_angular':
             y = self.worm_angular_velocity(fluorescence_fps=True)

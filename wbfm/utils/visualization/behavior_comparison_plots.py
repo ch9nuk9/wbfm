@@ -236,7 +236,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         trace_len = X.shape[0]
         y, y_train_name = self.unpack_behavioral_time_series_from_name(y_train_name, trace_len)
 
-        # Remove nan points, if any
+        # Remove nan points, if any (the regression can't handle them)
         valid_ind = np.where(~np.isnan(y))[0]
         X = save_valid_ind_1d_or_2d(X.copy(), valid_ind)
         y = save_valid_ind_1d_or_2d(y.copy(), valid_ind)
@@ -326,12 +326,11 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         X = self.all_dfs[df_name]
 
-        trace_len = X.shape[0]
         X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train,
                                                                   only_model_single_state=only_model_single_state)
-        # y, y_train_name = self.unpack_behavioral_time_series_from_name(y_train, trace_len, only_model_single_state)
 
         # Get train-test split
+        trace_len = X.shape[0]
         ind_test, ind_train = middle_40_cv_split(trace_len)
         X = X - X.mean()
         X = X / X.std()
