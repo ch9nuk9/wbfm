@@ -416,7 +416,8 @@ def accuracy_of_matches(gt_matches, new_matches, null_value=-1, allow_unknown=Tr
     return tp, fp, fn, unknown
 
 
-def fill_missing_indices_with_nan(df: pd.DataFrame, expected_max_t=None) -> Tuple[pd.DataFrame, int]:
+def fill_missing_indices_with_nan(df: Union[pd.DataFrame, pd.Series], expected_max_t=None) -> \
+        Tuple[Union[pd.DataFrame, pd.Series], int]:
     """
     Given a dataframe that may skip time points (e.g. the Index is 1, 2, 5), fill the missing Index values with nan
 
@@ -431,13 +432,15 @@ def fill_missing_indices_with_nan(df: pd.DataFrame, expected_max_t=None) -> Tupl
     """
     t = df.index
     dfs_to_add = []
+    # Check if df is a series or dataframe
+    is_series = isinstance(df, pd.Series)
+
     if len(t) != int(t[-1]) + 1:
         add_indices = pd.Index(range(int(t[-1]))).difference(t)
-        try:
+        if is_series:
+            df_interleave = pd.Series(index=add_indices)
+        else:
             df_interleave = pd.DataFrame(index=add_indices, columns=df.columns)
-        except AttributeError:
-            # If it is just a series, then it doesn't have columns
-            df_interleave = pd.DataFrame(index=add_indices)
         dfs_to_add.append(df_interleave)
         num_added = df_interleave.shape[0]
     else:
@@ -446,10 +449,10 @@ def fill_missing_indices_with_nan(df: pd.DataFrame, expected_max_t=None) -> Tupl
     current_max_t = df.shape[0] + num_added
     if expected_max_t is not None and current_max_t != expected_max_t:
         end_indices = pd.Index(range(current_max_t, expected_max_t))
-        try:
+        if is_series:
+            df_nan_at_end = pd.Series(index=end_indices)
+        else:
             df_nan_at_end = pd.DataFrame(index=end_indices, columns=df.columns)
-        except AttributeError:
-            df_nan_at_end = pd.DataFrame(index=end_indices)
         dfs_to_add.append(df_nan_at_end)
         num_added += df_nan_at_end.shape[0]
 
