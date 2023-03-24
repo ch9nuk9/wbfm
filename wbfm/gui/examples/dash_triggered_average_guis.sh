@@ -56,42 +56,71 @@ C="genotype"
 PORT="8053"
 open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
 
-# Curvature
-SUBFOLDER="gui_volcano_plot_kymograph_curvature"
+#
+## Curvature guis
+#
+
+# Most kymograph guis have the same default x, y, and color axes
 X="manual_id"
 Y="corr_max"
 C="genotype"
+
+# Curvature
+SUBFOLDER="gui_volcano_plot_kymograph_curvature"
 PORT="8060"
 open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
 
 # Curvature with other all confidence values
 SUBFOLDER="gui_volcano_plot_kymograph_all_conf_curvature"
-X="manual_id"
-Y="corr_max"
-C="genotype"
 PORT="8061"
 open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
 
 # Curvature with pca residuals
 SUBFOLDER="gui_volcano_plot_kymograph_all_conf_pca_residual_curvature"
-X="manual_id"
-Y="corr_max"
-C="genotype"
 PORT="8062"
 open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
 
 # Curvature with only fast scale
 SUBFOLDER="gui_volcano_plot_kymograph_fast_curvature"
-X="manual_id"
-Y="corr_max"
-C="genotype"
 PORT="8063"
 open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
 
 # Hilbert frequency
 SUBFOLDER="gui_volcano_plot_kymograph_hilbert_frequency"
-X="manual_id"
-Y="corr_max"
-C="genotype"
 PORT="8070"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
+#
+## Triggered average guis
+#
+
+# Most kymograph guis have the same default x, y, and color axes
+X="effect size"
+Y="-log(p value)"
+C="genotype"
+
+# Manually annotated turns
+# REV_DORSAL_TURN
+SUBFOLDER="gui_volcano_plot_triggered_REV_DORSAL_TURN-custom"
+PORT="8080"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
+# REV_VENTRAL_TURN
+SUBFOLDER="gui_volcano_plot_triggered_REV_VENTRAL_TURN-custom"
+PORT="8081"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
+# FWD_VENTRAL_TURN
+SUBFOLDER="gui_volcano_plot_triggered_FWD_VENTRAL_TURN-custom"
+PORT="8082"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
+# FWD_DORSAL_TURN
+SUBFOLDER="gui_volcano_plot_triggered_FWD_DORSAL_TURN-custom"
+PORT="8082"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
+# QUIESCENCE
+SUBFOLDER="gui_volcano_plot_triggered_QUIESCENCE-custom"
+PORT="8084"
 open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}

@@ -46,7 +46,7 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
     if trace_options is None:
         trace_options = {}
     if trigger_options is None:
-        trigger_options = {}
+        trigger_options = dict(state=BehaviorCodes.REV)
     opt = dict(interpolate_nan=False,
                filter_mode='rolling_mean',
                min_nonnan=0.9,
@@ -66,8 +66,12 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
     ind_class_dict_gfp = output_dict_rev_gfp['triggered_averages_class']
     
     # Make dictionary with fwd and rev to loop over
-    all_dict_rev_fwd = dict(reversal_triggered=[output_dict_rev, output_dict_rev_gfp],
-                            forward_triggered=[output_dict_fwd, output_dict_fwd_gfp])
+    # If the user specified a specific state, then only use that one
+    if 'state' in trigger_options:
+        all_dict_rev_fwd = dict(custom=[output_dict_rev, output_dict_rev_gfp])
+    else:
+        all_dict_rev_fwd = dict(reversal_triggered=[output_dict_rev, output_dict_rev_gfp],
+                                forward_triggered=[output_dict_fwd, output_dict_fwd_gfp])
 
     # Loop over all the dictionaries and save the dataframes
     for fname_suffix, value in all_dict_rev_fwd.items():
@@ -89,11 +93,12 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
         hline_height = - np.log(0.05)
 
         # Save dataframes
+        # TODO: the display of the triggered trace doesn't work for the forward triggered dataframes
         df_summary, raw_dfs = reformat_dataframes(all_projects_gcamp, all_projects_gfp, df_gcamp_gfp,
                                                   output_dict_traces, output_dict_traces_gfp,
                                                   ind_class_dict_gcamp, ind_class_dict_gfp,
                                                   include_raw_behavioral_annotation=include_raw_behavioral_annotation,
-                                                  include_speed=include_speed)
+                                                  include_speed=include_speed, state=trigger_options['state'])
 
         # Optionally add a raw dataframe with the exact behavioral variable
 
@@ -119,7 +124,7 @@ def build_all_gui_dfs_triggered_averages(all_projects_gcamp: Dict[str, ProjectDa
 
 def reformat_dataframes(all_projects_gcamp, all_projects_gfp, df_gcamp_gfp_rev, output_dict_traces,
                         output_dict_traces_gfp, ind_class_dict_gcamp, ind_class_dict_gfp,
-                        include_raw_behavioral_annotation, include_speed):
+                        include_raw_behavioral_annotation, include_speed, state):
     # Index of summary df must be the same as the columns of the raw df (traces)
     df_summary = df_gcamp_gfp_rev.copy()
     df_summary['index'] = df_summary['dataset_name'] + '_' + df_summary['neuron_name']
@@ -135,7 +140,7 @@ def reformat_dataframes(all_projects_gcamp, all_projects_gfp, df_gcamp_gfp_rev, 
     df_beh_gfp = build_beh_df(df_all_traces_gfp, all_projects=all_projects_gfp, **opt)
     df_beh = pd.concat([df_beh, df_beh_gfp], axis=1)
     df_beh.columns = ['_'.join(col).strip() for col in df_beh.columns.values]
-    raw_dfs.update({'behavior': df_beh})
+    raw_dfs.update({'reversal annotation': df_beh})
     if include_raw_behavioral_annotation:
         # Behavior from ind class directly
         opt = dict(beh_mode='individual class')
@@ -143,7 +148,9 @@ def reformat_dataframes(all_projects_gcamp, all_projects_gfp, df_gcamp_gfp_rev, 
         df_beh_gfp = build_beh_df(df_all_traces_gfp, ind_class_dict=ind_class_dict_gfp, **opt)
         df_beh = pd.concat([df_beh, df_beh_gfp], axis=1)
         df_beh.columns = ['_'.join(col).strip() for col in df_beh.columns.values]
-        raw_dfs.update({'triggered behavior': df_beh})
+
+        state_name = BehaviorCodes(state).name
+        raw_dfs.update({state_name: df_beh})
     if include_speed:
         # Behavior from ind class directly
         opt = dict(beh_mode='speed')
@@ -164,7 +171,7 @@ def calc_all_triggered_average_dictionaries(all_projects, trace_opt, trigger_opt
         trigger_opt = dict()
 
     kwargs = dict(significance_calculation_method='ttest')
-    default_trigger_opt = dict(ind_preceding=30, state=BehaviorCodes.REV)
+    default_trigger_opt = dict(ind_preceding=30)
     default_trigger_opt.update(trigger_opt)
 
     for proj_name, proj in tqdm(all_projects.items()):
@@ -187,16 +194,22 @@ def calc_all_triggered_average_dictionaries(all_projects, trace_opt, trigger_opt
         # Note: this is the same for both fwd and rev, and the behavioral state is overwritten below
         output_dict_rev['triggered_averages_class'][proj_name] = triggered_averages_class
 
-        # Second, forward triggered
-        triggered_averages_class.ind_class.behavioral_state = BehaviorCodes.FWD
-        significant_neurons, p_values, effect_sizes = triggered_averages_class.which_neurons_are_significant(
-            num_baseline_lines=1000)
+        # Second, forward triggered, but only if the user didn't specify a state
+        if 'state' not in trigger_opt:
 
-        output_dict_fwd['significant_neurons'][proj_name] = significant_neurons
-        output_dict_fwd['num_significant_neurons'][proj_name] = len(significant_neurons)
-        output_dict_fwd['p_values'][proj_name] = p_values
-        output_dict_fwd['effect_sizes'][proj_name] = effect_sizes
-        output_dict_rev['triggered_averages_class'][proj_name] = triggered_averages_class
+            triggered_averages_class_fwd = FullDatasetTriggeredAverages.load_from_project(proj,
+                                                                                          trigger_opt=default_trigger_opt,
+                                                                                          trace_opt=trace_opt,
+                                                                                          **kwargs)
+            triggered_averages_class_fwd.ind_class.behavioral_state = BehaviorCodes.FWD
+            significant_neurons, p_values, effect_sizes = triggered_averages_class_fwd.which_neurons_are_significant(
+                num_baseline_lines=1000)
+
+            output_dict_fwd['significant_neurons'][proj_name] = significant_neurons
+            output_dict_fwd['num_significant_neurons'][proj_name] = len(significant_neurons)
+            output_dict_fwd['p_values'][proj_name] = p_values
+            output_dict_fwd['effect_sizes'][proj_name] = effect_sizes
+            output_dict_fwd['triggered_averages_class'][proj_name] = triggered_averages_class_fwd
 
         # Final things
         num = len(proj.well_tracked_neuron_names(0.9))
@@ -345,7 +358,8 @@ def build_beh_df(df_all_traces, beh_mode='reversal',
             beh = beh.apply(cast_int_or_nan)
         elif beh_mode == 'individual class':
             triggered_average_class = ind_class_dict[dataset_name]
-            beh = triggered_average_class.ind_class.behavioral_annotation
+            beh = triggered_average_class.ind_class.cleaned_binary_state.reset_index(drop=True)
+            beh = beh.apply(cast_int_or_nan)
         elif beh_mode == 'speed':
             p = all_projects[dataset_name]
             beh = p.worm_posture_class.worm_speed(fluorescence_fps=True,
