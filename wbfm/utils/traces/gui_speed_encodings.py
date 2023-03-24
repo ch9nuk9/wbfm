@@ -28,7 +28,7 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
                channel_mode='dr_over_r_50')
     opt.update(trace_options)
 
-    encoder_opt = dict(df_name=opt['channel_mode'], y_train='signed_middle_body_speed_smoothed')
+    encoder_opt = dict(df_name=opt['channel_mode'], y_train='signed_middle_body_speed')
     constructor_kwargs = dict(df_kwargs=opt, dataframes_to_load=[opt['channel_mode']])
 
     cv_factory = partial(KFold, n_splits=3)
