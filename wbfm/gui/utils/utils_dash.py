@@ -65,7 +65,9 @@ def dashboard_from_two_dataframes(df_summary: pd.DataFrame, raw_dfs: Dict[str, p
     column_names_with_none = ['None'] + list(column_names)
 
     keys = list(raw_dfs.keys())
-    initial_clickData = {'points': [{'customdata': [raw_dfs[keys[0]].columns[0]]}]}
+    initial_click_point = raw_dfs[keys[0]].columns[0]
+    print(f"Initial click point: {initial_click_point}")
+    initial_clickData = {'points': [{'customdata': [initial_click_point]}]}
 
     # Create a dropdown menu to choose each column of the summary dataframe
     dropdown_menu_x = dcc.Dropdown(
@@ -132,10 +134,18 @@ def dashboard_from_two_dataframes(df_summary: pd.DataFrame, raw_dfs: Dict[str, p
         # Do not update if the clickData is None
         if clickData is None:
             return dash.no_update
-        click_name = clickData["points"][0]["customdata"][0]
+        try:
+            click_name = clickData["points"][0]["customdata"][0]
+        except TypeError:
+            return dash.no_update
 
-        fig = line_plot_from_dict_of_dataframes(raw_dfs, y=click_name)
-        
+        try:
+            fig = line_plot_from_dict_of_dataframes(raw_dfs, y=click_name)
+        except ValueError:
+            # Sometimes plotly fails the first time, so try again
+            # https://stackoverflow.com/questions/74367104/dashboard-plotly-valueerror-invalid-value
+            fig = line_plot_from_dict_of_dataframes(raw_dfs, y=click_name)
+
         return fig
 
     # Create a callback for updating the scatterplot using both dropdown menus
@@ -188,9 +198,19 @@ def _build_scatter_plot(df_summary, x, y, selected_row, **kwargs):
 
 def line_plot_from_dict_of_dataframes(dict_of_dfs: dict, y: str):
     # Create a single figure from a list of dataframes
-    fig = go.Figure()
-    for k, df in dict_of_dfs.items():
-        fig.add_scatter(y=df[y], name=k, )
+    # dict_of_dfs is a nested dictionary. The first key is the name of the trace type (e.g. 'speed')
+    #    The second key is the name of the trace inlcuding dataset and neuron
+    #    e.g. 'ZIM2165_Gcamp7b_worm1-2022_11_28'
+
+    # Build a temporary dataframe to plot
+    df = pd.DataFrame({k: df_[y] for k, df_ in dict_of_dfs.items()})
+    # df.index = dict_of_dfs[list(dict_of_dfs.keys())[0]].index
+    print(df)
+    fig = px.line(df)
+
+    # fig = go.Figure()
+    # for k, df in dict_of_dfs.items():
+    #     fig.add_scatter(y=df[y], name=k, )
     fig.update_layout(xaxis_title="Time", yaxis_title="Amplitude", font=dict(size=18))
     return fig
 
