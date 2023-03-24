@@ -3,6 +3,7 @@ import numpy as np
 import plotly.express as px
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column
+from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError
 
 
 class BehaviorCodes(IntEnum):
@@ -51,7 +52,9 @@ class BehaviorCodes(IntEnum):
 
     @classmethod
     def assert_is_valid(cls, value):
-        assert cls.has_value(value), f"Value {value} is not a valid behavioral code ({cls._value2member_map_})"
+        if not cls.has_value(value):
+            raise InvalidBehaviorAnnotationsError(f"Value {value} is not a valid behavioral code "
+                                                  f"({cls._value2member_map_})")
 
     @classmethod
     def assert_all_are_valid(cls, vec):

@@ -86,3 +86,9 @@ class NoManualBehaviorAnnotationsError(NoBehaviorAnnotationsError):
     def __init__(self, message=""):
         self.message = "No manual behavior annotations found; " + message
         super().__init__(self.message)
+
+
+class InvalidBehaviorAnnotationsError(Exception):
+    def __init__(self, message=""):
+        self.message = "Invalid behavior annotations found; " + message
+        super().__init__(self.message)
