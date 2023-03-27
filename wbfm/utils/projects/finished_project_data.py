@@ -1485,7 +1485,7 @@ class ProjectData:
 Project data for directory:\n\
 {self.project_dir} \n\
 With raw data in directory:\n\
-{self.project_config.config['parent_data_folder']} \n\
+{self.project_config.get_behavior_raw_parent_folder_from_red_fname()[0]} \n\
 \n\
 Found the following data files:\n\
 ============Raw========================\n\
