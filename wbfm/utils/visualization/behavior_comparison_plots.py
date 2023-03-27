@@ -11,6 +11,7 @@ import pandas as pd
 import sklearn.exceptions
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
+from scipy.stats import pearsonr
 from sklearn.feature_selection import SequentialFeatureSelector
 from sklearn.linear_model import LassoCV, Ridge, ElasticNetCV
 from sklearn.metrics import median_absolute_error
@@ -109,18 +110,29 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     def __post_init__(self):
         self.df_kwargs['interpolate_nan'] = True
 
-    def calc_multi_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, DEBUG=False):
+    def calc_multi_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, correlation_not_r2=False,
+                                   DEBUG=False,
+                                   **kwargs):
         """Speed by default"""
         X = self.all_dfs[df_name]
         X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train, only_model_single_state)
-        inner_cv = self.cv_factory() #.split(X, y_binary)
+        inner_cv = self.cv_factory()
         model = self._setup_inner_cross_validation(inner_cv)
 
         with warnings.catch_warnings():
             # Outer cross validation: get score
-            outer_cv = self.cv_factory() #.split(X, y=y_binary)
-            nested_scores = cross_val_score(model, X=X, y=y, cv=outer_cv)
-            # model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
+            outer_cv = self.cv_factory()
+            if not correlation_not_r2:
+                nested_scores = cross_val_score(model, X=X, y=y, cv=outer_cv)
+            else:
+                # Loop over all folds and calculate the correlation
+                nested_scores = []
+                for train_index, test_index in outer_cv.split(X, y=y_binary):
+                    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+                    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+                    model.fit(X_train, y_train)
+                    y_pred = model.predict(X_test)
+                    nested_scores.append(pearsonr(y_test, y_pred)[0])
 
             # Also do a prediction step
             try:
@@ -130,8 +142,6 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 y_pred = model.fit(X, y).predict(X)
             y_pred = pd.Series(y_pred, index=y.index)
 
-        # score = model.score(X_test, y_test)
-        # y_pred = model.predict(X)  # For entire dataset
         self._best_multi_neuron_model = model
         if DEBUG:
             # plt.plot(X_test, label='X')
@@ -155,7 +165,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             model = GridSearchCV(estimator=estimator, param_grid=p_grid, cv=inner_cv)
         return model
 
-    def calc_single_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, DEBUG=False):
+    def calc_single_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, correlation_not_r2=False,
+                                    DEBUG=False,
+                                    **kwargs):
         """
         Best single neuron encoding
 
@@ -187,7 +199,18 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
             # Calculate the error using this neuron (CV again)
             outer_cv = self.cv_factory()
-            nested_scores = cross_val_score(model, X=X_best_single_neuron, y=y, cv=outer_cv)
+            if not correlation_not_r2:
+                nested_scores = cross_val_score(model, X=X_best_single_neuron, y=y, cv=outer_cv)
+            else:
+                # Loop over all folds and calculate the correlation
+                nested_scores = []
+                for train_index, test_index in outer_cv.split(X_best_single_neuron, y):
+                    X_train, X_test = X_best_single_neuron[train_index], X_best_single_neuron[test_index]
+                    y_train, y_test = y[train_index], y[test_index]
+                    model.fit(X_train, y_train)
+                    y_pred = model.predict(X_test)
+                    corr = pearsonr(y_pred, y_test)[0]
+                    nested_scores.append(corr)
             # model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
 
             # Also do a prediction step
@@ -281,10 +304,12 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         return y, y_train_name
 
     def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, use_leifer_method=False,
-                              only_model_single_state=None,
+                              only_model_single_state=None, correlation_not_r2=False,
                               DEBUG=False, **plot_kwargs):
         """Plots model prediction over raw data"""
-        opt = dict(y_train=y_train, only_model_single_state=only_model_single_state, DEBUG=DEBUG)
+        opt = dict(y_train=y_train, only_model_single_state=only_model_single_state,
+                   correlation_not_r2=correlation_not_r2,
+                   DEBUG=DEBUG)
         if use_leifer_method:
             score_list, model, y_total, y_pred, y_train_name = \
                 self.calc_leifer_encoding(df_name, **opt)
@@ -305,6 +330,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         return model, best_neuron
 
     def calc_leifer_encoding(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
+                             correlation_not_r2=False, DEBUG=False,
                              **kwargs):
         """
         Fits model using the Leifer settings, which does not use full cross validation
@@ -314,6 +340,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         Note that this produces significantly more optimistic scores than the "best practice" nested cross validation
         method, used in the other methods in this class
+
+        Note also that the correlation_not_r2 score is what was actually calculated in the paper, and again produces
+        more optimistic scores than the r2 score or the other cross validation methods
 
         Parameters
         ----------
@@ -352,7 +381,11 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 model.fit(X=X_train, y=y_train)
         else:
             model = self._best_leifer_model
-        score = model.score(X_test, y_test)
+        if not correlation_not_r2:
+            score = model.score(X_test, y_test)
+        else:
+            y_pred = model.predict(X_test)
+            score = pearsonr(y_test, y_pred)[0]
         y_pred = model.predict(X)
         y_pred = pd.Series(y_pred, index=y.index)
 
