@@ -1001,7 +1001,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     @cached_property
     def y_min_max_on_plot(self):
-        # Return the min and max, because there could be overlapping lines in tracklet mode
+        """
+        Return the min and max, because there could be overlapping lines in tracklet mode
+
+        If there are no lines, return empty list
+
+        In trace mode, returns the single line self.y_trace_mode twice
+
+        Returns
+        -------
+
+        """
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             y_on_plot = [line.get_ydata() for line in self.static_ax.lines]
             if len(y_on_plot) == 0 or (len(y_on_plot) == 1 and len(y_on_plot[0]) == 2):
@@ -1014,7 +1024,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
                 y_on_plot_min = np.nanmin(np.vstack(y_on_plot), axis=0)
-                y_on_plot_max = np.nanmin(np.vstack(y_on_plot), axis=0)
+                y_on_plot_max = np.nanmax(np.vstack(y_on_plot), axis=0)
         else:
             y_on_plot_min = self.y_trace_mode
             y_on_plot_max = self.y_trace_mode
@@ -1041,9 +1051,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.time_line is not None:
             self.time_line.remove()
             del self.time_line
-        # self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
         self.time_line = self.static_ax.axvline(**self.calculate_time_line_options())
 
+        # Try to preserve the xlimits
         self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
         self.color_using_behavior()
         if self.current_subplot_xlim is not None:
@@ -1053,6 +1063,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.static_ax.set_xlim(self.main_subplot_xlim)
             # print("Resetting xlimits")
         self.subplot_is_initialized = True
+        # Add additional annotations
         self.color_using_behavior()
 
     def initialize_trace_subplot(self):
@@ -1071,6 +1082,24 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             new_line = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
             self.add_tracklet_to_cache(new_line, name)
         self.update_neuron_in_tracklet_annotator()
+
+    def add_tracking_outliers_to_plot(self):
+        # Note that this function should be cached
+        outlier_matrix = self.dat.calc_indices_to_remove_using_ppca()
+
+        # This is a matrix, so I need the index of this neuron name
+        neuron_name = self.changeNeuronsDropdown.currentText()
+        neuron_index = self.dat.neuron_names.index(neuron_name)
+        outlier_ind = outlier_matrix[:, neuron_index]
+        x = np.array(self.tspan)[outlier_ind]
+        # Take the upper line, if there are multiple overlapping lines... but there shouldn't be
+        y = self.y_min_max_on_plot[1]
+        y = y[outlier_ind[:len(y)]]
+
+        self.static_ax.plot(x, y, 'o', color='tab:red')
+        print(f"Successfully added {len(x)} tracking outliers to plot")
+        print(x)
+        print(y)
 
     def on_subplot_click(self, event):
         t = event.xdata
@@ -1132,6 +1161,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.update_trace_subplot()
         else:
             raise ValueError
+
+        # Add additional annotations that change based on the y values
+        # print("Adding tracking outliers")
+        # self.add_tracking_outliers_to_plot()
 
     def update_trace_subplot(self):
         if not self.changeTraceTrackletDropdown.currentText() == 'traces':
