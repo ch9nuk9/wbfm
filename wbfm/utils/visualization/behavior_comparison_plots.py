@@ -456,7 +456,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         return df
 
     def calc_prediction_or_raw_df(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
-                                  prediction_not_raw=True, use_leifer_method=False) -> pd.DataFrame:
+                                  prediction_not_raw=True, use_leifer_method=False, **kwargs) -> pd.DataFrame:
         """
         Similar to plot_model_prediction, but returns one dataframe (prediction or raw)
 
@@ -472,6 +472,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         """
         opt = dict(y_train=y_train, only_model_single_state=only_model_single_state)
+        opt.update(kwargs)
         if prediction_not_raw:
             if use_leifer_method:
                 score_list, model, y_total, y_pred, y_train_name = \
