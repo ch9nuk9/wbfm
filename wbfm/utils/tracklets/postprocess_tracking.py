@@ -106,7 +106,7 @@ class OutlierRemoval:
         self._all_dist = all_dist
         return all_dist, all_dist_flattened
 
-    def calc_outlier_indices_using_ppca(self):
+    def calc_outlier_indices_using_ppca(self) -> np.ndarray:
         ppca_dimension = self.ppca_dimension
         learning_rate = self.learning_rate
         verbose = self.verbose

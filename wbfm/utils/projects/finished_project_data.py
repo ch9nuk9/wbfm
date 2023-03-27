@@ -48,6 +48,7 @@ from wbfm.utils.projects.utils_project import safe_cd
 # from functools import cached_property # Only from python>=3.8
 from backports.cached_property import cached_property
 
+from wbfm.utils.utils_cache import cache_to_disk_class
 from wbfm.utils.visualization.filtering_traces import fast_slow_decomposition
 
 
@@ -780,14 +781,14 @@ class ProjectData:
                 #     self.logger.warning("Requested nan interpolation, but then nan were added due to tracking failures")
 
         if nan_using_ppca_manifold:
+            to_remove_all_names = self.calc_indices_to_remove_using_ppca()
+            # Subset the full removal matrix to only the neurons in this dataframe
+            # to_remove_all_names is a matrix, so we can't directly index using pandas syntax
             names = get_names_from_df(df)
-            coords = ['z', 'x', 'y']
-            all_zxy = self.red_traces.loc[:, (names, coords)].copy()
-            z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
-            all_zxy.loc[:, (slice(None), 'z')] = z_to_xy_ratio * all_zxy.loc[:, (slice(None), 'z')]
-            outlier_remover = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces=None, names=names, verbose=0)
-            outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=8)
-            df[outlier_remover.total_matrix_to_remove] = np.nan
+            original_names = self.neuron_names
+            name_ind = [names.index(n) for n in original_names]
+            to_remove = to_remove_all_names[:, name_ind]
+            df[to_remove] = np.nan
 
         # Optional: separate fast and slow components, and return only one
         if return_fast_scale_separation and return_slow_scale_separation:
@@ -800,6 +801,28 @@ class ProjectData:
                 df = df_slow
 
         return df
+
+    @cache_to_disk_class('invalid_indices_cache_fname', func_save_to_disk=np.save, func_load_from_disk=np.load)
+    def calc_indices_to_remove_using_ppca(self):
+        names = self.neuron_names
+        coords = ['z', 'x', 'y']
+        all_zxy = self.red_traces.loc[:, (slice(None), coords)].copy()
+        z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
+        all_zxy.loc[:, (slice(None), 'z')] = z_to_xy_ratio * all_zxy.loc[:, (slice(None), 'z')]
+        outlier_remover = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces=None, names=names, verbose=0)
+        outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=8)
+        to_remove = outlier_remover.total_matrix_to_remove
+        return to_remove
+
+    def invalid_indices_cache_fname(self):
+        return os.path.join(self.cache_dir, 'invalid_indices.npy')
+
+    @property
+    def cache_dir(self):
+        fname = os.path.join(self.project_dir, '.cache')
+        if not os.path.exists(fname):
+            os.makedirs(fname)
+        return fname
 
     @lru_cache(maxsize=16)
     def calc_raw_traces(self, neuron_names: tuple, **opt: dict):
