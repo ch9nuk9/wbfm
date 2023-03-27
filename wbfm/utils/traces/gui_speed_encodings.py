@@ -14,12 +14,15 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
                                      all_projects_gfp: Dict[str, ProjectData],
                                      output_folder: str = None,
                                      trace_options=None,
+                                     encoder_opt=None,
                                      verbose=0,
                                      **kwargs):
 
     # Use same trace options for all plots
     if trace_options is None:
         trace_options = {}
+    if encoder_opt is None:
+        encoder_opt = {}
     opt = dict(interpolate_nan=False,
                filter_mode='rolling_mean',
                min_nonnan=0.9,
@@ -28,7 +31,9 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
                channel_mode='dr_over_r_50')
     opt.update(trace_options)
 
-    encoder_opt = dict(df_name=opt['channel_mode'], y_train='signed_middle_body_speed')
+    default_encoder_opt = dict(df_name=opt['channel_mode'], y_train='signed_middle_body_speed')
+    default_encoder_opt.update(encoder_opt)
+    encoder_opt = default_encoder_opt
     constructor_kwargs = dict(df_kwargs=opt, dataframes_to_load=[opt['channel_mode']])
 
     cv_factory = partial(KFold, n_splits=3)
