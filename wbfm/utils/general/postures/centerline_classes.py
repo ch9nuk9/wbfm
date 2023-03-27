@@ -99,6 +99,7 @@ class WormFullVideoPosture:
     def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool,
                                  reset_index=False) -> Union[pd.DataFrame, pd.Series]:
         if df is not None:
+            # Get cleaned dataframe
             try:
                 df = self.remove_idx_of_tracking_failures(df, fluorescence_fps=fluorescence_fps)
                 if fluorescence_fps:
@@ -114,8 +115,15 @@ class WormFullVideoPosture:
                 print(self.tracking_failure_idx)
                 print(self.subsample_indices)
                 raise e
+            # Optional postprocessing
             if reset_index:
                 df.reset_index(drop=True, inplace=True)
+            # Shorten to the correct length, if necessary. Note that we have to check for series or dataframe
+            if len(df.shape) == 2:
+                df = df.iloc[:self.num_frames, :]
+            elif len(df.shape) == 1:
+                df = df.iloc[:self.num_frames]
+
         return df
 
     ##

@@ -720,6 +720,9 @@ class ProjectData:
 
         df = self.calc_raw_traces(neuron_names, **opt).copy()
 
+        # Shorten dataframe to only use expected number of time points
+        df = df.iloc[:self.num_frames, :]
+
         # Optional: check neurons to remove
         if min_nonnan is not None:
             names = self.well_tracked_neuron_names(min_nonnan, remove_invalid_neurons)
