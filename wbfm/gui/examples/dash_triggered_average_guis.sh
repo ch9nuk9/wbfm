@@ -56,6 +56,14 @@ C="genotype"
 PORT="8053"
 open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
 
+# Speed gui but calculating error using correlation
+SUBFOLDER="gui_speed_encodings_correlation"
+X="genotype"
+Y="multi_neuron"
+C="genotype"
+PORT="8054"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
 #
 ## Curvature guis
 #
