@@ -297,7 +297,7 @@ class WormFullVideoPosture:
 
         possible_values = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature', 'summed_curvature', 'pirouette',
                            'signed_stage_speed_strongly_smoothed', 'signed_speed_angular',
-                           'signed_middle_body_speed', 'worm_speed_average_all_segments',
+                           'middle_body_speed', 'signed_middle_body_speed', 'worm_speed_average_all_segments',
                            'worm_speed_average_all_segments', 'plateau', 'semi_plateau',
                            'signed_middle_body_speed_smoothed']
         assert behavior_alias in possible_values, f"Must be one of {possible_values}, not {behavior_alias}"
@@ -306,6 +306,8 @@ class WormFullVideoPosture:
             y = self.worm_speed(fluorescence_fps=True, signed=True)
         elif behavior_alias == 'abs_stage_speed':
             y = self.worm_speed(fluorescence_fps=True)
+        elif behavior_alias == 'middle_body_speed':
+            y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=False)
         elif behavior_alias == 'signed_middle_body_speed':
             y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=True)
         elif behavior_alias == 'signed_middle_body_speed_smoothed':
@@ -528,7 +530,7 @@ class WormFullVideoPosture:
         if len(invalid_ind) > 0:
             all_diffs[invalid_ind[0]-1:invalid_ind[-1]+1] = pd.to_timedelta(0)
         tdelta = all_diffs.mean()
-        tdelta_s = tdelta.delta / 1e9
+        tdelta_s = tdelta.nanoseconds / 1e9
         assert tdelta_s > 0, f"Calculated negative delta time ({tdelta_s}); was there a power outage or something?"
         return tdelta_s
 
