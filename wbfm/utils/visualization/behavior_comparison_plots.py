@@ -480,12 +480,18 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         kwargs['df_name'] = df_name
         multi_list = self.calc_multi_neuron_encoding(**kwargs)[0]
-        single_list = self.calc_single_neuron_encoding(**kwargs)[0]
+        try:
+            single_list = self.calc_single_neuron_encoding(**kwargs)[0]
+        except NotImplementedError:
+            single_list = [np.nan]
         leifer_score = self.calc_leifer_encoding(**kwargs)[0]
 
-        df_dict = {'best_single_neuron': np.mean(single_list), 'multi_neuron': np.mean(multi_list),
+        df_dict = {'best_single_neuron': np.nanmean(single_list),
+                   'multi_neuron': np.nanmean(multi_list),
                    'leifer_score': leifer_score,
                    'dataset_name': self.project_data.shortened_name}
+        # Remove any NaNs
+        df_dict = {k: v for k, v in df_dict.items() if not np.isnan(v)}
         df = pd.DataFrame(df_dict, index=[0])
         return df
 
