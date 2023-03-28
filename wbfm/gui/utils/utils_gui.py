@@ -349,3 +349,17 @@ def build_gui_for_grid_plots(parent_folder, DEBUG=False):
     app.exec()
 
 
+def on_close(self, event, widget):
+    # Copied from deeplabcut-napari
+    # https://github.com/DeepLabCut/napari-deeplabcut/blob/c05d4a8eb58716da96b97d362519d4ee14e21cac/src/napari_deeplabcut/_widgets.py#L121
+    choice = QMessageBox.warning(
+        widget,
+        "Warning",
+        "Data may not be saved. Are you certain you want to quit? "
+        "Note: you additionally need to press ctrl-c in the terminal to fully quit the program",
+        QMessageBox.Yes | QMessageBox.No,
+    )
+    if choice == QMessageBox.Yes:
+        event.accept()
+    else:
+        event.ignore()

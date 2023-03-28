@@ -6,6 +6,7 @@ import signal
 import warnings
 import logging
 import sys
+from functools import partial
 from typing import List, Tuple
 
 import napari
@@ -19,7 +20,7 @@ from PyQt5.QtWidgets import QApplication, QProgressDialog
 from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
-    build_tracks_from_dataframe, zoom_using_viewer, add_fps_printer
+    build_tracks_from_dataframe, zoom_using_viewer, add_fps_printer, on_close
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 cgitb.enable(format='text')
@@ -103,11 +104,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # BOX 1: Change neurons (dropdown)
         self.groupBox1NeuronSelection = QtWidgets.QGroupBox("Selection", self.verticalLayoutWidget)
         self.vbox1 = QtWidgets.QVBoxLayout(self.groupBox1NeuronSelection)
-        self.changeNeuronsDropdown = QtWidgets.QComboBox()
-        self.changeNeuronsDropdown.addItems(neuron_names)
-        self.changeNeuronsDropdown.setItemText(0, self.current_neuron_name)
-        self.changeNeuronsDropdown.currentIndexChanged.connect(self.change_neurons)
-        self.vbox1.addWidget(self.changeNeuronsDropdown)
+        self.changeNeuronDropdown = QtWidgets.QComboBox()
+        self.changeNeuronDropdown.addItems(neuron_names)
+        self.changeNeuronDropdown.setItemText(0, self.current_neuron_name)
+        self.changeNeuronDropdown.currentIndexChanged.connect(self.change_neurons)
+        self.vbox1.addWidget(self.changeNeuronDropdown)
 
         self.changeChannelDropdown = QtWidgets.QComboBox()
         self.changeChannelDropdown.addItems(['green', 'red', 'ratio', 'linear_model', 'df_over_f_20', 'dr_over_r_20'])
@@ -143,6 +144,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.initialize_trace_or_tracklet_subplot()
         self.update_interactivity()
 
+        self.viewer.window._qt_window.closeEvent = partial(
+            on_close,
+            self.viewer.window._qt_window,
+            widget=self,
+        )
+
         self.logger.debug("Finished main UI setup")
 
     def _setup_trace_filtering_buttons(self):
@@ -171,6 +178,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceOutlierCheckBox.setChecked(True)
         self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Remove outliers?", self.changeTraceOutlierCheckBox)
+        # Display ppca outlier candidates (checkbox)
+        self.changeOutlierOverlayCheckBox = QtWidgets.QCheckBox()
+        self.changeOutlierOverlayCheckBox.setChecked(False)
+        self.changeOutlierOverlayCheckBox.stateChanged.connect(self.update_trace_or_tracklet_subplot)
+        self.formlayout3.addRow("Display tracking outliers?", self.changeOutlierOverlayCheckBox)
         # self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox()
         # self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         # self.formlayout3.addRow("Remove outliers (tracking confidence)?", self.changeTrackingOutlierCheckBox)
@@ -470,7 +482,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
 
     def update_neuron_in_tracklet_annotator(self):
-        self.dat.tracklet_annotator.current_neuron = self.changeNeuronsDropdown.currentText()
+        self.dat.tracklet_annotator.current_neuron = self.changeNeuronDropdown.currentText()
 
     # def update_segmentation_options(self):
     #     self.dat.tracklet_annotator.segmentation_options = dict(
@@ -516,10 +528,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         """Uses segmentation as modified previously by candidate mask layer AND tracklet dataframe"""
         progress = QProgressDialog("Saving to disk, you may quit when finished", None, 0, 3, self)
         progress.setWindowModality(Qt.WindowModal)
-        progress.setValue(0)
+        # For some reason the progress bar doesn't show up until after the first segmentation_metadata call,
+        # ... even if I add sleep and etc.
+        import time
         progress.forceShow()
+        progress.setValue(0)
         self.dat.segmentation_metadata.overwrite_original_detection_file()
         progress.setValue(1)
+        # Sleep to make sure that the progress bar is updated
+        time.sleep(0.1)
         self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch()
         progress.setValue(2)
         self.dat.modify_segmentation_on_disk_using_buffer()
@@ -798,7 +815,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.dat.tracklet_annotator.gt_mismatches is None:
             self.logger.warning("No ground truth found; button not functional")
             return
-        neuron_name = self.changeNeuronsDropdown.currentText()
+        neuron_name = self.changeNeuronDropdown.currentText()
         remaining_mismatches = self.dat.tracklet_annotator.gt_mismatches[neuron_name]
         if len(remaining_mismatches) == 0:
             print("This neuron has no remaining conflicts")
@@ -810,7 +827,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.logger.info(f"Jumped to conflict at t={t} on {neuron_name} and {tracklet_name} "
                          f"with incorrect match: {model_mismatch} and correct match: {gt_mismatch}")
         change_viewer_time_point(self.viewer, t_target=t)
-        self.changeNeuronsDropdown.setCurrentText(neuron_name)
+        self.changeNeuronDropdown.setCurrentText(neuron_name)
         self.zoom_using_current_neuron_or_tracklet()
         # Also display the incorrect match
         # incorrect_match = self.dat.napari_tracks_layer_of_single_neuron_match(neuron_name, t)
@@ -836,7 +853,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # if self.dat.tracklet_annotator.gt_mismatches is None:
         #     self.logger.warning("No ground truth found; button not functional")
         #     return
-        neuron_name = self.changeNeuronsDropdown.currentText()
+        neuron_name = self.changeNeuronDropdown.currentText()
         mismatches = self.dat.tracklet_annotator.gt_mismatches
         if len(mismatches[neuron_name]) == 0:
             self.logger.info(f"No more conflicts on neuron {neuron_name}")
@@ -1072,6 +1089,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.trace_line = self.static_ax.plot(self.tspan, self.y_trace_mode)[0]
         self.add_tracking_outliers_to_plot()
         self.reference_line = self.reference_ax.plot([], color='tab:orange')[0]  # Initialize an empty line
+        self.invalidate_y_min_max_on_plot()
 
     def initialize_tracklet_subplot(self):
         # Designed for traces, but reuse
@@ -1084,10 +1102,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             new_line = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
             self.add_tracklet_to_cache(new_line, name)
         self.update_neuron_in_tracklet_annotator()
+        self.invalidate_y_min_max_on_plot()
 
     def add_tracking_outliers_to_plot(self):
         # TODO: doesn't update the first time tracklet mode is selected
         # TODO: will improperly jump to selected tracklets when added; should be able to loop over self.tracklet_lines
+        if not self.changeOutlierOverlayCheckBox.isChecked():
+            return
 
         if self.outlier_line is not None:
             self.outlier_line.remove()
@@ -1096,7 +1117,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         outlier_matrix = self.dat.calc_indices_to_remove_using_ppca()
 
         # This is a matrix, so I need the index of this neuron name
-        neuron_name = self.changeNeuronsDropdown.currentText()
+        neuron_name = self.changeNeuronDropdown.currentText()
         neuron_index = self.dat.neuron_names.index(neuron_name)
         outlier_ind = outlier_matrix[:, neuron_index]
         x = np.array(self.tspan)[outlier_ind]
@@ -1105,9 +1126,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         y = y[outlier_ind[:len(y)]]
 
         self.outlier_line = self.static_ax.plot(x, y, 'o', color='tab:red')[0]
-        print(f"Successfully added {len(x)} tracking outliers to plot")
-        print(x)
-        print(y)
+        # print(f"Successfully added {len(x)} tracking outliers to plot")
+        # print(x)
+        # print(y)
 
     def on_subplot_click(self, event):
         t = event.xdata
@@ -1203,7 +1224,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.invalidate_y_min_max_on_plot()
         # Add additional annotations that change based on the y values
-        print("Adding tracking outliers")
+        # print("Adding tracking outliers")
         self.add_tracking_outliers_to_plot()
         self.init_subplot_post_clear()
         self.finish_subplot_update_and_draw(preserve_xlims=True)
@@ -1240,12 +1261,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if traces_or_tracklets == 'tracklets':
             title = f"Tracklets for {neuron_name}"
         else:
-            if ref_name is "None":
-                title = f"{red_green_or_ratio} trace for " \
-                        f"{integration_or_not}"
+            if ref_name == "None":
+                title = f"{red_green_or_ratio} trace for {integration_or_not}"
             else:
-                title = f"{red_green_or_ratio} trace for " \
-                        f"{integration_or_not} mode with reference {ref_name}"
+                title = f"{red_green_or_ratio} trace for {integration_or_not} mode with reference {ref_name}"
 
         return title
 
@@ -1521,7 +1540,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.current_tracklet_name = current_name
 
     def get_track_data(self):
-        self.current_neuron_name = self.changeNeuronsDropdown.currentText()
+        self.current_neuron_name = self.changeNeuronDropdown.currentText()
         return self.build_tracks_from_name()
 
     def color_using_behavior(self):
