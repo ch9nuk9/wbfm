@@ -59,17 +59,7 @@ def consolidate_tracklets(df_all_tracklets, global2tracklet, neuron_names, num_t
         joined_tracklet, num_added = fill_missing_indices_with_nan(joined_tracklet, expected_max_t=num_time_points)
 
         # Then resplit this single tracklet based on z_threshold and gaps (nan)
-        df_diff = joined_tracklet[[(new_tracklet_name, 'z')]].diff().abs()
-        split_list_dict = {new_tracklet_name: list(np.where(df_diff > z_threshold)[0])}
-        block_starts, _ = get_contiguous_blocks_from_column(joined_tracklet[(new_tracklet_name, 'z')])
-        if len(block_starts) > 0 and block_starts[0] == 0:
-            block_starts = block_starts[1:]
-        if len(block_starts) > 0:
-            split_list_dict[new_tracklet_name].extend(block_starts)
-            split_list_dict[new_tracklet_name].sort()
-        if DEBUG:
-            print(f"Splitting {new_tracklet_name} at {split_list_dict[new_tracklet_name]}, ({block_starts} from nan)")
-            print(joined_tracklet)
+        split_list_dict = calc_split_dict_z_threshold(joined_tracklet, new_tracklet_name, z_threshold, DEBUG)
 
         # Actually split
         df_split, _, name_mapping = split_all_tracklets_at_once(joined_tracklet, split_list_dict, name_gen=name_gen)
@@ -88,3 +78,19 @@ def consolidate_tracklets(df_all_tracklets, global2tracklet, neuron_names, num_t
     df_new = pd.concat(consolidated_tracklets, axis=1)
 
     return df_new, new_neuron2tracklets
+
+
+def calc_split_dict_z_threshold(joined_tracklet, new_tracklet_name, z_threshold, DEBUG=False):
+    df_this_tracklet = joined_tracklet[[(new_tracklet_name, 'z')]]
+    df_diff = df_this_tracklet.diff().abs()
+    split_list_dict = {new_tracklet_name: list(np.where(df_diff > z_threshold)[0])}
+    block_starts, _ = get_contiguous_blocks_from_column(joined_tracklet[(new_tracklet_name, 'z')])
+    if len(block_starts) > 0 and block_starts[0] == 0:
+        block_starts = block_starts[1:]
+    if len(block_starts) > 0:
+        split_list_dict[new_tracklet_name].extend(block_starts)
+        split_list_dict[new_tracklet_name].sort()
+    if DEBUG:
+        print(f"Splitting {new_tracklet_name} at {split_list_dict[new_tracklet_name]}, ({block_starts} from nan)")
+        print(joined_tracklet)
+    return split_list_dict
