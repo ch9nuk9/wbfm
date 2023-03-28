@@ -1155,6 +1155,19 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_trace_or_tracklet_subplot(self, dropdown_ind=None,
                                          preserve_xlims=True, which_tracklets_to_update=None):
+        """
+        Update the trace or tracklet subplot, depending on the current mode
+
+        Parameters
+        ----------
+        dropdown_ind
+        preserve_xlims
+        which_tracklets_to_update
+
+        Returns
+        -------
+
+        """
         if self._disable_callbacks:
             return
         if self.changeTraceCalculationDropdown.currentText() == "":
@@ -1169,6 +1182,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             raise ValueError
 
     def update_trace_subplot(self):
+        """
+        Update the trace subplot, assuming that the mode is currently set to traces
+
+        Returns
+        -------
+
+        """
         if not self.changeTraceTrackletDropdown.currentText() == 'traces':
             print("Currently on tracklet setting, so this option didn't do anything")
             return
@@ -1213,6 +1233,18 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 self.finish_subplot_update_and_draw(title, preserve_xlims=True)
 
     def update_tracklet_subplot(self, preserve_xlims=True, which_tracklets_to_update=None):
+        """
+        Update the tracklet subplot, depending on the current mode
+
+        Parameters
+        ----------
+        preserve_xlims
+        which_tracklets_to_update
+
+        Returns
+        -------
+
+        """
         # For now, actually reinitializes the axes
         if not self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             print("Currently on traces setting, so this option didn't do anything")
