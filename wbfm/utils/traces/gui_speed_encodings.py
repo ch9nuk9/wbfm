@@ -90,8 +90,11 @@ def calculate_all_dfs_using_encoder(all_projects, genotype='gcamp', only_model_s
     df_summary = multi_encoder.calc_dataset_summary_df(**_encoder_opt)
     _encoder_opt['use_multineuron'] = True
     df_prediction_multi = multi_encoder.calc_prediction_or_raw_df(**_encoder_opt, prediction_not_raw=True)
-    _encoder_opt['use_multineuron'] = False
-    df_prediction_single = multi_encoder.calc_prediction_or_raw_df(**_encoder_opt, prediction_not_raw=True)
+    try:
+        _encoder_opt['use_multineuron'] = False
+        df_prediction_single = multi_encoder.calc_prediction_or_raw_df(**_encoder_opt, prediction_not_raw=True)
+    except NotImplementedError:
+        df_prediction_single = None
     _encoder_opt['use_leifer_method'] = True
     df_prediction_leifer = multi_encoder.calc_prediction_or_raw_df(**_encoder_opt, prediction_not_raw=True)
     df_raw = multi_encoder.calc_prediction_or_raw_df(**_encoder_opt, prediction_not_raw=False)
@@ -102,6 +105,8 @@ def calculate_all_dfs_using_encoder(all_projects, genotype='gcamp', only_model_s
     df_summary.index = df_summary.index.droplevel(1)
 
     all_dfs_prediction = {'multi': df_prediction_multi, 'single': df_prediction_single, 'leifer': df_prediction_leifer}
+    # Remove any None values
+    all_dfs_prediction = {k: v for k, v in all_dfs_prediction.items() if v is not None}
     df_raw = pd.concat(df_raw, axis=1)
     df_raw.columns = df_raw.columns.droplevel(1)
 
