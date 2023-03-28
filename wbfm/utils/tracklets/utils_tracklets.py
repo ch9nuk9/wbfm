@@ -656,9 +656,22 @@ def split_all_tracklets_at_once(df_tracklets: pd.DataFrame, split_list_dict: dic
         split_list_dict[tracklet_name] = list_of_times
 
     Performs one large concatenation at the end
-    """
-    # See: split_using_dict_of_points
 
+    See: split_using_dict_of_points
+
+    Parameters
+    ----------
+    df_tracklets
+    split_list_dict
+    include_unsplit
+    name_mode
+    name_gen
+    verbose
+
+    Returns
+    -------
+
+    """
     # Make long list of all split tracklets
     all_new_tracklets = []
     all_unsplit_tracklets = []

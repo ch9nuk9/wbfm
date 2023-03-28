@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import sklearn
 from matplotlib import pyplot as plt
+from sklearn.linear_model import LinearRegression
 
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan, get_contiguous_blocks_from_column
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
@@ -58,7 +59,7 @@ def correct_trace_using_linear_model(df_red: pd.DataFrame,
                                      predictor_names: Optional[list]=None,
                                      target_name='intensity_image',
                                      remove_intercept=True,
-                                     model=sklearn.linear_model.LinearRegression(),
+                                     model=LinearRegression(),
                                      bleach_correct=False,
                                      DEBUG=False):
     """
