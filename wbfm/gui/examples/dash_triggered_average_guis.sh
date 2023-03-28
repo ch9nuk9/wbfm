@@ -64,6 +64,15 @@ C="genotype"
 PORT="8054"
 open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
 
+# Speed gui but using a null model
+SUBFOLDER="gui_speed_encodings_null"
+X="genotype"
+Y="multi_neuron"
+C="genotype"
+PORT="8055"
+open_tmux_and_run ${SUBFOLDER} "${X}" "${Y}" ${C} ${PORT}
+
+
 #
 ## Curvature guis
 #
