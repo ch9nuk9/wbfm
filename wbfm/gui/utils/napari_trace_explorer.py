@@ -1086,6 +1086,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_neuron_in_tracklet_annotator()
 
     def add_tracking_outliers_to_plot(self):
+        # TODO: doesn't update the first time tracklet mode is selected
+        # TODO: will improperly jump to selected tracklets when added; should be able to loop over self.tracklet_lines
 
         if self.outlier_line is not None:
             self.outlier_line.remove()
@@ -1134,7 +1136,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Not just updating the data because we fully cleared the axes
         self.invalidate_y_min_max_on_plot()  # Force invalidation, so it is recalculated
         self.init_subplot_post_clear()
-        self.finish_subplot_update_and_draw(current_mode)
+        self.finish_subplot_update_and_draw()
 
     def initialize_trace_or_tracklet_subplot(self):
         if not self.subplot_is_initialized:
@@ -1152,6 +1154,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.init_subplot_post_clear()
             # Finally, add the traces to napari
             self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
+        # Additional annotations
+        self.add_tracking_outliers_to_plot()
+        self.finish_subplot_update_and_draw()
 
     def update_trace_or_tracklet_subplot(self, dropdown_ind=None,
                                          preserve_xlims=True, which_tracklets_to_update=None):
@@ -1194,7 +1199,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             return
         self.update_stored_trace_time_series()
         self.trace_line.set_ydata(self.y_trace_mode)
-        title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
         self.update_reference_trace(force_draw=False)
 
         self.invalidate_y_min_max_on_plot()
@@ -1202,7 +1206,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         print("Adding tracking outliers")
         self.add_tracking_outliers_to_plot()
         self.init_subplot_post_clear()
-        self.finish_subplot_update_and_draw(title, preserve_xlims=True)
+        self.finish_subplot_update_and_draw(preserve_xlims=True)
 
     def update_reference_trace(self, force_draw=True):
         if not self.changeTraceTrackletDropdown.currentText() == 'traces':
@@ -1213,28 +1217,43 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # Reset line
             # self.static_ax.lines.remove(self.reference_line)
             self.reference_line.set_data([], [])
-            title = f"{self.changeChannelDropdown.currentText()} trace for " \
-                    f"{self.changeTraceCalculationDropdown.currentText()}"
 
             if force_draw:
                 # For some reason, just the second call doesn't properly delete the line
                 self.update_trace_subplot()
-                self.finish_subplot_update_and_draw(title, preserve_xlims=True)
+                self.finish_subplot_update_and_draw(preserve_xlims=True)
         else:
             # Plot other trace
             t, y = self.calculate_trace(neuron_name=ref_name)
             # print(f"Setting data: {y}")
             self.reference_line.set_data(t, y)
             # self.reference_line.set_ydata(y)
-            title = f"{self.changeChannelDropdown.currentText()} trace for " \
-                    f"{self.changeTraceCalculationDropdown.currentText()} mode with reference {ref_name}"
-
             if force_draw:
-                self.finish_subplot_update_and_draw(title, preserve_xlims=True)
+                self.finish_subplot_update_and_draw(preserve_xlims=True)
+
+    def get_subplot_title(self):
+        ref_name = self.changeReferenceTrace.currentText()
+        red_green_or_ratio = self.changeChannelDropdown.currentText()
+        integration_or_not = self.changeTraceCalculationDropdown.currentText()
+        traces_or_tracklets = self.changeTraceTrackletDropdown.currentText()
+        neuron_name = self.changeNeuronDropdown.currentText()
+        if traces_or_tracklets == 'tracklets':
+            title = f"Tracklets for {neuron_name}"
+        else:
+            if ref_name is "None":
+                title = f"{red_green_or_ratio} trace for " \
+                        f"{integration_or_not}"
+            else:
+                title = f"{red_green_or_ratio} trace for " \
+                        f"{integration_or_not} mode with reference {ref_name}"
+
+        return title
 
     def update_tracklet_subplot(self, preserve_xlims=True, which_tracklets_to_update=None):
         """
         Update the tracklet subplot, depending on the current mode
+
+        Currently, all calls are made with which_tracklets_to_update=None, forcing a full update of the subplot
 
         Parameters
         ----------
@@ -1245,7 +1264,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         -------
 
         """
-        # For now, actually reinitializes the axes
         if not self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             print("Currently on traces setting, so this option didn't do anything")
             return
@@ -1261,7 +1279,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         field_to_plot = self.changeTraceCalculationDropdown.currentText()
         if which_tracklets_to_update is None:
-            # Replot ALL tracklets
+            # Replot ALL tracklets; takes time
             self.static_ax.clear()
             self.tracklet_lines = {}  # Remove references to old lines
             for name, y in tqdm(self.y_tracklets_dict.items(), leave=False):
@@ -1274,7 +1292,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 self.add_tracklet_to_cache(new_line, line_name)
             # Not a clear in the other branch
             print("Adding tracking outliers")
-            self.add_tracking_outliers_to_plot()
             self.init_subplot_post_clear()
         else:
             print(f"Updates: {which_tracklets_to_update}")
@@ -1308,14 +1325,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     new_line = y[field_to_plot].plot(ax=self.static_ax, **extra_opt, **marker_opt).lines[-1]
                     self.add_tracklet_to_cache(new_line, tracklet_name)
         self.invalidate_y_min_max_on_plot()
+        self.add_tracking_outliers_to_plot()
 
         # self.update_stored_time_series(field_to_plot)
-        title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
         # print(f"Final tracklets on plot: {self.tracklet_lines.keys()}")
         # print(self.static_ax.lines)
 
-        self.finish_subplot_update_and_draw(title, preserve_xlims)
-        pass
+        self.finish_subplot_update_and_draw(preserve_xlims)
 
     def add_tracklet_to_cache(self, new_line, tracklet_name):
         self.tracklet_lines[tracklet_name] = new_line
@@ -1400,7 +1416,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.zoom_using_current_neuron_or_tracklet()
         self.set_segmentation_layer_do_not_show_selected_label()
 
-    def finish_subplot_update_and_draw(self, title, preserve_xlims=True):
+    def finish_subplot_update_and_draw(self, title=None, preserve_xlims=True):
+        if title is None:
+            title = self.get_subplot_title()
+
         self.update_time_line()
         self.static_ax.set_title(title)
         if preserve_xlims:
