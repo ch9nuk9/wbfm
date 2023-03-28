@@ -72,6 +72,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Helper fields for subplots
         self.tracklet_lines = {}
         self.time_line = None
+        self.outlier_line = None
         self.main_subplot_xlim = []
         self.current_subplot_xlim = None
         self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
@@ -1069,6 +1070,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def initialize_trace_subplot(self):
         self.update_stored_trace_time_series()
         self.trace_line = self.static_ax.plot(self.tspan, self.y_trace_mode)[0]
+        self.add_tracking_outliers_to_plot()
         self.reference_line = self.reference_ax.plot([], color='tab:orange')[0]  # Initialize an empty line
 
     def initialize_tracklet_subplot(self):
@@ -1084,6 +1086,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_neuron_in_tracklet_annotator()
 
     def add_tracking_outliers_to_plot(self):
+
+        if self.outlier_line is not None:
+            self.outlier_line.remove()
+            del self.outlier_line
         # Note that this function should be cached
         outlier_matrix = self.dat.calc_indices_to_remove_using_ppca()
 
@@ -1096,7 +1102,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         y = self.y_min_max_on_plot[1]
         y = y[outlier_ind[:len(y)]]
 
-        self.static_ax.plot(x, y, 'o', color='tab:red')
+        self.outlier_line = self.static_ax.plot(x, y, 'o', color='tab:red')[0]
         print(f"Successfully added {len(x)} tracking outliers to plot")
         print(x)
         print(y)
@@ -1162,10 +1168,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             raise ValueError
 
-        # Add additional annotations that change based on the y values
-        # print("Adding tracking outliers")
-        # self.add_tracking_outliers_to_plot()
-
     def update_trace_subplot(self):
         if not self.changeTraceTrackletDropdown.currentText() == 'traces':
             print("Currently on tracklet setting, so this option didn't do anything")
@@ -1176,6 +1178,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_reference_trace(force_draw=False)
 
         self.invalidate_y_min_max_on_plot()
+        # Add additional annotations that change based on the y values
+        print("Adding tracking outliers")
+        self.add_tracking_outliers_to_plot()
         self.init_subplot_post_clear()
         self.finish_subplot_update_and_draw(title, preserve_xlims=True)
 
@@ -1236,6 +1241,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 line_name = f"{self.current_tracklet_name}_current"
                 self.add_tracklet_to_cache(new_line, line_name)
             # Not a clear in the other branch
+            print("Adding tracking outliers")
+            self.add_tracking_outliers_to_plot()
             self.init_subplot_post_clear()
         else:
             print(f"Updates: {which_tracklets_to_update}")
