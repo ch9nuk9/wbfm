@@ -530,7 +530,8 @@ class WormFullVideoPosture:
         if len(invalid_ind) > 0:
             all_diffs[invalid_ind[0]-1:invalid_ind[-1]+1] = pd.to_timedelta(0)
         tdelta = all_diffs.mean()
-        tdelta_s = tdelta.nanoseconds / 1e9
+        # To replicate the behavior of tdelta.delta
+        tdelta_s = (1000*tdelta.microseconds + tdelta.nanoseconds) / 1e9
         assert tdelta_s > 0, f"Calculated negative delta time ({tdelta_s}); was there a power outage or something?"
         return tdelta_s
 
