@@ -111,11 +111,30 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         self.df_kwargs['interpolate_nan'] = True
 
     def calc_multi_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, correlation_not_r2=False,
-                                   DEBUG=False,
-                                   **kwargs):
-        """Speed by default"""
+                                   use_null_model=False,
+                                   DEBUG=False, **kwargs):
+        """
+        Calculate the encoding of a single behavioral variable using all neurons
+
+        Uses cross_val_predict and cross_val_score to get the predictions and scores for each cv split
+
+        Parameters
+        ----------
+        df_name
+        y_train: Speed by default
+        only_model_single_state
+        correlation_not_r2
+        DEBUG
+        kwargs
+
+        Returns
+        -------
+
+        """
         X = self.all_dfs[df_name]
         X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train, only_model_single_state)
+        if use_null_model:
+            X = pd.DataFrame(y_binary)
         inner_cv = self.cv_factory()
         model = self._setup_inner_cross_validation(inner_cv)
 
@@ -166,16 +185,32 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         return model
 
     def calc_single_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, correlation_not_r2=False,
-                                    DEBUG=False,
-                                    **kwargs):
+                                    use_null_model=False,
+                                    DEBUG=False, **kwargs):
         """
         Best single neuron encoding
 
         Note that this does nested cross validation to select:
             ridge alpha (inner) and best neuron (outer)
+
+        Parameters
+        ----------
+        df_name
+        y_train
+        only_model_single_state
+        correlation_not_r2
+        use_null_model
+        DEBUG
+        kwargs
+
+        Returns
+        -------
+
         """
         X = self.all_dfs[df_name]
         X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train, only_model_single_state)
+        if use_null_model:
+            raise NotImplementedError("Null model not implemented for single neuron encoding")
         inner_cv = self.cv_factory() #.split(X, y_binary)
         model = self._setup_inner_cross_validation(inner_cv)
 
@@ -184,17 +219,13 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             # Outer cross validation: get best neuron
             # Note that this takes a while because it has to redo the inner cross validation for each feature
             # It can be parallelized but has a pickle error on my machine
-            if self._best_single_neuron_model is None:
-                sfs_cv = self.cv_factory()
-                sfs = SequentialFeatureSelector(estimator=model,
-                                                n_features_to_select=1, direction='forward', cv=sfs_cv)
-                sfs.fit(X, y)
+            sfs_cv = self.cv_factory()
+            sfs = SequentialFeatureSelector(estimator=model,
+                                            n_features_to_select=1, direction='forward', cv=sfs_cv)
+            sfs.fit(X, y)
 
-                feature_names = get_names_from_df(X)
-                best_neuron = [feature_names[s] for s in sfs.get_support(indices=True)]
-            else:
-                best_neuron = self._best_single_neuron
-                model = self._best_single_neuron_model
+            feature_names = get_names_from_df(X)
+            best_neuron = [feature_names[s] for s in sfs.get_support(indices=True)]
             X_best_single_neuron = X[best_neuron].values.reshape(-1, 1)
 
             # Calculate the error using this neuron (CV again)
@@ -241,7 +272,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             self.calc_single_neuron_encoding(df_name='ratio')
         return self._best_single_neuron
 
-    def prepare_training_data(self, X, y_train_name, only_model_single_state=None) -> \
+    def prepare_training_data(self, X, y_train_name, only_model_single_state=None,
+                              binary_state = BehaviorCodes.REV) -> \
             Tuple[pd.DataFrame, pd.Series, pd.Series, str]:
         """
         Converts a string describing a behavioral time series into the appropriate series, and aligns with the neural
@@ -251,7 +283,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         ----------
         X
         y_train_name
-        only_model_single_state - See BehaviorCodes
+        only_model_single_state: See BehaviorCodes
 
         Returns
         -------
@@ -265,9 +297,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         X = save_valid_ind_1d_or_2d(X.copy(), valid_ind)
         y = save_valid_ind_1d_or_2d(y.copy(), valid_ind)
 
-        # Also build a binary class variable; possibly used for cross validation
+        # Also build a binary class variable; possibly used for cross validation or as a null model
         worm = self.project_data.worm_posture_class
-        y_binary = (worm.beh_annotation(fluorescence_fps=True) == BehaviorCodes.REV).copy()
+        y_binary = (worm.beh_annotation(fluorescence_fps=True) == binary_state).copy()
         y_binary.index = y.index
 
         # Optionally subset the data to be only a specific state
@@ -304,11 +336,11 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         return y, y_train_name
 
     def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, use_leifer_method=False,
-                              only_model_single_state=None, correlation_not_r2=False,
+                              only_model_single_state=None, correlation_not_r2=False, use_null_model=False,
                               DEBUG=False, **plot_kwargs):
         """Plots model prediction over raw data"""
         opt = dict(y_train=y_train, only_model_single_state=only_model_single_state,
-                   correlation_not_r2=correlation_not_r2,
+                   correlation_not_r2=correlation_not_r2, use_null_model=use_null_model,
                    DEBUG=DEBUG)
         if use_leifer_method:
             score_list, model, y_total, y_pred, y_train_name = \
@@ -330,8 +362,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         return model, best_neuron
 
     def calc_leifer_encoding(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
-                             correlation_not_r2=False, DEBUG=False,
-                             **kwargs):
+                             correlation_not_r2=False, use_null_model=False,
+                             DEBUG=False, **kwargs):
         """
         Fits model using the Leifer settings, which does not use full cross validation
 
@@ -353,11 +385,11 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         -------
 
         """
-
         X = self.all_dfs[df_name]
-
         X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train,
                                                                   only_model_single_state=only_model_single_state)
+        if use_null_model:
+            X = pd.DataFrame(y_binary)
 
         # Get train-test split
         trace_len = X.shape[0]
