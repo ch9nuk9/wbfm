@@ -903,7 +903,7 @@ class ProjectData:
 
         Returns all tracklets already attached, as well as any currently selected tracklets
         """
-        y_dict, y_current, y_current_name = self.tracklet_annotator.calculate_tracklets_for_neuron(neuron_name)
+        y_dict, y_current, y_current_name = self.tracklet_annotator.get_tracklets_for_neuron(neuron_name)
         return y_dict, y_current, y_current_name
 
     def modify_confidences_of_frame_pair(self, pair, gamma, mode) -> list:

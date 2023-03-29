@@ -550,7 +550,7 @@ class TrackletAndSegmentationAnnotator:
         else:
             self.logger.debug("No current tracklet; this button did nothing")
 
-    def calculate_tracklets_for_neuron(self, neuron_name=None) -> \
+    def get_tracklets_for_neuron(self, neuron_name=None) -> \
             Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
         # Note: does NOT save this neuron as self.current_neuron
         if neuron_name is None:
@@ -689,9 +689,8 @@ class TrackletAndSegmentationAnnotator:
             self.logger.debug(f"Tracklet {tracklet_name} already in {neuron_name}; nothing added")
         else:
             self.manual_global2tracklet_names[neuron_name].append(tracklet_name)
-            self.add_tracklet_to_global2tracklet_dict(tracklet_name, neuron_name)
+            state_changed = self.add_tracklet_to_global2tracklet_dict(tracklet_name, neuron_name)
             self.logger.info(f"Successfully added tracklet {tracklet_name} to {neuron_name}")
-            state_changed = True
 
         if tracklet_name in previously_removed:
             self.logger.debug(f"Tracklet was in the to-remove list, but was removed")
@@ -707,11 +706,14 @@ class TrackletAndSegmentationAnnotator:
         else:
             logging.warning("Tried to remove tracklet, but is not added")
 
-    def add_tracklet_to_global2tracklet_dict(self, tracklet_name, neuron_name):
+    def add_tracklet_to_global2tracklet_dict(self, tracklet_name, neuron_name) -> bool:
         if tracklet_name not in self._combined_global2tracklet_dict[neuron_name]:
             self._combined_global2tracklet_dict[neuron_name].append(tracklet_name)
+            state_changed = True
         else:
             logging.warning("Tried to add tracklet, but is already added")
+            state_changed = False
+        return state_changed
 
     def remove_tracklet_from_neuron(self, tracklet_name, neuron_name=None):
         if neuron_name is None:
