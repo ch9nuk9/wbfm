@@ -1120,6 +1120,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             self.logger.debug("Removing tracking outliers")
             self.remove_tracking_outliers_from_plot()
+        self.draw_subplot()
 
     def add_tracking_outliers_to_plot(self):
         # TODO: will improperly jump to selected tracklets when added; should be able to loop over self.tracklet_lines
@@ -1467,11 +1468,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.reference_ax.autoscale(axis='both')
         self.static_ax.relim()
         self.reference_ax.relim()
+        self.draw_subplot()
+        y_min, y_max = self.y_min_max_on_plot
+        self.logger.debug(f"Autoscaled axis: {np.nanmin(y_min)} and {np.nanmax(y_max)}")
+
+    def draw_subplot(self):
         # self.static_ax.update_params()
         self.mpl_widget.draw()
         # self.mpl_widget.canvas.draw()
-        y_min, y_max = self.y_min_max_on_plot
-        self.logger.debug(f"Autoscaled axis: {np.nanmin(y_min)} and {np.nanmax(y_max)}")
 
     def connect_time_line_callback(self):
         viewer = self.viewer
