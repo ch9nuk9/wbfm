@@ -1280,10 +1280,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if traces_or_tracklets == 'tracklets':
             title = f"Tracklets for {neuron_name}"
         else:
-            if ref_name == "None":
-                title = f"{red_green_or_ratio} trace for {integration_or_not}"
-            else:
-                title = f"{red_green_or_ratio} trace for {integration_or_not} mode with reference {ref_name}"
+            title = f"{red_green_or_ratio} trace for {integration_or_not} mode for {neuron_name}"
+            if ref_name != "None":
+                title = f"{title} with reference {ref_name}"
 
         return title
 
