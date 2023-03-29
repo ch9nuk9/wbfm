@@ -478,9 +478,9 @@ class TrackletAndSegmentationAnnotator:
             self.df_tracklet_obj.setup_interactivity()
 
         match_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
-        self.output_match_fname = get_sequential_filename(match_fname)
+        self.output_match_fname = get_sequential_filename(match_fname, verbose=self.verbose)
         df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname')
-        self.output_df_fname = get_sequential_filename(df_fname)
+        self.output_df_fname = get_sequential_filename(df_fname, verbose=self.verbose)
 
         # Read metadata (if found) and save as same name with suffix
         splits_names_fname = Path(df_fname).parent.joinpath("split_names.pickle")

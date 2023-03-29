@@ -263,7 +263,8 @@ class ProjectData:
 
         This can become desynced if the user modifies segmentation
         """
-        self.logger.info("First time loading the raw frames, may take a while...")
+        if self.verbose >= 1:
+            self.logger.info("First time loading the raw frames, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'frame_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
@@ -279,7 +280,8 @@ class ProjectData:
 
         This can become desynced if the user modifies segmentation
         """
-        self.logger.info("First time loading the raw matches, may take a while...")
+        if self.verbose >= 1:
+            self.logger.info("First time loading the raw matches, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'match_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
@@ -295,7 +297,8 @@ class ProjectData:
 
         Use not suggested
         """
-        self.logger.info("First time loading the raw cluster dataframe, may take a while...")
+        if self.verbose >= 1:
+            self.logger.info("First time loading the raw cluster dataframe, may take a while...")
         train_cfg = self.project_config.get_training_config()
         fname = os.path.join('raw', 'clust_df_dat.pickle')
         fname = train_cfg.resolve_relative_path(fname, prepend_subfolder=True)
@@ -306,7 +309,9 @@ class ProjectData:
     @cached_property
     def df_all_tracklets(self) -> pd.DataFrame:
         """Sparse Dataframe of all tracklets"""
-        self.logger.info("First time loading all the tracklets, may take a while...")
+
+        if self.verbose >= 1:
+            self.logger.info("First time loading all the tracklets, may take a while...")
         train_cfg = self.project_config.get_training_config()
         track_cfg = self.project_config.get_tracking_config()
 
@@ -358,7 +363,8 @@ class ProjectData:
             training_cfg=training_cfg,
             z_to_xy_ratio=self.physical_unit_conversion.z_to_xy_ratio,
             buffer_masks=zarr.zeros_like(self.raw_segmentation),
-            logger=self.logger
+            logger=self.logger,
+            verbose=self.verbose,
         )
 
         obj.initialize_gt_model_mismatches(self)
@@ -367,7 +373,6 @@ class ProjectData:
     @cached_property
     def tracklets_and_neurons_class(self) -> DetectedTrackletsAndNeurons:
         """Class that connects tracklets with raw neuron segmentation"""
-        self.logger.info("Loading tracklets")
         _ = self.df_all_tracklets  # Make sure it is loaded
         return DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata,
                                            dataframe_output_filename=self.df_all_tracklets_fname,
@@ -385,7 +390,8 @@ class ProjectData:
     @cached_property
     def tracked_worm_class(self):
         """Class that connects tracklets and final neurons using global tracking"""
-        self.logger.warning("Loading tracked worm object for the first time, may take a while")
+        if self.verbose >= 1:
+            self.logger.warning(" First time loading  tracked worm object, may take a while")
         tracking_cfg = self.project_config.get_tracking_config()
         fname = tracking_cfg.resolve_relative_path('raw/worm_obj.pickle', prepend_subfolder=True)
         return pickle_load_binary(fname)

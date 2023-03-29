@@ -1,7 +1,7 @@
 import unittest
 import random
 import hypothesis.strategies as st
-from hypothesis import Verbosity, note
+from hypothesis import Verbosity, note, event
 from hypothesis.stateful import Bundle, RuleBasedStateMachine, rule, initialize, invariant
 
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -186,6 +186,7 @@ class AnnotatorTests(RuleBasedStateMachine):
         tracklets_dict, _, _ = annotator.get_tracklets_for_neuron(neuron_name)
         # If there are no tracklets, skip this test
         if len(tracklets_dict) == 0:
+            event(f"Skipping test_remove_and_readd_tracklets_to_neuron because there are no tracklets for {neuron_name}")
             return
 
         # For each tracklet, remove it and then re-add it
@@ -226,6 +227,7 @@ class AnnotatorTests(RuleBasedStateMachine):
                 break
         else:
             # If no tracklets with no conflicts were found, skip this test
+            event("No tracklets with no conflicts were found, skipping test_add_tracklets")
             return
 
         # Add the tracklet, without removing afterwards
@@ -265,7 +267,7 @@ class AnnotatorTests(RuleBasedStateMachine):
     def nothing_selected(self):
         # Check that nothing is selected
         annotator = self.project_data.tracklet_annotator
-        note(f"Current state of the annotator: {annotator.current_status_string}")
+        note(f"Current state of the annotator: {annotator.current_status_string()}")
         assert annotator.current_neuron is None
         assert annotator.current_tracklet_name is None
         assert annotator.current_tracklet is None
