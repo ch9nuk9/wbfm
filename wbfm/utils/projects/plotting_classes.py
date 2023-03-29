@@ -700,11 +700,14 @@ class TrackletAndSegmentationAnnotator:
 
         return state_changed
 
-    def remove_tracklet_from_global2tracklet_dict(self, tracklet_name, neuron_name):
+    def remove_tracklet_from_global2tracklet_dict(self, tracklet_name, neuron_name) -> bool:
         if tracklet_name in self._combined_global2tracklet_dict[neuron_name]:
             self._combined_global2tracklet_dict[neuron_name].remove(tracklet_name)
+            state_changed = True
         else:
             logging.warning("Tried to remove tracklet, but is not added")
+            state_changed = False
+        return state_changed
 
     def add_tracklet_to_global2tracklet_dict(self, tracklet_name, neuron_name) -> bool:
         if tracklet_name not in self._combined_global2tracklet_dict[neuron_name]:
@@ -715,22 +718,39 @@ class TrackletAndSegmentationAnnotator:
             state_changed = False
         return state_changed
 
-    def remove_tracklet_from_neuron(self, tracklet_name, neuron_name=None):
+    def remove_tracklet_from_neuron(self, tracklet_name, neuron_name=None) -> bool:
+        """
+        Note that state_changed is true either if the tracklet was removed from the neuron, or if it was
+        previously_added and is now removed from the to-add list
+
+        Parameters
+        ----------
+        tracklet_name
+        neuron_name
+
+        Returns
+        -------
+
+        """
         if neuron_name is None:
             neuron_name = self.current_neuron
         previously_added = self.manual_global2tracklet_names[neuron_name]
         previously_removed = self.manual_global2tracklet_removals[neuron_name]
         if tracklet_name in previously_removed:
             self.logger.debug(f"Tracklet {tracklet_name} already removed from {neuron_name}; nothing removed")
+            state_changed = False
         else:
             self.manual_global2tracklet_removals[neuron_name].append(tracklet_name)
-            self.remove_tracklet_from_global2tracklet_dict(tracklet_name, neuron_name)
+            state_changed = self.remove_tracklet_from_global2tracklet_dict(tracklet_name, neuron_name)
             self.logger.info(f"Successfully added {tracklet_name} to removal list of {neuron_name}")
 
         if tracklet_name in previously_added:
             self.logger.debug(f"{tracklet_name} was in the manually to-add list, but was removed")
             self.manual_global2tracklet_names[neuron_name].remove(tracklet_name)
             self.remove_tracklet_from_global2tracklet_dict(tracklet_name, neuron_name)
+            state_changed = True
+
+        return state_changed
 
     def remove_tracklet_from_all_matches(self, tracklet_name=None):
         if tracklet_name is None:
@@ -795,6 +815,19 @@ class TrackletAndSegmentationAnnotator:
             self.logger.debug(
                 f"Previous manually removed tracklets: {self.manual_global2tracklet_removals[neuron_name]}")
             self.logger.debug(f"Currently selected (not yet added) tracklet: {self.current_tracklet_name}")
+
+    def current_status_string(self):
+        if self.current_neuron is None and self.current_tracklet_name is None:
+            return "No neuron or tracklet selected"
+        elif self.current_neuron is None:
+            return f"Current tracklet: {self.current_tracklet_name}"
+        else:
+            # Works for tracklet selected or not
+            these_names = self.global2tracklet[self.current_neuron]
+            return f"Initial tracklets for {self.current_neuron}: {these_names}\n" \
+                   f"Previous manually added tracklets: {self.manual_global2tracklet_names[self.current_neuron]}\n" \
+                   f"Previous manually removed tracklets: {self.manual_global2tracklet_removals[self.current_neuron]}\n" \
+                   f"Currently selected (not yet added) tracklet: {self.current_tracklet_name}"
 
     def save_manual_matches_to_disk_dispatch(self):
         # Saves the new dataframe (possibly with split tracklets) and the new matches
