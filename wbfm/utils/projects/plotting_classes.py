@@ -5,7 +5,7 @@ import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Union, Dict, Tuple
+from typing import List, Union, Dict, Tuple, Optional
 from copy import deepcopy
 import napari
 import numpy as np
@@ -574,7 +574,7 @@ class TrackletAndSegmentationAnnotator:
 
         return these_tracklets, current_tracklet, current_name
 
-    def get_neuron_name_of_conflicting_match(self, tracklet_name=None):
+    def get_neuron_name_of_conflicting_match(self, tracklet_name=None) -> Optional[str]:
         # The tracklet shouldn't be in the manually annotated match, because it can't be added if there are conflicts
         if tracklet_name is None:
             tracklet_name = self.current_tracklet_name
@@ -681,20 +681,25 @@ class TrackletAndSegmentationAnnotator:
             for name, times in name_dict.items():
                 self.logger.info(f"{name} at times {times}")
 
-    def add_tracklet_to_neuron(self, tracklet_name, neuron_name):
+    def add_tracklet_to_neuron(self, tracklet_name, neuron_name) -> bool:
         previously_added = self.manual_global2tracklet_names[neuron_name]
         previously_removed = self.manual_global2tracklet_removals[neuron_name]
+        state_changed = False
         if tracklet_name in previously_added:
             self.logger.debug(f"Tracklet {tracklet_name} already in {neuron_name}; nothing added")
         else:
             self.manual_global2tracklet_names[neuron_name].append(tracklet_name)
             self.add_tracklet_to_global2tracklet_dict(tracklet_name, neuron_name)
             self.logger.info(f"Successfully added tracklet {tracklet_name} to {neuron_name}")
+            state_changed = True
 
         if tracklet_name in previously_removed:
             self.logger.debug(f"Tracklet was in the to-remove list, but was removed")
             self.manual_global2tracklet_removals[neuron_name].remove(tracklet_name)
             self.add_tracklet_to_global2tracklet_dict(tracklet_name, neuron_name)
+            state_changed = True
+
+        return state_changed
 
     def remove_tracklet_from_global2tracklet_dict(self, tracklet_name, neuron_name):
         if tracklet_name in self._combined_global2tracklet_dict[neuron_name]:
@@ -782,8 +787,8 @@ class TrackletAndSegmentationAnnotator:
         if neuron_name is None:
             print("No neuron selected")
         else:
-            these_names = self.global2tracklet[self.current_neuron]
-            self.logger.debug(f"Initial tracklets for {self.current_neuron}: {these_names}")
+            these_names = self.global2tracklet[neuron_name]
+            self.logger.debug(f"Initial tracklets for {neuron_name}: {these_names}")
             self.logger.debug(f"Previous manually added tracklets: {self.manual_global2tracklet_names[neuron_name]}")
             self.logger.debug(
                 f"Previous manually removed tracklets: {self.manual_global2tracklet_removals[neuron_name]}")
