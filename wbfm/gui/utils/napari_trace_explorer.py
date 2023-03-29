@@ -1115,8 +1115,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         """
         if self.changeOutlierOverlayCheckBox.isChecked():
+            self.logger.debug("Adding tracking outliers")
             self.add_tracking_outliers_to_plot()
         else:
+            self.logger.debug("Removing tracking outliers")
             self.remove_tracking_outliers_from_plot()
 
     def add_tracking_outliers_to_plot(self):
@@ -1136,7 +1138,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         y = y[outlier_ind[:len(y)]]
 
         self.outlier_line = self.static_ax.plot(x, y, 'o', color='tab:red')[0]
-        # print(f"Successfully added {len(x)} tracking outliers to plot")
+        self.logger.debug(f"Successfully added {len(x)} tracking outliers to plot")
+        self.logger.debug(f"Max: {np.nanmax(y)}, min: {np.nanmin(y)}")
         # print(x)
         # print(y)
 
@@ -1144,6 +1147,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.outlier_line is not None:
             self.outlier_line.remove()
             del self.outlier_line
+            self.outlier_line = None
 
     def on_subplot_click(self, event):
         t = event.xdata
@@ -1467,7 +1471,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.mpl_widget.draw()
         # self.mpl_widget.canvas.draw()
         y_min, y_max = self.y_min_max_on_plot
-        self.logger.debug(f"Autoscaled axis: {np.min(y_min)} and {np.max(y_max)}")
+        self.logger.debug(f"Autoscaled axis: {np.nanmin(y_min)} and {np.nanmax(y_max)}")
 
     def connect_time_line_callback(self):
         viewer = self.viewer
