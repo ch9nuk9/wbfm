@@ -59,8 +59,8 @@ def filter_rolling_mean(y: pd.Series, window: int = 9) -> pd.Series:
     return y.rolling(window, min_periods=1, center=True).mean()
 
 
-def filter_gaussian_moving_average(y: pd.Series, std=1) -> pd.Series:
-    return y.rolling(center=True, window=100, win_type='gaussian', min_periods=1).mean(std=std)
+def filter_gaussian_moving_average(y: pd.Series, std=1, window=100) -> pd.Series:
+    return y.rolling(center=True, window=window, win_type='gaussian', min_periods=1).mean(std=std)
 
 
 def filter_exponential_moving_average(y: pd.Series, span=17) -> pd.Series:
@@ -211,3 +211,34 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
         raise ValueError(f"Unknown calculation mode {calculation_mode}")
 
     return calc_single_trace
+
+
+def fill_nan_in_dataframe(df):
+    df = filter_rolling_mean(df.copy(), window=3)
+    df = df.copy().interpolate()
+    df.fillna(df.mean(), inplace=True)
+    return df
+
+
+def fast_slow_decomposition(y, fast_window=0, slow_window=9):
+    """
+    Decompose the trace into fast and slow components
+
+    Parameters
+    ----------
+    y
+    fast_window: std of gaussian filter. If 0, then no filtering on the fast component
+    slow_window
+
+    Returns
+    -------
+
+    """
+    assert fast_window < slow_window, "Fast window must be smaller than slow window"
+    if fast_window > 0:
+        y_fast = filter_gaussian_moving_average(y, std=fast_window)
+    else:
+        y_fast = y
+    y_slow = filter_gaussian_moving_average(y, std=slow_window)
+    y_fast = y_fast - y_slow
+    return y_fast, y_slow

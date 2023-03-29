@@ -83,7 +83,8 @@ class NapariLayerInitializer:
 
         list_of_matches = getattr(match_object, which_matches)
         list_of_matches = [m for m in list_of_matches if -1 not in m]
-        list_of_matches = [m for m in list_of_matches if m[2] > min_confidence]
+        if min_confidence > 0.0:
+            list_of_matches = [m for m in list_of_matches if m[2] > min_confidence]
 
         all_tracks_list = napari_tracks_from_match_list(list_of_matches, n0_zxy, n1_zxy)
 
@@ -130,7 +131,7 @@ class NapariLayerInitializer:
         if viewer is None:
             viewer = napari.Viewer(ndisplay=3)
 
-        basic_valid_layers = ['Red data', 'Green data', 'Raw segmentation', 'Colored segmentation',
+        basic_valid_layers = ['Red data', 'Green data', 'Raw segmentation',
                               'Neuron IDs', 'Intermediate global IDs']
         if which_layers == 'all':
             which_layers = basic_valid_layers
@@ -183,7 +184,7 @@ class NapariLayerInitializer:
             # Not added by default!
             df = project_data.final_tracks
             if gt_neuron_name_dict is None:
-                neurons_that_are_finished = project_data.finished_neuron_names
+                neurons_that_are_finished = project_data.finished_neuron_names()
                 gt_neuron_name_dict = {name: f"GT_{name.split('_')[1]}" for name in neurons_that_are_finished}
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
                                                           neuron_name_dict=gt_neuron_name_dict)

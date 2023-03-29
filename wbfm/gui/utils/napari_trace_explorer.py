@@ -6,6 +6,7 @@ import signal
 import warnings
 import logging
 import sys
+from functools import partial
 from typing import List, Tuple
 
 import napari
@@ -19,7 +20,7 @@ from PyQt5.QtWidgets import QApplication, QProgressDialog
 from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
-    build_tracks_from_dataframe, zoom_using_viewer, add_fps_printer
+    build_tracks_from_dataframe, zoom_using_viewer, add_fps_printer, on_close
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 cgitb.enable(format='text')
@@ -36,11 +37,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     current_time_point_before_callback = 0
     dict_of_saved_times = None
 
+    # For optional napari layers
+    use_track_of_point: bool = False
+
     logger: logging.Logger = None
 
     _disable_callbacks = False
 
-    def __init__(self, project_data: ProjectData, app: QApplication):
+    def __init__(self, project_data: ProjectData, app: QApplication, **kwargs):
         check_all_needed_data_for_step(project_data.project_config,
                                        step_index=5, raise_error=True, training_data_required=False)
         project_data.check_data_desyncing(raise_error=True)
@@ -69,6 +73,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Helper fields for subplots
         self.tracklet_lines = {}
         self.time_line = None
+        self.outlier_line = None
         self.main_subplot_xlim = []
         self.current_subplot_xlim = None
         self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
@@ -85,6 +90,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.list_of_gt_correction_widgets = []
 
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
     def setupUi(self, viewer: napari.Viewer):
 
         self.logger.debug("Starting main UI setup")
@@ -96,11 +104,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # BOX 1: Change neurons (dropdown)
         self.groupBox1NeuronSelection = QtWidgets.QGroupBox("Selection", self.verticalLayoutWidget)
         self.vbox1 = QtWidgets.QVBoxLayout(self.groupBox1NeuronSelection)
-        self.changeNeuronsDropdown = QtWidgets.QComboBox()
-        self.changeNeuronsDropdown.addItems(neuron_names)
-        self.changeNeuronsDropdown.setItemText(0, self.current_neuron_name)
-        self.changeNeuronsDropdown.currentIndexChanged.connect(self.change_neurons)
-        self.vbox1.addWidget(self.changeNeuronsDropdown)
+        self.changeNeuronDropdown = QtWidgets.QComboBox()
+        self.changeNeuronDropdown.addItems(neuron_names)
+        self.changeNeuronDropdown.setItemText(0, self.current_neuron_name)
+        self.changeNeuronDropdown.currentIndexChanged.connect(self.change_neurons)
+        self.vbox1.addWidget(self.changeNeuronDropdown)
 
         self.changeChannelDropdown = QtWidgets.QComboBox()
         self.changeChannelDropdown.addItems(['green', 'red', 'ratio', 'linear_model', 'df_over_f_20', 'dr_over_r_20'])
@@ -136,6 +144,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.initialize_trace_or_tracklet_subplot()
         self.update_interactivity()
 
+        self.viewer.window._qt_window.closeEvent = partial(
+            on_close,
+            self.viewer.window._qt_window,
+            widget=self,
+        )
+
         self.logger.debug("Finished main UI setup")
 
     def _setup_trace_filtering_buttons(self):
@@ -164,6 +178,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceOutlierCheckBox.setChecked(True)
         self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Remove outliers?", self.changeTraceOutlierCheckBox)
+        # Display ppca outlier candidates (checkbox)
+        self.changeOutlierOverlayCheckBox = QtWidgets.QCheckBox()
+        self.changeOutlierOverlayCheckBox.setChecked(False)
+        self.changeOutlierOverlayCheckBox.stateChanged.connect(self.update_trace_or_tracklet_subplot)
+        self.formlayout3.addRow("Display tracking outliers?", self.changeOutlierOverlayCheckBox)
         # self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox()
         # self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         # self.formlayout3.addRow("Remove outliers (tracking confidence)?", self.changeTrackingOutlierCheckBox)
@@ -454,7 +473,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
         self.viewer.layers['final_track'].data = point_layer_data
-        self.viewer.layers['track_of_point'].data = track_layer_data
+        if self.use_track_of_point:
+            self.viewer.layers['track_of_point'].data = track_layer_data
 
         self.zoom_using_current_neuron_or_tracklet()
 
@@ -462,7 +482,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
 
     def update_neuron_in_tracklet_annotator(self):
-        self.dat.tracklet_annotator.current_neuron = self.changeNeuronsDropdown.currentText()
+        self.dat.tracklet_annotator.current_neuron = self.changeNeuronDropdown.currentText()
 
     # def update_segmentation_options(self):
     #     self.dat.tracklet_annotator.segmentation_options = dict(
@@ -508,10 +528,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         """Uses segmentation as modified previously by candidate mask layer AND tracklet dataframe"""
         progress = QProgressDialog("Saving to disk, you may quit when finished", None, 0, 3, self)
         progress.setWindowModality(Qt.WindowModal)
-        progress.setValue(0)
+        # For some reason the progress bar doesn't show up until after the first segmentation_metadata call,
+        # ... even if I add sleep and etc.
+        import time
         progress.forceShow()
+        progress.setValue(0)
         self.dat.segmentation_metadata.overwrite_original_detection_file()
         progress.setValue(1)
+        # Sleep to make sure that the progress bar is updated
+        time.sleep(0.1)
         self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch()
         progress.setValue(2)
         self.dat.modify_segmentation_on_disk_using_buffer()
@@ -551,9 +576,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         point_layer_data, track_layer_data = self.get_track_data()
 
         points_opt = dict(face_color='blue', size=4)
+        # Note: the 'final_track' layer is used for visualization as well, e.g. zooming to a neuron
         self.viewer.add_points(point_layer_data, name="final_track", n_dimensional=True, symbol='cross', **points_opt,
                                visible=False)
-        self.viewer.add_tracks(track_layer_data, name="track_of_point", visible=False)
+        if self.use_track_of_point:
+            self.viewer.add_tracks(track_layer_data, name="track_of_point", visible=False)
         self.zoom_using_current_neuron_or_tracklet()
 
         layer_to_add_callback = self.seg_layer
@@ -788,7 +815,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.dat.tracklet_annotator.gt_mismatches is None:
             self.logger.warning("No ground truth found; button not functional")
             return
-        neuron_name = self.changeNeuronsDropdown.currentText()
+        neuron_name = self.changeNeuronDropdown.currentText()
         remaining_mismatches = self.dat.tracklet_annotator.gt_mismatches[neuron_name]
         if len(remaining_mismatches) == 0:
             print("This neuron has no remaining conflicts")
@@ -800,7 +827,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.logger.info(f"Jumped to conflict at t={t} on {neuron_name} and {tracklet_name} "
                          f"with incorrect match: {model_mismatch} and correct match: {gt_mismatch}")
         change_viewer_time_point(self.viewer, t_target=t)
-        self.changeNeuronsDropdown.setCurrentText(neuron_name)
+        self.changeNeuronDropdown.setCurrentText(neuron_name)
         self.zoom_using_current_neuron_or_tracklet()
         # Also display the incorrect match
         # incorrect_match = self.dat.napari_tracks_layer_of_single_neuron_match(neuron_name, t)
@@ -826,7 +853,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # if self.dat.tracklet_annotator.gt_mismatches is None:
         #     self.logger.warning("No ground truth found; button not functional")
         #     return
-        neuron_name = self.changeNeuronsDropdown.currentText()
+        neuron_name = self.changeNeuronDropdown.currentText()
         mismatches = self.dat.tracklet_annotator.gt_mismatches
         if len(mismatches[neuron_name]) == 0:
             self.logger.info(f"No more conflicts on neuron {neuron_name}")
@@ -992,7 +1019,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     @cached_property
     def y_min_max_on_plot(self):
-        # Return the min and max, because there could be overlapping lines in tracklet mode
+        """
+        Return the min and max, because there could be overlapping lines in tracklet mode
+
+        If there are no lines, return empty list
+
+        In trace mode, returns the single line self.y_trace_mode twice
+
+        Returns
+        -------
+
+        """
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             y_on_plot = [line.get_ydata() for line in self.static_ax.lines]
             if len(y_on_plot) == 0 or (len(y_on_plot) == 1 and len(y_on_plot[0]) == 2):
@@ -1005,7 +1042,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
                 y_on_plot_min = np.nanmin(np.vstack(y_on_plot), axis=0)
-                y_on_plot_max = np.nanmin(np.vstack(y_on_plot), axis=0)
+                y_on_plot_max = np.nanmax(np.vstack(y_on_plot), axis=0)
         else:
             y_on_plot_min = self.y_trace_mode
             y_on_plot_max = self.y_trace_mode
@@ -1032,9 +1069,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.time_line is not None:
             self.time_line.remove()
             del self.time_line
-        # self.time_line = self.static_ax.plot(*self.calculate_time_line())[0]
         self.time_line = self.static_ax.axvline(**self.calculate_time_line_options())
 
+        # Try to preserve the xlimits
         self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
         self.color_using_behavior()
         if self.current_subplot_xlim is not None:
@@ -1044,12 +1081,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.static_ax.set_xlim(self.main_subplot_xlim)
             # print("Resetting xlimits")
         self.subplot_is_initialized = True
+        # Add additional annotations
         self.color_using_behavior()
 
     def initialize_trace_subplot(self):
         self.update_stored_trace_time_series()
         self.trace_line = self.static_ax.plot(self.tspan, self.y_trace_mode)[0]
+        self.add_tracking_outliers_to_plot()
         self.reference_line = self.reference_ax.plot([], color='tab:orange')[0]  # Initialize an empty line
+        self.invalidate_y_min_max_on_plot()
 
     def initialize_tracklet_subplot(self):
         # Designed for traces, but reuse
@@ -1062,6 +1102,33 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             new_line = y[field_to_plot].plot(ax=self.static_ax, **marker_opt).lines[0]
             self.add_tracklet_to_cache(new_line, name)
         self.update_neuron_in_tracklet_annotator()
+        self.invalidate_y_min_max_on_plot()
+
+    def add_tracking_outliers_to_plot(self):
+        # TODO: doesn't update the first time tracklet mode is selected
+        # TODO: will improperly jump to selected tracklets when added; should be able to loop over self.tracklet_lines
+        if not self.changeOutlierOverlayCheckBox.isChecked():
+            return
+
+        if self.outlier_line is not None:
+            self.outlier_line.remove()
+            del self.outlier_line
+        # Note that this function should be cached
+        outlier_matrix = self.dat.calc_indices_to_remove_using_ppca()
+
+        # This is a matrix, so I need the index of this neuron name
+        neuron_name = self.changeNeuronDropdown.currentText()
+        neuron_index = self.dat.neuron_names.index(neuron_name)
+        outlier_ind = outlier_matrix[:, neuron_index]
+        x = np.array(self.tspan)[outlier_ind]
+        # Take the upper line, if there are multiple overlapping lines... but there shouldn't be
+        y = self.y_min_max_on_plot[1]
+        y = y[outlier_ind[:len(y)]]
+
+        self.outlier_line = self.static_ax.plot(x, y, 'o', color='tab:red')[0]
+        # print(f"Successfully added {len(x)} tracking outliers to plot")
+        # print(x)
+        # print(y)
 
     def on_subplot_click(self, event):
         t = event.xdata
@@ -1090,7 +1157,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Not just updating the data because we fully cleared the axes
         self.invalidate_y_min_max_on_plot()  # Force invalidation, so it is recalculated
         self.init_subplot_post_clear()
-        self.finish_subplot_update_and_draw(current_mode)
+        self.finish_subplot_update_and_draw()
 
     def initialize_trace_or_tracklet_subplot(self):
         if not self.subplot_is_initialized:
@@ -1108,9 +1175,25 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.init_subplot_post_clear()
             # Finally, add the traces to napari
             self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
+        # Additional annotations
+        self.add_tracking_outliers_to_plot()
+        self.finish_subplot_update_and_draw()
 
     def update_trace_or_tracklet_subplot(self, dropdown_ind=None,
                                          preserve_xlims=True, which_tracklets_to_update=None):
+        """
+        Update the trace or tracklet subplot, depending on the current mode
+
+        Parameters
+        ----------
+        dropdown_ind
+        preserve_xlims
+        which_tracklets_to_update
+
+        Returns
+        -------
+
+        """
         if self._disable_callbacks:
             return
         if self.changeTraceCalculationDropdown.currentText() == "":
@@ -1125,17 +1208,26 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             raise ValueError
 
     def update_trace_subplot(self):
+        """
+        Update the trace subplot, assuming that the mode is currently set to traces
+
+        Returns
+        -------
+
+        """
         if not self.changeTraceTrackletDropdown.currentText() == 'traces':
             print("Currently on tracklet setting, so this option didn't do anything")
             return
         self.update_stored_trace_time_series()
         self.trace_line.set_ydata(self.y_trace_mode)
-        title = f"{self.changeChannelDropdown.currentText()} trace for {self.changeTraceCalculationDropdown.currentText()} mode"
         self.update_reference_trace(force_draw=False)
 
         self.invalidate_y_min_max_on_plot()
+        # Add additional annotations that change based on the y values
+        # print("Adding tracking outliers")
+        self.add_tracking_outliers_to_plot()
         self.init_subplot_post_clear()
-        self.finish_subplot_update_and_draw(title, preserve_xlims=True)
+        self.finish_subplot_update_and_draw(preserve_xlims=True)
 
     def update_reference_trace(self, force_draw=True):
         if not self.changeTraceTrackletDropdown.currentText() == 'traces':
@@ -1146,27 +1238,51 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # Reset line
             # self.static_ax.lines.remove(self.reference_line)
             self.reference_line.set_data([], [])
-            title = f"{self.changeChannelDropdown.currentText()} trace for " \
-                    f"{self.changeTraceCalculationDropdown.currentText()}"
 
             if force_draw:
                 # For some reason, just the second call doesn't properly delete the line
                 self.update_trace_subplot()
-                self.finish_subplot_update_and_draw(title, preserve_xlims=True)
+                self.finish_subplot_update_and_draw(preserve_xlims=True)
         else:
             # Plot other trace
             t, y = self.calculate_trace(neuron_name=ref_name)
             # print(f"Setting data: {y}")
             self.reference_line.set_data(t, y)
             # self.reference_line.set_ydata(y)
-            title = f"{self.changeChannelDropdown.currentText()} trace for " \
-                    f"{self.changeTraceCalculationDropdown.currentText()} mode with reference {ref_name}"
-
             if force_draw:
-                self.finish_subplot_update_and_draw(title, preserve_xlims=True)
+                self.finish_subplot_update_and_draw(preserve_xlims=True)
+
+    def get_subplot_title(self):
+        ref_name = self.changeReferenceTrace.currentText()
+        red_green_or_ratio = self.changeChannelDropdown.currentText()
+        integration_or_not = self.changeTraceCalculationDropdown.currentText()
+        traces_or_tracklets = self.changeTraceTrackletDropdown.currentText()
+        neuron_name = self.changeNeuronDropdown.currentText()
+        if traces_or_tracklets == 'tracklets':
+            title = f"Tracklets for {neuron_name}"
+        else:
+            if ref_name == "None":
+                title = f"{red_green_or_ratio} trace for {integration_or_not}"
+            else:
+                title = f"{red_green_or_ratio} trace for {integration_or_not} mode with reference {ref_name}"
+
+        return title
 
     def update_tracklet_subplot(self, preserve_xlims=True, which_tracklets_to_update=None):
-        # For now, actually reinitializes the axes
+        """
+        Update the tracklet subplot, depending on the current mode
+
+        Currently, all calls are made with which_tracklets_to_update=None, forcing a full update of the subplot
+
+        Parameters
+        ----------
+        preserve_xlims
+        which_tracklets_to_update
+
+        Returns
+        -------
+
+        """
         if not self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             print("Currently on traces setting, so this option didn't do anything")
             return
@@ -1182,7 +1298,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         field_to_plot = self.changeTraceCalculationDropdown.currentText()
         if which_tracklets_to_update is None:
-            # Replot ALL tracklets
+            # Replot ALL tracklets; takes time
             self.static_ax.clear()
             self.tracklet_lines = {}  # Remove references to old lines
             for name, y in tqdm(self.y_tracklets_dict.items(), leave=False):
@@ -1194,6 +1310,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 line_name = f"{self.current_tracklet_name}_current"
                 self.add_tracklet_to_cache(new_line, line_name)
             # Not a clear in the other branch
+            print("Adding tracking outliers")
             self.init_subplot_post_clear()
         else:
             print(f"Updates: {which_tracklets_to_update}")
@@ -1227,14 +1344,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     new_line = y[field_to_plot].plot(ax=self.static_ax, **extra_opt, **marker_opt).lines[-1]
                     self.add_tracklet_to_cache(new_line, tracklet_name)
         self.invalidate_y_min_max_on_plot()
+        self.add_tracking_outliers_to_plot()
 
         # self.update_stored_time_series(field_to_plot)
-        title = f"Tracklets for {self.changeNeuronsDropdown.currentText()}"
         # print(f"Final tracklets on plot: {self.tracklet_lines.keys()}")
         # print(self.static_ax.lines)
 
-        self.finish_subplot_update_and_draw(title, preserve_xlims)
-        pass
+        self.finish_subplot_update_and_draw(preserve_xlims)
 
     def add_tracklet_to_cache(self, new_line, tracklet_name):
         self.tracklet_lines[tracklet_name] = new_line
@@ -1319,7 +1435,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.zoom_using_current_neuron_or_tracklet()
         self.set_segmentation_layer_do_not_show_selected_label()
 
-    def finish_subplot_update_and_draw(self, title, preserve_xlims=True):
+    def finish_subplot_update_and_draw(self, title=None, preserve_xlims=True):
+        if title is None:
+            title = self.get_subplot_title()
+
         self.update_time_line()
         self.static_ax.set_title(title)
         if preserve_xlims:
@@ -1421,7 +1540,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.current_tracklet_name = current_name
 
     def get_track_data(self):
-        self.current_neuron_name = self.changeNeuronsDropdown.currentText()
+        self.current_neuron_name = self.changeNeuronDropdown.currentText()
         return self.build_tracks_from_name()
 
     def color_using_behavior(self):
@@ -1506,7 +1625,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat.add_layers_to_viewer(self.viewer, which_layers=which_layers, heatmap_kwargs=heatmap_kwargs)
 
 
-def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=None, DEBUG=False):
+def napari_trace_explorer_from_config(project_path: str, app=None, force_tracklets_to_be_sparse=True,
+                                      DEBUG=False, **kwargs):
     # A parent QT application must be initialized first
     os.environ["NAPARI_ASYNC"] = "1"
     # os.environ["NAPARI_PERFMON"] = "1"
@@ -1518,7 +1638,8 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
         started_new_app = False
 
     # Build object that has all the data
-    initialization_kwargs = dict(use_custom_padded_dataframe=False)
+    initialization_kwargs = dict(use_custom_padded_dataframe=False,
+                                 force_tracklets_to_be_sparse=force_tracklets_to_be_sparse)
     project_data = ProjectData.load_final_project_data_from_config(project_path,
                                                                    to_load_tracklets=True,
                                                                    # to_load_interactivity=True,
@@ -1530,7 +1651,7 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
     # If I don't set this to false, need to debug custom dataframe here
     project_data.use_custom_padded_dataframe = False
     project_data.load_interactive_properties()
-    ui, viewer = napari_trace_explorer(project_data, app=app, to_print_fps=to_print_fps)
+    ui, viewer = napari_trace_explorer(project_data, app=app, **kwargs)
 
     # Note: don't use this in jupyter
     napari.run()
@@ -1543,7 +1664,7 @@ def napari_trace_explorer_from_config(project_path: str, to_print_fps=True, app=
 def napari_trace_explorer(project_data: ProjectData,
                           app: QApplication = None,
                           viewer: napari.Viewer = None,
-                          to_print_fps: bool = False):
+                          to_print_fps: bool = False, **kwargs):
     """Current function for building the explorer (1/11/2022)"""
     print("Starting GUI setup")
     # Make sure ctrl-c works
@@ -1551,7 +1672,7 @@ def napari_trace_explorer(project_data: ProjectData,
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     # Build Napari and add data layers
-    ui = NapariTraceExplorer(project_data, app)
+    ui = NapariTraceExplorer(project_data, app, **kwargs)
     if viewer is None:
         ui.logger.info("Creating a new Napari window")
         viewer = napari.Viewer(ndisplay=3)

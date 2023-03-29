@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import sklearn
 from matplotlib import pyplot as plt
+from sklearn.linear_model import LinearRegression
 
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan, get_contiguous_blocks_from_column
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
@@ -52,12 +53,13 @@ def set_big_font(size=22):
     matplotlib.rc('font', **font)
 
 
-def correct_trace_using_linear_model(df_red: pd.DataFrame, df_green: Union[pd.DataFrame, np.ndarray]=None,
+def correct_trace_using_linear_model(df_red: pd.DataFrame,
+                                     df_green: Union[pd.DataFrame, np.ndarray, pd.Series]=None,
                                      neuron_name: Optional[str]=None,
                                      predictor_names: Optional[list]=None,
                                      target_name='intensity_image',
                                      remove_intercept=True,
-                                     model=sklearn.linear_model.LinearRegression(),
+                                     model=LinearRegression(),
                                      bleach_correct=False,
                                      DEBUG=False):
     """
@@ -268,3 +270,18 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name, connect_at
 
     df_gaps = pd.DataFrame(new_columns)
     return df_gaps, new_x_names
+
+
+def plot_with_shading(mean_vals, std_vals, xmax=None, ax=None, **kwargs):
+    if ax is None:
+        fig, ax = plt.subplots(dpi=100)
+    if xmax is None:
+        xmax = len(mean_vals)
+    x = np.arange(xmax)
+    # Main line
+    ax.plot(mean_vals, **kwargs)
+    # Shading
+    upper_shading = mean_vals + std_vals
+    lower_shading = mean_vals - std_vals
+    ax.fill_between(x, upper_shading, lower_shading, alpha=0.25)
+    return ax, lower_shading, upper_shading

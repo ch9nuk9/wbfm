@@ -23,6 +23,7 @@ for f in "$DATA_PATH"/*; do
         if [ "$is_dry_run" ]; then
             echo "DRYRUN: Dispatching on folder: $f with EXPERIMENTER: $EXPERIMENTER"
         else
+            echo "Dispatching on folder: $f with EXPERIMENTER: $EXPERIMENTER"
             python $COMMAND with project_dir="$PROJECT_DIR" experimenter="$EXPERIMENTER" parent_data_folder="$f" &
         fi
     fi

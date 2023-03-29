@@ -16,7 +16,11 @@ def get_twin_axis(ax, axis='x'):
     return None
 
 
-def paired_boxplot_from_dataframes(df_before_and_after: pd.DataFrame, labels: list = None, use_coloring=True):
+def paired_boxplot_from_dataframes(df_before_and_after: pd.DataFrame, labels: list = None,
+                                   num_rows = 2,
+                                   add_median_line=True,
+                                   use_coloring=True,
+                                   fig=None):
     """
     Plots a pair of boxplots with red (green) lines showing points that lost (gained) value between conditions
 
@@ -24,7 +28,7 @@ def paired_boxplot_from_dataframes(df_before_and_after: pd.DataFrame, labels: li
 
     Parameters
     ----------
-    df_before_and_after: 2 x n Dataframe. Index is the x position on the boxplot (i.e. long form data)
+    df_before_and_after: num_rows x n Dataframe. Index is the x position on the boxplot (i.e. long form data)
         Note that more rows can be present, but they will be ignored
         Rows are compared based on position (0th row is before, 1st row is after)
     labels
@@ -36,21 +40,37 @@ def paired_boxplot_from_dataframes(df_before_and_after: pd.DataFrame, labels: li
     box_opt = {}
     if labels is not None:
         box_opt['labels'] = labels
-    plt.figure(dpi=100)
-    x = df_before_and_after.index[:2]
-    y0_vec = df_before_and_after.iloc[0, :]
-    y1_vec = df_before_and_after.iloc[1, :]
-    diff = y1_vec - y0_vec
-    if use_coloring:
-        colors = ['green' if d > 0 else 'red' for d in diff]
-    else:
-        colors = ['black' for _ in diff]
-    bplot = plt.boxplot([y0_vec, y1_vec], positions=[0, 1], zorder=10, patch_artist=True, **box_opt)
-    for y0, y1, col in zip(y0_vec, y1_vec, colors):
-        plt.plot(x, [y0, y1], color=col, alpha=0.1)
-    plt.xticks(ticks=[0, 1], labels=x)
-    for patch in bplot['boxes']:
-        patch.set_facecolor('lightgray')
+    if fig is None:
+        fig = plt.figure(dpi=100)
+    x = df_before_and_after.index[:num_rows]
+    y_vec_list = []
+    for i in range(num_rows):
+        y_vec_list.append(df_before_and_after.iloc[i, :])
+    positions = np.arange(num_rows)
+    bplot = plt.boxplot(y_vec_list, positions=positions, zorder=10, patch_artist=True, **box_opt)
+    plt.xticks(ticks=positions, labels=x)
+
+    # Plot lines between each pair of boxes
+    for i in range(num_rows - 1):
+        y0_vec = y_vec_list[i]
+        y1_vec = y_vec_list[i + 1]
+        this_x = x[i:i+2]
+        diff = y1_vec - y0_vec
+        if use_coloring:
+            colors = ['green' if d > 0 else 'red' for d in diff]
+        else:
+            colors = ['black' for _ in diff]
+        for y0, y1, col in zip(y0_vec, y1_vec, colors):
+            plt.plot(this_x, [y0, y1], color=col, alpha=0.1)
+        for patch in bplot['boxes']:
+            patch.set_facecolor('lightgray')
+
+        if add_median_line:
+            y0_med, y1_med = np.median(y0_vec), np.median(y1_vec)
+            col = 'green' if y1_med > y0_med else 'red'
+            plt.plot([i, i+1], [y0_med, y1_med], color=col, zorder=20, linewidth=2)
+
+    return fig
 
 
 def corrfunc(x, y, ax=None, **kws):

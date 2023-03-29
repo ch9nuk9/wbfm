@@ -6,7 +6,6 @@ import pandas as pd
 import plotly.express as px
 import dask
 import numpy as np
-from numpy import ma
 from sklearn.preprocessing import StandardScaler
 from ppca import PPCA
 from sklearn.metrics.pairwise import nan_euclidean_distances
@@ -56,11 +55,12 @@ class OutlierRemoval:
         self.all_outlier_values = []
 
     @staticmethod
-    def load_from_project(project_data, verbose=0, **kwargs):
+    def load_from_project(project_data, names=None, min_nonnan=None, verbose=0, **kwargs):
 
         coords = ['z', 'x', 'y']
-        names = project_data.well_tracked_neuron_names(min_nonnan=0.9)
-        df_traces = project_data.calc_default_traces(channel_mode='ratio', min_nonnan=0.9)
+        if names is None:
+            names = project_data.well_tracked_neuron_names(min_nonnan=min_nonnan)
+        df_traces = project_data.calc_default_traces(channel_mode='ratio', neuron_names=tuple(names))
 
         all_zxy = project_data.red_traces.loc[:, (names, coords)].copy()
         z_to_xy_ratio = project_data.physical_unit_conversion.z_to_xy_ratio
@@ -106,7 +106,7 @@ class OutlierRemoval:
         self._all_dist = all_dist
         return all_dist, all_dist_flattened
 
-    def calc_outlier_indices_using_ppca(self):
+    def calc_outlier_indices_using_ppca(self) -> np.ndarray:
         ppca_dimension = self.ppca_dimension
         learning_rate = self.learning_rate
         verbose = self.verbose
@@ -115,7 +115,7 @@ class OutlierRemoval:
         all_dist = self._all_dist
         names = self.names
 
-        if verbose > 0:
+        if verbose > 1:
             print("Building low dimensional manifold...")
         scaler = StandardScaler()
         scaler.fit(all_dist_flattened)
@@ -126,7 +126,7 @@ class OutlierRemoval:
             warnings.simplefilter(action='ignore', category=RuntimeWarning)
             ppca.fit(data=dat_normalized, d=ppca_dimension, tol=0.02, verbose=(verbose > 1))
 
-        if verbose > 0:
+        if verbose > 1:
             print("Project data to that manifold...")
         full_time_reconstruction = np.dot(ppca.transform(), ppca.C.T)
         # V = ma.masked_invalid(ppca.C)
@@ -195,7 +195,7 @@ class OutlierRemoval:
         matrix_to_remove = self.all_matrices_to_remove[-1]
         self._all_zxy_3d[matrix_to_remove, :] = np.nan
 
-    def iteratively_remove_outliers_using_ppca(self, max_iter=4, DEBUG=False, DEBUG_name='neuron_017'):
+    def iteratively_remove_outliers_using_ppca(self, max_iter=8, DEBUG=False, DEBUG_name='neuron_017'):
         """
 
         Parameters
@@ -209,7 +209,7 @@ class OutlierRemoval:
 
         """
         # Do not assume it was set up initially; start from all_zxy_3d
-        for i in tqdm(range(max_iter)):
+        for _ in tqdm(range(max_iter), leave=False):
             self.get_pairwise_distances()
             self.calc_outlier_indices_using_ppca()
             self.remove_outliers_from_zxy()
@@ -220,14 +220,17 @@ class OutlierRemoval:
 
             num_removed = np.sum(self.all_matrices_to_remove[-1])
 
-            print(f"Removed {num_removed} outliers "
-                  f"(total={np.sum(self.total_matrix_to_remove)})")
+            if self.verbose > 0:
+                print(f"Removed {num_removed} outliers "
+                      f"(total={np.sum(self.total_matrix_to_remove)})")
 
             if num_removed <= self.num_outliers_tol:
-                print("Reached tolerance")
+                if self.verbose > 0:
+                    print("Reached tolerance")
                 break
         else:
-            print("Outlier removal ended before convergence")
+            if self.verbose > 0:
+                print("Outlier removal ended before convergence (this is normal)")
 
     def plot_before_after(self, neuron_name, z_not_traces=True):
         i_trace = self.names.index(neuron_name)

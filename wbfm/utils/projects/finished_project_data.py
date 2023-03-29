@@ -1,10 +1,8 @@
 import concurrent
 import logging
-import multiprocessing
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
-import dask
 from methodtools import lru_cache
 from pathlib import Path
 from matplotlib import pyplot as plt
@@ -29,7 +27,6 @@ import numpy as np
 import pandas as pd
 import zarr
 from tqdm.auto import tqdm
-import dask.array as da
 
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
     get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns, get_contiguous_blocks_from_column
@@ -38,6 +35,7 @@ from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_project_status import get_project_status
 from wbfm.utils.traces.residuals import calculate_residual_subtract_pca, calculate_residual_subtract_nmf
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.tracklets.postprocess_tracking import OutlierRemoval
 from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
 from sklearn.neighbors import NearestNeighbors, LocalOutlierFactor
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
@@ -49,6 +47,9 @@ from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_bina
 from wbfm.utils.projects.utils_project import safe_cd
 # from functools import cached_property # Only from python>=3.8
 from backports.cached_property import cached_property
+
+from wbfm.utils.utils_cache import cache_to_disk_class
+from wbfm.utils.visualization.filtering_traces import fast_slow_decomposition
 
 
 @dataclass
@@ -161,6 +162,43 @@ class ProjectData:
         return global_tracks
 
     @cached_property
+    def initial_pipeline_tracks(self) -> pd.DataFrame:
+        """
+        Dataframe of tracks produced by the global tracker with tracklets
+
+        Does not include any manual annotations
+
+        Uses the initial filename in the config file, under ['final_3d_postprocessing']['output_df_fname']
+        """
+        tracking_cfg = self.project_config.get_tracking_config()
+
+        # Manual annotations take precedence by default
+        fname = tracking_cfg.config['final_3d_postprocessing']['output_df_fname']
+        fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=False)
+        self.logger.debug(f"Loading initial pipeline tracks from {fname}")
+        self.all_used_fnames.append(fname)
+
+        global_tracks = read_if_exists(fname)
+        return global_tracks
+
+    def single_reference_frame_tracks(self, i_frame: int = 0) -> pd.DataFrame:
+        """
+        Dataframe of tracks produced by the global tracker, but before combining with other reference frames
+
+        Assumes the filename is of the format f"df_tracks_superglue_template-{i_frame}.h5"
+        """
+        tracking_cfg = self.project_config.get_tracking_config()
+
+        # Manual annotations take precedence by default
+        fname = os.path.join('postprocessing', f"df_tracks_superglue_template-{i_frame}.h5")
+        fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        self.logger.debug(f"Loading single reference frame tracks from: {fname}")
+        self.all_used_fnames.append(fname)
+
+        global_tracks = read_if_exists(fname)
+        return global_tracks
+
+    @cached_property
     def final_tracks(self) -> pd.DataFrame:
         """
         Dataframe of tracks produced by combining the global tracker and tracklets
@@ -196,7 +234,7 @@ class ProjectData:
     def get_list_of_finished_neurons(self):
         """Get the finished neurons and dataframe that will be subset-ed"""
         df_gt = self.final_tracks
-        finished_neurons = self.finished_neuron_names
+        finished_neurons = self.finished_neuron_names()
         return df_gt, finished_neurons
 
     @cached_property
@@ -286,17 +324,21 @@ class ProjectData:
         # Loosely check if there has been any manual annotation
         if train_cfg.config['df_3d_tracklets'] != "2-training_data/all_tracklets.pickle":
             self.force_tracklets_to_be_sparse = True
-        else:
-            self.logger.info("Found initial tracklets; not casting as sparse")
+        # else:
+        #     self.logger.info("Found initial tracklets; not casting as sparse")
 
         if self.force_tracklets_to_be_sparse:
+            # This check itself takes so long that it's not worth it
             # if not check_if_fully_sparse(df_all_tracklets):
-            if True:
-                self.logger.warning("Casting tracklets as sparse, may take a minute")
-                # df_all_tracklets = to_sparse_multiindex(df_all_tracklets)
-                df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
-            else:
-                self.logger.info("Found sparse matrix")
+            self.logger.warning("Casting tracklets as sparse, may take a minute")
+            # df_all_tracklets = to_sparse_multiindex(df_all_tracklets)
+            df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
+            # if True:
+            #     self.logger.warning("Casting tracklets as sparse, may take a minute")
+            #     # df_all_tracklets = to_sparse_multiindex(df_all_tracklets)
+            #     df_all_tracklets = df_all_tracklets.astype(pd.SparseDtype("float", np.nan))
+            # else:
+            #     self.logger.info("Found sparse matrix")
         self.logger.debug(f"Finished loading tracklets from {fname}")
 
         return df_all_tracklets
@@ -599,7 +641,7 @@ class ProjectData:
         """All names of neurons"""
         return get_names_from_df(self.red_traces)
 
-    def well_tracked_neuron_names(self, min_nonnan=0.5):
+    def well_tracked_neuron_names(self, min_nonnan=0.5, remove_invalid_neurons=False):
         """
         Subset of neurons that pass a given tracking threshold
         """
@@ -607,6 +649,9 @@ class ProjectData:
         min_nonnan = int(min_nonnan * self.num_frames)
         df_tmp = self.red_traces.dropna(axis=1, thresh=min_nonnan)
         neuron_names = get_names_from_df(df_tmp)
+        if remove_invalid_neurons:
+            invalid_names = self.finished_neuron_names(finished_not_invalid=False)
+            neuron_names = [n for n in neuron_names if n not in invalid_names]
         return neuron_names
 
     @lru_cache(maxsize=128)
@@ -615,17 +660,25 @@ class ProjectData:
                             neuron_names: tuple = None,
                             residual_mode: Optional[str] = None,
                             nan_tracking_failure_points: bool = False,
+                            nan_using_ppca_manifold: bool = False,
+                            remove_invalid_neurons: bool = True,
+                            return_fast_scale_separation: bool = False,
+                            return_slow_scale_separation: bool = False,
                             verbose=0,
                             **kwargs):
         """
         Core function for calculating dataframes of traces using various preprocessing options
+
+        Note that all steps that can be calculated per-trace are implemented in the TracePlotter class.
+            Other steps that require the full dataframe are implemented in this function
 
         Uses the currently recommended 'best' settings:
         opt = dict(
             channel_mode='ratio',
             calculation_mode='integration',
             remove_outliers=True,
-            filter_mode='no_filtering'
+            filter_mode='no_filtering',
+            high_pass_bleach_correct=True
         )
 
         if interpolate_nan is True, then additionally (after dropping empty neurons and removing outliers):
@@ -638,8 +691,14 @@ class ProjectData:
         interpolate_nan: bool, see above
         raise_error_on_empty: if empty AFTER dropping, raise an error
         neuron_names: a subset of names to do
+        nan_tracking_failure_points: Uses a simple heuristic (count number of neurons) to determine points of complete
+            tracking failure, and removes all activity at those times
+        nan_using_ppca_manifold: Uses a dimensionality heuristic to remove single-neuron mistakes. See OutlierRemover
+            Note: iterative algorithm that takes around a minute
+        high_pass_bleach_correct: Filters by removing very slow drifts, i.e. a gaussian of sigma = num_frames / 5
         verbose
         kwargs: Args to pass to calculate_traces; updates the default 'opt' dict above
+            See TracePlotter for options
 
         Returns
         -------
@@ -649,32 +708,27 @@ class ProjectData:
             channel_mode='ratio',
             calculation_mode='integration',
             remove_outliers=True,
-            filter_mode='no_filtering'
+            filter_mode='no_filtering',
+            high_pass_bleach_correct=True
         )
         opt.update(kwargs)
 
         if neuron_names is None:
-            neuron_names = self.neuron_names
-        # Initialize the trace calculator class and get the initial dataframe
-        _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
+            neuron_names = tuple(self.neuron_names)
+        if remove_invalid_neurons:
+            invalid_names = self.finished_neuron_names(finished_not_invalid=False)
+            neuron_names = tuple([n for n in neuron_names if n not in invalid_names])
 
-        trace_dict = dict()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            futures = {executor.submit(self._trace_plotter.calculate_traces, n): n for n in neuron_names}
-            for future in concurrent.futures.as_completed(futures):
-                name = futures[future]
-                trace_dict[name] = future.result()
-        # trace_dict = {n: self._trace_plotter.calculate_traces(n) for n in neuron_names}
-        df = pd.DataFrame(trace_dict)
-        df = df.reindex(sorted(df.columns), axis=1)
+        df = self.calc_raw_traces(neuron_names, **opt).copy()
+
+        # Shorten dataframe to only use expected number of time points
+        df = df.iloc[:self.num_frames, :]
 
         # Optional: check neurons to remove
-        # if isinstance(min_nonnan, float):
-        #     min_nonnan = int(min_nonnan * df.count().max())
         if min_nonnan is not None:
-            names = self.well_tracked_neuron_names(min_nonnan)
-            df_drop = df[names]
-            # df_drop = df.dropna(axis=1, thresh=min_nonnan)
+            names = self.well_tracked_neuron_names(min_nonnan, remove_invalid_neurons)
+            df_drop = df.loc[:, names].copy()
+            # df_drop = df[names].copy()
         else:
             df_drop = df
 
@@ -712,20 +766,89 @@ class ProjectData:
         if residual_mode is not None:
             assert interpolate_nan, "Residual mode only works if nan are interpolated!"
             if residual_mode == 'pca':
-                df = calculate_residual_subtract_pca(df, n_components=2)
+                df, _ = calculate_residual_subtract_pca(df, n_components=1)
             elif residual_mode == 'nmf':
-                df = calculate_residual_subtract_nmf(df, n_components=2)
+                df, _ = calculate_residual_subtract_nmf(df, n_components=1)
             else:
                 raise NotImplementedError(f"Unrecognized residual mode: {residual_mode}")
 
-        # Optional: nan time points that are estimated to have a tracking error
+        # Optional: nan time points that are estimated to have a tracking error (either global or per-neuron)
         if nan_tracking_failure_points:
             invalid_ind = self.estimate_tracking_failures_from_project(pad_nan_points=5)
             if invalid_ind is not None:
                 df.loc[invalid_ind, :] = np.nan
-                if interpolate_nan:
-                    self.logger.warning("Requested nan interpolation, but then nan were added due to tracking failures")
+                # if interpolate_nan:
+                #     self.logger.warning("Requested nan interpolation, but then nan were added due to tracking failures")
 
+        if nan_using_ppca_manifold:
+            to_remove_all_names = self.calc_indices_to_remove_using_ppca()
+            # Subset the full removal matrix to only the neurons in this dataframe
+            # to_remove_all_names is a matrix, so we can't directly index using pandas syntax
+            names = get_names_from_df(df)
+            original_names = self.neuron_names
+            name_ind = [names.index(n) for n in original_names]
+            to_remove = to_remove_all_names[:, name_ind]
+            df[to_remove] = np.nan
+
+        # Optional: separate fast and slow components, and return only one
+        if return_fast_scale_separation and return_slow_scale_separation:
+            raise ValueError("Cannot return both fast and slow scale separation")
+        if return_fast_scale_separation or return_slow_scale_separation:
+            df_fast, df_slow = fast_slow_decomposition(df)
+            if return_fast_scale_separation:
+                df = df_fast
+            else:
+                df = df_slow
+
+        return df
+
+    @cache_to_disk_class('invalid_indices_cache_fname', func_save_to_disk=np.save, func_load_from_disk=np.load)
+    def calc_indices_to_remove_using_ppca(self):
+        names = self.neuron_names
+        coords = ['z', 'x', 'y']
+        all_zxy = self.red_traces.loc[:, (slice(None), coords)].copy()
+        z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
+        all_zxy.loc[:, (slice(None), 'z')] = z_to_xy_ratio * all_zxy.loc[:, (slice(None), 'z')]
+        outlier_remover = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces=None, names=names, verbose=0)
+        outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=8)
+        to_remove = outlier_remover.total_matrix_to_remove
+        return to_remove
+
+    def invalid_indices_cache_fname(self):
+        return os.path.join(self.cache_dir, 'invalid_indices.npy')
+
+    @property
+    def cache_dir(self):
+        fname = os.path.join(self.project_dir, '.cache')
+        if not os.path.exists(fname):
+            os.makedirs(fname)
+        return fname
+
+    @lru_cache(maxsize=16)
+    def calc_raw_traces(self, neuron_names: tuple, **opt: dict):
+        """
+        Calculates traces for a list of neurons in parallel
+        Similar to calc_default_traces, but does not do any post-processing
+
+        Parameters
+        ----------
+        neuron_names
+        opt
+
+        Returns
+        -------
+
+        """
+        # Initialize the trace calculator class and get the initial dataframe
+        _ = self.calculate_traces(neuron_name=neuron_names[0], **opt)
+        trace_dict = dict()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {executor.submit(self._trace_plotter.calculate_traces, n): n for n in neuron_names}
+            for future in concurrent.futures.as_completed(futures):
+                name = futures[future]
+                trace_dict[name] = future.result()
+        df = pd.DataFrame(trace_dict)
+        df = df.reindex(sorted(df.columns), axis=1)
         return df
 
     def plot_neuron_with_kymograph(self, neuron_name: str):
@@ -1026,7 +1149,6 @@ class ProjectData:
             ['Red data',
             'Green data',
             'Raw segmentation',
-            'Colored segmentation',
             'Neuron IDs',
             'Intermediate global IDs']
 
@@ -1077,13 +1199,56 @@ class ProjectData:
         return desynced_frames
 
     @cached_property
-    def df_manual_tracking(self) -> pd.DataFrame:
+    def df_manual_tracking(self) -> Optional[pd.DataFrame]:
         """Load a dataframe corresponding to manual tracking, i.e. which neurons have been manually corrected"""
         track_cfg = self.project_config.get_tracking_config()
-        fname = track_cfg.resolve_relative_path("manual_annotation/manual_tracking.csv", prepend_subfolder=True)
+        fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.csv", prepend_subfolder=True)
         df_manual_tracking = read_if_exists(fname, reader=pd.read_csv)
-        # df_manual_tracking = pd.read_csv(fname)
+        if df_manual_tracking is None:
+            fname = Path(fname).with_name(self.shortened_name).with_suffix('.xlsx')
+            df_manual_tracking = read_if_exists(str(fname), reader=pd.read_excel)
         return df_manual_tracking
+
+    @cached_property
+    def dict_numbers_to_neuron_names(self) -> Dict[str, Tuple[str, int]]:
+        """
+        Uses df_manual_tracking to map neuron numbers to names and confidence. Example:
+            dict_numbers_to_neuron_names['neuron_001'] -> ['AVAL', 2]
+
+        Assumes the following column names:
+            output keys = 'Neuron ID'
+            output values = ['ID1', 'Certainty']
+
+        Certainty goes from 0-2, with 2 being the most certain
+
+        Some files my have an 'ID2' column for less certain ID's; this is ignored
+
+        Returns
+        -------
+
+        """
+        # Read each column, and create a dictionary
+        df = self.df_manual_tracking
+        if df is None:
+            return {}
+        # Strip white space from column names
+        df.columns = df.columns.str.strip()
+
+        # Get the automatically assigned (meaningless) neuron names
+        neuron_names = df['Neuron ID'].values
+        neuron_names = [str(i) for i in neuron_names]
+
+        # Get the most confident ID. If not present (nan), will be an empty string
+        neuron_ids = df['ID1'].values
+        neuron_ids = ['' if isinstance(i, float) and np.isnan(i) else str(i) for i in neuron_ids]
+
+        # Get the certainty. If not present (nan), will be 0
+        neuron_certainty = df['Certainty'].values
+        neuron_certainty = [0 if np.isnan(i) else int(i) for i in neuron_certainty]
+
+        # Create a dictionary
+        neuron_dict = dict(zip(neuron_names, zip(neuron_ids, neuron_certainty)))
+        return neuron_dict
 
     def estimate_tracking_failures_from_project(self, pad_nan_points=3, contamination='auto', DEBUG=False):
         """
@@ -1153,15 +1318,18 @@ class ProjectData:
         except FileNotFoundError:
             return None
 
-    @cached_property
-    def finished_neuron_names(self) -> List[str]:
+    @lru_cache(maxsize=2)
+    def finished_neuron_names(self, finished_not_invalid=True) -> List[str]:
         """
-        Uses df_manual_tracking to get a list of the neuron names that have been fully corrected
+        Uses df_manual_tracking to get a list of the neuron names that have been fully corrected, or are invalid
+
+        By default, returns the finished neurons, corresponding to the column 'Finished?'
+            Otherwise, uses the column 'Invalid?'
 
         The manual annotation file is expected to be a .csv in the following format:
-        Neuron ID, Finished?
-        neuron_001, False
-        neuron_002, True
+        Neuron ID, Finished?, Invalid?
+        neuron_001, False, True
+        neuron_002, True, False
         ...
 
         Extra columns are not a problem, but extra rows are
@@ -1170,27 +1338,34 @@ class ProjectData:
         if df_manual_tracking is None:
             return []
 
+        if finished_not_invalid:
+            column_name = None
+        else:
+            column_name = 'Invalid?'
+
         try:
-            neurons_finished_mask = self._check_format_and_unpack(df_manual_tracking)
-            neurons_that_are_finished = list(df_manual_tracking[neurons_finished_mask]['Neuron ID'])
+            neurons_finished_mask = self._check_format_and_unpack(df_manual_tracking, column_name=column_name)
+            neurons_in_column = list(df_manual_tracking[neurons_finished_mask]['Neuron ID'])
 
             # Filter to make sure they are the proper format
             tmp = []
-            for col_name in neurons_that_are_finished:
+            for col_name in neurons_in_column:
                 if isinstance(col_name, str):
                     tmp.append(col_name)
                 else:
                     self.logger.warning(f"Found and removed improper column name in manual annotation : {col_name}")
-            neurons_that_are_finished = tmp
+            neurons_in_column = tmp
         except KeyError:
-            neurons_that_are_finished = []
+            neurons_in_column = []
 
-        return neurons_that_are_finished
+        return neurons_in_column
 
     @cached_property
     def neurons_with_ids(self) -> Optional[pd.DataFrame]:
         """
         Loads excel file with information about manually id'ed neurons
+
+        Note: in newer datasets, this information is stored in df_manual_tracking instead of a separate file
 
         Returns
         -------
@@ -1207,12 +1382,14 @@ class ProjectData:
         else:
             return None
 
-    def _check_format_and_unpack(self, df_manual_tracking):
-        neurons_finished_mask = df_manual_tracking[self.finished_neurons_column_name]
+    def _check_format_and_unpack(self, df_manual_tracking, column_name=None):
+        if column_name is None:
+            column_name = self.finished_neurons_column_name
+        neurons_finished_mask = df_manual_tracking[column_name]
         if neurons_finished_mask.dtype != bool:
             self.logger.warning("Found non-boolean entries in manual annotation column; this may be a data error: "
                                 f"{np.unique(neurons_finished_mask)}")
-            neurons_finished_mask = neurons_finished_mask.astype(bool)
+            neurons_finished_mask = neurons_finished_mask.fillna(False).astype(bool)
         if 'Neuron ID' not in df_manual_tracking[neurons_finished_mask]:
             self.logger.warning("Did not find expected column name ('Neuron ID') for the neuron ids... "
                                 "check the formatting of the manual annotation file")
@@ -1307,6 +1484,9 @@ class ProjectData:
         return f"=======================================\n\
 Project data for directory:\n\
 {self.project_dir} \n\
+With raw data in directory:\n\
+{self.project_config.get_behavior_raw_parent_folder_from_red_fname()[0]} \n\
+\n\
 Found the following data files:\n\
 ============Raw========================\n\
 red_data:                 {self.red_data is not None}\n\

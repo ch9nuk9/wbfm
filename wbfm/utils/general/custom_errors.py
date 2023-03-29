@@ -74,3 +74,21 @@ class MustBeFiniteError(Exception):
     def __init__(self, value=""):
         self.message = f"Value should not be nan, but was: {value}"
         super().__init__(self.message)
+
+
+class NoBehaviorAnnotationsError(Exception):
+    def __init__(self, message=""):
+        self.message = "No behavior annotations found; " + message
+        super().__init__(self.message)
+
+
+class NoManualBehaviorAnnotationsError(NoBehaviorAnnotationsError):
+    def __init__(self, message=""):
+        self.message = "No manual behavior annotations found; " + message
+        super().__init__(self.message)
+
+
+class InvalidBehaviorAnnotationsError(Exception):
+    def __init__(self, message=""):
+        self.message = "Invalid behavior annotations found; " + message
+        super().__init__(self.message)

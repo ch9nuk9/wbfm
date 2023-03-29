@@ -7,7 +7,7 @@ from shutil import copytree
 import numpy as np
 import tifffile
 import zarr
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings, \
     preprocess_all_frames_using_config, background_subtract_single_channel
@@ -62,7 +62,10 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     # Note: requires correct value of num_slices
     if _config['dataset_params'].get('num_frames', None) is None:
         logging.info("Detecting number of total frames in the video, may take ~30 seconds")
-        full_video = Image.open(red_bigtiff_fname)
+        try:
+            full_video = Image.open(red_bigtiff_fname)
+        except UnidentifiedImageError:
+            full_video = tifffile.TiffFile(red_bigtiff_fname)
         num_2d_frames = full_video.n_frames
         num_volumes = num_2d_frames / _config['dataset_params']['num_slices']
         _config['dataset_params']['num_frames'] = int(num_volumes)

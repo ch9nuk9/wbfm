@@ -51,3 +51,14 @@ class TestPaddedDataFrame(unittest.TestCase):
         overlapping_tracklet_conflict_points = get_times_of_conflicting_dataframes(all_new_tracklets,
                                                                                    new_tracklet_names)
         self.assertEqual(overlapping_tracklet_conflict_points, dict())
+
+        # Check if the new tracklets are correct
+        expected_tracklet_names = ['tracklet_0000004', 'tracklet_0000005', 'tracklet_0000006', 'tracklet_0000007',
+                                   'tracklet_0000008', 'tracklet_0000009', 'tracklet_0000010']
+        self.assertEqual(new_tracklet_names, expected_tracklet_names)
+
+        # Check if the values are correct
+        print(self.df)
+        print(df_split)
+
+

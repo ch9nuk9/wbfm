@@ -1,6 +1,7 @@
 import copy
 import glob
 import logging
+import math
 import os
 from pathlib import Path
 from typing import Union, Optional
@@ -19,6 +20,7 @@ from sklearn.neighbors import NearestNeighbors
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
+from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
@@ -43,6 +45,12 @@ class WormFullVideoPosture:
     filename_x: str = None
     filename_y: str = None
     filename_beh_annotation: str = None
+    filename_manual_beh_annotation: str = None
+
+    filename_hilbert_amplitude: str = None
+    filename_hilbert_frequency: str = None
+    filename_hilbert_phase: str = None
+    filename_hilbert_carrier: str = None
 
     filename_table_position: str = None
 
@@ -91,8 +99,9 @@ class WormFullVideoPosture:
     def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool,
                                  reset_index=False) -> Union[pd.DataFrame, pd.Series]:
         if df is not None:
+            # Get cleaned dataframe
             try:
-                df = self.remove_idx_of_tracking_failures(df)
+                df = self.remove_idx_of_tracking_failures(df, fluorescence_fps=fluorescence_fps)
                 if fluorescence_fps:
                     if len(df.shape) == 2:
                         df = df.iloc[self.subsample_indices, :]
@@ -106,8 +115,15 @@ class WormFullVideoPosture:
                 print(self.tracking_failure_idx)
                 print(self.subsample_indices)
                 raise e
+            # Optional postprocessing
             if reset_index:
                 df.reset_index(drop=True, inplace=True)
+            # Shorten to the correct length, if necessary. Note that we have to check for series or dataframe
+            if len(df.shape) == 2:
+                df = df.iloc[:self.num_frames, :]
+            elif len(df.shape) == 1:
+                df = df.iloc[:self.num_frames]
+
         return df
 
     ##
@@ -115,9 +131,9 @@ class WormFullVideoPosture:
     ##
 
     @lru_cache(maxsize=8)
-    def centerlineX(self, fluorescence_fps=False) -> pd.DataFrame:
+    def centerlineX(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_centerlineX
-        df = self._validate_and_downsample(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
     @cached_property
@@ -125,9 +141,9 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_x, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def centerlineY(self, fluorescence_fps=False) -> pd.DataFrame:
+    def centerlineY(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_centerlineY
-        df = self._validate_and_downsample(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
     @cached_property
@@ -135,18 +151,79 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_y, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def curvature(self, fluorescence_fps=False) -> pd.DataFrame:
+    def curvature(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_curvature
-        df = self._validate_and_downsample(df, fluorescence_fps)
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
+
+    @lru_cache(maxsize=8)
+    def head_smoothed_curvature(self, fluorescence_fps=False, start_segment=1, final_segment=20,
+                                **kwargs) -> pd.DataFrame:
+        df = self._raw_curvature
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        # Smooth the curvature by taking an expanding average
+        # Start with segment 4, which is the first segment that is not too noisy
+        # Then take the average of segments 4 and 5, then 4-6, then 4-7, etc.
+        df_new = df.copy()
+
+        for i in range(start_segment+1, final_segment):
+            df_new.iloc[:, i] = df.iloc[:, i - start_segment:i + 1].mean(axis=1)
+        # Remove the first and last few segments, which are not smoothed
+        # df_new = df_new.iloc[:, start_segment:final_segment+1]
+
+        return df_new
 
     @cached_property
     def _raw_curvature(self):
-        return read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
+        df = read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
+        # Remove the first column, which is the frame number
+        df = df.iloc[:, 1:]
+        return df
+
+    @lru_cache(maxsize=8)
+    def hilbert_amplitude(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        df = self._raw_hilbert_amplitude
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
+
+    @cached_property
+    def _raw_hilbert_amplitude(self):
+        return read_if_exists(self.filename_hilbert_amplitude, reader=pd.read_csv, header=None)
+
+    @lru_cache(maxsize=8)
+    def hilbert_phase(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        df = self._raw_hilbert_phase
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        df = (df % (2 * math.pi))
+        return df
+
+    @cached_property
+    def _raw_hilbert_phase(self):
+        return read_if_exists(self.filename_hilbert_phase, reader=pd.read_csv, header=None)
+
+    @lru_cache(maxsize=8)
+    def hilbert_frequency(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        df = self._raw_hilbert_frequency
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
+
+    @cached_property
+    def _raw_hilbert_frequency(self):
+        return read_if_exists(self.filename_hilbert_frequency, reader=pd.read_csv, header=None)
+
+    @lru_cache(maxsize=8)
+    def hilbert_carrier(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        df = self._raw_hilbert_carrier
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
+
+    @cached_property
+    def _raw_hilbert_carrier(self):
+        return read_if_exists(self.filename_hilbert_carrier, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
     def stage_position(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
-        """Units of mm?"""
+        """Units of mm"""
         df = self._raw_stage_position
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
@@ -183,15 +260,34 @@ class WormFullVideoPosture:
             BehaviorCodes.assert_all_are_valid(self._beh_annotation)
         return self._beh_annotation
 
-    def calc_behavior_from_alias(self, speed_alias: str) -> pd.Series:
+    @lru_cache(maxsize=8)
+    def manual_beh_annotation(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        """Ulises' manual annotations of behavior"""
+        df = self._raw_manual_beh_annotation
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
+
+    @cached_property
+    def _raw_manual_beh_annotation(self) -> pd.Series:
+        df = read_if_exists(self.filename_manual_beh_annotation, reader=pd.read_csv)
+        # Assume we only want the Annotation column
+        df = df['Annotation']
+        return df
+
+    def calc_behavior_from_alias(self, behavior_alias: str) -> pd.Series:
         """
         This calls worm_speed or summed_curvature_from_kymograph with defined key word arguments
+
+        Some strings call specific other functions:
+            'leifer_curvature' -> summed_curvature_from_kymograph
+            'pirouette' -> calc_psuedo_pirouette_state
+            'plateau' -> calc_plateau_state
 
         Note: always has fluorescence_fps=True
 
         Parameters
         ----------
-        speed_alias
+        behavior_alias
         kwargs
 
         Returns
@@ -200,39 +296,58 @@ class WormFullVideoPosture:
         """
 
         possible_values = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature', 'summed_curvature', 'pirouette',
-                           'signed_stage_speed_smoothed', 'signed_speed_angular',
-                           'signed_middle_body_speed', 'worm_speed_average_all_segments',
-                           'worm_speed_average_all_segments']
-        assert speed_alias in possible_values, f"Must be one of {possible_values}"
+                           'signed_stage_speed_strongly_smoothed', 'signed_speed_angular',
+                           'middle_body_speed', 'signed_middle_body_speed', 'worm_speed_average_all_segments',
+                           'worm_speed_average_all_segments', 'plateau', 'semi_plateau',
+                           'signed_middle_body_speed_smoothed']
+        assert behavior_alias in possible_values, f"Must be one of {possible_values}, not {behavior_alias}"
 
-        if speed_alias == 'signed_stage_speed':
+        if behavior_alias == 'signed_stage_speed':
             y = self.worm_speed(fluorescence_fps=True, signed=True)
-        elif speed_alias == 'abs_stage_speed':
+        elif behavior_alias == 'abs_stage_speed':
             y = self.worm_speed(fluorescence_fps=True)
-        elif speed_alias == 'signed_middle_body_speed':
+        elif behavior_alias == 'middle_body_speed':
+            y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=False)
+        elif behavior_alias == 'signed_middle_body_speed':
             y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=True)
-        elif speed_alias == 'leifer_curvature' or speed_alias == 'summed_curvature':
+        elif behavior_alias == 'signed_middle_body_speed_smoothed':
+            y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=True,
+                                strong_smoothing_before_derivative=True)
+        elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True)
-        elif speed_alias == 'pirouette':
+        elif behavior_alias == 'pirouette':
             y = self.calc_psuedo_pirouette_state()
-        elif speed_alias == 'signed_stage_speed_smoothed':
+        elif behavior_alias == 'plateau':
+            y = self.calc_plateau_state()
+        elif behavior_alias == 'semi_plateau':
+            y = self.calc_semi_plateau_state()
+        elif behavior_alias == 'signed_stage_speed_strongly_smoothed':
             y = self.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing=True)
-        elif speed_alias == 'signed_speed_angular':
+        elif behavior_alias == 'signed_speed_angular':
             y = self.worm_angular_velocity(fluorescence_fps=True)
-        elif speed_alias == 'worm_speed_average_all_segments':
+        elif behavior_alias == 'worm_speed_average_all_segments':
             y = self.worm_speed_average_all_segments(fluorescence_fps=True)
-        elif speed_alias == 'worm_nose_residual_speed':
+        elif behavior_alias == 'worm_nose_residual_speed':
             y = self.worm_speed_average_all_segments(fluorescence_fps=True)
         else:
-            raise NotImplementedError(speed_alias)
+            raise NotImplementedError(behavior_alias)
 
         return y
 
     @lru_cache(maxsize=8)
-    def beh_annotation(self, fluorescence_fps=False, reset_index=False) -> Optional[pd.Series]:
+    def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False) -> \
+            Optional[pd.Series]:
         """Name is shortened to avoid US-UK spelling confusion"""
-        beh = self._raw_beh_annotation
+        if not use_manual_annotation:
+            beh = self._raw_beh_annotation
+        else:
+            beh = self._raw_manual_beh_annotation
+            if beh is None:
+                logging.warning("Requested manual annotation, but none exists")
+                logging.warning("Using automatic annotation instead")
+                beh = self._raw_beh_annotation
+
         if fluorescence_fps:
             if beh is None or self.beh_annotation_already_converted_to_fluorescence_fps:
                 return beh
@@ -256,7 +371,7 @@ class WormFullVideoPosture:
 
     @cached_property
     def _raw_worm_angular_velocity(self):
-        """Using angular velocity in 2d pca space. Note: interpolates by default"""
+        """Using angular velocity in 2d pca space"""
 
         xyz_pca = self.pca_projections
         window = 5
@@ -272,18 +387,18 @@ class WormFullVideoPosture:
 
         velocity = np.gradient(smoothed_angles)
         velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
-        velocity = pd.Series(velocity).interpolate()
+        # velocity = pd.Series(velocity).interpolate()
 
         return velocity
 
     @lru_cache(maxsize=8)
-    def worm_angular_velocity(self, fluorescence_fps=False, remove_outliers=True):
+    def worm_angular_velocity(self, fluorescence_fps=False, remove_outliers=True, **kwargs):
         """
         This is the angular velocity in PCA space (first two modes)
 
         Note: remove outliers by default"""
         velocity = self._raw_worm_angular_velocity
-        velocity = self._validate_and_downsample(velocity, fluorescence_fps=fluorescence_fps)
+        velocity = self._validate_and_downsample(velocity, fluorescence_fps=fluorescence_fps, **kwargs)
         if fluorescence_fps:
             velocity.reset_index(drop=True, inplace=True)
         if remove_outliers:
@@ -292,9 +407,10 @@ class WormFullVideoPosture:
             velocity = pd.Series(velocity).interpolate()
         return velocity
 
-    @lru_cache(maxsize=256)
+    # @lru_cache(maxsize=256)
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
-                   strong_smoothing=False, use_stage_position=True, remove_outliers=True, body_segment=50) -> pd.Series:
+                   strong_smoothing=False, use_stage_position=True, remove_outliers=True, body_segment=50,
+                   strong_smoothing_before_derivative=False) -> pd.Series:
         """
         Calculates derivative of position
 
@@ -322,7 +438,8 @@ class WormFullVideoPosture:
             df = get_positions(fluorescence_fps=fluorescence_fps)
         else:
             df = get_positions(fluorescence_fps=False)
-
+        if strong_smoothing_before_derivative:
+            df = filter_gaussian_moving_average(df, std=5)
         # Derivative, then convert to physical units (note that subsampling might not have happened yet)
         speed = np.sqrt(np.gradient(df['X']) ** 2 + np.gradient(df['Y']) ** 2)
         tdelta_s = self.get_time_delta_in_s(fluorescence_fps and subsample_before_derivative)
@@ -413,7 +530,8 @@ class WormFullVideoPosture:
         if len(invalid_ind) > 0:
             all_diffs[invalid_ind[0]-1:invalid_ind[-1]+1] = pd.to_timedelta(0)
         tdelta = all_diffs.mean()
-        tdelta_s = tdelta.delta / 1e9
+        # To replicate the behavior of tdelta.delta
+        tdelta_s = (1000*tdelta.microseconds + tdelta.nanoseconds) / 1e9
         assert tdelta_s > 0, f"Calculated negative delta time ({tdelta_s}); was there a power outage or something?"
         return tdelta_s
 
@@ -441,6 +559,10 @@ class WormFullVideoPosture:
         return self.filename_beh_annotation is not None and os.path.exists(self.filename_beh_annotation)
 
     @property
+    def has_manual_beh_annotation(self):
+        return self.filename_manual_beh_annotation is not None and os.path.exists(self.filename_manual_beh_annotation)
+
+    @property
     def has_full_kymograph(self):
         fnames = [self.filename_y, self.filename_x, self.filename_curvature]
         return all([f is not None for f in fnames]) and all([os.path.exists(f) for f in fnames])
@@ -466,11 +588,18 @@ class WormFullVideoPosture:
         c_y = self.centerlineY().iloc[t * self.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
-    def calc_triggered_average_indices(self, state=BehaviorCodes.FWD, min_duration=5, ind_preceding=20, **kwargs):
+    def calc_triggered_average_indices(self, state=BehaviorCodes.FWD, min_duration=5, ind_preceding=20,
+                                       behavior_name=None,
+                                       use_manual_annotation=None,
+                                       **kwargs):
         """
         Calculates a list of indices that can be used to calculate triggered averages of 'state' ONSET
 
-        See BehaviorCodes for state indices
+        Default uses the behavior annotation, binarized via comparing to state
+            See BehaviorCodes for state indices
+        Alternatively, can pass a behavior_name, which will be used to look up the behavior in this class
+        Alternatively, can pass a behavioral_annotation, which will be used directly
+            See TriggeredAverageIndices for more details
 
         Parameters
         ----------
@@ -483,9 +612,27 @@ class WormFullVideoPosture:
         -------
 
         """
-        ind_class = TriggeredAverageIndices(self.beh_annotation(fluorescence_fps=True), state, min_duration,
-                                            trace_len=self.num_frames, ind_preceding=ind_preceding,
-                                            **kwargs)
+        if use_manual_annotation is None:
+            if BehaviorCodes.must_be_manually_annotated(state):
+                use_manual_annotation = True
+                if not self.has_manual_beh_annotation:
+                    raise NoManualBehaviorAnnotationsError()
+            else:
+                use_manual_annotation = False
+        behavioral_annotation = kwargs.get('behavioral_annotation', None)
+        if behavioral_annotation is None:
+            if behavior_name is None:
+                behavioral_annotation = self.beh_annotation(fluorescence_fps=True,
+                                                            use_manual_annotation=use_manual_annotation)
+            else:
+                behavioral_annotation = self.calc_behavior_from_alias(behavior_name)
+        opt = dict(behavioral_annotation=behavioral_annotation,
+                   min_duration=min_duration,
+                   ind_preceding=ind_preceding,
+                   trace_len=self.num_frames,
+                   behavioral_state=state)
+        opt.update(kwargs)
+        ind_class = TriggeredAverageIndices(**opt)
         return ind_class
 
     def calc_triggered_average_indices_with_pirouette_split(self, duration_threshold=34, **kwargs):
@@ -590,7 +737,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        ind_class = self.calc_triggered_average_indices(state=1, ind_preceding=0,
+        ind_class = self.calc_triggered_average_indices(state=BehaviorCodes.REV, ind_preceding=0,
                                                         min_duration=min_duration)
 
         onsets = np.array([vec[0] for vec in ind_class.triggered_average_indices() if vec[0] > 0])
@@ -613,6 +760,98 @@ class WormFullVideoPosture:
         predicted_pirouette_state = predicted_pirouette_state[pad_num:-pad_num].reset_index(drop=True)
 
         return predicted_pirouette_state
+
+    def calc_plateau_state(self, frames_to_remove=5, DEBUG=False):
+        """
+        Calculates a state that is high when the worm is in a "plateau", and low otherwise
+        Plateau is defined in two steps:
+            1. Find all reversals that are longer than 2 * frames_to_remove
+            2. Determine a break point, and keep all points after
+
+        Parameters
+        ----------
+        frames_to_remove
+
+        Returns
+        -------
+
+        """
+        from wbfm.utils.traces.triggered_averages import calc_time_series_from_starts_and_ends
+        import ruptures as rpt
+        from ruptures.exceptions import BadSegmentationParameters
+
+        # Get the binary state
+        beh_vec = self.beh_annotation(fluorescence_fps=True)
+        rev_ind = beh_vec == BehaviorCodes.REV
+        all_starts, all_ends = get_contiguous_blocks_from_column(rev_ind, already_boolean=True)
+        # Also get the speed
+        speed = self.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True)
+        # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
+        new_starts = []
+        new_ends = []
+        for start, end in zip(all_starts, all_ends):
+            # The breakpoint algorithm needs at least 3 points
+            if end - start - 2 * frames_to_remove < 3:
+                continue
+            dat = speed.loc[start+frames_to_remove:end-frames_to_remove].to_numpy()
+            algo = rpt.Dynp(model="l2").fit(dat)
+            try:
+                result = algo.predict(n_bkps=1)
+            except BadSegmentationParameters:
+                continue
+            breakpoint_absolute_coords = result[0] + start + frames_to_remove
+            new_starts.append(breakpoint_absolute_coords)
+            new_ends.append(end)
+
+            if DEBUG:
+                fig, ax = plt.subplots()
+                plt.plot(dat)
+                for r in result:
+                    ax.axvline(x=r, color='black')
+                plt.title(f"Start: {start}, bkps: {breakpoint_absolute_coords}, End: {end}")
+                plt.show()
+        if DEBUG:
+            print(f"Original starts: {all_starts}")
+            print(f"New starts: {new_starts}")
+
+        num_pts = len(beh_vec)
+        plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
+        return pd.Series(plateau_state)
+
+    def calc_semi_plateau_state(self, min_length=10, DEBUG=False):
+        """
+        Calculates a state that is high when the worm is in a "semi-plateau", and low otherwise
+        A semi-plateau is defined in two steps:
+            1. Find all reversals that are longer than min_length
+            2. Fit a piecewise regression, and keep all points between the first and last breakpoints
+
+        See fit_3_break_piecewise_regression for more details
+
+        Parameters
+        ----------
+        min_length
+
+        Returns
+        -------
+
+        """
+        from wbfm.utils.traces.triggered_averages import calc_time_series_from_starts_and_ends
+
+        # Get the binary state
+        beh_vec = self.beh_annotation(fluorescence_fps=True)
+        rev_ind = beh_vec == BehaviorCodes.REV
+        all_starts, all_ends = get_contiguous_blocks_from_column(rev_ind, already_boolean=True)
+        # Also get the speed
+        speed = self.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True)
+        # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
+        new_ends_with_nan, new_starts_with_nan = fit_3_break_piecewise_regression(speed, all_ends, all_starts, min_length, DEBUG)
+        # Remove values that were nan in either the start or end
+        new_starts = [s for s, e in zip(new_starts_with_nan, new_ends_with_nan) if not np.isnan(s) and not np.isnan(e)]
+        new_ends = [e for s, e in zip(new_starts_with_nan, new_ends_with_nan) if not np.isnan(s) and not np.isnan(e)]
+
+        num_pts = len(beh_vec)
+        plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
+        return pd.Series(plateau_state)
 
     def calc_fwd_counter_state(self):
         """
@@ -709,25 +948,28 @@ class WormFullVideoPosture:
             behavior_subfolder = Path(behavior_fname).parent
 
         if behavior_subfolder is not None:
-
             # Second get the centerline-specific files
-            filename_curvature, filename_x, filename_y, filename_beh_annotation = None, None, None, None
+            all_files = dict(filename_curvature=None, filename_x=None, filename_y=None, filename_beh_annotation=None,
+                             filename_hilbert_amplitude=None, filename_hilbert_phase=None,
+                             filename_hilbert_frequency=None, filename_hilbert_carrier=None)
             for file in Path(behavior_subfolder).iterdir():
                 if not file.is_file() or file.name.startswith('.'):
                     # Skip hidden files and directories
                     continue
-                if file.name.endswith('skeleton_spline_K.csv'):
-                    filename_curvature = str(file)
-                elif file.name.endswith('skeleton_spline_X_coords.csv'):
-                    filename_x = str(file)
-                elif file.name.endswith('skeleton_spline_Y_coords.csv'):
-                    filename_y = str(file)
-                elif file.name.endswith('_beh_annotation.csv'):
-                    filename_beh_annotation = str(file)
-            all_files = dict(filename_curvature=filename_curvature,
-                             filename_x=filename_x,
-                             filename_y=filename_y,
-                             filename_beh_annotation=filename_beh_annotation)
+                if file.name.endswith('skeleton_spline_K_signed_avg.csv'):
+                    all_files['filename_curvature'] = str(file)
+                elif file.name.endswith('skeleton_spline_X_coords_avg.csv'):
+                    all_files['filename_x'] = str(file)
+                elif file.name.endswith('skeleton_spline_Y_coords_avg.csv'):
+                    all_files['filename_y'] = str(file)
+                elif file.name.endswith('hilbert_inst_amplitude.csv'):
+                    all_files['filename_hilbert_amplitude'] = str(file)
+                elif file.name.endswith('hilbert_inst_freq.csv'):
+                    all_files['filename_hilbert_frequency'] = str(file)
+                elif file.name.endswith('hilbert_inst_phase.csv'):
+                    all_files['filename_hilbert_phase'] = str(file)
+                elif file.name.endswith('hilbert_regenerated_carrier.csv'):
+                    all_files['filename_hilbert_carrier'] = str(file)
 
             # Third, get the table stage position
             # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)
@@ -739,10 +981,23 @@ class WormFullVideoPosture:
                 filename_table_position = fnames[0]
             all_files['filename_table_position'] = filename_table_position
 
+            # Fourth, get manually annotated behavior (if it exists)
+            # Note that these may have additional behaviors annotated that are not in the automatic annotation
+            filename_manual_beh_annotation = None
+            manual_annotation_subfolder = Path(behavior_subfolder).joinpath('ground_truth_beh_annotation')
+            if manual_annotation_subfolder.exists():
+                fnames = [fn for fn in glob.glob(os.path.join(manual_annotation_subfolder,
+                                                              '*beh_annotation_timeseries.csv'))]
+                if len(fnames) != 1:
+                    logging.warning(f"Did not find manual behavior annotation file in {manual_annotation_subfolder}")
+                else:
+                    filename_manual_beh_annotation = fnames[0]
+            all_files['filename_manual_beh_annotation'] = filename_manual_beh_annotation
+
         else:
             all_files = dict()
 
-        # Get the manual behavior annotations if automatic wasn't found
+        # Get other manual behavior annotations if automatic wasn't found
         if all_files.get('filename_beh_annotation', None) is None:
             try:
                 filename_beh_annotation, is_manual_style = get_manual_behavior_annotation_fname(project_config)
@@ -771,17 +1026,26 @@ class WormFullVideoPosture:
                      len(self._raw_stage_position),
                      self.frames_per_volume)
 
-    def remove_idx_of_tracking_failures(self, vec: pd.Series) -> pd.Series:
+    def remove_idx_of_tracking_failures(self, vec: pd.Series, estimate_failures_from_kymograph=True,
+                                        fluorescence_fps=True) -> pd.Series:
         """
         Removes indices of known tracking failures, if any
 
         Assumes the high frame rate index
         """
-        if self.tracking_failure_idx is not None and len(self.tracking_failure_idx) > 0 and vec is not None:
+        tracking_failure_idx = self.tracking_failure_idx
+        if tracking_failure_idx is None and estimate_failures_from_kymograph:
+            tracking_failure_idx = self.estimate_tracking_failures_from_kymo(fluorescence_fps)
+        if tracking_failure_idx is not None and len(tracking_failure_idx) > 0 and vec is not None:
             vec = vec.copy()
-            logging.debug(f"Setting these indices as tracking failures: {self.tracking_failure_idx}")
-            vec.iloc[self.tracking_failure_idx] = np.nan
+            logging.debug(f"Setting these indices as tracking failures: {tracking_failure_idx}")
+            vec.iloc[tracking_failure_idx] = np.nan
         return vec
+
+    def estimate_tracking_failures_from_kymo(self, fluorescence_fps):
+        kymo = self.curvature(fluorescence_fps=fluorescence_fps, reset_index=True)
+        tracking_failure_idx = np.where(kymo.isnull())[0]
+        return tracking_failure_idx
 
     # Raw videos
     def behavior_video_avi_fname(self):
@@ -866,7 +1130,8 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
     behavior_suffix = "beh_annotation.csv"
     behavior_fname = Path(raw_behavior_folder).joinpath(behavior_suffix)
     if not behavior_fname.exists():
-        behavior_fname = [f for f in raw_behavior_folder.iterdir() if f.name.endswith(behavior_suffix)]
+        behavior_fname = [f for f in raw_behavior_folder.iterdir() if f.name.endswith(behavior_suffix) and
+                          not f.name.startswith('.')]
         if len(behavior_fname) == 0:
             behavior_fname = None
         elif len(behavior_fname) == 1:
@@ -1147,3 +1412,98 @@ def plot_highest_correlations(df_traces, df_speed):
     min_vals = df_corr.min(axis=1)
     _plot(min_vals, min_names)
 
+
+def fit_3_break_piecewise_regression(dat, all_ends, all_starts, min_length=10,
+                                     end_padding=0, start_padding=0,
+                                     n_breakpoints=3,
+                                     DEBUG=False,
+                                     DEBUG_base_fname=None):
+    """
+    Within a time series (dat), fit a piecewise regression model to each segment between start and end points
+    given by zip(all_starts, all_ends)
+
+    The final output is a "score" of the plateau of the piecewise regression model, which is defined differently
+    depending on n_breakpoints:
+        n_breakpoints=2: The score is the distance between the breaks, with no checks
+        n_breakpoints=3: The score is the distance between the 1/2nd or 2/3rd break, decided in this way:
+            If the absolute amplitude at the first breakpoint is much lower than the second, use the second breakpoint
+            If the last breakpoint is not in the second half of the data, the fit failed and return np.nan
+            Otherwise, use the first and last breakpoints
+
+    Parameters
+    ----------
+    dat
+    all_ends
+    all_starts
+    min_length
+    end_padding
+    start_padding
+    n_breakpoints
+    DEBUG
+
+    Returns
+    -------
+
+    """
+    import piecewise_regression
+
+    new_starts = []
+    new_ends = []
+    for i_event, (start, end) in enumerate(zip(all_starts, all_ends)):
+        if end - start < min_length:
+            continue
+        y = dat.loc[start-start_padding:end + end_padding].to_numpy()
+        x = np.arange(len(y))
+
+        pw_fit = piecewise_regression.Fit(x, y, n_breakpoints=n_breakpoints, n_boot=25)
+        results = pw_fit.get_results()['estimates']
+        if results is None:
+            new_starts.append(np.nan)
+            new_ends.append(np.nan)
+            continue
+        # Only use first and last breakpoints, but do a quality check
+        if n_breakpoints >= 3:
+            breakpoint_start = results['breakpoint1']['estimate']
+            breakpoint2 = results['breakpoint2']['estimate']
+            breakpoint_end = results['breakpoint3']['estimate']
+            # If the absolute amplitude at the first breakpoint is much lower than the second, use the second
+            if np.abs(y[int(breakpoint_start)]) < np.abs(y[int(breakpoint2)]) / 2:
+                breakpoint_start = breakpoint2
+            # If the last breakpoint is not in the second half of the data, the fit failed
+            if breakpoint_end < len(x) / 2:
+                new_starts.append(np.nan)
+                new_ends.append(np.nan)
+                continue
+        else:
+            # No quality checks possible
+            breakpoint_start = results['breakpoint1']['estimate']
+            breakpoint_end = results['breakpoint2']['estimate']
+
+        start_absolute_coords = int(np.round(breakpoint_start + start))
+        end_absolute_coords = int(np.round(breakpoint_end + start))
+        new_starts.append(start_absolute_coords)
+        new_ends.append(end_absolute_coords)
+
+        if DEBUG:
+            pw_fit.plot_data(color="grey", s=20)
+            # Pass in standard matplotlib keywords to control any of the plots
+            pw_fit.plot_fit(color="red", linewidth=4)
+            pw_fit.plot_breakpoints()
+            pw_fit.plot_breakpoint_confidence_intervals()
+            plt.plot(breakpoint_start, y[int(breakpoint_start)], 'o', color='black')
+            plt.plot(breakpoint_end, y[int(breakpoint_end)], 'o', color='black')
+            plt.xlabel("x")
+            plt.ylabel("y")
+            plt.title(f"Difference: {end - start} vs {end_absolute_coords - start_absolute_coords}")
+
+            if DEBUG_base_fname is not None:
+                if not os.path.exists(DEBUG_base_fname):
+                    os.makedirs(DEBUG_base_fname, exist_ok=True)
+                fname = os.path.join(DEBUG_base_fname, f"time_series_with_breakpoints-{i_event}.png")
+                plt.savefig(fname)
+
+            plt.show()
+    if DEBUG:
+        print(f"Original starts: {all_starts}")
+        print(f"New starts: {new_starts}")
+    return new_ends, new_starts

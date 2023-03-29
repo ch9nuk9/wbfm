@@ -85,7 +85,7 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
     return path
 
 
-def read_if_exists(filename, reader=pd.read_hdf, **kwargs):
+def read_if_exists(filename: str, reader=pd.read_hdf, **kwargs):
     if filename is None:
         return None
     elif os.path.exists(filename):
@@ -180,6 +180,9 @@ def get_sequential_filename(fname: str, verbose=1) -> str:
     Check if the file or dir exists, and if so, append an integer
 
     Also check if this function has been used before, and remove the suffix
+
+    Example if the files test.h5 and test-1.h5 exist:
+        get_sequential_filename('test.h5') -> 'test-2.h5'
     """
     i = 1
     fpath = Path(fname)

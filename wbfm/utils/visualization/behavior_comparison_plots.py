@@ -1,33 +1,36 @@
 import logging
 import os
 import warnings
-from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import reduce
 from typing import List, Dict, Tuple, Union
+
 import seaborn as sns
 import numpy as np
 import pandas as pd
 import sklearn.exceptions
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
+from scipy.stats import pearsonr
 from sklearn.feature_selection import SequentialFeatureSelector
-from sklearn.linear_model import RidgeCV, LassoCV, Ridge
+from sklearn.linear_model import LassoCV, Ridge, ElasticNetCV
 from sklearn.metrics import median_absolute_error
-from sklearn.model_selection import cross_validate, RepeatedKFold, train_test_split, cross_val_score, GridSearchCV, \
+from sklearn.model_selection import cross_validate, RepeatedKFold, cross_val_score, GridSearchCV, \
     cross_val_predict, KFold
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
-from wbfm.utils.external.utils_pandas import correlate_return_cross_terms
+from wbfm.utils.external.utils_pandas import correlate_return_cross_terms, save_valid_ind_1d_or_2d, \
+    fill_missing_indices_with_nan
+from wbfm.utils.external.utils_sklearn import middle_40_cv_split
 from wbfm.utils.external.utils_statsmodels import ols_groupby
-from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, corrfunc
-from wbfm.utils.projects.finished_project_data import ProjectData, load_all_projects_from_list
+from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
+from wbfm.utils.projects.finished_project_data import ProjectData
 import statsmodels.api as sm
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
-from wbfm.utils.traces.residuals import calculate_residual_subtract_pca
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 
 
@@ -39,7 +42,7 @@ class NeuronEncodingBase:
     dataframes_to_load: List[str] = field(default_factory=lambda: ['ratio'])  # 'red', 'green', 'ratio_filt'])
 
     is_valid: bool = True
-    df_kwargs: dict = field(default_factory=dict)
+    df_kwargs: dict = field(default_factory=lambda: dict(filter_mode='rolling_mean'))
 
     use_residual_traces: bool = False
     _retained_neuron_names: list = None
@@ -56,12 +59,12 @@ class NeuronEncodingBase:
 
     @cached_property
     def all_dfs(self) -> Dict[str, pd.DataFrame]:
-        print("First time calculating traces, may take a while...")
+        # print("First time calculating traces, may take a while...")
 
         all_dfs = dict()
         for key in self.dataframes_to_load:
             # Assumes keys are a basic data mode, perhaps with a _filt suffix
-            new_opt = dict(filter_mode='rolling_mean')
+            new_opt = dict()
             channel_key = key
             if '_filt' in key:
                 channel_key = key.replace('_filt', '')
@@ -73,7 +76,9 @@ class NeuronEncodingBase:
 
             opt = self.df_kwargs.copy()
             opt.update(new_opt)
-            all_dfs[key] = self.project_data.calc_default_traces(**opt)
+            df = self.project_data.calc_default_traces(**opt)
+            df = fill_nan_in_dataframe(df)
+            all_dfs[key] = df
 
         # Align columns to common subset
         # If I didn't have this block, then I could just use the project data cache directly
@@ -85,7 +90,7 @@ class NeuronEncodingBase:
 
         self._retained_neuron_names = common_column_names
 
-        print("Finished calculating traces!")
+        # print("Finished calculating traces!")
         return all_dfs
 
 
@@ -96,23 +101,57 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     cv_factory: callable = KFold
     estimator: callable = Ridge
 
-    _last_model_calculated: callable = None
+    _best_single_neuron: str = None
+
+    _best_multi_neuron_model: callable = None
+    _best_single_neuron_model: callable = None
+    _best_leifer_model: callable = None
 
     def __post_init__(self):
         self.df_kwargs['interpolate_nan'] = True
 
-    def calc_multi_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, DEBUG=False):
-        """Speed by default"""
+    def calc_multi_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, correlation_not_r2=False,
+                                   use_null_model=False,
+                                   DEBUG=False, **kwargs):
+        """
+        Calculate the encoding of a single behavioral variable using all neurons
+
+        Uses cross_val_predict and cross_val_score to get the predictions and scores for each cv split
+
+        Parameters
+        ----------
+        df_name
+        y_train: Speed by default
+        only_model_single_state
+        correlation_not_r2
+        DEBUG
+        kwargs
+
+        Returns
+        -------
+
+        """
         X = self.all_dfs[df_name]
         X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train, only_model_single_state)
-        inner_cv = self.cv_factory() #.split(X, y_binary)
+        if use_null_model:
+            X = pd.DataFrame(y_binary)
+        inner_cv = self.cv_factory()
         model = self._setup_inner_cross_validation(inner_cv)
 
         with warnings.catch_warnings():
             # Outer cross validation: get score
-            outer_cv = self.cv_factory() #.split(X, y=y_binary)
-            nested_scores = cross_val_score(model, X=X, y=y, cv=outer_cv)
-            # model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
+            outer_cv = self.cv_factory()
+            if not correlation_not_r2:
+                nested_scores = cross_val_score(model, X=X, y=y, cv=outer_cv)
+            else:
+                # Loop over all folds and calculate the correlation
+                nested_scores = []
+                for train_index, test_index in outer_cv.split(X, y=y_binary):
+                    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+                    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+                    model.fit(X_train, y_train)
+                    y_pred = model.predict(X_test)
+                    nested_scores.append(pearsonr(y_test, y_pred)[0])
 
             # Also do a prediction step
             try:
@@ -122,9 +161,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 y_pred = model.fit(X, y).predict(X)
             y_pred = pd.Series(y_pred, index=y.index)
 
-        # score = model.score(X_test, y_test)
-        # y_pred = model.predict(X)  # For entire dataset
-        self._last_model_calculated = model
+        self._best_multi_neuron_model = model
         if DEBUG:
             # plt.plot(X_test, label='X')
             plt.plot(y, label='y')
@@ -147,15 +184,33 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             model = GridSearchCV(estimator=estimator, param_grid=p_grid, cv=inner_cv)
         return model
 
-    def calc_single_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, DEBUG=False):
+    def calc_single_neuron_encoding(self, df_name, y_train=None, only_model_single_state=None, correlation_not_r2=False,
+                                    use_null_model=False,
+                                    DEBUG=False, **kwargs):
         """
         Best single neuron encoding
 
         Note that this does nested cross validation to select:
             ridge alpha (inner) and best neuron (outer)
+
+        Parameters
+        ----------
+        df_name
+        y_train
+        only_model_single_state
+        correlation_not_r2
+        use_null_model
+        DEBUG
+        kwargs
+
+        Returns
+        -------
+
         """
         X = self.all_dfs[df_name]
         X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train, only_model_single_state)
+        if use_null_model:
+            raise NotImplementedError("Null model not implemented for single neuron encoding")
         inner_cv = self.cv_factory() #.split(X, y_binary)
         model = self._setup_inner_cross_validation(inner_cv)
 
@@ -175,7 +230,18 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
             # Calculate the error using this neuron (CV again)
             outer_cv = self.cv_factory()
-            nested_scores = cross_val_score(model, X=X_best_single_neuron, y=y, cv=outer_cv)
+            if not correlation_not_r2:
+                nested_scores = cross_val_score(model, X=X_best_single_neuron, y=y, cv=outer_cv)
+            else:
+                # Loop over all folds and calculate the correlation
+                nested_scores = []
+                for train_index, test_index in outer_cv.split(X_best_single_neuron, y):
+                    X_train, X_test = X_best_single_neuron[train_index], X_best_single_neuron[test_index]
+                    y_train, y_test = y[train_index], y[test_index]
+                    model.fit(X_train, y_train)
+                    y_pred = model.predict(X_test)
+                    corr = pearsonr(y_pred, y_test)[0]
+                    nested_scores.append(corr)
             # model = RidgeCV(cv=self.cv, alphas=alphas).fit(X_train, y_train)
 
             # Also do a prediction step
@@ -186,7 +252,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 y_pred = model.fit(X_best_single_neuron, y).predict(X_best_single_neuron)
             y_pred = pd.Series(y_pred, index=y.index)
 
-        self._last_model_calculated = model
+        self._best_single_neuron_model = model
+        self._best_single_neuron = best_neuron
         if DEBUG:
             plt.plot(X_best_single_neuron, label='X')
             plt.plot(y, label='y')
@@ -198,7 +265,15 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                   f"{nested_scores.mean():.2f} +- {nested_scores.std():.2f}")
         return nested_scores, model, y, y_pred, y_train_name, best_neuron
 
-    def prepare_training_data(self, X, y_train_name, only_model_single_state=None) -> \
+    def best_single_neuron(self):
+        """Returns the name of the best single neuron, if it was calculated"""
+        if self._best_single_neuron is None:
+            logging.warning("Best single neuron was not calculated, using default settings")
+            self.calc_single_neuron_encoding(df_name='ratio')
+        return self._best_single_neuron
+
+    def prepare_training_data(self, X, y_train_name, only_model_single_state=None,
+                              binary_state = BehaviorCodes.REV) -> \
             Tuple[pd.DataFrame, pd.Series, pd.Series, str]:
         """
         Converts a string describing a behavioral time series into the appropriate series, and aligns with the neural
@@ -208,7 +283,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         ----------
         X
         y_train_name
-        only_model_single_state - See BehaviorCodes
+        only_model_single_state: See BehaviorCodes
 
         Returns
         -------
@@ -217,19 +292,14 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         trace_len = X.shape[0]
         y, y_train_name = self.unpack_behavioral_time_series_from_name(y_train_name, trace_len)
 
-        # Remove nan points, if any
+        # Remove nan points, if any (the regression can't handle them)
         valid_ind = np.where(~np.isnan(y))[0]
-        for tmp in [X, y]:
-            if len(tmp.shape) == 2:
-                tmp = tmp.iloc[valid_ind, :]
-            elif len(tmp.shape) == 1:
-                tmp = tmp.iloc[valid_ind]
-            else:
-                raise NotImplementedError("Must be 1d or 2d")
+        X = save_valid_ind_1d_or_2d(X.copy(), valid_ind)
+        y = save_valid_ind_1d_or_2d(y.copy(), valid_ind)
 
-        # Also build a binary class variable; possibly used for cross validation
+        # Also build a binary class variable; possibly used for cross validation or as a null model
         worm = self.project_data.worm_posture_class
-        y_binary = (worm.beh_annotation(fluorescence_fps=True) == BehaviorCodes.REV).copy()
+        y_binary = (worm.beh_annotation(fluorescence_fps=True) == binary_state).copy()
         y_binary.index = y.index
 
         # Optionally subset the data to be only a specific state
@@ -261,27 +331,99 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         # Get 1d series from behavior
         y = self.project_data.worm_posture_class.calc_behavior_from_alias(y_train_name)
         y = y.iloc[:trace_len]
+        y = fill_nan_in_dataframe(y)
         y.reset_index(drop=True, inplace=True)
         return y, y_train_name
 
-    def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
+    def plot_model_prediction(self, df_name, y_train=None, use_multineuron=True, use_leifer_method=False,
+                              only_model_single_state=None, correlation_not_r2=False, use_null_model=False,
                               DEBUG=False, **plot_kwargs):
         """Plots model prediction over raw data"""
-        if use_multineuron:
+        opt = dict(y_train=y_train, only_model_single_state=only_model_single_state,
+                   correlation_not_r2=correlation_not_r2, use_null_model=use_null_model,
+                   DEBUG=DEBUG)
+        if use_leifer_method:
             score_list, model, y_total, y_pred, y_train_name = \
-                self.calc_multi_neuron_encoding(df_name, y_train=y_train,
-                                                only_model_single_state=only_model_single_state, DEBUG=DEBUG)
+                self.calc_leifer_encoding(df_name, **opt)
+            y_name = f"leifer_{y_train_name}"
+            best_neuron = ""
+        elif use_multineuron:
+            score_list, model, y_total, y_pred, y_train_name = \
+                self.calc_multi_neuron_encoding(df_name, **opt)
             y_name = f"multineuron_{y_train_name}"
             best_neuron = ""
         else:
             score_list, model, y_total, y_pred, y_train_name, best_neuron = \
-                self.calc_single_neuron_encoding(df_name, y_train=y_train,
-                                                 only_model_single_state=only_model_single_state, DEBUG=DEBUG)
+                self.calc_single_neuron_encoding(df_name, **opt)
             y_name = f"single_best_neuron_{y_train_name}"
         self._plot_predictions(df_name, y_pred, y_total, y_name=y_name, score_list=score_list, best_neuron=best_neuron,
                                **plot_kwargs)
 
         return model, best_neuron
+
+    def calc_leifer_encoding(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
+                             correlation_not_r2=False, use_null_model=False,
+                             DEBUG=False, **kwargs):
+        """
+        Fits model using the Leifer settings, which does not use full cross validation
+
+        Rather, it uses a single train/test split, and then calculates the score on the test set
+        The test set is the middle 40% of the data
+
+        Note that this produces significantly more optimistic scores than the "best practice" nested cross validation
+        method, used in the other methods in this class
+
+        Note also that the correlation_not_r2 score is what was actually calculated in the paper, and again produces
+        more optimistic scores than the r2 score or the other cross validation methods
+
+        Parameters
+        ----------
+        df_name
+        y_train
+
+        Returns
+        -------
+
+        """
+        X = self.all_dfs[df_name]
+        X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train,
+                                                                  only_model_single_state=only_model_single_state)
+        if use_null_model:
+            X = pd.DataFrame(y_binary)
+
+        # Get train-test split
+        trace_len = X.shape[0]
+        ind_test, ind_train = middle_40_cv_split(trace_len)
+        X = X - X.mean()
+        X = X / X.std()
+        X_train = X.iloc[ind_train, :]
+        X_test = X.iloc[ind_test, :]
+        y_train = y.iloc[ind_train]
+        y_test = y.iloc[ind_test]
+
+        # Fit; note that even though we have CV, the result is sensitive to the exact value space
+        # alphas = np.logspace(-6, 6, 21)  # alpha values to be chosen from by cross-validation
+        # l1_ratio = np.logspace(-7, 0, 13)
+        alphas = np.logspace(-6, 2, 11)  # alpha values to be chosen from by cross-validation
+        l1_ratio = np.logspace(-6, 0, 7)
+        if self._best_leifer_model is None:
+            model = ElasticNetCV(alphas=alphas, l1_ratio=l1_ratio)
+            with warnings.catch_warnings():
+                warnings.simplefilter(action='ignore', category=sklearn.exceptions.ConvergenceWarning)
+                model.fit(X=X_train, y=y_train)
+        else:
+            model = self._best_leifer_model
+        if not correlation_not_r2:
+            score = model.score(X_test, y_test)
+        else:
+            y_pred = model.predict(X_test)
+            score = pearsonr(y_test, y_pred)[0]
+        y_pred = model.predict(X)
+        y_pred = pd.Series(y_pred, index=y.index)
+
+        self._best_leifer_model = model
+
+        return [score], model, y, y_pred, y_train_name
 
     def plot_sorted_correlations(self, df_name, y_train=None, to_save=False, saving_folder=None):
         """
@@ -319,10 +461,11 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             fname = f"sorted_correlation_{df_name}_{y_train_name}.png"
             self._savefig(fname, saving_folder)
 
-    def calc_dataset_summary_df(self, name: str, **kwargs) -> pd.DataFrame:
+    def calc_dataset_summary_df(self, df_name: str, **kwargs) -> pd.DataFrame:
         """
         Calculates a summary number for the full dataset:
             The linear model error for a) the best single neuron and b) the multivariate encoding
+            Also calculates the leifer error
 
         Parameters
         ----------
@@ -333,13 +476,62 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         """
 
-        multi_list = self.calc_multi_neuron_encoding(name, **kwargs)[0]
-        single_list = self.calc_single_neuron_encoding(name, **kwargs)[0]
+        kwargs['df_name'] = df_name
+        multi_list = self.calc_multi_neuron_encoding(**kwargs)[0]
+        try:
+            single_list = self.calc_single_neuron_encoding(**kwargs)[0]
+        except NotImplementedError:
+            single_list = None
+        leifer_score = self.calc_leifer_encoding(**kwargs)[0]
 
-        df_dict = {'best_single_neuron': np.mean(single_list), 'multi_neuron': np.mean(multi_list),
+        df_dict = {'multi_neuron': np.nanmean(multi_list),
+                   'leifer_score': leifer_score,
                    'dataset_name': self.project_data.shortened_name}
+        if single_list is not None:
+            df_dict['single_neuron'] = np.nanmean(single_list)
         df = pd.DataFrame(df_dict, index=[0])
         return df
+
+    def calc_prediction_or_raw_df(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
+                                  prediction_not_raw=True, use_leifer_method=False, **kwargs) -> pd.DataFrame:
+        """
+        Similar to plot_model_prediction, but returns one dataframe (prediction or raw)
+
+        Parameters
+        ----------
+        df_name
+        y_train
+        use_multineuron
+        only_model_single_state
+
+        Returns
+        -------
+
+        """
+        opt = dict(y_train=y_train, only_model_single_state=only_model_single_state)
+        opt.update(kwargs)
+        if prediction_not_raw:
+            if use_leifer_method:
+                score_list, model, y_total, y_pred, y_train_name = \
+                    self.calc_leifer_encoding(df_name, **opt)
+            elif use_multineuron:
+                score_list, model, y_total, y_pred, y_train_name = \
+                    self.calc_multi_neuron_encoding(df_name, **opt)
+            else:
+                score_list, model, y_total, y_pred, y_train_name, best_neuron = \
+                    self.calc_single_neuron_encoding(df_name, **opt)
+            y = y_pred
+
+        else:
+            X = self.all_dfs[df_name]
+            X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train, only_model_single_state)
+
+        y = y.sort_index()
+        y, _ = fill_missing_indices_with_nan(y, expected_max_t=self.project_data.num_frames)
+        y = y.sort_index()
+        df_summary = pd.DataFrame({self.project_data.shortened_name: y})
+
+        return df_summary
 
     def calc_dataset_per_neuron_summary_df(self, df_name, x_name):
         """
@@ -552,7 +744,17 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
 @dataclass
 class NeuronToMultivariateEncoding(NeuronEncodingBase):
-    """Designed for single-neuron correlations to all kymograph body segments"""
+    """
+    Designed for single-neuron correlations to all kymograph body segments
+
+    Can also use other kymograph-like dataframes, such as hilbert amplitude or instantaneous frequency
+    """
+
+    posture_attribute: str = "curvature"  # Must be a function of WormFullVideoPosture
+    posture_index_start: int = 2
+    posture_index_end: int = 30
+
+    allow_negative_correlations: bool = True
 
     def __post_init__(self):
 
@@ -562,39 +764,44 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
             logging.warning("Kymograph not found, this class will not work")
             self.is_valid = False
 
+    def get_kymo_like_df(self):
+        opt = dict(fluorescence_fps=True)
+        kymo = getattr(self.project_data.worm_posture_class, self.posture_attribute)(**opt).reset_index(drop=True)
+        df_kymo = kymo.loc[:, self.posture_index_start:self.posture_index_end].copy()
+        return df_kymo
+
     @cached_property
     def all_dfs_corr(self) -> Dict[str, pd.DataFrame]:
-        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True) .reset_index(drop=True, inplace=False)
+        df_kymo = self.get_kymo_like_df()
 
         all_dfs = self.all_dfs
-        df_kymo = kymo.loc[:, 3:60].copy()
         all_dfs_corr = {key: correlate_return_cross_terms(df, df_kymo) for key, df in all_dfs.items()}
         return all_dfs_corr
 
     @cached_property
     def all_dfs_corr_fwd(self) -> Dict[str, pd.DataFrame]:
         assert self.project_data.worm_posture_class.has_beh_annotation, "Behavior annotations required"
-
-        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True).reset_index(drop=True)
+        kymo = self.get_kymo_like_df()
 
         # New: only do certain indices
-        ind = self.project_data.worm_posture_class.beh_annotation == BehaviorCodes.FWD
+        ind = self.project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True) \
+              == BehaviorCodes.FWD
         all_dfs = self.all_dfs
-        df_kymo = kymo.loc[ind, 3:60].copy()
+        df_kymo = kymo.loc[ind, :].copy()
         all_dfs_corr = {key: correlate_return_cross_terms(df.loc[ind, :], df_kymo) for key, df in all_dfs.items()}
         return all_dfs_corr
 
     @cached_property
     def all_dfs_corr_rev(self) -> Dict[str, pd.DataFrame]:
         assert self.project_data.worm_posture_class.has_beh_annotation, "Behavior annotations required"
-
-        kymo = self.project_data.worm_posture_class.curvature(fluorescence_fps=True).reset_index(drop=True)
+        kymo = self.get_kymo_like_df()
 
         # New: only do certain indices
-        ind = self.project_data.worm_posture_class.beh_annotation == BehaviorCodes.REV
+        ind = self.project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True) \
+              == BehaviorCodes.REV
         all_dfs = self.all_dfs
 
-        df_kymo = kymo.loc[ind, 3:60].copy()
+        df_kymo = kymo.loc[ind, :].copy()
         all_dfs_corr = {key: correlate_return_cross_terms(df.loc[ind, :], df_kymo) for key, df in all_dfs.items()}
         return all_dfs_corr
 
@@ -607,7 +814,7 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         cols = ['tab:red', 'tab:green', 'tab:blue', 'tab:orange', 'tab:purple']
         return cols[:len(self.all_labels)]
 
-    def calc_per_neuron_df(self, name: str) -> pd.DataFrame:
+    def calc_per_neuron_df(self, name: str, rectification_variable=None) -> pd.DataFrame:
         """
         Calculates a summary dataframe of information per neuron.
             Rows: neuron names
@@ -618,18 +825,28 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         Parameters
         ----------
         name - str, one of self.all_labels
+        rectification_variable - optional str, one of None, 'rev', 'fwd'
 
         Returns
         -------
 
         """
-        df_corr = self.all_dfs_corr[name]
+        if rectification_variable is None:
+            df_corr = self.all_dfs_corr[name].copy()
+        elif rectification_variable == 'rev':
+            df_corr = self.all_dfs_corr_rev[name].copy()
+        elif rectification_variable == 'fwd':
+            df_corr = self.all_dfs_corr_fwd[name].copy()
+        else:
+            raise ValueError(f"rectification_variable must be one of None, 'rev', 'fwd', not {rectification_variable}")
+        if self.allow_negative_correlations:
+            df_corr = df_corr.abs()
         df_traces = self.all_dfs[name]
 
-        body_segment_argmax = df_corr.columns[df_corr.abs().apply(pd.Series.argmax, axis=1)]
+        body_segment_argmax = df_corr.columns[df_corr.apply(pd.Series.argmax, axis=1)]
         body_segment_argmax = pd.Series(body_segment_argmax, index=df_corr.index)
 
-        corr_max = df_corr.abs().max(axis=1)
+        corr_max = df_corr.max(axis=1)
         median = df_traces.median(axis=0)
         var = df_traces.var(axis=0)
 
@@ -739,7 +956,7 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         # for fig in all_figs:
         #     fig.axes[0][0].set_ylabel("Differential correlation")
 
-    def plot_correlation_histograms(self, to_save=True):
+    def plot_correlation_histograms(self, to_save=False):
         plt.figure(dpi=100)
         all_max_corrs = [df_corr.abs().max(axis=1) for df_corr in self.all_dfs_corr.values()]
 
@@ -898,144 +1115,13 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
 
             fig.tight_layout()
 
-            if to_save:
-                fname = f'traces_kymo_correlation_{neuron_name}.png'
-                self.project_data.save_fig_in_project(suffix=fname)
+            # if to_save:
+            #     fname = f'traces_kymo_correlation_{neuron_name}.png'
+            #     self.project_data.save_fig_in_project(suffix=fname)
 
             if max_num_plots is not None and num_open_plots >= max_num_plots:
                 break
         return all_figs
-
-
-@dataclass
-class MultiProjectBehaviorPlotter:
-    all_project_paths: list = None
-    all_projects: Dict[str, ProjectData] = None
-
-    class_constructor: callable = NeuronToMultivariateEncoding
-    use_threading: bool = True
-
-    _all_behavior_plotters: List[NeuronEncodingBase] = None
-
-    def __post_init__(self):
-        if self.all_projects is None:
-            assert self.all_project_paths is not None, "Must pass either projects or paths"
-            self.all_projects = load_all_projects_from_list(self.all_project_paths)
-        # Initialize the behavior plotters
-        self._all_behavior_plotters = [self.class_constructor(p) for p in self.all_projects.values()]
-
-    def __getattr__(self, item):
-        # Transform all unknown function calls into a loop of calls to the subobjects
-        def method(*args, **kwargs):
-            print(f"Dynamically dispatching method: {item}")
-            if item == '_all_behavior_plotters':
-                return self._all_behavior_plotters
-            output = {}
-            for p in tqdm(self._all_behavior_plotters):
-                if not p.is_valid:
-                    logging.warning(f"Skipping invalid project {p.project_data.shortened_name}")
-                    continue
-                out = getattr(p, item)(*args, **kwargs)
-                output[p.project_data.shortened_name] = out
-            return output
-        return method
-
-    @staticmethod
-    def concat_multiple_datasets_long(dict_of_dfs, long_format=True):
-        # Works for get_data_for_paired_boxplot
-        if long_format:
-            df = pd.concat(dict_of_dfs, axis=1)  # Creates a multiindex dataframe
-        else:
-            df = pd.concat(dict_of_dfs, axis=0).T
-        df = df.T.reset_index().drop(columns='level_1')
-        if 'dataset_name' in df:
-            df.drop('level_0', inplace=True)
-        else:
-            df = df.rename(columns={'level_0': 'dataset_name'})
-        return df.T
-
-    def pairplot_multi_dataset(self, which_channel='red', include_corr=True,
-                               to_save=False):
-        """
-        Plots a seaborn pairplot for multiple datasets
-
-        Parameters
-        ----------
-        which_channel
-        include_corr
-        to_save
-
-        Returns
-        -------
-
-        """
-
-        all_dfs = self.calc_per_neuron_df(which_channel)
-
-        df = pd.concat(all_dfs, axis=0)
-        df = df.reset_index().rename(columns={'index': 'neuron_name'})
-        g = sns.pairplot(df, hue='dataset_name')
-        if include_corr:
-            g.map_lower(corrfunc)
-
-        return g
-
-        # if to_save:
-        #     fname = '/home/charles/Current_work/presentations/nov_2022'
-        #     fname = os.path.join(fname, 'gcamp6f_red_summary.png')
-        #     plt.savefig(fname)
-
-    def paired_boxplot_per_neuron_multi_dataset(self, df_start_name='red', df_final_name='ratio'):
-        """
-        Designed for use with subclass: BehavioralEncoding
-            Uses per-neuron dataframes from each dataset
-
-        Parameters
-        ----------
-        df_start_name
-        df_final_name
-
-        Returns
-        -------
-
-        """
-        all_dfs = self.get_data_for_paired_boxplot(df_final_name, df_start_name)
-        df = self.concat_multiple_datasets_long(all_dfs)
-
-        paired_boxplot_from_dataframes(df.iloc[1:, :], [df_start_name, df_final_name])
-        plt.title("Maximum correlation to kymograph")
-        plt.ylim(0, 0.8)
-
-    def paired_boxplot_overall_multi_dataset(self, df_name='ratio', **kwargs):
-        """
-        Designed for use with subclass: SpeedEncoding
-            Uses full-dataset dataframes from each dataset (one number per dataset)
-
-        Parameters
-        ----------
-        df_name
-
-        Returns
-        -------
-
-        """
-        dict_of_dfs = self.calc_dataset_summary_df(df_name, **kwargs)
-        df = pd.concat(dict_of_dfs, axis=0).reset_index(drop=True).T
-
-        paired_boxplot_from_dataframes(df)
-        if kwargs.get('y_train', None) is not None:
-            plt.title(f"Decoding of {kwargs['y_train']}")
-        else:
-            plt.title(f"Decoding of Speed")
-        plt.ylim(-1.0, 1.0)
-
-    def set_for_all_classes(self, updates: dict):
-        for key, val in updates.items():
-            for b in self._all_behavior_plotters:
-                b.__setattr__(key, val)
-
-    def __repr__(self):
-        return f"Multiproject analyzer with {len(self._all_behavior_plotters)} projects"
 
 
 @dataclass

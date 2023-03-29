@@ -12,7 +12,7 @@ import numpy as np
 import scipy.io
 from sklearn.decomposition import PCA
 
-from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes, options_for_ethogram
 from wbfm.utils.general.custom_errors import NoNeuronsError
 
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
@@ -31,6 +31,7 @@ import matplotlib.style as mplstyle
 from plotly.subplots import make_subplots
 from plotly import graph_objects as go
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.visualization.filtering_traces import filter_rolling_mean, fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 import plotly.express as px
 
@@ -898,7 +899,7 @@ def make_default_triggered_average_plots(project_cfg, to_save=True):
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     vis_cfg = project_data.project_config.get_visualization_config()
     project_data.verbose = 0
-    all_triggers = dict(reversal=1, forward=0)
+    all_triggers = dict(reversal=BehaviorCodes.REV, forward=BehaviorCodes.FWD)
     # Build triggered average class
     trace_opt = dict(channel_mode='ratio', calculation_mode='integration', min_nonnan=0.8)
     df = project_data.calc_default_traces(**trace_opt)
@@ -988,12 +989,14 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
 def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show=False):
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
-    df_traces = project_data.calc_default_traces(interpolate_nan=True, filter_mode='rolling_mean',
+    df_traces = project_data.calc_default_traces(interpolate_nan=True,
+                                                 filter_mode='rolling_mean',
                                                  min_nonnan=0.9,
                                                  nan_tracking_failure_points=True,
+                                                 nan_using_ppca_manifold=True,
                                                  channel_mode='dr_over_r_50')
-    df_traces_no_nan = df_traces.copy()
-    df_traces_no_nan.fillna(df_traces.mean(), inplace=True)
+    df_traces = filter_rolling_mean(df_traces, window=3)
+    df_traces_no_nan = fill_nan_in_dataframe(df_traces)
     # Calculate pca modes, and use them to sort
     pca_weights = PCA(n_components=10)
     pca_modes = PCA(n_components=10)
@@ -1030,11 +1033,11 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     # Initialize options for all subplots
     base_colormap = px.colors.qualitative.Plotly
 
-    subplot_titles = ['Traces sorted by PC1', '', 'PCA weights', '',
-                      'PCA modes', 'Phase plot', '', '', 'Middle Body Speed', 'Variance Explained']
-    row_heights = [0.6, 0.1, 0.1, 0.1, 0.1]
+    subplot_titles = ['Traces sorted by PC1', '', 'PCA weights', '', 'Ethogram', 'Phase plot',
+                      'PCA modes', '', '', 'Middle Body Speed', 'Variance Explained']
+    row_heights = [0.55, 0.05, 0.1, 0.1, 0.1, 0.1]
     column_widths = [0.7, 0.1, 0.1, 0.1]
-    rows = 1 + num_pca_modes_to_plot + 1
+    rows = 1 + num_pca_modes_to_plot + 2
     cols = 1 + num_pca_modes_to_plot
 
     ### Main heatmap
@@ -1046,11 +1049,11 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     trace_opt_list = []
     for i, col in enumerate(col_names):
         trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index))
-        trace_opt_list.append(dict(row=i + 2, col=1, secondary_y=False))
+        trace_opt_list.append(dict(row=i+3, col=1, secondary_y=False))
 
     ### Speed plot (below pca modes)
     trace_list.append(go.Scatter(y=speed, x=speed.index))
-    trace_opt_list.append(dict(row=num_pca_modes_to_plot + 2, col=1, secondary_y=False))
+    trace_opt_list.append(dict(row=num_pca_modes_to_plot+3, col=1, secondary_y=False))
 
     ### PCA weights (same names as pca modes)
     weights_list = []
@@ -1060,7 +1063,11 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
                                    marker=dict(color=base_colormap[i]),
                                    hovertext=neuron_names,
                                    hoverinfo="text"))
-        weights_opt_list.append(dict(row=1, col=2 + i, secondary_y=False))
+        weights_opt_list.append(dict(row=1, col=2+i, secondary_y=False))
+
+    ### Ethogram
+    beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
+    all_shape_opt = options_for_ethogram(beh_vec)
 
     ### 3d phase plot
     beh_trace = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
@@ -1080,21 +1087,25 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
 
     ### Variance explained
     var_explained_line = go.Scatter(y=var_explained)
-    var_explained_line_opt = dict(row=5, col=2, secondary_y=False)
+    var_explained_line_opt = dict(row=6, col=2, secondary_y=False)
 
     # Build figure
 
     ### First column: x axis is time
     fig = make_subplots(rows=rows, cols=cols, shared_xaxes=False, shared_yaxes=False,
                         row_heights=row_heights, column_widths=column_widths,
+                        horizontal_spacing=0.02, vertical_spacing=0.05,
                         subplot_titles=subplot_titles,
                         specs=[[{}, {}, {}, {}],
-                               [{}, {"rowspan": 3, "colspan": 3, "type": "scene"}, None, None],
+                               [{}, {"rowspan": 4, "colspan": 3, "type": "scene"}, None, None],
+                               [{}, None, None, None],
                                [{}, None, None, None],
                                [{}, None, None, None],
                                [{}, {"rowspan": 1, "colspan": 3}, None, None]])
 
     fig.add_trace(heatmap, **heatmap_opt)
+    for opt in all_shape_opt:
+        fig.add_shape(**opt, row=2, col=1)
     for trace, trace_opt in zip(trace_list, trace_opt_list):
         fig.add_trace(trace, **trace_opt)
 
@@ -1126,5 +1137,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         fname = trace_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         fig.write_html(str(fname))
         fname = Path(fname).with_suffix('.png')
+        fig.write_image(str(fname))
+        fname = Path(fname).with_suffix('.svg')
         fig.write_image(str(fname))
 

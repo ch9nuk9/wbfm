@@ -1,8 +1,15 @@
 import logging
+import os
+import subprocess
+import sys
 
 import napari
 import numpy as np
+from PIL.Image import Image
 from PyQt5 import QtGui
+from PyQt5.QtWidgets import QPushButton, QComboBox, QVBoxLayout, QWidget, QApplication, QMessageBox
+from imageio import imread
+from matplotlib import pyplot as plt
 
 from wbfm.utils.general.postprocessing.base_cropping_utils import get_crop_coords3d
 from wbfm.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume, \
@@ -206,3 +213,153 @@ def add_fps_printer(viewer):
         print(f'{x:.1f} frames per second')
 
     viewer.window.qt_viewer.canvas.measure_fps(callback=lambda x: fps_status(viewer, x))
+
+
+def build_gui_for_grid_plots(parent_folder, DEBUG=False):
+    # Build a GUI for selecting which grid plots to view
+    # Each grid plot is a png file
+    # Subfolder structure is:
+    # parent_folder
+    #  - folder of projects
+    #    - folder of single project
+    #      - folder called "4-traces"
+    #        - individual png files
+    # There can be many png files, and we want a dropdown to select which one to view
+
+    # Get all the project parent folders
+    project_parent_folders = [os.path.join(parent_folder, x) for x in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder, x))]
+    # Get individual project_folders as a nested dictionary of {project_parent_folder: {project_name: project_folder}}
+    project_folders = {}
+    for project_parent_folder in project_parent_folders:
+        # Set the outer key as just the folder name
+        key = os.path.basename(project_parent_folder)
+        project_folders[key] = {os.path.basename(x): os.path.join(project_parent_folder, x)
+                                    for x in os.listdir(project_parent_folder)
+                                    if os.path.isdir(os.path.join(project_parent_folder, x))}
+
+    # Remove any folders that have not subfolders
+    project_folders = {k: v for k, v in project_folders.items() if len(v) > 0}
+
+    # Get all the png files as a nested dictionary of {project_parent_folder: {project_name: {png_basename: png_full_path}}}
+    png_files = {}
+    for project_parent_folder, project_name_dict in project_folders.items():
+        png_files[project_parent_folder] = {}
+        for project_name, project_full_path in project_name_dict.items():
+            this_subfolder = os.path.join(project_full_path, "4-traces")
+            # There could be other folders with different subfolders, so skip if this isn't a folder
+            if not os.path.isdir(this_subfolder):
+                continue
+            png_basename = [x for x in os.listdir(this_subfolder) if x.endswith(".png")]
+            png_full_path = [os.path.join(this_subfolder, x) for x in png_basename]
+            # Do not save if there are no png files
+            if len(png_basename) > 0:
+                png_files[project_parent_folder][project_name] = dict(zip(png_basename, png_full_path))
+
+    # Remove any folders that have no subfolders
+    png_files = {k: v for k, v in png_files.items() if len(v) > 0}
+    # Remove subfolders that have no png files
+    for k, v in png_files.items():
+        png_files[k] = {k2: v2 for k2, v2 in v.items() if len(v2) > 0}
+
+    # Build the GUI using qtwidgets
+    app = QApplication([])
+    window = QWidget()
+    layout = QVBoxLayout()
+    window.setLayout(layout)
+    # Add a dropdown to select the folder of projects
+    project_parent_dropdown = QComboBox()
+    project_parent_dropdown.addItems(png_files.keys())
+    layout.addWidget(project_parent_dropdown)
+
+    # Add a dropdown to select the project within the folder
+    project_dropdown = QComboBox()
+    layout.addWidget(project_dropdown)
+
+    # Add a dropdown to select the png file
+    png_dropdown = QComboBox()
+    layout.addWidget(png_dropdown)
+    # Add a button to view the selected png file
+    view_button = QPushButton("View")
+    layout.addWidget(view_button)
+    # Add a popup if the image isn't found
+    popup = QMessageBox()
+    popup.setWindowTitle("Error")
+    popup.setText("Image not found")
+    popup.setIcon(QMessageBox.Critical)
+    popup.setStandardButtons(QMessageBox.Ok)
+
+    # Callback to update the png dropdown when the project dropdown is changed
+    def update_png_dropdown():
+        project_name = project_dropdown.currentText()
+        project_parent_name = project_parent_dropdown.currentText()
+        # Do not try if no project is selected
+        if project_name == "" or project_parent_name == "":
+            return
+        # print("Updating png dropdown for: ", project_parent_name, project_name)
+        keys = list(png_files[project_parent_name][project_name].keys())
+        png_dropdown.clear()
+        png_dropdown.addItems(keys)
+        # Set the default value as an item that contains the word 'beh'
+        for i, key in enumerate(keys):
+            if "beh" in key.lower():
+                png_dropdown.setCurrentIndex(i)
+                break
+
+    # Callback to view the selected png file
+    def view_png():
+        project_parent_name = project_parent_dropdown.currentText()
+        project_name = project_dropdown.currentText()
+        png_name = png_dropdown.currentText()
+        # Do not try if no file is selected
+        if png_name == "" or project_name == "" or project_parent_name == "":
+            return
+        png_path = png_files[project_parent_name][project_name][png_name]
+        # Display the image if it exists using the system default image viewer
+        if os.path.exists(png_path):
+            print("Opening: ", png_path)
+            path = os.path.realpath(png_path)
+            if sys.platform == "win32":
+                os.startfile(path)
+            else:
+                opener = "open" if sys.platform == "darwin" else "xdg-open"
+                subprocess.call([opener, path])
+        else:
+            popup.exec()
+
+    # Callback to update the project dropdown when the project parent dropdown is changed
+    def update_project_dropdown():
+        project_parent_folder = project_parent_dropdown.currentText()
+        keys = list(png_files[project_parent_folder].keys())
+        project_dropdown.clear()  # Note that this triggers the update_png_dropdown callback
+        project_dropdown.addItems(keys)
+        project_dropdown.setCurrentIndex(0)
+        # print("Updating project dropdown for: ", project_parent_folder)
+        # print(png_files[project_parent_folder])
+
+    # Connect the callbacks, ensuring that the parent folder is updated first
+    project_parent_dropdown.currentTextChanged.connect(update_project_dropdown)
+    project_dropdown.currentTextChanged.connect(update_png_dropdown)
+    view_button.clicked.connect(view_png)
+
+    # Set the parent dropdown folder, in order to trigger the callbacks
+    project_parent_dropdown.setCurrentIndex(1)
+    project_parent_dropdown.setCurrentIndex(0)
+
+    window.show()
+    app.exec()
+
+
+def on_close(self, event, widget):
+    # Copied from deeplabcut-napari
+    # https://github.com/DeepLabCut/napari-deeplabcut/blob/c05d4a8eb58716da96b97d362519d4ee14e21cac/src/napari_deeplabcut/_widgets.py#L121
+    choice = QMessageBox.warning(
+        widget,
+        "Warning",
+        "Data may not be saved. Are you certain you want to quit? "
+        "Note: you additionally need to press ctrl-c in the terminal to fully quit the program",
+        QMessageBox.Yes | QMessageBox.No,
+    )
+    if choice == QMessageBox.Yes:
+        event.accept()
+    else:
+        event.ignore()

@@ -3,6 +3,7 @@ import numpy as np
 import plotly.express as px
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column
+from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError
 
 
 class BehaviorCodes(IntEnum):
@@ -13,11 +14,20 @@ class BehaviorCodes(IntEnum):
     """
     FWD = -1
     REV = 1
-    TURN = 2 # Not currently used by Ulises
-    PAUSE = 3 # Not currently used by Ulises
+    FWD_VENTRAL_TURN = 2  # Manually annotated
+    FWD_DORSAL_TURN = 3  # Manually annotated
+    REV_VENTRAL_TURN = 4  # Manually annotated
+    REV_DORSAL_TURN = 5  # Manually annotated
+    SUPERCOIL = 6  # Manually annotated
+    QUIESCENCE = 7  # Manually annotated
+
+    # These don't work properly
+    # VENTRAL_TURN = FWD_VENTRAL_TURN | REV_VENTRAL_TURN
+    # DORSAL_TURN = FWD_DORSAL_TURN | REV_DORSAL_TURN
+    # ALL_TURNS = VENTRAL_TURN | DORSAL_TURN
+
     NOT_ANNOTATED = 0
     UNKNOWN = -99
-    # UNKNOWN = NOT_ANNOTATED | GAP
 
     @classmethod
     def cmap(cls):
@@ -42,12 +52,19 @@ class BehaviorCodes(IntEnum):
 
     @classmethod
     def assert_is_valid(cls, value):
-        assert cls.has_value(value), f"Value {value} is not a valid behavioral code ({cls._value2member_map_})"
+        if not cls.has_value(value):
+            raise InvalidBehaviorAnnotationsError(f"Value {value} is not a valid behavioral code "
+                                                  f"({cls._value2member_map_})")
 
     @classmethod
     def assert_all_are_valid(cls, vec):
         for v in np.unique(vec):
             cls.assert_is_valid(v)
+
+    @classmethod
+    def must_be_manually_annotated(cls, value):
+        """As of 23-03-2023, everything except FWD and REV must be manually annotated"""
+        return value not in (cls.FWD, cls.REV, cls.NOT_ANNOTATED, cls.UNKNOWN)
 
 
 def options_for_ethogram(beh_vec):
