@@ -181,7 +181,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Display ppca outlier candidates (checkbox)
         self.changeOutlierOverlayCheckBox = QtWidgets.QCheckBox()
         self.changeOutlierOverlayCheckBox.setChecked(False)
-        self.changeOutlierOverlayCheckBox.stateChanged.connect(self.update_trace_or_tracklet_subplot)
+        self.changeOutlierOverlayCheckBox.stateChanged.connect(self.add_or_remove_tracking_outliers)
         self.formlayout3.addRow("Display tracking outliers?", self.changeOutlierOverlayCheckBox)
         # self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox()
         # self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
@@ -1087,7 +1087,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def initialize_trace_subplot(self):
         self.update_stored_trace_time_series()
         self.trace_line = self.static_ax.plot(self.tspan, self.y_trace_mode)[0]
-        self.add_tracking_outliers_to_plot()
+        self.add_or_remove_tracking_outliers()
         self.reference_line = self.reference_ax.plot([], color='tab:orange')[0]  # Initialize an empty line
         self.invalidate_y_min_max_on_plot()
 
@@ -1104,15 +1104,25 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_neuron_in_tracklet_annotator()
         self.invalidate_y_min_max_on_plot()
 
-    def add_tracking_outliers_to_plot(self):
-        # TODO: doesn't update the first time tracklet mode is selected
-        # TODO: will improperly jump to selected tracklets when added; should be able to loop over self.tracklet_lines
-        if not self.changeOutlierOverlayCheckBox.isChecked():
-            return
+    def add_or_remove_tracking_outliers(self):
+        """
+        Wrapper around add_tracking_outliers_to_plot and remove_tracking_outliers_on_plot
 
-        if self.outlier_line is not None:
-            self.outlier_line.remove()
-            del self.outlier_line
+        Switches based on the checkbox
+
+        Returns
+        -------
+
+        """
+        if self.changeOutlierOverlayCheckBox.isChecked():
+            self.add_tracking_outliers_to_plot()
+        else:
+            self.remove_tracking_outliers_from_plot()
+
+    def add_tracking_outliers_to_plot(self):
+        # TODO: will improperly jump to selected tracklets when added; should be able to loop over self.tracklet_lines
+
+        self.remove_tracking_outliers_from_plot()
         # Note that this function should be cached
         outlier_matrix = self.dat.calc_indices_to_remove_using_ppca()
 
@@ -1129,6 +1139,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # print(f"Successfully added {len(x)} tracking outliers to plot")
         # print(x)
         # print(y)
+
+    def remove_tracking_outliers_from_plot(self):
+        if self.outlier_line is not None:
+            self.outlier_line.remove()
+            del self.outlier_line
 
     def on_subplot_click(self, event):
         t = event.xdata
@@ -1176,7 +1191,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # Finally, add the traces to napari
             self.viewer.window.add_dock_widget(self.mpl_widget, area='bottom')
         # Additional annotations
-        self.add_tracking_outliers_to_plot()
+        self.add_or_remove_tracking_outliers()
         self.finish_subplot_update_and_draw()
 
     def update_trace_or_tracklet_subplot(self, dropdown_ind=None,
@@ -1224,8 +1239,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.invalidate_y_min_max_on_plot()
         # Add additional annotations that change based on the y values
-        # print("Adding tracking outliers")
-        self.add_tracking_outliers_to_plot()
+        self.add_or_remove_tracking_outliers()
         self.init_subplot_post_clear()
         self.finish_subplot_update_and_draw(preserve_xlims=True)
 
@@ -1344,7 +1358,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     new_line = y[field_to_plot].plot(ax=self.static_ax, **extra_opt, **marker_opt).lines[-1]
                     self.add_tracklet_to_cache(new_line, tracklet_name)
         self.invalidate_y_min_max_on_plot()
-        self.add_tracking_outliers_to_plot()
+        self.add_or_remove_tracking_outliers()
 
         # self.update_stored_time_series(field_to_plot)
         # print(f"Final tracklets on plot: {self.tracklet_lines.keys()}")
