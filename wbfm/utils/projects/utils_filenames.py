@@ -213,7 +213,6 @@ def get_sequential_filename(fname: str, verbose=1) -> str:
 
             if verbose >= 2:
                 print(f"Trying {candidate_fname}...")
-        # new_fname = fpath.with_name(candidate_fname)
     else:
         candidate_fname = fname
     return str(candidate_fname)
