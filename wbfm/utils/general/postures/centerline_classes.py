@@ -317,7 +317,7 @@ class WormFullVideoPosture:
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True)
         elif behavior_alias == 'pirouette':
-            y = self.calc_psuedo_pirouette_state()
+            y = self.calc_pseudo_pirouette_state()
         elif behavior_alias == 'plateau':
             y = self.calc_plateau_state()
         elif behavior_alias == 'semi_plateau':
@@ -720,7 +720,7 @@ class WormFullVideoPosture:
 
         return state_trace
 
-    def calc_psuedo_pirouette_state(self, min_duration=3, window=600, std=50):
+    def calc_pseudo_pirouette_state(self, min_duration=3, window=600, std=50):
         """
         Calculates a state that is high when there are many reversal onsets, and low otherwise
             Note: is low even during reversals if they are isolated
