@@ -9,7 +9,7 @@ from sacred import Experiment
 from sacred.observers import TinyDbObserver
 
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
-from wbfm.utils.general.postprocessing.combine_tracklets_and_DLC_tracks import remove_overmatched_tracks_using_config
+from wbfm.utils.general.postprocessing.combine_tracklets_and_spatial_tracks import remove_overmatched_tracks_using_config
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 # Initialize sacred experiment

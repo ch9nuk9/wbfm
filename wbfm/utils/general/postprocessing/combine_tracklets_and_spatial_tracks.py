@@ -15,6 +15,7 @@ from wbfm.utils.projects.project_config_classes import SubfolderConfigFile, Modu
 from wbfm.utils.projects.utils_filenames import read_if_exists, get_sequential_filename
 from wbfm.utils.projects.utils_project import safe_cd
 
+
 def combine_matched_tracklets(these_tracklet_names: List[str],
                               neuron_name: str,
                               df_tracklet: pd.DataFrame,
