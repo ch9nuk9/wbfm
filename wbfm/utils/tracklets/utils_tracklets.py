@@ -1,7 +1,7 @@
 import copy
 import logging
 from collections import defaultdict
-from typing import List, Dict
+from typing import List, Dict, Optional, Set
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
@@ -567,7 +567,21 @@ def fix_matches_to_use_keys_not_int(df_tracklet, these_tracklet_ind):
     return these_tracklet_names
 
 
-def get_time_overlap_of_candidate_tracklet(candidate_tracklet_name, current_tracklet_names, df_tracklets):
+def get_time_overlap_of_candidate_tracklet(candidate_tracklet_name, current_tracklet_names, df_tracklets)\
+        -> Optional[Dict[str, Set[int]]]:
+    """
+    Get the time overlap of a candidate tracklet with the tracklets currently assigned to a neuron
+
+    Parameters
+    ----------
+    candidate_tracklet_name
+    current_tracklet_names
+    df_tracklets
+
+    Returns
+    -------
+
+    """
     df_candidate_tracklet = df_tracklets[candidate_tracklet_name]
     times_candidate_tracklet = df_candidate_tracklet['z'].dropna().index
     overlap_dict = {}

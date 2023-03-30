@@ -2,7 +2,7 @@ import copy
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import networkx as nx
 import numpy as np
@@ -216,11 +216,11 @@ class NeuronComposedOfTracklets:
 class DetectedTrackletsAndNeurons:
 
     df_tracklets_zxy: pd.DataFrame
-    segmentation_metadata: DetectedNeurons
+    segmentation_metadata: Optional[DetectedNeurons] = None
 
     # If things are modified, this flag should be set
     dataframe_is_synced_to_disk: bool = True
-    dataframe_output_filename: str = None
+    dataframe_output_filename: Optional[str] = None
 
     # Pre-construct this for MUCH faster clicking callbacks
     segmentation_id_to_tracklet_name_database: dict = None
@@ -234,12 +234,18 @@ class DetectedTrackletsAndNeurons:
         if self.interactive_mode:
             self.setup_interactivity()
 
+        if self.segmentation_metadata is None:
+            logging.warning("No segmentation metadata provided, the following functions will not work: "
+                            "get_neurons_at_time, get_number_of_neurons_at_time"
+                            "update_tracklet_metadata_using_segmentation_metadata"
+                            "initialize_neurons_at_time in the TrackedWorm class")
+
         if self.use_custom_padded_dataframe:
             raise NotImplementedError
-            print("Using experimental custom padded dataframe")
-            self.df_tracklets_zxy = PaddedDataFrame.construct_from_basic_dataframe(self.df_tracklets_zxy,
-                                                                                   name_mode='tracklet',
-                                                                                   initial_empty_cols=10000)
+            # print("Using experimental custom padded dataframe")
+            # self.df_tracklets_zxy = PaddedDataFrame.construct_from_basic_dataframe(self.df_tracklets_zxy,
+            #                                                                        name_mode='tracklet',
+            #                                                                        initial_empty_cols=10000)
         else:
             pass
             # print("Using basic dataframe")
@@ -424,7 +430,7 @@ class TrackedWorm:
     global_name_to_neuron_backup: Dict[str, NeuronComposedOfTracklets] = None
     detections: DetectedTrackletsAndNeurons = None
 
-    logger: logging.Logger = None
+    logger: Optional[logging.Logger] = None
 
     verbose: int = 0
 
@@ -504,7 +510,19 @@ class TrackedWorm:
         self.logger.info(f"Added new tracklets: {new_tracklets}")
         self.detections.synchronize_dataframe_to_disk()
 
-    def initialize_neurons_using_previous_matches(self, previous_matches):
+    def initialize_neurons_using_previous_matches(self, previous_matches: Dict[str, List[str]]):
+        """
+        Matches should have the form:
+        {'neuron_name': ['tracklet_name1', 'tracklet_name2', ...]}
+
+        Parameters
+        ----------
+        previous_matches
+
+        Returns
+        -------
+
+        """
         for name, matches in tqdm(previous_matches.items(), leave=False):
             new_neuron = self.initialize_new_neuron(name=name)
 
@@ -513,11 +531,12 @@ class TrackedWorm:
                 tracklet = self.detections.df_tracklets_zxy[[tracklet_name]]
                 new_neuron.add_tracklet(confidence, tracklet, metadata=tracklet_name)
 
-        self.logger.info("Initialized using previous matches:")
-        v = self.verbose
-        self.verbose = 1
-        self.logger.info(self)
-        self.verbose = v
+        if self.logger is not None:
+            self.logger.info("Initialized using previous matches:")
+            v = self.verbose
+            self.verbose = 1
+            self.logger.info(self)
+            self.verbose = v
 
     def initialize_neurons_from_training_data(self, df_training_data):
         training_tracklet_names = translate_training_names_to_raw_names(df_training_data)
@@ -535,7 +554,8 @@ class TrackedWorm:
         df_tracklets = self.detections.df_tracklets_zxy
         verbose = self.verbose
         if previous_matches is not None:
-            self.logger.info(f"Found {len(previous_matches)} previously matched neurons")
+            if self.logger is not None:
+                self.logger.info(f"Found {len(previous_matches)} previously matched neurons")
             for neuron_name, match_names in previous_matches.items():
                 neuron = self.global_name_to_neuron[neuron_name]
                 for name in match_names:
@@ -543,7 +563,7 @@ class TrackedWorm:
                     conf = 1.0  # Assume it was good
                     neuron.add_tracklet(conf, previously_matched_tracklet, metadata=name,
                                         check_using_classifier=False, verbose=verbose - 2)
-        else:
+        elif self.logger is not None:
             self.logger.info("No previous matches found")
 
     def initialize_all_neuron_tracklet_classifiers(self):

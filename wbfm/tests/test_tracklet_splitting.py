@@ -3,9 +3,11 @@ import unittest
 import numpy as np
 import pandas as pd
 from wbfm.utils.external.utils_pandas import check_if_fully_sparse, to_sparse_multiindex
+from wbfm.utils.general.postprocessing.combine_tracklets_and_DLC_tracks import \
+    wiggle_tracklet_endpoint_to_remove_conflict
 from wbfm.utils.projects.utils_consolidation import calc_split_dict_z_threshold
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
+from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once, get_time_overlap_of_candidate_tracklet
 
 
 class TestTrackletSplitting(unittest.TestCase):
@@ -98,3 +100,70 @@ class TestTrackletSplitting(unittest.TestCase):
         # Test that they are sparse
         df_split_sparse = to_sparse_multiindex(df_split)
         self.assertTrue(check_if_fully_sparse(df_split_sparse))
+
+    # def test_pipeline_split_function(self):
+    #     # Use wiggle_tracklet_endpoint_to_remove_conflict to split the tracklet
+    #     # and check that the split is correct
+    #
+    #     # First, add some nan points to the dataframe
+    #     df = self.df.copy()
+    #     df.loc[:5, (self.neuron_name, slice(None))] = np.nan
+    #     covering_tracklet_names = [self.neuron_name]
+    #
+    #     # Second, add the candidate tracklet that will be added to this neuron
+    #     # Should be a multi-index dataframe with columns 'x' and 'z', of the same length as df
+    #     # The index should be the same as df
+    #     candidate_name = 'tracklet_0000001'
+    #     df_candidate = pd.DataFrame({(candidate_name, 'z'): list(range(20)),
+    #                                  (candidate_name, 'x'): 10*np.array(list(range(20)))})
+    #     # Create an overlap from 6 to 7
+    #     true_split_point = 5
+    #     candidate_end_point = 9
+    #     df_candidate.loc[candidate_end_point:, (candidate_name, slice(None))] = np.nan
+    #     # Concatenate the two dataframes
+    #     df_tracklets = pd.concat([df, df_candidate], axis=1)
+    #
+    #     i_tracklet = get_names_from_df(df_tracklets).index(candidate_name)
+    #
+    #     # Go through the steps of the pipeline. See: calc_covering_from_distances
+    #     t = df_tracklets.index
+    #     is_nan = df_tracklets[candidate_name]['x'].isnull()
+    #     newly_covered_times = list(t[~is_nan])
+    #
+    #     # Make sure there is a conflict
+    #     time_conflicts = get_time_overlap_of_candidate_tracklet(
+    #         candidate_name, covering_tracklet_names, df_tracklets
+    #     )
+    #     self.assertTrue(len(time_conflicts) > 0)
+    #
+    #     # Split the tracklet
+    #     allowed_number_of_conflict_points = 3
+    #
+    #     new_candidate_name, df_tracklets_new, i_tracklet_new, successfully_split = \
+    #         wiggle_tracklet_endpoint_to_remove_conflict(allowed_number_of_conflict_points, candidate_name,
+    #                                                     time_conflicts, df_tracklets, i_tracklet, newly_covered_times)
+    #
+    #     # Check that the split was successful
+    #     self.assertTrue(successfully_split)
+    #
+    #     # Check that the candidate name was kept the same, because they split was on the past (left) side
+    #     self.assertEqual(candidate_name, new_candidate_name)
+    #
+    #     # Check that the index is unchanged
+    #     self.assertEqual(i_tracklet, i_tracklet_new)
+    #
+    #     # Check that the dataframe has a new column for the split tracklet
+    #     new_names = get_names_from_df(df_tracklets_new)
+    #     expected_names = [self.neuron_name, candidate_name, 'tracklet_0000002']
+    #     self.assertEquals(expected_names, new_names)
+    #
+    #     print(df_tracklets_new)
+    #
+    #     # Check that the split point is correct by checking the non-nan values in each tracklet
+    #     expected_nonnan_new_candidate = list(range(true_split_point))
+    #     nonnan_new_candidate = list(df_tracklets_new[candidate_name].dropna(axis=0).index)
+    #     self.assertEqual(expected_nonnan_new_candidate, nonnan_new_candidate)
+    #
+    #     expected_nonnan_new_tracklet = list(range(true_split_point, candidate_end_point+1))
+    #     nonnan_new_tracklet = list(df_tracklets_new['tracklet_0000002'].dropna(axis=0).index)
+    #     self.assertEqual(expected_nonnan_new_tracklet, nonnan_new_tracklet)

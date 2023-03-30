@@ -5,7 +5,7 @@ import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Union, Dict, Tuple, Optional
+from typing import List, Union, Dict, Tuple, Optional, Set
 from copy import deepcopy
 import napari
 import numpy as np
@@ -631,7 +631,7 @@ class TrackletAndSegmentationAnnotator:
         else:
             return True
 
-    def get_dict_of_tracklet_time_conflicts(self, candidate_tracklet_name=None) -> Union[Dict[str, list], None]:
+    def get_dict_of_tracklet_time_conflicts(self, candidate_tracklet_name=None) -> Optional[Dict[str, Set[int]]]:
         # The tracklet shouldn't be in the manually annotated match, because it can't be added if there are conflicts
         if candidate_tracklet_name is None:
             candidate_tracklet_name = self.current_tracklet_name

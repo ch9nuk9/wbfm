@@ -1,7 +1,7 @@
 import unittest
 import random
 import hypothesis.strategies as st
-from hypothesis import Verbosity, note, event
+from hypothesis import Verbosity, note, event, settings, Phase
 from hypothesis.stateful import Bundle, RuleBasedStateMachine, rule, initialize, invariant
 
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -9,18 +9,6 @@ from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 # Global variables: the main project object
-
-# project_path = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/project_pytest/project_config.yaml"
-# initialization_kwargs = dict(use_custom_padded_dataframe=False, force_tracklets_to_be_sparse=False)
-# project_data = ProjectData.load_final_project_data_from_config(project_path,
-#                                                                to_load_tracklets=True,
-#                                                                to_load_segmentation_metadata=True,
-#                                                                to_load_frames=True,
-#                                                                initialization_kwargs=initialization_kwargs,
-#                                                                verbose=0)
-# project_data.use_custom_padded_dataframe = False
-# # Load the gui-related tracklet saving objects
-# project_data.load_interactive_properties()
 
 
 class AnnotatorTests(RuleBasedStateMachine):
@@ -109,6 +97,9 @@ class AnnotatorTests(RuleBasedStateMachine):
         # If there are no tracklets, skip this test
         if len(tracklet_dict) == 0:
             event(f"Skipping test for neuron {neuron_name} because it has no tracklets")
+
+            # Deselect the tracklet and neuron
+            annotator.clear_tracklet_and_neuron()
             return
 
         # Get an attached tracklet_name, and check properties
@@ -153,7 +144,7 @@ class AnnotatorTests(RuleBasedStateMachine):
         conflict_free = annotator.is_current_tracklet_confict_free
 
         # Get the current state of the neuron for later checking
-        original_tracklet_set = set(annotator.global2tracklet[neuron_name])
+        original_tracklet_set = set(annotator.combined_global2tracklet_dict[neuron_name])
 
         # If conflicts, check that they are found correctly
         if not conflict_free:
@@ -192,6 +183,8 @@ class AnnotatorTests(RuleBasedStateMachine):
         # If there are no tracklets, skip this test
         if len(tracklets_dict) == 0:
             note(f"Skipping test_remove_and_readd_tracklets_to_neuron because there are no tracklets for {neuron_name}")
+            # Deselect the tracklet and neuron
+            annotator.clear_tracklet_and_neuron()
             return
 
         # For each tracklet, remove it and then re-add it
@@ -205,7 +198,7 @@ class AnnotatorTests(RuleBasedStateMachine):
             # Check that the total dictionary for the neuron is the same
             # But ignore the order of the tracklets
             new_tracklet_set = set(annotator.combined_global2tracklet_dict[neuron_name])
-            original_tracklet_set = set(original_global2neuron_dict[neuron_name])
+            original_tracklet_set = set(original_global2neuron_dict)
             assert new_tracklet_set == original_tracklet_set
             note(f"Removed and re-added tracklet {tracklet_name} to neuron {neuron_name} successfully")
 
@@ -238,6 +231,9 @@ class AnnotatorTests(RuleBasedStateMachine):
         else:
             # If no tracklets with no conflicts were found, skip this test
             note("No tracklets with no conflicts were found, skipping test_add_tracklets")
+
+            # Deselect the tracklet and neuron
+            annotator.clear_tracklet_and_neuron()
             return
 
         # Add the tracklet, without removing afterwards
@@ -262,8 +258,10 @@ class AnnotatorTests(RuleBasedStateMachine):
 
         # Get the tracklets for the neuron
         tracklets_dict, _, _ = annotator.get_tracklets_for_neuron(neuron_name)
-        # If there are no tracklets, skip this test
         if len(tracklets_dict) == 0:
+            note(f"Skipping test_remove_tracklet_from_neuron because there are no tracklets for {neuron_name}")
+            # Deselect the tracklet and neuron
+            annotator.clear_tracklet_and_neuron()
             return
 
         # Get a tracklet to remove
@@ -284,7 +282,42 @@ class AnnotatorTests(RuleBasedStateMachine):
 
     @rule(neuron_data=st.data(), tracklet_data=st.data())
     def test_split_tracklet_and_add(self, neuron_data: st.SearchStrategy, tracklet_data: st.SearchStrategy):
-        pass
+
+        # Get a neuron to add to
+        neuron_name = neuron_data.draw(st.sampled_from(self.neuron_names))
+        # Get the annotator
+        annotator = self.project_data.tracklet_annotator
+        annotator.current_neuron = neuron_name
+
+        # Get a tracklet to add; filter for time conflict and isn't already attached
+        for i in range(100):
+            tracklet_name = tracklet_data.draw(st.sampled_from(self.tracklet_names))
+            # Select tracklet and check for conflicts
+            annotator.set_current_tracklet(tracklet_name)
+            if annotator.is_current_tracklet_confict_free:
+                continue
+            elif tracklet_name in annotator.get_tracklets_for_neuron(neuron_name)[0]:
+                continue
+            elif len(annotator.get_dict_of_tracklet_time_conflicts(tracklet_name)) > 0:
+                note(f"Found tracklet {tracklet_name} with time conflicts and not attached to {neuron_name}")
+                break
+        else:
+            # If no tracklets with no conflicts were found, skip this test
+            note("No tracklets with no conflicts were found, skipping test_add_tracklets")
+
+            # Deselect the tracklet and neuron
+            annotator.clear_tracklet_and_neuron()
+            return
+
+        # Check for identity conflicts, and remove if there are any
+        conflict_types = annotator.get_types_of_conflicts()
+        if "Identity" in conflict_types:
+            annotator.remove_tracklet_from_all_matches()
+        assert "Time" in conflict_types
+
+        # Get the time conflicts points, and split the tracklet there
+        time_conflict_dict = annotator.get_dict_of_tracklet_time_conflicts()
+
 
     @rule(neuron_data=st.data(), tracklet_data=st.data())
     def test_remove_conflicts_and_add_tracklet(self, neuron_data: st.SearchStrategy, tracklet_data: st.SearchStrategy):
@@ -307,6 +340,9 @@ class AnnotatorTests(RuleBasedStateMachine):
         else:
             # If no tracklets with no conflicts were found, skip this test
             note("No tracklets with no conflicts were found, skipping test_add_tracklets")
+
+            # Deselect the tracklet and neuron
+            annotator.clear_tracklet_and_neuron()
             return
 
         # Remove the conflicts

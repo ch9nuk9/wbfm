@@ -31,6 +31,8 @@ def calc_covering_from_distances(all_dist: list,
                                  min_allowed_covering=2,
                                  verbose=0):
     """
+    DEPRECATED; See TrackedWorm class
+
     Given distances between a dlc track and all tracklets, make a time-unique covering from the tracklets
 
     if allowed_tracklet_endpoint_wiggle > 0, then:
@@ -112,9 +114,29 @@ def calc_covering_from_distances(all_dist: list,
     return covering_time_points, these_dist, covering_tracklet_names, df_tracklets
 
 
-def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle, candidate_name,
+def wiggle_tracklet_endpoint_to_remove_conflict(allowed_number_of_conflict_points, candidate_name,
                                                 time_conflicts, df_tracklets, i_tracklet, newly_covered_times):
-    can_split = len(newly_covered_times) > (2 * allowed_tracklet_endpoint_wiggle)
+    """
+    Splits a tracklet into two, and tries to remove the time conflict by removing a few points from the start or end
+    Allowable splitting is defined by 2 * allowed_number_of_conflict_points
+
+    Only attempt split if the newly_covered_times, i.e. the length of the tracklet, is longer than the allowed conflict
+    points
+
+    Parameters
+    ----------
+    allowed_number_of_conflict_points
+    candidate_name
+    time_conflicts
+    df_tracklets
+    i_tracklet
+    newly_covered_times
+
+    Returns
+    -------
+
+    """
+    can_split = len(newly_covered_times) > (2 * allowed_number_of_conflict_points)
 
     if can_split:
         split_points = []
@@ -122,7 +144,7 @@ def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle
         # logging.info(f"Found conflicting time points for a promising tracklet, attempting wiggle: {time_conflicts}")
         for conflict_name, conflict_ind in time_conflicts.items():
             assert np.all(np.diff(conflict_ind) >= 0), "Indices must be sorted or will cause incorrect results"
-            if len(conflict_ind) > allowed_tracklet_endpoint_wiggle:
+            if len(conflict_ind) > allowed_number_of_conflict_points:
                 # Then there is too much conflict
                 break
             elif conflict_ind[0] == newly_covered_times[0]:
@@ -143,7 +165,8 @@ def wiggle_tracklet_endpoint_to_remove_conflict(allowed_tracklet_endpoint_wiggle
         else:
             # Then we split the tracklet, and follow which name we keep
             for i_split, mode in zip(split_points, split_modes):
-                successfully_split, df_tracklets, left_name, right_name = split_tracklet_within_dataframe(df_tracklets, i_split, candidate_name)
+                successfully_split, df_tracklets, left_name, right_name = split_tracklet_within_dataframe(
+                    df_tracklets, i_split, candidate_name)
                 if not successfully_split:
                     continue
                 if mode == "keep_left":
