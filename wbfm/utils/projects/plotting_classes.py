@@ -422,9 +422,9 @@ class TrackletAndSegmentationAnnotator:
     # Annotation
     manual_global2tracklet_names: Dict[str, List[str]] = None
     manual_global2tracklet_removals: Dict[str, List[str]] = None
-    current_neuron: str = None
-    current_tracklet_name: Union[str, None] = None
-    previous_tracklet_name: Union[str, None] = None
+    current_neuron: Optional[str] = None
+    current_tracklet_name: Optional[str] = None
+    previous_tracklet_name: Optional[str] = None
 
     tracklet_split_names: Dict[str, List[str]] = None
     tracklet_split_times: Dict[str, List[Tuple[int, int]]] = None
@@ -561,7 +561,7 @@ class TrackletAndSegmentationAnnotator:
         return self._combined_global2tracklet_dict
 
     @property
-    def current_tracklet(self):
+    def current_tracklet(self) -> Optional[pd.DataFrame]:
         if self.current_tracklet_name is None:
             return None
         df_single_track = self.df_tracklet_obj.df_tracklets_zxy[self.current_tracklet_name]
@@ -577,6 +577,17 @@ class TrackletAndSegmentationAnnotator:
             self.set_current_tracklet(None)
         else:
             self.logger.debug("No current tracklet; this button did nothing")
+
+    def clear_tracklet_and_neuron(self):
+        self.clear_current_tracklet()
+        self.clear_current_neuron()
+
+    def clear_current_neuron(self):
+        if self.current_neuron is not None:
+            self.logger.debug(f"Cleared neuron {self.current_neuron} from the annotator")
+            self.current_neuron = None
+        else:
+            self.logger.debug("No current neuron; this button did nothing")
 
     def get_tracklets_for_neuron(self, neuron_name=None) -> \
             Tuple[Dict[str, pd.DataFrame], pd.DataFrame, str]:
@@ -684,7 +695,20 @@ class TrackletAndSegmentationAnnotator:
             self.print_tracklet_conflicts()
             return False
 
-    def get_types_of_conflicts(self):
+    def get_types_of_conflicts(self) -> List[str]:
+        """
+        Returns a list of strings describing the types of conflicts that the current tracklet has
+
+        Possibilities:
+        - Already added (will be unique)
+        - Identity (may not be unique)
+        - Time (may not be unique)
+        - No conflicts (will be unique)
+
+        Returns
+        -------
+
+        """
         types_of_conflicts = []
         conflicting_match = self.get_neuron_name_of_conflicting_match()
         if conflicting_match and conflicting_match == self.current_neuron:

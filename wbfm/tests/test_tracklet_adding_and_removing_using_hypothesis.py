@@ -91,8 +91,7 @@ class AnnotatorTests(RuleBasedStateMachine):
         # Note that there may be no tracklets for a neuron
 
         # Deselect the tracklet and neuron
-        annotator.clear_current_tracklet()
-        annotator.current_neuron = None
+        annotator.clear_tracklet_and_neuron()
 
     @rule(data=st.data())
     def test_already_matched_tracklets(self, data: st.SearchStrategy):
@@ -135,8 +134,7 @@ class AnnotatorTests(RuleBasedStateMachine):
         assert not flag
 
         # Reset the tracklet and neuron
-        annotator.clear_current_tracklet()
-        annotator.current_neuron = None
+        annotator.clear_tracklet_and_neuron()
 
     @rule(neuron_data=st.data(), tracklet_data=st.data())
     def test_add_and_remove_tracklets(self, neuron_data: st.SearchStrategy, tracklet_data: st.SearchStrategy):
@@ -150,21 +148,16 @@ class AnnotatorTests(RuleBasedStateMachine):
         annotator = self.project_data.tracklet_annotator
 
         # Check if the tracklet has conflicts
-        has_conflict = annotator.is_tracklet_already_matched(tracklet_name)
+        annotator.set_current_tracklet(tracklet_name)
+        annotator.current_neuron = neuron_name
+        conflict_free = annotator.is_current_tracklet_confict_free
 
         # If conflicts, check that they are found correctly
-        if has_conflict:
-            # Select the tracklet and neuron, and check
-            annotator.set_current_tracklet(tracklet_name)
-            annotator.current_neuron = neuron_name
-
+        if not conflict_free:
             conflicts = annotator.get_types_of_conflicts()
             assert len(conflicts) > 0
+            note(f"Not adding {tracklet_name} to {neuron_name} because of conflicts: {conflicts}")
         else:
-            # If no conflicts, check that it can be added and removed
-            annotator.set_current_tracklet(tracklet_name)
-            annotator.current_neuron = neuron_name
-
             # Add the tracklet
             state_changed = annotator.save_current_tracklet_to_current_neuron()
             assert state_changed
@@ -173,9 +166,15 @@ class AnnotatorTests(RuleBasedStateMachine):
             state_changed = annotator.remove_tracklet_from_neuron(tracklet_name, neuron_name)
             assert state_changed
 
+        # Check that the total dictionary for the neuron is the same
+        # But ignore the order of the tracklets
+        new_tracklet_set = set(annotator.global2tracklet[neuron_name])
+        original_tracklet_set = set(annotator.global2tracklet[neuron_name])
+        assert new_tracklet_set == original_tracklet_set
+        note(f"Added and removed tracklet {tracklet_name} from neuron {neuron_name} successfully")
+
         # Deselect the tracklet and neuron
-        annotator.clear_current_tracklet()
-        annotator.current_neuron = None
+        annotator.clear_tracklet_and_neuron()
 
     @rule(data=st.data())
     def test_remove_and_readd_tracklets_to_neuron(self, data: st.SearchStrategy):
@@ -190,7 +189,7 @@ class AnnotatorTests(RuleBasedStateMachine):
         tracklets_dict, _, _ = annotator.get_tracklets_for_neuron(neuron_name)
         # If there are no tracklets, skip this test
         if len(tracklets_dict) == 0:
-            event(f"Skipping test_remove_and_readd_tracklets_to_neuron because there are no tracklets for {neuron_name}")
+            note(f"Skipping test_remove_and_readd_tracklets_to_neuron because there are no tracklets for {neuron_name}")
             return
 
         # For each tracklet, remove it and then re-add it
@@ -202,11 +201,14 @@ class AnnotatorTests(RuleBasedStateMachine):
             annotator.set_current_tracklet(tracklet_name)
             annotator.save_current_tracklet_to_current_neuron()
             # Check that the total dictionary for the neuron is the same
-            assert annotator.combined_global2tracklet_dict == original_global2neuron_dict
+            # But ignore the order of the tracklets
+            new_tracklet_set = set(annotator.global2tracklet[neuron_name])
+            original_tracklet_set = set(original_global2neuron_dict[neuron_name])
+            assert new_tracklet_set == original_tracklet_set
+            note(f"Removed and re-added tracklet {tracklet_name} to neuron {neuron_name} successfully")
 
         # Deselect the tracklet and neuron
-        annotator.clear_current_tracklet()
-        annotator.current_neuron = None
+        annotator.clear_tracklet_and_neuron()
 
     @rule(neuron_data=st.data(), tracklet_data=st.data())
     def test_add_tracklets(self, neuron_data: st.SearchStrategy, tracklet_data: st.SearchStrategy):
@@ -240,9 +242,13 @@ class AnnotatorTests(RuleBasedStateMachine):
         state_changed = annotator.save_current_tracklet_to_current_neuron()
         assert state_changed
 
+        # Check that the total dictionary for the neuron not is the same
+        new_tracklet_set = set(annotator.global2tracklet[neuron_name])
+        original_tracklet_set = set(annotator.global2tracklet[neuron_name])
+        assert new_tracklet_set != original_tracklet_set
+
         # Deselect the tracklet and neuron
-        annotator.clear_current_tracklet()
-        annotator.current_neuron = None
+        annotator.clear_tracklet_and_neuron()
 
     @rule(data=st.data())
     def test_remove_tracklet_from_neuron(self, data: st.SearchStrategy):
@@ -265,9 +271,63 @@ class AnnotatorTests(RuleBasedStateMachine):
         state_changed = annotator.remove_tracklet_from_neuron(tracklet_name, neuron_name)
         assert state_changed
 
+        # Check that the total dictionary for the neuron is not the same
+        # But ignore the order of the tracklets
+        new_tracklet_set = set(annotator.combined_global2tracklet_dict[neuron_name])
+        original_tracklet_set = set(annotator.global2tracklet[neuron_name])
+        assert new_tracklet_set != original_tracklet_set
+
         # Deselect the tracklet and neuron
-        annotator.clear_current_tracklet()
-        annotator.current_neuron = None
+        annotator.clear_tracklet_and_neuron()
+
+    @rule(neuron_data=st.data(), tracklet_data=st.data())
+    def test_split_tracklet_and_add(self, neuron_data: st.SearchStrategy, tracklet_data: st.SearchStrategy):
+        pass
+
+    @rule(neuron_data=st.data(), tracklet_data=st.data())
+    def test_remove_conflicts_and_add_tracklet(self, neuron_data: st.SearchStrategy, tracklet_data: st.SearchStrategy):
+
+        # Get a neuron to add to
+        neuron_name = neuron_data.draw(st.sampled_from(self.neuron_names))
+        # Get the annotator
+        annotator = self.project_data.tracklet_annotator
+        annotator.current_neuron = neuron_name
+
+        # Get a tracklet to add with conflicts
+        for i in range(100):
+            tracklet_name = tracklet_data.draw(st.sampled_from(self.tracklet_names))
+            # Select tracklet and check for conflicts
+            annotator.set_current_tracklet(tracklet_name)
+            is_conflict_free = annotator.is_current_tracklet_confict_free
+            if not is_conflict_free:
+                note(f"Found tracklet {tracklet_name} with conflicts")
+                break
+        else:
+            # If no tracklets with no conflicts were found, skip this test
+            note("No tracklets with no conflicts were found, skipping test_add_tracklets")
+            return
+
+        # Remove the conflicts
+        types_of_conflicts = annotator.get_types_of_conflicts()
+        assert len(types_of_conflicts) > 0
+        assert types_of_conflicts[0] != "No conflicts"
+        conflict_removal_dict = {"Already added": 'remove_tracklet_from_all_matches',
+                                 "Identity": 'remove_tracklet_from_all_matches',
+                                 "Time": 'remove_tracklets_with_time_conflicts'}
+        for conflict_type in types_of_conflicts:
+            # Perform the conflict removal
+            conflict_removal_function = getattr(annotator, conflict_removal_dict[conflict_type])
+            conflict_removal_function()
+
+        # Check that the conflicts are gone
+        assert annotator.is_current_tracklet_confict_free
+
+        # Add the tracklet to the neuron
+        state_changed = annotator.save_current_tracklet_to_current_neuron()
+        assert state_changed
+
+        # Deselect
+        annotator.clear_tracklet_and_neuron()
 
     @invariant()
     def nothing_selected(self):
