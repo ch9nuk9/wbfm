@@ -30,7 +30,8 @@ class AnnotatorTests(RuleBasedStateMachine):
         project_path = "/home/charles/dlc_stacks/project_pytest/project_config.yaml"
         opt = {'log_to_file': False}
         cfg = ModularProjectConfig(project_path, **opt)
-        initialization_kwargs = dict(use_custom_padded_dataframe=False, force_tracklets_to_be_sparse=False)
+        initialization_kwargs = dict(use_custom_padded_dataframe=False, force_tracklets_to_be_sparse=False,
+                                     verbose=0)
         project_data = ProjectData.load_final_project_data_from_config(cfg,
                                                                        to_load_tracklets=True,
                                                                        to_load_segmentation_metadata=True,
@@ -108,14 +109,17 @@ class AnnotatorTests(RuleBasedStateMachine):
 
         # If there are no tracklets, skip this test
         if len(tracklet_dict) == 0:
+            event(f"Skipping test for neuron {neuron_name} because it has no tracklets")
             return
 
         # Get an attached tracklet_name, and check properties
         tracklet_name = random.choice(list(tracklet_dict.keys()))
-        # Has conflict
-        annotator.is_tracklet_already_matched(tracklet_name)
-        # Check identity conflict
+        assert annotator.is_tracklet_already_matched(tracklet_name)
+        # Must have a conflict: the tracklet is already matched to our target neuron
         name = annotator.get_neuron_name_of_conflicting_match(tracklet_name)
+        note(f"{tracklet_name} should be in: {list(tracklet_dict.keys())}")
+        note(f"Conflicting neuron {name} should be the same neuron: "
+             f"{list(annotator.combined_global2tracklet_dict[name])}")
         assert name == neuron_name
 
         # Select the tracklet and neuron, and check
@@ -127,7 +131,7 @@ class AnnotatorTests(RuleBasedStateMachine):
         assert types_of_conflicts == ["Already added"]
 
         # Try to add, and check that it didn't work
-        flag = annotator.add_tracklet_to_neuron(tracklet_name, neuron_name)
+        flag = annotator.save_current_tracklet_to_current_neuron()
         assert not flag
 
         # Reset the tracklet and neuron
@@ -162,7 +166,7 @@ class AnnotatorTests(RuleBasedStateMachine):
             annotator.current_neuron = neuron_name
 
             # Add the tracklet
-            state_changed = annotator.add_tracklet_to_neuron(tracklet_name, neuron_name)
+            state_changed = annotator.save_current_tracklet_to_current_neuron()
             assert state_changed
 
             # Remove the tracklet
@@ -190,12 +194,13 @@ class AnnotatorTests(RuleBasedStateMachine):
             return
 
         # For each tracklet, remove it and then re-add it
-        original_global2neuron_dict = annotator.combined_global2tracklet_dict.copy()
+        original_global2neuron_dict = annotator.global2tracklet  # Original dictionary
         for tracklet_name in tracklets_dict.keys():
             # Remove the tracklet
             annotator.remove_tracklet_from_neuron(tracklet_name, neuron_name)
-            # Add the tracklet
-            annotator.add_tracklet_to_neuron(tracklet_name, neuron_name)
+            # Add the tracklet; requires selecting it first
+            annotator.set_current_tracklet(tracklet_name)
+            annotator.save_current_tracklet_to_current_neuron()
             # Check that the total dictionary for the neuron is the same
             assert annotator.combined_global2tracklet_dict == original_global2neuron_dict
 
@@ -221,17 +226,18 @@ class AnnotatorTests(RuleBasedStateMachine):
             tracklet_name = tracklet_data.draw(st.sampled_from(self.tracklet_names))
             # Select tracklet and check for conflicts
             annotator.set_current_tracklet(tracklet_name)
-            is_conflict_free = not annotator.is_current_tracklet_confict_free
+            is_conflict_free = annotator.is_current_tracklet_confict_free
             is_not_attached = tracklet_name not in annotator.get_tracklets_for_neuron(neuron_name)[0]
             if is_conflict_free and is_not_attached:
+                note(f"Found tracklet {tracklet_name} with no conflicts and not attached to {neuron_name}")
                 break
         else:
             # If no tracklets with no conflicts were found, skip this test
-            event("No tracklets with no conflicts were found, skipping test_add_tracklets")
+            note("No tracklets with no conflicts were found, skipping test_add_tracklets")
             return
 
         # Add the tracklet, without removing afterwards
-        state_changed = annotator.add_tracklet_to_neuron(tracklet_name, neuron_name)
+        state_changed = annotator.save_current_tracklet_to_current_neuron()
         assert state_changed
 
         # Deselect the tracklet and neuron
@@ -267,7 +273,7 @@ class AnnotatorTests(RuleBasedStateMachine):
     def nothing_selected(self):
         # Check that nothing is selected
         annotator = self.project_data.tracklet_annotator
-        note(f"Current state of the annotator: {annotator.current_status_string()}")
+        # note(f"Current state of the annotator: {annotator.current_status_string()}")
         assert annotator.current_neuron is None
         assert annotator.current_tracklet_name is None
         assert annotator.current_tracklet is None

@@ -14,7 +14,8 @@ class TestTrackletAddingAndRemoving(unittest.TestCase):
         # See napari_trace_explorer_from_config.py for an example of how to load a project
         project_path = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/project_pytest/project_config.yaml"
         initialization_kwargs = dict(use_custom_padded_dataframe=False,
-                                     force_tracklets_to_be_sparse=False)
+                                     force_tracklets_to_be_sparse=False,
+                                     verbose=0)
         project_data = ProjectData.load_final_project_data_from_config(project_path,
                                                                        to_load_tracklets=True,
                                                                        to_load_segmentation_metadata=True,
@@ -25,6 +26,7 @@ class TestTrackletAddingAndRemoving(unittest.TestCase):
         # Load the gui-related tracklet saving objects
         project_data.load_interactive_properties()
         self.project_data = project_data
+        print("Is verbose?", project_data.verbose)
 
         # Get names of all objects
         self.tracklet_names = get_names_from_df(project_data.df_all_tracklets)
@@ -117,7 +119,7 @@ class TestTrackletAddingAndRemoving(unittest.TestCase):
             self.assertFalse(annotator.is_current_tracklet_confict_free)
 
             # Try to add, and check that it didn't work
-            flag = annotator.add_tracklet_to_neuron(tracklet_name, selected_neuron)
+            flag = annotator._add_tracklet_to_neuron(tracklet_name, selected_neuron)
             self.assertFalse(flag)
 
     def test_add_and_remove_tracklets(self):
@@ -152,7 +154,7 @@ class TestTrackletAddingAndRemoving(unittest.TestCase):
         annotator.set_current_tracklet(tracklet_name)
 
         # Add the tracklet
-        flag = annotator.add_tracklet_to_neuron(tracklet_name, selected_neuron)
+        flag = annotator._add_tracklet_to_neuron(tracklet_name, selected_neuron)
         self.assertTrue(flag)
 
         # Remove the tracklet
@@ -183,7 +185,7 @@ class TestTrackletAddingAndRemoving(unittest.TestCase):
             # Remove the tracklet
             annotator.remove_tracklet_from_neuron(tracklet_name, neuron_name)
             # Add the tracklet
-            annotator.add_tracklet_to_neuron(tracklet_name, neuron_name)
+            annotator._add_tracklet_to_neuron(tracklet_name, neuron_name)
             # Check that the total dictionary for the neuron is the same
             assert annotator.combined_global2tracklet_dict == original_global2neuron_dict
 
