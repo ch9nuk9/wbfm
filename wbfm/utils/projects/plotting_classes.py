@@ -465,12 +465,15 @@ class TrackletAndSegmentationAnnotator:
     logger: logging.Logger = None
 
     def __post_init__(self):
+        # Keep track of all tracklet changes made with this gui
         if self.manual_global2tracklet_names is None:
             self.manual_global2tracklet_names = defaultdict(list)
         if self.manual_global2tracklet_removals is None:
             self.manual_global2tracklet_removals = defaultdict(list)
+        # Keep track of all segmentation changes
         if self.t_buffer_masks is None:
             self.t_buffer_masks = []
+        # Final object to save, combining all manual changes
         if self._combined_global2tracklet_dict is None:
             self._combined_global2tracklet_dict = deepcopy(self.global2tracklet)
 
@@ -522,6 +525,19 @@ class TrackletAndSegmentationAnnotator:
 
     @property
     def combined_global2tracklet_dict(self):
+        """
+        This was originally intended to be a property that dynamically combines the manual corrections with the original
+        automatic ones.
+        However, it was too expensive to update it dynamically, so it is now updated in other callback functions.
+
+        See:
+            remove_tracklet_from_global2tracklet_dict
+            add_tracklet_to_global2tracklet_dict
+
+        Returns
+        -------
+
+        """
         # tmp = deepcopy(self.global2tracklet)
         # for k in tmp.keys():
         #     tmp[k].extend(self.manual_global2tracklet_names[k].copy())
@@ -690,13 +706,13 @@ class TrackletAndSegmentationAnnotator:
         else:
             self.manual_global2tracklet_names[neuron_name].append(tracklet_name)
             state_changed = self.add_tracklet_to_global2tracklet_dict(tracklet_name, neuron_name)
-            self.logger.info(f"Successfully added tracklet {tracklet_name} to {neuron_name}")
+            if state_changed:
+                self.logger.info(f"Successfully added tracklet {tracklet_name} to {neuron_name}")
 
         if tracklet_name in previously_removed:
             self.logger.debug(f"Tracklet was in the to-remove list, but was removed")
             self.manual_global2tracklet_removals[neuron_name].remove(tracklet_name)
-            self.add_tracklet_to_global2tracklet_dict(tracklet_name, neuron_name)
-            state_changed = True
+            state_changed = self.add_tracklet_to_global2tracklet_dict(tracklet_name, neuron_name)
 
         return state_changed
 

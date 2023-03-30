@@ -494,9 +494,7 @@ class ProjectData:
         else:
             cfg.logger.debug(f"Initialized project with custom settings: {initialization_kwargs}")
 
-        obj = ProjectData(project_dir, cfg)
-        for k, v in initialization_kwargs.items():
-            obj.k = v
+        obj = ProjectData(project_dir, cfg, **initialization_kwargs)
 
         obj.all_used_fnames = []
         preprocessing_settings = PreprocessingSettings.load_from_config(cfg, do_background_subtraction=False)
