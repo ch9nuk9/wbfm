@@ -189,7 +189,7 @@ def get_sequential_filename(fname: str, verbose=1) -> str:
     if fpath.exists():
         if verbose >= 1:
             print(f"Original fname {fpath} exists, so will be suffixed")
-        base_fname, suffix_fname = fpath.stem, fpath.suffix
+        base_fname, suffix_filetype = fpath.stem, fpath.suffix
         # Check for previous application of this function
         regex = r"-\d+$"
         matches = list(re.finditer(regex, base_fname))
@@ -200,13 +200,17 @@ def get_sequential_filename(fname: str, verbose=1) -> str:
                 print(f"Removed suffix {matches[0].group()}, so the basename is taken as: {base_fname}")
 
         new_base_fname = f"{str(base_fname)}-{i}"
-        candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
+        candidate_fname = fpath.with_name(new_base_fname + str(suffix_filetype))
         while Path(candidate_fname).exists():
+            # Increment the suffix
             i += 1
-            str_len = len(str(i)) + 1
+            str_len = len(str(i))
+            # Remove the previous suffix
             new_base_fname = new_base_fname[:-str_len].strip('-')
+            # Add the new suffix and get the full path
             new_base_fname = f"{new_base_fname}-{i}"
-            candidate_fname = fpath.with_name(new_base_fname + str(suffix_fname))
+            candidate_fname = fpath.with_name(f"{new_base_fname}{suffix_filetype}")
+
             if verbose >= 2:
                 print(f"Trying {candidate_fname}...")
         # new_fname = fpath.with_name(candidate_fname)
