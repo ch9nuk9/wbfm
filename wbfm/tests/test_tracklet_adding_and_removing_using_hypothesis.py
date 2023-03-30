@@ -300,7 +300,7 @@ class AnnotatorTests(RuleBasedStateMachine):
                 continue
             elif tracklet_name in annotator.get_tracklets_for_neuron(neuron_name)[0]:
                 continue
-            elif len(annotator.get_dict_of_tracklet_time_conflicts(tracklet_name)) > 0:
+            elif annotator.tracklet_has_time_overlap():
                 note(f"Found tracklet {tracklet_name} with time conflicts and not attached to {neuron_name}")
                 break
         else:
@@ -317,12 +317,15 @@ class AnnotatorTests(RuleBasedStateMachine):
             annotator.remove_tracklet_from_all_matches()
         assert "Time" in conflict_types
 
-        # Get the time conflicts points, and split the tracklet there
-        time_conflict_dict = annotator.get_dict_of_tracklet_time_conflicts()
+        # Check the time conflicts points, and split the tracklet there
         original_tracklet_name = annotator.current_tracklet_name
         new_tracklet_names = []
-        for conflict_name, t in time_conflict_dict.items():
-            successfully_split = annotator.split_current_tracklet(t, set_new_half_to_current=True)
+        for i in range(100):
+            t, _ = annotator.time_of_next_conflict()
+            if t is None:
+                break
+            successfully_split = annotator.split_current_tracklet(t, set_new_half_to_current=True,
+                                                                  verbose=0)
             assert successfully_split
 
             new_tracklet_names.append(annotator.current_tracklet_name)
@@ -337,6 +340,9 @@ class AnnotatorTests(RuleBasedStateMachine):
                 break
         else:
             assert original_tracklet_attached
+
+        # Deselect the tracklet and neuron
+        annotator.clear_tracklet_and_neuron()
 
     @rule(neuron_data=st.data(), tracklet_data=st.data())
     def test_remove_conflicts_and_add_tracklet(self, neuron_data: st.SearchStrategy, tracklet_data: st.SearchStrategy):

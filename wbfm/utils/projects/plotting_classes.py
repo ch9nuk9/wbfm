@@ -717,7 +717,7 @@ class TrackletAndSegmentationAnnotator:
             # It's possible for a human to force an already added tracklet to have multiple tracklets...
             if conflicting_match:
                 types_of_conflicts.append("Identity")
-            if self.get_dict_of_tracklet_time_conflicts():
+            if self.tracklet_has_time_overlap():
                 types_of_conflicts.append("Time")
             if len(types_of_conflicts) == 0:
                 types_of_conflicts.append("No conflicts")
@@ -943,7 +943,7 @@ class TrackletAndSegmentationAnnotator:
             self.tracking_cfg.update_self_on_disk()
         self.logger.info("Saving successful! You may now quit")
 
-    def split_current_tracklet(self, i_split, set_new_half_to_current=True):
+    def split_current_tracklet(self, i_split, set_new_half_to_current=True, verbose=1):
         """
         The current time is included in the "new half" of the tracklet
         The newer half is added as a new index in the df_tracklet dataframe
@@ -973,7 +973,7 @@ class TrackletAndSegmentationAnnotator:
                     all_tracklets.split_tracklet(i_split, old_name)
             else:
                 successfully_split, all_tracklets, left_name, right_name = \
-                    split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name)
+                    split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name, verbose=verbose)
 
             if not successfully_split:
                 self.logger.warning("Did not successfully split; check logs")
