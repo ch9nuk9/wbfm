@@ -51,3 +51,8 @@ wbfm/new_project_defaults/snakemake/.snakemake/
 
 *.json
 /wbfm/scratch/
+/docs/*.dtmp
+/docs/*.bkp
+
+/wbfm/tests/.hypothesis/examples/*
+/wbfm/tests/.hypothesis/examples/*/*
