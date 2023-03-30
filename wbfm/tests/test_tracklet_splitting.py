@@ -3,8 +3,6 @@ import unittest
 import numpy as np
 import pandas as pd
 from wbfm.utils.external.utils_pandas import check_if_fully_sparse, to_sparse_multiindex
-from wbfm.utils.general.postprocessing.combine_tracklets_and_spatial_tracks import \
-    wiggle_tracklet_endpoint_to_remove_conflict
 from wbfm.utils.projects.utils_consolidation import calc_split_dict_z_threshold
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once, get_time_overlap_of_candidate_tracklet

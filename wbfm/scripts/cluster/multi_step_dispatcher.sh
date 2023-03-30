@@ -23,6 +23,6 @@ done
 NUM_JOBS=$(( ( $# / 2 ) - 1 ))
 echo "Found $NUM_JOBS jobs"
 
-for step_reference in ${step_reference_array[@]}; do
+for step_reference in "${step_reference_array[@]}"; do
   sbatch --wait single_step_dispatcher.sbatch -s "$step_reference" -t "$project_path"
 done

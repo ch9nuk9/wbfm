@@ -9,7 +9,7 @@ leifer_um_per_unit = 84
 
 
 def zimmer2physical_fluorescence(vol0_zxy: np.ndarray,
-                                 zimmer_um_per_pixel_z : float = None) -> np.ndarray:
+                                 zimmer_um_per_pixel_z: float = None) -> np.ndarray:
     if zimmer_um_per_pixel_z is None:
         zimmer_um_per_pixel_z = zimmer_um_per_pixel_z
     # xy, then z
@@ -38,7 +38,7 @@ def zimmer2leifer(vol0_zxy: np.ndarray) -> np.ndarray:
     xy_in_um = vol0_zxy[:, [1, 2]] * zimmer_fluroscence_um_per_pixel_xy
     xy_in_leifer = xy_in_um / leifer_um_per_unit
 
-    z_in_um = vol0_zxy[:, [0]] * zimmer_um_per_pixel_z
+    z_in_um = vol0_zxy[:, [0]] * ZIMMER_UM_PER_PIXEL_Z
     z_in_leifer = z_in_um / leifer_um_per_unit
 
     zxy_in_leifer = np.hstack([z_in_leifer, xy_in_leifer])

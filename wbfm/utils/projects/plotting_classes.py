@@ -1154,7 +1154,6 @@ class TrackletAndSegmentationAnnotator:
         ----------
         viewer
         new_full_mask
-        t
 
         Returns
         -------

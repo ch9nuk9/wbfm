@@ -1263,7 +1263,6 @@ class ProjectData:
 
         Parameters
         ----------
-        project_data
         pad_nan_points
         contamination
 
