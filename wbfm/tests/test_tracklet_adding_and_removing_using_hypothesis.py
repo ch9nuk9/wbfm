@@ -152,6 +152,9 @@ class AnnotatorTests(RuleBasedStateMachine):
         annotator.current_neuron = neuron_name
         conflict_free = annotator.is_current_tracklet_confict_free
 
+        # Get the current state of the neuron for later checking
+        original_tracklet_set = set(annotator.global2tracklet[neuron_name])
+
         # If conflicts, check that they are found correctly
         if not conflict_free:
             conflicts = annotator.get_types_of_conflicts()
@@ -168,8 +171,7 @@ class AnnotatorTests(RuleBasedStateMachine):
 
         # Check that the total dictionary for the neuron is the same
         # But ignore the order of the tracklets
-        new_tracklet_set = set(annotator.global2tracklet[neuron_name])
-        original_tracklet_set = set(annotator.global2tracklet[neuron_name])
+        new_tracklet_set = set(annotator.combined_global2tracklet_dict[neuron_name])
         assert new_tracklet_set == original_tracklet_set
         note(f"Added and removed tracklet {tracklet_name} from neuron {neuron_name} successfully")
 
@@ -193,7 +195,7 @@ class AnnotatorTests(RuleBasedStateMachine):
             return
 
         # For each tracklet, remove it and then re-add it
-        original_global2neuron_dict = annotator.global2tracklet  # Original dictionary
+        original_global2neuron_dict = annotator.combined_global2tracklet_dict[neuron_name]
         for tracklet_name in tracklets_dict.keys():
             # Remove the tracklet
             annotator.remove_tracklet_from_neuron(tracklet_name, neuron_name)
@@ -202,7 +204,7 @@ class AnnotatorTests(RuleBasedStateMachine):
             annotator.save_current_tracklet_to_current_neuron()
             # Check that the total dictionary for the neuron is the same
             # But ignore the order of the tracklets
-            new_tracklet_set = set(annotator.global2tracklet[neuron_name])
+            new_tracklet_set = set(annotator.combined_global2tracklet_dict[neuron_name])
             original_tracklet_set = set(original_global2neuron_dict[neuron_name])
             assert new_tracklet_set == original_tracklet_set
             note(f"Removed and re-added tracklet {tracklet_name} to neuron {neuron_name} successfully")
@@ -239,12 +241,12 @@ class AnnotatorTests(RuleBasedStateMachine):
             return
 
         # Add the tracklet, without removing afterwards
+        original_tracklet_set = set(annotator.combined_global2tracklet_dict[neuron_name])
         state_changed = annotator.save_current_tracklet_to_current_neuron()
         assert state_changed
 
         # Check that the total dictionary for the neuron not is the same
-        new_tracklet_set = set(annotator.global2tracklet[neuron_name])
-        original_tracklet_set = set(annotator.global2tracklet[neuron_name])
+        new_tracklet_set = set(annotator.combined_global2tracklet_dict[neuron_name])
         assert new_tracklet_set != original_tracklet_set
 
         # Deselect the tracklet and neuron
@@ -268,13 +270,13 @@ class AnnotatorTests(RuleBasedStateMachine):
         tracklet_name = data.draw(st.sampled_from(list(tracklets_dict.keys())))
 
         # Remove the tracklet
+        original_tracklet_set = set(annotator.combined_global2tracklet_dict[neuron_name])
         state_changed = annotator.remove_tracklet_from_neuron(tracklet_name, neuron_name)
         assert state_changed
 
         # Check that the total dictionary for the neuron is not the same
         # But ignore the order of the tracklets
         new_tracklet_set = set(annotator.combined_global2tracklet_dict[neuron_name])
-        original_tracklet_set = set(annotator.global2tracklet[neuron_name])
         assert new_tracklet_set != original_tracklet_set
 
         # Deselect the tracklet and neuron
