@@ -16,6 +16,7 @@ from backports.cached_property import cached_property
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
 
+from wbfm.utils.general.custom_errors import DataSynchronizationError
 from wbfm.utils.general.utils_piecewise import predict_using_rolling_ransac_filter_single_trace
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
@@ -412,7 +413,7 @@ class TracePlotter:
 @dataclass
 class TrackletAndSegmentationAnnotator:
     df_tracklet_obj: DetectedTrackletsAndNeurons
-    global2tracklet: Dict[str, List[str]]
+    global2tracklet: Dict[str, List[str]]  # The original (unmodified) dict mapping global names to tracklet names
     segmentation_metadata: DetectedNeurons
 
     # Same as global2tracklet, but updated with all manual changes
@@ -476,6 +477,7 @@ class TrackletAndSegmentationAnnotator:
         # Final object to save, combining all manual changes
         if self._combined_global2tracklet_dict is None:
             self._combined_global2tracklet_dict = deepcopy(self.global2tracklet)
+            self.check_tracklets_are_not_multi_assigned()
 
         if not self.df_tracklet_obj.interactive_mode:
             self.df_tracklet_obj.setup_interactivity()
@@ -515,6 +517,16 @@ class TrackletAndSegmentationAnnotator:
 
         self.logger.debug(
             f"Output files for annotator: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
+
+    def check_tracklets_are_not_multi_assigned(self):
+        # Check to make sure all tracklets have 1 or 0 neuron assignments
+        all_assigned_tracklets = set()
+        for neuron_name, tracklet_name_list in self._combined_global2tracklet_dict.items():
+            # Make sure no tracklets are already assigned
+            if set(tracklet_name_list).intersection(all_assigned_tracklets):
+                raise DataSynchronizationError(f"At least one tracklet is assigned to multiple neurons: "
+                                               f"{set(tracklet_name_list).intersection(all_assigned_tracklets)}")
+            all_assigned_tracklets.update(tracklet_name_list)
 
     def initialize_gt_model_mismatches(self, project_data):
         from wbfm.utils.projects.finished_project_data import calc_all_mismatches_between_ground_truth_and_pairs
@@ -697,7 +709,22 @@ class TrackletAndSegmentationAnnotator:
             for name, times in name_dict.items():
                 self.logger.info(f"{name} at times {times}")
 
-    def add_tracklet_to_neuron(self, tracklet_name, neuron_name) -> bool:
+    def _add_tracklet_to_neuron(self, tracklet_name, neuron_name) -> bool:
+        """
+        Add a tracklet to a neuron. Note that this function does not check for conflicts, so it should only be used
+        when the user has already checked for conflicts.
+
+        Instead, the function save_current_tracklet_to_current_neuron() should be used
+
+        Parameters
+        ----------
+        tracklet_name
+        neuron_name
+
+        Returns
+        -------
+
+        """
         previously_added = self.manual_global2tracklet_names[neuron_name]
         previously_removed = self.manual_global2tracklet_removals[neuron_name]
         state_changed = False
@@ -805,14 +832,29 @@ class TrackletAndSegmentationAnnotator:
         return conflicting_names
 
     def save_current_tracklet_to_current_neuron(self):
+        """
+        Saves the current tracklet to the current neuron. Returns the tracklet name if successful, None otherwise
+        Common reasons to return None are:
+        1. No current tracklet
+        2. Current tracklet has conflicts
+        3. No current neuron
+
+        If successful, also clears the current tracklet
+
+        Is the safe version of _add_tracklet_to_neuron, which does not check for conflicts
+
+        Returns
+        -------
+
+        """
         if self.current_tracklet_name is None:
             self.logger.info("No neuron selected")
             return None
         if self.is_current_tracklet_confict_free:
             with self.saving_lock:
-                self.add_tracklet_to_neuron(self.current_tracklet_name, self.current_neuron)
+                self._add_tracklet_to_neuron(self.current_tracklet_name, self.current_neuron)
                 tracklet_name = self.current_tracklet_name
-                self.set_current_tracklet(None)
+                self.clear_current_tracklet()
             return tracklet_name
         else:
             self.logger.warning("Current tracklet has conflicts, please resolve before saving as a match")
