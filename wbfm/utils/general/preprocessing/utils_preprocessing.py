@@ -80,6 +80,9 @@ class PreprocessingSettings:
     Designed to be used with the ReferenceFrame class
     """
 
+    # Path to bounding boxes
+    bounding_boxes_fname: str = None
+
     # Plane removal, especially flyback
     raw_number_of_planes: int = None
     starting_plane: int = None

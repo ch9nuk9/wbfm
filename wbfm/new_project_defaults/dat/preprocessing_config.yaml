@@ -1,5 +1,8 @@
 # DEFAULT definitions (do not edit!)
 
+# For bounding boxes
+bounding_boxes_fname: dat/bounding_boxes.pickle
+
 # Removing planes, especially flyback
 raw_number_of_planes: 22
 starting_plane: 0
