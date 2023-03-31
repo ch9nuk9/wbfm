@@ -38,6 +38,8 @@ class AnnotatorTests(RuleBasedStateMachine):
 
         # Set the logging state to not log anything
         self.project_data.logger.setLevel("CRITICAL")
+        self.project_data.tracklet_annotator.logger.setLevel("CRITICAL")
+        self.project_data.tracklet_annotator.verbose = 0
 
     @rule(data=st.data())
     def test_basic_tracklet_functions(self, data: st.SearchStrategy):
@@ -324,16 +326,19 @@ class AnnotatorTests(RuleBasedStateMachine):
             t, _ = annotator.time_of_next_conflict()
             if t is None:
                 break
+            note(f"Splitting tracklet at time {t}")
             successfully_split = annotator.split_current_tracklet(t, set_new_half_to_current=True,
                                                                   verbose=0)
             assert successfully_split
 
             new_tracklet_names.append(annotator.current_tracklet_name)
             annotator.set_current_tracklet(original_tracklet_name)
+        note(f"Generated {len(new_tracklet_names)} new tracklets from splits: {new_tracklet_names}")
 
         # Try to attach part of the split tracklet, and check that one worked
         original_tracklet_attached = annotator.save_current_tracklet_to_current_neuron()
         for new_tracklet_name in new_tracklet_names:
+            note(f"Attempting to attach new tracklet: {new_tracklet_name}")
             annotator.set_current_tracklet(new_tracklet_name)
             new_tracklet_attached = annotator.save_current_tracklet_to_current_neuron()
             if new_tracklet_attached:

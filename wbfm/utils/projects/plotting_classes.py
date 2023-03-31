@@ -772,7 +772,8 @@ class TrackletAndSegmentationAnnotator:
             self._combined_global2tracklet_dict[neuron_name].remove(tracklet_name)
             state_changed = True
         else:
-            logging.warning("Tried to remove tracklet, but is not added")
+            if self.verbose >= 1:
+                logging.warning("Tried to remove tracklet, but is not added")
             state_changed = False
         return state_changed
 
@@ -781,7 +782,8 @@ class TrackletAndSegmentationAnnotator:
             self._combined_global2tracklet_dict[neuron_name].append(tracklet_name)
             state_changed = True
         else:
-            logging.warning("Tried to add tracklet, but is already added")
+            if self.verbose >= 1:
+                logging.warning("Tried to add tracklet, but is already added")
             state_changed = False
         return state_changed
 
