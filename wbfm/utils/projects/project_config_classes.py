@@ -215,8 +215,16 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         Note: NOT a subfolder
         """
-        fname = str(Path(self.project_dir).joinpath('preprocessing_config.yaml'))
+        fname = self.get_preprocessing_config_filename()
         return ConfigFileWithProjectContext(fname)
+
+    def get_preprocessing_config_filename(self):
+        # In newer versions, it is in the dat folder and has an entry in the main config file
+        fname = self.config['subfolder_configs'].get('preprocessing', None)
+        if fname is None or not Path(fname).exists():
+            # In older versions, it was in the main folder
+            fname = str(Path(self.project_dir).joinpath('preprocessing_config.yaml'))
+        return fname
 
     def get_behavior_config(self) -> SubfolderConfigFile:
         fname = Path(self.project_dir).joinpath('behavior', 'behavior_config.yaml')

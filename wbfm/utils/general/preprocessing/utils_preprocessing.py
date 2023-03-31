@@ -292,7 +292,7 @@ class PreprocessingSettings:
 
     @staticmethod
     def load_from_config(cfg: ModularProjectConfig, do_background_subtraction=None):
-        fname = Path(cfg.project_dir).joinpath('preprocessing_config.yaml')
+        fname = cfg.get_preprocessing_config_filename()
         preprocessing_settings = PreprocessingSettings._load_from_yaml(fname, do_background_subtraction)
         preprocessing_settings.cfg_preprocessing = cfg.get_preprocessing_config()
         if not preprocessing_settings.background_is_ready:

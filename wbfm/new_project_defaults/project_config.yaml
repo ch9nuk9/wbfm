@@ -43,9 +43,8 @@ physical_units:
 # Project status and steps
 ###################
 
-preprocessing_config: 'preprocessing_config.yaml'
-
 subfolder_configs:
+  preprocessing: dat/preprocessing_config.yaml
   # Copy from external_libraries package
   segmentation: 1-segmentation/segment_config.yaml
   # Outputs of this package
@@ -53,7 +52,6 @@ subfolder_configs:
   tracking: 3-tracking/tracking_config.yaml
   traces: 4-traces/traces_config.yaml
   # Non-pipeline steps
-  dat: dat/visualization_config.yaml  # NOTE: for now, not used
   visualization: visualization/visualization_config.yaml
 
 ###################

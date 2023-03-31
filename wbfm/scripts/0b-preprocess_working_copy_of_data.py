@@ -4,7 +4,7 @@
 import os
 from pathlib import Path
 import sacred
-from wbfm.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames
+from wbfm.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames_and_save
 from sacred import Experiment
 from sacred import SETTINGS
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
@@ -106,7 +106,7 @@ def main(_config, _run):
         video_fname = red_output_fname
         bbox_fname = _config['bounding_box_fname']
         Path(bbox_fname).parent.mkdir(parents=True, exist_ok=True)
-        calculate_bounding_boxes_from_fnames(video_fname, bbox_fname, num_frames)
+        calculate_bounding_boxes_from_fnames_and_save(video_fname, bbox_fname, num_frames)
 
         segment_cfg = _config['segment_cfg']
         bbox_fname = segment_cfg.unresolve_absolute_path(bbox_fname)

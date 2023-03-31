@@ -66,7 +66,7 @@ def bbox2ind(bbox):
 
 
 ## Optional main traces function
-def calculate_bounding_boxes_from_fnames(video_fname, bbox_fname, num_frames=None):
+def calculate_bounding_boxes_from_fnames_and_save(video_fname, bbox_fname, num_frames=None):
 
     if num_frames is None:
         video_4d = zarr.open(video_fname)
