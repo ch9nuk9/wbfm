@@ -67,11 +67,13 @@ def get_names_of_conflicting_dataframes(tracklet_list: list,
     return overlapping_tracklet_names
 
 
-def get_times_of_conflicting_dataframes(tracklet_list: list,
-                                        tracklet_network_names: list,
+def get_times_of_conflicting_dataframes(tracklet_list: List[Union[pd.Series, pd.DataFrame]],
+                                        tracklet_network_names: List[str],
                                         verbose=0) -> Dict[str, List[int]]:
     """
     Takes a list of tracklets and their names, and finds the conflict points between the tracklets in the list
+
+    tracklet_list and tracklet_network_names should be synchronized lists
 
     Returns a dictionary of the times of the conflict points, indexed by the conflicting tracklet names
 

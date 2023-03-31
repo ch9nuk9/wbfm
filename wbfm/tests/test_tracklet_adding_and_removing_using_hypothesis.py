@@ -303,14 +303,15 @@ class AnnotatorTests(RuleBasedStateMachine):
             tracklet_name = tracklet_data.draw(st.sampled_from(self.tracklet_names))
             # Select tracklet and check for conflicts
             annotator.set_current_tracklet(tracklet_name)
+            these_tracklets, current_tracklet, current_tracklet_name = annotator.get_tracklets_for_neuron()
             assume(annotator.tracklet_has_time_overlap() and not annotator.is_current_tracklet_confict_free and
-                   not tracklet_name in annotator.get_tracklets_for_neuron(neuron_name)[0])
+                   tracklet_name not in these_tracklets and len(current_tracklet.dropna().index) > 1)
+            # Do I need this check, or does the assume take care of it?
             if annotator.is_current_tracklet_confict_free:
                 continue
-            elif tracklet_name in annotator.get_tracklets_for_neuron(neuron_name)[0]:
+            elif tracklet_name in these_tracklets:
                 continue
-            elif annotator.time_of_next_conflict()[0] is None:
-                # This means that the entire tracklet is in conflict
+            elif len(current_tracklet.dropna().index) > 1:
                 continue
             elif annotator.tracklet_has_time_overlap():
                 note(f"Found tracklet {tracklet_name} with time conflicts and not attached to {neuron_name}")
@@ -338,8 +339,16 @@ class AnnotatorTests(RuleBasedStateMachine):
         note(f"All initial time conflicts: {conflicts}")
 
         # Get the times of the conflicts from the actual tracklets
-        these_tracklets, current_tracklet, _ = annotator.get_tracklets_for_neuron()
-        overlapping_tracklet_conflict_points = get_times_of_conflicting_dataframes(these_tracklets, [current_tracklet],
+        these_tracklets, current_tracklet, current_tracklet_name = annotator.get_tracklets_for_neuron()
+        note(f"Current tracklet: {current_tracklet}")
+        note(f"Already attached tracklets: {these_tracklets}")
+        tracklet_list = list(these_tracklets.values())
+        tracklet_list.append(current_tracklet)
+        tracklet_names = list(these_tracklets.keys())
+        tracklet_names.append(current_tracklet_name)
+
+        overlapping_tracklet_conflict_points = get_times_of_conflicting_dataframes(tracklet_list,
+                                                                                   tracklet_names,
                                                                                    verbose=0)
         note(f"Overlapping tracklet conflict points: {overlapping_tracklet_conflict_points}")
         for tracklet_name, split_list in overlapping_tracklet_conflict_points.items():
