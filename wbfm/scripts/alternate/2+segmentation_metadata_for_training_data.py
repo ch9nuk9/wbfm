@@ -27,6 +27,7 @@ def cfg(project_path, DEBUG):
 
     segment_cfg = cfg.get_segmentation_config()
     train_cfg = cfg.get_training_config()
+    preprocessing_cfg = cfg.get_preprocessing_config()
 
     # Modify the config files so that we process the training data instead
     segment_cfg.config['output_masks'] = train_cfg.config['reindexed_masks']
@@ -47,6 +48,7 @@ def main(_config, _run):
 
     segment_cfg = _config['segment_cfg']
     project_cfg = _config['cfg']
+    preprocessing_cfg = _config['preprocessing_cfg']
 
     with safe_cd(_config['project_dir']):
-        recalculate_metadata_from_config(segment_cfg, project_cfg, name_mode='neuron', DEBUG=_config['DEBUG'])
+        recalculate_metadata_from_config(preprocessing_cfg, segment_cfg, project_cfg, name_mode='neuron', DEBUG=_config['DEBUG'])

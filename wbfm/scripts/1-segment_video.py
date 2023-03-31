@@ -34,6 +34,7 @@ def cfg(project_path, DEBUG):
     project_dir = cfg.project_dir
 
     segment_cfg = cfg.get_segmentation_config()
+    preprocessing_cfg = cfg.get_preprocessing_config()
 
     if not DEBUG:
         using_monkeypatch()
@@ -54,15 +55,18 @@ def segment_video(_config, _run):
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     segment_cfg = _config['segment_cfg']
+    preprocessing_cfg = _config['preprocessing_cfg']
     project_cfg = _config['cfg']
     if _config['DEBUG']:
         project_cfg.config['dataset_params']['num_frames'] = 3
 
     mode = segment_cfg.config['segmentation_type']
+    opt = dict(preprocessing_cfg=preprocessing_cfg, segment_cfg=segment_cfg, project_cfg=project_cfg,
+               continue_from_frame=_config['continue_from_frame'], DEBUG=_config['DEBUG'])
     with safe_cd(project_cfg.project_dir):
         if mode == "3d":
-            segment_video_using_config_3d(segment_cfg, project_cfg, _config['continue_from_frame'], DEBUG=_config['DEBUG'])
+            segment_video_using_config_3d(**opt)
         elif mode == "2d":
-            segment_video_using_config_2d(segment_cfg, project_cfg, _config['continue_from_frame'], DEBUG=_config['DEBUG'])
+            segment_video_using_config_2d(**opt)
         else:
             raise ValueError(f"Unknown segmentation_type; expected '2d' or '3d' instead of {mode}")

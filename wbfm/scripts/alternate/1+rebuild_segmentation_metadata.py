@@ -25,6 +25,7 @@ def cfg(project_path, DEBUG):
     cfg = ModularProjectConfig(project_path)
     project_dir = cfg.project_dir
     segment_cfg = cfg.get_segmentation_config()
+    preprocessing_cfg = cfg.get_preprocessing_config()
 
     # if not DEBUG:
     #     using_monkeypatch()
@@ -37,6 +38,7 @@ def main(_config, _run):
 
     segment_cfg = _config['segment_cfg']
     project_cfg = _config['cfg']
+    preprocessing_cfg = _config['preprocessing_cfg']
 
     with safe_cd(_config['project_dir']):
-        recalculate_metadata_from_config(segment_cfg, project_cfg, name_mode='neuron', DEBUG=_config['DEBUG'])
+        recalculate_metadata_from_config(preprocessing_cfg, segment_cfg, project_cfg, name_mode='neuron', DEBUG=_config['DEBUG'])

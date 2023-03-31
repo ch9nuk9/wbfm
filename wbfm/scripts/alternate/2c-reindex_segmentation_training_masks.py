@@ -38,6 +38,7 @@ def cfg(project_path, DEBUG):
 
     training_cfg = cfg.get_training_config()
     segment_cfg = cfg.get_segmentation_config()
+    preprocessing_cfg = cfg.get_preprocessing_config()
 
     log_dir = cfg.get_log_dir()
     log_fname = os.path.join(log_dir, '2-training_data_warnings.log')
@@ -57,6 +58,7 @@ def produce_training_data(_config, _run):
 
     training_cfg = _config['training_cfg']
     segment_cfg = _config['segment_cfg']
+    preprocessing_cfg = _config['preprocessing_cfg']
 
     # For manual correction or improvement of later algorithms
     reindex_segmentation_only_training_data(
@@ -69,7 +71,7 @@ def produce_training_data(_config, _run):
     modify_config_files_for_training_data(project_config, segment_cfg, training_cfg)
 
     with safe_cd(project_config.project_dir):
-        recalculate_metadata_from_config(segment_cfg, project_config, name_mode='tracklet', DEBUG=DEBUG)
+        recalculate_metadata_from_config(preprocessing_cfg, segment_cfg, project_config, name_mode='tracklet', DEBUG=DEBUG)
 
         extract_traces_of_training_data_from_config(project_config, training_cfg)
         # save_training_data_as_dlc_format(training_cfg, segment_cfg, DEBUG=DEBUG)
