@@ -35,6 +35,7 @@ def cfg(project_path, DEBUG):
 @ex.automain
 def main(_config, _run):
     sacred.commands.print_config(_run)
+    raise NotImplementedError("Needs to be fixed with preprocessing config")
 
     video_fname = _config['cfg'].config['preprocessed_red']
     bbox_fname = _config['bounding_box_fname']

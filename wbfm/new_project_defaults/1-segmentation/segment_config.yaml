@@ -1,10 +1,5 @@
 
 ###################
-# Preprocessing
-###################
-bbox_fname: null
-
-###################
 # Parameters
 ###################
 self_path: 1-segmentation/segment_config.yaml
