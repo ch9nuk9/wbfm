@@ -24,7 +24,8 @@ import zarr
 import concurrent.futures
 
 
-def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
+def segment_video_using_config_3d(preprocessing_cfg: ConfigFileWithProjectContext,
+                                  segment_cfg: ConfigFileWithProjectContext,
                                   project_cfg: ModularProjectConfig,
                                   continue_from_frame: int =None,
                                   DEBUG: bool = False) -> None:
@@ -44,7 +45,7 @@ def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, _, all_bounding_boxes = _unpack_config_file(
-        segment_cfg, project_cfg, DEBUG)
+        preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Open the file
     project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
@@ -117,7 +118,8 @@ def _segment_full_video_3d(segment_cfg: ConfigFileWithProjectContext,
 ##
 
 
-def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
+def segment_video_using_config_2d(preprocessing_cfg: ConfigFileWithProjectContext,
+                                  segment_cfg: ConfigFileWithProjectContext,
                                   project_cfg: ModularProjectConfig,
                                   continue_from_frame: int = None,
                                   DEBUG: bool = False) -> None:
@@ -128,7 +130,7 @@ def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, zero_out_borders, all_bounding_boxes = _unpack_config_file(
-        segment_cfg, project_cfg, DEBUG)
+        preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Open the file
     project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
@@ -545,7 +547,8 @@ def perform_post_processing_2d(mask_array: np.ndarray, img_volume: np.ndarray, b
     return final_masks
 
 
-def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
+def resplit_masks_in_z_from_config(preprocessing_cfg: ConfigFileWithProjectContext,
+                                   segment_cfg: ConfigFileWithProjectContext,
                                    project_cfg: ModularProjectConfig,
                                    continue_from_frame: int = None, DEBUG=False) -> None:
     """
@@ -554,7 +557,7 @@ def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, _, verbose, video_path, zero_out_borders, all_bounding_boxes = _unpack_config_file(
-        segment_cfg, project_cfg, DEBUG)
+        preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Get data: needs both segmentation and raw video
     check_all_needed_data_for_step(project_cfg.self_path, 2)

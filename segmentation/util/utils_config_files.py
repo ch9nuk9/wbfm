@@ -6,7 +6,7 @@ from wbfm.utils.projects.utils_filenames import pickle_load_binary
 from segmentation.util.utils_paths import get_output_fnames
 
 
-def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
+def _unpack_config_file(preprocessing_cfg, segment_cfg, project_cfg, DEBUG):
     # Initializing variables
     start_volume = project_cfg.config['dataset_params']['start_volume']
     num_frames = project_cfg.config['dataset_params']['num_frames']
@@ -28,11 +28,12 @@ def _unpack_config_file(segment_cfg, project_cfg, DEBUG):
     stardist_model_name = segment_cfg.config['segmentation_params']['stardist_model_name']
     zero_out_borders = segment_cfg.config['segmentation_params']['zero_out_borders']
     # Preprocessing information
-    bbox_fname = segment_cfg.config.get('bbox_fname', None)
+    bbox_fname = preprocessing_cfg.config.get('bounding_boxes_fname', None)
     if bbox_fname is not None:
         all_bounding_boxes = pickle_load_binary(bbox_fname)
         project_cfg.logger.info(f"Found bounding boxes at: {bbox_fname}")
     else:
         all_bounding_boxes = None
-        project_cfg.logger.info(f"Did not find bounding boxes at: {bbox_fname}")
+        project_cfg.logger.warning(f"Did not find bounding boxes at: {bbox_fname},"
+                                   f"a large number of false positive segmentations might be generated.")
     return frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, zero_out_borders, all_bounding_boxes

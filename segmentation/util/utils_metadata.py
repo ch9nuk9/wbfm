@@ -277,7 +277,7 @@ class DetectedNeurons:
         return f"DetectedNeurons object with {self.num_frames} frames"
 
 
-def recalculate_metadata_from_config(segment_cfg, project_cfg, name_mode, DEBUG=False):
+def recalculate_metadata_from_config(preprocessing_cfg, segment_cfg, project_cfg, name_mode, DEBUG=False):
     """
 
     Given a project that contains a segmentation, recalculate the metadata
@@ -298,7 +298,7 @@ def recalculate_metadata_from_config(segment_cfg, project_cfg, name_mode, DEBUG=
     """
 
     frame_list, mask_fname, metadata_fname, _, _, _, video_path, _, _ = _unpack_config_file(
-        segment_cfg, project_cfg, DEBUG)
+        preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     masks_zarr = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())
     video_dat = zarr.open(video_path, synchronizer=zarr.ThreadSynchronizer())
