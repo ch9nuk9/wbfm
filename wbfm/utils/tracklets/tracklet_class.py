@@ -2,7 +2,7 @@ import copy
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import networkx as nx
 import numpy as np
@@ -176,7 +176,7 @@ class NeuronComposedOfTracklets:
         except TypeError:
             return []
 
-    def get_confidences_of_tracklets(self, list_of_lists_of_tracklet_names):
+    def get_confidences_of_tracklets(self, list_of_lists_of_tracklet_names) -> List[List[float]]:
         overlapping_confidences = []
         for these_names in list_of_lists_of_tracklet_names:
             overlapping_confidences.append(
@@ -662,7 +662,8 @@ class TrackedWorm:
             print(f"Removed {len(names_to_remove)} tracklets from {neuron.name}")
             print(f"Current neuron status: {neuron}")
 
-    def get_conflicting_tracklets_for_neuron(self, neuron_name, minimum_confidence=None):
+    def get_conflicting_tracklets_for_neuron(self, neuron_name, minimum_confidence=None) ->\
+            Tuple[List[List[float]], List[List[str]]]:
         tracklet_list, tracklet_network_names = self.get_tracklets_and_network_names_for_neuron(neuron_name,
                                                                                                 minimum_confidence)
         neuron = self.global_name_to_neuron[neuron_name]
@@ -672,6 +673,19 @@ class TrackedWorm:
         return overlapping_confidences, overlapping_tracklet_names
 
     def get_conflict_times_for_tracklets_for_neuron(self, neuron_name, minimum_confidence=None, verbose=0):
+        """
+        Returns a dictionary of tracklet names, with the values being the times of conflicts
+
+        Parameters
+        ----------
+        neuron_name
+        minimum_confidence
+        verbose
+
+        Returns
+        -------
+
+        """
         tracklet_list, tracklet_network_names = self.get_tracklets_and_network_names_for_neuron(neuron_name,
                                                                                                 minimum_confidence)
         neuron = self.global_name_to_neuron[neuron_name]
@@ -684,6 +698,18 @@ class TrackedWorm:
         return overlapping_confidences, overlapping_tracklet_conflict_points
 
     def get_conflict_time_dictionary_for_all_neurons(self, minimum_confidence=None):
+        """
+
+        Core function: get_names_of_conflicting_dataframes
+
+        Parameters
+        ----------
+        minimum_confidence
+
+        Returns
+        -------
+
+        """
         # TODO: check if some conflict times are too close
         overlapping_tracklet_conflict_points = {}
         for name in tqdm(self.neuron_names):

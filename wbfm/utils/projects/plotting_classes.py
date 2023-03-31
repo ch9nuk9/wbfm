@@ -632,6 +632,20 @@ class TrackletAndSegmentationAnnotator:
             return True
 
     def get_dict_of_tracklet_time_conflicts(self, candidate_tracklet_name=None) -> Optional[Dict[str, Set[int]]]:
+        """
+        Returns a dictionary of tracklet names that conflict with the current tracklet, and the timepoints at
+        which they conflict (a full list).
+
+        See: get_time_overlap_of_candidate_tracklet
+
+        Parameters
+        ----------
+        candidate_tracklet_name
+
+        Returns
+        -------
+
+        """
         # The tracklet shouldn't be in the manually annotated match, because it can't be added if there are conflicts
         if candidate_tracklet_name is None:
             candidate_tracklet_name = self.current_tracklet_name

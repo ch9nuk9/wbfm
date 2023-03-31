@@ -1,9 +1,10 @@
 import unittest
 import random
 import hypothesis.strategies as st
-from hypothesis import Verbosity, note, event, settings, Phase
+from hypothesis import Verbosity, note, event, settings, Phase, assume
 from hypothesis.stateful import Bundle, RuleBasedStateMachine, rule, initialize, invariant
 
+from wbfm.utils.external.utils_pandas import get_times_of_conflicting_dataframes
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
@@ -101,6 +102,7 @@ class AnnotatorTests(RuleBasedStateMachine):
         # If there are no tracklets, skip this test
         if len(tracklet_dict) == 0:
             event(f"Skipping test for neuron {neuron_name} because it has no tracklets")
+            assume(len(tracklet_dict) > 0)
 
             # Deselect the tracklet and neuron
             annotator.clear_tracklet_and_neuron()
@@ -187,6 +189,7 @@ class AnnotatorTests(RuleBasedStateMachine):
         # If there are no tracklets, skip this test
         if len(tracklets_dict) == 0:
             note(f"Skipping test_remove_and_readd_tracklets_to_neuron because there are no tracklets for {neuron_name}")
+            assume(len(tracklets_dict) > 0)
             # Deselect the tracklet and neuron
             annotator.clear_tracklet_and_neuron()
             return
@@ -229,6 +232,7 @@ class AnnotatorTests(RuleBasedStateMachine):
             annotator.set_current_tracklet(tracklet_name)
             is_conflict_free = annotator.is_current_tracklet_confict_free
             is_not_attached = tracklet_name not in annotator.get_tracklets_for_neuron(neuron_name)[0]
+            assume(is_not_attached and is_conflict_free)
             if is_conflict_free and is_not_attached:
                 note(f"Found tracklet {tracklet_name} with no conflicts and not attached to {neuron_name}")
                 break
@@ -264,6 +268,7 @@ class AnnotatorTests(RuleBasedStateMachine):
         tracklets_dict, _, _ = annotator.get_tracklets_for_neuron(neuron_name)
         if len(tracklets_dict) == 0:
             note(f"Skipping test_remove_tracklet_from_neuron because there are no tracklets for {neuron_name}")
+            assume(len(tracklets_dict) > 0)
             # Deselect the tracklet and neuron
             annotator.clear_tracklet_and_neuron()
             return
@@ -298,9 +303,14 @@ class AnnotatorTests(RuleBasedStateMachine):
             tracklet_name = tracklet_data.draw(st.sampled_from(self.tracklet_names))
             # Select tracklet and check for conflicts
             annotator.set_current_tracklet(tracklet_name)
+            assume(annotator.tracklet_has_time_overlap() and not annotator.is_current_tracklet_confict_free and
+                   not tracklet_name in annotator.get_tracklets_for_neuron(neuron_name)[0])
             if annotator.is_current_tracklet_confict_free:
                 continue
             elif tracklet_name in annotator.get_tracklets_for_neuron(neuron_name)[0]:
+                continue
+            elif annotator.time_of_next_conflict()[0] is None:
+                # This means that the entire tracklet is in conflict
                 continue
             elif annotator.tracklet_has_time_overlap():
                 note(f"Found tracklet {tracklet_name} with time conflicts and not attached to {neuron_name}")
@@ -317,22 +327,35 @@ class AnnotatorTests(RuleBasedStateMachine):
         conflict_types = annotator.get_types_of_conflicts()
         if "Identity" in conflict_types:
             annotator.remove_tracklet_from_all_matches()
+            note("First, fixed identity conflicts")
         assert "Time" in conflict_types
 
-        # Check the time conflicts points, and split the tracklet there
+        # Check the time conflict points, and split the tracklet there
         original_tracklet_name = annotator.current_tracklet_name
         new_tracklet_names = []
-        for i in range(100):
-            t, _ = annotator.time_of_next_conflict()
-            if t is None:
-                break
-            note(f"Splitting tracklet at time {t}")
-            successfully_split = annotator.split_current_tracklet(t, set_new_half_to_current=True,
-                                                                  verbose=0)
-            assert successfully_split
+        # Print all the time conflicts
+        conflicts = annotator.get_dict_of_tracklet_time_conflicts()
+        note(f"All initial time conflicts: {conflicts}")
 
-            new_tracklet_names.append(annotator.current_tracklet_name)
-            annotator.set_current_tracklet(original_tracklet_name)
+        # Get the times of the conflicts from the actual tracklets
+        these_tracklets, current_tracklet, _ = annotator.get_tracklets_for_neuron()
+        overlapping_tracklet_conflict_points = get_times_of_conflicting_dataframes(these_tracklets, [current_tracklet],
+                                                                                   verbose=0)
+        note(f"Overlapping tracklet conflict points: {overlapping_tracklet_conflict_points}")
+        for tracklet_name, split_list in overlapping_tracklet_conflict_points.items():
+            # Split the tracklet so that no more conflicts are possible
+            annotator.set_current_tracklet(tracklet_name)
+            split_list.sort()
+            for t in split_list:
+                # Split and keep the new half, because the list is sorted
+                successfully_split = annotator.split_current_tracklet(t, set_new_half_to_current=True, verbose=0)
+                assert successfully_split
+                # Remove the old tracklet from the neuron
+                previous_tracklet_name = annotator.previous_tracklet_name
+                annotator.remove_tracklet_from_neuron(previous_tracklet_name)
+
+                new_tracklet_names.append(annotator.current_tracklet_name)
+
         note(f"Generated {len(new_tracklet_names)} new tracklets from splits: {new_tracklet_names}")
 
         # Try to attach part of the split tracklet, and check that one worked
@@ -364,6 +387,7 @@ class AnnotatorTests(RuleBasedStateMachine):
             # Select tracklet and check for conflicts
             annotator.set_current_tracklet(tracklet_name)
             is_conflict_free = annotator.is_current_tracklet_confict_free
+            assume(not is_conflict_free)
             if not is_conflict_free:
                 note(f"Found tracklet {tracklet_name} with conflicts")
                 break

@@ -5,7 +5,7 @@ settings.register_profile("quick", max_examples=2,
                           phases=[Phase.explicit, Phase.reuse])
 
 #
-settings.register_profile("noshrink", max_examples=10,
+settings.register_profile("noshrink", max_examples=100,
                           phases=[Phase.explicit, Phase.reuse, Phase.generate, Phase.target])
 
 #

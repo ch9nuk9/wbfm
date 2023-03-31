@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Dict
 
 import numpy as np
 import pandas as pd
@@ -69,11 +69,15 @@ def get_names_of_conflicting_dataframes(tracklet_list: list,
 
 def get_times_of_conflicting_dataframes(tracklet_list: list,
                                         tracklet_network_names: list,
-                                        verbose=0):
+                                        verbose=0) -> Dict[str, List[int]]:
     """
     Takes a list of tracklets and their names, and finds the conflict points between the tracklets in the list
 
-    Returns the times of the conflict points
+    Returns a dictionary of the times of the conflict points, indexed by the conflicting tracklet names
+
+    In principle this function is symmetric with respect to tracklet_list and tracklet_network_names, but
+    it is not exactly symmetric with respect to the order of the tracklets in the list. This is because the
+    conflict points are determined by the order of the tracklets in the list.
 
     Parameters
     ----------
