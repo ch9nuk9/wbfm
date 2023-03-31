@@ -1,4 +1,5 @@
 import logging
+import os
 
 import numpy as np
 from skimage import filters
@@ -90,3 +91,8 @@ def calculate_bounding_boxes_full_video(video_4d):
     all_bboxes = [f(vol) for vol in tqdm(video_4d)]
 
     return all_bboxes
+
+
+def generate_legacy_bbox_fname(project_dir):
+    bounding_box_fname = os.path.join(project_dir, '1-segmentation', 'bounding_boxes.pickle')
+    return bounding_box_fname

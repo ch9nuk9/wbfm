@@ -4,7 +4,8 @@
 import os
 from pathlib import Path
 import sacred
-from wbfm.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames_and_save
+from wbfm.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames_and_save, \
+    generate_legacy_bbox_fname
 from sacred import Experiment
 from sacred import SETTINGS
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
@@ -31,11 +32,8 @@ def cfg(project_path, DEBUG):
     cfg = ModularProjectConfig(project_path)
     cfg.setup_logger('step_0b.log')
     project_dir = cfg.project_dir
-
     out_fname_red, out_fname_green = generate_output_data_names(cfg)
-
-    bounding_box_fname = os.path.join(cfg.project_dir, '1-segmentation', 'bounding_boxes.pickle')
-    segment_cfg = cfg.get_segmentation_config()
+    preprocessing_cfg = cfg.get_preprocessing_config()
 
     if not DEBUG:
         using_monkeypatch()
@@ -57,12 +55,18 @@ def main(_config, _run):
     num_frames = cfg.config['dataset_params']['num_frames']
     logger = cfg.logger
 
+    project_dir = _config['project_dir']
+
     red_output_fname = _config['out_fname_red']
     green_output_fname = _config['out_fname_green']
-    red_btf_fname = cfg.config['red_bigtiff_fname']
-    green_btf_fname = cfg.config['green_bigtiff_fname']
 
-    with safe_cd(_config['project_dir']):
+    preprocessing_cfg = _config['preprocessing_cfg']
+
+    bbox_fname = preprocessing_cfg.config.get('bounding_boxes_fname', None)
+    if bbox_fname is None:
+        generate_legacy_bbox_fname(project_dir)
+
+    with safe_cd(project_dir):
 
         preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
 
@@ -104,14 +108,12 @@ def main(_config, _run):
 
         # Also saving bounding boxes for future segmentation (speeds up and dramatically reduces false positives)
         video_fname = red_output_fname
-        bbox_fname = _config['bounding_box_fname']
         Path(bbox_fname).parent.mkdir(parents=True, exist_ok=True)
         calculate_bounding_boxes_from_fnames_and_save(video_fname, bbox_fname, num_frames)
 
-        segment_cfg = _config['segment_cfg']
-        bbox_fname = segment_cfg.unresolve_absolute_path(bbox_fname)
-        segment_cfg.config['bbox_fname'] = bbox_fname
-        segment_cfg.update_self_on_disk()
+        bbox_fname = preprocessing_cfg.unresolve_absolute_path(bbox_fname)
+        preprocessing_cfg.config['bounding_boxes_fname'] = bbox_fname
+        preprocessing_cfg.update_self_on_disk()
 
     if _config['to_zip_zarr_using_7z']:
         zip_zarr_using_config(cfg)
