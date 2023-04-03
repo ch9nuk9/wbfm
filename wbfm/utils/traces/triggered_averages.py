@@ -2,16 +2,19 @@ import logging
 import os
 import warnings
 from dataclasses import dataclass
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Callable
 
+import plotly.express as px
 import numpy as np
 import pandas as pd
 import scipy
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, cm
 from scipy.cluster import hierarchy
+from sklearn.metrics import silhouette_score, silhouette_samples
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
@@ -673,6 +676,8 @@ class ClusteredTriggeredAverages:
     Z: np.ndarray = None
     clust_ind: np.ndarray = None
 
+    cluster_func: Callable = hierarchy.fcluster
+
     verbose: int = 0
 
     def __post_init__(self):
@@ -690,7 +695,7 @@ class ClusteredTriggeredAverages:
         if self.verbose >= 1:
             print("Calculating clustering")
         Z = hierarchy.linkage(df_corr.to_numpy(), method='complete', optimal_ordering=False)
-        clust_ind = hierarchy.fcluster(Z, t=self.linkage_threshold, criterion='distance')
+        clust_ind = self.cluster_func(Z, t=self.linkage_threshold, criterion='distance')
         names = self.names
 
         per_cluster_names = {}
@@ -710,6 +715,10 @@ class ClusteredTriggeredAverages:
 
     def plot_clustergram(self, output_folder=None):
         X = self.df_corr.to_numpy()
+
+        # Check for jupyter notebook and large matrices
+        if (X.shape[0] > 200 or X.shape[1] > 200) and executing_in_notebook():
+            raise NotImplementedError("Clustergram will crash jupyter notebook if too many neurons are plotted.")
 
         dist_fun = lambda X, metric: X  # df_corr is already the distance (similarity)
         import dash_bio
@@ -777,6 +786,94 @@ class ClusteredTriggeredAverages:
                     os.makedirs(output_folder, exist_ok=True)
                 plt.savefig(os.path.join(output_folder, f"cluster_{i_clust}.png"))
             plt.show()
+
+    def plot_cluster_silhouette_scores(self, plot_individual_neuron_scores=True):
+        """
+        Plots silhouette scores for different number of clusters, for each neuron
+
+        See: https://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html
+
+        Returns
+        -------
+
+        """
+
+        Z = self.Z
+        X = self.df_corr.to_numpy()
+        range_n_clusters = np.arange(2, 10)
+
+        all_scores = []
+        for n_clusters in range_n_clusters:
+            if plot_individual_neuron_scores:
+                fig, ax1 = plt.subplots(1, 1)
+                fig.set_size_inches(18, 7)
+                ax1.set_xlim([-0.1, 1])
+                ax1.set_ylim([0, len(Z) + (n_clusters + 1) * 10])
+
+            # Initialize the clusterer with n_clusters value and a random generator
+            # seed of 10 for reproducibility.
+            cluster_labels = self.cluster_func(Z, t=n_clusters, criterion='maxclust')
+
+            # The silhouette_score gives the average value for all the samples.
+            # This gives a perspective into the density and separation of the formed
+            # clusters
+            silhouette_avg = silhouette_score(X, cluster_labels)
+            all_scores.append(silhouette_avg)
+            # print(
+            #     "For n_clusters =",
+            #     n_clusters,
+            #     "The average silhouette_score is :",
+            #     silhouette_avg,
+            # )
+
+            if plot_individual_neuron_scores:
+                # Compute the silhouette scores for each sample
+                sample_silhouette_values = silhouette_samples(X, cluster_labels)
+
+                y_lower = 10
+                for i in range(n_clusters):
+                    # Aggregate the silhouette scores for samples belonging to
+                    # cluster i, and sort them
+                    ith_cluster_silhouette_values = sample_silhouette_values[cluster_labels == i + 1]
+
+                    ith_cluster_silhouette_values.sort()
+
+                    size_cluster_i = ith_cluster_silhouette_values.shape[0]
+                    y_upper = y_lower + size_cluster_i
+
+                    color = cm.nipy_spectral(float(i) / n_clusters)
+                    ax1.fill_betweenx(
+                        np.arange(y_lower, y_upper),
+                        0,
+                        ith_cluster_silhouette_values,
+                        facecolor=color,
+                        edgecolor=color,
+                        alpha=0.7,
+                    )
+
+                    # Label the silhouette plots with their cluster numbers at the middle
+                    ax1.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
+
+                    # Compute the new y_lower for next plot
+                    y_lower = y_upper + 10  # 10 for the 0 samples
+
+                ax1.set_title(f"Silhouette scores for {n_clusters} clusters with average score {silhouette_avg:.2f}")
+                ax1.set_xlabel("The silhouette coefficient values")
+                ax1.set_ylabel("Cluster label")
+
+                # The vertical line for average silhouette score of all the values
+                ax1.axvline(x=silhouette_avg, color="red", linestyle="--")
+
+                ax1.set_yticks([])  # Clear the yaxis labels / ticks
+                ax1.set_xticks([-0.1, 0, 0.2, 0.4, 0.6, 0.8, 1])
+
+        plt.show()
+
+        df = pd.DataFrame(dict(n_clusters=range_n_clusters, silhouette_score=all_scores))
+
+        fig = px.line(df, title="Silhouette scores for different number of clusters", x="n_clusters",
+                      y="silhouette_score")
+        fig.show()
 
     @staticmethod
     def load_from_project(project_data, trigger_opt=None):
