@@ -251,7 +251,7 @@ class AnnotatorTests(RuleBasedStateMachine):
 
         # Check that the total dictionary for the neuron not is the same
         new_tracklet_set = set(annotator.combined_global2tracklet_dict[neuron_name])
-        assert new_tracklet_set != original_tracklet_set
+        assert new_tracklet_set == original_tracklet_set | {tracklet_name}
 
         # Deselect the tracklet and neuron
         annotator.clear_tracklet_and_neuron()
@@ -284,7 +284,7 @@ class AnnotatorTests(RuleBasedStateMachine):
         # Check that the total dictionary for the neuron is not the same
         # But ignore the order of the tracklets
         new_tracklet_set = set(annotator.combined_global2tracklet_dict[neuron_name])
-        assert new_tracklet_set != original_tracklet_set
+        assert new_tracklet_set == original_tracklet_set - {tracklet_name}
 
         # Deselect the tracklet and neuron
         annotator.clear_tracklet_and_neuron()
