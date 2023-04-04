@@ -1,17 +1,13 @@
 import unittest
 import random
 import hypothesis.strategies as st
-from hypothesis import Verbosity, note, event, settings, Phase, assume
-from hypothesis.stateful import Bundle, RuleBasedStateMachine, rule, initialize, invariant
+from hypothesis import Verbosity, note, event, assume
+from hypothesis.stateful import RuleBasedStateMachine, rule, invariant
 
 from wbfm.utils.external.utils_pandas import get_times_of_conflicting_dataframes
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
-
-
-# Global variables: the main project object
 
 
 class AnnotatorTests(RuleBasedStateMachine):
@@ -256,10 +252,10 @@ class AnnotatorTests(RuleBasedStateMachine):
         # Deselect the tracklet and neuron
         annotator.clear_tracklet_and_neuron()
 
-    @rule(data=st.data())
-    def test_remove_tracklet_from_neuron(self, data: st.SearchStrategy):
+    @rule(neuron_data=st.data(), tracklet_data=st.data())
+    def test_remove_tracklet_from_neuron(self, neuron_data: st.SearchStrategy, tracklet_data: st.SearchStrategy):
         # Get a neuron to add to
-        neuron_name = data.draw(st.sampled_from(self.neuron_names))
+        neuron_name = neuron_data.draw(st.sampled_from(self.neuron_names))
         # Get the annotator
         annotator = self.project_data.tracklet_annotator
         annotator.current_neuron = neuron_name
@@ -274,7 +270,7 @@ class AnnotatorTests(RuleBasedStateMachine):
             return
 
         # Get a tracklet to remove
-        tracklet_name = data.draw(st.sampled_from(list(tracklets_dict.keys())))
+        tracklet_name = tracklet_data.draw(st.sampled_from(list(tracklets_dict.keys())))
 
         # Remove the tracklet
         original_tracklet_set = set(annotator.combined_global2tracklet_dict[neuron_name])

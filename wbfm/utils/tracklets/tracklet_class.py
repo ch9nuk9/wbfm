@@ -254,7 +254,7 @@ class DetectedTrackletsAndNeurons:
         subcolumn_to_check = 'raw_segmentation_id'
         names = get_names_from_df(self.df_tracklets_zxy)
         logging.info("Prebuilding clickback dictionary (segmentation to tracklet), will take ~ 1 minute")
-        for n in tqdm(names):
+        for n in tqdm(names, leave=False):
             self.update_callback_dictionary_for_single_tracklet(n, subcolumn_to_check)
 
         self.interactive_mode = True
