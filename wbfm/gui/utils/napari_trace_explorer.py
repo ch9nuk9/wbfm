@@ -621,7 +621,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @viewer.bind_key('Shift-t', overwrite=True)
         def remove_tracklets(viewer):
-            self.remove_all_tracklet_layers()
+            self.remove_all_tracklet_napari_layers()
 
         @viewer.bind_key('d', overwrite=True)
         def zoom_next(viewer):
@@ -890,7 +890,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         """
         self.logger.debug("USER: split tracklet keep right")
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            self.remove_layer_of_current_tracklet()
+            self.remove_napari_layer_of_current_tracklet()
             # which_tracklets_to_update = self.subplot_update_dict_for_tracklet_modification()
             successfully_split = self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
             if successfully_split:
@@ -902,7 +902,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
                 # Reselect the tracklet, because it is removed when saved by default
                 self.dat.tracklet_annotator.set_current_tracklet(current_tracklet_name)
-                self.add_layer_of_current_tracklet()
+                self.add_napari_layer_of_current_tracklet()
                 # post_split_dict = self.subplot_update_dict_for_tracklet_modification()
                 # which_tracklets_to_update.update(post_split_dict)
                 self.tracklet_updated_psuedo_event()
@@ -910,13 +910,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             print(f"{self.changeTraceTrackletDropdown.currentText()} mode, so this option didn't do anything")
 
     def split_current_tracklet_keep_left(self):
+        """
+        Simpler version of split_current_tracklet_keep_right. In this case, the left half is kept, and the right half is
+        removed from the neuron. The left half remains attached to the neuron, so no additional logic is needed
+
+        Returns
+        -------
+
+        """
         self.logger.debug("USER: split tracklet keep left")
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
-            self.remove_layer_of_current_tracklet()
+            self.remove_napari_layer_of_current_tracklet()
             # which_tracklets_to_update = self.subplot_update_dict_for_tracklet_modification()
             successfully_split = self.dat.tracklet_annotator.split_current_tracklet(self.t + 1, False)
             if successfully_split:
-                self.add_layer_of_current_tracklet()
+                self.add_napari_layer_of_current_tracklet()
                 # post_split_dict = self.subplot_update_dict_for_tracklet_modification()
                 # which_tracklets_to_update.update(post_split_dict)
                 self.tracklet_updated_psuedo_event()
@@ -925,7 +933,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def clear_current_tracklet(self):
         self.logger.debug("USER: clear current tracklet")
-        self.remove_layer_of_current_tracklet()
+        self.remove_napari_layer_of_current_tracklet()
         # current_tracklet_name = f"{self.dat.tracklet_annotator.current_tracklet_name}_current"
         self.dat.tracklet_annotator.clear_current_tracklet()
         self.tracklet_updated_psuedo_event()
@@ -952,7 +960,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             tracklet_name = self.dat.tracklet_annotator.save_current_tracklet_to_current_neuron()
             if tracklet_name:
-                self.remove_layer_of_current_tracklet(tracklet_name)
+                self.remove_napari_layer_of_current_tracklet(tracklet_name)
                 # which_tracklets_to_update = self.get_dict_for_tracklet_save(tracklet_name)
                 if do_callback:
                     self.tracklet_updated_psuedo_event()
@@ -975,18 +983,18 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.modify_current_tracklet()
             self.set_segmentation_layer_invisible()
 
-    def remove_layer_of_current_tracklet(self, layer_name=None):
+    def remove_napari_layer_of_current_tracklet(self, layer_name=None):
         if layer_name is None:
             layer_name = self.dat.tracklet_annotator.current_tracklet_name
         if layer_name is not None and layer_name in self.viewer.layers:
             self.viewer.layers.remove(layer_name)
 
-    def remove_all_tracklet_layers(self):
-        for layer in self.viewer.layers:
-            if 'tracklet_' in layer.name:
-                self.viewer.layers.remove(layer)
+    def remove_all_tracklet_napari_layers(self):
+        to_remove = [layer for layer in self.viewer.layers if 'tracklet_' in layer.name]
+        for layer in to_remove:
+            self.viewer.layers.remove(layer)
 
-    def add_layer_of_current_tracklet(self, layer_name=None):
+    def add_napari_layer_of_current_tracklet(self, layer_name=None):
         if layer_name is None:
             layer_name = self.dat.tracklet_annotator.current_tracklet_name
         if layer_name is not None and layer_name not in self.viewer.layers:
