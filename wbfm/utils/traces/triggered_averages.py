@@ -1,7 +1,7 @@
 import logging
 import os
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Callable
 
 import plotly.express as px
@@ -10,7 +10,9 @@ import pandas as pd
 import scipy
 from matplotlib import pyplot as plt, cm
 from scipy.cluster import hierarchy
+from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score, silhouette_samples
+from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
@@ -673,10 +675,11 @@ class ClusteredTriggeredAverages:
     # For plotting individual clusters
     triggered_averages_class: FullDatasetTriggeredAverages = None
     linkage_threshold: float = 4.0  # TODO: better way to get clusters
+    linkage_method: str = 'single'
     Z: np.ndarray = None
     clust_ind: np.ndarray = None
 
-    cluster_func: Callable = hierarchy.fcluster
+    cluster_func: Callable = field(default=hierarchy.fcluster)
 
     verbose: int = 0
 
@@ -694,7 +697,7 @@ class ClusteredTriggeredAverages:
         # Calculate clustering for further analysis
         if self.verbose >= 1:
             print("Calculating clustering")
-        Z = hierarchy.linkage(df_corr.to_numpy(), method='complete', optimal_ordering=False)
+        Z = hierarchy.linkage(df_corr.to_numpy(), method=self.linkage_method, optimal_ordering=False)
         clust_ind = self.cluster_func(Z, t=self.linkage_threshold, criterion='distance')
         names = self.names
 
@@ -718,7 +721,11 @@ class ClusteredTriggeredAverages:
 
         # Check for jupyter notebook and large matrices
         if (X.shape[0] > 200 or X.shape[1] > 200) and executing_in_notebook():
-            raise NotImplementedError("Clustergram will crash jupyter notebook if too many neurons are plotted.")
+            static_rendering_required = True
+            logging.warning(f"Clustergram will crash jupyter notebook if > 200 neurons (there are {X.shape[0]}) are plotted. "
+                            "Will render static image instead.")
+        else:
+            static_rendering_required = False
 
         dist_fun = lambda X, metric: X  # df_corr is already the distance (similarity)
         import dash_bio
@@ -735,7 +742,10 @@ class ClusteredTriggeredAverages:
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder, exist_ok=True)
             clustergram.write_image(os.path.join(output_folder, 'clustergram.png'))
-        clustergram.show()
+        if static_rendering_required:
+            clustergram.show(renderer="svg")
+        else:
+            clustergram.show()
 
         return clustergram
 
@@ -787,7 +797,7 @@ class ClusteredTriggeredAverages:
                 plt.savefig(os.path.join(output_folder, f"cluster_{i_clust}.png"))
             plt.show()
 
-    def plot_cluster_silhouette_scores(self, plot_individual_neuron_scores=True):
+    def plot_cluster_silhouette_scores(self, max_n_clusters=10, plot_individual_neuron_scores=True):
         """
         Plots silhouette scores for different number of clusters, for each neuron
 
@@ -800,7 +810,7 @@ class ClusteredTriggeredAverages:
 
         Z = self.Z
         X = self.df_corr.to_numpy()
-        range_n_clusters = np.arange(2, 10)
+        range_n_clusters = np.arange(2, max_n_clusters)
 
         all_scores = []
         for n_clusters in range_n_clusters:
@@ -819,12 +829,6 @@ class ClusteredTriggeredAverages:
             # clusters
             silhouette_avg = silhouette_score(X, cluster_labels)
             all_scores.append(silhouette_avg)
-            # print(
-            #     "For n_clusters =",
-            #     n_clusters,
-            #     "The average silhouette_score is :",
-            #     silhouette_avg,
-            # )
 
             if plot_individual_neuron_scores:
                 # Compute the silhouette scores for each sample
@@ -857,8 +861,9 @@ class ClusteredTriggeredAverages:
                     # Compute the new y_lower for next plot
                     y_lower = y_upper + 10  # 10 for the 0 samples
 
-                ax1.set_title(f"Silhouette scores for {n_clusters} clusters with average score {silhouette_avg:.2f}")
-                ax1.set_xlabel("The silhouette coefficient values")
+                ax1.set_title(f"Silhouette scores for {n_clusters} clusters with average score {silhouette_avg:.2f}"
+                              f" for {len(Z)} neurons")
+                ax1.set_xlabel("Silhouette coefficient values (higher is better)")
                 ax1.set_ylabel("Cluster label")
 
                 # The vertical line for average silhouette score of all the values
@@ -874,6 +879,133 @@ class ClusteredTriggeredAverages:
         fig = px.line(df, title="Silhouette scores for different number of clusters", x="n_clusters",
                       y="silhouette_score")
         fig.show()
+
+    def plot_silhouette_scores_and_points(self, max_n_clusters=10):
+        """
+        Plots silhouette scores for different number of clusters, for each neuron
+
+        Includes a 2d pca plot of the neurons, with the silhouette scores as color
+
+        See: https://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html
+
+        Returns
+        -------
+
+        """
+
+        Z = self.Z
+        X = self.df_corr.to_numpy()
+        # X_normalized = StandardScaler().fit_transform(X)
+        X_normalized = X
+        # Build a 2d tsne embedding
+        # from tsnecuda import TSNE
+        # tsne = TSNE()
+        # X_pca = tsne.fit_transform(X_normalized)
+        X_pca = PCA(n_components=2).fit_transform(X_normalized)
+
+        range_n_clusters = np.arange(2, max_n_clusters)
+        for n_clusters in range_n_clusters:
+            # Create a subplot with 1 row and 2 columns
+            fig, (ax1, ax2) = plt.subplots(1, 2)
+            fig.set_size_inches(18, 7)
+
+            # The 1st subplot is the silhouette plot
+            # The silhouette coefficient can range from -1, 1 but in this example all
+            # lie within [-0.1, 1]
+            ax1.set_xlim([-0.1, 1])
+            # The (n_clusters+1)*10 is for inserting blank space between silhouette
+            # plots of individual clusters, to demarcate them clearly.
+            ax1.set_ylim([0, len(X) + (n_clusters + 1) * 10])
+
+            # Initialize the clusterer with n_clusters value and a random generator
+            # seed of 10 for reproducibility.
+            cluster_labels = self.cluster_func(Z, t=n_clusters, criterion='maxclust')
+
+            # The silhouette_score gives the average value for all the samples.
+            # This gives a perspective into the density and separation of the formed
+            # clusters
+            silhouette_avg = silhouette_score(X, cluster_labels)
+            print(
+                "For n_clusters =",
+                n_clusters,
+                "The average silhouette_score is :",
+                silhouette_avg,
+            )
+
+            # Compute the silhouette scores for each sample
+            sample_silhouette_values = silhouette_samples(X, cluster_labels)
+
+            y_lower = 10
+            for i in range(n_clusters):
+                # Aggregate the silhouette scores for samples belonging to
+                # cluster i, and sort them
+                ith_cluster_silhouette_values = sample_silhouette_values[cluster_labels == i + 1]
+
+                ith_cluster_silhouette_values.sort()
+
+                size_cluster_i = ith_cluster_silhouette_values.shape[0]
+                y_upper = y_lower + size_cluster_i
+
+                color = cm.nipy_spectral(float(i + 1) / n_clusters)
+                ax1.fill_betweenx(
+                    np.arange(y_lower, y_upper),
+                    0,
+                    ith_cluster_silhouette_values,
+                    facecolor=color,
+                    edgecolor=color,
+                    alpha=0.7,
+                )
+
+                # Label the silhouette plots with their cluster numbers at the middle
+                ax1.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
+
+                # Compute the new y_lower for next plot
+                y_lower = y_upper + 10  # 10 for the 0 samples
+
+            ax1.set_title("The silhouette plot for the various clusters.")
+            ax1.set_xlabel("The silhouette coefficient values")
+            ax1.set_ylabel("Cluster label")
+
+            # The vertical line for average silhouette score of all the values
+            ax1.axvline(x=silhouette_avg, color="red", linestyle="--")
+
+            ax1.set_yticks([])  # Clear the yaxis labels / ticks
+            ax1.set_xticks([-0.1, 0, 0.2, 0.4, 0.6, 0.8, 1])
+
+            # 2nd Plot showing the actual clusters formed
+            colors = cm.nipy_spectral(cluster_labels.astype(float) / n_clusters)
+            ax2.scatter(
+                X_pca[:, 0], X_pca[:, 1], marker=".", s=30, lw=0, alpha=0.7, c=colors, edgecolor="k"
+            )
+
+            # Labeling the clusters
+            # centers = clusterer.cluster_centers_
+            # # Draw white circles at cluster centers
+            # ax2.scatter(
+            #     centers[:, 0],
+            #     centers[:, 1],
+            #     marker="o",
+            #     c="white",
+            #     alpha=1,
+            #     s=200,
+            #     edgecolor="k",
+            # )
+
+            # for i, c in enumerate(centers):
+            #     ax2.scatter(c[0], c[1], marker="$%d$" % i, alpha=1, s=50, edgecolor="k")
+
+            ax2.set_title("The visualization of the clustered data.")
+            ax2.set_xlabel("Feature space for the 1st feature")
+            ax2.set_ylabel("Feature space for the 2nd feature")
+
+            plt.suptitle(
+                "Silhouette analysis for KMeans clustering on sample data with n_clusters = %d"
+                % n_clusters,
+                fontsize=14,
+                fontweight="bold",
+            )
+
+        plt.show()
 
     @staticmethod
     def load_from_project(project_data, trigger_opt=None):
