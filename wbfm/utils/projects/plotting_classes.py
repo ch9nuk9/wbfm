@@ -608,16 +608,7 @@ class TrackletAndSegmentationAnnotator:
             neuron_name = self.current_neuron
         if neuron_name is None:
             raise ValueError("Must pass neuron name explicitly or have one saved in the object")
-        # Initialize with automatic tracklets
-        these_names = self.global2tracklet[neuron_name].copy()
-        # Add manual tracklets, and remove any that were manually removed
-        these_names.extend(self.manual_global2tracklet_names[neuron_name])
-        [these_names.remove(name) for name in self.manual_global2tracklet_removals[neuron_name] if name in these_names]
-        # TODO: remove the above manual logic for the combined_global2tracklet_dict
-        updated_names = self.combined_global2tracklet_dict[neuron_name]
-        if set(these_names) != set(updated_names):
-            raise DataSynchronizationError("manual_global2tracklet_names and manual_global2tracklet_removals",
-                                           "combined_global2tracklet_dict")
+        these_names = self.combined_global2tracklet_dict[neuron_name]
 
         if self.verbose >= 1:
             self.print_current_status(neuron_name)
