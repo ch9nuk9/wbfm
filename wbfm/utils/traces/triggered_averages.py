@@ -27,13 +27,14 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines,
                                                  show_individual_lines, is_second_plot, ax, xlim=None, **kwargs):
-    raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
+    raw_trace_mean, triggered_avg, triggered_lower_std, triggered_upper_std, xmax, is_valid = \
         TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines=min_lines)
     if not is_valid:
         logging.warning("Found invalid neuron (empty triggered average)")
         return None, None
     # Plot
-    ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_std, xmax, ax, **kwargs)
+    ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_lower_std, xmax, ax, **kwargs,
+                                                         std_vals_upper=triggered_upper_std)
     if show_individual_lines:
         for trace in triggered_avg_matrix:
             ax.plot(trace[:xmax], 'black', alpha=5.0 / (triggered_avg_matrix.shape[0] + 10.0))
@@ -250,27 +251,30 @@ class TriggeredAverageIndices:
 
     @staticmethod
     def prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines, shorten_to_last_valid=True):
-        triggered_avg, triggered_std, triggered_avg_counts = \
+        triggered_avg, triggered_lower_std, triggered_upper_std, triggered_avg_counts = \
             TriggeredAverageIndices.calc_triggered_average_stats(triggered_avg_matrix)
         # Remove points where there are too few lines contributing
         to_remove = triggered_avg_counts < min_lines
         triggered_avg[to_remove] = np.nan
-        triggered_std[to_remove] = np.nan
+        triggered_lower_std[to_remove] = np.nan
+        triggered_upper_std[to_remove] = np.nan
         xmax = pd.Series(triggered_avg).last_valid_index()
         if shorten_to_last_valid:
             # Helps with plotting individual lines, but will likely produce traces of different lengths
             triggered_avg = triggered_avg[:xmax]
-            triggered_std = triggered_std[:xmax]
+            triggered_std = triggered_lower_std[:xmax]
+            triggered_std = triggered_upper_std[:xmax]
         raw_trace_mean = np.nanmean(triggered_avg)
         is_valid = len(triggered_avg) > 0 and np.count_nonzero(~np.isnan(triggered_avg)) > 0
-        return raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid
+        return raw_trace_mean, triggered_avg, triggered_lower_std, triggered_upper_std, xmax, is_valid
 
     @staticmethod
     def calc_triggered_average_stats(triggered_avg_matrix):
         triggered_avg = np.nanmean(triggered_avg_matrix, axis=0)
-        triggered_std = np.nanstd(triggered_avg_matrix, axis=0)
+        triggered_upper_std = np.quantile(triggered_avg_matrix, 0.025, axis=0)
+        triggered_lower_std = np.quantile(triggered_avg_matrix, 0.975, axis=0)
         triggered_avg_counts = np.nansum(~np.isnan(triggered_avg_matrix), axis=0)
-        return triggered_avg, triggered_std, triggered_avg_counts
+        return triggered_avg, triggered_lower_std, triggered_upper_std, triggered_avg_counts
 
     def calc_significant_points_from_triggered_matrix(self, triggered_avg_matrix):
         """
@@ -286,12 +290,12 @@ class TriggeredAverageIndices:
         -------
 
         """
-        raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
+        raw_trace_mean, triggered_avg, triggered_lower_std, triggered_upper_std, xmax, is_valid = \
             self.prep_triggered_average_for_plotting(triggered_avg_matrix, self.min_lines)
         if not is_valid:
             return []
-        upper_shading = triggered_avg + triggered_std
-        lower_shading = triggered_avg - triggered_std
+        upper_shading = triggered_avg + triggered_upper_std
+        lower_shading = triggered_avg - triggered_lower_std
         x_significant = np.where(np.logical_or(lower_shading > raw_trace_mean, upper_shading < raw_trace_mean))[0]
         return x_significant
 
@@ -574,7 +578,7 @@ class FullDatasetTriggeredAverages:
         df_triggered = {}
         for name in self.neuron_names:
             mat = self.triggered_average_matrix_from_name(name)
-            raw_trace_mean, triggered_avg, triggered_std, xmax, is_valid = \
+            raw_trace_mean, triggered_avg, _, _, xmax, is_valid = \
                 self.ind_class.prep_triggered_average_for_plotting(mat, min_lines=self.min_lines,
                                                                    shorten_to_last_valid=False)
             df_triggered[name] = triggered_avg
@@ -766,7 +770,7 @@ class ClusteredTriggeredAverages:
             ind_class.plot_triggered_average_from_matrix(pseudo_mat, ax, show_individual_lines=True)
             plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
 
-    def plot_all_clusters_simple(self, min_lines=0, ind_preceding=20, xlim=None, z_score=False,
+    def plot_all_clusters_simple(self, min_lines=2, ind_preceding=20, xlim=None, z_score=False,
                                  output_folder=None):
         """Like plot_all_clusters, but doesn't require a triggered_averages_class to be saved"""
         for i_clust, name_list in self.per_cluster_names.items():
