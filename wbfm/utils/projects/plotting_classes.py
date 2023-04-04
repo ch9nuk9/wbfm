@@ -1020,6 +1020,8 @@ class TrackletAndSegmentationAnnotator:
             if not successfully_split:
                 self.logger.warning("Did not successfully split; check logs")
                 return False
+            else:
+                self.logger.debug(f"Successfully split {old_name} into {left_name} and {right_name}")
 
             self.df_tracklet_obj.df_tracklets_zxy = all_tracklets
             if set_new_half_to_current:
