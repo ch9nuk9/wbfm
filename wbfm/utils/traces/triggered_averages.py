@@ -262,8 +262,8 @@ class TriggeredAverageIndices:
         if shorten_to_last_valid:
             # Helps with plotting individual lines, but will likely produce traces of different lengths
             triggered_avg = triggered_avg[:xmax]
-            triggered_std = triggered_lower_std[:xmax]
-            triggered_std = triggered_upper_std[:xmax]
+            triggered_lower_std = triggered_lower_std[:xmax]
+            triggered_upper_std = triggered_upper_std[:xmax]
         raw_trace_mean = np.nanmean(triggered_avg)
         is_valid = len(triggered_avg) > 0 and np.count_nonzero(~np.isnan(triggered_avg)) > 0
         return raw_trace_mean, triggered_avg, triggered_lower_std, triggered_upper_std, xmax, is_valid
@@ -271,8 +271,8 @@ class TriggeredAverageIndices:
     @staticmethod
     def calc_triggered_average_stats(triggered_avg_matrix):
         triggered_avg = np.nanmean(triggered_avg_matrix, axis=0)
-        triggered_upper_std = np.quantile(triggered_avg_matrix, 0.025, axis=0)
-        triggered_lower_std = np.quantile(triggered_avg_matrix, 0.975, axis=0)
+        triggered_upper_std = np.nanquantile(triggered_avg_matrix, 0.975, axis=0)
+        triggered_lower_std = np.nanquantile(triggered_avg_matrix, 0.025, axis=0)
         triggered_avg_counts = np.nansum(~np.isnan(triggered_avg_matrix), axis=0)
         return triggered_avg, triggered_lower_std, triggered_upper_std, triggered_avg_counts
 
