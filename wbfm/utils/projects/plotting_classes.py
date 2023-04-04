@@ -858,7 +858,9 @@ class TrackletAndSegmentationAnnotator:
             # This is often a second call to the same function, but it is necessary in the following situation:
             # 1. Tracklet is added to neuron (will be in manual_global2tracklet_names only)
             # 2. Tracklet is removed from neuron (should be in manual_global2tracklet_removals only; requires this call)
-            state_changed = self._remove_tracklet_from_global2tracklet_dict(tracklet_name, neuron_name)
+            self._remove_tracklet_from_global2tracklet_dict(tracklet_name, neuron_name)
+            # The state is always changed here, because the tracklet was in the to-add list
+            state_changed = True
 
         return state_changed
 
