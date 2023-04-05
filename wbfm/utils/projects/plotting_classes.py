@@ -919,6 +919,8 @@ class TrackletAndSegmentationAnnotator:
         if self.is_current_tracklet_confict_free:
             with self.saving_lock:
                 self._add_tracklet_to_neuron(self.current_tracklet_name, self.current_neuron)
+                self.logger.debug(f"Saved {self.current_tracklet_name} to {self.current_neuron} using function: "
+                                  f"save_current_tracklet_to_current_neuron")
                 tracklet_name = self.current_tracklet_name
                 self.clear_current_tracklet()
             return tracklet_name
