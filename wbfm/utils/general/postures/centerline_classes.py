@@ -820,10 +820,10 @@ class WormFullVideoPosture:
 
     def calc_semi_plateau_state(self, min_length=10, DEBUG=False):
         """
-        Calculates a state that is high when the worm is in a "semi-plateau", and low otherwise
+        Calculates a state that is high when the worm speed is in a "semi-plateau", and low otherwise
         A semi-plateau is defined in two steps:
             1. Find all reversals that are longer than min_length
-            2. Fit a piecewise regression, and keep all points between the first and last breakpoints
+            2. Fit a piecewise regression (3 breaks), and keep all points between the first and last breakpoints
 
         See fit_3_break_piecewise_regression for more details
 
@@ -1452,7 +1452,9 @@ def fit_3_break_piecewise_regression(dat, all_ends, all_starts, min_length=10,
     for i_event, (start, end) in enumerate(zip(all_starts, all_ends)):
         if end - start < min_length:
             continue
-        y = dat.loc[start-start_padding:end + end_padding].to_numpy()
+        time_series_start = start - start_padding
+        time_series_end = end + end_padding
+        y = dat.loc[time_series_start:time_series_end].to_numpy()
         x = np.arange(len(y))
 
         pw_fit = piecewise_regression.Fit(x, y, n_breakpoints=n_breakpoints, n_boot=25)
@@ -1466,21 +1468,21 @@ def fit_3_break_piecewise_regression(dat, all_ends, all_starts, min_length=10,
             breakpoint_start = results['breakpoint1']['estimate']
             breakpoint2 = results['breakpoint2']['estimate']
             breakpoint_end = results['breakpoint3']['estimate']
-            # If the absolute amplitude at the first breakpoint is much lower than the second, use the second
-            if np.abs(y[int(breakpoint_start)]) < np.abs(y[int(breakpoint2)]) / 2:
-                breakpoint_start = breakpoint2
             # If the last breakpoint is not in the second half of the data, the fit failed
             if breakpoint_end < len(x) / 2:
                 new_starts.append(np.nan)
                 new_ends.append(np.nan)
                 continue
+            # If the absolute amplitude at the first breakpoint is much lower than the second, use the second
+            if np.abs(y[int(breakpoint_start)]) < np.abs(y[int(breakpoint2)]) / 2:
+                breakpoint_start = breakpoint2
         else:
-            # No quality checks possible
+            # No quality checks defined
             breakpoint_start = results['breakpoint1']['estimate']
             breakpoint_end = results['breakpoint2']['estimate']
 
-        start_absolute_coords = int(np.round(breakpoint_start + start))
-        end_absolute_coords = int(np.round(breakpoint_end + start))
+        start_absolute_coords = int(np.round(breakpoint_start + time_series_start))
+        end_absolute_coords = int(np.round(breakpoint_end + time_series_start))
         new_starts.append(start_absolute_coords)
         new_ends.append(end_absolute_coords)
 
