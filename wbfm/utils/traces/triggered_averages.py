@@ -679,6 +679,7 @@ class ClusteredTriggeredAverages:
     # For plotting individual clusters
     triggered_averages_class: FullDatasetTriggeredAverages = None
     linkage_threshold: float = 4.0  # TODO: better way to get clusters
+    cluster_criterion: str = 'distance'  # Alternate: 'maxclust'
     linkage_method: str = 'single'
     Z: np.ndarray = None
     clust_ind: np.ndarray = None
@@ -702,7 +703,7 @@ class ClusteredTriggeredAverages:
         if self.verbose >= 1:
             print("Calculating clustering")
         Z = hierarchy.linkage(df_corr.to_numpy(), method=self.linkage_method, optimal_ordering=False)
-        clust_ind = self.cluster_func(Z, t=self.linkage_threshold, criterion='distance')
+        clust_ind = self.cluster_func(Z, t=self.linkage_threshold, criterion=self.cluster_criterion)
         names = self.names
 
         per_cluster_names = {}
