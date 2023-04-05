@@ -31,7 +31,10 @@ class AnnotatorTests(RuleBasedStateMachine):
 
         self.project_data = project_data
         self.tracklet_names = get_names_from_df(self.project_data.df_all_tracklets)
+        self.original_tracklet_names = self.tracklet_names.copy()
         self.neuron_names = self.project_data.neuron_names
+
+        self.expected_number_of_tracklets = len(self.tracklet_names)
 
         # Set the logging state to not log anything
         self.project_data.logger.setLevel("CRITICAL")
@@ -355,6 +358,7 @@ class AnnotatorTests(RuleBasedStateMachine):
                 # Split and keep the new half, because the list is sorted
                 successfully_split = annotator.split_current_tracklet(t, set_new_half_to_current=True, verbose=0)
                 assert successfully_split
+                self.expected_number_of_tracklets += 1
                 # Remove the old tracklet from the neuron
                 previous_tracklet_name = annotator.previous_tracklet_name
                 annotator.remove_tracklet_from_neuron(previous_tracklet_name)
@@ -427,13 +431,26 @@ class AnnotatorTests(RuleBasedStateMachine):
         annotator.clear_tracklet_and_neuron()
 
     @invariant()
-    def nothing_selected(self):
+    def test_nothing_selected(self):
         # Check that nothing is selected
         annotator = self.project_data.tracklet_annotator
         # note(f"Current state of the annotator: {annotator.current_status_string()}")
         assert annotator.current_neuron is None
         assert annotator.current_tracklet_name is None
         assert annotator.current_tracklet is None
+
+    @invariant()
+    def test_number_of_tracklets(self):
+        # Check that the number of tracklets is correct
+        annotator = self.project_data.tracklet_annotator
+        assert annotator.df_tracklet_obj.num_total_tracklets == self.expected_number_of_tracklets
+
+    @invariant()
+    def test_original_tracklet_names(self):
+        # Check that all the original tracklet names are a subset of the current names
+        original_names = self.original_tracklet_names
+        current_names = self.project_data.tracklet_annotator.df_tracklet_obj.all_tracklet_names
+        assert set(original_names).issubset(set(current_names))
 
 
 # Allow the test to be run from the command line

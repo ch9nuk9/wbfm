@@ -5,7 +5,8 @@ import pandas as pd
 from wbfm.utils.external.utils_pandas import check_if_fully_sparse, to_sparse_multiindex
 from wbfm.utils.projects.utils_consolidation import calc_split_dict_z_threshold
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once, get_time_overlap_of_candidate_tracklet
+from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once, get_time_overlap_of_candidate_tracklet, \
+    split_tracklet_within_sparse_dataframe
 
 
 class TestTrackletSplitting(unittest.TestCase):
@@ -16,6 +17,64 @@ class TestTrackletSplitting(unittest.TestCase):
         tmp_df = pd.DataFrame({(self.neuron_name, 'z'): list(range(20)),
                               (self.neuron_name, 'x'): 10*np.array(list(range(20)))})
         self.df = tmp_df
+
+    def test_single_split(self):
+
+        i_split = 11
+        name = self.neuron_name
+        successfully_split, df_split, left_name, right_name = \
+            split_tracklet_within_sparse_dataframe(self.df, i_split, name, name_mode='neuron')
+        self.assertTrue(successfully_split)
+
+        # Should keep the old name, and add a new one
+        expected_names = ['neuron_001', 'neuron_002']
+        split_names = get_names_from_df(df_split)
+        self.assertEqual(expected_names, split_names)
+
+        # Two columns per neuron; test that the lengths are correct
+        expected_lens = [11, 11, 9, 9]
+        split_lens = list(df_split.count())
+        self.assertEqual(expected_lens, split_lens)
+
+        # Specific indices are correct
+        expected_indices = [list(range(11)), list(range(11, 20))]
+        split_indices = [list(df_split[name].dropna(axis=0).index) for name in split_names]
+        self.assertEqual(expected_indices, split_indices)
+
+        # Test that they are sparse
+        df_split_sparse = to_sparse_multiindex(df_split)
+        self.assertTrue(check_if_fully_sparse(df_split_sparse))
+
+    def test_multi_split(self):
+
+        i_splits = [15, 10, 5]
+        name = self.neuron_name
+        df = self.df.copy()
+        for i_split in i_splits:
+            successfully_split, df, left_name, right_name = \
+                split_tracklet_within_sparse_dataframe(df, i_split, name, name_mode='neuron')
+            self.assertTrue(successfully_split)
+
+        df_split = df
+
+        # Should keep the old name, and add a new one
+        expected_names = ['neuron_001', 'neuron_002', 'neuron_003', 'neuron_004']
+        split_names = get_names_from_df(df_split)
+        self.assertEqual(expected_names, split_names)
+
+        # Two columns per neuron; test that the lengths are correct
+        expected_lens = [5, 5, 5, 5, 5, 5, 5, 5]
+        split_lens = list(df_split.count())
+        self.assertEqual(expected_lens, split_lens)
+
+        # Specific indices are correct
+        expected_indices = [list(range(5)), list(range(15, 20)), list(range(10, 15)), list(range(5, 10))]
+        split_indices = [list(df_split[name].dropna(axis=0).index) for name in split_names]
+        self.assertEqual(expected_indices, split_indices)
+
+        # Test that they are sparse
+        df_split_sparse = to_sparse_multiindex(df_split)
+        self.assertTrue(check_if_fully_sparse(df_split_sparse))
 
     def test_split_several_at_once(self):
         split_list_dict = {self.neuron_name: [10, 15]}
@@ -98,6 +157,7 @@ class TestTrackletSplitting(unittest.TestCase):
         # Test that they are sparse
         df_split_sparse = to_sparse_multiindex(df_split)
         self.assertTrue(check_if_fully_sparse(df_split_sparse))
+
 
     # def test_pipeline_split_function(self):
     #     # Use wiggle_tracklet_endpoint_to_remove_conflict to split the tracklet

@@ -892,6 +892,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.remove_napari_layer_of_current_tracklet()
             # which_tracklets_to_update = self.subplot_update_dict_for_tracklet_modification()
+            # Note that this function gives a log message if it fails
             successfully_split = self.dat.tracklet_annotator.split_current_tracklet(self.t, True)
             if successfully_split:
                 # Remove old half, and attach new one
@@ -922,6 +923,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
             self.remove_napari_layer_of_current_tracklet()
             # which_tracklets_to_update = self.subplot_update_dict_for_tracklet_modification()
+            # Note that this function gives a log message if it fails
             successfully_split = self.dat.tracklet_annotator.split_current_tracklet(self.t + 1, False)
             if successfully_split:
                 self.add_napari_layer_of_current_tracklet()

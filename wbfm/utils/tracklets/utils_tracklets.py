@@ -633,7 +633,8 @@ def split_tracklet_within_dataframe(all_tracklets, i_split, old_name, verbose=1)
     return True, all_tracklets, left_name, right_name
 
 
-def split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name, verbose=1):
+def split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name,
+                                           name_mode='tracklet', verbose=1):
     left_name = old_name
     this_tracklet = all_tracklets[[left_name]]
     idx = this_tracklet.index[this_tracklet[left_name]['z'].notnull()]
@@ -642,7 +643,7 @@ def split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name, ver
         return False, all_tracklets, left_name, None
     # Split
     left_half, right_half = split_single_sparse_tracklet(i_split, this_tracklet)
-    right_name = get_next_name_tracklet_or_neuron(all_tracklets)
+    right_name = get_next_name_tracklet_or_neuron(all_tracklets, name_mode=name_mode)
     right_half.rename(columns={left_name: right_name}, level=0, inplace=True)
     if verbose >= 1:
         print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")
