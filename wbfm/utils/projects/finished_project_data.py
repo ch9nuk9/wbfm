@@ -718,7 +718,10 @@ class ProjectData:
         opt.update(kwargs)
 
         if neuron_names is None:
+            user_passed_neuron_names = False
             neuron_names = tuple(self.neuron_names)
+        else:
+            user_passed_neuron_names = True
         if remove_invalid_neurons:
             invalid_names = self.finished_neuron_names(finished_not_invalid=False)
             neuron_names = tuple([n for n in neuron_names if n not in invalid_names])
@@ -730,9 +733,13 @@ class ProjectData:
 
         # Optional: check neurons to remove
         if min_nonnan is not None:
-            names = self.well_tracked_neuron_names(min_nonnan, remove_invalid_neurons)
-            df_drop = df.loc[:, names].copy()
-            # df_drop = df[names].copy()
+            if not user_passed_neuron_names:
+                names = self.well_tracked_neuron_names(min_nonnan, remove_invalid_neurons)
+                df_drop = df.loc[:, names].copy()
+                # df_drop = df[names].copy()
+            else:
+                self.logger.warning("min_nonnan was passed, but neuron_names was also passed. Ignoring min_nonnan")
+                df_drop = df
         else:
             df_drop = df
 
