@@ -831,13 +831,13 @@ class ClusteredTriggeredAverages:
                 plt.savefig(os.path.join(output_folder, f"cluster_{i_clust}.png"))
             plt.show()
 
-    def plot_all_clusters_grid_plot(self, i_clust, num_columns=1):
+    def plot_all_clusters_grid_plot(self, i_clust, num_columns=1, **kwargs):
         """Like plot_all_clusters, but plots the full times series instead of the triggered average"""
         if self.df_traces is None:
             raise ValueError("df_traces is None, cannot plot")
         name_list = list(self.per_cluster_names[i_clust])
         # Use the grid plot function to plot
-        fig, axes = make_grid_plot_from_dataframe(self.df_traces, name_list, num_columns=num_columns)
+        fig, axes = make_grid_plot_from_dataframe(self.df_traces, name_list, num_columns=num_columns, **kwargs)
 
     def plot_two_clusters_simple(self, i_clust0, i_clust1, min_lines=2, ind_preceding=20, z_score=False):
         name_list0 = list(self.per_cluster_names[i_clust0])
