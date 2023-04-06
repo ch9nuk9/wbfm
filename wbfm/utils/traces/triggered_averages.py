@@ -22,7 +22,6 @@ from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jit
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average, fill_nan_in_dataframe
-from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 
@@ -837,6 +836,7 @@ class ClusteredTriggeredAverages:
             raise ValueError("df_traces is None, cannot plot")
         name_list = list(self.per_cluster_names[i_clust])
         # Use the grid plot function to plot
+        from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
         fig, axes = make_grid_plot_from_dataframe(self.df_traces, name_list, num_columns=num_columns, **kwargs)
 
     def plot_two_clusters_simple(self, i_clust0, i_clust1, min_lines=2, ind_preceding=20, z_score=False):
