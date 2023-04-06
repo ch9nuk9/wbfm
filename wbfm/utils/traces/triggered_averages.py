@@ -4,6 +4,7 @@ import warnings
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Callable, Dict
 
+import hdbscan
 import plotly.express as px
 import numpy as np
 import pandas as pd
@@ -857,6 +858,20 @@ class ClusteredTriggeredAverages:
         plot_triggered_average_from_matrix_low_level(pseudo_mat1, ind_preceding, min_lines,
                                                      show_individual_lines=False, is_second_plot=True, ax=ax)
 
+    def get_optimal_clusters_using_hdbscan(self, min_cluster_size=10):
+        """
+        This is a different clustering algorithm that automatically detects the number of clusters
+
+        Returns
+        -------
+
+        """
+
+        clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, metric='precomputed')
+        cluster_labels = clusterer.fit_predict(1 - self.df_corr)
+        unique_labels, label_counts = np.unique(cluster_labels, return_counts=True)
+
+        return len(unique_labels) - 1, label_counts
 
     def get_subset_triggered_average_matrix(self, name_list):
         # Build a pseudo-triggered average matrix, made of the means of each neuron
