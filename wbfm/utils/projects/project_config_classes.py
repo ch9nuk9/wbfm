@@ -221,6 +221,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     def get_preprocessing_config_filename(self):
         # In newer versions, it is in the dat folder and has an entry in the main config file
         fname = self.config['subfolder_configs'].get('preprocessing', None)
+        fname = self.resolve_relative_path(fname)
         if fname is None or not Path(fname).exists():
             # In older versions, it was in the main folder
             fname = str(Path(self.project_dir).joinpath('preprocessing_config.yaml'))
