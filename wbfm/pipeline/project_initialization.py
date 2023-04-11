@@ -64,9 +64,10 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
         logging.info("Detecting number of total frames in the video, may take ~30 seconds")
         try:
             full_video = Image.open(red_bigtiff_fname)
+            num_2d_frames = full_video.n_frames
         except UnidentifiedImageError:
             full_video = tifffile.TiffFile(red_bigtiff_fname)
-        num_2d_frames = full_video.n_frames
+            num_2d_frames = len(full_video.pages)
         num_volumes = num_2d_frames / _config['dataset_params']['num_slices']
         _config['dataset_params']['num_frames'] = int(num_volumes)
 
