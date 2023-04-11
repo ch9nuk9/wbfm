@@ -215,8 +215,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         Note: NOT a subfolder
         """
-        fname = self.get_preprocessing_config_filename()
-        return ConfigFileWithProjectContext(fname)
+        fname = Path(self.get_preprocessing_config_filename())
+        return ConfigFileWithProjectContext(**self._check_path_and_load_config(fname))
 
     def get_preprocessing_config_filename(self):
         # In newer versions, it is in the dat folder and has an entry in the main config file
