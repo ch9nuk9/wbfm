@@ -168,6 +168,7 @@ class CreateProjectDialog(QDialog):
                                f"experimenter={experimenter} task_name={task}"
 
         if full_command is not None:
+            print(f"Running command: {full_command}")
             subprocess.run(full_command, shell=True)
             self.finishButton.setText("Create new project; Close the window if finished")
         else:
