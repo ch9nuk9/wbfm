@@ -209,14 +209,14 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         fname = Path(self.config['subfolder_configs']['tracking'])
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
-    def get_preprocessing_config(self) -> ConfigFileWithProjectContext:
+    def get_preprocessing_config(self) -> SubfolderConfigFile:
         """
         Not often used, except for updating the file.
 
         Note: NOT a subfolder
         """
         fname = Path(self.get_preprocessing_config_filename())
-        return ConfigFileWithProjectContext(**self._check_path_and_load_config(fname))
+        return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
     def get_preprocessing_config_filename(self):
         # In newer versions, it is in the dat folder and has an entry in the main config file
