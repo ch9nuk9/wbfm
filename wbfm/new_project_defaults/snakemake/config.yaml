@@ -6,12 +6,12 @@ code_path: "/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts"
 # Step 0: preprocessing
 # Also uses raw data and produces a .zarr.zip, but that will NOT be within this project, so is not included
 output_0:
-  - 1-segmentation/bounding_boxes.pickle
+  - dat/bounding_boxes.pickle
 
 # Step 1: segmentation
 # NOTE: raw data is outside the project, and thus is not in this format
 input_1:
-  - 1-segmentation/bounding_boxes.pickle
+  - dat/bounding_boxes.pickle
 output_1_dir:
   - 1-segmentation/masks.zarr
 output_1:
