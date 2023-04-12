@@ -285,7 +285,10 @@ def factory_correlate_trace_to_behavior_variable(project_data,
     elif behavioral_correlation_shading == 'pc1':
         # Note: this does not require the kymograph
         model = PCA(n_components=1)
-        df = project_data.calc_default_traces(interpolate_nan=True, min_nonnan=0.9)
+        try:
+            df = project_data.calc_default_traces(interpolate_nan=True, min_nonnan=0.9)
+        except NoNeuronsError:
+            df = project_data.calc_default_traces(interpolate_nan=True, min_nonnan=0.5)
         df -= df.mean()
         model.fit(df.T)
         y = np.squeeze(model.components_)
@@ -890,19 +893,19 @@ def make_default_summary_plots_using_config(project_cfg):
     grid_opt['sort_using_shade_value'] = True
     try:
         make_grid_plot_using_project(proj_dat, **grid_opt)
-    except (np.linalg.LinAlgError, ValueError) as e:
+    except (np.linalg.LinAlgError, ValueError, NoNeuronsError) as e:
         # For test projects, this will fail due to too little data
         logger.info("Failed to make PC1 grid plot; if this is a test project this may be expected")
         logger.info(e)
         pass
-    except NoNeuronsError:
-        # For projects with tracking mistakes, the number of neurons may be too low at a threshold of 90% tracking
-        logger.info("Failed to make PC1 grid plot; trying again with lower tracking threshold")
-        try:
-            make_grid_plot_using_project(proj_dat, **grid_opt,
-                                         min_nonnan=0.5)
-        except NoNeuronsError:
-            pass
+    # except NoNeuronsError:
+    #     # For projects with tracking mistakes, the number of neurons may be too low at a threshold of 90% tracking
+    #     logger.info("Failed to make PC1 grid plot; trying again with lower tracking threshold")
+    #     try:
+    #         make_grid_plot_using_project(proj_dat, **grid_opt,
+    #                                      min_nonnan=0.5)
+    #     except NoNeuronsError:
+    #         pass
 
 
 def make_default_triggered_average_plots(project_cfg, to_save=True):
