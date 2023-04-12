@@ -108,11 +108,6 @@ def make_grid_plot_using_project(project_data: ProjectData,
         opt['filter_mode'] = 'rolling_mean'
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
-        # Do the same, but sorted by pc1 (doesn't require behavior)
-        for mode in all_modes:
-            make_grid_plot_using_project(channel_mode=mode, **opt,
-                                         behavioral_correlation_shading='pc1',
-                                         sort_using_shade_value=True)
         # Do share-y versions, with filtering but not colors
         opt['share_y_axis'] = True
         for mode in all_modes:
