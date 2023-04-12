@@ -9,6 +9,7 @@ import plotly.express as px
 import numpy as np
 import pandas as pd
 import scipy
+import sklearn
 from matplotlib import pyplot as plt, cm
 from scipy.cluster import hierarchy
 from sklearn.decomposition import PCA
@@ -840,7 +841,8 @@ class ClusteredTriggeredAverages:
         from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
         fig, axes = make_grid_plot_from_dataframe(self.df_traces, name_list, num_columns=num_columns, **kwargs)
 
-    def plot_two_clusters_simple(self, i_clust0, i_clust1, min_lines=2, ind_preceding=20, z_score=False):
+    def plot_two_clusters_simple(self, i_clust0, i_clust1, min_lines=2, ind_preceding=20, z_score=False,
+                                 show_individual_lines=False):
         name_list0 = list(self.per_cluster_names[i_clust0])
         name_list1 = list(self.per_cluster_names[i_clust1])
         fig, ax = plt.subplots(dpi=200)
@@ -853,10 +855,12 @@ class ClusteredTriggeredAverages:
             pseudo_mat1 = pseudo_mat1 - np.nanmean(pseudo_mat1, axis=1, keepdims=True)
             pseudo_mat1 = pseudo_mat1 / np.nanstd(pseudo_mat1, axis=1, keepdims=True)
         # Plot
+        two_unique_clusters = i_clust0 != i_clust1
         plot_triggered_average_from_matrix_low_level(pseudo_mat0, ind_preceding, min_lines,
-                                                     show_individual_lines=False, is_second_plot=False, ax=ax)
-        plot_triggered_average_from_matrix_low_level(pseudo_mat1, ind_preceding, min_lines,
-                                                     show_individual_lines=False, is_second_plot=True, ax=ax)
+                                                     show_individual_lines=show_individual_lines, is_second_plot=False, ax=ax)
+        if two_unique_clusters:
+            plot_triggered_average_from_matrix_low_level(pseudo_mat1, ind_preceding, min_lines,
+                                                         show_individual_lines=False, is_second_plot=True, ax=ax)
 
     def get_optimal_clusters_using_hdbscan(self, min_cluster_size=10):
         """
@@ -892,9 +896,8 @@ class ClusteredTriggeredAverages:
         -------
 
         """
-
         Z = self.Z
-        X = self.df_corr.to_numpy()
+        X = 1.0 - self.df_corr.to_numpy()
         range_n_clusters = np.arange(2, max_n_clusters)
 
         all_scores = []
@@ -912,7 +915,7 @@ class ClusteredTriggeredAverages:
             # The silhouette_score gives the average value for all the samples.
             # This gives a perspective into the density and separation of the formed
             # clusters
-            silhouette_avg = silhouette_score(X, cluster_labels)
+            silhouette_avg = silhouette_score(X, cluster_labels, metric='precomputed')
             all_scores.append(silhouette_avg)
 
             if plot_individual_neuron_scores:
@@ -961,7 +964,7 @@ class ClusteredTriggeredAverages:
 
         df = pd.DataFrame(dict(n_clusters=range_n_clusters, silhouette_score=all_scores))
 
-        fig = px.line(df, title="Silhouette scores for different number of clusters", x="n_clusters",
+        fig = px.line(df, title="Silhouette scores for different number of clusters (higher is better)", x="n_clusters",
                       y="silhouette_score")
         fig.show()
 
@@ -1091,6 +1094,43 @@ class ClusteredTriggeredAverages:
             )
 
         plt.show()
+
+    def plot_cluster_alternate_score(self, max_n_clusters=10, score_func='calinski_harabasz_score'):
+        """
+        See: plot_cluster_silhouette_scores
+
+        Note that silhouette uses the correlation as a distance metric, while calinski_harabasz
+        uses the euclidean distance between points, which should be z-scored
+
+        Returns
+        -------
+
+        """
+        if score_func == 'calinski_harabasz_score':
+            func = sklearn.metrics.calinski_harabasz_score
+            better_str = "(higher is better)"
+        elif score_func == 'davies_bouldin_score':
+            func = sklearn.metrics.davies_bouldin_score
+            better_str = "(lower is better)"
+        else:
+            raise ValueError("score_func must be either 'calinski_harabasz_score' or 'davies_bouldin_score'")
+        Z = self.Z
+        X = self.df_triggered.to_numpy()
+        # z-score the data
+        X = (X - X.mean(axis=0)) / X.std(axis=0)
+        X = X.T
+        range_n_clusters = np.arange(2, max_n_clusters)
+
+        all_scores = []
+        for n_clusters in range_n_clusters:
+            cluster_labels = self.cluster_func(Z, t=n_clusters, criterion='maxclust')
+            score = func(X, cluster_labels)
+            all_scores.append(score)
+
+        df = pd.DataFrame(dict(n_clusters=range_n_clusters, score=all_scores))
+        fig = px.line(df, title=f"{score_func} for different number of clusters {better_str}", x="n_clusters",
+                      y="score")
+        fig.show()
 
     @staticmethod
     def load_from_project(project_data, trigger_opt=None, trace_opt=None, to_filter=True,
