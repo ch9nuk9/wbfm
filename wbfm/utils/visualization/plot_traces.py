@@ -94,6 +94,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
     """
     # Evaluate possible recursion
     if channel_mode == 'all':
+        # First, completely raw data
         all_modes = ['red', 'green']
         opt = dict(project_data=project_data,
                    calculation_mode=calculation_mode,
@@ -101,13 +102,18 @@ def make_grid_plot_using_project(project_data: ProjectData,
                    bleach_correct=bleach_correct)
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
-        # Also try to remove outliers and filter
+        # Second, remove outliers and filter
         all_modes = ['ratio']
         opt['remove_outliers'] = True
-        opt['filter_mode'] = 'bilateral'
+        opt['filter_mode'] = 'rolling_mean'
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
-        # Also do share-y versions, with the filtering
+        # Do the same, but sorted by pc1 (doesn't require behavior)
+        for mode in all_modes:
+            make_grid_plot_using_project(channel_mode=mode, **opt,
+                                         behavioral_correlation_shading='pc1',
+                                         sort_using_shade_value=True)
+        # Do share-y versions, with filtering but not colors
         opt['share_y_axis'] = True
         for mode in all_modes:
             make_grid_plot_using_project(channel_mode=mode, **opt)
