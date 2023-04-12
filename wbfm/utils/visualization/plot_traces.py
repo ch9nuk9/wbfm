@@ -898,14 +898,6 @@ def make_default_summary_plots_using_config(project_cfg):
         logger.info("Failed to make PC1 grid plot; if this is a test project this may be expected")
         logger.info(e)
         pass
-    # except NoNeuronsError:
-    #     # For projects with tracking mistakes, the number of neurons may be too low at a threshold of 90% tracking
-    #     logger.info("Failed to make PC1 grid plot; trying again with lower tracking threshold")
-    #     try:
-    #         make_grid_plot_using_project(proj_dat, **grid_opt,
-    #                                      min_nonnan=0.5)
-    #     except NoNeuronsError:
-    #         pass
 
 
 def make_default_triggered_average_plots(project_cfg, to_save=True):
