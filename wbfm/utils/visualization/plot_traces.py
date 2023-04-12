@@ -870,8 +870,9 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
 
 def make_default_summary_plots_using_config(project_cfg):
     # Note: reloads the project data to properly read the new trace h5 files
-    project_cfg.logger.info("Making default grid plots")
     proj_dat = ProjectData.load_final_project_data_from_config(project_cfg)
+    logger = proj_dat.logger
+    logger.info("Making default grid plots")
     grid_opt = dict(channel_mode='all', calculation_mode='integration', min_nonnan=0.5)
     try:
         make_grid_plot_using_project(proj_dat, **grid_opt)
@@ -891,12 +892,12 @@ def make_default_summary_plots_using_config(project_cfg):
         make_grid_plot_using_project(proj_dat, **grid_opt)
     except (np.linalg.LinAlgError, ValueError) as e:
         # For test projects, this will fail due to too little data
-        project_cfg.logger.info("Failed to make PC1 grid plot; if this is a test project this may be expected")
-        project_cfg.logger.info(e)
+        logger.info("Failed to make PC1 grid plot; if this is a test project this may be expected")
+        logger.info(e)
         pass
     except NoNeuronsError:
         # For projects with tracking mistakes, the number of neurons may be too low at a threshold of 90% tracking
-        project_cfg.logger.info("Failed to make PC1 grid plot; trying again with lower tracking threshold")
+        logger.info("Failed to make PC1 grid plot; trying again with lower tracking threshold")
         try:
             make_grid_plot_using_project(proj_dat, **grid_opt,
                                          min_nonnan=0.5)
