@@ -811,7 +811,7 @@ class ClusteredTriggeredAverages:
             plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
 
     def plot_all_clusters_simple(self, min_lines=2, ind_preceding=20, xlim=None, z_score=False,
-                                 output_folder=None):
+                                 output_folder=None, use_individual_triggered_events=False):
         """Like plot_all_clusters, but doesn't require a triggered_averages_class to be saved"""
         for i_clust, name_list in self.per_cluster_names.items():
             name_list = list(name_list)
@@ -819,7 +819,10 @@ class ClusteredTriggeredAverages:
                 print(f"Skipping cluster {i_clust} with {len(name_list)} lines")
                 continue
             fig, ax = plt.subplots(dpi=200)
-            pseudo_mat = self.get_subset_triggered_average_matrix(name_list)
+            if use_individual_triggered_events:
+                pseudo_mat = self.get_triggered_matrix_all_events_from_names(name_list)
+            else:
+                pseudo_mat = self.get_subset_triggered_average_matrix(name_list)
             # Normalize the traces to be similar to the correlation, i.e. z-score them
             if z_score:
                 pseudo_mat = pseudo_mat - np.nanmean(pseudo_mat, axis=1, keepdims=True)
@@ -892,6 +895,13 @@ class ClusteredTriggeredAverages:
             pseudo_mat.append(triggered_avg)
         pseudo_mat = np.stack(pseudo_mat)
         return pseudo_mat
+
+    def get_triggered_matrix_all_events_from_names(self, name_list):
+        # Gets all the individual events from all neurons in the list
+        get_df_trigger = self.triggered_averages_class.triggered_average_matrix_from_name
+        clust_traces = [get_df_trigger(name) for name in name_list]
+        # Stack along neuron axis, not time axis
+        return np.vstack(clust_traces).T
 
     def plot_cluster_silhouette_scores(self, max_n_clusters=10, plot_individual_neuron_scores=False):
         """
