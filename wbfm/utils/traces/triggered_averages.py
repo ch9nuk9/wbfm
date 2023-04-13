@@ -28,9 +28,11 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 
 def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines,
-                                                 show_individual_lines, is_second_plot, ax, xlim=None, **kwargs):
+                                                 show_individual_lines, is_second_plot, ax, xlim=None, z_score=False,
+                                                 **kwargs):
     raw_trace_mean, triggered_avg, triggered_lower_std, triggered_upper_std, xmax, is_valid = \
-        TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines=min_lines)
+        TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines=min_lines,
+                                                                    z_score=z_score)
     if not is_valid:
         logging.warning("Found invalid neuron (empty triggered average)")
         return None, None
@@ -252,9 +254,10 @@ class TriggeredAverageIndices:
         return triggered_average_mat
 
     @staticmethod
-    def prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines, shorten_to_last_valid=True):
+    def prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines, shorten_to_last_valid=True,
+                                            z_score=False):
         triggered_avg, triggered_lower_std, triggered_upper_std, triggered_avg_counts = \
-            TriggeredAverageIndices.calc_triggered_average_stats(triggered_avg_matrix)
+            TriggeredAverageIndices.calc_triggered_average_stats(triggered_avg_matrix, z_score=z_score)
         # Remove points where there are too few lines contributing
         to_remove = triggered_avg_counts < min_lines
         triggered_avg[to_remove] = np.nan
@@ -271,7 +274,10 @@ class TriggeredAverageIndices:
         return raw_trace_mean, triggered_avg, triggered_lower_std, triggered_upper_std, xmax, is_valid
 
     @staticmethod
-    def calc_triggered_average_stats(triggered_avg_matrix):
+    def calc_triggered_average_stats(triggered_avg_matrix, z_score=False):
+        if z_score:
+            triggered_avg_matrix = (triggered_avg_matrix - np.nanmean(triggered_avg_matrix)) \
+                                   / np.nanstd(triggered_avg_matrix)
         triggered_avg = np.nanmean(triggered_avg_matrix, axis=0)
         triggered_upper_std = np.nanquantile(triggered_avg_matrix, 0.975, axis=0)
         triggered_lower_std = np.nanquantile(triggered_avg_matrix, 0.025, axis=0)
@@ -635,6 +641,7 @@ class FullDatasetTriggeredAverages:
     def plot_single_neuron_triggered_average(self, neuron, ax=None, **kwargs):
         y = self.df_traces[neuron]
         self.ax_plot_func_for_grid_plot(None, y, ax, neuron, **kwargs)
+        plt.title(f"Triggered average for {neuron}")
 
     def ax_plot_func_for_grid_plot(self, t, y, ax, name, **kwargs):
         """Same as ax_plot_func_for_grid_plot, but can be used directly"""
@@ -961,9 +968,7 @@ class ClusteredTriggeredAverages:
                 ax1.set_xticks([-0.1, 0, 0.2, 0.4, 0.6, 0.8, 1])
 
         plt.show()
-
         df = pd.DataFrame(dict(n_clusters=range_n_clusters, silhouette_score=all_scores))
-
         fig = px.line(df, title="Silhouette scores for different number of clusters (higher is better)", x="n_clusters",
                       y="silhouette_score")
         fig.show()
@@ -1199,23 +1204,6 @@ def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4,
                                                           min_lines=min_lines)
     mat = ind_class.calc_triggered_average_matrix(y)
     ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
-
-
-# def plot_triggered_average_from_matrix_with_histogram(triggered_avg_matrix, show_individual_lines=True):
-#     triggered_avg, triggered_std, triggered_avg_counts = calc_triggered_average_stats(triggered_avg_matrix)
-#
-#     fig, axes = plt.subplots(nrows=2, sharex=True, dpi=100)
-#
-#     ax = axes[0]
-#     plot_triggered_average_from_matrix(triggered_avg_matrix, ax, show_individual_lines)
-#
-#     triggered_avg_counts = np.nansum(~np.isnan(triggered_avg_matrix), axis=0)
-#     x = np.arange(len(triggered_avg))
-#     axes[1].bar(x, triggered_avg_counts)
-#     axes[1].set_ylabel("Num contributing")
-#     axes[1].set_xlabel("Time (frames)")
-#
-#     return axes
 
 
 def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets, rev_onsets) -> dict:
