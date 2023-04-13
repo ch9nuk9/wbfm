@@ -901,7 +901,7 @@ class ClusteredTriggeredAverages:
         get_df_trigger = self.triggered_averages_class.triggered_average_matrix_from_name
         clust_traces = [get_df_trigger(name) for name in name_list]
         # Stack along neuron axis, not time axis
-        return np.vstack(clust_traces).T
+        return np.vstack(clust_traces)
 
     def plot_cluster_silhouette_scores(self, max_n_clusters=10, plot_individual_neuron_scores=False):
         """
