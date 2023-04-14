@@ -633,25 +633,34 @@ def split_tracklet_within_dataframe(all_tracklets, i_split, old_name, verbose=1)
     return True, all_tracklets, left_name, right_name
 
 
-def split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name,
+def split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name, right_half_gets_new_name=True,
                                            name_mode='tracklet', verbose=1):
-    left_name = old_name
-    this_tracklet = all_tracklets[[left_name]]
-    idx = this_tracklet.index[this_tracklet[left_name]['z'].notnull()]
+    this_tracklet = all_tracklets[[old_name]]
+    # Check if the tracklet exists at the split time
+    idx = this_tracklet.index[this_tracklet[old_name]['z'].notnull()]
     if i_split not in idx:
         logging.warning(f"Tried to split {old_name} at {i_split}, but it doesn't exist at that time")
-        return False, all_tracklets, left_name, None
-    # Split
+        return False, all_tracklets, old_name, None
+    # Perform split
     left_half, right_half = split_single_sparse_tracklet(i_split, this_tracklet)
-    right_name = get_next_name_tracklet_or_neuron(all_tracklets, name_mode=name_mode)
-    right_half.rename(columns={left_name: right_name}, level=0, inplace=True)
+    # Get the new name, and rename the left/right halves as appropriate
+    new_name = get_next_name_tracklet_or_neuron(all_tracklets, name_mode=name_mode)
+    if right_half_gets_new_name:
+        new_half = right_half
+        old_half = left_half
+    else:
+        new_half = left_half
+        old_half = right_half
+    # Actually apply name change
+    new_half.rename(columns={old_name: new_name}, level=0, inplace=True)
     if verbose >= 1:
-        print(f"Creating new tracklet {right_name} from {left_name} by splitting at t={i_split}")
-        print(
-            f"New non-nan lengths: new: {right_half[right_name]['z'].count()}, old:{left_half[left_name]['z'].count()}")
-    all_tracklets = all_tracklets.join(right_half, sort=False)
-    all_tracklets[left_name] = left_half[left_name]
-    return True, all_tracklets, left_name, right_name
+        print(f"Creating new tracklet {new_name} from {old_name} by splitting at t={i_split}")
+        print(f"New non-nan lengths: new: {new_half[new_name]['z'].count()}, "
+              f"old:{old_half[old_name]['z'].count()}")
+    # Update full dataframe with new tracklet and rename old tracklet
+    all_tracklets = all_tracklets.join(new_half, sort=False)
+    all_tracklets[old_name] = old_half[old_name]
+    return True, all_tracklets, old_name, new_name
 
 
 def split_single_tracklet(i_split, this_tracklet: pd.DataFrame):
