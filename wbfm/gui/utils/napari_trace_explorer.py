@@ -1380,7 +1380,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # print(f"Final tracklets on plot: {self.tracklet_lines.keys()}")
         # print(self.static_ax.lines)
 
-        self.finish_subplot_update_and_draw(preserve_xlims)
+        self.finish_subplot_update_and_draw(preserve_xlims=preserve_xlims)
 
     def add_tracklet_to_cache(self, new_line, tracklet_name):
         self.tracklet_lines[tracklet_name] = new_line
