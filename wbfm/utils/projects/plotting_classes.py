@@ -987,17 +987,18 @@ class TrackletAndSegmentationAnnotator:
             self.tracking_cfg.update_self_on_disk()
         self.logger.info("Saving successful! You may now quit")
 
-    def split_current_tracklet(self, i_split, set_new_half_to_current=True, verbose=1):
+    def split_current_tracklet(self, i_split, set_right_half_to_current=True, verbose=1):
         """
-        The current time is included in the "new half" of the tracklet
-        The newer half is added as a new index in the df_tracklet dataframe
+        The current time is included in the right half of the tracklet (i_split is the first index in the right half)
+        The new half is added as a new column in the df_tracklet dataframe
 
-        And finally, the newer half is set as the current tracklet (if set_new_half_to_current)
+        The right half is set as the current tracklet (if set_right_half_to_current)
+        The old half is not changed, and keeps any matches it had
 
         Parameters
         ----------
         i_split
-        set_new_half_to_current
+        set_right_half_to_current
 
         Returns
         -------
@@ -1008,36 +1009,40 @@ class TrackletAndSegmentationAnnotator:
             return False
 
         with self.saving_lock:
-            # Left half stays as old name
             old_name = self.current_tracklet_name
             all_tracklets = self.df_tracklet_obj.df_tracklets_zxy
 
+            # Perform split
             if self.df_tracklet_obj.use_custom_padded_dataframe:
-                successfully_split, all_tracklets, left_name, right_name = \
-                    all_tracklets.split_tracklet(i_split, old_name)
+                raise NotImplementedError
+                # successfully_split, all_tracklets, left_name, right_name = \
+                #     all_tracklets.split_tracklet(i_split, old_name)
             else:
-                successfully_split, all_tracklets, left_name, right_name = \
-                    split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name, verbose=verbose)
+                successfully_split, all_tracklets, old_name, new_name = \
+                    split_tracklet_within_sparse_dataframe(all_tracklets, i_split, old_name,
+                                                           right_half_gets_new_name=set_right_half_to_current,
+                                                           name_mode='tracklet',
+                                                           verbose=verbose)
 
             if not successfully_split:
-                self.logger.warning("Did not successfully split; check logs")
+                self.logger.warning(f"Did not successfully split {old_name} at t={i_split}; check logs")
                 return False
             else:
-                self.logger.debug(f"Successfully split {old_name} into {left_name} and {right_name}")
+                self.logger.debug(f"Successfully split {old_name} at t={i_split}, creating {new_name}")
 
+            # Update the dataframe in our subclass
             self.df_tracklet_obj.df_tracklets_zxy = all_tracklets
-            if set_new_half_to_current:
-                self.set_current_tracklet(right_name)
-            else:
-                self.set_current_tracklet(left_name)
+
+            # Update the current tracklet
+            self.set_current_tracklet(new_name)
 
             # Save a record of the split
-            self.tracklet_split_names[left_name].append(right_name)
-            self.tracklet_split_times[left_name].append((i_split - 1, i_split))
+            self.tracklet_split_names[old_name].append(new_name)
+            self.tracklet_split_times[old_name].append((i_split - 1, i_split))
 
-            # Update the callback dictionary
-            self.df_tracklet_obj.update_callback_dictionary_for_single_tracklet(left_name)
-            self.df_tracklet_obj.update_callback_dictionary_for_single_tracklet(right_name)
+            # Update the callback dictionary for clicking on the segmentation layer
+            self.df_tracklet_obj.update_callback_dictionary_for_single_tracklet(old_name)
+            self.df_tracklet_obj.update_callback_dictionary_for_single_tracklet(new_name)
 
         return True
 

@@ -356,7 +356,7 @@ class AnnotatorTests(RuleBasedStateMachine):
             split_list.sort()
             for t in split_list:
                 # Split and keep the new half, because the list is sorted
-                successfully_split = annotator.split_current_tracklet(t, set_new_half_to_current=True, verbose=0)
+                successfully_split = annotator.split_current_tracklet(t, set_right_half_to_current=True, verbose=0)
                 assert successfully_split
                 self.expected_number_of_tracklets += 1
                 # Remove the old tracklet from the neuron
