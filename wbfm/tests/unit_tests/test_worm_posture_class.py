@@ -9,7 +9,7 @@ class TestWormPostureClass(unittest.TestCase):
 
     def setUp(self):
         # Example project
-        fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-23_spacer_7b_2per_agar/2022-11-23_worm8/project_config.yaml"
+        fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/paper_datasets/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
         project_data = ProjectData.load_final_project_data_from_config(fname)
         self.project_data = project_data
         self.worm = project_data.worm_posture_class
@@ -47,7 +47,7 @@ class TestWormPostureClass(unittest.TestCase):
         kwarg1 = [False, True]
         k2 = "strong_smoothing"
         kwarg2 = [False, True]
-        k3 = "signed"
+        k3 = "fluorescence_fps"
         kwarg3 = [False, True]
 
         for v0 in kwarg0:
@@ -55,4 +55,8 @@ class TestWormPostureClass(unittest.TestCase):
                 for v2 in kwarg2:
                     for v3 in kwarg3:
                         kwargs = {k0: v0, k1: v1, k2: v2, k3: v3}
-                        self.assertTrue(self.worm.worm_speed(**kwargs) is not None)
+                        # print(kwargs)
+                        flag = self.worm.worm_speed(**kwargs) is not None
+                        if not flag:
+                            print(kwargs)
+                        self.assertTrue(flag)

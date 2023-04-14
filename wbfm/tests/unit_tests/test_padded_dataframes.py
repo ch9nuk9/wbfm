@@ -210,7 +210,7 @@ class TestPaddedDataFrame(unittest.TestCase):
         df_sparse = self.df.return_sparse_dataframe()
         df_sparse.to_pickle('df_pytest.pickle')
 
-        df_loaded = pd.read_pickle('../df_pytest.pickle')
+        df_loaded = pd.read_pickle('df_pytest.pickle')
 
         current_names = get_names_from_df(df_loaded)
         expected_names = [self.neuron_name]
@@ -232,7 +232,7 @@ class TestPaddedDataFrame(unittest.TestCase):
         df_sparse = df_working_copy.return_sparse_dataframe()
         df_sparse.to_pickle('df_pytest.pickle')
 
-        df_loaded = pd.read_pickle('../df_pytest.pickle')
+        df_loaded = pd.read_pickle('df_pytest.pickle')
 
         current_names = get_names_from_df(df_loaded)
         self.assertEqual(current_names, expected_names)

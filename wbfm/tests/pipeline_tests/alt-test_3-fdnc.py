@@ -1,6 +1,6 @@
 import importlib
 import logging
-from .global_vars_for_tests import project_path
+from wbfm.tests.unit_tests.global_vars_for_tests import project_path
 
 
 def test_pipeline_step():

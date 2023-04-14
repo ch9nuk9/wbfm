@@ -6,8 +6,7 @@ import pandas as pd
 
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.tests.global_vars_for_tests import project_path
-import pytest
+from wbfm.tests.unit_tests.global_vars_for_tests import project_path
 
 
 def _load_training_data() -> Tuple[object, ModularProjectConfig]:

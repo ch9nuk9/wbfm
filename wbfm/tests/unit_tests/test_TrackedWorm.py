@@ -29,7 +29,7 @@ class TestTrackedWorm(unittest.TestCase):
         df_tracklets.loc[:5, (self.tracklet_names[0], slice(None))] = np.nan
         df_tracklets.loc[8:, (self.tracklet_names[1], slice(None))] = np.nan
 
-        print(df_tracklets)
+        # print(df_tracklets)
 
         # Build an original match between a neuron and these tracklets
         previous_matches = {self.neuron_name: self.tracklet_names}
@@ -45,19 +45,20 @@ class TestTrackedWorm(unittest.TestCase):
 
         # Save
         self.worm_obj = worm_obj
+        # self.df_all_tracklets = df_tracklets
 
     def test_init(self):
         pass
 
     def test_split_tracklet(self):
         worm_obj = self.worm_obj
-        df_tracklets = self.df_all_tracklets
+        df_tracklets = self.worm_obj.detections.df_tracklets_zxy
 
         split_list_dict = worm_obj.get_conflict_time_dictionary_for_all_neurons()
         df_tracklets_split, all_new_tracklets, name_mapping = split_all_tracklets_at_once(df_tracklets, split_list_dict)
 
-        print(df_tracklets_split)
-        print(name_mapping)
+        # print(df_tracklets_split)
+        # print(name_mapping)
 
         # Check that the names are correct
         expected_names = ['tracklet_0000002', 'tracklet_0000003', 'tracklet_0000004', 'tracklet_0000005']

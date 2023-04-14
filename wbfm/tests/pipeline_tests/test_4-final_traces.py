@@ -1,5 +1,5 @@
 import importlib
-from wbfm.tests.global_vars_for_tests import project_path
+from wbfm.tests.unit_tests.global_vars_for_tests import project_path
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 
