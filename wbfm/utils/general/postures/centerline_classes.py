@@ -65,7 +65,7 @@ class WormFullVideoPosture:
     frames_per_volume: int = 32  # Enhancement: make sure this is synchronized with z_slices
 
     project_config: ModularProjectConfig = None
-    num_frames: int = None
+    num_trace_frames: int = None
 
     # Postprocessing the time series
     tracking_failure_idx: np.ndarray = None
@@ -119,10 +119,11 @@ class WormFullVideoPosture:
             if reset_index:
                 df.reset_index(drop=True, inplace=True)
             # Shorten to the correct length, if necessary. Note that we have to check for series or dataframe
-            if len(df.shape) == 2:
-                df = df.iloc[:self.num_frames, :]
-            elif len(df.shape) == 1:
-                df = df.iloc[:self.num_frames]
+            if fluorescence_fps:
+                if len(df.shape) == 2:
+                    df = df.iloc[:self.num_trace_frames, :]
+                elif len(df.shape) == 1:
+                    df = df.iloc[:self.num_trace_frames]
 
         return df
 
@@ -348,15 +349,14 @@ class WormFullVideoPosture:
                 logging.warning("Using automatic annotation instead")
                 beh = self._raw_beh_annotation
 
-        if fluorescence_fps:
-            if beh is None or self.beh_annotation_already_converted_to_fluorescence_fps:
-                return beh
-            else:
-                return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
-        else:
-            if self.beh_annotation_already_converted_to_fluorescence_fps:
-                raise ValueError("Full fps behavioral annotation requested, but only low resolution exists")
+        if beh is None:
             return beh
+        elif self.beh_annotation_already_converted_to_fluorescence_fps and fluorescence_fps:
+            return beh
+        elif self.beh_annotation_already_converted_to_fluorescence_fps and not fluorescence_fps:
+            raise ValueError("Full fps behavioral annotation requested, but only low resolution exists")
+        else:
+            return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
 
     @lru_cache(maxsize=8)
     def summed_curvature_from_kymograph(self, fluorescence_fps=False) -> pd.Series:
@@ -538,13 +538,17 @@ class WormFullVideoPosture:
     def flip_of_vector_during_state(self, vector, fluorescence_fps=False, state=BehaviorCodes.REV) -> pd.Series:
         """By default changes sign during reversal"""
         BehaviorCodes.assert_is_valid(state)
-        rev_ind = pd.Series(self.beh_annotation(fluorescence_fps=fluorescence_fps) == state).reset_index(drop=True)
+        rev_ind = pd.Series(self.beh_annotation(fluorescence_fps=fluorescence_fps, reset_index=True) == state)
         velocity = copy.copy(vector)
         if len(velocity) == len(rev_ind):
             velocity[rev_ind] *= -1
         elif len(velocity) == len(rev_ind) + 1:
             velocity = velocity.iloc[:-1]
-            velocity[rev_ind] *= -1
+            try:
+                velocity[rev_ind] *= -1
+            except Exception as e:
+                print(velocity, rev_ind)
+                raise e
         else:
             raise ValueError(f"Velocity ({len(velocity)}) and reversal indices ({len(rev_ind)}) are desynchronized")
 
@@ -579,7 +583,7 @@ class WormFullVideoPosture:
     def plot_pca_eigenworms(self):
         fig = plt.figure(figsize=(15, 15))
         ax = fig.add_subplot(111, projection='3d')
-        c = np.arange(self.num_frames) / 1e6
+        c = np.arange(self.num_trace_frames) / 1e6
         ax.scatter(self.pca_projections[:, 0], self.pca_projections[:, 1], self.pca_projections[:, 2], c=c)
         plt.colorbar()
 
@@ -629,7 +633,7 @@ class WormFullVideoPosture:
         opt = dict(behavioral_annotation=behavioral_annotation,
                    min_duration=min_duration,
                    ind_preceding=ind_preceding,
-                   trace_len=self.num_frames,
+                   trace_len=self.num_trace_frames,
                    behavioral_state=state)
         opt.update(kwargs)
         ind_class = TriggeredAverageIndices(**opt)
@@ -929,7 +933,7 @@ class WormFullVideoPosture:
         bigtiff_start_volume = project_config.config['dataset_params'].get('bigtiff_start_volume', 0)
         opt = dict(frames_per_volume=frames_per_volume,
                    bigtiff_start_volume=bigtiff_start_volume,
-                   num_frames=project_data.num_frames,
+                   num_trace_frames=project_data.num_frames,
                    project_config=project_config,
                    tracking_failure_idx=invalid_idx)
 
