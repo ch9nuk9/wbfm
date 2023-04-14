@@ -279,8 +279,10 @@ class TriggeredAverageIndices:
             triggered_avg_matrix = (triggered_avg_matrix - np.nanmean(triggered_avg_matrix)) \
                                    / np.nanstd(triggered_avg_matrix)
         triggered_avg = np.nanmean(triggered_avg_matrix, axis=0)
-        triggered_upper_std = np.nanquantile(triggered_avg_matrix, 0.975, axis=0)
-        triggered_lower_std = np.nanquantile(triggered_avg_matrix, 0.025, axis=0)
+        # Use quantiles that would be same as std if the distribution was normal
+        # https://tidsskriftet.no/en/2020/06/medisin-og-tall/mean-and-standard-deviation-or-median-and-quartiles
+        triggered_upper_std = np.nanquantile(triggered_avg_matrix, 0.84, axis=0)
+        triggered_lower_std = np.nanquantile(triggered_avg_matrix, 0.16, axis=0)
         triggered_avg_counts = np.nansum(~np.isnan(triggered_avg_matrix), axis=0)
         return triggered_avg, triggered_lower_std, triggered_upper_std, triggered_avg_counts
 
