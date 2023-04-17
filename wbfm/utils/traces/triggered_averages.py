@@ -716,7 +716,7 @@ class ClusteredTriggeredAverages:
         # Calculate clustering for further analysis
         if self.verbose >= 1:
             print("Calculating clustering")
-        Z = hierarchy.linkage(df_corr.to_numpy(), method=self.linkage_method, optimal_ordering=False)
+        Z = hierarchy.linkage(df_corr.to_numpy(), method=self.linkage_method, optimal_ordering=True)
         clust_ind = self.cluster_func(Z, t=self.linkage_threshold, criterion=self.cluster_criterion)
         names = self.names
 
@@ -907,7 +907,7 @@ class ClusteredTriggeredAverages:
         # Stack along neuron axis, not time axis
         return np.vstack(clust_traces)
 
-    def calculate_p_value_between_clusters(self, n_resamples=300):
+    def calculate_p_value_all_clusters(self, n_resamples=300):
         """
         Uses a permutation test on the max difference between traces to calculate a p value
 
@@ -921,22 +921,28 @@ class ClusteredTriggeredAverages:
         all_p_values = 0.05*np.ones((n, n))
         rng = np.random.default_rng()
         # Loop through all pairs of clusters
-        for i_clust0 in tqdm(range(n)):
+        for i_clust0 in tqdm(range(n), leave=False):
             name_list0 = list(self.per_cluster_names[i_clust0 + 1])
             traces0 = self.get_triggered_matrix_all_events_from_names(name_list0)
             for i_clust1 in range(i_clust0+1, n):
                 name_list1 = list(self.per_cluster_names[i_clust1 + 1])
                 traces1 = self.get_triggered_matrix_all_events_from_names(name_list1)
-
-                # all_traces should be an iterable of arrays, each row of each array being a trace
-                all_traces = (traces0.T, traces1.T)
-                res = permutation_test(all_traces, ks_statistic, vectorized=True,
-                                       n_resamples=n_resamples, axis=1, random_state=rng)
+                pvalue = self.calculate_p_value_two_clusters(traces0, traces1, rng, n_resamples)
                 # Force symmetry
-                all_p_values[i_clust0, i_clust1] = res.pvalue
-                all_p_values[i_clust1, i_clust0] = res.pvalue
+                all_p_values[i_clust0, i_clust1] = pvalue
+                all_p_values[i_clust1, i_clust0] = pvalue
 
         return all_p_values
+
+    @staticmethod
+    def calculate_p_value_two_clusters(traces0, traces1, rng=None, n_resamples=300):
+        if rng is None:
+            rng = np.random.default_rng()
+        # all_traces should be an iterable of arrays, each row of each array being a trace
+        all_traces = (traces0.T, traces1.T)
+        res = permutation_test(all_traces, ks_statistic, vectorized=True,
+                               n_resamples=n_resamples, axis=1, random_state=rng)
+        return res.pvalue
 
     def plot_cluster_silhouette_scores(self, max_n_clusters=10, plot_individual_neuron_scores=False):
         """
