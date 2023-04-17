@@ -12,6 +12,7 @@ import scipy
 import sklearn
 from matplotlib import pyplot as plt, cm
 from scipy.cluster import hierarchy
+from scipy.stats import permutation_test
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score, silhouette_samples
 from sklearn.preprocessing import StandardScaler
@@ -22,6 +23,7 @@ from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
+from wbfm.utils.traces.utils_cluster import ks_statistic
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average, fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
@@ -904,6 +906,37 @@ class ClusteredTriggeredAverages:
         clust_traces = [get_df_trigger(name) for name in name_list]
         # Stack along neuron axis, not time axis
         return np.vstack(clust_traces)
+
+    def calculate_p_value_between_clusters(self, n_resamples=300):
+        """
+        Uses a permutation test on the max difference between traces to calculate a p value
+
+        Note that permutation is done on individual triggered events, not of full neurons
+
+        Returns
+        -------
+
+        """
+        n = len(self.per_cluster_names)
+        all_p_values = 0.05*np.ones((n, n))
+        rng = np.random.default_rng()
+        # Loop through all pairs of clusters
+        for i_clust0 in tqdm(range(n)):
+            name_list0 = list(self.per_cluster_names[i_clust0 + 1])
+            traces0 = self.get_triggered_matrix_all_events_from_names(name_list0)
+            for i_clust1 in range(i_clust0+1, n):
+                name_list1 = list(self.per_cluster_names[i_clust1 + 1])
+                traces1 = self.get_triggered_matrix_all_events_from_names(name_list1)
+
+                # all_traces should be an iterable of arrays, each row of each array being a trace
+                all_traces = (traces0.T, traces1.T)
+                res = permutation_test(all_traces, ks_statistic, vectorized=True,
+                                       n_resamples=n_resamples, axis=1, random_state=rng)
+                # Force symmetry
+                all_p_values[i_clust0, i_clust1] = res.pvalue
+                all_p_values[i_clust1, i_clust0] = res.pvalue
+
+        return all_p_values
 
     def plot_cluster_silhouette_scores(self, max_n_clusters=10, plot_individual_neuron_scores=False):
         """
