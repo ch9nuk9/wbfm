@@ -817,16 +817,25 @@ class ClusteredTriggeredAverages:
     def plot_all_clusters_simple(self, min_lines=2, ind_preceding=20, xlim=None, z_score=False,
                                  output_folder=None, use_individual_triggered_events=False):
         """Like plot_all_clusters, but doesn't require a triggered_averages_class to be saved"""
-        for i_clust, name_list in self.per_cluster_names.items():
+        per_cluster_names = self.per_cluster_names
+        if use_individual_triggered_events:
+            get_matrix_from_names = self.get_triggered_matrix_all_events_from_names
+        else:
+            get_matrix_from_names = self.get_subset_triggered_average_matrix
+
+        self.plot_clusters_from_names(get_matrix_from_names, per_cluster_names, min_lines, ind_preceding, xlim, z_score,
+                                      output_folder)
+
+    @staticmethod
+    def plot_clusters_from_names(get_matrix_from_names, per_cluster_names, min_lines=2,
+                                 ind_preceding=20, xlim=None, z_score=False, output_folder=None):
+        for i_clust, name_list in per_cluster_names.items():
             name_list = list(name_list)
             if len(name_list) < min_lines:
                 print(f"Skipping cluster {i_clust} with {len(name_list)} lines")
                 continue
             fig, ax = plt.subplots(dpi=200)
-            if use_individual_triggered_events:
-                pseudo_mat = self.get_triggered_matrix_all_events_from_names(name_list)
-            else:
-                pseudo_mat = self.get_subset_triggered_average_matrix(name_list)
+            pseudo_mat = get_matrix_from_names(name_list)
             # Normalize the traces to be similar to the correlation, i.e. z-score them
             if z_score:
                 pseudo_mat = pseudo_mat - np.nanmean(pseudo_mat, axis=1, keepdims=True)
@@ -839,7 +848,7 @@ class ClusteredTriggeredAverages:
             plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
                                                          show_individual_lines=True, is_second_plot=False, ax=ax,
                                                          xlim=xlim)
-            plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
+            plt.title(f"Cluster {i_clust}/{len(per_cluster_names)} with {pseudo_mat.shape[0]} traces")
             if output_folder is not None:
                 if not os.path.exists(output_folder):
                     os.makedirs(output_folder, exist_ok=True)
