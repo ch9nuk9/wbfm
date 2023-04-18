@@ -934,6 +934,12 @@ class ClusteredTriggeredAverages:
         else:
             get_df_trigger = self.dict_of_triggered_traces.get
         clust_traces = [get_df_trigger(name) for name in name_list]
+        # Loop through and pad array with nan if some arrays are shorter
+        max_len = max([x.shape[1] for x in clust_traces])
+        for i, trace in enumerate(clust_traces):
+            if trace.shape[1] < max_len:
+                clust_traces[i] = np.pad(trace, ((0, 0), (0, max_len - trace.shape[1])), mode='constant',
+                                         constant_values=np.nan)
         # Stack along neuron axis, not time axis
         return np.vstack(clust_traces)
 
