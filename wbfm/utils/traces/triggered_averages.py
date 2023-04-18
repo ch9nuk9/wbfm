@@ -943,6 +943,139 @@ class ClusteredTriggeredAverages:
 
         return all_p_values
 
+    def get_p_value_for_next_split(self, tree, min_size=4, verbose=0):
+        """
+        Meant to be called recursively from build_unsplittable_tree_dict
+
+        Parameters
+        ----------
+        tree
+        min_size
+        verbose
+
+        Returns
+        -------
+
+        """
+        rng = np.random.default_rng()
+
+        if tree.is_leaf():
+            if verbose >= 1:
+                print("Reached leaf; can't split")
+            return 1.0
+        if verbose >= 1:
+            print(f"Checking split: {tree.id} -> {tree.left.id} + {tree.right.id}")
+
+        # Get left and right sub clusters, then check p value
+        left_ids = tree.left.pre_order(lambda x: x.id)
+        right_ids = tree.right.pre_order(lambda x: x.id)
+
+        # Automatically split if ONLY one side is too small to calculate p_values
+        # If they are both small, then leave it unsplit
+        right_is_small = len(right_ids) < min_size
+        left_is_small = len(left_ids) < min_size
+        if right_is_small ^ left_is_small:
+            if verbose >= 1:
+                print("Single small cluster; splitting")
+            return 0.0
+        elif right_is_small and left_is_small:
+            if verbose >= 1:
+                print("Two small clusters; not splitting")
+            return 1.0
+
+        left_names = self.names[left_ids]
+        left_traces = self.get_triggered_matrix_all_events_from_names(left_names)
+
+        right_names = self.names[right_ids]
+        right_traces = self.get_triggered_matrix_all_events_from_names(right_names)
+
+        # Check p value
+        p_value = self.calculate_p_value_two_clusters(left_traces, right_traces, rng)
+        if verbose >= 1:
+            print(f"p-value: {p_value}")
+        return p_value
+
+    def build_clusters_using_p_values(self, tree=None, split_dict=None, recursion_level=0, verbose=0):
+        """
+        Returns a dictionary with keys of the tree ids, and values as a tuple:
+        - the tree corresponding to the entire cluster
+        - p-value at which the splitting stopped (should be > 0.05)
+
+        Parameters
+        ----------
+        tree
+        split_dict
+        recursion_level
+        verbose
+
+        Returns
+        -------
+
+        """
+        if tree is None:
+            tree = hierarchy.to_tree(self.Z)
+
+        if split_dict is None:
+            split_dict = {}
+        if verbose >= 1:
+            print(f"Checking tree {tree.id} at recursion level {recursion_level}")
+        p_value = self.get_p_value_for_next_split(tree, verbose=verbose - 1)
+
+        if p_value > 0.05:
+            # Then it can't be split, and we stop the dfs
+            split_dict[tree.id] = (tree, p_value)
+        else:
+            # Then it can be split, and we recurse using left and right
+            split_dict = self.build_clusters_using_p_values(tree.left, split_dict=split_dict,
+                                                            recursion_level=recursion_level + 1, verbose=verbose)
+            split_dict = self.build_clusters_using_p_values(tree.right, split_dict=split_dict,
+                                                            recursion_level=recursion_level + 1, verbose=verbose)
+
+        return split_dict
+
+    def map_list_of_cluster_ids_to_colors(self, split_dict, cmap=None, min_size=3) -> Callable:
+        """
+        Turn cluster ids into colors, but need the ids of the linkage combinations, not the neurons
+
+        Meant to be used with link_color_func of hierarchy.dendrogram as:
+        link_color_func = self.map_list_of_cluster_ids_to_colors(...)
+        hierarchy.dendrogram(..., link_color_func=link_color_func)
+
+        Parameters
+        ----------
+        split_dict
+        cmap
+        min_size
+
+        Returns
+        -------
+
+        """
+        if cmap is None:
+            cmap = px.colors.qualitative.Plotly
+
+        def assign_color_recursively(link_color_dict, tree, col):
+            link_color_dict[tree.id] = col
+            if not tree.is_leaf():
+                assign_color_recursively(link_color_dict, tree.left, col)
+                assign_color_recursively(link_color_dict, tree.right, col)
+            return link_color_dict
+
+        link_color_dict = {}
+        keys = list(split_dict.keys())
+        for i_clust, k in enumerate(keys):
+            col = cmap[i_clust % len(cmap)]
+            tree = split_dict[k][0]
+            # If the cluster is too small, set the color to black
+            if len(tree.pre_order(lambda x: x.id)) < min_size:
+                col = 'black'
+            # Assign color to top level split, then recursively for all leaves
+            link_color_dict = assign_color_recursively(link_color_dict, tree, col)
+
+        def link_color_func(node_id):
+            return link_color_dict.get(node_id, 'black')
+        return link_color_func
+
     @staticmethod
     def calculate_p_value_two_clusters(traces0, traces1, rng=None, n_resamples=300):
         if rng is None:
