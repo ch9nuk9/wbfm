@@ -1,9 +1,8 @@
 import numpy as np
-import plotly.figure_factory as ff
 from plotly.figure_factory._dendrogram import _Dendrogram
 import scipy.cluster.hierarchy as sch
 import scipy as scp
-import plotly.express as px
+from plotly.graph_objs import graph_objs
 
 
 def ks_statistic(x, y, axis=0):
@@ -37,7 +36,6 @@ class CustomDendrogram(_Dendrogram):
 
     Specifically, allows a custom list of clusters to be passed, producing more complex clusters than a simple cutoff
     """
-
 
     def get_dendrogram_traces(
         self, X, colorscale, distfun, linkagefun, hovertext, color_threshold=None,
@@ -113,3 +111,21 @@ class CustomDendrogram(_Dendrogram):
             trace_list.append(trace)
 
         return trace_list, icoord, dcoord, ordered_labels, P["leaves"]
+
+
+def custom_create_dendrogram(**kwargs):
+    """
+    Similar to plotly's create_dendrogram, but allows a custom list of clusters to be passed, producing more complex
+    clusters than a simple cutoff. Uses the CustomDendrogram class
+
+    Parameters
+    ----------
+    X
+    kwargs
+
+    Returns
+    -------
+
+    """
+    dendrogram = _Dendrogram(**kwargs)
+    return graph_objs.Figure(data=dendrogram.data, layout=dendrogram.layout)

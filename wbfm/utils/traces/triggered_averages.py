@@ -943,7 +943,7 @@ class ClusteredTriggeredAverages:
 
         return all_p_values
 
-    def get_p_value_for_next_split(self, tree, min_size=4, verbose=0):
+    def get_p_value_for_next_split(self, tree, min_size=4, verbose=0, DEBUG=False):
         """
         Meant to be called recursively from build_unsplittable_tree_dict
 
@@ -990,12 +990,15 @@ class ClusteredTriggeredAverages:
         right_traces = self.get_triggered_matrix_all_events_from_names(right_names)
 
         # Check p value
-        p_value = self.calculate_p_value_two_clusters(left_traces, right_traces, rng)
+        p_value = self.calculate_p_value_two_clusters(left_traces, right_traces, rng,
+                                                      DEBUG=DEBUG,
+                                                      DEBUG_str=f"{tree.id} -> {tree.left.id} + {tree.right.id}")
         if verbose >= 1:
             print(f"p-value: {p_value}")
         return p_value
 
-    def build_clusters_using_p_values(self, tree=None, split_dict=None, recursion_level=0, verbose=0):
+    def build_clusters_using_p_values(self, tree=None, split_dict=None, p_value_threshold=0.05,
+                                      recursion_level=0, verbose=0, DEBUG=False):
         """
         Returns a dictionary with keys of the tree ids, and values as a tuple:
         - the tree corresponding to the entire cluster
@@ -1019,23 +1022,25 @@ class ClusteredTriggeredAverages:
             split_dict = {}
         if verbose >= 1:
             print(f"Checking tree {tree.id} at recursion level {recursion_level}")
-        p_value = self.get_p_value_for_next_split(tree, verbose=verbose - 1)
+        p_value = self.get_p_value_for_next_split(tree, verbose=verbose - 1, DEBUG=DEBUG)
 
-        if p_value > 0.05:
+        if p_value > p_value_threshold:
             # Then it can't be split, and we stop the dfs
             split_dict[tree.id] = (tree, p_value)
         else:
             # Then it can be split, and we recurse using left and right
-            split_dict = self.build_clusters_using_p_values(tree.left, split_dict=split_dict,
-                                                            recursion_level=recursion_level + 1, verbose=verbose)
-            split_dict = self.build_clusters_using_p_values(tree.right, split_dict=split_dict,
-                                                            recursion_level=recursion_level + 1, verbose=verbose)
+            opt = dict(p_value_threshold=p_value_threshold, recursion_level=recursion_level + 1, verbose=verbose)
+            split_dict = self.build_clusters_using_p_values(tree.left, split_dict=split_dict, **opt)
+            split_dict = self.build_clusters_using_p_values(tree.right, split_dict=split_dict, **opt)
 
         return split_dict
 
-    def map_list_of_cluster_ids_to_colors(self, split_dict, cmap=None, min_size=3) -> Callable:
+    @staticmethod
+    def map_list_of_cluster_ids_to_colors(split_dict, cmap=None, min_size=3) -> Callable:
         """
         Turn cluster ids into colors, but need the ids of the linkage combinations, not the neurons
+
+        split_dict is the output of build_clusters_using_p_values
 
         Meant to be used with link_color_func of hierarchy.dendrogram as:
         link_color_func = self.map_list_of_cluster_ids_to_colors(...)
@@ -1077,13 +1082,21 @@ class ClusteredTriggeredAverages:
         return link_color_func
 
     @staticmethod
-    def calculate_p_value_two_clusters(traces0, traces1, rng=None, n_resamples=300):
+    def calculate_p_value_two_clusters(traces0, traces1, rng=None, n_resamples=300,
+                                       DEBUG=False, DEBUG_str=""):
         if rng is None:
             rng = np.random.default_rng()
         # all_traces should be an iterable of arrays, each row of each array being a trace
         all_traces = (traces0.T, traces1.T)
         res = permutation_test(all_traces, ks_statistic, vectorized=True,
                                n_resamples=n_resamples, axis=1, random_state=rng)
+        if DEBUG:
+            plt.hist(res.null_distribution, bins=50)
+            plt.vlines(x=ks_statistic(*all_traces, axis=-1), ymin=0, ymax=20, color='r')
+            plt.title(f"Permutation distribution of test statistic (p={res.pvalue}) {DEBUG_str}")
+            plt.xlabel("Value of Statistic")
+            plt.ylabel("Frequency")
+            plt.show()
         return res.pvalue
 
     def plot_cluster_silhouette_scores(self, max_n_clusters=10, plot_individual_neuron_scores=False):
