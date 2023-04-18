@@ -1132,7 +1132,7 @@ class ClusteredTriggeredAverages:
             fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(10, 10))
 
             # Traces for each cluster with shading
-            opt = dict(show_individual_lines=True, ax=axes[0], min_lines=2, ind_preceding=20)
+            opt = dict(show_individual_lines=False, ax=axes[0], min_lines=2, ind_preceding=20)
             plot_triggered_average_from_matrix_low_level(traces0, is_second_plot=False, **opt)
             plot_triggered_average_from_matrix_low_level(traces1, is_second_plot=True, **opt)
 
