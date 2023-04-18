@@ -199,7 +199,7 @@ class TriggeredAverageIndices:
             triggered_avg_matrix[i, np.arange(len(ind))] = trace[ind]
 
         # Postprocessing type 1: change amplitudes
-        if self.mean_subtract:
+        if self.mean_subtract or self.z_score:
             triggered_avg_matrix -= np.nanmean(triggered_avg_matrix, axis=1, keepdims=True)
         if self.z_score:
             triggered_avg_matrix /= np.nanstd(triggered_avg_matrix, axis=1, keepdims=True)
@@ -943,7 +943,7 @@ class ClusteredTriggeredAverages:
 
         return all_p_values
 
-    def get_p_value_for_next_split(self, tree, min_size=4, verbose=0, DEBUG=False):
+    def get_p_value_for_next_split(self, tree, min_size=4, n_resamples=300, verbose=0, DEBUG=False):
         """
         Meant to be called recursively from build_unsplittable_tree_dict
 
@@ -991,6 +991,7 @@ class ClusteredTriggeredAverages:
 
         # Check p value
         p_value = self.calculate_p_value_two_clusters(left_traces, right_traces, rng,
+                                                      n_resamples=n_resamples,
                                                       DEBUG=DEBUG,
                                                       DEBUG_str=f"{tree.id} -> {tree.left.id} + {tree.right.id}")
         if verbose >= 1:
@@ -998,7 +999,7 @@ class ClusteredTriggeredAverages:
         return p_value
 
     def build_clusters_using_p_values(self, tree=None, split_dict=None, p_value_threshold=0.05,
-                                      recursion_level=0, verbose=0, DEBUG=False):
+                                      recursion_level=0, verbose=0, DEBUG=False, **kwargs):
         """
         Returns a dictionary with keys of the tree ids, and values as a tuple:
         - the tree corresponding to the entire cluster
@@ -1022,14 +1023,15 @@ class ClusteredTriggeredAverages:
             split_dict = {}
         if verbose >= 1:
             print(f"Checking tree {tree.id} at recursion level {recursion_level}")
-        p_value = self.get_p_value_for_next_split(tree, verbose=verbose - 1, DEBUG=DEBUG)
+        p_value = self.get_p_value_for_next_split(tree, verbose=verbose - 1, DEBUG=DEBUG, **kwargs)
 
         if p_value > p_value_threshold:
             # Then it can't be split, and we stop the dfs
             split_dict[tree.id] = (tree, p_value)
         else:
             # Then it can be split, and we recurse using left and right
-            opt = dict(p_value_threshold=p_value_threshold, recursion_level=recursion_level + 1, verbose=verbose)
+            opt = dict(p_value_threshold=p_value_threshold, recursion_level=recursion_level + 1,
+                       verbose=verbose, DEBUG=DEBUG)
             split_dict = self.build_clusters_using_p_values(tree.left, split_dict=split_dict, **opt)
             split_dict = self.build_clusters_using_p_values(tree.right, split_dict=split_dict, **opt)
 
@@ -1091,12 +1093,23 @@ class ClusteredTriggeredAverages:
         res = permutation_test(all_traces, ks_statistic, vectorized=True,
                                n_resamples=n_resamples, axis=1, random_state=rng)
         if DEBUG:
-            plt.hist(res.null_distribution, bins=50)
-            plt.vlines(x=ks_statistic(*all_traces, axis=-1), ymin=0, ymax=20, color='r')
-            plt.title(f"Permutation distribution of test statistic (p={res.pvalue}) {DEBUG_str}")
-            plt.xlabel("Value of Statistic")
-            plt.ylabel("Frequency")
+            
+            fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(10, 10))
+
+            # Traces for each cluster with shading
+            opt = dict(show_individual_lines=True, ax=axes[0], min_lines=2, ind_preceding=20)
+            plot_triggered_average_from_matrix_low_level(traces0, is_second_plot=False, **opt)
+            plot_triggered_average_from_matrix_low_level(traces1, is_second_plot=True, **opt)
+
+            # Histogram for permutation test
+            axes[1].hist(res.null_distribution, bins=50)
+            axes[1].vlines(x=ks_statistic(*all_traces, axis=-1), ymin=0, ymax=20, color='r')
+            axes[1].set_title(f"Permutation distribution of test statistic (p={res.pvalue}) {DEBUG_str}")
+            axes[1].set_xlabel("Value of Statistic")
+            axes[1].set_ylabel("Frequency")
+
             plt.show()
+            
         return res.pvalue
 
     def plot_cluster_silhouette_scores(self, max_n_clusters=10, plot_individual_neuron_scores=False):

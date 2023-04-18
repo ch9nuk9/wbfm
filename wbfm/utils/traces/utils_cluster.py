@@ -1,8 +1,10 @@
 import numpy as np
+from dash_bio.component_factory._clustergram import _Clustergram
 from plotly.figure_factory._dendrogram import _Dendrogram
 import scipy.cluster.hierarchy as sch
 import scipy as scp
 from plotly.graph_objs import graph_objs
+import plotly.graph_objs as go
 
 
 def ks_statistic(x, y, axis=0):
@@ -37,22 +39,29 @@ class CustomDendrogram(_Dendrogram):
     Specifically, allows a custom list of clusters to be passed, producing more complex clusters than a simple cutoff
     """
 
-    def get_dendrogram_traces(
-        self, X, colorscale, distfun, linkagefun, hovertext, color_threshold=None,
-            Z=None, link_color_func=None
-    ):
-        if link_color_func is None:
+    def __init__(self, Z, link_color_func=None, **kwargs):
+        self.Z = Z
+        self.link_color_func = link_color_func
+        if 'X' not in kwargs:
+            kwargs['X'] = None
+        super().__init__(**kwargs)
+
+    def get_dendrogram_traces(self, X, colorscale, distfun, linkagefun, hovertext, color_threshold=None):
+        if self.link_color_func is None:
             # Then default to the original method
             return super().get_dendrogram_traces(
                 X, colorscale, distfun, linkagefun, hovertext, color_threshold
             )
         else:
             assert color_threshold is None, "Cannot use both color_threshold and link_color_func"
+            link_color_func = self.link_color_func
 
         # Otherwise, use the custom method, which is almost entirely copied from the original
-        if Z is None:
+        if self.Z is None:
             d = distfun(X)
             Z = linkagefun(d)
+        else:
+            Z = self.Z
         P = sch.dendrogram(
             Z,
             orientation=self.orientation,
@@ -65,11 +74,12 @@ class CustomDendrogram(_Dendrogram):
         dcoord = scp.array(P["dcoord"])
         ordered_labels = scp.array(P["ivl"])
         color_list = scp.array(P["color_list"])
-        colors = self.get_color_dict(colorscale)
+        # colors = self.get_color_dict(colorscale)
 
         trace_list = []
 
-        for i in range(len(icoord)):
+        # Modify to just use the same colors as the original
+        for i, color in enumerate(color_list):
             # xs and ys are arrays of 4 points that make up the '∩' shapes
             # of the dendrogram tree
             if self.orientation in ["top", "bottom"]:
@@ -81,7 +91,7 @@ class CustomDendrogram(_Dendrogram):
                 ys = dcoord[i]
             else:
                 ys = icoord[i]
-            color_key = color_list[i]
+            # color_key = color_list[i]
             hovertext_label = None
             if hovertext:
                 hovertext_label = hovertext[i]
@@ -90,7 +100,8 @@ class CustomDendrogram(_Dendrogram):
                 x=np.multiply(self.sign[self.xaxis], xs),
                 y=np.multiply(self.sign[self.yaxis], ys),
                 mode="lines",
-                marker=dict(color=colors[color_key]),
+                # marker=dict(color=colors[color_key]),
+                marker=dict(color=color),
                 text=hovertext_label,
                 hoverinfo="text",
             )
@@ -127,5 +138,86 @@ def custom_create_dendrogram(**kwargs):
     -------
 
     """
-    dendrogram = _Dendrogram(**kwargs)
+    dendrogram = CustomDendrogram(**kwargs)
     return graph_objs.Figure(data=dendrogram.data, layout=dendrogram.layout)
+
+
+class CustomClustergram(_Clustergram):
+    """
+    Similar to base class, but uses CustomDendrogram class
+
+    Note that the plotly library uses the Clustergram function to initialize the class, and we combine that in one
+
+    """
+
+    def __init__(self, Z=None, link_color_func=None, **kwargs):
+        self.Z = Z
+        self.link_color_func = link_color_func
+        super().__init__(**kwargs)
+
+        (fig, ct, curves_dict) = self.figure()
+
+        self.fig = go.Figure(fig)  # This actually plots?
+        self.ct = ct
+        self.curves_dict = curves_dict
+
+    def _compute_clustered_data(self):
+        """
+        Same as super class, but uses custom dendrogram
+        """
+
+        # initialize return dict
+        trace_list = {"col": [], "row": []}
+
+        clustered_column_ids = self._column_ids
+        clustered_row_ids = self._row_ids
+
+        # cluster the data and calculate dendrogram
+
+        # For the custom dendrogram, we need to pass the Z matrix, which is the linkage matrix
+        # This can be calculated from the data, or passed in directly
+        opt = dict(Z=self.Z, link_color_func=self.link_color_func)
+
+        # allow referring to protected member
+        # columns
+        if self._cluster in ["col", "all"]:
+            cols_dendro = CustomDendrogram(
+                X=np.transpose(self._data),
+                orientation="bottom",
+                labels=self._column_ids,
+                distfun=lambda X: self._dist_fun(X, metric=self._col_dist),
+                linkagefun=lambda d: self._link_fun(
+                    d, optimal_ordering=self._optimal_leaf_order
+                ),
+                **opt
+            )
+            clustered_column_ids = cols_dendro.labels
+            trace_list["col"] = cols_dendro.data
+
+        # rows
+        if self._cluster in ["row", "all"]:
+            rows_dendro = CustomDendrogram(
+                X=self._data,
+                orientation="right",
+                labels=self._row_ids,
+                distfun=lambda X: self._dist_fun(X, metric=self._row_dist),
+                linkagefun=lambda d: self._link_fun(
+                    d, optimal_ordering=self._optimal_leaf_order
+                ),
+                **opt
+            )
+            clustered_row_ids = rows_dendro.labels
+            trace_list["row"] = rows_dendro.data
+
+        # now, we need to rearrange the data array to fit the labels
+
+        # first get reordered indices
+        rl_indices = [self._row_ids.index(r) for r in clustered_row_ids]
+        cl_indices = [self._column_ids.index(c) for c in clustered_column_ids]
+
+        # modify the data here; first shuffle rows,
+        # then transpose and shuffle columns,
+        # then transpose again
+        clustered_data = self._data[rl_indices].T[cl_indices].T
+
+        return trace_list, clustered_data, clustered_row_ids, clustered_column_ids
