@@ -581,6 +581,21 @@ class FullDatasetTriggeredAverages:
     def triggered_average_matrix_from_name(self, name):
         return self.ind_class.calc_triggered_average_matrix(self.df_traces[name])
 
+    def dict_of_all_triggered_averages(self):
+        """
+        Unlike df_of_all_triggered_averages, returns a dict of np.ndarrays, saving not just the mean but the full matrix
+        for each neuron
+
+        Returns
+        -------
+
+        """
+        dict_triggered = {}
+        for name in self.neuron_names:
+            mat = self.triggered_average_matrix_from_name(name)
+            dict_triggered[name] = mat
+        return dict_triggered
+
     def df_of_all_triggered_averages(self):
         """
         Just saves the mean of the triggered average
@@ -697,6 +712,9 @@ class ClusteredTriggeredAverages:
     Z: np.ndarray = None
     clust_ind: np.ndarray = None
     per_cluster_names: Dict[int, List[str]] = None
+
+    # For plotting or calculating p values with all triggered traces, not just averages
+    dict_of_triggered_traces: Dict[str, np.ndarray] = None
 
     cluster_func: Callable = field(default=hierarchy.fcluster)
 
@@ -911,7 +929,10 @@ class ClusteredTriggeredAverages:
 
     def get_triggered_matrix_all_events_from_names(self, name_list):
         # Gets all the individual events from all neurons in the list
-        get_df_trigger = self.triggered_averages_class.triggered_average_matrix_from_name
+        if self.dict_of_triggered_traces is None:
+            get_df_trigger = self.triggered_averages_class.triggered_average_matrix_from_name
+        else:
+            get_df_trigger = self.dict_of_triggered_traces.get
         clust_traces = [get_df_trigger(name) for name in name_list]
         # Stack along neuron axis, not time axis
         return np.vstack(clust_traces)

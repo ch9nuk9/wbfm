@@ -543,6 +543,29 @@ def flatten_multiindex_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def flatten_nested_dict(nested_dict: dict) -> dict:
+    """
+    Flattens the keys of a nested dictionary
+
+    See flatten_multiindex_columns for a similar function that flattens the columns of a dataframe
+
+    Parameters
+    ----------
+    df
+
+    Returns
+    -------
+
+    """
+    flat_dict = {}
+    for outer_key, inner_dict in nested_dict.items():
+        for inner_key, value in inner_dict.items():
+            keys = [outer_key, inner_key]
+            flat_dict['_'.join(keys).strip()] = value
+    return flat_dict
+
+
+
 def save_valid_ind_1d_or_2d(df, valid_ind):
     if len(df.shape) == 2:
         df = df.iloc[valid_ind, :]
