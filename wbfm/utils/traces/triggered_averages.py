@@ -715,6 +715,7 @@ class ClusteredTriggeredAverages:
 
     # For plotting or calculating p values with all triggered traces, not just averages
     dict_of_triggered_traces: Dict[str, np.ndarray] = None
+    max_trace_len: int = None
 
     cluster_func: Callable = field(default=hierarchy.fcluster)
 
@@ -934,12 +935,18 @@ class ClusteredTriggeredAverages:
         else:
             get_df_trigger = self.dict_of_triggered_traces.get
         clust_traces = [get_df_trigger(name) for name in name_list]
+        # If there is a maximum length set, loop through and reduce the length of the traces
         # Loop through and pad array with nan if some arrays are shorter
-        max_len = max([x.shape[1] for x in clust_traces])
+        if self.max_trace_len is None:
+            max_len = max([x.shape[1] for x in clust_traces])
+        else:
+            max_len = self.max_trace_len
         for i, trace in enumerate(clust_traces):
             if trace.shape[1] < max_len:
                 clust_traces[i] = np.pad(trace, ((0, 0), (0, max_len - trace.shape[1])), mode='constant',
                                          constant_values=np.nan)
+            elif trace.shape[1] > max_len:
+                clust_traces[i] = trace[:, :max_len]
         # Stack along neuron axis, not time axis
         return np.vstack(clust_traces)
 
@@ -1017,7 +1024,7 @@ class ClusteredTriggeredAverages:
         right_traces = self.get_triggered_matrix_all_events_from_names(right_names)
 
         # Check p value
-        p_value = self.calculate_p_value_two_clusters(left_traces, right_traces, rng,
+        p_value = self.calculate_p_value_two_clusters(left_traces, right_traces, rng=rng,
                                                       n_resamples=n_resamples,
                                                       DEBUG=DEBUG,
                                                       DEBUG_str=f"{tree.id} -> {tree.left.id} + {tree.right.id}")
