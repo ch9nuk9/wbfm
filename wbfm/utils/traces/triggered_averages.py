@@ -1066,6 +1066,7 @@ class ClusteredTriggeredAverages:
             # Then it can be split, and we recurse using left and right
             opt = dict(p_value_threshold=p_value_threshold, recursion_level=recursion_level + 1,
                        verbose=verbose, DEBUG=DEBUG)
+            opt.update(kwargs)
             split_dict = self.build_clusters_using_p_values(tree.left, split_dict=split_dict, **opt)
             split_dict = self.build_clusters_using_p_values(tree.right, split_dict=split_dict, **opt)
 
