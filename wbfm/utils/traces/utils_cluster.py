@@ -150,7 +150,7 @@ class CustomClustergram(_Clustergram):
 
     """
 
-    def __init__(self, Z=None, link_color_func=None, **kwargs):
+    def __init__(self, Z=None, link_color_func=None, to_show=True, **kwargs):
         self.Z = Z
         self.link_color_func = link_color_func
         super().__init__(**kwargs)
@@ -160,6 +160,9 @@ class CustomClustergram(_Clustergram):
         self.fig = go.Figure(fig)  # This actually plots?
         self.ct = ct
         self.curves_dict = curves_dict
+
+        if to_show:
+            self.fig.show()
 
     def _compute_clustered_data(self):
         """
