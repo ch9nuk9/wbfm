@@ -668,6 +668,7 @@ class ProjectData:
                             remove_invalid_neurons: bool = True,
                             return_fast_scale_separation: bool = False,
                             return_slow_scale_separation: bool = False,
+                            rename_neurons_using_manual_ids: bool = False,
                             verbose=0,
                             **kwargs):
         """
@@ -813,6 +814,11 @@ class ProjectData:
                 df = df_fast
             else:
                 df = df_slow
+
+        # Optional: rename columns to use manual ids, if found
+        if rename_neurons_using_manual_ids:
+            mapping = self.neuron_name_to_manual_id_mapping()
+            df = df.rename(columns=mapping)
 
         return df
 
@@ -1263,6 +1269,13 @@ class ProjectData:
         # Create a dictionary
         neuron_dict = dict(zip(neuron_names, zip(neuron_ids, neuron_certainty)))
         return neuron_dict
+
+    def neuron_name_to_manual_id_mapping(self, confidence_threshold=2):
+        name_ids = self.dict_numbers_to_neuron_names.copy()
+        if len(name_ids) == 0:
+            return {}
+        name_mapping = {k: (v[0] if v[1] >= confidence_threshold else k) for k, v in name_ids.items()}
+        return name_mapping
 
     def estimate_tracking_failures_from_project(self, pad_nan_points=3, contamination='auto', DEBUG=False):
         """
