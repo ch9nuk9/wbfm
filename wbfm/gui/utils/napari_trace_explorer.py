@@ -405,12 +405,22 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.update_track_layers()
             self.update_trace_or_tracklet_subplot(preserve_xlims=False)
 
+    def change_tracklet_to_currently_attached_tracklet(self):
+        # Get tracklet that is currently attached to the selected neuron
+        self.logger.debug("USER: change tracklet to currently attached tracklet")
+        if not self._disable_callbacks:
+            target_tracklet = self.dat.tracklet_annotator.get_tracklet_attached_at_time(self.t)
+            self.change_tracklets_from_gui(next_tracklet=target_tracklet)
+
     def change_tracklets_using_dropdown(self):
         self.change_tracklets_from_gui(self.recentTrackletSelector.currentText())
 
     def change_tracklets_from_gui(self, next_tracklet=None):
         self.logger.debug("USER: change tracklets from gui")
-        if not self._disable_callbacks and next_tracklet is not None:
+        if next_tracklet is None:
+            self.logger.info("Attempted to change tracklet, but no tracklet was passed")
+            return
+        if not self._disable_callbacks:
             # which_tracklets_to_update = self.subplot_update_dict_for_tracklet_change(next_tracklet=next_tracklet)
             self.dat.tracklet_annotator.set_current_tracklet(next_tracklet)
             self.dat.tracklet_annotator.add_current_tracklet_to_viewer(self.viewer)
@@ -722,6 +732,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         @viewer.bind_key('c', overwrite=True)
         def save_tracklet(viewer):
             self.save_current_tracklet_to_neuron()
+
+        @viewer.bind_key('Shift-c', overwrite=True)
+        def change_tracklet_to_currently_attached_tracklet(viewer):
+            self.change_tracklet_to_currently_attached_tracklet()
 
         @viewer.bind_key('v', overwrite=True)
         def print_tracklet_status(viewer):

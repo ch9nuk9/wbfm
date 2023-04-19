@@ -597,6 +597,27 @@ def get_time_overlap_of_candidate_tracklet(candidate_tracklet_name, current_trac
         return overlap_dict
 
 
+def get_tracklet_at_time(t, current_tracklet_names, df_tracklets) -> Optional[str]:
+    """
+    Loop through the tracklets and return the one that has a value at time t
+
+    Parameters
+    ----------
+    t
+    current_tracklet_names
+    df_tracklets
+
+    Returns
+    -------
+
+    """
+    for name in current_tracklet_names:
+        current_tracklet = df_tracklets[name]
+        if t in current_tracklet.index:
+            return name
+    return None
+
+
 def get_next_name_tracklet_or_neuron(df, name_mode='tracklet'):
     all_names = get_names_from_df(df)
     max_int = name2int_neuron_and_tracklet(all_names[-1])

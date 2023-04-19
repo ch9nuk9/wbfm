@@ -20,7 +20,7 @@ from wbfm.utils.general.custom_errors import DataSynchronizationError
 from wbfm.utils.general.utils_piecewise import predict_using_rolling_ransac_filter_single_trace
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
-    split_tracklet_within_sparse_dataframe
+    split_tracklet_within_sparse_dataframe, get_tracklet_at_time
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from segmentation.util.utils_metadata import DetectedNeurons
 from segmentation.util.utils_postprocessing import split_neuron_interactive
@@ -683,6 +683,17 @@ class TrackletAndSegmentationAnnotator:
             return int(next_conflict_time), neuron_conflict
         else:
             return None, None
+
+    def get_tracklet_attached_at_time(self, t, neuron_name=None) -> Optional[str]:
+        if neuron_name is None:
+            neuron_name = self.current_neuron
+        if neuron_name is None:
+            return None
+
+        tracklet_names = self.combined_global2tracklet_dict[neuron_name]
+        target_name = get_tracklet_at_time(t, tracklet_names, self.df_tracklet_obj.df_tracklets_zxy)
+
+        return target_name
 
     def end_time_of_current_tracklet(self):
         tracklet = self.current_tracklet
