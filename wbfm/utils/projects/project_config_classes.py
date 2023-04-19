@@ -169,7 +169,9 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
             return None
 
         final_path = self._prepend_subfolder(raw_path, prepend_subfolder)
-        return str(Path(final_path).resolve())
+        # Replace any windows slashes with unix slashes
+        final_path = str(Path(final_path).resolve()).replace('\\', '/')
+        return final_path
 
     def _prepend_subfolder(self, val, prepend_subfolder):
         if prepend_subfolder:
