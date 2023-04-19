@@ -57,6 +57,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
                                  to_save=True,
                                  savename_suffix="",
                                  title_str = None,
+                                 trace_kwargs=None,
                                  **kwargs):
     """
 
@@ -93,6 +94,8 @@ def make_grid_plot_using_project(project_data: ProjectData,
 
     """
     # Evaluate possible recursion
+    if trace_kwargs is None:
+        trace_kwargs = {}
     if channel_mode == 'all':
         # First, completely raw data
         all_modes = ['red', 'green']
@@ -129,7 +132,10 @@ def make_grid_plot_using_project(project_data: ProjectData,
         trace_options = {'channel_mode': channel_mode, 'calculation_mode': calculation_mode, 'filter_mode': filter_mode,
                          'remove_outliers': remove_outliers, 'bleach_correct': bleach_correct,
                          'neuron_names': tuple(neuron_names), 'min_nonnan': min_nonnan}
+        trace_options.update(trace_kwargs)
         df_traces = project_data.calc_default_traces(**trace_options)
+        # Recalculate the neuron names; they may have been renamed if rename_neurons_using_manual_ids was used
+        neuron_names = get_names_from_df(df_traces)
 
     # Build functions to make a single subplot
     shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
