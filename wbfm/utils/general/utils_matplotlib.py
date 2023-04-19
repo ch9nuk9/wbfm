@@ -1,9 +1,13 @@
 # From https://stackoverflow.com/questions/48140576/matplotlib-toolbar-in-a-pyqt5-application
+import logging
+
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib
 from scipy.stats import pearsonr
+
+from wbfm.utils.external.utils_jupyter import executing_in_notebook
 
 
 def get_twin_axis(ax, axis='x'):
@@ -122,3 +126,21 @@ def build_histogram_from_counts(all_dat, pixel_sz=0.1):
         video_histogram[i, ...] = np.histogram2d(dat[:, 0], dat[:, 1], bins=bins)[0]
 
     return video_histogram
+
+
+def check_plotly_rendering(X: np.ndarray, max_size_for_notebook=200) -> (bool, dict):
+    if not executing_in_notebook():
+        return False
+    if any(np.array(X.shape) > max_size_for_notebook):
+        static_rendering_required = True
+        logging.warning(
+            f"Plotly will crash jupyter notebook if > {max_size_for_notebook} neurons (there are {X.shape}). "
+            "Will render static image instead.")
+    else:
+        static_rendering_required = False
+
+    if static_rendering_required:
+        render_opt = dict(renderer="svg")
+    else:
+        render_opt = dict()
+    return static_rendering_required, render_opt

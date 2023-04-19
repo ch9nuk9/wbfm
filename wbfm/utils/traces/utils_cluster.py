@@ -6,6 +6,8 @@ import scipy as scp
 from plotly.graph_objs import graph_objs
 import plotly.graph_objs as go
 
+from wbfm.utils.general.utils_matplotlib import check_plotly_rendering
+
 
 def ks_statistic(x, y, axis=0):
     """
@@ -162,7 +164,13 @@ class CustomClustergram(_Clustergram):
         self.curves_dict = curves_dict
 
         if to_show:
-            self.fig.show()
+            if 'X' in kwargs:
+               X = kwargs['X']
+               static_rendering_required, render_opt = check_plotly_rendering(X)
+               self.fig.show(**render_opt)
+            else:
+                # Can't display the figure if we don't have the data
+                pass
 
     def _compute_clustered_data(self):
         """

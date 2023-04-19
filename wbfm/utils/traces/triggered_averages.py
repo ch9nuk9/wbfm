@@ -15,16 +15,13 @@ from scipy.cluster import hierarchy
 from scipy.stats import permutation_test
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score, silhouette_samples
-from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
-from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
-from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
+from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
 from wbfm.utils.traces.utils_cluster import ks_statistic
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average, fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
@@ -762,12 +759,7 @@ class ClusteredTriggeredAverages:
         X = self.df_corr.to_numpy()
 
         # Check for jupyter notebook and large matrices
-        if (X.shape[0] > 200 or X.shape[1] > 200) and executing_in_notebook():
-            static_rendering_required = True
-            logging.warning(f"Clustergram will crash jupyter notebook if > 200 neurons (there are {X.shape[0]}) are plotted. "
-                            "Will render static image instead.")
-        else:
-            static_rendering_required = False
+        static_rendering_required, render_opt = check_plotly_rendering(X)
 
         dist_fun = lambda X, metric: X  # df_corr is already the distance (similarity)
         import dash_bio
@@ -783,10 +775,7 @@ class ClusteredTriggeredAverages:
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder, exist_ok=True)
             clustergram.write_image(os.path.join(output_folder, 'clustergram.png'))
-        if static_rendering_required:
-            clustergram.show(renderer="svg")
-        else:
-            clustergram.show()
+        clustergram.show(**render_opt)
 
         return clustergram
 
@@ -797,12 +786,7 @@ class ClusteredTriggeredAverages:
         names = self.per_cluster_names[i_clust]
         df_corr = self.df_corr.loc[names, names]
         X = df_corr.to_numpy()
-        if (X.shape[0] > 200 or X.shape[1] > 200) and executing_in_notebook():
-            static_rendering_required = True
-            logging.warning(f"Clustergram will crash jupyter notebook if > 200 neurons (there are {X.shape[0]}) are plotted. "
-                            "Will render static image instead.")
-        else:
-            static_rendering_required = False
+        static_rendering_required, render_opt = check_plotly_rendering(X)
 
         dist_fun = lambda X, metric: X  # df_corr is already the distance (similarity)
         import dash_bio
@@ -811,10 +795,7 @@ class ClusteredTriggeredAverages:
                    center_values=False)
         opt.update(dict(row_labels=[], column_labels=[]))
         clustergram = dash_bio.Clustergram(X, dist_fun=dist_fun, **opt)
-        if static_rendering_required:
-            clustergram.show(renderer="svg")
-        else:
-            clustergram.show()
+        clustergram.show(**render_opt)
 
     def plot_all_clusters(self):
         ind_class = self.triggered_averages_class.ind_class
