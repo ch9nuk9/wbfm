@@ -831,7 +831,7 @@ class ClusteredTriggeredAverages:
     @staticmethod
     def plot_clusters_from_names(get_matrix_from_names, per_cluster_names, min_lines=2,
                                  ind_preceding=20, xlim=None, z_score=False, output_folder=None,
-                                 show_individual_lines=True):
+                                 show_individual_lines=True, cluster_color_func: Callable = None):
         for i_clust, name_list in per_cluster_names.items():
             name_list = list(name_list)
             if len(name_list) < min_lines:
@@ -846,12 +846,14 @@ class ClusteredTriggeredAverages:
             # Plot
             if np.isnan(pseudo_mat).all():
                 continue
+            plot_opt = dict(show_individual_lines=show_individual_lines, is_second_plot=False, xlim=xlim)
+            if cluster_color_func is not None:
+                cluster_color = cluster_color_func(i_clust)
+                plot_opt['color'] = cluster_color
             # these_corr = self.df_corr.loc[name_list[0], name_list[1:]]
             # avg_corr = these_corr.mean()
             plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
-                                                         show_individual_lines=show_individual_lines,
-                                                         is_second_plot=False, ax=ax,
-                                                         xlim=xlim)
+                                                         ax=ax, **plot_opt)
             plt.title(f"Cluster {i_clust}/{len(per_cluster_names)} with {pseudo_mat.shape[0]} traces")
             if output_folder is not None:
                 if not os.path.exists(output_folder):
@@ -1136,7 +1138,8 @@ class ClusteredTriggeredAverages:
             fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(10, 10))
 
             # Traces for each cluster with shading
-            opt = dict(show_individual_lines=False, ax=axes[0], min_lines=2, ind_preceding=20)
+            opt = dict(show_individual_lines=False, ax=axes[0], min_lines=2, ind_preceding=20,
+                       z_score=True)
             plot_triggered_average_from_matrix_low_level(traces0, is_second_plot=False, **opt)
             plot_triggered_average_from_matrix_low_level(traces1, is_second_plot=True, **opt)
 

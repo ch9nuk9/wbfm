@@ -289,5 +289,8 @@ def plot_with_shading(mean_vals, std_vals, xmax=None, ax=None, std_vals_upper=No
     # Main line
     ax.plot(mean_vals, **kwargs)
     # Shading
-    ax.fill_between(x, upper_shading, lower_shading, alpha=0.25)
+    fill_kwargs = {}
+    if "color" in kwargs:
+        fill_kwargs["color"] = kwargs["color"]
+    ax.fill_between(x, upper_shading, lower_shading, alpha=0.25, **fill_kwargs)
     return ax, lower_shading, upper_shading
