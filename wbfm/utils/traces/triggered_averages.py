@@ -40,7 +40,7 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
                                                          std_vals_upper=triggered_upper_std)
     if show_individual_lines:
         for trace in triggered_avg_matrix:
-            ax.plot(trace[:xmax], 'black', alpha=5.0 / (triggered_avg_matrix.shape[0] + 10.0))
+            ax.plot(trace[:xmax], 'black', alpha=3.0 / (triggered_avg_matrix.shape[0] + 10.0))
     if not is_second_plot:
         ax.set_ylabel("Activity")
         ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
@@ -815,20 +815,23 @@ class ClusteredTriggeredAverages:
             plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
 
     def plot_all_clusters_simple(self, min_lines=2, ind_preceding=20, xlim=None, z_score=False,
-                                 output_folder=None, use_individual_triggered_events=False):
+                                 output_folder=None, use_individual_triggered_events=False,
+                                 per_cluster_names=None, **kwargs):
         """Like plot_all_clusters, but doesn't require a triggered_averages_class to be saved"""
-        per_cluster_names = self.per_cluster_names
+        if per_cluster_names is None:
+            per_cluster_names = self.per_cluster_names
         if use_individual_triggered_events:
             get_matrix_from_names = self.get_triggered_matrix_all_events_from_names
         else:
             get_matrix_from_names = self.get_subset_triggered_average_matrix
 
         self.plot_clusters_from_names(get_matrix_from_names, per_cluster_names, min_lines, ind_preceding, xlim, z_score,
-                                      output_folder)
+                                      output_folder, **kwargs)
 
     @staticmethod
     def plot_clusters_from_names(get_matrix_from_names, per_cluster_names, min_lines=2,
-                                 ind_preceding=20, xlim=None, z_score=False, output_folder=None):
+                                 ind_preceding=20, xlim=None, z_score=False, output_folder=None,
+                                 show_individual_lines=True):
         for i_clust, name_list in per_cluster_names.items():
             name_list = list(name_list)
             if len(name_list) < min_lines:
@@ -846,7 +849,8 @@ class ClusteredTriggeredAverages:
             # these_corr = self.df_corr.loc[name_list[0], name_list[1:]]
             # avg_corr = these_corr.mean()
             plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
-                                                         show_individual_lines=True, is_second_plot=False, ax=ax,
+                                                         show_individual_lines=show_individual_lines,
+                                                         is_second_plot=False, ax=ax,
                                                          xlim=xlim)
             plt.title(f"Cluster {i_clust}/{len(per_cluster_names)} with {pseudo_mat.shape[0]} traces")
             if output_folder is not None:
@@ -1052,6 +1056,25 @@ class ClusteredTriggeredAverages:
             split_dict = self.build_clusters_using_p_values(tree.right, split_dict=split_dict, **opt)
 
         return split_dict
+
+    def cluster2neuron_from_split_dict(self, split_dict):
+        """
+        Turn the output of build_clusters_using_p_values into a dictionary mapping cluster ids to a list of neuron ids
+
+        Parameters
+        ----------
+        split_dict
+
+        Returns
+        -------
+
+        """
+        names = self.names
+        per_cluster_names = {}
+        for clust_id, (tree, _) in split_dict.items():
+            neuron_ids = tree.pre_order(lambda x: x.id)
+            per_cluster_names[clust_id] = [names[i] for i in neuron_ids]
+        return per_cluster_names
 
     @staticmethod
     def map_list_of_cluster_ids_to_colors(split_dict, cmap=None, min_size=3) -> Callable:
