@@ -77,7 +77,9 @@ class ConfigFileWithProjectContext:
         if val is None or Path(val).is_absolute():
             return val
         relative_path = Path(self.project_dir).joinpath(val)
-        return str(relative_path.resolve())
+        # Replace any windows slashes with unix slashes
+        relative_path = str(relative_path.resolve()).replace('\\', '/')
+        return relative_path
 
     def unresolve_absolute_path(self, val: str) -> Optional[str]:
         if val is None:
