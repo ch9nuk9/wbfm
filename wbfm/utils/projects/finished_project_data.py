@@ -391,7 +391,7 @@ class ProjectData:
     def tracked_worm_class(self):
         """Class that connects tracklets and final neurons using global tracking"""
         if self.verbose >= 1:
-            self.logger.warning(" First time loading  tracked worm object, may take a while")
+            self.logger.warning(" First time loading tracked worm object, may take a while")
         tracking_cfg = self.project_config.get_tracking_config()
         fname = tracking_cfg.resolve_relative_path('raw/worm_obj.pickle', prepend_subfolder=True)
         return pickle_load_binary(fname)
