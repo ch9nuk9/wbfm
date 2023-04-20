@@ -979,7 +979,7 @@ class ClusteredTriggeredAverages:
         return all_p_values
 
     def get_p_value_for_next_split(self, tree, min_size=4, n_resamples=300, min_fraction_datasets=0.8,
-                                   verbose=0, DEBUG=False):
+                                   verbose=0, DEBUG=False, **kwargs):
         """
         Meant to be called recursively from build_unsplittable_tree_dict
 
@@ -1044,6 +1044,7 @@ class ClusteredTriggeredAverages:
         # If all above tests are passed, then calculate p value using a permutation test
         p_value = self.calculate_p_value_two_clusters(left_traces, right_traces, rng=rng,
                                                       n_resamples=n_resamples,
+                                                      **kwargs,
                                                       DEBUG=DEBUG,
                                                       names0=left_names, names1=right_names,
                                                       DEBUG_str=f"{tree.id} -> {tree.left.id} + {tree.right.id}")
@@ -1157,7 +1158,7 @@ class ClusteredTriggeredAverages:
         return link_color_func
 
     @staticmethod
-    def calculate_p_value_two_clusters(traces0, traces1, rng=None, n_resamples=300,
+    def calculate_p_value_two_clusters(traces0, traces1, rng=None, n_resamples=300, z_score=False,
                                        DEBUG=False, DEBUG_str="",
                                        names0=None, names1=None):
         if rng is None:
@@ -1172,7 +1173,7 @@ class ClusteredTriggeredAverages:
 
             # Traces for each cluster with shading
             opt = dict(show_individual_lines=False, ax=axes[0], min_lines=2, ind_preceding=20,
-                       z_score=True)
+                       z_score=z_score)
             plot_triggered_average_from_matrix_low_level(traces0, is_second_plot=False, **opt)
             plot_triggered_average_from_matrix_low_level(traces1, is_second_plot=True, **opt)
 
