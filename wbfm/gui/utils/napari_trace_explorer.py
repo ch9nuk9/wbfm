@@ -407,7 +407,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def change_tracklet_to_currently_attached_tracklet(self):
         # Get tracklet that is currently attached to the selected neuron
-        self.logger.debug("USER: change tracklet to currently attached tracklet")
+        self.logger.debug(f"USER: change tracklet to currently attached tracklet at t={self.t}")
         if not self._disable_callbacks:
             target_tracklet = self.dat.tracklet_annotator.get_tracklet_attached_at_time(self.t)
             self.change_tracklets_from_gui(next_tracklet=target_tracklet)
@@ -1167,8 +1167,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.outlier_line = self.static_ax.plot(x, y, 'o', color='tab:red')[0]
         self.logger.debug(f"Successfully added {len(x)} tracking outliers to plot")
         self.logger.debug(f"Max: {np.nanmax(y)}, min: {np.nanmin(y)}")
-        # print(x)
-        # print(y)
 
     def remove_tracking_outliers_from_plot(self):
         if self.outlier_line is not None:
@@ -1291,7 +1289,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         else:
             # Plot other trace
             t, y = self.calculate_trace(neuron_name=ref_name)
-            # print(f"Setting data: {y}")
             self.reference_line.set_data(t, y)
             # self.reference_line.set_ydata(y)
             if force_draw:
@@ -1354,7 +1351,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 line_name = f"{self.current_tracklet_name}_current"
                 self.add_tracklet_to_cache(new_line, line_name)
             # Not a clear in the other branch
-            print("Adding tracking outliers")
             self.init_subplot_post_clear()
         else:
             print(f"Updates: {which_tracklets_to_update}")
