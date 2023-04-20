@@ -551,7 +551,7 @@ def flatten_nested_dict(nested_dict: dict) -> dict:
 
     Parameters
     ----------
-    df
+    nested_dict
 
     Returns
     -------
@@ -565,6 +565,35 @@ def flatten_nested_dict(nested_dict: dict) -> dict:
     return flat_dict
 
 
+def split_flattened_index(flattened_index: list) -> dict:
+    """
+    Attempts to undo the flattening of a nested dictionary or dataframe
+
+    Assumes that the first name is unknown, but that the second name is of the format: 'neuron_XYZ'
+
+    See flatten_multiindex_columns and flatten_nested_dict for opposite functions
+
+    Parameters
+    ----------
+    nested_dict
+
+    Returns
+    -------
+
+    """
+    unflattened_dict = {}
+    for key in flattened_index:
+        # Split a string like 'ZIM2165_Gcamp7b_worm3-2022-12-05_neuron_054' into
+        # ['ZIM2165_Gcamp7b_worm3-2022-12-05', 'neuron_054']
+        split_key = key.split('_neuron_')
+        if len(split_key) == 2:
+            neuron_id = split_key[1]
+            neuron_name = f"neuron_{neuron_id}"
+            dataset_name = split_key[0]
+            unflattened_dict[key] = (dataset_name, neuron_name)
+        else:
+            raise ValueError(f"Could not split key {key}")
+    return unflattened_dict
 
 def save_valid_ind_1d_or_2d(df, valid_ind):
     if len(df.shape) == 2:

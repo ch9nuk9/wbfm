@@ -1,6 +1,7 @@
 import logging
 import os
 import warnings
+from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Callable, Dict
 
@@ -18,7 +19,8 @@ from sklearn.metrics import silhouette_score, silhouette_samples
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
-from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes
+from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
+    split_flattened_index
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
 from wbfm.utils.traces.utils_cluster import ks_statistic
@@ -1135,7 +1137,7 @@ class ClusteredTriggeredAverages:
                                n_resamples=n_resamples, axis=1, random_state=rng)
         if DEBUG:
             
-            fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(10, 10))
+            fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(10, 10))
 
             # Traces for each cluster with shading
             opt = dict(show_individual_lines=False, ax=axes[0], min_lines=2, ind_preceding=20,
@@ -1149,6 +1151,23 @@ class ClusteredTriggeredAverages:
             axes[1].set_title(f"Permutation distribution of test statistic (p={res.pvalue}) {DEBUG_str}")
             axes[1].set_xlabel("Value of Statistic")
             axes[1].set_ylabel("Frequency")
+
+            # Histogram showing how many datasets are represented in each cluster
+
+            # First, split the names of the traces to get the dataset name, then count
+            # the number of times each dataset appears
+            all_dataset_counts = {}
+            for i, t in enumerate([traces0, traces1]):
+                cols0 = list(t.columns)
+                unflattened_dict0 = split_flattened_index(cols0)
+                # Count how many times each dataset name appears
+                dataset_counts = defaultdict(int)
+                for key, (dataset_name, neuron_name) in unflattened_dict0.items():
+                    dataset_counts[dataset_name] += 1
+                all_dataset_counts[i] = dataset_counts
+            df_counts = pd.DataFrame(all_dataset_counts)
+            # Plot histogram
+            df_counts.plot.bar(ax=axes[2])
 
             plt.show()
             
