@@ -595,6 +595,24 @@ def split_flattened_index(flattened_index: list) -> dict:
             raise ValueError(f"Could not split key {key}")
     return unflattened_dict
 
+
+def count_unique_datasets_from_flattened_index(flattened_index: list) -> int:
+    """
+    Counts the number of unique datasets in a flattened index
+
+    Parameters
+    ----------
+    flattened_index
+
+    Returns
+    -------
+
+    """
+    unflattened_dict = split_flattened_index(flattened_index)
+    unique_datasets = set([unflattened_dict[key][0] for key in unflattened_dict.keys()])
+    return len(unique_datasets)
+
+
 def save_valid_ind_1d_or_2d(df, valid_ind):
     if len(df.shape) == 2:
         df = df.iloc[valid_ind, :]

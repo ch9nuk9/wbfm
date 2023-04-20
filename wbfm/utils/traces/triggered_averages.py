@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import scipy
 import sklearn
+from backports.cached_property import cached_property
 from matplotlib import pyplot as plt, cm
 from scipy.cluster import hierarchy
 from scipy.stats import permutation_test
@@ -20,7 +21,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
-    split_flattened_index
+    split_flattened_index, count_unique_datasets_from_flattened_index
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
 from wbfm.utils.traces.utils_cluster import ks_statistic
@@ -757,6 +758,17 @@ class ClusteredTriggeredAverages:
         # return pd.Series(get_names_from_df(self.df_corr, to_sort=False))
         return pd.Series(list(self.df_corr.columns))
 
+    @cached_property
+    def number_of_datasets(self):
+        """
+        Only makes sense if datasets were pooled using flatten_multiindex_columns function
+
+        Returns
+        -------
+
+        """
+        return count_unique_datasets_from_flattened_index(self.names)
+
     def plot_clustergram(self, output_folder=None, use_labels=False):
         X = self.df_corr.to_numpy()
 
@@ -966,9 +978,15 @@ class ClusteredTriggeredAverages:
 
         return all_p_values
 
-    def get_p_value_for_next_split(self, tree, min_size=4, n_resamples=300, verbose=0, DEBUG=False):
+    def get_p_value_for_next_split(self, tree, min_size=4, n_resamples=300, min_fraction_datasets=0.8,
+                                   verbose=0, DEBUG=False):
         """
         Meant to be called recursively from build_unsplittable_tree_dict
+
+        Does several sanity checks, and returns a fake p value if any fail.
+        Specifically, returns 1.0 for no split, and 0.0 for split
+
+        If these pass, then it calculates the p value for the split using a permutation test
 
         Parameters
         ----------
@@ -993,7 +1011,7 @@ class ClusteredTriggeredAverages:
         left_ids = tree.left.pre_order(lambda x: x.id)
         right_ids = tree.right.pre_order(lambda x: x.id)
 
-        # Automatically split if ONLY one side is too small to calculate p_values
+        # Check one: automatically split if ONLY one side is too small to calculate p_values
         # If they are both small, then leave it unsplit
         right_is_small = len(right_ids) < min_size
         left_is_small = len(left_ids) < min_size
@@ -1012,10 +1030,22 @@ class ClusteredTriggeredAverages:
         right_names = self.names[right_ids]
         right_traces = self.get_triggered_matrix_all_events_from_names(right_names)
 
-        # Check p value
+        # Check two: if not enough datasets are represented in each side, then don't split
+        total_number_of_datasets = self.number_of_datasets
+        min_datasets_needed = int(min_fraction_datasets * total_number_of_datasets)
+        num_left_datasets = count_unique_datasets_from_flattened_index(left_names)
+        num_right_datasets = count_unique_datasets_from_flattened_index(right_names)
+        print(f"num_left_datasets: {num_left_datasets}, num_right_datasets: {num_right_datasets}")
+        if num_left_datasets < min_datasets_needed or num_right_datasets < min_datasets_needed:
+            if verbose >= 1:
+                print(f"Too few datasets in one side; not splitting")
+            return 1.0
+
+        # If all above tests are passed, then calculate p value using a permutation test
         p_value = self.calculate_p_value_two_clusters(left_traces, right_traces, rng=rng,
                                                       n_resamples=n_resamples,
                                                       DEBUG=DEBUG,
+                                                      names0=left_names, names1=right_names,
                                                       DEBUG_str=f"{tree.id} -> {tree.left.id} + {tree.right.id}")
         if verbose >= 1:
             print(f"p-value: {p_value}")
@@ -1128,7 +1158,8 @@ class ClusteredTriggeredAverages:
 
     @staticmethod
     def calculate_p_value_two_clusters(traces0, traces1, rng=None, n_resamples=300,
-                                       DEBUG=False, DEBUG_str=""):
+                                       DEBUG=False, DEBUG_str="",
+                                       names0=None, names1=None):
         if rng is None:
             rng = np.random.default_rng()
         # all_traces should be an iterable of arrays, each row of each array being a trace
@@ -1157,9 +1188,10 @@ class ClusteredTriggeredAverages:
             # First, split the names of the traces to get the dataset name, then count
             # the number of times each dataset appears
             all_dataset_counts = {}
-            for i, t in enumerate([traces0, traces1]):
-                cols0 = list(t.columns)
-                unflattened_dict0 = split_flattened_index(cols0)
+            for i, names in enumerate([names0, names1]):
+                if names is None:
+                    continue
+                unflattened_dict0 = split_flattened_index(names)
                 # Count how many times each dataset name appears
                 dataset_counts = defaultdict(int)
                 for key, (dataset_name, neuron_name) in unflattened_dict0.items():
