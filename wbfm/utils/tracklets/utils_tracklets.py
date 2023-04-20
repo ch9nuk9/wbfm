@@ -612,7 +612,8 @@ def get_tracklet_at_time(t, current_tracklet_names, df_tracklets) -> Optional[st
 
     """
     for name in current_tracklet_names:
-        current_tracklet = df_tracklets[name]
+        # Drop the NaNs
+        current_tracklet = df_tracklets[name].dropna()
         if t in current_tracklet.index:
             return name
     return None
