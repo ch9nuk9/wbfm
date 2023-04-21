@@ -13,6 +13,7 @@ import scipy
 import sklearn
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt, cm
+from methodtools import lru_cache
 from scipy.cluster import hierarchy
 from scipy.stats import permutation_test
 from sklearn.decomposition import PCA
@@ -713,9 +714,6 @@ class ClusteredTriggeredAverages:
     linkage_threshold: float = 4.0  # TODO: better way to get clusters
     cluster_criterion: str = 'distance'  # Alternate: 'maxclust'
     linkage_method: str = 'average'
-    Z: np.ndarray = None
-    clust_ind: np.ndarray = None
-    per_cluster_names: Dict[int, List[str]] = None
 
     # For plotting or calculating p values with all triggered traces, not just averages
     dict_of_triggered_traces: Dict[str, np.ndarray] = None
@@ -736,22 +734,48 @@ class ClusteredTriggeredAverages:
         df_corr = self.df_triggered.corr()
         self.df_corr = df_corr
 
-        # Calculate clustering for further analysis
+        # Calculate clustering using a cache for further analysis
+        self._do_clustering(*self.clust_args)
+        if self.verbose >= 1:
+            print(f"Finished initializing with {len(self.per_cluster_names)} clusters")
+
+    @lru_cache(maxsize=16)
+    def _do_clustering(self, linkage_threshold, cluster_criterion, linkage_method):
         if self.verbose >= 1:
             print("Calculating clustering")
-        Z = hierarchy.linkage(df_corr.to_numpy(), method=self.linkage_method, optimal_ordering=True)
-        clust_ind = self.cluster_func(Z, t=self.linkage_threshold, criterion=self.cluster_criterion)
+        # Assume these don't change, unlike the function args
+        df_corr = self.df_corr
         names = self.names
+        cluster_func = self.cluster_func
+
+        Z = hierarchy.linkage(df_corr.to_numpy(), method=linkage_method, optimal_ordering=True)
+        clust_ind = cluster_func(Z, t=linkage_threshold, criterion=cluster_criterion)
 
         per_cluster_names = {}
         for i_clust in np.unique(clust_ind):
             per_cluster_names[i_clust] = names[clust_ind == i_clust]
 
-        self.per_cluster_names = per_cluster_names
-        self.Z = Z
-        self.clust_ind = clust_ind
-        if self.verbose >= 1:
-            print(f"Finished initializing with {len(self.per_cluster_names)} clusters")
+        return Z, clust_ind, per_cluster_names
+
+    # Set all dependent attributes as properties, which call (cached) _do_clustering each time
+    @property
+    def clust_args(self):
+        return self.linkage_threshold, self.cluster_criterion, self.linkage_method
+
+    @property
+    def Z(self) -> np.ndarray:
+        Z, clust_ind, per_cluster_names = self._do_clustering(*self.clust_args)
+        return Z
+
+    @property
+    def clust_ind(self):
+        Z, clust_ind, per_cluster_names = self._do_clustering(*self.clust_args)
+        return clust_ind
+
+    @property
+    def per_cluster_names(self) -> Dict[int, List[str]]:
+        Z, clust_ind, per_cluster_names = self._do_clustering(*self.clust_args)
+        return per_cluster_names
 
     @property
     def df_traces(self):
