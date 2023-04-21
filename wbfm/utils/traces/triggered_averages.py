@@ -1632,11 +1632,13 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, **kwargs):
     # First calculate triggered average classes for each project
     all_triggered_average_classes = {}
     trigger_opt_default = {'state': BehaviorCodes.FWD}
-    trigger_opt = kwargs.get('trigger_opt', trigger_opt_default)
-    trigger_opt_default.update(trigger_opt)
+    if 'trigger_opt' in kwargs:
+        trigger_opt_default.update(kwargs['trigger_opt'])
+        kwargs.pop('trigger_opt')
 
     for name, p in tqdm(all_projects.items()):
-        triggered_averages_class = FullDatasetTriggeredAverages.load_from_project(p, trigger_opt=trigger_opt_default)
+        triggered_averages_class = FullDatasetTriggeredAverages.load_from_project(p, trigger_opt=trigger_opt_default,
+                                                                                  **kwargs)
         all_triggered_average_classes[name] = triggered_averages_class
 
     # Combine all triggered averages dataframes, renaming to contain dataset information
