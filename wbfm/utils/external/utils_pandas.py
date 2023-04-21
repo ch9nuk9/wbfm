@@ -583,16 +583,32 @@ def split_flattened_index(flattened_index: list) -> dict:
     """
     unflattened_dict = {}
     for key in flattened_index:
-        # Split a string like 'ZIM2165_Gcamp7b_worm3-2022-12-05_neuron_054' into
-        # ['ZIM2165_Gcamp7b_worm3-2022-12-05', 'neuron_054']
-        split_key = key.split('_neuron_')
-        if len(split_key) == 2:
-            neuron_id = split_key[1]
-            neuron_name = f"neuron_{neuron_id}"
-            dataset_name = split_key[0]
-            unflattened_dict[key] = (dataset_name, neuron_name)
+        if '_neuron_' in key:
+            # Split a string like 'ZIM2165_Gcamp7b_worm3-2022-12-05_neuron_054' into
+            # ['ZIM2165_Gcamp7b_worm3-2022-12-05', 'neuron_054']
+            split_key = key.split('_neuron_')
+            if len(split_key) == 2:
+                neuron_id = split_key[1]
+                neuron_name = f"neuron_{neuron_id}"
+                dataset_name = split_key[0]
+                unflattened_dict[key] = (dataset_name, neuron_name)
+            else:
+                raise ValueError(f"Could not split key {key}")
         else:
-            raise ValueError(f"Could not split key {key}")
+            # Split a string like 'ZIM2165_Gcamp7b_worm3-2022-12-05_signed_stage_speed' into
+            # ['ZIM2165_Gcamp7b_worm3-2022-12-05', 'signed_stage_speed']
+            # Or a string like 'ZIM2165_Gcamp7b_worm3-2022-12-05_summed_curvature' into
+            # ['ZIM2165_Gcamp7b_worm3-2022-12-05', 'summed_curvature']
+            # The name of the actual trace (second name) may have multiple underscores, so this is not consistent
+            # But all project names end with a number, and no second names have any
+            try:
+                last_num_index = max([i for i, c in enumerate(key) if c.isdigit()])
+                dataset_name = key[:last_num_index + 1]
+                trace_name = key[last_num_index + 2:]  # Assume there is a single character as a splitter
+                unflattened_dict[key] = (dataset_name, trace_name)
+            except ValueError:
+                raise ValueError(f"Could not split key {key}")
+
     return unflattened_dict
 
 
