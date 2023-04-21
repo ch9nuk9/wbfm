@@ -300,7 +300,7 @@ class WormFullVideoPosture:
                            'signed_stage_speed_strongly_smoothed', 'signed_speed_angular',
                            'middle_body_speed', 'signed_middle_body_speed', 'worm_speed_average_all_segments',
                            'worm_speed_average_all_segments', 'plateau', 'semi_plateau',
-                           'signed_middle_body_speed_smoothed']
+                           'signed_middle_body_speed_smoothed', 'head_curvature']
         assert behavior_alias in possible_values, f"Must be one of {possible_values}, not {behavior_alias}"
 
         if behavior_alias == 'signed_stage_speed':
@@ -317,6 +317,9 @@ class WormFullVideoPosture:
         elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True)
+        elif behavior_alias == 'head_curvature':
+            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=2, end_segment=15)
         elif behavior_alias == 'pirouette':
             y = self.calc_pseudo_pirouette_state()
         elif behavior_alias == 'plateau':
@@ -359,9 +362,9 @@ class WormFullVideoPosture:
             return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
 
     @lru_cache(maxsize=8)
-    def summed_curvature_from_kymograph(self, fluorescence_fps=False) -> pd.Series:
-        """Signed average over segments 15 to 80"""
-        curvature = self.curvature().loc[:, 15:80].mean(axis=1)
+    def summed_curvature_from_kymograph(self, fluorescence_fps=False, start_segment=15, end_segment=80) -> pd.Series:
+        """Signed average over segments (default) 15 to 80"""
+        curvature = self.curvature().loc[:, start_segment:end_segment].mean(axis=1)
         curvature = self._validate_and_downsample(curvature, fluorescence_fps=fluorescence_fps)
         return curvature
 

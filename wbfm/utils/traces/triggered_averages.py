@@ -679,7 +679,8 @@ class FullDatasetTriggeredAverages:
         # ax.plot(self.ind_class.ind_preceding, 0, "r>", markersize=10)
 
     @staticmethod
-    def load_from_project(project_data, trigger_opt=None, trace_opt=None, **kwargs):
+    def load_from_project(project_data, trigger_opt=None, trace_opt=None, use_behavior_not_traces=False,
+                          **kwargs):
         if trigger_opt is None:
             trigger_opt = {}
         if trace_opt is None:
@@ -691,7 +692,10 @@ class FullDatasetTriggeredAverages:
 
         trace_opt_default = dict(channel_mode='dr_over_r_20', calculation_mode='integration', min_nonnan=0.9)
         trace_opt_default.update(trace_opt)
-        df_traces = project_data.calc_default_traces(**trace_opt_default)
+        if use_behavior_not_traces:
+            df_traces = project_data.calc_default_behaviors(**trace_opt_default)
+        else:
+            df_traces = project_data.calc_default_traces(**trace_opt_default)
 
         triggered_averages_class = FullDatasetTriggeredAverages(df_traces, ind_class, **kwargs)
 

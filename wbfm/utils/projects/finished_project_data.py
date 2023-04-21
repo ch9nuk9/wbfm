@@ -658,6 +658,46 @@ class ProjectData:
             neuron_names = [n for n in neuron_names if n not in invalid_names]
         return neuron_names
 
+    def calc_default_behaviors(self, min_nonnan: Optional[float] = None, interpolate_nan: bool = False,
+                               raise_error_on_empty: bool = True,
+                               neuron_names: tuple = None,
+                               residual_mode: Optional[str] = None,
+                               nan_tracking_failure_points: bool = False,
+                               nan_using_ppca_manifold: bool = False,
+                               remove_invalid_neurons: bool = True,
+                               return_fast_scale_separation: bool = False,
+                               return_slow_scale_separation: bool = False,
+                               rename_neurons_using_manual_ids: bool = False,
+                               verbose=0,
+                               **kwargs):
+        """
+        Like calc_default_traces, but for behaviors
+
+        Returns a dataframe of behaviors, by default:
+            - signed speed
+            - angular speed
+            - summed curvature
+            - head curvature
+
+        Options are kept for compatibility with calc_default_traces, but most are not used
+        """
+
+        behavior_codes = ['signed_stage_speed', 'summed_curvature', 'signed_speed_angular',
+                           'signed_middle_body_speed', 'head_curvature']
+
+        behavior_dict = {}
+        for code in behavior_codes:
+            behavior_dict[code] = self.worm_posture_class.calc_behavior_from_alias(code).reset_index(drop=True)
+
+        df = pd.DataFrame(behavior_dict)
+        # Optional: nan time points that are estimated to have a tracking error (either global or per-neuron)
+        if nan_tracking_failure_points:
+            invalid_ind = self.estimate_tracking_failures_from_project(pad_nan_points=5)
+            if invalid_ind is not None:
+                df.loc[invalid_ind, :] = np.nan
+
+        return df
+
     @lru_cache(maxsize=128)
     def calc_default_traces(self, min_nonnan: Optional[float] = None, interpolate_nan: bool = False,
                             raise_error_on_empty: bool = True,
