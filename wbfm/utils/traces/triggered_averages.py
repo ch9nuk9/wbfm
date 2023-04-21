@@ -1631,9 +1631,9 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, **kwargs):
     trigger_opt = kwargs.get('trigger_opt', trigger_opt_default)
     trigger_opt_default.update(trigger_opt)
 
-    for p in tqdm(all_projects):
+    for name, p in tqdm(all_projects.items()):
         triggered_averages_class = FullDatasetTriggeredAverages.load_from_project(p, trigger_opt=trigger_opt_default)
-        all_triggered_average_classes[p.shortened_name] = triggered_averages_class
+        all_triggered_average_classes[name] = triggered_averages_class
 
     # Combine all triggered averages dataframes, renaming to contain dataset information
     df_triggered_good = pd.concat(
