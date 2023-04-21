@@ -21,7 +21,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
-    split_flattened_index, count_unique_datasets_from_flattened_index
+    split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
 from wbfm.utils.traces.utils_cluster import ks_statistic
@@ -1609,3 +1609,46 @@ def calc_time_series_from_starts_and_ends(all_starts, all_ends, num_pts, min_dur
             state_trace[start] = 1
     return state_trace
 
+
+def clustered_triggered_averages_from_list_of_projects(all_projects, **kwargs):
+    """
+    See ClusteredTriggeredAverages.load_from_project for kwargs
+
+
+
+    Parameters
+    ----------
+    all_projects
+    kwargs
+
+    Returns
+    -------
+
+    """
+    # First calculate triggered average classes for each project
+    all_triggered_average_classes = {}
+    trigger_opt_default = {'state': BehaviorCodes.FWD}
+    trigger_opt = kwargs.get('trigger_opt', trigger_opt_default)
+    trigger_opt_default.update(trigger_opt)
+
+    for p in tqdm(all_projects):
+        triggered_averages_class = FullDatasetTriggeredAverages.load_from_project(p, trigger_opt=trigger_opt_default)
+        all_triggered_average_classes[p.shortened_name] = triggered_averages_class
+
+    # Combine all triggered averages dataframes, renaming to contain dataset information
+    df_triggered_good = pd.concat(
+        {name: c.df_of_all_triggered_averages() for name, c in all_triggered_average_classes.items()}, axis=1)
+    df_triggered_good = flatten_multiindex_columns(df_triggered_good)
+
+    # Build a map back to the original data
+    dict_of_triggered_traces = {}
+    for name, c in all_triggered_average_classes.items():
+        c.ind_class.z_score = False
+        dict_of_triggered_traces[name] = c.dict_of_all_triggered_averages()
+    dict_of_triggered_traces = flatten_nested_dict(dict_of_triggered_traces)
+
+    # Build a combined class
+    good_dataset_clusterer = ClusteredTriggeredAverages(df_triggered_good, linkage_threshold=4, verbose=1,
+                                                        dict_of_triggered_traces=dict_of_triggered_traces)
+
+    return good_dataset_clusterer, (all_triggered_average_classes, df_triggered_good, dict_of_triggered_traces)
