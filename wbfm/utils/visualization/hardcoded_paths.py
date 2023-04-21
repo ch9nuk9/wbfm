@@ -50,16 +50,18 @@ def load_paper_datasets(genotype='gcamp', require_behavior=True) -> dict:
             "2022-12-05_spacer_7b_2per_agar": [3, 9, 10],
             "2022-12-10_spacer_7b_2per_agar": [1, 2, 3, 4, 5, 6, 7, 8]
         }
-        list_of_all_projects = []
-        parent_folder = Path(get_project_parent_folder())
-        for rel_group_folder, worm_id_list in folder_and_id_dict.items():
-            group_folder = parent_folder.joinpath(rel_group_folder)
-            for worm_id in worm_id_list:
-                worm_id_str = f"worm{worm_id}"
-                for this_project_folder in group_folder.iterdir():
-                    if worm_id_str in this_project_folder.name:
-                        list_of_all_projects.append(this_project_folder.resolve())
+        list_of_all_projects = _resolve_project_from_worm_id(folder_and_id_dict)
 
+        good_projects = load_all_projects_from_list(list_of_all_projects)
+    elif genotype == 'gcamp_good':
+        # Determined by looking at the data and deciding which ones are good
+        folder_and_id_dict = {
+            "2022-11-27_spacer_7b_2per_agar": [1, 3, 5, 6],
+            "2022-11-30_spacer_7b_2per_agar": [1, 2],
+            "2022-12-05_spacer_7b_2per_agar": [3, 10],
+            "2022-12-10_spacer_7b_2per_agar": [2, 5, 7, 8]
+        }
+        list_of_all_projects = _resolve_project_from_worm_id(folder_and_id_dict)
         good_projects = load_all_projects_from_list(list_of_all_projects)
     elif genotype == 'gfp':
         folder_path = '/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-12-10_spacer_7b_2per_agar_GFP'
@@ -85,6 +87,18 @@ def load_paper_datasets(genotype='gcamp', require_behavior=True) -> dict:
 
     return good_projects_filtered
 
+
+def _resolve_project_from_worm_id(folder_and_id_dict):
+    list_of_all_projects = []
+    parent_folder = Path(get_project_parent_folder())
+    for rel_group_folder, worm_id_list in folder_and_id_dict.items():
+        group_folder = parent_folder.joinpath(rel_group_folder)
+        for worm_id in worm_id_list:
+            worm_id_str = f"worm{worm_id}"
+            for this_project_folder in group_folder.iterdir():
+                if worm_id_str in this_project_folder.name:
+                    list_of_all_projects.append(this_project_folder.resolve())
+    return list_of_all_projects
 
 # def get_path_to_double_exponential_model():
 #     """Model fit to the forward duration distribution. See fit_multi_exponential_model"""
