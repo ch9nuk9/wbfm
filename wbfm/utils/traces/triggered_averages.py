@@ -711,7 +711,7 @@ class ClusteredTriggeredAverages:
 
     # For plotting individual clusters
     triggered_averages_class: FullDatasetTriggeredAverages = None
-    linkage_threshold: float = 4.0  # TODO: better way to get clusters
+    linkage_threshold: float = 4.0  # Not a great default; depends strongly on dataset
     cluster_criterion: str = 'distance'  # Alternate: 'maxclust'
     linkage_method: str = 'average'
 
@@ -754,6 +754,8 @@ class ClusteredTriggeredAverages:
         per_cluster_names = {}
         for i_clust in np.unique(clust_ind):
             per_cluster_names[i_clust] = names[clust_ind == i_clust]
+        if self.verbose >= 1:
+            print(f"Found {len(per_cluster_names)} clusters")
 
         return Z, clust_ind, per_cluster_names
 

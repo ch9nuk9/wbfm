@@ -296,13 +296,6 @@ class WormFullVideoPosture:
 
         """
 
-        possible_values = ['signed_stage_speed', 'abs_stage_speed', 'leifer_curvature', 'summed_curvature', 'pirouette',
-                           'signed_stage_speed_strongly_smoothed', 'signed_speed_angular',
-                           'middle_body_speed', 'signed_middle_body_speed', 'worm_speed_average_all_segments',
-                           'worm_speed_average_all_segments', 'plateau', 'semi_plateau',
-                           'signed_middle_body_speed_smoothed', 'head_curvature']
-        assert behavior_alias in possible_values, f"Must be one of {possible_values}, not {behavior_alias}"
-
         if behavior_alias == 'signed_stage_speed':
             y = self.worm_speed(fluorescence_fps=True, signed=True)
         elif behavior_alias == 'abs_stage_speed':
@@ -334,6 +327,14 @@ class WormFullVideoPosture:
             y = self.worm_speed_average_all_segments(fluorescence_fps=True)
         elif behavior_alias == 'worm_nose_residual_speed':
             y = self.worm_speed_average_all_segments(fluorescence_fps=True)
+        elif behavior_alias == 'fwd_counter':
+            y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.FWD)
+        elif behavior_alias == 'fwd_phase_counter':
+            y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.FWD, phase_not_real_time=True)
+        elif behavior_alias == 'rev_counter':
+            y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.REV)
+        elif behavior_alias == 'rev_phase_counter':
+            y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.REV, phase_not_real_time=True)
         else:
             raise NotImplementedError(behavior_alias)
 
@@ -860,24 +861,35 @@ class WormFullVideoPosture:
         plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
         return pd.Series(plateau_state)
 
-    def calc_fwd_counter_state(self):
+    def calc_counter_state(self, state=BehaviorCodes.FWD,
+                           fluorescence_fps=True, phase_not_real_time=False):
         """
         Calculates an integer vector that counts the time since last reversal
+
+        Parameters
+        ----------
+        state: Which state to count (0 outside this state)
+        fluorescence_fps
+        phase_not_real_time: If true, will be in fraction of a forward state, rather than real time
 
         Returns
         -------
 
         """
-        binary_fwd = self.beh_annotation(fluorescence_fps=True) == BehaviorCodes.FWD
-        all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
+        BehaviorCodes.assert_is_valid(state)
+        binary_state = self.beh_annotation(fluorescence_fps=fluorescence_fps) == state
+        all_starts, all_ends = get_contiguous_blocks_from_column(binary_state, already_boolean=True)
 
         # Turn into time series
         num_pts = len(self.subsample_indices)
         state_trace = np.zeros(num_pts)
         for start, end in zip(all_starts, all_ends):
-            state_trace[start:end] = np.arange(end - start)
+            time_counter = np.arange(end - start)
+            if phase_not_real_time:
+                time_counter = time_counter / (end - start)
+            state_trace[start:end] = time_counter
 
-        return state_trace
+        return pd.Series(state_trace)
 
     def calc_exponential_chance_to_end_fwd_state(self):
         """        Using a double exponential fit from a population of forward durations, estimates the probability to terminate
@@ -894,25 +906,6 @@ class WormFullVideoPosture:
         """
         binary_fwd = self.beh_annotation(fluorescence_fps=True) == BehaviorCodes.FWD
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
-
-        # Turn into time series
-        num_pts = len(self.subsample_indices)
-        state_trace = np.zeros(num_pts)
-        for start, end in zip(all_starts, all_ends):
-            state_trace[start:end] = np.arange(end - start)
-
-        return state_trace
-
-    def calc_rev_counter_state(self):
-        """
-        Calculates an integer vector that counts the time since last forward state
-
-        Returns
-        -------
-
-        """
-        binary_rev = self.beh_annotation(fluorescence_fps=True) == BehaviorCodes.REV
-        all_starts, all_ends = get_contiguous_blocks_from_column(binary_rev, already_boolean=True)
 
         # Turn into time series
         num_pts = len(self.subsample_indices)
