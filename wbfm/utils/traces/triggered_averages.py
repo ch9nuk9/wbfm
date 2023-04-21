@@ -835,7 +835,7 @@ class ClusteredTriggeredAverages:
         if per_cluster_names is None:
             per_cluster_names = self.per_cluster_names
         if use_individual_triggered_events:
-            get_matrix_from_names = self.get_triggered_matrix_all_events_from_names
+            get_matrix_from_names = lambda names: self.get_triggered_matrix_all_events_from_names(names)[0]
         else:
             get_matrix_from_names = self.get_subset_triggered_average_matrix
 
@@ -929,7 +929,8 @@ class ClusteredTriggeredAverages:
         pseudo_mat = np.stack(pseudo_mat)
         return pseudo_mat
 
-    def get_triggered_matrix_all_events_from_names(self, name_list):
+    def get_triggered_matrix_all_events_from_names(self, name_list: List[str]) -> \
+            Tuple[np.ndarray, Dict[str, List[int]]]:
         # Gets all the individual events from all neurons in the list
         if self.dict_of_triggered_traces is None:
             get_df_trigger = self.triggered_averages_class.triggered_average_matrix_from_name
@@ -948,8 +949,14 @@ class ClusteredTriggeredAverages:
                                          constant_values=np.nan)
             elif trace.shape[1] > max_len:
                 clust_traces[i] = trace[:, :max_len]
+        # Build a dictionary mapping each neuron name to a list of indices in the matrix
+        ind_of_each_neuron = {}
+        offset = 0
+        for name, traces in zip(name_list, clust_traces):
+            ind_of_each_neuron[name] = list(range(offset, offset + traces.shape[0]))
+            offset += traces.shape[0]
         # Stack along neuron axis, not time axis
-        return np.vstack(clust_traces)
+        return np.vstack(clust_traces), ind_of_each_neuron
 
     def calculate_p_value_all_clusters(self, n_resamples=300):
         """
@@ -967,11 +974,12 @@ class ClusteredTriggeredAverages:
         # Loop through all pairs of clusters
         for i_clust0 in tqdm(range(n), leave=False):
             name_list0 = list(self.per_cluster_names[i_clust0 + 1])
-            traces0 = self.get_triggered_matrix_all_events_from_names(name_list0)
+            traces0, name2ind0 = self.get_triggered_matrix_all_events_from_names(name_list0)
             for i_clust1 in range(i_clust0+1, n):
                 name_list1 = list(self.per_cluster_names[i_clust1 + 1])
-                traces1 = self.get_triggered_matrix_all_events_from_names(name_list1)
-                pvalue = self.calculate_p_value_two_clusters(traces0, traces1, rng, n_resamples)
+                traces1, name2ind1 = self.get_triggered_matrix_all_events_from_names(name_list1)
+                pvalue = self.calculate_p_value_two_clusters(traces0, name2ind0, traces1, name2ind1,
+                                                             rng, n_resamples)
                 # Force symmetry
                 all_p_values[i_clust0, i_clust1] = pvalue
                 all_p_values[i_clust1, i_clust0] = pvalue
@@ -1025,10 +1033,10 @@ class ClusteredTriggeredAverages:
             return 1.0
 
         left_names = self.names[left_ids]
-        left_traces = self.get_triggered_matrix_all_events_from_names(left_names)
+        left_traces, name2ind0 = self.get_triggered_matrix_all_events_from_names(left_names)
 
         right_names = self.names[right_ids]
-        right_traces = self.get_triggered_matrix_all_events_from_names(right_names)
+        right_traces, name2ind1 = self.get_triggered_matrix_all_events_from_names(right_names)
 
         # Check two: if not enough datasets are represented in each side, then don't split
         total_number_of_datasets = self.number_of_datasets
@@ -1042,7 +1050,8 @@ class ClusteredTriggeredAverages:
             return 1.0
 
         # If all above tests are passed, then calculate p value using a permutation test
-        p_value = self.calculate_p_value_two_clusters(left_traces, right_traces, rng=rng,
+        p_value = self.calculate_p_value_two_clusters(left_traces, name2ind0,
+                                                      right_traces, name2ind1, rng=rng,
                                                       n_resamples=n_resamples,
                                                       **kwargs,
                                                       DEBUG=DEBUG,
@@ -1158,7 +1167,8 @@ class ClusteredTriggeredAverages:
         return link_color_func
 
     @staticmethod
-    def calculate_p_value_two_clusters(traces0, traces1, rng=None, n_resamples=300, z_score=False,
+    def calculate_p_value_two_clusters(traces0, name2ind0, traces1, name2ind1,
+                                       rng=None, n_resamples=300, z_score=False,
                                        DEBUG=False, DEBUG_str="",
                                        names0=None, names1=None):
         if rng is None:
