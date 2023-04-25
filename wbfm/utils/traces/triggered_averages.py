@@ -25,7 +25,6 @@ from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, 
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
-from wbfm.utils.traces.utils_cluster import ks_statistic
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average, fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
@@ -1205,6 +1204,7 @@ class ClusteredTriggeredAverages:
             rng = np.random.default_rng()
         # all_traces should be an iterable of arrays, each row of each array being a trace
         all_traces = (traces0.T, traces1.T)
+        from wbfm.utils.traces.utils_cluster import ks_statistic
         res = permutation_test(all_traces, ks_statistic, vectorized=True,
                                n_resamples=n_resamples, axis=1, random_state=rng)
         if DEBUG:
