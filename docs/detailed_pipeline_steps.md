@@ -1,5 +1,54 @@
 # More details on each step
 
+## Creating a single project
+
+Working examples to create a project are available for 
+[linux](wbfm/scripts/examples/0-create_new_project-linux-EXAMPLE.sh)
+and [windows](wbfm/scripts/examples/0-create_new_project-windows-EXAMPLE.sh).
+Recommended: run these commands on the command line.
+
+If your data is visible locally (mounted is okay), for the initial project creation you can use a gui:
+
+```commandline
+cd /path/to/this/code/wbfm/gui
+python create_project_gui.py
+```
+
+## Running the rest of the workflow for single project
+
+This code is designed in several different scripts, which can be running using a single command.
+The organization between these steps uses the workflow manager [snakemake](https://snakemake.readthedocs.io/en/stable/).
+Snakemake works by keeping track of output files with special names, and only reliably works for the first run.
+If you are rerunning an old project, see the next section.
+
+Once a project is made, the analysis can be run in the following way:
+1. Activate the wbfm environment
+2. cd to the /snakemake folder within the project:
+```commandline
+cd /path/to/your/project/snakemake
+```
+3. Do a dry run to catch any errors in initialization:
+```bash
+bash DRYRUN.sh
+```
+4. If there are errors, there are three easy possibilities:
+   1. If this is not a new project, you might have to run steps one by one (see the next subsection).
+   2. If you changed the name of the project, read the *IMPORTANT* tip above
+   3. If you get a permission issue, read the *IMPORTANT* tip above
+   4. If you still have a problem, then it is probably a bug and you should file a GitHub issue and possibly talk to Charlie
+5. Run the relevant RUNME script, either cluster or local. Probably, you want the cluster version:
+```bash
+bash RUNME_cluster.sh
+```
+6. This will run ALL steps in sequence.
+   1. Note: you can't close the terminal! You may need to use a long-term terminal program like tmux or screen.
+   2. If you get errors, see step 4.
+   3. It will print a lot of green-colored text, and the current analysis step will be written near the top, for example: 'rule: preprocessing'. Depending on how busy the cluster is, it could take 6-24 hours / 1000 volumes.
+7. Check the log files (they will be in the /snakemake folder) to make sure there were no errors.
+Almost all errors will crash the program (display a lot of red text), but if you find one that doesn't, please file an issue!
+8. If the program crashes and you fix the problem, then you should be able to start again from step 3 (DRYRUN). This should rerun only the steps that failed and after, not the steps that succeeded. 
+
+
 ## ADVANCED: running steps within an incomplete project
 
 Snakemake works by keeping track of output files with special names, and only reliably works for the first run.
