@@ -29,7 +29,7 @@ For more detail, see:
 
 ## Full workflow
 
-### Creating a project
+### Creating a single project
 
 Working examples to create a project are available for 
 [linux](wbfm/scripts/examples/0-create_new_project-linux-EXAMPLE.sh)
@@ -39,9 +39,22 @@ Recommended: run these commands on the command line.
 If your data is visible locally (mounted is okay), for the initial project creation you can use a gui:
 
 ```commandline
-cd /path/to/this/code/wbfm
-python gui/create_project_gui.py
+cd /path/to/this/code/wbfm/gui
+python create_project_gui.py
 ```
+
+### Creating multiple projects
+
+If you have many projects to create, you can use the create_projects_from_folder.sh script.
+This script will create a project for each data folder in a given directory.
+
+```commandline
+cd /path/to/this/code/wbfm/scripts/cluster
+bash create_multiple_projects_from_data_parent_folder.sh -t /path/to/data/folder -p /path/to/projects/folder
+```
+
+For running projects, you will most likely want to run them all simultaneously instead of one-by-one.
+See this [section](#running-the-rest-of-the-workflow-for-multiple-projects).
 
 #### *IMPORTANT*
 
@@ -50,21 +63,18 @@ Thus, if you create and run the project on different operating systems, you will
 
 Example: Create the project on Windows, but run it on the cluster (Linux).
 
-Specifically be aware of these variables:
+Specifically be aware of these variables in the main project file (config.yaml):
 ```yaml
 red_bigtiff_fname
 green_bigtiff_fname
 ```
 
-in the main project file: config.yaml
-
-AND
+AND the subfolder file: snakemake/config.yaml
 ```yaml
 project_dir
 ```
-in a subfolder: snakemake/config.yaml
 
-In addition, if creating from a windows computer, you may need to use dos2unix to fix any files that you want to execute, specifically those referenced below:
+In addition, if creating from a windows computer, you may need to use the command line script dos2unix to fix any files that you want to execute, specifically those referenced below:
 1. RUNME_*.sh
 2. DRYRUN.sh
 
@@ -88,7 +98,7 @@ If you changed the name of your project or you changed operating systems, you mu
 update the 'project_dir' variable in the snakemake/config.yaml file.
 This variable should be matched to the operating system you are running on, for example starting with 'S:' for windows or '/' for linux (cluster).
 
-### Running the rest of the workflow
+### Running the rest of the workflow for single project
 
 This code is designed in several different scripts, which can be running using a single command.
 The organization between these steps uses the workflow manager [snakemake](https://snakemake.readthedocs.io/en/stable/).
@@ -122,7 +132,45 @@ bash RUNME_cluster.sh
 Almost all errors will crash the program (display a lot of red text), but if you find one that doesn't, please file an issue!
 8. If the program crashes and you fix the problem, then you should be able to start again from step 3 (DRYRUN). This should rerun only the steps that failed and after, not the steps that succeeded. 
 
-Note: at any point you can look at the output of the pipeline using the GUIs described below.
+### Running the rest of the workflow for multiple projects
+
+If you have many projects to run, you can use the run_all_projects_in_parent_folder.sh script.
+This is especially useful if you created the projects using the create_multiple_projects_from_data_parent_folder.sh script.
+
+```commandline
+cd /path/to/this/code/wbfm/scripts/cluster
+bash run_all_projects_in_parent_folder.sh -p /path/to/projects/folder
+```
+
+This will perform all of the steps in the above section automatically.
+
+#### Check ongoing progress
+
+There are three ways to check progress:
+1. Check the currently running jobs
+2. Check the log files in the snakemake/ subfolder
+3. Check the produced analysis files using a gui
+
+Method 1:
+Run this command on the cluster:
+```commandline
+squeue -u <your_username>
+```
+
+Method 2:
+Use the tail command to check the log files:
+```commandline
+tail -f /path/to/your/project/snakemake/log/[MOST_RECENT_LOG].log
+```
+
+Note that the -f flag will keep the terminal open and update the log file as it changes.
+
+Method 3:
+Use the progress_gui.py gui on a local machine with mounted data to check the actual images, segmentation, and tracking produced.
+```commandline
+cd /path/to/this/code/wbfm/gui
+python progress_gui.py -p /path/to/your/project
+```
 
 ### Manual annotation and rerunning
 
