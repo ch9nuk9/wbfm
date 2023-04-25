@@ -83,7 +83,9 @@ In addition, if creating from a windows computer, you may need to use the comman
 Finally, due to changes in the cluster you may get a permission error when importing skimage.
 This should be fixable with one line; check the file RUNME_cluster.sh for more information.
 
-### Checklist of most important parameters to change
+### Checklist of most important parameters to change or validate
+
+You should check two things: the correct files were found, and the correct metadata (video length) was detected.
 
 1. project_config.yaml
    1. bigtiff_start_volume
@@ -192,7 +194,7 @@ Example usage is given within that file.
 
 Note that it is possible to use snakemake to "know" which files need to be updated, if any files were copied to/from a local machine, snakemake will become confused and attempt to rerun the entire pipeline.
 
-### Advanced: running steps within an incomplete project
+### Advanced: running steps within an incomplete project (including if it crashed)
 
 See [detailed pipeline steps](docs/detailed_pipeline_steps.md)
 
