@@ -57,6 +57,27 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
     return ax, triggered_avg
 
 
+def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, ind_preceding=0,
+                                                   dict_of_events_to_keep=None,
+                                                   min_duration=0, max_duration=None, DEBUG=False):
+    all_starts, all_ends = get_contiguous_blocks_from_column(binary_state,
+                                                             already_boolean=True, skip_boolean_check=True)
+    if DEBUG:
+        print("All starts: ", all_starts)
+        print("All ends: ", all_ends)
+    # Build all validity checks as a list of callables
+    is_too_short = lambda start, end: end - start < min_duration
+    is_too_long = lambda start, end: (max_duration is not None) and (end - start > max_duration)
+    is_at_edge = lambda start, end: start == 0
+    starts_with_misannotation = lambda start, end: (beh_vec is not None) and beh_vec[start - 1] == BehaviorCodes.UNKNOWN
+    not_in_dict = lambda start, end: (dict_of_events_to_keep is not None) and \
+                                     (dict_of_events_to_keep.get(start, 0) == 0)
+    validity_checks = [is_too_short, is_too_long, is_at_edge, starts_with_misannotation, not_in_dict]
+    # Build actual indices
+    all_ind = build_ind_matrix_from_starts_and_ends(all_ends, all_starts, ind_preceding, validity_checks, DEBUG)
+    return all_ind
+
+
 @dataclass
 class TriggeredAverageIndices:
     """
@@ -136,25 +157,11 @@ class TriggeredAverageIndices:
         else:
             self.dict_of_events_to_keep = dict_of_events_to_keep
         binary_state = self.cleaned_binary_state.copy()
-        all_starts, all_ends = get_contiguous_blocks_from_column(binary_state,
-                                                                 already_boolean=True, skip_boolean_check=True)
-
-        if DEBUG:
-            print("All starts: ", all_starts)
-            print("All ends: ", all_ends)
         # Turn into time series
         beh_vec = self.behavioral_annotation.to_numpy()
         min_duration, max_duration, ind_preceding = self.min_duration, self.max_duration, self.ind_preceding
-        # Build all validity checks as a list of callables
-        is_too_short = lambda start, end: end - start < min_duration
-        is_too_long = lambda start, end: (max_duration is not None) and (end - start > max_duration)
-        is_at_edge = lambda start, end: start == 0
-        starts_with_misannotation = lambda start, end: beh_vec[start-1] == BehaviorCodes.UNKNOWN
-        not_in_dict = lambda start, end: (dict_of_events_to_keep is not None) and \
-                                         (dict_of_events_to_keep.get(start, 0) == 0)
-        validity_checks = [is_too_short, is_too_long, is_at_edge, starts_with_misannotation, not_in_dict]
-        # Build actual indices
-        all_ind = build_ind_matrix_from_starts_and_ends(all_ends, all_starts, ind_preceding, validity_checks, DEBUG)
+
+        all_ind = calculate_and_filter_triggered_average_indices(binary_state, beh_vec, ind_preceding, DEBUG)
         return all_ind
 
     def calc_triggered_average_matrix(self, trace, custom_ind: List[np.ndarray]=None,
