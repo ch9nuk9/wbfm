@@ -209,7 +209,7 @@ class NapariLayerInitializer:
                 continue
             test_neuron = project_data.neuron_names[0]
             num_frames = project_data.red_traces[test_neuron].shape[0]
-            if project_data.worm_posture_class.has_full_kymograph():
+            if project_data.worm_posture_class.has_full_kymograph:
                 curvature = project_data.worm_posture_class.curvature(fluorescence_fps=True).iloc[0:num_frames]
             else:
                 curvature = None
