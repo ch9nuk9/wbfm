@@ -29,7 +29,7 @@ For more detail, see:
 
 ## Full workflow
 
-### Creating a single project
+### Creating a single project (single recording)
 
 Working examples to create a project are available for 
 [linux](wbfm/scripts/examples/0-create_new_project-linux-EXAMPLE.sh)
@@ -44,6 +44,8 @@ python create_project_gui.py
 ```
 
 ### Creating multiple projects
+
+Note that each recording will generate one project.
 
 If you have many projects to create, you can use the create_projects_from_folder.sh script.
 This script will create a project for each data folder in a given directory.
