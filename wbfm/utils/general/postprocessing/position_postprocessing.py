@@ -37,6 +37,18 @@ def impute_missing_values_using_config(tracking_config, DEBUG=False):
 
 
 def impute_missing_values_in_dataframe(df: pd.DataFrame, d=None) -> pd.DataFrame:
+    """
+    Given a dataframe with gaps, impute the missing values using PPCA
+
+    Parameters
+    ----------
+    df
+    d
+
+    Returns
+    -------
+
+    """
     from ppca import PPCA
 
     # DLC uses zeros as "failed tracking"

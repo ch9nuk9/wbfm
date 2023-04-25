@@ -120,11 +120,15 @@ class WormFullVideoPosture:
                 df.reset_index(drop=True, inplace=True)
             # Shorten to the correct length, if necessary. Note that we have to check for series or dataframe
             if fluorescence_fps:
-                if len(df.shape) == 2:
-                    df = df.iloc[:self.num_trace_frames, :]
-                elif len(df.shape) == 1:
-                    df = df.iloc[:self.num_trace_frames]
+                df = self._shorten_to_trace_length(df)
 
+        return df
+
+    def _shorten_to_trace_length(self, df: Union[pd.DataFrame, pd.Series]):
+        if len(df.shape) == 2:
+            df = df.iloc[:self.num_trace_frames, :]
+        elif len(df.shape) == 1:
+            df = df.iloc[:self.num_trace_frames]
         return df
 
     ##
@@ -889,7 +893,7 @@ class WormFullVideoPosture:
                 time_counter = time_counter / (end - start)
             state_trace[start:end] = time_counter
 
-        return pd.Series(state_trace)
+        return self._shorten_to_trace_length(pd.Series(state_trace))
 
     def calc_exponential_chance_to_end_fwd_state(self):
         """        Using a double exponential fit from a population of forward durations, estimates the probability to terminate
