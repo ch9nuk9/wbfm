@@ -158,10 +158,14 @@ class TriggeredAverageIndices:
             self.dict_of_events_to_keep = dict_of_events_to_keep
         binary_state = self.cleaned_binary_state.copy()
         # Turn into time series
-        beh_vec = self.behavioral_annotation.to_numpy()
-        min_duration, max_duration, ind_preceding = self.min_duration, self.max_duration, self.ind_preceding
+        opt = dict(min_duration=self.min_duration,
+                   max_duration=self.max_duration,
+                   beh_vec=self.behavioral_annotation.to_numpy(),
+                   dict_of_events_to_keep=dict_of_events_to_keep,
+                   ind_preceding=self.ind_preceding,
+                   DEBUG=DEBUG)
 
-        all_ind = calculate_and_filter_triggered_average_indices(binary_state, beh_vec, ind_preceding, DEBUG)
+        all_ind = calculate_and_filter_triggered_average_indices(binary_state, **opt)
         return all_ind
 
     def calc_triggered_average_matrix(self, trace, custom_ind: List[np.ndarray]=None,
