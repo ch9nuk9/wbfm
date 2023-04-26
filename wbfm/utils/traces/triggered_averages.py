@@ -4,7 +4,7 @@ import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Callable, Dict
-
+import matplotlib
 import hdbscan
 import plotly.express as px
 import numpy as np
@@ -521,6 +521,8 @@ class TriggeredAverageIndices:
             if len(x_significant) > 0:
                 ax.plot(x_significant, triggered_avg[x_significant], 'o', color='tab:orange')
 
+        return ax
+
     def plot_ind_over_trace(self, trace):
         """
         Plots the indices stored here over a trace (for debugging)
@@ -670,8 +672,10 @@ class FullDatasetTriggeredAverages:
 
     def plot_single_neuron_triggered_average(self, neuron, ax=None, **kwargs):
         y = self.df_traces[neuron]
-        self.ax_plot_func_for_grid_plot(None, y, ax, neuron, **kwargs)
+        ax = self.ax_plot_func_for_grid_plot(None, y, ax, neuron, **kwargs)
         plt.title(f"Triggered average for {neuron}")
+
+        return ax
 
     def ax_plot_func_for_grid_plot(self, t, y, ax, name, **kwargs):
         """Same as ax_plot_func_for_grid_plot, but can be used directly"""
@@ -688,6 +692,8 @@ class FullDatasetTriggeredAverages:
         self.ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
         # ax.axhline(0, c='black', ls='--')
         # ax.plot(self.ind_class.ind_preceding, 0, "r>", markersize=10)
+
+        return ax
 
     @staticmethod
     def load_from_project(project_data, trigger_opt=None, trace_opt=None, use_behavior_not_traces=False,
@@ -886,6 +892,8 @@ class ClusteredTriggeredAverages:
     def plot_clusters_from_names(get_matrix_from_names, per_cluster_names, min_lines=2,
                                  ind_preceding=20, xlim=None, z_score=False, output_folder=None,
                                  show_individual_lines=True, cluster_color_func: Callable = None):
+        if cluster_color_func is None:
+            cluster_color_func = matplotlib.cm.get_cmap('tab10')
         for i_clust, name_list in per_cluster_names.items():
             name_list = list(name_list)
             if len(name_list) < min_lines:
@@ -909,6 +917,7 @@ class ClusteredTriggeredAverages:
             plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
                                                          ax=ax, **plot_opt)
             plt.title(f"Cluster {i_clust}/{len(per_cluster_names)} with {pseudo_mat.shape[0]} traces")
+            plt.xlabel("Time")
             if output_folder is not None:
                 if not os.path.exists(output_folder):
                     os.makedirs(output_folder, exist_ok=True)
