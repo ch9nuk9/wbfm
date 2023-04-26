@@ -822,9 +822,9 @@ class ProjectData:
         if residual_mode is not None:
             assert interpolate_nan, "Residual mode only works if nan are interpolated!"
             if residual_mode == 'pca':
-                df, _ = calculate_residual_subtract_pca(df, n_components=1)
+                df, _ = calculate_residual_subtract_pca(df, n_components=2)
             elif residual_mode == 'nmf':
-                df, _ = calculate_residual_subtract_nmf(df, n_components=1)
+                df, _ = calculate_residual_subtract_nmf(df, n_components=2)
             else:
                 raise NotImplementedError(f"Unrecognized residual mode: {residual_mode}")
 
