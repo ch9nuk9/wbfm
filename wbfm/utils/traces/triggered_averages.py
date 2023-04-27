@@ -22,7 +22,8 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
-    split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict
+    split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
+    calc_surpyval_durations_and_censoring
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average, fill_nan_in_dataframe
@@ -560,6 +561,13 @@ class TriggeredAverageIndices:
     @property
     def num_events(self):
         return len(self.idx_onsets)
+
+    def all_durations_with_censoring(self):
+        # Note that this doesn't account for gaps caused by incorrect annotation
+        binary_vec = self.cleaned_binary_state
+        all_starts, all_ends = get_contiguous_blocks_from_column(binary_vec, already_boolean=True)
+        duration_vec, censored_vec = calc_surpyval_durations_and_censoring(all_starts, all_ends)
+        return duration_vec, censored_vec
 
 
 @dataclass

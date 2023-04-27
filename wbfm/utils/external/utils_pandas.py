@@ -298,6 +298,48 @@ def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boole
     return block_starts, block_ends
 
 
+def calc_surpyval_durations_and_censoring(all_starts, all_ends):
+    """
+    Uses the conventions of the surpyval package and checks for censoring
+    More detail: https://surpyval.readthedocs.io/en/latest/Types%20of%20Data.html#censored-data
+
+    Quote:
+    The possible values of c are -1, 0, 1, and 2.
+    The convention tries to illustrate the concept of left, right, and interval censoring on the timeline.
+    That is, -1 is the flag for left censoring because it is to the left of an observed failure.
+    With an observed failure at 0. 1 is used to flag a value as right censored.
+    Finally, 2 is used to flag a value as being intervally censored because it has 2 data points, a left and right point.
+
+    Example:
+    import surpyval
+
+    x = [3, 3, 3, 4, 4, [4, 6], [6, 8], 8]
+    c = [-1, -1, -1, 0, 0, 2, 2, 1]
+
+    model = surpyval.Weibull.fit(x=x, c=c)
+
+    Parameters
+    ----------
+    all_starts
+    all_ends
+
+    Returns
+    -------
+
+    """
+
+    censored_vec = []
+    duration_vec = []
+    for i, (s, e) in enumerate(zip(all_starts, all_ends)):
+        duration_vec.append(e - s)
+        # For this type of data, there won't be any left censoring, only right censoring at both edges
+        if s == 0 or i == len(all_starts) - 1:
+            censored_vec.append(1)
+        else:
+            censored_vec.append(0)
+    return duration_vec, censored_vec
+
+
 def remove_short_state_changes(bool_column: pd.Series, min_length, only_replace_these_states=None,
                                replace_with_next_state=True, DEBUG=False):
     """
