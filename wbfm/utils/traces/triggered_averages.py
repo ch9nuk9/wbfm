@@ -815,7 +815,7 @@ class ClusteredTriggeredAverages:
         """
         return count_unique_datasets_from_flattened_index(self.names)
 
-    def plot_clustergram(self, output_folder=None, use_labels=False):
+    def plot_clustergram(self, output_folder=None, use_labels=False, show_clusters=True):
         X = self.df_corr.to_numpy()
 
         # Check for jupyter notebook and large matrices
@@ -823,13 +823,16 @@ class ClusteredTriggeredAverages:
 
         dist_fun = lambda X, metric: X  # df_corr is already the distance (similarity)
         import dash_bio
-        opt = dict(height=800, width=800, link_method=self.linkage_method,
+        opt = dict(height=800, width=1000, link_method=self.linkage_method,
                    color_threshold={'row': self.linkage_threshold, 'col': self.linkage_threshold},
                    center_values=False)
         if use_labels:
             opt.update(dict(row_labels=list(self.names), column_labels=list(self.names)))
         else:
-            opt.update(dict(row_labels=[], column_labels=[]))
+            opt.update(dict(hidden_labels=['row', 'col']))
+        if not show_clusters:
+            # opt.update(dict(color_list={'row': ['blue'], 'col': ['blue']}))
+            opt.update(dict(color_threshold={'row': np.inf, 'col': np.inf}))
         clustergram = dash_bio.Clustergram(X, dist_fun=dist_fun, **opt)
         if output_folder is not None:
             if not os.path.exists(output_folder):
