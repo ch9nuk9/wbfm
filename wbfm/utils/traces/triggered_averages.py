@@ -103,6 +103,9 @@ class TriggeredAverageIndices:
     behavioral_annotation_is_continuous: bool = False
     behavioral_annotation_threshold: float = 0.0  # Not used if behavioral_annotation_is_continuous is False
 
+    behavioral_annotation_for_rectification: pd.Series = None
+    only_allow_events_during_state: int = None  # If not None, only allow events that start during this state (only used if behavioral_annotation_is_continuous==True)
+
     # Postprocessing the trace matrix (per trace)
     trace_len: int = None
     to_nan_points_of_state_before_point: bool = True
@@ -114,6 +117,19 @@ class TriggeredAverageIndices:
     normalize_amplitude_at_onset: bool = False
 
     DEBUG: bool = False
+
+    def __post_init__(self):
+        # Build a dict_of_events_to_keep if only_allow_events_during_state is not None
+        state = self.only_allow_events_during_state
+        if state is not None and self.behavioral_annotation_is_continuous:
+            if self.dict_of_events_to_keep is not None:
+                logging.warning("Passed custom dict_of_events_to_keep, but also passed only_allow_events_during_state. "
+                                "Using only_allow_events_during_state to overwrite dict_of_events_to_keep")
+            if self.behavioral_annotation_for_rectification is None:
+                raise ValueError("Must pass behavioral_annotation_for_rectification if only_allow_events_during_state is not None")
+            # Note that this dictionary can be overcomplete
+            beh = self.behavioral_annotation_for_rectification
+            self.dict_of_events_to_keep = {i: beh[i] == state for i in range(len(self.behavioral_annotation))}
 
     @property
     def binary_state(self):
