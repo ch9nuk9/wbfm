@@ -896,7 +896,8 @@ class WormFullVideoPosture:
         return self._shorten_to_trace_length(pd.Series(state_trace))
 
     def calc_exponential_chance_to_end_fwd_state(self):
-        """        Using a double exponential fit from a population of forward durations, estimates the probability to terminate
+        """
+        Using a double exponential fit from a population of forward durations, estimates the probability to terminate
         a forward state, assuming one exponential is active at once. Specifically:
             - For short forward periods (<34 volumes), use a sharp exponential of ~2 volume decay
             - For long forward periods, use a flat exponential of ~30 volume decay time

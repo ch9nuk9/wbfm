@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, load_all_projects_in_folder
+from wbfm.utils.projects.utils_filenames import pickle_load_binary
 
 
 ##
@@ -103,3 +104,8 @@ def _resolve_project_from_worm_id(folder_and_id_dict):
 # def get_path_to_double_exponential_model():
 #     """Model fit to the forward duration distribution. See fit_multi_exponential_model"""
 
+
+def forward_distribution_statistics():
+    fname = "/scratch/neurobiology/zimmer/wbfm/DistributionsOfBehavior/forward_duration.pickle"
+    model_dict = pickle_load_binary(fname)
+    return model_dict
