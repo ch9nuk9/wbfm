@@ -107,5 +107,5 @@ def _resolve_project_from_worm_id(folder_and_id_dict):
 
 def forward_distribution_statistics():
     fname = "/scratch/neurobiology/zimmer/wbfm/DistributionsOfBehavior/forward_duration.pickle"
-    model_dict = pickle_load_binary(fname)
-    return model_dict
+    forward_duration_dict = pickle_load_binary(fname)
+    return forward_duration_dict

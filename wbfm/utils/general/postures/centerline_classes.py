@@ -28,6 +28,7 @@ from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std, remove_outliers_via_rolling_mean, \
     filter_gaussian_moving_average
+from wbfm.utils.visualization.hardcoded_paths import forward_distribution_statistics
 
 
 @dataclass
@@ -895,20 +896,24 @@ class WormFullVideoPosture:
 
         return self._shorten_to_trace_length(pd.Series(state_trace))
 
-    def calc_exponential_chance_to_end_fwd_state(self):
+    def calc_empirical_probability_to_end_fwd_state(self):
         """
-        Using a double exponential fit from a population of forward durations, estimates the probability to terminate
-        a forward state, assuming one exponential is active at once. Specifically:
-            - For short forward periods (<34 volumes), use a sharp exponential of ~2 volume decay
-            - For long forward periods, use a flat exponential of ~30 volume decay time
+        Using an observed set of forward durations from worms with coverslip, estimates the probability to terminate
+        a forward state, assuming one exponential is active at once.
 
-        For now, just use a flat prediction of the tau of these two states... this might be better than an increasing
-        series that is very flat towards the end of the forward
+        Note that this is loaded assuming a frame rate of 3.5 volumes per second
+
+        Original was a two exponential fit, but I actually think a weibull distribution is much better
 
         Returns
         -------
 
         """
+        # Load the hardcoded empirical distribution
+        forward_duration_dict = forward_distribution_statistics()
+        y_dat = forward_duration_dict['y_dat']
+
+        # Load this dataset
         binary_fwd = self.beh_annotation(fluorescence_fps=True) == BehaviorCodes.FWD
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
 
@@ -916,7 +921,11 @@ class WormFullVideoPosture:
         num_pts = len(self.subsample_indices)
         state_trace = np.zeros(num_pts)
         for start, end in zip(all_starts, all_ends):
-            state_trace[start:end] = np.arange(end - start)
+            duration = end - start
+            if duration >= len(y_dat):
+                raise ValueError(f"Duration {duration} is too long for the empirical distribution"
+                                 f"It could be padded with 1s, but this probably means it needs to be recalculated")
+            state_trace[start:end] = y_dat[duration]
 
         return state_trace
 
