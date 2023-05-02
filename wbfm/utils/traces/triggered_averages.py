@@ -899,7 +899,7 @@ class ClusteredTriggeredAverages:
             pseudo_mat = pseudo_mat / np.nanstd(pseudo_mat, axis=1, keepdims=True)
             # Plot
             ind_class.plot_triggered_average_from_matrix(pseudo_mat, ax, show_individual_lines=True)
-            plt.title(f"Cluster {i_clust}/{len(self.per_cluster_names)} with {pseudo_mat.shape[0]} traces")
+            plt.title(f"Triggered Averages of cluster {i_clust} ({pseudo_mat.shape[0]} traces)")
 
     def plot_all_clusters_simple(self, min_lines=2, ind_preceding=20, xlim=None, z_score=False,
                                  output_folder=None, use_individual_triggered_events=False,
@@ -922,7 +922,7 @@ class ClusteredTriggeredAverages:
                                  fig_opt=None):
         if fig_opt is None:
             fig_opt = {}
-        default_fig_opt = dict(dpi=200, figsize=(10, 5))
+        default_fig_opt = dict(dpi=200)
         default_fig_opt.update(fig_opt)
 
         if cluster_color_func is None:
@@ -955,8 +955,9 @@ class ClusteredTriggeredAverages:
             # avg_corr = these_corr.mean()
             plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
                                                          ax=ax, **plot_opt)
-            plt.title(f"Cluster {i_clust}/{len(per_cluster_names)} with {pseudo_mat.shape[0]} traces")
+            plt.title(f"Triggered Averages of cluster {i_clust} ({pseudo_mat.shape[0]} traces)")
             plt.xlabel("Time")
+            plt.tight_layout()
             if output_folder is not None:
                 if not os.path.exists(output_folder):
                     os.makedirs(output_folder, exist_ok=True)
