@@ -929,7 +929,7 @@ class WormFullVideoPosture:
             if duration >= len(y_dat):
                 raise ValueError(f"Duration {duration} is too long for the empirical distribution"
                                  f"It could be padded with 1s, but this probably means it needs to be recalculated")
-            state_trace[start:end] = y_dat[duration]
+            state_trace[start:end] = y_dat[:duration].copy()
 
         return self._shorten_to_trace_length(pd.Series(state_trace))
 
