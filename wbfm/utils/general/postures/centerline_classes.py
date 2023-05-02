@@ -340,6 +340,8 @@ class WormFullVideoPosture:
             y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.REV)
         elif behavior_alias == 'rev_phase_counter':
             y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.REV, phase_not_real_time=True)
+        elif behavior_alias == 'fwd_empirical_distribution':
+            y = self.calc_empirical_probability_to_end_fwd_state(fluorescence_fps=True)
         else:
             raise NotImplementedError(behavior_alias)
 
@@ -896,7 +898,7 @@ class WormFullVideoPosture:
 
         return self._shorten_to_trace_length(pd.Series(state_trace))
 
-    def calc_empirical_probability_to_end_fwd_state(self):
+    def calc_empirical_probability_to_end_fwd_state(self, fluorescence_fps=True):
         """
         Using an observed set of forward durations from worms with coverslip, estimates the probability to terminate
         a forward state, assuming one exponential is active at once.
@@ -909,6 +911,8 @@ class WormFullVideoPosture:
         -------
 
         """
+        if not fluorescence_fps:
+            raise NotImplementedError("Empirical distribution is only implemented for fluorescence fps")
         # Load the hardcoded empirical distribution
         forward_duration_dict = forward_distribution_statistics()
         y_dat = forward_duration_dict['y_dat']
@@ -927,7 +931,7 @@ class WormFullVideoPosture:
                                  f"It could be padded with 1s, but this probably means it needs to be recalculated")
             state_trace[start:end] = y_dat[duration]
 
-        return state_trace
+        return self._shorten_to_trace_length(pd.Series(state_trace))
 
     @staticmethod
     def load_from_project(project_data):
