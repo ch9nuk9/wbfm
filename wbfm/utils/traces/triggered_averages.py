@@ -918,7 +918,13 @@ class ClusteredTriggeredAverages:
     @staticmethod
     def plot_clusters_from_names(get_matrix_from_names, per_cluster_names, min_lines=2,
                                  ind_preceding=20, xlim=None, z_score=False, output_folder=None,
-                                 show_individual_lines=True, cluster_color_func: Callable = None):
+                                 show_individual_lines=True, cluster_color_func: Callable = None,
+                                 fig_opt=None):
+        if fig_opt is None:
+            fig_opt = {}
+        default_fig_opt = dict(dpi=200, figsize=(10, 5))
+        default_fig_opt.update(fig_opt)
+
         if cluster_color_func is None:
             # The dendrogram has a funny default, where the 0 color is reservered for non-clusters, and is skipped
             # So in principle I want the modular division of i, but if i > 10 I have to add 1
@@ -932,7 +938,7 @@ class ClusteredTriggeredAverages:
             if len(name_list) < min_lines:
                 print(f"Skipping cluster {i_clust} with {len(name_list)} lines")
                 continue
-            fig, ax = plt.subplots(dpi=200)
+            fig, ax = plt.subplots(**default_fig_opt)
             pseudo_mat = get_matrix_from_names(name_list)
             # Normalize the traces to be similar to the correlation, i.e. z-score them
             if z_score:
