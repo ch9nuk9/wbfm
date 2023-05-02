@@ -1,20 +1,49 @@
 import numpy as np
-from lmfit.models import ExponentialModel
+from lmfit.models import ExponentialModel, ConstantModel
 from matplotlib import pyplot as plt
 
 
-def fit_multi_exponential_model(x, y, to_plot=True, num_exponentials=2, verbose=0):
+def fit_multi_exponential_model(x, y, to_plot=True, num_exponentials=2,
+                                cumulative=False,
+                                verbose=0):
+    """
+    Fit a multi-exponential model to the data (1 is allowed).
+
+    Optionally fit a cumulative model, which should be done if there are empty bins.
+        In this case the functional form is still exponential, but it is a constant minus the exponentials.
+
+    Parameters
+    ----------
+    x
+    y
+    to_plot
+    num_exponentials
+    cumulative
+    verbose
+
+    Returns
+    -------
+
+    """
     mymodel = ExponentialModel(prefix='e0_')
     for i in range(num_exponentials - 1):
         mymodel = mymodel + ExponentialModel(prefix=f'e{i+1}_')
 
+    if cumulative:
+        mymodel = mymodel + ConstantModel(prefix='const_')
+
     # Guess isn't super important, but the decays should be different scales
     p_dict = {}
     for i in range(num_exponentials):
-        p_dict.update({f'e{i}_amplitude': 10**(i+1), f'e{i}_decay': 10**(-i+1)})
+        if not cumulative:
+            p_dict.update({f'e{i}_amplitude': 10**(i+1), f'e{i}_decay': 10**(-i+1), 'min': 0})
+        else:
+            p_dict.update({f'e{i}_amplitude': -10 ** (i + 1), f'e{i}_decay': 10 ** (-i + 1)})
         # params = mymodel.make_params(e1_amplitude=10, e1_decay=10,
         #                              e2_amplitude=10, e2_decay=0.50)
     params = mymodel.make_params(**p_dict)
+    if cumulative:
+        params['const_c'].set(value=num_exponentials, vary=False)
 
     result = mymodel.fit(y, params, x=x)
     if verbose >= 1:
