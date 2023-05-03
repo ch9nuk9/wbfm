@@ -607,10 +607,14 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         df = pd.DataFrame(df_dict)
         return df
 
-    def plot_multineuron_weights(self):
+    def plot_multineuron_weights(self, df_name=None, **kwargs):
+        if df_name is not None:
+            feature_names = list(self.all_dfs[df_name].columns)
+        else:
+            feature_names = None
         # Uses precalculated results of cross validation
         coefs = boxplot_from_cross_validation_dict(self._multi_neuron_cv_results,
-                                                   feature_names=self.retained_neuron_names,
+                                                   feature_names=feature_names,
                                                    name=self.shortened_name)
 
     def _plot_predictions(self, df_name, y_pred, y_train, y_name="", score_list: list = None, best_neuron="",
