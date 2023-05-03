@@ -3,8 +3,8 @@ import os
 import warnings
 from dataclasses import dataclass, field
 from functools import reduce
-from typing import List, Dict, Tuple, Union
-
+from typing import List, Dict, Tuple, Union, Optional
+import plotly.express as px
 import seaborn as sns
 import numpy as np
 import pandas as pd
@@ -50,6 +50,9 @@ class NeuronEncodingBase:
     # Alternate method that doesn't use the project data
     dict_of_precalculated_dfs: Dict[str, pd.DataFrame] = None
 
+    # For visualization
+    use_plotly: bool = False
+
     @property
     def retained_neuron_names(self):
         if not self._retained_neuron_names:
@@ -57,8 +60,11 @@ class NeuronEncodingBase:
         return self._retained_neuron_names
 
     @cached_property
-    def project_data(self) -> ProjectData:
-        return ProjectData.load_final_project_data_from_config(self.project_path)
+    def project_data(self) -> Optional[ProjectData]:
+        if self.project_path is not None:
+            return ProjectData.load_final_project_data_from_config(self.project_path)
+        else:
+            return None
 
     @property
     def shortened_name(self):
@@ -317,6 +323,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             worm = self.project_data.worm_posture_class
             y_binary = (worm.beh_annotation(fluorescence_fps=True) == binary_state).copy()
             y_binary.index = y.index
+        else:
+            y_binary = y.copy()
 
         # Optionally subset the data to be only a specific state
         if only_model_single_state is not None:
@@ -342,7 +350,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         -------
 
         """
-        if self.df_of_behaviors is not None and y_train_name in self.df_of_behaviors.columns:
+        if self.df_of_behaviors is not None and y_train_name in self.df_of_behaviors:
             y = self.df_of_behaviors[y_train_name].copy()
         else:
             if y_train_name is None:
@@ -641,23 +649,29 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         else:
             score_mean = np.mean(score_list)
             score_std = np.std(score_list)
-
-        fig, ax = plt.subplots(dpi=200)
-        opt = dict()
-        if df_name == 'green' or df_name == 'red':
-            opt['color'] = df_name
-        ax.plot(y_pred, label='prediction', **opt)
-
+        # Metadata for plots
         title_str = f"R2={score_mean:.2f}+-{score_std:.2f} ({df_name}; {self.shortened_name})"
         if best_neuron != "":
             title_str = f"{best_neuron}: {title_str}"
-        ax.set_title(title_str)
-        plt.ylabel(f"{y_name}")
-        plt.xlabel("Time (volumes)")
-        ax.plot(y_train, color='black', label='Target', alpha=0.8)
-        plt.legend()
-        if self.project_data is not None:
-            self.project_data.shade_axis_using_behavior()
+        # Actually plot
+        if not self.use_plotly:
+            fig, ax = plt.subplots(dpi=200)
+            opt = dict()
+            if df_name == 'green' or df_name == 'red':
+                opt['color'] = df_name
+            ax.plot(y_pred, label='prediction', **opt)
+            ax.set_title(title_str)
+            plt.ylabel(f"{y_name}")
+            plt.xlabel("Time (volumes)")
+            ax.plot(y_train, color='black', label='Target', alpha=0.8)
+            plt.legend()
+            if self.project_data is not None:
+                self.project_data.shade_axis_using_behavior()
+        else:
+            # Make a dataframe for plotly
+            df = pd.DataFrame({'Prediction': y_pred, 'Target': y_train})
+            fig = px.line(df, title=title_str, labels={'index': 'Time (volumes)', 'value': f"{y_name}"})
+            fig.show()
 
         if to_save:
             fname = f"regression_fit_{df_name}_{y_name}.png"
@@ -700,12 +714,15 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         return df, x_train_name
 
     def _savefig(self, fname, saving_folder):
-        if saving_folder is None:
-            vis_cfg = self.project_data.project_config.get_visualization_config(make_subfolder=True)
-            fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        if self.use_plotly:
+            raise NotImplementedError("Saving plotly figures is not yet implemented")
         else:
-            fname = os.path.join(saving_folder, f"{self.shortened_name}-{fname}")
-        plt.savefig(fname)
+            if saving_folder is None:
+                vis_cfg = self.project_data.project_config.get_visualization_config(make_subfolder=True)
+                fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+            else:
+                fname = os.path.join(saving_folder, f"{self.shortened_name}-{fname}")
+            plt.savefig(fname)
 
     def _plot_linear_regression_coefficients(self, X, y, df_name, model=None,
                                              only_plot_nonzero=True, also_plot_traces=True, y_name="speed"):

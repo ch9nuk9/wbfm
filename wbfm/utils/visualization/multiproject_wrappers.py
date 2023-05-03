@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import reduce
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import numpy as np
 import pandas as pd
@@ -163,7 +163,8 @@ class MultiProjectBehaviorPlotter(MultiProjectWrapper):
         plt.ylim(-1.0, 1.0)
 
 
-def build_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData], behavior_name: str) -> pd.DataFrame:
+def build_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData],
+                                             behavior_names: Union[str, List[str]]) -> pd.DataFrame:
     """
     Builds a time series of behavior from multiple projects
 
@@ -172,23 +173,32 @@ def build_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData
     Parameters
     ----------
     all_projects
-    behavior_name
+    behavior_names
 
     Returns
     -------
 
     """
 
-    output_dict = defaultdict(list)
-    for dataset_name, p in all_projects.items():
-        worm = p.worm_posture_class
-        trace = worm.calc_behavior_from_alias(behavior_name)
-        output_dict[behavior_name].extend(trace)
-        output_dict['dataset_name'].extend([dataset_name] * len(trace))
-        output_dict['local_time_index'].extend(np.arange(len(trace)))
-    # Make sure the final dataframe is sorted correctly
-    df_beh = pd.DataFrame(output_dict)
-    df_beh = df_beh.sort_values(['dataset_name', 'local_time_index']).reset_index(drop=True)
+    if isinstance(behavior_names, str):
+        behavior_names = [behavior_names]
+
+    list_of_beh_dfs = []
+    for b in behavior_names:
+        output_dict = defaultdict(list)
+        for dataset_name, p in all_projects.items():
+            worm = p.worm_posture_class
+            trace = worm.calc_behavior_from_alias(b)
+            output_dict[b].extend(trace)
+            output_dict['dataset_name'].extend([dataset_name] * len(trace))
+            output_dict['local_time_index'].extend(np.arange(len(trace)))
+        # Make sure the final dataframe is sorted correctly
+        df_beh = pd.DataFrame(output_dict)
+        df_beh = df_beh.sort_values(['dataset_name', 'local_time_index']).reset_index(drop=True)
+        list_of_beh_dfs.append(df_beh)
+    # Combine all the dataframes, keeping only a single column of dataset names
+    df_beh = pd.concat(list_of_beh_dfs, axis=1)
+    df_beh = df_beh.loc[:, ~df_beh.columns.duplicated()]
     return df_beh
 
 
