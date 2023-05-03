@@ -1700,7 +1700,7 @@ def calc_time_series_from_starts_and_ends(all_starts, all_ends, num_pts, min_dur
     return state_trace
 
 
-def clustered_triggered_averages_from_list_of_projects(all_projects, **kwargs):
+def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt=None, **kwargs):
     """
     See ClusteredTriggeredAverages.load_from_project for kwargs
 
@@ -1716,6 +1716,8 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, **kwargs):
 
     """
     # First calculate triggered average classes for each project
+    if cluster_opt is None:
+        cluster_opt = {}
     all_triggered_average_classes = {}
     trigger_opt_default = {'state': BehaviorCodes.FWD}
     if 'trigger_opt' in kwargs:
@@ -1740,7 +1742,9 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, **kwargs):
     dict_of_triggered_traces = flatten_nested_dict(dict_of_triggered_traces)
 
     # Build a combined class
-    good_dataset_clusterer = ClusteredTriggeredAverages(df_triggered_good, linkage_threshold=4, verbose=1,
+    default_cluster_opt = dict(linkage_threshold=4, verbose=1)
+    default_cluster_opt.update(cluster_opt)
+    good_dataset_clusterer = ClusteredTriggeredAverages(df_triggered_good, **default_cluster_opt,
                                                         dict_of_triggered_traces=dict_of_triggered_traces)
 
     return good_dataset_clusterer, (all_triggered_average_classes, df_triggered_good, dict_of_triggered_traces)

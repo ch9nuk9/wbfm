@@ -48,10 +48,10 @@ class MultiProjectWrapper:
             output = {}
             for p in tqdm(self._all_behavior_plotters):
                 if not p.is_valid:
-                    logging.warning(f"Skipping invalid project {p.project_data.shortened_name}")
+                    logging.warning(f"Skipping invalid project {p.shortened_name}")
                     continue
                 out = getattr(p, item)(*args, **kwargs)
-                output[p.project_data.shortened_name] = out
+                output[p.shortened_name] = out
             return output
         return method
 
@@ -193,7 +193,7 @@ def build_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData
 
 
 def build_time_series_from_multiple_project_clusters(all_projects: Dict[str, ProjectData],
-                                                     cluster_options: dict = None,
+                                                     cluster_opt: dict = None,
                                                      z_score=False):
     """
     Similar to build_time_series_from_multiple_projects, using a clustering object to cluster traces across datasets.
@@ -210,11 +210,11 @@ def build_time_series_from_multiple_project_clusters(all_projects: Dict[str, Pro
     -------
 
     """
-    if cluster_options is None:
-        cluster_options = {}
+    if cluster_opt is None:
+        cluster_opt = {'cluster_criterion': 'maxclust', 'linkage_threshold': 10}
     # First build the clustering class
     multi_dataset_clusterer, clustering_intermediates = \
-        clustered_triggered_averages_from_list_of_projects(all_projects, **cluster_options)
+        clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt=cluster_opt)
     all_triggered_average_classes, df_triggered_good, dict_of_triggered_traces = clustering_intermediates
 
     df_all_clusters, df_imputed = build_dataframe_of_clusters(all_triggered_average_classes, multi_dataset_clusterer,
@@ -274,8 +274,13 @@ def build_dataframe_of_clusters(all_triggered_average_classes, multi_dataset_clu
         list_of_dfs)
     df_all_clusters = df_all_clusters.sort_values(['dataset_name', 'local_time_index']).reset_index(drop=True)
     # Remove missing values to make valid for sklearn
-    df_imputed = df_all_clusters.dropna(axis=1, thresh=df_all_clusters.shape[0] * 0.9).copy()
-    df_imputed.drop(columns=['dataset_name', 'temp_id'], inplace=True)
-    df_imputed = remove_outliers_using_std(df_imputed, std_factor=4)
-    df_imputed = impute_missing_values_in_dataframe(df_imputed)
+    try:
+        df_imputed = df_all_clusters.dropna(axis=1, thresh=df_all_clusters.shape[0] * 0.9).copy()
+        df_imputed.drop(columns=['dataset_name', 'local_time_index'], inplace=True)
+        df_imputed = remove_outliers_using_std(df_imputed, std_factor=4)
+        df_imputed = impute_missing_values_in_dataframe(df_imputed)
+    except ValueError as e:
+        df_imputed = None
+        logging.warning("Could not impute missing values in dataframe, returning None")
+        print(e)
     return df_all_clusters, df_imputed
