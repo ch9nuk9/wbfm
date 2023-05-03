@@ -125,6 +125,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     _best_single_neuron: str = None
 
     _best_multi_neuron_model: callable = None
+    _multi_neuron_cv_results: dict = None
     _best_single_neuron_model: callable = None
     _best_leifer_model: callable = None
 
@@ -163,10 +164,15 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             # Outer cross validation: get score
             outer_cv = self.cv_factory()
             if not correlation_not_r2:
-                nested_scores = cross_val_score(model, X=X, y=y, cv=outer_cv)
+                # nested_scores = cross_val_score(model, X=X, y=y, cv=outer_cv)
+                cv_results = cross_validate(model, X=X, y=y, cv=outer_cv,
+                                            return_train_score=True, return_estimator=True)
+                nested_scores = cv_results['test_score']
             else:
                 # Loop over all folds and calculate the correlation
+                # Note: this is only for Leifer comparison, and should not be used
                 nested_scores = []
+                cv_results = None
                 for train_index, test_index in outer_cv.split(X, y=y_binary):
                     X_train, X_test = X.iloc[train_index], X.iloc[test_index]
                     y_train, y_test = y.iloc[train_index], y.iloc[test_index]
@@ -183,6 +189,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             y_pred = pd.Series(y_pred, index=y.index)
 
         self._best_multi_neuron_model = model
+        self._multi_neuron_cv_results = cv_results
         if DEBUG:
             # plt.plot(X_test, label='X')
             plt.plot(y, label='y')
@@ -600,32 +607,11 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         df = pd.DataFrame(df_dict)
         return df
 
-    def plot_encoding_and_weights(self, df_name, y_train=None, y_name="speed"):
-        """
-        Plots the fit, regression weights, and grid plot for a Lasso model
-
-        Parameters
-        ----------
-        df_name
-        y_train
-        y_name
-
-        Returns
-        -------
-
-        """
-        X_train = self.all_dfs[df_name]
-        if not isinstance(y_train, pd.Series):
-            if isinstance(y_train, str):
-                trace_len = X_train.shape[0]
-                y_train, y_train_name = self.unpack_behavioral_time_series_from_name(y_train, trace_len)
-                y_name = y_train_name
-            else:
-                raise NotImplementedError
-        cv_model = self._plot_linear_regression_coefficients(X_train, y_train, df_name, y_name=y_name)[0]
-        model = cv_model['estimator'][0]  # Just predict using a single model?
-        y_pred = model.predict(X_train)
-        self._plot_predictions(df_name, y_pred, y_train)
+    def plot_multineuron_weights(self):
+        # Uses precalculated results of cross validation
+        coefs = boxplot_from_cross_validation_dict(self._multi_neuron_cv_results,
+                                                   feature_names=self.retained_neuron_names,
+                                                   name=self.shortened_name)
 
     def _plot_predictions(self, df_name, y_pred, y_train, y_name="", score_list: list = None, best_neuron="",
                           to_save=False, saving_folder=None):
@@ -749,24 +735,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             return_estimator=True,
             n_jobs=2,
         )
-        coefs = pd.DataFrame(
-            [est.coef_ for est in cv_model["estimator"]], columns=feature_names
-        )
-
-        # Only keep neurons with nonzero values
-        tol = 1e-3
-        if only_plot_nonzero:
-            coefs = coefs.loc[:, coefs.mean().abs() > tol]
-
-        # Boxplot of variability
-        plt.figure(dpi=100)
-        sns.stripplot(data=coefs, orient="h", color="k", alpha=0.5, linewidth=1)
-        sns.boxplot(data=coefs, orient="h", color="cyan", saturation=0.5, whis=100)
-        plt.axvline(x=0, color=".5")
-        title_str = f"Coefficient variability for {self.shortened_name}"
-        plt.title(title_str)
-        plt.subplots_adjust(left=0.3)
-        plt.grid(axis='y', which='both')
+        name = self.shortened_name
+        coefs = boxplot_from_cross_validation_dict(cv_model, feature_names, only_plot_nonzero, name)
 
         if self.project_data is not None:
             fname = f"lasso_coefficients_{df_name}_{y_name}.png"
@@ -783,6 +753,37 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         os.environ["PYTHONWARNINGS"] = initial_val  # Also affect subprocesses
 
         return cv_model, coefs
+
+
+def boxplot_from_cross_validation_dict(cv_model, feature_names=None, only_plot_nonzero=False, name=None):
+    def get_coef(estimator_like):
+        try:
+            return estimator_like.coef_
+        except AttributeError:
+            # For GridSearchCV objects
+            return estimator_like.best_estimator_.coef_
+
+    if feature_names is not None:
+        coefs = pd.DataFrame(
+            [get_coef(est) for est in cv_model["estimator"]], columns=feature_names
+        )
+    else:
+        coefs = pd.DataFrame([get_coef(est) for est in cv_model["estimator"]])
+
+    # Only keep neurons with nonzero values
+    tol = 1e-3
+    if only_plot_nonzero:
+        coefs = coefs.loc[:, coefs.mean().abs() > tol]
+    # Boxplot of variability
+    plt.figure(dpi=100)
+    sns.stripplot(data=coefs, orient="h", color="k", alpha=0.5, linewidth=1)
+    sns.boxplot(data=coefs, orient="h", color="cyan", saturation=0.5, whis=100)
+    plt.axvline(x=0, color=".5")
+    title_str = f"Coefficient variability for {name}"
+    plt.title(title_str)
+    plt.subplots_adjust(left=0.3)
+    plt.grid(axis='y', which='both')
+    return coefs
 
 
 @dataclass
