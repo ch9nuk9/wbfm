@@ -28,7 +28,8 @@ from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std, remove_outliers_via_rolling_mean, \
     filter_gaussian_moving_average
-from wbfm.utils.visualization.hardcoded_paths import forward_distribution_statistics
+from wbfm.utils.visualization.hardcoded_paths import forward_distribution_statistics, reversal_distribution_statistics, \
+    reverse_distribution_statistics
 
 
 @dataclass
@@ -341,6 +342,8 @@ class WormFullVideoPosture:
         elif behavior_alias == 'rev_phase_counter':
             y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.REV, phase_not_real_time=True)
         elif behavior_alias == 'fwd_empirical_distribution':
+            y = self.calc_empirical_probability_to_end_fwd_state(fluorescence_fps=True)
+        elif behavior_alias == 'rev_empirical_distribution':
             y = self.calc_empirical_probability_to_end_fwd_state(fluorescence_fps=True)
         else:
             raise NotImplementedError(behavior_alias)
@@ -898,7 +901,7 @@ class WormFullVideoPosture:
 
         return self._shorten_to_trace_length(pd.Series(state_trace))
 
-    def calc_empirical_probability_to_end_fwd_state(self, fluorescence_fps=True):
+    def calc_empirical_probability_to_end_fwd_state(self, fluorescence_fps=True, state=BehaviorCodes.FWD):
         """
         Using an observed set of forward durations from worms with coverslip, estimates the probability to terminate
         a forward state, assuming one exponential is active at once.
@@ -913,13 +916,18 @@ class WormFullVideoPosture:
         """
         if not fluorescence_fps:
             raise NotImplementedError("Empirical distribution is only implemented for fluorescence fps")
+        if not state in (BehaviorCodes.FWD, BehaviorCodes.REV):
+            raise ValueError("Only fwd and rev are implemented")
         # Load the hardcoded empirical distribution
-        forward_duration_dict = forward_distribution_statistics()
-        y_dat = forward_duration_dict['y_dat']
+        if state == BehaviorCodes.FWD:
+            duration_dict = forward_distribution_statistics()
+        else:
+            duration_dict = reverse_distribution_statistics()
+        y_dat = duration_dict['y_dat']
 
         # Load this dataset
-        binary_fwd = self.beh_annotation(fluorescence_fps=True) == BehaviorCodes.FWD
-        all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
+        binary_vec = self.beh_annotation(fluorescence_fps=True) == state
+        all_starts, all_ends = get_contiguous_blocks_from_column(binary_vec, already_boolean=True)
 
         # Turn into time series
         num_pts = len(self.subsample_indices)

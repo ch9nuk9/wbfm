@@ -110,3 +110,9 @@ def forward_distribution_statistics():
     fname = "/scratch/neurobiology/zimmer/wbfm/DistributionsOfBehavior/forward_duration.pickle"
     forward_duration_dict = pickle_load_binary(fname)
     return forward_duration_dict
+
+
+def reverse_distribution_statistics():
+    fname = "/scratch/neurobiology/zimmer/wbfm/DistributionsOfBehavior/reversal_duration.pickle"
+    duration_dict = pickle_load_binary(fname)
+    return duration_dict
