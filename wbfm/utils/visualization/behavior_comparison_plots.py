@@ -615,8 +615,13 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         """
         X_train = self.all_dfs[df_name]
-        if y_train is None:
-            y_train = self.project_data.worm_posture_class.worm_speed(fluorescence_fps=True, signed=True)[:X_train.shape[0]]
+        if not isinstance(y_train, pd.Series):
+            if isinstance(y_train, str):
+                trace_len = X_train.shape[0]
+                y_train, y_train_name = self.unpack_behavioral_time_series_from_name(y_train, trace_len)
+                y_name = y_train_name
+            else:
+                raise NotImplementedError
         cv_model = self._plot_linear_regression_coefficients(X_train, y_train, df_name, y_name=y_name)[0]
         model = cv_model['estimator'][0]  # Just predict using a single model?
         y_pred = model.predict(X_train)
@@ -763,11 +768,12 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         plt.subplots_adjust(left=0.3)
         plt.grid(axis='y', which='both')
 
-        fname = f"lasso_coefficients_{df_name}_{y_name}.png"
-        self.project_data.save_fig_in_project(fname)
+        if self.project_data is not None:
+            fname = f"lasso_coefficients_{df_name}_{y_name}.png"
+            self.project_data.save_fig_in_project(fname)
 
         # gridplot of traces
-        if also_plot_traces:
+        if also_plot_traces and self.project_data is not None:
             direct_shading_dict = coefs.mean().to_dict()
             make_grid_plot_using_project(self.project_data, 'ratio', 'integration',
                                          neuron_names_to_plot=get_names_from_df(coefs),
