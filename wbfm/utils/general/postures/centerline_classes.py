@@ -342,9 +342,9 @@ class WormFullVideoPosture:
         elif behavior_alias == 'rev_phase_counter':
             y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.REV, phase_not_real_time=True)
         elif behavior_alias == 'fwd_empirical_distribution':
-            y = self.calc_empirical_probability_to_end_fwd_state(fluorescence_fps=True)
+            y = self.calc_empirical_probability_to_end_state(fluorescence_fps=True, state=BehaviorCodes.FWD)
         elif behavior_alias == 'rev_empirical_distribution':
-            y = self.calc_empirical_probability_to_end_fwd_state(fluorescence_fps=True)
+            y = self.calc_empirical_probability_to_end_state(fluorescence_fps=True, state=BehaviorCodes.REV)
         else:
             raise NotImplementedError(behavior_alias)
 
@@ -901,7 +901,7 @@ class WormFullVideoPosture:
 
         return self._shorten_to_trace_length(pd.Series(state_trace))
 
-    def calc_empirical_probability_to_end_fwd_state(self, fluorescence_fps=True, state=BehaviorCodes.FWD):
+    def calc_empirical_probability_to_end_state(self, fluorescence_fps=True, state=BehaviorCodes.FWD):
         """
         Using an observed set of forward durations from worms with coverslip, estimates the probability to terminate
         a forward state, assuming one exponential is active at once.
