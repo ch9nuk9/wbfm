@@ -866,6 +866,62 @@ class ClusteredTriggeredAverages:
 
         return clustergram
 
+    def plot_clustergram_matplotlib(self, output_folder=None, use_labels=False, no_dendrogram=True, ax=None):
+        """
+        Similar to plot_clustergram but uses matplotlib (not interactive) instead of plotly
+
+        Parameters
+        ----------
+        output_folder
+        use_labels
+
+        Returns
+        -------
+
+        """
+        df = self.df_corr
+
+        if ax is None:
+            if no_dendrogram:
+                fig, ax = plt.subplots(dpi=200)
+                ax_dend = None
+                ax.set_title("Dendrogram-matched correlations")
+            else:
+                fig, (ax_dend, ax) = plt.subplots(2, 1, dpi=200)
+                ax.set_box_aspect(1)
+                ax_dend.set_box_aspect(1)
+                ax_dend.set_title("Dendrogram-matched correlations")
+
+        R = self.recalculate_dendrogram(self.linkage_threshold, no_plot=no_dendrogram, ax=ax_dend)
+        dendrogram_idx = [int(i) for i in R['ivl']]
+        # Needs to be reversed if the orientation is left
+        # dendrogram_idx.reverse()
+
+        ax.imshow(df.iloc[dendrogram_idx, dendrogram_idx], cmap='BrBG')
+        if not use_labels:
+            ax.set_xticks([])
+            ax.set_yticks([])
+        # ax.colorbar()
+
+    def plot_dendrogram_matplotlib(self, linkage_threshold=None):
+        if linkage_threshold is None:
+            linkage_threshold = self.linkage_threshold
+
+        # link_color_func = good_dataset_clusterer.map_list_of_cluster_ids_to_colors(split_dict)
+        # R = hierarchy.dendrogram(Z, orientation='left', no_labels=True, link_color_func=link_color_func)
+
+        fig, ax = plt.subplots(dpi=200)
+        no_plot = False
+        self.recalculate_dendrogram(linkage_threshold, no_plot, ax)
+        plt.axis('off')
+        plt.xticks([])
+
+    def recalculate_dendrogram(self, linkage_threshold, no_plot=False, ax=None):
+        Z = self.Z
+        R = hierarchy.dendrogram(Z, orientation='top', no_labels=True, color_threshold=linkage_threshold,
+                                 above_threshold_color='black', ax=ax, no_plot=no_plot)
+        return R
+
     def plot_subcluster_clustergram(self, i_clust, linkage_threshold=None):
         if linkage_threshold is None:
             linkage_threshold = self.linkage_threshold
