@@ -37,7 +37,7 @@ from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 @dataclass
 class NeuronEncodingBase:
     """General class for behavioral encoding or correlations"""
-    project_path: Union[str, ProjectData]
+    project_path: Union[str, ProjectData] = None
 
     dataframes_to_load: List[str] = field(default_factory=lambda: ['ratio'])  # 'red', 'green', 'ratio_filt'])
 
@@ -46,6 +46,9 @@ class NeuronEncodingBase:
 
     use_residual_traces: bool = False
     _retained_neuron_names: list = None
+
+    # Alternate method that doesn't use the project data
+    dict_of_precalculated_dfs: Dict[str, pd.DataFrame] = None
 
     @property
     def retained_neuron_names(self):
@@ -57,9 +60,17 @@ class NeuronEncodingBase:
     def project_data(self) -> ProjectData:
         return ProjectData.load_final_project_data_from_config(self.project_path)
 
+    @property
+    def shortened_name(self):
+        if self.project_data is not None:
+            return self.project_data.shortened_name
+        else:
+            return 'custom'
+
     @cached_property
     def all_dfs(self) -> Dict[str, pd.DataFrame]:
-        # print("First time calculating traces, may take a while...")
+        if self.dict_of_precalculated_dfs is not None:
+            return self.dict_of_precalculated_dfs
 
         all_dfs = dict()
         for key in self.dataframes_to_load:
@@ -101,6 +112,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     cv_factory: callable = KFold
     estimator: callable = Ridge
 
+    # Optional alternate method for the target variable, instead of calculating it from a project
+    df_of_behaviors: pd.DataFrame = None
+
+    # Results of the fits
     _best_single_neuron: str = None
 
     _best_multi_neuron_model: callable = None
@@ -298,9 +313,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y = save_valid_ind_1d_or_2d(y.copy(), valid_ind)
 
         # Also build a binary class variable; possibly used for cross validation or as a null model
-        worm = self.project_data.worm_posture_class
-        y_binary = (worm.beh_annotation(fluorescence_fps=True) == binary_state).copy()
-        y_binary.index = y.index
+        if self.project_data is not None:
+            worm = self.project_data.worm_posture_class
+            y_binary = (worm.beh_annotation(fluorescence_fps=True) == binary_state).copy()
+            y_binary.index = y.index
 
         # Optionally subset the data to be only a specific state
         if only_model_single_state is not None:
@@ -326,10 +342,13 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         -------
 
         """
-        if y_train_name is None:
-            y_train_name = 'signed_stage_speed'
-        # Get 1d series from behavior
-        y = self.project_data.worm_posture_class.calc_behavior_from_alias(y_train_name)
+        if self.df_of_behaviors is not None and y_train_name in self.df_of_behaviors.columns:
+            y = self.df_of_behaviors[y_train_name].copy()
+        else:
+            if y_train_name is None:
+                y_train_name = 'signed_stage_speed'
+            # Get 1d series from behavior
+            y = self.project_data.worm_posture_class.calc_behavior_from_alias(y_train_name)
         y = y.iloc[:trace_len]
         y = fill_nan_in_dataframe(y)
         y.reset_index(drop=True, inplace=True)
@@ -486,7 +505,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         df_dict = {'multi_neuron': np.nanmean(multi_list),
                    'leifer_score': leifer_score,
-                   'dataset_name': self.project_data.shortened_name}
+                   'dataset_name': self.shortened_name}
         if single_list is not None:
             df_dict['single_neuron'] = np.nanmean(single_list)
         df = pd.DataFrame(df_dict, index=[0])
@@ -529,7 +548,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y = y.sort_index()
         y, _ = fill_missing_indices_with_nan(y, expected_max_t=self.project_data.num_frames)
         y = y.sort_index()
-        df_summary = pd.DataFrame({self.project_data.shortened_name: y})
+        df_summary = pd.DataFrame({self.shortened_name: y})
 
         return df_summary
 
@@ -629,7 +648,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             opt['color'] = df_name
         ax.plot(y_pred, label='prediction', **opt)
 
-        title_str = f"R2={score_mean:.2f}+-{score_std:.2f} ({df_name}; {self.project_data.shortened_name})"
+        title_str = f"R2={score_mean:.2f}+-{score_std:.2f} ({df_name}; {self.shortened_name})"
         if best_neuron != "":
             title_str = f"{best_neuron}: {title_str}"
         ax.set_title(title_str)
@@ -637,7 +656,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         plt.xlabel("Time (volumes)")
         ax.plot(y_train, color='black', label='Target', alpha=0.8)
         plt.legend()
-        self.project_data.shade_axis_using_behavior()
+        if self.project_data is not None:
+            self.project_data.shade_axis_using_behavior()
 
         if to_save:
             fname = f"regression_fit_{df_name}_{y_name}.png"
@@ -684,7 +704,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             vis_cfg = self.project_data.project_config.get_visualization_config(make_subfolder=True)
             fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         else:
-            fname = os.path.join(saving_folder, f"{self.project_data.shortened_name}-{fname}")
+            fname = os.path.join(saving_folder, f"{self.shortened_name}-{fname}")
         plt.savefig(fname)
 
     def _plot_linear_regression_coefficients(self, X, y, df_name, model=None,
@@ -721,7 +741,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         sns.stripplot(data=coefs, orient="h", color="k", alpha=0.5, linewidth=1)
         sns.boxplot(data=coefs, orient="h", color="cyan", saturation=0.5, whis=100)
         plt.axvline(x=0, color=".5")
-        title_str = f"Coefficient variability for {self.project_data.shortened_name}"
+        title_str = f"Coefficient variability for {self.shortened_name}"
         plt.title(title_str)
         plt.subplots_adjust(left=0.3)
         plt.grid(axis='y', which='both')
@@ -854,7 +874,7 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         df_all.columns = ['median_brightness', 'var_brightness', 'body_segment_argmax', 'corr_max']
 
         # Add column with name of dataset
-        df_all['dataset_name'] = self.project_data.shortened_name
+        df_all['dataset_name'] = self.shortened_name
         df_all.dataset_name = df_all.dataset_name.astype('category')
 
         return df_all
