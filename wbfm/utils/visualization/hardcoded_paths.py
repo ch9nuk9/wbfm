@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, load_all_projects_in_folder
 from wbfm.utils.projects.utils_filenames import pickle_load_binary
 
 
@@ -36,11 +35,13 @@ def load_paper_datasets(genotype='gcamp', require_behavior=True) -> dict:
     Parameters
     ----------
     genotype
+    require_behavior
 
     Returns
     -------
 
     """
+    from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, load_all_projects_in_folder
 
     # Build a dictionary of all
     if genotype == 'gcamp':
