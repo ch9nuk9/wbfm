@@ -50,6 +50,9 @@ class NeuronEncodingBase:
     # Alternate method that doesn't use the project data
     dict_of_precalculated_dfs: Dict[str, pd.DataFrame] = None
 
+    # If subsets of the data are desired
+    rectification_indices: List[bool] = None
+
     # For visualization
     use_plotly: bool = False
 
@@ -319,6 +322,14 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         """
         trace_len = X.shape[0]
         y, y_train_name = self.unpack_behavioral_time_series_from_name(y_train_name, trace_len)
+
+        # If used, subset the data using a rectification variable
+        # Note that this is similar to only_model_single_state, but can be used if there is no project saved
+        #  (or if this class refers to multiple projects)
+        if self.rectification_indices is not None:
+            assert only_model_single_state is None, "Can't use both rectification and only_model_single_state"
+            X = X.loc[self.rectification_indices, :]
+            y = y.loc[self.rectification_indices]
 
         # Remove nan points, if any (the regression can't handle them)
         valid_ind = np.where(~np.isnan(y))[0]

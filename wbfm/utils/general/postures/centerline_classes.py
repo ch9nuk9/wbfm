@@ -303,6 +303,10 @@ class WormFullVideoPosture:
 
         if behavior_alias == 'signed_stage_speed':
             y = self.worm_speed(fluorescence_fps=True, signed=True)
+        elif behavior_alias == 'rev':
+            y = self.beh_annotation(fluorescence_fps=True, reset_index=True) == BehaviorCodes.REV
+        elif behavior_alias == 'fwd':
+            y = self.beh_annotation(fluorescence_fps=True, reset_index=True) == BehaviorCodes.FWD
         elif behavior_alias == 'abs_stage_speed':
             y = self.worm_speed(fluorescence_fps=True)
         elif behavior_alias == 'middle_body_speed':
