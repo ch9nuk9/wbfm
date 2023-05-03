@@ -167,6 +167,8 @@ def build_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData
     """
     Builds a time series of behavior from multiple projects
 
+    See calc_behavior_from_alias for valid values of behavior_name
+
     Parameters
     ----------
     all_projects
@@ -192,7 +194,7 @@ def build_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData
 
 def build_time_series_from_multiple_project_clusters(all_projects: Dict[str, ProjectData],
                                                      cluster_options: dict = None,
-                                                     z_score = False):
+                                                     z_score=False):
     """
     Similar to build_time_series_from_multiple_projects, using a clustering object to cluster traces across datasets.
     This object should be built from multiple datasets, and have names that can be split using split_flattened_index
@@ -215,10 +217,28 @@ def build_time_series_from_multiple_project_clusters(all_projects: Dict[str, Pro
         clustered_triggered_averages_from_list_of_projects(all_projects, **cluster_options)
     all_triggered_average_classes, df_triggered_good, dict_of_triggered_traces = clustering_intermediates
 
+    df_all_clusters, df_imputed = build_dataframe_of_clusters(all_triggered_average_classes, multi_dataset_clusterer,
+                                                              z_score)
+
+    return df_imputed, df_all_clusters, multi_dataset_clusterer, all_triggered_average_classes
+
+
+def build_dataframe_of_clusters(all_triggered_average_classes, multi_dataset_clusterer, z_score: bool = False):
+    """
+
+    Parameters
+    ----------
+    all_triggered_average_classes
+    multi_dataset_clusterer
+    z_score
+
+    Returns
+    -------
+
+    """
     # Loop through clusters, and do two things:
     # 1. Get the average of all neurons per dataset
     # 2. Save in a long dataframe
-
     # Get a dict from each dataset to the neurons within each cluster in that data
     clust_and_dataset_to_neurons = {}
     for i_clust, combined_names in tqdm(multi_dataset_clusterer.per_cluster_names.items()):
@@ -228,7 +248,6 @@ def build_time_series_from_multiple_project_clusters(all_projects: Dict[str, Pro
             dataset_name, neuron_name = split_flattened_index([name])[name]
             dataset_to_neurons[dataset_name].append(neuron_name)
         clust_and_dataset_to_neurons[i_clust] = dataset_to_neurons
-
     list_of_dfs = []
     for i_clust, dataset_to_neurons in tqdm(clust_and_dataset_to_neurons.items()):
         one_clust_dict = defaultdict(list)
@@ -249,17 +268,14 @@ def build_time_series_from_multiple_project_clusters(all_projects: Dict[str, Pro
     # Make a temp index to keep things in order within each dataframe
     for df in list_of_dfs:
         df['local_time_index'] = df.groupby('dataset_name').cumcount()
-
     # Merge entire list of dataframes on the dataset name and the new index
-    df_all_clusters = reduce(lambda left, right: pd.merge(left, right, on=['dataset_name', 'local_time_index'], how='outer'),
-                       list_of_dfs)
+    df_all_clusters = reduce(
+        lambda left, right: pd.merge(left, right, on=['dataset_name', 'local_time_index'], how='outer'),
+        list_of_dfs)
     df_all_clusters = df_all_clusters.sort_values(['dataset_name', 'local_time_index']).reset_index(drop=True)
-
     # Remove missing values to make valid for sklearn
     df_imputed = df_all_clusters.dropna(axis=1, thresh=df_all_clusters.shape[0] * 0.9).copy()
     df_imputed.drop(columns=['dataset_name', 'temp_id'], inplace=True)
     df_imputed = remove_outliers_using_std(df_imputed, std_factor=4)
-
     df_imputed = impute_missing_values_in_dataframe(df_imputed)
-
-    return df_imputed, df_all_clusters, multi_dataset_clusterer, all_triggered_average_classes
+    return df_all_clusters, df_imputed
