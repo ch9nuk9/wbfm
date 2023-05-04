@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 from dash_bio.component_factory._clustergram import _Clustergram
 from plotly.figure_factory._dendrogram import _Dendrogram
 import scipy.cluster.hierarchy as sch
@@ -232,3 +233,39 @@ class CustomClustergram(_Clustergram):
         clustered_data = self._data[rl_indices].T[cl_indices].T
 
         return trace_list, clustered_data, clustered_row_ids, clustered_column_ids
+
+
+def get_node_from_tree(tree: scipy.cluster.hierarchy.ClusterNode, id: int, node_history=None):
+    """
+    Traverses scipy dendrogram tree to get the node with the given id and the full history
+
+    Returns node_history in order from root to leaf, not including the node itself
+        Note that the last element should be the same for all function calls, because everything is in one cluster
+
+    Parameters
+    ----------
+    tree
+    id
+
+    Returns
+    -------
+
+    """
+
+    if node_history is None:
+        node_history = []
+    if tree.id == id:
+        return tree, node_history
+    else:
+        if tree.is_leaf():
+            return None, node_history
+        else:
+            left_result, node_history = get_node_from_tree(tree.left, id, node_history)
+            if left_result is not None:
+                node_history.append(tree)
+                return left_result, node_history
+            right_result, node_history = get_node_from_tree(tree.right, id, node_history)
+            if right_result is not None:
+                node_history.append(tree)
+                return right_result, node_history
+    return None, node_history
