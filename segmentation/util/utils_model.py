@@ -59,10 +59,10 @@ def get_stardist_model(model_name: str = 'students_and_lukas_3d_zarr',
         model = StarDist2D(None, name='stardistNiklas', basedir=folder)
     elif model_name == 'charlie':
         raise NotImplementedError
-        model = StarDist2D(None, name='stardistCharlie', basedir=folder)
+        # model = StarDist2D(None, name='stardistCharlie', basedir=folder)
     elif model_name == 'charlie_3d':
         raise NotImplementedError
-        model = StarDist3D(None, name='Charlie100-3d', basedir=folder)
+        # model = StarDist3D(None, name='Charlie100-3d', basedir=folder)
     elif model_name == 'lukas_3d_zarr':
         model = StarDist3D(None, name='Lukas3d_zarr', basedir=folder)
     elif model_name == 'students_and_lukas_3d_zarr':
@@ -73,7 +73,7 @@ def get_stardist_model(model_name: str = 'students_and_lukas_3d_zarr',
         model = StarDist3D(None, name='Lukas3d_zarr_local', basedir=folder_local)
     elif model_name == 'charlie_3d_party':
         raise NotImplementedError
-        model = StarDist3D(None, name='Charlie100-3d-party', basedir=folder)
+        # model = StarDist3D(None, name='Charlie100-3d-party', basedir=folder)
     else:
         raise NameError(f'No StarDist model found using {model_name}! Current models are {sd_options}')
 
