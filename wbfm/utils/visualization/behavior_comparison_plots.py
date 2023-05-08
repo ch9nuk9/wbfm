@@ -653,7 +653,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             all_pfi.append(pfi['importances'])
 
         all_pfi = np.hstack(all_pfi)
-        fig = px.box(all_pfi.T, title=y_train)
+        df_pfi = pd.DataFrame(all_pfi.T, columns=X.columns)
+        fig = px.box(df_pfi, title=y_train)
         fig.show()
 
     def _plot_predictions(self, df_name, y_pred, y_train, y_name="", score_list: list = None, best_neuron="",
