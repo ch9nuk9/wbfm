@@ -13,6 +13,7 @@ from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
 from sklearn.feature_selection import SequentialFeatureSelector
+from sklearn.inspection import permutation_importance
 from sklearn.linear_model import LassoCV, Ridge, ElasticNetCV
 from sklearn.metrics import median_absolute_error
 from sklearn.model_selection import cross_validate, RepeatedKFold, cross_val_score, GridSearchCV, \
@@ -627,6 +628,33 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         coefs = boxplot_from_cross_validation_dict(self._multi_neuron_cv_results,
                                                    feature_names=feature_names,
                                                    name=self.shortened_name)
+
+    def plot_permutation_feature_importance(self, df_name, y_train):
+        """
+        Does pfi on the saved _multi_neuron_cv_results, which assumes that the model has just been trained by the same
+        arguments as passed to this function
+
+        Parameters
+        ----------
+        df_name
+        y_train
+
+        Returns
+        -------
+
+        """
+        X = self.all_dfs[df_name]
+        X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train)
+
+        all_pfi = []
+        for idx,estimator in tqdm(enumerate(self._multi_neuron_cv_results['estimator']), leave=False):
+            # Use train and test data again
+            pfi = permutation_importance(estimator.best_estimator_, X, y)
+            all_pfi.append(pfi['importances'])
+
+        all_pfi = np.hstack(all_pfi)
+        fig = px.box(all_pfi.T, title=y_train)
+        fig.show()
 
     def _plot_predictions(self, df_name, y_pred, y_train, y_name="", score_list: list = None, best_neuron="",
                           to_save=False, saving_folder=None):
