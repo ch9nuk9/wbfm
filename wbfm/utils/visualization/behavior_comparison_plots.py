@@ -130,6 +130,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
     _best_multi_neuron_model: callable = None
     _multi_neuron_cv_results: dict = None
+    _multi_neuron_model_args: dict = None
+
     _best_single_neuron_model: callable = None
     _best_leifer_model: callable = None
 
@@ -194,6 +196,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         self._best_multi_neuron_model = model
         self._multi_neuron_cv_results = cv_results
+        self._multi_neuron_model_args = dict(df_name=df_name, y_train=y_train_name,
+                                             only_model_single_state=only_model_single_state,
+                                             correlation_not_r2=correlation_not_r2, use_null_model=use_null_model)
         if DEBUG:
             # plt.plot(X_test, label='X')
             plt.plot(y, label='y')
@@ -619,17 +624,38 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         df = pd.DataFrame(df_dict)
         return df
 
-    def plot_multineuron_weights(self, df_name=None, **kwargs):
-        if df_name is not None:
-            feature_names = list(self.all_dfs[df_name].columns)
-        else:
-            feature_names = None
-        # Uses precalculated results of cross validation
-        coefs = boxplot_from_cross_validation_dict(self._multi_neuron_cv_results,
-                                                   feature_names=feature_names,
-                                                   name=self.shortened_name)
+    def plot_multineuron_weights(self, saving_folder=None):
+        """
+        Uses saved model, and plots the weights
 
-    def plot_permutation_feature_importance(self, df_name, y_train):
+        Parameters
+        ----------
+        df_name
+        y_name
+        saving_folder
+        kwargs
+
+        Returns
+        -------
+
+        """
+        model_args = self._multi_neuron_model_args
+        if model_args is None:
+            raise ValueError("No model has been trained yet")
+        df_name = model_args['df_name']
+        y_name = model_args['y_name']
+        feature_names = list(self.all_dfs[df_name].columns)
+
+        # Uses precalculated results of cross validation
+        coefs, fig = boxplot_from_cross_validation_dict(self._multi_neuron_cv_results,
+                                                        feature_names=feature_names,
+                                                        name=self.shortened_name)
+
+        if saving_folder is not None:
+            fname = f"regression_weights_{df_name}_{y_name}.png"
+            self._savefig(fig, fname, saving_folder)
+
+    def plot_permutation_feature_importance(self, df_name, y_train, saving_folder=None, **kwargs):
         """
         Does pfi on the saved _multi_neuron_cv_results, which assumes that the model has just been trained by the same
         arguments as passed to this function
@@ -647,7 +673,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train)
 
         all_pfi = []
-        for idx,estimator in tqdm(enumerate(self._multi_neuron_cv_results['estimator']), leave=False):
+        for idx, estimator in tqdm(enumerate(self._multi_neuron_cv_results['estimator']), leave=False):
             # Use train and test data again
             pfi = permutation_importance(estimator.best_estimator_, X, y)
             all_pfi.append(pfi['importances'])
@@ -656,6 +682,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         df_pfi = pd.DataFrame(all_pfi.T, columns=X.columns)
         fig = px.box(df_pfi, title=y_train)
         fig.show()
+
+        if saving_folder is not None:
+            fname = f"pfi_{df_name}_{y_train}.png"
+            self._savefig(fig, fname, saving_folder)
 
     def _plot_predictions(self, df_name, y_pred, y_train, y_name="", score_list: list = None, best_neuron="",
                           to_save=False, saving_folder=None):
@@ -710,7 +740,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         if to_save:
             fname = f"regression_fit_{df_name}_{y_name}.png"
-            self._savefig(fname, saving_folder)
+            self._savefig(fig, fname, saving_folder)
+
+        return fig
 
     def plot_single_neuron_scatter(self, df_name, neuron_name, x_name,
                                    do_rectified=True):
@@ -748,16 +780,18 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         df = pd.DataFrame({x_name: x, neuron_name: y, 'reversal': binary_state})
         return df, x_train_name
 
-    def _savefig(self, fname, saving_folder):
+    def _savefig(self, fig, fname, saving_folder):
+        fname = os.path.join(saving_folder, f"{self.shortened_name}-{fname}")
+        print(f"Saving figure to {fname}")
+
         if self.use_plotly:
-            raise NotImplementedError("Saving plotly figures is not yet implemented")
+            fig.write_image(fname)
+            # raise NotImplementedError("Saving plotly figures is not yet implemented")
         else:
             if saving_folder is None:
                 vis_cfg = self.project_data.project_config.get_visualization_config(make_subfolder=True)
                 fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-            else:
-                fname = os.path.join(saving_folder, f"{self.shortened_name}-{fname}")
-            plt.savefig(fname)
+            fig.savefig(fname)
 
     def _plot_linear_regression_coefficients(self, X, y, df_name, model=None,
                                              only_plot_nonzero=True, also_plot_traces=True, y_name="speed"):
@@ -819,7 +853,7 @@ def boxplot_from_cross_validation_dict(cv_model, feature_names=None, only_plot_n
     if only_plot_nonzero:
         coefs = coefs.loc[:, coefs.mean().abs() > tol]
     # Boxplot of variability
-    plt.figure(dpi=100)
+    fig = plt.figure(dpi=100)
     sns.stripplot(data=coefs, orient="h", color="k", alpha=0.5, linewidth=1)
     sns.boxplot(data=coefs, orient="h", color="cyan", saturation=0.5, whis=100)
     plt.axvline(x=0, color=".5")
@@ -827,7 +861,7 @@ def boxplot_from_cross_validation_dict(cv_model, feature_names=None, only_plot_n
     plt.title(title_str)
     plt.subplots_adjust(left=0.3)
     plt.grid(axis='y', which='both')
-    return coefs
+    return coefs, fig
 
 
 @dataclass
