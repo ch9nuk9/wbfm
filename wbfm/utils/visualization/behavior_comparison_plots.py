@@ -4,6 +4,8 @@ import warnings
 from dataclasses import dataclass, field
 from functools import reduce
 from typing import List, Dict, Tuple, Union, Optional
+
+import matplotlib
 import plotly.express as px
 import seaborn as sns
 import numpy as np
@@ -643,7 +645,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         if model_args is None:
             raise ValueError("No model has been trained yet")
         df_name = model_args['df_name']
-        y_name = model_args['y_name']
+        y_train = model_args['y_train']
         feature_names = list(self.all_dfs[df_name].columns)
 
         # Uses precalculated results of cross validation
@@ -652,7 +654,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                                                         name=self.shortened_name)
 
         if saving_folder is not None:
-            fname = f"regression_weights_{df_name}_{y_name}.png"
+            fname = f"regression_weights_{df_name}_{y_train}.png"
             self._savefig(fig, fname, saving_folder)
 
     def plot_permutation_feature_importance(self, df_name, y_train, saving_folder=None, **kwargs):
@@ -680,7 +682,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         all_pfi = np.hstack(all_pfi)
         df_pfi = pd.DataFrame(all_pfi.T, columns=X.columns)
-        fig = px.box(df_pfi, title=y_train)
+        fig = px.box(df_pfi, title=f"Feature importance for predicting: {y_train}")
         fig.show()
 
         if saving_folder is not None:
@@ -688,7 +690,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             self._savefig(fig, fname, saving_folder)
 
     def _plot_predictions(self, df_name, y_pred, y_train, y_name="", score_list: list = None, best_neuron="",
-                          to_save=False, saving_folder=None):
+                          saving_folder=None):
         """
         Plots predictions and training data
 
@@ -701,7 +703,6 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         y_train
         y_name
         score_list
-        to_save
         saving_folder
 
         Returns
@@ -738,7 +739,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             fig = px.line(df, title=title_str, labels={'index': 'Time (volumes)', 'value': f"{y_name}"})
             fig.show()
 
-        if to_save:
+        if saving_folder is not None:
             fname = f"regression_fit_{df_name}_{y_name}.png"
             self._savefig(fig, fname, saving_folder)
 
@@ -784,14 +785,14 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         fname = os.path.join(saving_folder, f"{self.shortened_name}-{fname}")
         print(f"Saving figure to {fname}")
 
-        if self.use_plotly:
-            fig.write_image(fname)
-            # raise NotImplementedError("Saving plotly figures is not yet implemented")
-        else:
+        if type(fig) == matplotlib.figure.Figure:
             if saving_folder is None:
                 vis_cfg = self.project_data.project_config.get_visualization_config(make_subfolder=True)
                 fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
             fig.savefig(fname)
+        else:
+            # Assume plotly
+            fig.write_image(fname)
 
     def _plot_linear_regression_coefficients(self, X, y, df_name, model=None,
                                              only_plot_nonzero=True, also_plot_traces=True, y_name="speed"):
