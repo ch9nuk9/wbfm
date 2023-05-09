@@ -1311,11 +1311,13 @@ class ProjectData:
         neuron_dict = dict(zip(neuron_names, zip(neuron_ids, neuron_certainty)))
         return neuron_dict
 
-    def neuron_name_to_manual_id_mapping(self, confidence_threshold=2):
+    def neuron_name_to_manual_id_mapping(self, confidence_threshold=2, remove_unnamed_neurons=False):
         name_ids = self.dict_numbers_to_neuron_names.copy()
         if len(name_ids) == 0:
             return {}
         name_mapping = {k: (v[0] if v[1] >= confidence_threshold else k) for k, v in name_ids.items()}
+        if remove_unnamed_neurons:
+            name_mapping = {k: v for k, v in name_mapping.items() if k != v}
         return name_mapping
 
     def estimate_tracking_failures_from_project(self, pad_nan_points=3, contamination='auto', DEBUG=False):
