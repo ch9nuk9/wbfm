@@ -325,9 +325,11 @@ class WormFullVideoPosture:
         elif behavior_alias == 'pirouette':
             y = self.calc_pseudo_pirouette_state()
         elif behavior_alias == 'plateau':
-            y = self.calc_plateau_state()
-        elif behavior_alias == 'semi_plateau':
-            y = self.calc_semi_plateau_state()
+            raise NotImplementedError
+            # TODO: build a plateau using PC1 as a reversal trace
+            # y = self.calc_plateau_state()
+        elif behavior_alias == 'speed_plateau':
+            y = self.calc_speed_plateau_state()
         elif behavior_alias == 'signed_stage_speed_strongly_smoothed':
             y = self.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing=True)
         elif behavior_alias == 'signed_speed_angular':
@@ -839,18 +841,23 @@ class WormFullVideoPosture:
         plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
         return pd.Series(plateau_state)
 
-    def calc_semi_plateau_state(self, min_length=10, DEBUG=False):
+    def calc_speed_plateau_state(self, min_length=10, end_padding=20, return_last_breakpoint=False, DEBUG=False):
         """
         Calculates a state that is high when the worm speed is in a "semi-plateau", and low otherwise
         A semi-plateau is defined in two steps:
             1. Find all reversals that are longer than min_length
             2. Fit a piecewise regression (3 breaks), and keep all points between the first and last breakpoints
 
+        Alternatively, if return_last_breakpoint is true, return the last breakpoint as the onset and the index of the
+        reversal end + end_padding as the end
+
         See fit_3_break_piecewise_regression for more details
 
         Parameters
         ----------
         min_length
+        end_padding
+        DEBUG
 
         Returns
         -------
@@ -865,7 +872,11 @@ class WormFullVideoPosture:
         # Also get the speed
         speed = self.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True)
         # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
-        new_ends_with_nan, new_starts_with_nan = fit_3_break_piecewise_regression(speed, all_ends, all_starts, min_length, DEBUG)
+        new_starts_with_nan, new_ends_with_nan, new_times_series_starts, new_times_series_ends = \
+            fit_3_break_piecewise_regression(speed, all_ends, all_starts, min_length, end_padding, DEBUG)
+        if return_last_breakpoint:
+            new_starts_with_nan = new_ends_with_nan
+            new_ends_with_nan = new_times_series_ends  # Not a fit point, but the end of the reversal with padding
         # Remove values that were nan in either the start or end
         new_starts = [s for s, e in zip(new_starts_with_nan, new_ends_with_nan) if not np.isnan(s) and not np.isnan(e)]
         new_ends = [e for s, e in zip(new_starts_with_nan, new_ends_with_nan) if not np.isnan(s) and not np.isnan(e)]
@@ -1478,11 +1489,15 @@ def fit_3_break_piecewise_regression(dat, all_ends, all_starts, min_length=10,
 
     new_starts = []
     new_ends = []
+    new_times_series_starts = []
+    new_times_series_ends = []
     for i_event, (start, end) in enumerate(zip(all_starts, all_ends)):
         if end - start < min_length:
             continue
         time_series_start = start - start_padding
         time_series_end = end + end_padding
+        new_times_series_starts.append(time_series_start)
+        new_times_series_ends.append(time_series_end)
         y = dat.loc[time_series_start:time_series_end].to_numpy()
         x = np.arange(len(y))
 
@@ -1537,4 +1552,4 @@ def fit_3_break_piecewise_regression(dat, all_ends, all_starts, min_length=10,
     if DEBUG:
         print(f"Original starts: {all_starts}")
         print(f"New starts: {new_starts}")
-    return new_ends, new_starts
+    return new_starts, new_ends, new_times_series_starts, new_times_series_ends
