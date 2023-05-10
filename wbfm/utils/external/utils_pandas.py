@@ -626,12 +626,19 @@ def split_flattened_index(flattened_index: list) -> dict:
     unflattened_dict = {}
     for key in flattened_index:
         if '_neuron_' in key:
+            split_str = 'neuron'
+        elif '_segment_' in key:
+            split_str = 'segment'
+        else:
+            split_str = None
+
+        if split_str is not None:
             # Split a string like 'ZIM2165_Gcamp7b_worm3-2022-12-05_neuron_054' into
             # ['ZIM2165_Gcamp7b_worm3-2022-12-05', 'neuron_054']
-            split_key = key.split('_neuron_')
+            split_key = key.split(f'_{split_str}_')
             if len(split_key) == 2:
                 neuron_id = split_key[1]
-                neuron_name = f"neuron_{neuron_id}"
+                neuron_name = f"{split_str}_{neuron_id}"
                 dataset_name = split_key[0]
                 unflattened_dict[key] = (dataset_name, neuron_name)
             else:
