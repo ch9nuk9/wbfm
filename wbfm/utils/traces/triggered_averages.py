@@ -761,6 +761,9 @@ class ClusteredTriggeredAverages:
 
     cluster_func: Callable = field(default=hierarchy.fcluster)
 
+    # For plotting individual traces
+    _df_traces: pd.DataFrame = None  # If triggered_averages_class is not None, that will be used
+
     verbose: int = 0
 
     def __post_init__(self):
@@ -821,7 +824,12 @@ class ClusteredTriggeredAverages:
 
     @property
     def df_traces(self):
-        return self.triggered_averages_class.df_traces
+        if self._df_traces is not None:
+            return self._df_traces
+        elif self.triggered_averages_class is not None:
+            return self.triggered_averages_class.df_traces
+        else:
+            raise ValueError("df_traces is not saved; must provide either _df_traces or triggered_averages_class")
 
     @property
     def names(self):
@@ -1810,6 +1818,11 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt
         {name: c.df_of_all_triggered_averages() for name, c in all_triggered_average_classes.items()}, axis=1)
     df_triggered_good = flatten_multiindex_columns(df_triggered_good)
 
+    # Combine all full traces dataframes, renaming to contain dataset information
+    df_traces_good = pd.concat(
+        {name: c.df_traces for name, c in all_triggered_average_classes.items()}, axis=1)
+    df_traces_good = flatten_multiindex_columns(df_traces_good)
+
     # Build a map back to the original data
     dict_of_triggered_traces = {}
     for name, c in all_triggered_average_classes.items():
@@ -1821,6 +1834,7 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt
     default_cluster_opt = dict(linkage_threshold=4, verbose=1)
     default_cluster_opt.update(cluster_opt)
     good_dataset_clusterer = ClusteredTriggeredAverages(df_triggered_good, **default_cluster_opt,
-                                                        dict_of_triggered_traces=dict_of_triggered_traces)
+                                                        dict_of_triggered_traces=dict_of_triggered_traces,
+                                                        _df_traces=df_traces_good)
 
     return good_dataset_clusterer, (all_triggered_average_classes, df_triggered_good, dict_of_triggered_traces)
