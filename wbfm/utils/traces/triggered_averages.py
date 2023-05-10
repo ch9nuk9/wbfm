@@ -25,6 +25,7 @@ from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, 
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
     calc_surpyval_durations_and_censoring
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
+from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average, fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
@@ -762,7 +763,8 @@ class ClusteredTriggeredAverages:
     cluster_func: Callable = field(default=hierarchy.fcluster)
 
     # For plotting individual traces
-    _df_traces: pd.DataFrame = None  # If triggered_averages_class is not None, that will be used
+    _df_traces: pd.DataFrame = None
+    _df_behavior: pd.DataFrame = None
 
     verbose: int = 0
 
@@ -830,6 +832,15 @@ class ClusteredTriggeredAverages:
             return self.triggered_averages_class.df_traces
         else:
             raise ValueError("df_traces is not saved; must provide either _df_traces or triggered_averages_class")
+
+    @property
+    def df_behavior(self):
+        if self._df_behavior is not None:
+            return self._df_behavior
+        elif self.triggered_averages_class is not None:
+            return self.triggered_averages_class.ind_class.behavioral_annotation
+        else:
+            raise ValueError("df_behavior is not saved; must provide either _df_behavior or triggered_averages_class")
 
     @property
     def names(self):
@@ -1030,12 +1041,16 @@ class ClusteredTriggeredAverages:
                 plt.savefig(os.path.join(output_folder, f"cluster_{i_clust}.png"))
             plt.show()
 
-    def plot_all_clusters_grid_plot(self, i_clust, num_columns=1, **kwargs):
+    def plot_all_clusters_grid_plot(self, i_clust, num_columns=1, add_trigger_shading=True, **kwargs):
         """Like plot_all_clusters, but plots the full times series instead of the triggered average"""
         if self.df_traces is None:
             raise ValueError("df_traces is None, cannot plot")
         name_list = list(self.per_cluster_names[i_clust])
         # Use the grid plot function to plot
+        if add_trigger_shading:
+            bh = self.df_behavior
+            shade_plot_func = lambda ax: shade_using_behavior(bh, ax=ax)
+            raise NotImplementedError
         from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
         fig, axes = make_grid_plot_from_dataframe(self.df_traces, name_list, num_columns=num_columns, **kwargs)
 
@@ -1823,6 +1838,11 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt
         {name: c.df_traces for name, c in all_triggered_average_classes.items()}, axis=1)
     df_traces_good = flatten_multiindex_columns(df_traces_good)
 
+    # Combine all behavior time series, renaming to contain dataset information
+    df_behavior = pd.concat(
+        {name: c.ind_class.behavioral_annotation for name, c in all_triggered_average_classes.items()}, axis=1)
+    # This one doesn't need to be flattened, because each dataset only has one column
+
     # Build a map back to the original data
     dict_of_triggered_traces = {}
     for name, c in all_triggered_average_classes.items():
@@ -1835,6 +1855,7 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt
     default_cluster_opt.update(cluster_opt)
     good_dataset_clusterer = ClusteredTriggeredAverages(df_triggered_good, **default_cluster_opt,
                                                         dict_of_triggered_traces=dict_of_triggered_traces,
-                                                        _df_traces=df_traces_good)
+                                                        _df_traces=df_traces_good,
+                                                        _df_behavior=df_behavior)
 
     return good_dataset_clusterer, (all_triggered_average_classes, df_triggered_good, dict_of_triggered_traces)
