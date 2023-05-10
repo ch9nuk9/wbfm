@@ -1041,7 +1041,7 @@ class ClusteredTriggeredAverages:
                 plt.savefig(os.path.join(output_folder, f"cluster_{i_clust}.png"))
             plt.show()
 
-    def plot_all_clusters_grid_plot(self, i_clust, num_columns=1, add_trigger_shading=True, **kwargs):
+    def plot_all_clusters_grid_plot(self, i_clust, num_columns=1, **kwargs):
         """Like plot_all_clusters, but plots the full times series instead of the triggered average"""
         if self.df_traces is None:
             raise ValueError("df_traces is None, cannot plot")
@@ -1053,6 +1053,30 @@ class ClusteredTriggeredAverages:
             raise NotImplementedError
         from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
         fig, axes = make_grid_plot_from_dataframe(self.df_traces, name_list, num_columns=num_columns, **kwargs)
+
+    def plot_all_clusters_grid_plot_multi_project(self, i_clust, all_projects,
+                                                  min_neurons_per_project=1, num_columns=1, **kwargs):
+        """
+        Like plot_all_clusters_grid_plot, but assumes that traces come from different projects, which need different shading
+        """
+        if self.df_traces is None:
+            raise ValueError("df_traces is None, cannot plot")
+        name_list = list(self.per_cluster_names[i_clust])
+        from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
+        # Use the grid plot function to plot
+        for project_name, project in all_projects.items():
+            bh = self.df_behavior[project_name]
+            shade_plot_func = lambda ax: shade_using_behavior(bh, ax=ax)
+
+            # Only get the names that are in this project
+            this_name_list = [name for name in name_list if project_name in name]
+            if len(this_name_list) < min_neurons_per_project:
+                continue
+
+            fig, axes = make_grid_plot_from_dataframe(self.df_traces, this_name_list,
+                                                      num_columns=num_columns, shade_plot_func=shade_plot_func, **kwargs)
+
+
 
     def plot_two_clusters_simple(self, i_clust0, i_clust1, min_lines=2, ind_preceding=20, z_score=False,
                                  show_individual_lines=False):
