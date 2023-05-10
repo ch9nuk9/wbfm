@@ -625,8 +625,14 @@ class WormFullVideoPosture:
         Default uses the behavior annotation, binarized via comparing to state
             See BehaviorCodes for state indices
         Alternatively, can pass a behavior_name, which will be used to look up the behavior in this class
+            Note: this overrides the state parameter
+            Note: unless the behavior returned has values understood by BehaviorCodes, this should be set as continuous
+            using the kwargs:
+                behavioral_annotation_is_continuous = True
+                behavioral_annotation_threshold = threshold [OPTIONAL; see TriggeredAverageIndices]
         Alternatively, can pass a behavioral_annotation, which will be used directly
             See TriggeredAverageIndices for more details
+            Note: this overrides the state and behavior_name parameters
 
         Parameters
         ----------

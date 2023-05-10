@@ -918,6 +918,8 @@ class ClusteredTriggeredAverages:
 
     def recalculate_dendrogram(self, linkage_threshold, no_plot=False, ax=None):
         Z = self.Z
+        if self.cluster_criterion != 'distance':
+            logging.warning("Cluster criterion is not distance, dendrogram will not be matched to clusters")
         R = hierarchy.dendrogram(Z, orientation='top', no_labels=True, color_threshold=linkage_threshold,
                                  above_threshold_color='black', ax=ax, no_plot=no_plot)
         return R
