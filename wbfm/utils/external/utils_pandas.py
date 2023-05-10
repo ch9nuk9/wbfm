@@ -607,7 +607,7 @@ def flatten_nested_dict(nested_dict: dict) -> dict:
     return flat_dict
 
 
-def split_flattened_index(flattened_index: list) -> dict:
+def split_flattened_index(flattened_index: list) -> Dict[str, Tuple[str, str]]:
     """
     Attempts to undo the flattening of a nested dictionary or dataframe
 
@@ -659,6 +659,33 @@ def split_flattened_index(flattened_index: list) -> dict:
                 raise ValueError(f"Could not split key {key}")
 
     return unflattened_dict
+
+
+def combine_rows_with_same_suffix(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Assuming a dataframe with column names that can be split with split_flattened_index, combine rows with the same
+    suffix (i.e. second part of the name)
+
+    Parameters
+    ----------
+    df
+
+    Returns
+    -------
+
+    """
+    unique_name_dict = defaultdict(list)
+
+    for name in df.columns:
+        segment_name = split_flattened_index([name])[name][1]
+        unique_name_dict[segment_name].append(df[name])
+
+    df_unique_names = {}
+    for name, list_of_triggered_segments in unique_name_dict.items():
+        df_unique_names[name] = np.nanmean(np.vstack(list_of_triggered_segments), axis=0)
+    df_unique_names = pd.DataFrame(df_unique_names)
+    df_unique_names = df_unique_names.T.sort_index().T
+    return df_unique_names
 
 
 def count_unique_datasets_from_flattened_index(flattened_index: list) -> int:
