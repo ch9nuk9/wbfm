@@ -25,7 +25,6 @@ from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, 
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
     calc_surpyval_durations_and_censoring
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
-from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average, fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
@@ -735,9 +734,9 @@ class FullDatasetTriggeredAverages:
         trace_opt_default = dict(channel_mode='dr_over_r_20', calculation_mode='integration', min_nonnan=0.9)
         trace_opt_default.update(trace_opt)
         if triggered_time_series_mode == "traces":
-            df_traces = project_data.calc_default_behaviors(**trace_opt_default)
-        elif triggered_time_series_mode == "behavior":
             df_traces = project_data.calc_default_traces(**trace_opt_default)
+        elif triggered_time_series_mode == "behavior":
+            df_traces = project_data.calc_default_behaviors(**trace_opt_default)
         elif triggered_time_series_mode == "curvature":
             df_traces = project_data.worm_posture_class.curvature(fluorescence_fps=True, reset_index=True,
                                                                   rename_columns=True)
@@ -1065,6 +1064,7 @@ class ClusteredTriggeredAverages:
         name_list = list(self.per_cluster_names[i_clust])
         from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
         # Use the grid plot function to plot
+        from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
         for project_name, project in all_projects.items():
             bh = self.df_behavior[project_name]
             shade_plot_func = lambda ax: shade_using_behavior(bh, ax=ax)
@@ -1076,6 +1076,7 @@ class ClusteredTriggeredAverages:
 
             fig, axes = make_grid_plot_from_dataframe(self.df_traces, this_name_list,
                                                       num_columns=num_columns, shade_plot_func=shade_plot_func, **kwargs)
+            plt.show()
 
     def plot_two_clusters_simple(self, i_clust0, i_clust1, min_lines=2, ind_preceding=20, z_score=False,
                                  show_individual_lines=False):
