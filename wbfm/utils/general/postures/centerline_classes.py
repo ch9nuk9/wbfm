@@ -280,7 +280,7 @@ class WormFullVideoPosture:
         df = df['Annotation']
         return df
 
-    def calc_behavior_from_alias(self, behavior_alias: str) -> pd.Series:
+    def calc_behavior_from_alias(self, behavior_alias: str, **kwargs) -> pd.Series:
         """
         This calls worm_speed or summed_curvature_from_kymograph with defined key word arguments
 
@@ -328,8 +328,10 @@ class WormFullVideoPosture:
             raise NotImplementedError
             # TODO: build a plateau using PC1 as a reversal trace
             # y = self.calc_plateau_state()
-        elif behavior_alias == 'speed_plateau':
-            y = self.calc_speed_plateau_state()
+        elif behavior_alias == 'speed_plateau_piecewise_linear':
+            y = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, **kwargs)
+        elif behavior_alias == 'speed_plateau_piecewise_constant':
+            y = self.calc_constant_offset_plateau_state(**kwargs)
         elif behavior_alias == 'signed_stage_speed_strongly_smoothed':
             y = self.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing=True)
         elif behavior_alias == 'signed_speed_angular':
@@ -784,12 +786,12 @@ class WormFullVideoPosture:
 
         return predicted_pirouette_state
 
-    def calc_plateau_state(self, frames_to_remove=5, DEBUG=False):
+    def calc_constant_offset_plateau_state(self, frames_to_remove=5, DEBUG=False):
         """
         Calculates a state that is high when the worm is in a "plateau", and low otherwise
         Plateau is defined in two steps:
             1. Find all reversals that are longer than 2 * frames_to_remove
-            2. Determine a break point, and keep all points after
+            2. Determine a single break point, and keep all points after
 
         Parameters
         ----------
@@ -841,12 +843,13 @@ class WormFullVideoPosture:
         plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
         return pd.Series(plateau_state)
 
-    def calc_speed_plateau_state(self, min_length=10, end_padding=20, return_last_breakpoint=False, DEBUG=False):
+    def calc_piecewise_linear_plateau_state(self, min_length=10, end_padding=-1, n_breakpoints=3,
+                                            return_last_breakpoint=False, DEBUG=False):
         """
         Calculates a state that is high when the worm speed is in a "semi-plateau", and low otherwise
         A semi-plateau is defined in two steps:
             1. Find all reversals that are longer than min_length
-            2. Fit a piecewise regression (3 breaks), and keep all points between the first and last breakpoints
+            2. Fit a piecewise regression (default 3 breaks), and keep all points between the first and last breakpoints
 
         Alternatively, if return_last_breakpoint is true, return the last breakpoint as the onset and the index of the
         reversal end + end_padding as the end
@@ -857,6 +860,7 @@ class WormFullVideoPosture:
         ----------
         min_length
         end_padding
+        return_last_breakpoint
         DEBUG
 
         Returns
@@ -870,10 +874,12 @@ class WormFullVideoPosture:
         rev_ind = beh_vec == BehaviorCodes.REV
         all_starts, all_ends = get_contiguous_blocks_from_column(rev_ind, already_boolean=True)
         # Also get the speed
-        speed = self.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True)
+        speed = self.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing_before_derivative=True)
         # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
         new_starts_with_nan, new_ends_with_nan, new_times_series_starts, new_times_series_ends = \
-            fit_3_break_piecewise_regression(speed, all_ends, all_starts, min_length, end_padding, DEBUG)
+            fit_3_break_piecewise_regression(speed, all_ends, all_starts, min_length, end_padding,
+                                             n_breakpoints=n_breakpoints,
+                                             DEBUG=DEBUG)
         if return_last_breakpoint:
             new_starts_with_nan = new_ends_with_nan
             new_ends_with_nan = new_times_series_ends  # Not a fit point, but the end of the reversal with padding
@@ -1521,7 +1527,26 @@ def fit_3_break_piecewise_regression(dat, all_ends, all_starts, min_length=10,
             if np.abs(y[int(breakpoint_start)]) < np.abs(y[int(breakpoint2)]) / 2:
                 breakpoint_start = breakpoint2
         else:
-            # No quality checks defined
+            # Assume that the first breakpoint is the start of the plateau, and the second is the end
+            # Thus if the slope of the 3rd (final) segment is the same as the 1st segment, we don't have a plateau
+            is_first_segment_slope_positive = results['alpha1']['estimate'] > 0.0
+            is_last_segment_slope_positive = results['alpha3']['estimate'] > 0.0
+            if is_first_segment_slope_positive == is_last_segment_slope_positive:
+                new_starts.append(np.nan)
+                new_ends.append(np.nan)
+                continue
+
+            # Also, the last segment should be steeper than the middle; otherwise we might have just forced a breakpoint
+            # in the middle of a plateau or slow decline
+            # In the same way, the first segment should be steeper than the middle
+            abs_slope1 = np.abs(results['alpha1']['estimate'])
+            abs_slope2 = np.abs(results['alpha2']['estimate'])
+            abs_slope3 = np.abs(results['alpha3']['estimate'])
+            if abs_slope2 > abs_slope1 or abs_slope2 > abs_slope3:
+                new_starts.append(np.nan)
+                new_ends.append(np.nan)
+                continue
+
             breakpoint_start = results['breakpoint1']['estimate']
             breakpoint_end = results['breakpoint2']['estimate']
 
@@ -1531,6 +1556,8 @@ def fit_3_break_piecewise_regression(dat, all_ends, all_starts, min_length=10,
         new_ends.append(end_absolute_coords)
 
         if DEBUG:
+            # import json
+            # print(json.dumps(results, indent=2, default=str))
             pw_fit.plot_data(color="grey", s=20)
             # Pass in standard matplotlib keywords to control any of the plots
             pw_fit.plot_fit(color="red", linewidth=4)
