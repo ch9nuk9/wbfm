@@ -1699,7 +1699,7 @@ class ClusteredTriggeredAverages:
                 manual_name = mapping.get(neuron_name, None)
                 if manual_name is not None:
                     # clust_names_manual.append(manual_name)
-                    per_id_counts_per_cluster[manual_name][f"cluster_{key_clust}"] += 1
+                    per_id_counts_per_cluster[manual_name][f"cluster_{key_clust:02d}"] += 1
         df_id_counts = pd.DataFrame(per_id_counts_per_cluster).sort_index()
         return df_id_counts
 
