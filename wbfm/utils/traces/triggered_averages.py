@@ -731,7 +731,8 @@ class FullDatasetTriggeredAverages:
         trigger_opt_default.update(trigger_opt)
         ind_class = project_data.worm_posture_class.calc_triggered_average_indices(**trigger_opt_default)
 
-        trace_opt_default = dict(channel_mode='dr_over_r_20', calculation_mode='integration', min_nonnan=0.9)
+        trace_opt_default = dict(channel_mode='dr_over_r_20', calculation_mode='integration', min_nonnan=0.9,
+                                 filter_mode='rolling_mean')
         trace_opt_default.update(trace_opt)
         if triggered_time_series_mode == "traces":
             df_traces = project_data.calc_default_traces(**trace_opt_default)
