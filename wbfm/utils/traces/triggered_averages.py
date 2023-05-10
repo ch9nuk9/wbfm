@@ -721,7 +721,7 @@ class FullDatasetTriggeredAverages:
         return ax
 
     @staticmethod
-    def load_from_project(project_data, trigger_opt=None, trace_opt=None, use_behavior_not_traces=False,
+    def load_from_project(project_data, trigger_opt=None, trace_opt=None, triggered_time_series_mode="traces",
                           **kwargs):
         if trigger_opt is None:
             trigger_opt = {}
@@ -734,10 +734,14 @@ class FullDatasetTriggeredAverages:
 
         trace_opt_default = dict(channel_mode='dr_over_r_20', calculation_mode='integration', min_nonnan=0.9)
         trace_opt_default.update(trace_opt)
-        if use_behavior_not_traces:
+        if triggered_time_series_mode == "traces":
             df_traces = project_data.calc_default_behaviors(**trace_opt_default)
-        else:
+        elif triggered_time_series_mode == "behavior":
             df_traces = project_data.calc_default_traces(**trace_opt_default)
+        elif triggered_time_series_mode == "curvature":
+            df_traces = project_data.worm_posture_class.curvature(fluorescence_fps=True, reset_index=True)
+        else:
+            raise NotImplementedError(f"Unrecognized triggered_time_series_mode: {triggered_time_series_mode}")
 
         triggered_averages_class = FullDatasetTriggeredAverages(df_traces, ind_class, **kwargs)
 
@@ -1047,10 +1051,6 @@ class ClusteredTriggeredAverages:
             raise ValueError("df_traces is None, cannot plot")
         name_list = list(self.per_cluster_names[i_clust])
         # Use the grid plot function to plot
-        if add_trigger_shading:
-            bh = self.df_behavior
-            shade_plot_func = lambda ax: shade_using_behavior(bh, ax=ax)
-            raise NotImplementedError
         from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
         fig, axes = make_grid_plot_from_dataframe(self.df_traces, name_list, num_columns=num_columns, **kwargs)
 
@@ -1075,8 +1075,6 @@ class ClusteredTriggeredAverages:
 
             fig, axes = make_grid_plot_from_dataframe(self.df_traces, this_name_list,
                                                       num_columns=num_columns, shade_plot_func=shade_plot_func, **kwargs)
-
-
 
     def plot_two_clusters_simple(self, i_clust0, i_clust1, min_lines=2, ind_preceding=20, z_score=False,
                                  show_individual_lines=False):
@@ -1844,7 +1842,8 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt
     all_triggered_average_classes = {}
     trigger_opt_default = {'state': BehaviorCodes.FWD}
     if 'trigger_opt' in kwargs:
-        trigger_opt_default.update(kwargs['trigger_opt'])
+        if kwargs['trigger_opt'] is not None:
+            trigger_opt_default.update(kwargs['trigger_opt'])
         kwargs.pop('trigger_opt')
 
     for name, p in tqdm(all_projects.items()):
