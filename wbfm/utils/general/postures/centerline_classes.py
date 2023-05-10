@@ -157,9 +157,11 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_y, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def curvature(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+    def curvature(self, fluorescence_fps=False, rename_columns=False, **kwargs) -> pd.DataFrame:
         df = self._raw_curvature
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        if rename_columns:
+            df.columns = [f"segment_{i+1:03d}" for i in df.columns]
         return df
 
     @lru_cache(maxsize=8)

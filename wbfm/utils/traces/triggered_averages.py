@@ -739,7 +739,8 @@ class FullDatasetTriggeredAverages:
         elif triggered_time_series_mode == "behavior":
             df_traces = project_data.calc_default_traces(**trace_opt_default)
         elif triggered_time_series_mode == "curvature":
-            df_traces = project_data.worm_posture_class.curvature(fluorescence_fps=True, reset_index=True)
+            df_traces = project_data.worm_posture_class.curvature(fluorescence_fps=True, reset_index=True,
+                                                                  rename_columns=True)
         else:
             raise NotImplementedError(f"Unrecognized triggered_time_series_mode: {triggered_time_series_mode}")
 
