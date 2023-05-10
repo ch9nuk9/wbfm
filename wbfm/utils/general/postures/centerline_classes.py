@@ -328,8 +328,10 @@ class WormFullVideoPosture:
             raise NotImplementedError
             # TODO: build a plateau using PC1 as a reversal trace
             # y = self.calc_plateau_state()
-        elif behavior_alias == 'speed_plateau_piecewise_linear':
-            y = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, **kwargs)
+        elif behavior_alias == 'speed_plateau_piecewise_linear_onset':
+            y = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=False, **kwargs)
+        elif behavior_alias == 'speed_plateau_piecewise_linear_offset':
+            y = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=True, **kwargs)
         elif behavior_alias == 'speed_plateau_piecewise_constant':
             y = self.calc_constant_offset_plateau_state(**kwargs)
         elif behavior_alias == 'signed_stage_speed_strongly_smoothed':
