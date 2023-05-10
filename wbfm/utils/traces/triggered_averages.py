@@ -1635,6 +1635,24 @@ class ClusteredTriggeredAverages:
         return ClusteredTriggeredAverages(df_triggered, triggered_averages_class=triggered_averages_class,
                                           **kwargs)
 
+    def calc_dataframe_of_manual_ids_per_cluster(self, all_projects):
+        per_cluster_names = self.per_cluster_names
+        per_id_counts_per_cluster = defaultdict(lambda: defaultdict(int))
+        for key_clust, clust_names in per_cluster_names.items():
+            # clust_names_manual = []
+            for name in clust_names:
+                dataset_name, neuron_name = split_flattened_index([name])[name]
+
+                # Get project, and check if this neuron has a manually annotated name
+                p = all_projects[dataset_name]
+                mapping = p.neuron_name_to_manual_id_mapping(confidence_threshold=1, remove_unnamed_neurons=True)
+                manual_name = mapping.get(neuron_name, None)
+                if manual_name is not None:
+                    # clust_names_manual.append(manual_name)
+                    per_id_counts_per_cluster[manual_name][key_clust] += 1
+        df_id_counts = pd.DataFrame(per_id_counts_per_cluster).sort_index()
+        return df_id_counts
+
 
 def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4, **kwargs):
     """
