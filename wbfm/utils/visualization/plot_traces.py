@@ -241,10 +241,18 @@ def make_grid_plot_from_two_dataframes(df0, df1, twinx_when_reusing_figure=True,
     -------
 
     """
+    # Original grid plot
     fig, original_axes = make_grid_plot_from_dataframe(df0, **kwargs)
+    # Don't want to pass these to the second plot
     if 'neuron_names_to_plot' not in kwargs:
         kwargs['neuron_names_to_plot'] = get_names_from_df(df0)
+    if 'sort_using_shade_value' in kwargs:
+        del kwargs['sort_using_shade_value']
+    if 'background_shading_value_func' in kwargs:
+        del kwargs['background_shading_value_func']
+    # Plot second trace
     fig, _ = make_grid_plot_from_dataframe(df1, fig=fig, twinx_when_reusing_figure=twinx_when_reusing_figure, **kwargs)
+    # Align y axes
     if kwargs.get('share_y_axis', False):
         twinned_axes = [get_twin_axis(ax) for ax in original_axes]
         # From: https://www.tutorialspoint.com/how-to-share-secondary-y-axis-between-subplots-in-matplotlib
