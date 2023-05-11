@@ -683,6 +683,7 @@ class ProjectData:
         """
 
         behavior_codes = ['signed_stage_speed', 'summed_curvature', 'signed_speed_angular',
+                          'signed_middle_body_speed_smoothed',
                           'signed_middle_body_speed', 'head_curvature',
                           'fwd_empirical_distribution', 'rev_phase_counter']
 
