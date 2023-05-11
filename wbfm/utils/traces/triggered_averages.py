@@ -1011,10 +1011,14 @@ class ClusteredTriggeredAverages:
             # The dendrogram has a funny default, where the 0 color is reservered for non-clusters, and is skipped
             # So in principle I want the modular division of i, but if i > 10 I have to add 1
             def cluster_color_func(i):
+                # We want to skip 1, 11, 21, etc.
                 if i > 10:
-                    i = (i % 10) + 1
+                    i = (i + 1) % 10
+                else:
+                    i = i % 10
                 return matplotlib.cm.get_cmap('tab10')(i)
             # cluster_color_func = lambda i: matplotlib.cm.get_cmap('tab10')(i % 10)
+        i_clust_actually_plotted = 0  # Used for determining the color
         for i_clust, name_list in per_cluster_names.items():
             name_list = list(name_list)
             if len(name_list) < min_lines:
@@ -1031,7 +1035,8 @@ class ClusteredTriggeredAverages:
                 continue
             plot_opt = dict(show_individual_lines=show_individual_lines, is_second_plot=False, xlim=xlim)
             if cluster_color_func is not None:
-                cluster_color = cluster_color_func(i_clust)
+                i_clust_actually_plotted += 1
+                cluster_color = cluster_color_func(i_clust_actually_plotted)
                 plot_opt['color'] = cluster_color
             # these_corr = self.df_corr.loc[name_list[0], name_list[1:]]
             # avg_corr = these_corr.mean()
