@@ -698,6 +698,19 @@ class ProjectData:
             if invalid_ind is not None:
                 df.loc[invalid_ind, :] = np.nan
 
+        # Optional: fill all gaps
+        if interpolate_nan:
+            df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
+            for i in range(5):
+                # Sometimes svd randomly doesn't converge; try again
+                try:
+                    df = impute_missing_values_in_dataframe(df_filtered, d=int(0.9*df.shape[1]))  # Removes larger holes
+                    break
+                except np.linalg.LinAlgError:
+                    if i == 0:
+                        self.logger.warning("SVD did not converge, trying again")
+                    continue
+
         return df
 
     @lru_cache(maxsize=128)
