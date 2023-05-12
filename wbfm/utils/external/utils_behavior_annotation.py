@@ -97,7 +97,7 @@ def options_for_ethogram(beh_vec):
     return all_shape_opt
 
 
-def detect_peaks_and_interpolate(dat, to_plot=False):
+def detect_peaks_and_interpolate(dat, to_plot=False, fig=None):
     """
     Builds a time series approximating the highest peaks of an oscillating signal
 
@@ -123,7 +123,8 @@ def detect_peaks_and_interpolate(dat, to_plot=False):
     y_interp = interp_obj(x)
 
     if to_plot:
-        plt.figure(dpi=200, figsize=(20,10))
+        if fig is None:
+            plt.figure(dpi=200, figsize=(20,10))
         plt.plot(dat)
         plt.scatter(peaks, y_peaks, c='r')
         plt.plot(x, y_interp, c='tab:orange')

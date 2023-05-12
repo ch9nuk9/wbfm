@@ -357,13 +357,13 @@ class WormFullVideoPosture:
         elif behavior_alias == 'rev_empirical_distribution':
             y = self.calc_empirical_probability_to_end_state(fluorescence_fps=True, state=BehaviorCodes.REV)
         elif behavior_alias == 'interpolated_ventral_midbody_curvature':
-            y = self.calc_interpolated_curvature(i_segment=41, fluorescence_fps=True, flip=False)
+            y = self.calc_interpolated_curvature_using_peak_detection(i_segment=41, fluorescence_fps=True, flip=False)
         elif behavior_alias == 'interpolated_dorsal_midbody_curvature':
-            y = self.calc_interpolated_curvature(i_segment=41, fluorescence_fps=True, flip=True)
+            y = self.calc_interpolated_curvature_using_peak_detection(i_segment=41, fluorescence_fps=True, flip=True)
         elif behavior_alias == 'interpolated_ventral_head_curvature':
-            y = self.calc_interpolated_curvature(i_segment=4, fluorescence_fps=True, flip=False)
+            y = self.calc_interpolated_curvature_using_peak_detection(i_segment=4, fluorescence_fps=True, flip=False)
         elif behavior_alias == 'interpolated_dorsal_head_curvature':
-            y = self.calc_interpolated_curvature(i_segment=4, fluorescence_fps=True, flip=True)
+            y = self.calc_interpolated_curvature_using_peak_detection(i_segment=4, fluorescence_fps=True, flip=True)
         else:
             raise NotImplementedError(behavior_alias)
 
@@ -979,7 +979,7 @@ class WormFullVideoPosture:
 
         return self._shorten_to_trace_length(pd.Series(state_trace))
 
-    def calc_interpolated_curvature(self, i_segment=41, fluorescence_fps=True, flip=False):
+    def calc_interpolated_curvature_using_peak_detection(self, i_segment=41, fluorescence_fps=True, flip=False):
         kymo = self.curvature(fluorescence_fps=fluorescence_fps, reset_index=True).T
         dat = kymo.iloc[i_segment, :]
         if flip:
