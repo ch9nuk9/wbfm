@@ -995,10 +995,10 @@ class WormFullVideoPosture:
 
     def calc_full_matrix_interpolated_curvature_using_peak_detection(self, fluorescence_fps=True, flip=False):
 
-        kymo = self.curvature(fluorescence_fps=fluorescence_fps, reset_index=True).T
+        kymo = self.curvature(fluorescence_fps=fluorescence_fps, reset_index=True)
         kymo_envelope = np.zeros_like(kymo)
         for i_seg in range(kymo.shape[0]):
-            kymo_envelope[i_seg, :] = self.calc_interpolated_curvature_using_peak_detection(i_seg,
+            kymo_envelope[:, i_seg] = self.calc_interpolated_curvature_using_peak_detection(i_seg,
                                                                                             fluorescence_fps=fluorescence_fps,
                                                                                             flip=flip).values
 

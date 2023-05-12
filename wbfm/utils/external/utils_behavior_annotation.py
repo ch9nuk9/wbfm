@@ -127,10 +127,11 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None,
 
     if to_plot:
         if fig is None:
-            plt.figure(dpi=200, figsize=(20, 10))
+            plt.figure(dpi=200, figsize=(10, 5))
         plt.plot(dat, label="Raw data")
         plt.scatter(peaks, y_peaks, c='r', label="Detected peaks")
         plt.plot(x, y_interp, label="Interpolated envelope")#, c='tab:purple')
+        plt.title("Envelope signal interpolated between peaks")
         plt.legend()
 
     return x, y_interp, interp_obj
