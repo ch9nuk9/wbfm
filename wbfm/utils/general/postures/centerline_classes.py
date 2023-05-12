@@ -17,6 +17,7 @@ from skimage import transform
 from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
+from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
@@ -979,17 +980,29 @@ class WormFullVideoPosture:
 
         return self._shorten_to_trace_length(pd.Series(state_trace))
 
-    def calc_interpolated_curvature_using_peak_detection(self, i_segment=41, fluorescence_fps=True, flip=False):
+    def calc_interpolated_curvature_using_peak_detection(self, i_segment=41, fluorescence_fps=True, flip=False,
+                                                         to_plot=False):
         kymo = self.curvature(fluorescence_fps=fluorescence_fps, reset_index=True).T
         dat = kymo.iloc[i_segment, :]
         if flip:
             # Ventral should be unflipped
             dat = -dat
 
-        x, y_interp, interp_obj = detect_peaks_and_interpolate(dat, to_plot=False)
+        x, y_interp, interp_obj = detect_peaks_and_interpolate(dat, to_plot=to_plot)
         if flip:
             y_interp = -y_interp
         return self._shorten_to_trace_length(pd.Series(y_interp))
+
+    def calc_full_matrix_interpolated_curvature_using_peak_detection(self, fluorescence_fps=True, flip=False):
+
+        kymo = self.curvature(fluorescence_fps=fluorescence_fps, reset_index=True).T
+        kymo_envelope = np.zeros_like(kymo)
+        for i_seg in range(kymo.shape[0]):
+            kymo_envelope[i_seg, :] = self.calc_interpolated_curvature_using_peak_detection(i_seg,
+                                                                                            fluorescence_fps=fluorescence_fps,
+                                                                                            flip=flip).values
+
+        return kymo_envelope
 
     @staticmethod
     def load_from_project(project_data):
