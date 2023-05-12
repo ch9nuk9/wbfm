@@ -97,7 +97,8 @@ def options_for_ethogram(beh_vec):
     return all_shape_opt
 
 
-def detect_peaks_and_interpolate(dat, to_plot=False, fig=None):
+def detect_peaks_and_interpolate(dat, to_plot=False, fig=None,
+                                 height="mean", width=5):
     """
     Builds a time series approximating the highest peaks of an oscillating signal
 
@@ -114,7 +115,9 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None):
     """
 
     # Get peaks
-    peaks, properties = find_peaks(dat, height=np.mean(dat), width=5)
+    if height == "mean":
+        height = np.mean(dat)
+    peaks, properties = find_peaks(dat, height=height, width=width)
     y_peaks = dat[peaks]
 
     # Interpolate
@@ -125,8 +128,9 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None):
     if to_plot:
         if fig is None:
             plt.figure(dpi=200, figsize=(20, 10))
-        plt.plot(dat)
-        plt.scatter(peaks, y_peaks, c='r')
-        plt.plot(x, y_interp, c='tab:purple')
+        plt.plot(dat, label="Raw data")
+        plt.scatter(peaks, y_peaks, c='r', label="Detected peaks")
+        plt.plot(x, y_interp, label="Interpolated envelope")#, c='tab:purple')
+        plt.legend()
 
     return x, y_interp, interp_obj
