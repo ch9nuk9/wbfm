@@ -124,9 +124,9 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None):
 
     if to_plot:
         if fig is None:
-            plt.figure(dpi=200, figsize=(20,10))
+            plt.figure(dpi=200, figsize=(20, 10))
         plt.plot(dat)
         plt.scatter(peaks, y_peaks, c='r')
-        plt.plot(x, y_interp, c='tab:orange')
+        plt.plot(x, y_interp, c='tab:purple')
 
     return x, y_interp, interp_obj
