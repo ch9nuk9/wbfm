@@ -18,7 +18,7 @@ from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
 
-from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
@@ -356,6 +356,14 @@ class WormFullVideoPosture:
             y = self.calc_empirical_probability_to_end_state(fluorescence_fps=True, state=BehaviorCodes.FWD)
         elif behavior_alias == 'rev_empirical_distribution':
             y = self.calc_empirical_probability_to_end_state(fluorescence_fps=True, state=BehaviorCodes.REV)
+        elif behavior_alias == 'interpolated_ventral_midbody_curvature':
+            y = self.calc_interpolated_curvature(i_segment=41, fluorescence_fps=True, flip=False)
+        elif behavior_alias == 'interpolated_dorsal_midbody_curvature':
+            y = self.calc_interpolated_curvature(i_segment=41, fluorescence_fps=True, flip=True)
+        elif behavior_alias == 'interpolated_ventral_head_curvature':
+            y = self.calc_interpolated_curvature(i_segment=4, fluorescence_fps=True, flip=False)
+        elif behavior_alias == 'interpolated_dorsal_head_curvature':
+            y = self.calc_interpolated_curvature(i_segment=4, fluorescence_fps=True, flip=True)
         else:
             raise NotImplementedError(behavior_alias)
 
@@ -970,6 +978,18 @@ class WormFullVideoPosture:
             state_trace[start:end] = y_dat[:duration].copy()
 
         return self._shorten_to_trace_length(pd.Series(state_trace))
+
+    def calc_interpolated_curvature(self, i_segment=41, fluorescence_fps=True, flip=False):
+        kymo = self.curvature(fluorescence_fps=fluorescence_fps, reset_index=True).T
+        dat = kymo.iloc[i_segment, :]
+        if flip:
+            # Ventral should be unflipped
+            dat = -dat
+
+        x, y_interp, interp_obj = detect_peaks_and_interpolate(dat, to_plot=False)
+        if flip:
+            y_interp = -y_interp
+        return self._shorten_to_trace_length(pd.Series(y_interp))
 
     @staticmethod
     def load_from_project(project_data):

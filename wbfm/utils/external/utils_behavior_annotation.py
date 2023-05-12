@@ -1,6 +1,9 @@
 from enum import IntEnum
 import numpy as np
 import plotly.express as px
+from matplotlib import pyplot as plt
+from scipy.interpolate import interp1d
+from scipy.signal import find_peaks
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError
@@ -92,3 +95,37 @@ def options_for_ethogram(beh_vec):
         all_shape_opt.append(shape_opt)
 
     return all_shape_opt
+
+
+def detect_peaks_and_interpolate(dat, to_plot=False):
+    """
+    Builds a time series approximating the highest peaks of an oscillating signal
+
+    Returns the interpolation class, which has the location and value of the peaks themselves
+
+    Parameters
+    ----------
+    dat
+    to_plot
+
+    Returns
+    -------
+
+    """
+
+    # Get peaks
+    peaks, properties = find_peaks(dat, height=np.mean(dat), width=5)
+    y_peaks = dat[peaks]
+
+    # Interpolate
+    interp_obj = interp1d(peaks, y_peaks, kind='cubic', bounds_error=False, fill_value="extrapolate")
+    x = np.arange(len(dat))
+    y_interp = interp_obj(x)
+
+    if to_plot:
+        plt.figure(dpi=200, figsize=(20,10))
+        plt.plot(dat)
+        plt.scatter(peaks, y_peaks, c='r')
+        plt.plot(x, y_interp, c='tab:orange')
+
+    return x, y_interp, interp_obj
