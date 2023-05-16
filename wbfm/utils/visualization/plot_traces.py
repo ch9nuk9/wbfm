@@ -1060,11 +1060,11 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     fig.update_xaxes(dict(showticklabels=False), row=1, overwrite=True)
     fig.update_yaxes(dict(showticklabels=False), row=1, overwrite=True, matches='y')
 
-    fig.update_xaxes(dict(showticklabels=True), row=5, col=1, overwrite=True)
-    fig.update_yaxes(dict(showticklabels=True), row=5, col=1, overwrite=True)
+    fig.update_xaxes(dict(showticklabels=True, showgrid=False), row=5, col=1, overwrite=True)
+    fig.update_yaxes(dict(showticklabels=True, showgrid=False), row=5, col=1, overwrite=True)
 
     fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
-    # Transparent background
+    # Transparent background and remove lines
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     # Fonts
     fig.update_layout(font=dict(size=18))
@@ -1086,8 +1086,10 @@ def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html'):
     fig.write_image(str(fname))
     fname = Path(fname).with_suffix('.svg')
     fig.write_image(str(fname))
-    fname = Path(fname).with_suffix('.eps')
-    fig.write_image(str(fname))
+    # eps isn't working:
+    # ValueError: Transform failed with error code 256: PDF to EPS conversion failed
+    # fname = Path(fname).with_suffix('.eps')
+    # fig.write_image(str(fname))
 
 
 def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, to_show=False):
@@ -1246,10 +1248,12 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                                                                     keep_reversal_turns=True)
     if beh_vec is None:
         project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
-    ethogram_opt = options_for_ethogram(beh_vec, include_reversal_turns=True)
+    ethogram_cmap_opt = dict(include_reversal_turns=True)
+
+    ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt)
     ### 3d phase plot
-    base_colormap = BehaviorCodes.base_colormap()
-     # Subset the behavior to be reversal, forward, or turn
+    ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_opt)
+    # Use the same behaviors as the ethogram
     df_pca_modes['behavior'] = beh_vec
     df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
                                                                   ['mode 0', 'mode 1', 'mode 2'],
@@ -1259,7 +1263,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     for i, state_name in enumerate(state_names):
         phase_plot_list.append(
             go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]], mode='lines',
-                         name=state_name, line=dict(color=base_colormap[i], width=4)))
+                         name=state_name, line=dict(color=ethogram_cmap[state_name], width=4)))
     phase_plot_list_opt = dict(rows=2, cols=2)
     ### Variance explained
     var_explained_line = go.Scatter(y=var_explained)

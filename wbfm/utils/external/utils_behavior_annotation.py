@@ -43,7 +43,7 @@ class BehaviorCodes(IntEnum):
     @classmethod
     def base_colormap(cls):
         # See: https://plotly.com/python/discrete-color/
-        return px.colors.qualitative.Bold_r
+        return px.colors.qualitative.Plotly_r
 
     @classmethod
     def ethogram_cmap(cls, include_reversal_turns=False):
@@ -55,13 +55,15 @@ class BehaviorCodes(IntEnum):
                 cls.FWD_VENTRAL_TURN: base_cmap[2],
                 cls.FWD_DORSAL_TURN: base_cmap[3],
                 # Same as REV
-                # cls.REV_VENTRAL_TURN: base_cmap[1],
-                # cls.REV_DORSAL_TURN: base_cmap[1],
+                cls.REV_VENTRAL_TURN: base_cmap[1],
+                cls.REV_DORSAL_TURN: base_cmap[1],
                 # Unclear
-                cls.QUIESCENCE: base_cmap[4]}
+                cls.QUIESCENCE: base_cmap[4],
+                }
         if include_reversal_turns:
-            cmap[cls.REV_VENTRAL_TURN] = base_cmap[5]
-            cmap[cls.REV_DORSAL_TURN] = base_cmap[6]
+            cmap[cls.REV_VENTRAL_TURN] = base_cmap[4]
+            cmap[cls.REV_DORSAL_TURN] = base_cmap[5]
+            cmap[cls.QUIESCENCE] = base_cmap[6]
         return cmap
 
     @classmethod
