@@ -77,5 +77,6 @@ def cache_to_disk_class(cache_filename_method: str,
                 logging.info(f'Cache file {cache_filename} does not exist. Running function and saving output to disk.')
                 output = func(self)
                 func_save_to_disk(cache_filename, output)
+                return output
         return wrapper
     return decorator
