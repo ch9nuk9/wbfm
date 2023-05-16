@@ -319,9 +319,12 @@ class WormFullVideoPosture:
         elif behavior_alias == 'signed_middle_body_speed_smoothed':
             y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=True,
                                 strong_smoothing_before_derivative=True)
-        elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_curvature':
+        elif behavior_alias == 'summed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True)
+        elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_signed_curvature':
+            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            y = self.summed_signed_curvature_from_kymograph(fluorescence_fps=True)
         elif behavior_alias == 'head_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=2, end_segment=15)
