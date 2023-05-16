@@ -1117,7 +1117,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     for i, state_name in enumerate(state_names):
         phase_plot_list.append(
             go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]], mode='lines',
-                         name=state_name, line=dict(color=base_colormap[i], width=2)))
+                         name=state_name, line=dict(color=base_colormap[i], width=4)))
     phase_plot_list_opt = dict(rows=2, cols=2)
 
     ### Variance explained
@@ -1171,6 +1171,8 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
     # Transparent background
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    # Fonts
+    fig.update_layout(font=dict(size=18))
 
     if to_show:
         fig.show()
