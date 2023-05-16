@@ -47,6 +47,9 @@ class NeuronEncodingBase:
     is_valid: bool = True
     df_kwargs: dict = field(default_factory=lambda: dict(filter_mode='rolling_mean'))
 
+    # Needed to interpret the coefficients
+    z_score: bool = False
+
     use_residual_traces: bool = False
     _retained_neuron_names: list = None
 
@@ -361,6 +364,11 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             y = y.loc[ind]
             y_binary = y_binary.loc[ind]
 
+        # z-score the data
+        if self.z_score:
+            X = (X - X.mean()) / X.std()
+            y = (y - y.mean()) / y.std()
+
         return X, y, y_binary, y_train_name
 
     def unpack_behavioral_time_series_from_name(self, y_train_name, trace_len):
@@ -641,6 +649,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         -------
 
         """
+        if not self.z_score:
+            logging.warning("Not z-scored, so weights are not interpretable")
         model_args = self._multi_neuron_model_args
         if model_args is None:
             raise ValueError("No model has been trained yet")
@@ -671,6 +681,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         -------
 
         """
+        if not self.z_score:
+            logging.warning("Not z-scored, so pfi is not interpretable")
         X = self.all_dfs[df_name]
         X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train)
 
