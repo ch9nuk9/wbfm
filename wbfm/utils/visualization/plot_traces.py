@@ -1074,6 +1074,10 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index))
         trace_opt_list.append(dict(row=i+3, col=1, secondary_y=False))
 
+    #### Shading on top of the PCA modes
+    beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
+    trace_shading_opt = options_for_ethogram(beh_vec, shading=True)
+
     ### Speed plot (below pca modes)
     trace_list.append(go.Scatter(y=speed, x=speed.index))
     trace_opt_list.append(dict(row=num_pca_modes_to_plot+3, col=1, secondary_y=False))
@@ -1130,6 +1134,8 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         fig.add_shape(**opt, row=2, col=1)
     for trace, trace_opt in zip(trace_list, trace_opt_list):
         fig.add_trace(trace, **trace_opt)
+        for opt in trace_shading_opt:
+            fig.add_shape(**opt, row=trace_opt['row'], col=trace_opt['col'])
 
     ### Second column
     for trace, trace_opt in zip(weights_list, weights_opt_list):

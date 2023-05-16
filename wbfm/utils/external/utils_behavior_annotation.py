@@ -105,7 +105,8 @@ def options_for_ethogram(beh_vec, shading=False):
         for s, e in zip(starts, ends):
             this_val = beh_vec[s]
             color = cmap[this_val]
-            shape_opt = dict(type="rect", x0=s, x1=e, y0=0, y1=1, fillcolor=color, line_width=0,
+            shape_opt = dict(type="rect", x0=s, x1=e, y0=0, y1=1, yref='paper',
+                             fillcolor=color, line_width=0,
                              layer="below")
             all_shape_opt.append(shape_opt)
 
