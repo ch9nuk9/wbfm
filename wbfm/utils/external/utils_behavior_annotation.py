@@ -41,9 +41,14 @@ class BehaviorCodes(IntEnum):
         return cmap
 
     @classmethod
+    def base_colormap(cls):
+        # See: https://plotly.com/python/discrete-color/
+        return px.colors.qualitative.Bold_r
+
+    @classmethod
     def ethogram_cmap(cls):
         """Colormap for shading as a stand-alone ethogram"""
-        base_cmap = px.colors.qualitative.Plotly
+        base_cmap = cls.base_colormap()
         cmap = {cls.UNKNOWN: None,
                 cls.FWD: base_cmap[0],
                 cls.REV: base_cmap[1],
@@ -105,9 +110,8 @@ def options_for_ethogram(beh_vec, shading=False):
         for s, e in zip(starts, ends):
             this_val = beh_vec[s]
             color = cmap[this_val]
-            shape_opt = dict(type="rect", x0=s, x1=e, y0=0, y1=1, yref='paper',
-                             fillcolor=color, line_width=0,
-                             layer="below")
+            shape_opt = dict(type="rect", x0=s, x1=e, yref='paper', y0=0, y1=1,
+                             fillcolor=color, line_width=0, layer="below")
             all_shape_opt.append(shape_opt)
 
     return all_shape_opt

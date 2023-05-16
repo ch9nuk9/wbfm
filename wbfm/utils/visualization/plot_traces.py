@@ -1054,7 +1054,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     var_explained = pca_modes.explained_variance_ratio_[:7]
 
     # Initialize options for all subplots
-    base_colormap = px.colors.qualitative.Plotly
+    base_colormap = BehaviorCodes.base_colormap()
 
     subplot_titles = ['Traces sorted by PC1', '', 'PCA weights', '', 'Ethogram', 'Phase plot',
                       'PCA modes', '', '', 'Middle Body Speed', 'Variance Explained']
@@ -1068,10 +1068,12 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     heatmap_opt = dict(row=1, col=1)
 
     ### PCA modes
+    mode_colormap = px.colors.qualitative.Plotly
     trace_list = []
     trace_opt_list = []
     for i, col in enumerate(col_names):
-        trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index))
+        trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index,
+                                     line=dict(color=mode_colormap[i], width=2)))
         trace_opt_list.append(dict(row=i+3, col=1, secondary_y=False))
 
     #### Shading on top of the PCA modes
@@ -1083,32 +1085,39 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     trace_opt_list.append(dict(row=num_pca_modes_to_plot+3, col=1, secondary_y=False))
 
     ### PCA weights (same names as pca modes)
+    mode_colormap = px.colors.qualitative.Plotly
     weights_list = []
     weights_opt_list = []
     for i, col in enumerate(col_names):
         weights_list.append(go.Bar(x=df_pca_weights[col], y=df_pca_weights.index, orientation='h',
-                                   marker=dict(color=base_colormap[i]),
+                                   marker=dict(color=mode_colormap[i]),
                                    hovertext=neuron_names,
                                    hoverinfo="text"))
         weights_opt_list.append(dict(row=1, col=2+i, secondary_y=False))
 
     ### Ethogram
-    beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
+    # Include manual annotations
+    beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True)
     ethogram_opt = options_for_ethogram(beh_vec)
 
     ### 3d phase plot
-    beh_trace = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
-    df_pca_modes['behavior'] = beh_trace == BehaviorCodes.REV
+    base_colormap = BehaviorCodes.base_colormap()
+    beh_trace = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True,
+                                                                      keep_reversal_turns=False)
+    # df_pca_modes['behavior'] = beh_trace == BehaviorCodes.REV
+    # Subset the behavior to be reversal, forward, or turn
+    df_pca_modes['behavior'] = beh_trace
     df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
                                                                   ['mode 0', 'mode 1', 'mode 2'],
                                                                   'behavior')
 
-    state_names = ['FWD', 'REV']
+    # state_names = ['FWD', 'REV']
+    state_names = beh_trace.unique()
     phase_plot_list = []
     for i, state_name in enumerate(state_names):
         phase_plot_list.append(
             go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]], mode='lines',
-                         name=state_name))
+                         name=state_name, line=dict(color=base_colormap[i], width=2)))
     phase_plot_list_opt = dict(rows=2, cols=2)
 
     ### Variance explained
@@ -1134,8 +1143,14 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         fig.add_shape(**opt, row=2, col=1)
     for trace, trace_opt in zip(trace_list, trace_opt_list):
         fig.add_trace(trace, **trace_opt)
-        for opt in trace_shading_opt:
-            fig.add_shape(**opt, row=trace_opt['row'], col=trace_opt['col'])
+        num_before_adding_shapes = len(fig.layout.shapes)
+        for shade_opt in trace_shading_opt:
+            shade_opt['y1'] = 0.5 # Will be half the overall plot
+            fig.add_shape(**shade_opt, row=trace_opt['row'], col=trace_opt['col'])
+        # Force yref in all of these new shapes, which doens't really work for subplots
+        # But here it is hardcoded as 50% of the overall plot (extending across subplots)
+        for i in range(num_before_adding_shapes, len(fig.layout.shapes)):
+            fig.layout.shapes[i]['yref'] = 'paper'
 
     ### Second column
     for trace, trace_opt in zip(weights_list, weights_opt_list):

@@ -269,10 +269,14 @@ class WormFullVideoPosture:
             BehaviorCodes.assert_all_are_valid(self._beh_annotation)
         return self._beh_annotation
 
-    @lru_cache(maxsize=8)
-    def manual_beh_annotation(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+    # @lru_cache(maxsize=8)
+    def manual_beh_annotation(self, fluorescence_fps=False, keep_reversal_turns=True, **kwargs) -> pd.DataFrame:
         """Ulises' manual annotations of behavior"""
         df = self._raw_manual_beh_annotation
+        if not keep_reversal_turns:
+            # Map reversal turns to regular reversal state
+            df = df.replace(BehaviorCodes.REV_VENTRAL_TURN, BehaviorCodes.REV)
+            df = df.replace(BehaviorCodes.REV_DORSAL_TURN, BehaviorCodes.REV)
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 

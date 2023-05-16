@@ -265,7 +265,6 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name, connect_at
             for s in starts:
                 if s > 0:
                     new_col[s] = df[x_name].at[s]
-
         new_columns[new_x_name] = new_col
 
     df_gaps = pd.DataFrame(new_columns)
