@@ -210,7 +210,9 @@ def build_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData
 
 def build_time_series_from_multiple_project_clusters(all_projects: Dict[str, ProjectData],
                                                      cluster_opt: dict = None,
-                                                     z_score=False, trigger_opt: dict = None, **kwargs):
+                                                     z_score=False, trigger_opt: dict = None,
+                                                     num_clusters=10,
+                                                     **kwargs):
     """
     Similar to build_time_series_from_multiple_projects, using a clustering object to cluster traces across datasets.
     This object should be built from multiple datasets, and have names that can be split using split_flattened_index
@@ -227,7 +229,7 @@ def build_time_series_from_multiple_project_clusters(all_projects: Dict[str, Pro
 
     """
     if cluster_opt is None:
-        cluster_opt = {'cluster_criterion': 'maxclust', 'linkage_threshold': 10}
+        cluster_opt = {'cluster_criterion': 'maxclust', 'linkage_threshold': num_clusters}
     # First build the clustering class
     multi_dataset_clusterer, clustering_intermediates = \
         clustered_triggered_averages_from_list_of_projects(all_projects,
