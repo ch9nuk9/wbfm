@@ -1193,11 +1193,13 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     df_pca_modes = pd.DataFrame(pca_modes.components_[0:num_pca_modes_to_plot, :].T)
     col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
     df_pca_modes.columns = col_names
-    df_pca_modes.set_index(x)
+    # Trying to do physical time doesn't work unless everything is aligned (especially ethogram)
+    # df_pca_modes.set_index(x, inplace=True)
 
     speed = project_data.worm_posture_class.worm_speed(fluorescence_fps=True, use_stage_position=False,
                                                        signed=True)
-    speed.set_index(x)
+    # speed = pd.DataFrame(speed)
+    # speed.set_index(x, inplace=True)
 
     df_pca_weights = pd.DataFrame(pca_weights.components_[0:num_pca_modes_to_plot, :].T)
     col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
@@ -1263,7 +1265,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     ### 3d phase plot
     ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_opt)
     # Use the same behaviors as the ethogram
-    df_pca_modes['behavior'] = beh_vec
+    df_pca_modes['behavior'] = list(beh_vec)
     df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
                                                                   ['mode 0', 'mode 1', 'mode 2'],
                                                                   'behavior')
