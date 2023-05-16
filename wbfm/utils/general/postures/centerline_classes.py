@@ -1246,19 +1246,24 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
     if not flag:
         return behavior_fname, is_likely_manually_annotated
 
-    # Could be named this, or have this as a suffix
-    behavior_suffix = "beh_annotation.csv"
-    behavior_fname = Path(raw_behavior_folder).joinpath(behavior_suffix)
+    # Check if there is a manually corrected version
+    manually_corrected_suffix = "beh_annotation_manual_corrected_timeseries.csv"
+    behavior_fname = Path(raw_behavior_folder).joinpath(manually_corrected_suffix)
     if not behavior_fname.exists():
-        behavior_fname = [f for f in raw_behavior_folder.iterdir() if f.name.endswith(behavior_suffix) and
-                          not f.name.startswith('.')]
-        if len(behavior_fname) == 0:
-            behavior_fname = None
-        elif len(behavior_fname) == 1:
-            behavior_fname = behavior_fname[0]
-        else:
-            logging.warning(f"Found multiple possible behavior annotations {behavior_fname}; taking the first one")
-            behavior_fname = behavior_fname[0]
+        # Could be named this, or have this as a suffix
+        behavior_suffix = "beh_annotation.csv"
+        behavior_fname = Path(raw_behavior_folder).joinpath(behavior_suffix)
+        # Check if that exact file exists
+        if not behavior_fname.exists():
+            behavior_fname = [f for f in raw_behavior_folder.iterdir() if f.name.endswith(behavior_suffix) and
+                              not f.name.startswith('.')]
+            if len(behavior_fname) == 0:
+                behavior_fname = None
+            elif len(behavior_fname) == 1:
+                behavior_fname = behavior_fname[0]
+            else:
+                logging.warning(f"Found multiple possible behavior annotations {behavior_fname}; taking the first one")
+                behavior_fname = behavior_fname[0]
 
     return behavior_fname, is_likely_manually_annotated
 
