@@ -252,7 +252,6 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name, connect_at
     new_x_names = []
     new_columns = {}
     all_values = df[state_name].unique()
-
     for val in all_values:
         new_x_name = f"{x_name}-{val}"
         new_x_names.append(new_x_name)
@@ -264,7 +263,7 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name, connect_at
             starts, ends = get_contiguous_blocks_from_column(nan_ind, already_boolean=True)
             for s in starts:
                 if s > 0:
-                    new_col[s] = df[x_name].at[s]
+                    new_col[s] = df[x_name].iat[s]
         new_columns[new_x_name] = new_col
 
     df_gaps = pd.DataFrame(new_columns)

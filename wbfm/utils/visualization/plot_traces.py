@@ -1193,11 +1193,11 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     df_pca_modes = pd.DataFrame(pca_modes.components_[0:num_pca_modes_to_plot, :].T)
     col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
     df_pca_modes.columns = col_names
-    df_pca_modes.index = x
+    df_pca_modes.set_index(x)
 
     speed = project_data.worm_posture_class.worm_speed(fluorescence_fps=True, use_stage_position=False,
                                                        signed=True)
-    speed.index = x
+    speed.set_index(x)
 
     df_pca_weights = pd.DataFrame(pca_weights.components_[0:num_pca_modes_to_plot, :].T)
     col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
