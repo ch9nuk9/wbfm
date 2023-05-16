@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
+from scipy.signal import detrend
+from sklearn.decomposition import PCA
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import split_flattened_index
@@ -303,3 +305,27 @@ def build_dataframe_of_clusters(all_triggered_average_classes, multi_dataset_clu
         logging.warning("Could not impute missing values in dataframe, returning None")
         print(e)
     return df_all_clusters, df_imputed
+
+
+def get_variance_explained(project_data, trace_kwargs=None):
+    if trace_kwargs is None:
+        trace_kwargs = dict(channel_mode='dr_over_r_20', min_nonnan=0.9, filter_mode='rolling_mean')
+    X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
+    X = detrend(X, axis=0)
+    pca = PCA(n_components=20, whiten=False)
+    pca.fit(X.T)
+
+    return pca.explained_variance_ratio_
+
+
+def get_all_variance_explained(all_projects_gcamp, all_projects_gfp, all_projects_immob):
+    # PERCENT VARIANCE EXPLAINED
+    gcamp_var = {name: get_variance_explained(p) for name, p in tqdm(all_projects_gcamp.items())}
+    gfp_var = {name: get_variance_explained(p) for name, p in tqdm(all_projects_gfp)}
+    immob_var = {name: get_variance_explained(p) for name, p in tqdm(all_projects_immob)}
+    # Cumulative sum
+    gcamp_var_sum = np.array([np.cumsum(p) for p in gcamp_var.values()]).T
+    gfp_var_sum = np.array([np.cumsum(p) for p in gfp_var.values()]).T
+    immob_var_sum = np.array([np.cumsum(p) for p in immob_var.values()]).T
+
+    return gcamp_var, gfp_var, immob_var, gcamp_var_sum, gfp_var_sum, immob_var_sum
