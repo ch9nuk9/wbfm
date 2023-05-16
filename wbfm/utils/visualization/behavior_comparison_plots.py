@@ -422,6 +422,34 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         return fig, model, best_neuron
 
+    def plot_X(self, df_name, y_train=None):
+        X = self.all_dfs[df_name]
+        X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train)
+
+        if self.use_plotly:
+            fig = px.line(X, title=f"Training data for {df_name}")
+            fig.show()
+        else:
+            fig = plt.figure()
+            plt.plot(X)
+            plt.title(f"Training data for {df_name}")
+            plt.show()
+        return fig
+
+    def plot_y(self, df_name, y_train=None):
+        X = self.all_dfs[df_name]
+        X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train)
+
+        if self.use_plotly:
+            fig = px.line(y, title=f"Target data for {y_train_name}")
+            fig.show()
+        else:
+            fig = plt.figure()
+            plt.plot(y)
+            plt.title(f"Target for {y_train_name}")
+            plt.show()
+        return fig
+
     def calc_leifer_encoding(self, df_name, y_train=None, use_multineuron=True, only_model_single_state=None,
                              correlation_not_r2=False, use_null_model=False,
                              DEBUG=False, **kwargs):
