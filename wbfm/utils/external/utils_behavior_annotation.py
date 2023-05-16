@@ -43,7 +43,7 @@ class BehaviorCodes(IntEnum):
     @classmethod
     def base_colormap(cls):
         # See: https://plotly.com/python/discrete-color/
-        return px.colors.qualitative.Plotly_r
+        return px.colors.qualitative.Set1_r
 
     @classmethod
     def ethogram_cmap(cls, include_reversal_turns=False):

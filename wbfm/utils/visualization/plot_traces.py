@@ -1054,20 +1054,22 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     fig.add_trace(var_explained_line, **var_explained_line_opt)
 
     ### Final updates
-    fig.update_xaxes(dict(showticklabels=False), col=1, overwrite=True, matches='x')
-    fig.update_yaxes(dict(showticklabels=False), col=1, overwrite=True)
+    fig.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
+    fig.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
 
     fig.update_xaxes(dict(showticklabels=False), row=1, overwrite=True)
     fig.update_yaxes(dict(showticklabels=False), row=1, overwrite=True, matches='y')
 
-    fig.update_xaxes(dict(showticklabels=True, showgrid=False), row=5, col=1, overwrite=True)
-    fig.update_yaxes(dict(showticklabels=True, showgrid=False), row=5, col=1, overwrite=True)
+    fig.update_xaxes(dict(showticklabels=True), row=6, col=1, overwrite=True)
+    fig.update_yaxes(dict(showticklabels=True), row=6, col=1, overwrite=True)
 
     fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
     # Transparent background and remove lines
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     # Fonts
     fig.update_layout(font=dict(size=18))
+    # Unclear why the colorscale is not jet, but this fixes it
+    fig.update_layout(coloraxis1=dict(colorscale='jet'))
 
     if to_show:
         fig.show()
@@ -1134,8 +1136,8 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
     fig.add_trace(kymograph, **kymograph_opt)
 
     ### Final updates
-    fig.update_xaxes(dict(showticklabels=False), col=1, overwrite=True, matches='x')
-    fig.update_yaxes(dict(showticklabels=False), col=1, overwrite=True)
+    fig.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
+    fig.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
 
     fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
     # Fonts
@@ -1173,6 +1175,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                                                  nan_tracking_failure_points=True,
                                                  nan_using_ppca_manifold=True,
                                                  channel_mode='dr_over_r_50')
+    x = project_data._x_physical_time
     df_traces = filter_rolling_mean(df_traces, window=3)
     df_traces_no_nan = fill_nan_in_dataframe(df_traces)
     # Calculate pca modes, and use them to sort
@@ -1190,8 +1193,12 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     df_pca_modes = pd.DataFrame(pca_modes.components_[0:num_pca_modes_to_plot, :].T)
     col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
     df_pca_modes.columns = col_names
+    df_pca_modes.index = x
+
     speed = project_data.worm_posture_class.worm_speed(fluorescence_fps=True, use_stage_position=False,
                                                        signed=True)
+    speed.index = x
+
     df_pca_weights = pd.DataFrame(pca_weights.components_[0:num_pca_modes_to_plot, :].T)
     col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
     df_pca_weights.columns = col_names
@@ -1199,16 +1206,17 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     df_pca_weights = df_pca_weights.iloc[ind_sort, :].reset_index(drop=True)
     var_explained = pca_modes.explained_variance_ratio_[:7]
     # Initialize options for all subplots
-    base_colormap = BehaviorCodes.base_colormap()
     subplot_titles = ['Traces sorted by PC1', '', 'PCA weights', '', 'Ethogram', 'Phase plot',
                       'PCA modes', '', '', 'Middle Body Speed', 'Variance Explained']
     # Relies on num_pca_modes_to_plot being 3
     row_heights = [0.55, 0.05, 0.1, 0.1, 0.1, 0.1]
     column_widths = [0.7, 0.1, 0.1, 0.1]
+
     ### Main heatmap
     heatmap = go.Heatmap(y=dat.index, z=dat, zmin=0, zmax=1, colorscale='jet', xaxis="x", yaxis="y",
                          coloraxis='coloraxis1')
     heatmap_opt = dict(row=1, col=1)
+
     ### Aternate: Kymograph heatmap
     kymo_dat = project_data.worm_posture_class.curvature(fluorescence_fps=True, reset_index=True).T
     # Instead of zmin and zmax on the plot, actually modify the data (options seem to not propagate to the plot)
@@ -1218,6 +1226,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     kymograph = go.Heatmap(y=kymo_dat.index, z=kymo_dat, colorscale='RdBu', xaxis="x", yaxis="y",
                          coloraxis='coloraxis2')
     kymograph_opt = dict(row=3, col=1)
+
     ### PCA modes
     mode_colormap = px.colors.qualitative.Plotly
     trace_list = []
@@ -1259,11 +1268,16 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                                                                   ['mode 0', 'mode 1', 'mode 2'],
                                                                   'behavior')
     state_names = beh_vec.unique()
+
     phase_plot_list = []
     for i, state_name in enumerate(state_names):
-        phase_plot_list.append(
-            go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]], mode='lines',
-                         name=state_name, line=dict(color=ethogram_cmap[state_name], width=4)))
+        try:
+            phase_plot_list.append(
+                go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]], mode='lines',
+                             name=state_name, line=dict(color=ethogram_cmap[state_name], width=4)))
+        except KeyError:
+            pass
+
     phase_plot_list_opt = dict(rows=2, cols=2)
     ### Variance explained
     var_explained_line = go.Scatter(y=var_explained)
