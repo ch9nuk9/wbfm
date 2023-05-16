@@ -113,6 +113,7 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False):
         for s, e in zip(starts, ends):
             this_val = beh_vec[s]
             color = cmap[this_val]
+            # Note that yref is ignored if this is a subplot. If yref is manually set, then it refers to the entire plot
             shape_opt = dict(type="rect", x0=s, x1=e, yref='paper', y0=0, y1=1,
                              fillcolor=color, line_width=0, layer="below")
             all_shape_opt.append(shape_opt)

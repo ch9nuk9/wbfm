@@ -1073,16 +1073,21 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         fig.show()
 
     if to_save:
-        trace_cfg = project_data.project_config.get_traces_config()
-        fname = 'summary_trace_plot.html'
-        fname = trace_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-        fig.write_html(str(fname))
-        fname = Path(fname).with_suffix('.png')
-        fig.write_image(str(fname))
-        fname = Path(fname).with_suffix('.svg')
-        fig.write_image(str(fname))
+        _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html')
 
     return fig
+
+
+def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html'):
+    trace_cfg = project_data.project_config.get_traces_config()
+    fname = trace_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+    fig.write_html(str(fname))
+    fname = Path(fname).with_suffix('.png')
+    fig.write_image(str(fname))
+    fname = Path(fname).with_suffix('.svg')
+    fig.write_image(str(fname))
+    fname = Path(fname).with_suffix('.eps')
+    fig.write_image(str(fname))
 
 
 def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, to_show=False):
@@ -1154,94 +1159,7 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
         fig.show()
 
     if to_save:
-        trace_cfg = project_data.project_config.get_traces_config()
-        fname = 'summary_trace_plot_kymograph.html'
-        fname = trace_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-        fig.write_html(str(fname))
-        fname = Path(fname).with_suffix('.png')
-        fig.write_image(str(fname))
-        fname = Path(fname).with_suffix('.svg')
-        fig.write_image(str(fname))
-
-    return fig
-
-
-def make_summary_interactive_heatmap_with_all_variance_explained(project_cfg, to_save=True, to_show=False):
-    """
-    Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of PCA modes
-    The total effect is to remove all but the first column
-
-    Parameters
-    ----------
-    project_cfg
-    to_save
-    to_show
-
-    Returns
-    -------
-
-    """
-
-    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
-    num_pca_modes_to_plot = 3
-    column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
-        project_data, num_pca_modes_to_plot)
-
-    # One column with a heatmap, (short) ethogram, and kymograph
-    rows = 3
-    cols = 1
-
-    row_heights = row_heights[:2]
-    row_heights.append(row_heights[0])
-
-    # Build figure
-
-    ### Column: x axis is time
-    fig = make_subplots(rows=rows, cols=cols, shared_xaxes=False, shared_yaxes=False,
-                        row_heights=row_heights, vertical_spacing=0.03,)
-
-    fig.add_trace(heatmap, **heatmap_opt)
-    for opt in ethogram_opt:
-        fig.add_shape(**opt, row=2, col=1)
-    fig.add_trace(kymograph, **kymograph_opt)
-
-    ### Final updates
-    fig.update_xaxes(dict(showticklabels=False), col=1, overwrite=True, matches='x')
-    fig.update_yaxes(dict(showticklabels=False), col=1, overwrite=True)
-
-    fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
-    # Fonts
-    fig.update_layout(font=dict(size=18))
-    # Get the colormaps in the right places
-    fig.update_layout(
-        coloraxis1=dict(colorscale='jet',  colorbar=dict(
-            len=0.5,
-            yanchor='middle',
-            y=0.75,
-            xanchor='right',
-            x=1.1)),
-        coloraxis2=dict(colorscale='RdBu', colorbar=dict(
-            zmin=-0.04, zmax=0.04,
-            len=0.5,
-            yanchor='middle',
-            y=0.25,
-            xanchor='right',
-            x=1.1
-        ),),
-    )
-
-    if to_show:
-        fig.show()
-
-    if to_save:
-        trace_cfg = project_data.project_config.get_traces_config()
-        fname = 'summary_trace_plot_kymograph.html'
-        fname = trace_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-        fig.write_html(str(fname))
-        fname = Path(fname).with_suffix('.png')
-        fig.write_image(str(fname))
-        fname = Path(fname).with_suffix('.svg')
-        fig.write_image(str(fname))
+        _save_plotly_all_types(fig, project_data, fname='summary_trace_plot_kymograph.html')
 
     return fig
 
@@ -1295,7 +1213,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     kymo_dat[kymo_dat < -0.04] = -0.04
     kymo_dat[kymo_dat > 0.04] = 0.04
     kymo_dat = kymo_dat.iloc[3:-3, :]
-    kymograph = go.Heatmap(y=kymo_dat.index, z=kymo_dat, colorscale='jet', xaxis="x", yaxis="y",
+    kymograph = go.Heatmap(y=kymo_dat.index, z=kymo_dat, colorscale='RdBu', xaxis="x", yaxis="y",
                          coloraxis='coloraxis2')
     kymograph_opt = dict(row=3, col=1)
     ### PCA modes
@@ -1326,17 +1244,17 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     # Include manual annotations
     beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True,
                                                                     keep_reversal_turns=True)
+    if beh_vec is None:
+        project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
     ethogram_opt = options_for_ethogram(beh_vec, include_reversal_turns=True)
     ### 3d phase plot
     base_colormap = BehaviorCodes.base_colormap()
-    beh_trace = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True,
-                                                                      keep_reversal_turns=True)
-    # Subset the behavior to be reversal, forward, or turn
-    df_pca_modes['behavior'] = beh_trace
+     # Subset the behavior to be reversal, forward, or turn
+    df_pca_modes['behavior'] = beh_vec
     df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
                                                                   ['mode 0', 'mode 1', 'mode 2'],
                                                                   'behavior')
-    state_names = beh_trace.unique()
+    state_names = beh_vec.unique()
     phase_plot_list = []
     for i, state_name in enumerate(state_names):
         phase_plot_list.append(

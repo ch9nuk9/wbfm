@@ -281,8 +281,10 @@ class WormFullVideoPosture:
         return df
 
     @cached_property
-    def _raw_manual_beh_annotation(self) -> pd.Series:
+    def _raw_manual_beh_annotation(self) -> Optional[pd.Series]:
         df = read_if_exists(self.filename_manual_beh_annotation, reader=pd.read_csv)
+        if df is None:
+            return None
         # Assume we only want the Annotation column
         df = df['Annotation']
         return df
