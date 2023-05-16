@@ -1090,12 +1090,11 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
 
     ### Ethogram
     beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
-    all_shape_opt = options_for_ethogram(beh_vec)
+    ethogram_opt = options_for_ethogram(beh_vec)
 
     ### 3d phase plot
     beh_trace = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
     df_pca_modes['behavior'] = beh_trace == BehaviorCodes.REV
-
     df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
                                                                   ['mode 0', 'mode 1', 'mode 2'],
                                                                   'behavior')
@@ -1127,7 +1126,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
                                [{}, {"rowspan": 1, "colspan": 3}, None, None]])
 
     fig.add_trace(heatmap, **heatmap_opt)
-    for opt in all_shape_opt:
+    for opt in ethogram_opt:
         fig.add_shape(**opt, row=2, col=1)
     for trace, trace_opt in zip(trace_list, trace_opt_list):
         fig.add_trace(trace, **trace_opt)
@@ -1148,8 +1147,9 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     fig.update_xaxes(dict(showticklabels=True), row=5, col=1, overwrite=True)
     fig.update_yaxes(dict(showticklabels=True), row=5, col=1, overwrite=True)
 
-    fig.update_layout(showlegend=False)
-    fig.update_layout(autosize=False, width=1.5*1000, height=1.5*800)
+    fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
+    # Transparent background
+    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
 
     if to_show:
         fig.show()
@@ -1164,3 +1164,4 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         fname = Path(fname).with_suffix('.svg')
         fig.write_image(str(fname))
 
+    return fig

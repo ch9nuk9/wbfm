@@ -324,17 +324,25 @@ class WormFullVideoPosture:
             y = self.summed_curvature_from_kymograph(start_segment=30, fluorescence_fps=True)
         elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_signed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_signed_curvature_from_kymograph(fluorescence_fps=True)
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, do_abs=False)
         elif behavior_alias == 'head_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=5, end_segment=30)
         elif behavior_alias == 'head_signed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_signed_curvature_from_kymograph(fluorescence_fps=True, start_segment=5, end_segment=30)
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, do_abs=False, start_segment=5, end_segment=30)
         elif behavior_alias == 'quantile_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.quantile_curvature_from_kymograph(fluorescence_fps=True, start_segment=5, end_segment=95,
-                                                       which_quantile=0.9)
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
+                                                     do_quantile=True, which_quantile=0.9)
+        elif behavior_alias == 'ventral_quantile_curvature':
+            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
+                                                     do_quantile=True, which_quantile=0.9)
+        elif behavior_alias == 'dorsal_quantile_curvature':
+            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
+                                                     do_quantile=True, which_quantile=0.1)
         elif behavior_alias == 'pirouette':
             y = self.calc_pseudo_pirouette_state()
         elif behavior_alias == 'plateau':
@@ -402,26 +410,18 @@ class WormFullVideoPosture:
         else:
             return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
 
-    @lru_cache(maxsize=8)
-    def summed_curvature_from_kymograph(self, fluorescence_fps=False, start_segment=30, end_segment=80) -> pd.Series:
+    @lru_cache(maxsize=64)
+    def summed_curvature_from_kymograph(self, fluorescence_fps=False, start_segment=30, end_segment=80,
+                                        do_abs=True, do_quantile=False, which_quantile=0.9) -> pd.Series:
         """Average over absolute value of segments (default) 30 to 80"""
-        curvature = self.curvature().loc[:, start_segment:end_segment].abs().mean(axis=1)
-        curvature = self._validate_and_downsample(curvature, fluorescence_fps=fluorescence_fps)
-        return curvature
-
-    @lru_cache(maxsize=8)
-    def summed_signed_curvature_from_kymograph(self, fluorescence_fps=False, start_segment=30, end_segment=80) -> pd.Series:
-        """Signed average over segments (default) 30 to 80"""
-        curvature = self.curvature().loc[:, start_segment:end_segment].mean(axis=1)
-        curvature = self._validate_and_downsample(curvature, fluorescence_fps=fluorescence_fps)
-        return curvature
-
-    @lru_cache(maxsize=8)
-    def quantile_curvature_from_kymograph(self, fluorescence_fps=False, start_segment=5, end_segment=95,
-                                          which_quantile=0.9) -> pd.Series:
-        """Quantile (default 90%) of absolute value of segments (default) 5 to 95"""
-        curvature = self.curvature().loc[:, start_segment:end_segment].abs().quantile(axis=1, q=which_quantile)
-        curvature = self._validate_and_downsample(curvature, fluorescence_fps=fluorescence_fps)
+        mat = self.curvature().loc[:, start_segment:end_segment]
+        if do_abs:
+            mat = mat.abs()
+        if not do_quantile:
+            mat = mat.mean(axis=1)
+        else:
+            mat = mat.quantile(axis=1, q=which_quantile)
+        curvature = self._validate_and_downsample(mat, fluorescence_fps=fluorescence_fps)
         return curvature
 
     ##

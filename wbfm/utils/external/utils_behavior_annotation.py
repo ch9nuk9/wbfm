@@ -70,7 +70,21 @@ class BehaviorCodes(IntEnum):
         return value not in (cls.FWD, cls.REV, cls.NOT_ANNOTATED, cls.UNKNOWN)
 
 
-def options_for_ethogram(beh_vec):
+def options_for_ethogram(beh_vec, shading=False):
+    """
+    Returns a list of dictionaries that can be passed to plotly to draw an ethogram
+
+    if shading is True, then the ethogram will be partially transparent, to be drawn on top of a trace
+
+    Parameters
+    ----------
+    beh_vec
+    shading
+
+    Returns
+    -------
+
+    """
     all_shape_opt = []
     cmap = BehaviorCodes.ethogram_cmap()
 
