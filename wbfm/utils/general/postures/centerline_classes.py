@@ -394,6 +394,13 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=8)
     def summed_curvature_from_kymograph(self, fluorescence_fps=False, start_segment=15, end_segment=80) -> pd.Series:
+        """Average over absolute value of segments (default) 15 to 80"""
+        curvature = self.curvature().loc[:, start_segment:end_segment].abs().mean(axis=1)
+        curvature = self._validate_and_downsample(curvature, fluorescence_fps=fluorescence_fps)
+        return curvature
+
+    @lru_cache(maxsize=8)
+    def summed_signed_curvature_from_kymograph(self, fluorescence_fps=False, start_segment=15, end_segment=80) -> pd.Series:
         """Signed average over segments (default) 15 to 80"""
         curvature = self.curvature().loc[:, start_segment:end_segment].mean(axis=1)
         curvature = self._validate_and_downsample(curvature, fluorescence_fps=fluorescence_fps)
