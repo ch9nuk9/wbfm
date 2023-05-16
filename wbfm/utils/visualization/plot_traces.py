@@ -1010,119 +1010,14 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
 
 
 def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show=False):
+
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
-
-    df_traces = project_data.calc_default_traces(interpolate_nan=True,
-                                                 filter_mode='rolling_mean',
-                                                 min_nonnan=0.9,
-                                                 nan_tracking_failure_points=True,
-                                                 nan_using_ppca_manifold=True,
-                                                 channel_mode='dr_over_r_50')
-    df_traces = filter_rolling_mean(df_traces, window=3)
-    df_traces_no_nan = fill_nan_in_dataframe(df_traces)
-    # Calculate pca modes, and use them to sort
-    pca_weights = PCA(n_components=10)
-    pca_modes = PCA(n_components=10)
-    df_mean_subtracted = df_traces_no_nan - df_traces_no_nan.mean()
-    pca_weights.fit(df_mean_subtracted)
-    pca_modes.fit(df_mean_subtracted.T)
-
     num_pca_modes_to_plot = 3
+    column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
+        project_data, num_pca_modes_to_plot)
 
-    # Preprocess
-    df_tmp = df_traces.copy()
-    df_tmp -= df_tmp.min()
-    ind_sort = np.argsort(pca_weights.components_[0, :])
-    dat = df_tmp.T.iloc[ind_sort, :]
-
-    neuron_names = list(dat.index)
-
-    df_pca_modes = pd.DataFrame(pca_modes.components_[0:num_pca_modes_to_plot, :].T)
-    col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
-    df_pca_modes.columns = col_names
-
-    speed = project_data.worm_posture_class.worm_speed(fluorescence_fps=True, use_stage_position=False,
-                                                       signed=True)
-
-    df_pca_weights = pd.DataFrame(pca_weights.components_[0:num_pca_modes_to_plot, :].T)
-    col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
-    df_pca_weights.columns = col_names
-    df_pca_weights.index = neuron_names
-
-    df_pca_weights = df_pca_weights.iloc[ind_sort, :].reset_index(drop=True)
-
-    var_explained = pca_modes.explained_variance_ratio_[:7]
-
-    # Initialize options for all subplots
-    base_colormap = BehaviorCodes.base_colormap()
-
-    subplot_titles = ['Traces sorted by PC1', '', 'PCA weights', '', 'Ethogram', 'Phase plot',
-                      'PCA modes', '', '', 'Middle Body Speed', 'Variance Explained']
-    row_heights = [0.55, 0.05, 0.1, 0.1, 0.1, 0.1]
-    column_widths = [0.7, 0.1, 0.1, 0.1]
     rows = 1 + num_pca_modes_to_plot + 2
     cols = 1 + num_pca_modes_to_plot
-
-    ### Main heatmap
-    heatmap = go.Heatmap(y=dat.index, z=dat, zmin=0, zmax=1, colorscale='jet', xaxis="x", yaxis="y")
-    heatmap_opt = dict(row=1, col=1)
-
-    ### PCA modes
-    mode_colormap = px.colors.qualitative.Plotly
-    trace_list = []
-    trace_opt_list = []
-    for i, col in enumerate(col_names):
-        trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index,
-                                     line=dict(color=mode_colormap[i], width=2)))
-        trace_opt_list.append(dict(row=i+3, col=1, secondary_y=False))
-
-    #### Shading on top of the PCA modes
-    beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
-    trace_shading_opt = options_for_ethogram(beh_vec, shading=True)
-
-    ### Speed plot (below pca modes)
-    trace_list.append(go.Scatter(y=speed, x=speed.index))
-    trace_opt_list.append(dict(row=num_pca_modes_to_plot+3, col=1, secondary_y=False))
-
-    ### PCA weights (same names as pca modes)
-    mode_colormap = px.colors.qualitative.Plotly
-    weights_list = []
-    weights_opt_list = []
-    for i, col in enumerate(col_names):
-        weights_list.append(go.Bar(x=df_pca_weights[col], y=df_pca_weights.index, orientation='h',
-                                   marker=dict(color=mode_colormap[i]),
-                                   hovertext=neuron_names,
-                                   hoverinfo="text"))
-        weights_opt_list.append(dict(row=1, col=2+i, secondary_y=False))
-
-    ### Ethogram
-    # Include manual annotations
-    beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True)
-    ethogram_opt = options_for_ethogram(beh_vec)
-
-    ### 3d phase plot
-    base_colormap = BehaviorCodes.base_colormap()
-    beh_trace = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True,
-                                                                      keep_reversal_turns=False)
-    # df_pca_modes['behavior'] = beh_trace == BehaviorCodes.REV
-    # Subset the behavior to be reversal, forward, or turn
-    df_pca_modes['behavior'] = beh_trace
-    df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
-                                                                  ['mode 0', 'mode 1', 'mode 2'],
-                                                                  'behavior')
-
-    # state_names = ['FWD', 'REV']
-    state_names = beh_trace.unique()
-    phase_plot_list = []
-    for i, state_name in enumerate(state_names):
-        phase_plot_list.append(
-            go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]], mode='lines',
-                         name=state_name, line=dict(color=base_colormap[i], width=4)))
-    phase_plot_list_opt = dict(rows=2, cols=2)
-
-    ### Variance explained
-    var_explained_line = go.Scatter(y=var_explained)
-    var_explained_line_opt = dict(row=6, col=2, secondary_y=False)
 
     # Build figure
 
@@ -1188,3 +1083,266 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         fig.write_image(str(fname))
 
     return fig
+
+
+def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, to_show=False):
+    """
+    Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of PCA modes
+    The total effect is to remove all but the first column
+
+    Parameters
+    ----------
+    project_cfg
+    to_save
+    to_show
+
+    Returns
+    -------
+
+    """
+
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    num_pca_modes_to_plot = 3
+    column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
+        project_data, num_pca_modes_to_plot)
+
+    # One column with a heatmap, (short) ethogram, and kymograph
+    rows = 3
+    cols = 1
+
+    row_heights = row_heights[:2]
+    row_heights.append(row_heights[0])
+
+    # Build figure
+
+    ### Column: x axis is time
+    fig = make_subplots(rows=rows, cols=cols, shared_xaxes=False, shared_yaxes=False,
+                        row_heights=row_heights, vertical_spacing=0.05,)
+
+    fig.add_trace(heatmap, **heatmap_opt)
+    for opt in ethogram_opt:
+        fig.add_shape(**opt, row=2, col=1)
+    fig.add_trace(kymograph, **kymograph_opt)
+    subplot_titles = ['Traces sorted by PC1', 'Ethogram', 'Kymograph']
+
+    ### Final updates
+    fig.update_xaxes(dict(showticklabels=False), col=1, overwrite=True, matches='x')
+    fig.update_yaxes(dict(showticklabels=False), col=1, overwrite=True)
+
+    fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800,
+                      subplot_titles=subplot_titles)
+    # Fonts
+    fig.update_layout(font=dict(size=18))
+    # Get the colormaps in the right places
+    fig.update_layout(
+        coloraxis1=dict(colorscale='jet',  colorbar=dict(
+            len=0.5,
+            yanchor='middle',
+            y=0.75,
+            xanchor='right',
+            x=1.1)),
+        coloraxis2=dict(colorscale='RdBu', colorbar=dict(
+            len=0.5,
+            yanchor='middle',
+            y=0.25,
+            xanchor='right',
+            x=1.1
+        ),),
+    )
+
+    if to_show:
+        fig.show()
+
+    if to_save:
+        trace_cfg = project_data.project_config.get_traces_config()
+        fname = 'summary_trace_plot_kymograph.html'
+        fname = trace_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        fig.write_html(str(fname))
+        fname = Path(fname).with_suffix('.png')
+        fig.write_image(str(fname))
+        fname = Path(fname).with_suffix('.svg')
+        fig.write_image(str(fname))
+
+    return fig
+
+
+def make_summary_interactive_heatmap_with_all_variance_explained(project_cfg, to_save=True, to_show=False):
+    """
+    Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of PCA modes
+    The total effect is to remove all but the first column
+
+    Parameters
+    ----------
+    project_cfg
+    to_save
+    to_show
+
+    Returns
+    -------
+
+    """
+
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    num_pca_modes_to_plot = 3
+    column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
+        project_data, num_pca_modes_to_plot)
+
+    # One column with a heatmap, (short) ethogram, and kymograph
+    rows = 3
+    cols = 1
+
+    row_heights = row_heights[:2]
+    row_heights.append(row_heights[0])
+
+    # Build figure
+
+    ### Column: x axis is time
+    fig = make_subplots(rows=rows, cols=cols, shared_xaxes=False, shared_yaxes=False,
+                        row_heights=row_heights, vertical_spacing=0.03,)
+
+    fig.add_trace(heatmap, **heatmap_opt)
+    for opt in ethogram_opt:
+        fig.add_shape(**opt, row=2, col=1)
+    fig.add_trace(kymograph, **kymograph_opt)
+
+    ### Final updates
+    fig.update_xaxes(dict(showticklabels=False), col=1, overwrite=True, matches='x')
+    fig.update_yaxes(dict(showticklabels=False), col=1, overwrite=True)
+
+    fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
+    # Fonts
+    fig.update_layout(font=dict(size=18))
+    # Get the colormaps in the right places
+    fig.update_layout(
+        coloraxis1=dict(colorscale='jet',  colorbar=dict(
+            len=0.5,
+            yanchor='middle',
+            y=0.75,
+            xanchor='right',
+            x=1.1)),
+        coloraxis2=dict(colorscale='RdBu', colorbar=dict(
+            zmin=-0.04, zmax=0.04,
+            len=0.5,
+            yanchor='middle',
+            y=0.25,
+            xanchor='right',
+            x=1.1
+        ),),
+    )
+
+    if to_show:
+        fig.show()
+
+    if to_save:
+        trace_cfg = project_data.project_config.get_traces_config()
+        fname = 'summary_trace_plot_kymograph.html'
+        fname = trace_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        fig.write_html(str(fname))
+        fname = Path(fname).with_suffix('.png')
+        fig.write_image(str(fname))
+        fname = Path(fname).with_suffix('.svg')
+        fig.write_image(str(fname))
+
+    return fig
+
+
+def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plot=3):
+    df_traces = project_data.calc_default_traces(interpolate_nan=True,
+                                                 filter_mode='rolling_mean',
+                                                 min_nonnan=0.9,
+                                                 nan_tracking_failure_points=True,
+                                                 nan_using_ppca_manifold=True,
+                                                 channel_mode='dr_over_r_50')
+    df_traces = filter_rolling_mean(df_traces, window=3)
+    df_traces_no_nan = fill_nan_in_dataframe(df_traces)
+    # Calculate pca modes, and use them to sort
+    pca_weights = PCA(n_components=10)
+    pca_modes = PCA(n_components=10)
+    df_mean_subtracted = df_traces_no_nan - df_traces_no_nan.mean()
+    pca_weights.fit(df_mean_subtracted)
+    pca_modes.fit(df_mean_subtracted.T)
+    # Preprocess
+    df_tmp = df_traces.copy()
+    df_tmp -= df_tmp.min()
+    ind_sort = np.argsort(pca_weights.components_[0, :])
+    dat = df_tmp.T.iloc[ind_sort, :]
+    neuron_names = list(dat.index)
+    df_pca_modes = pd.DataFrame(pca_modes.components_[0:num_pca_modes_to_plot, :].T)
+    col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
+    df_pca_modes.columns = col_names
+    speed = project_data.worm_posture_class.worm_speed(fluorescence_fps=True, use_stage_position=False,
+                                                       signed=True)
+    df_pca_weights = pd.DataFrame(pca_weights.components_[0:num_pca_modes_to_plot, :].T)
+    col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
+    df_pca_weights.columns = col_names
+    df_pca_weights.index = neuron_names
+    df_pca_weights = df_pca_weights.iloc[ind_sort, :].reset_index(drop=True)
+    var_explained = pca_modes.explained_variance_ratio_[:7]
+    # Initialize options for all subplots
+    base_colormap = BehaviorCodes.base_colormap()
+    subplot_titles = ['Traces sorted by PC1', '', 'PCA weights', '', 'Ethogram', 'Phase plot',
+                      'PCA modes', '', '', 'Middle Body Speed', 'Variance Explained']
+    # Relies on num_pca_modes_to_plot being 3
+    row_heights = [0.55, 0.05, 0.1, 0.1, 0.1, 0.1]
+    column_widths = [0.7, 0.1, 0.1, 0.1]
+    ### Main heatmap
+    heatmap = go.Heatmap(y=dat.index, z=dat, zmin=0, zmax=1, colorscale='jet', xaxis="x", yaxis="y",
+                         coloraxis='coloraxis1')
+    heatmap_opt = dict(row=1, col=1)
+    ### Aternate: Kymograph heatmap
+    kymo_dat = project_data.worm_posture_class.curvature(fluorescence_fps=True, reset_index=True).T
+    # Instead of zmin and zmax on the plot, actually modify the data (options seem to not propagate to the plot)
+    kymo_dat[kymo_dat < -0.04] = -0.04
+    kymo_dat[kymo_dat > 0.04] = 0.04
+    kymo_dat = kymo_dat.iloc[3:-3, :]
+    kymograph = go.Heatmap(y=kymo_dat.index, z=kymo_dat, colorscale='jet', xaxis="x", yaxis="y",
+                         coloraxis='coloraxis2')
+    kymograph_opt = dict(row=3, col=1)
+    ### PCA modes
+    mode_colormap = px.colors.qualitative.Plotly
+    trace_list = []
+    trace_opt_list = []
+    for i, col in enumerate(col_names):
+        trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index,
+                                     line=dict(color=mode_colormap[i], width=2)))
+        trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
+    #### Shading on top of the PCA modes
+    beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
+    trace_shading_opt = options_for_ethogram(beh_vec, shading=True)
+    ### Speed plot (below pca modes)
+    trace_list.append(go.Scatter(y=speed, x=speed.index))
+    trace_opt_list.append(dict(row=num_pca_modes_to_plot + 3, col=1, secondary_y=False))
+    ### PCA weights (same names as pca modes)
+    mode_colormap = px.colors.qualitative.Plotly
+    weights_list = []
+    weights_opt_list = []
+    for i, col in enumerate(col_names):
+        weights_list.append(go.Bar(x=df_pca_weights[col], y=df_pca_weights.index, orientation='h',
+                                   marker=dict(color=mode_colormap[i]),
+                                   hovertext=neuron_names,
+                                   hoverinfo="text"))
+        weights_opt_list.append(dict(row=1, col=2 + i, secondary_y=False))
+    ### Ethogram
+    # Include manual annotations
+    beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True)
+    ethogram_opt = options_for_ethogram(beh_vec)
+    ### 3d phase plot
+    base_colormap = BehaviorCodes.base_colormap()
+    beh_trace = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True,
+                                                                      keep_reversal_turns=False)
+    # Subset the behavior to be reversal, forward, or turn
+    df_pca_modes['behavior'] = beh_trace
+    df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
+                                                                  ['mode 0', 'mode 1', 'mode 2'],
+                                                                  'behavior')
+    state_names = beh_trace.unique()
+    phase_plot_list = []
+    for i, state_name in enumerate(state_names):
+        phase_plot_list.append(
+            go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]], mode='lines',
+                         name=state_name, line=dict(color=base_colormap[i], width=4)))
+    phase_plot_list_opt = dict(rows=2, cols=2)
+    ### Variance explained
+    var_explained_line = go.Scatter(y=var_explained)
+    var_explained_line_opt = dict(row=6, col=2, secondary_y=False)
+    return column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list
