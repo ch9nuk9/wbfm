@@ -33,7 +33,7 @@ class BehaviorCodes(IntEnum):
     UNKNOWN = -99
 
     @classmethod
-    def cmap(cls):
+    def shading_cmap(cls):
         """Colormap for shading on top of traces"""
         cmap = {cls.UNKNOWN: None,
                 cls.FWD: None,
@@ -46,7 +46,14 @@ class BehaviorCodes(IntEnum):
         base_cmap = px.colors.qualitative.Plotly
         cmap = {cls.UNKNOWN: None,
                 cls.FWD: base_cmap[0],
-                cls.REV: base_cmap[1]}
+                cls.REV: base_cmap[1],
+                cls.FWD_VENTRAL_TURN: base_cmap[2],
+                cls.FWD_DORSAL_TURN: base_cmap[3],
+                # Same as REV
+                cls.REV_VENTRAL_TURN: base_cmap[1],
+                cls.REV_DORSAL_TURN: base_cmap[1],
+                # Unclear
+                cls.QUIESCENCE: base_cmap[4]}
         return cmap
 
     @classmethod
@@ -86,27 +93,21 @@ def options_for_ethogram(beh_vec, shading=False):
 
     """
     all_shape_opt = []
-    cmap = BehaviorCodes.ethogram_cmap()
+    if shading:
+        cmap = BehaviorCodes.shading_cmap()
+    else:
+        cmap = BehaviorCodes.ethogram_cmap()
 
-    # Reversals
-    bin_behavior = beh_vec == BehaviorCodes.REV
-    starts, ends = get_contiguous_blocks_from_column(bin_behavior, already_boolean=True)
-    for s, e in zip(starts, ends):
-        this_val = beh_vec[s]
-        color = cmap[this_val]
-        shape_opt = dict(type="rect", x0=s, x1=e, y0=0, y1=1, fillcolor=color,
-                         line_width=0)
-        all_shape_opt.append(shape_opt)
-
-    # Forwards
-    bin_behavior = beh_vec == BehaviorCodes.FWD
-    starts, ends = get_contiguous_blocks_from_column(bin_behavior, already_boolean=True)
-    for s, e in zip(starts, ends):
-        this_val = beh_vec[s]
-        color = cmap[this_val]
-        shape_opt = dict(type="rect", x0=s, x1=e, y0=0, y1=1, fillcolor=color,
-                         line_width=0)
-        all_shape_opt.append(shape_opt)
+    # Loop over all behaviors in the colormap (some may not be present in the vector)
+    for behavior_code, color in cmap.items():
+        binary_behavior = beh_vec == behavior_code
+        starts, ends = get_contiguous_blocks_from_column(binary_behavior, already_boolean=True)
+        for s, e in zip(starts, ends):
+            this_val = beh_vec[s]
+            color = cmap[this_val]
+            shape_opt = dict(type="rect", x0=s, x1=e, y0=0, y1=1, fillcolor=color, line_width=0,
+                             layer="below")
+            all_shape_opt.append(shape_opt)
 
     return all_shape_opt
 

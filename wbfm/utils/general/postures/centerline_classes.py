@@ -1433,7 +1433,7 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
     """
 
     if cmap is None:
-        cmap = BehaviorCodes.cmap()
+        cmap = BehaviorCodes.shading_cmap()
     if ax is None:
         ax = plt.gca()
     bh = np.array(bh)
