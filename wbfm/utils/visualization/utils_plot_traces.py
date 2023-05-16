@@ -9,7 +9,7 @@ from sklearn.linear_model import LinearRegression
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan, get_contiguous_blocks_from_column
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-
+import plotly.graph_objects as go
 
 def build_trace_factory(base_trace_fname, trace_mode, smoothing_func=lambda x: x, background_per_pixel=0):
     if trace_mode in ['red', 'green']:
@@ -293,3 +293,81 @@ def plot_with_shading(mean_vals, std_vals, xmax=None, ax=None, std_vals_upper=No
         fill_kwargs["color"] = kwargs["color"]
     ax.fill_between(x, upper_shading, lower_shading, alpha=0.25, **fill_kwargs)
     return ax, lower_shading, upper_shading
+
+
+def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_upper=None, **kwargs):
+    """
+    Plot with shading, but for plotly. See plot_with_shading for matplotlib version
+
+    See: https://plotly.com/python/continuous-error-bars/
+
+    Parameters
+    ----------
+    mean_vals
+    std_vals
+    xmax
+    ax
+    std_vals_upper
+    kwargs
+
+    Returns
+    -------
+
+    """
+    if std_vals_upper is not None:
+        # Then the quantiles were passed, and they can be directly used
+        upper_shading = std_vals_upper
+        lower_shading = std_vals
+    else:
+        # Then the std was passed, and it must be added to the mean
+        upper_shading = mean_vals + std_vals
+        lower_shading = mean_vals - std_vals
+
+    if xmax is None:
+        xmax = len(mean_vals)
+    x = np.arange(xmax)
+    # Main line and shading together
+    # Options for all lines
+    opt = dict(
+        mode='lines',
+        x=x,
+        line=dict(color='rgb(31, 119, 180)'),
+    )
+
+    if fig is None:
+        fig = go.Figure()
+
+    main_line = go.Scatter(
+        name='Measurement',
+        y=mean_vals,
+        **opt
+    )
+    # Options for only the shading lines
+    fillcolor = main_line['line']['color'].replace('rgb', 'rgba').replace(')', ', 0.5)')
+    opt_shading = dict(
+        line=dict(width=0),
+        showlegend=False,
+        marker=dict(color="#444"),
+        fillcolor=fillcolor,
+        opacity=0.2,
+    )
+    opt_shading.update(opt)
+
+    shading_lines = [
+        go.Scatter(
+            name='Upper Bound',
+            y=upper_shading,
+            **opt_shading
+        ),
+        go.Scatter(
+            name='Lower Bound',
+            y=lower_shading,
+            fill='tonexty',
+            **opt_shading
+        )
+    ]
+
+    fig.add_trace(main_line)
+    fig.add_traces(shading_lines)
+
+    return fig, lower_shading, upper_shading

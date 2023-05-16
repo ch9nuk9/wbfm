@@ -314,15 +314,14 @@ def get_variance_explained(project_data, trace_kwargs=None):
     X = detrend(X, axis=0)
     pca = PCA(n_components=20, whiten=False)
     pca.fit(X.T)
-
     return pca.explained_variance_ratio_
 
 
 def get_all_variance_explained(all_projects_gcamp, all_projects_gfp, all_projects_immob):
     # PERCENT VARIANCE EXPLAINED
     gcamp_var = {name: get_variance_explained(p) for name, p in tqdm(all_projects_gcamp.items())}
-    gfp_var = {name: get_variance_explained(p) for name, p in tqdm(all_projects_gfp)}
-    immob_var = {name: get_variance_explained(p) for name, p in tqdm(all_projects_immob)}
+    gfp_var = {name: get_variance_explained(p) for name, p in tqdm(all_projects_gfp.items())}
+    immob_var = {name: get_variance_explained(p) for name, p in tqdm(all_projects_immob.items())}
     # Cumulative sum
     gcamp_var_sum = np.array([np.cumsum(p) for p in gcamp_var.values()]).T
     gfp_var_sum = np.array([np.cumsum(p) for p in gfp_var.values()]).T

@@ -1116,21 +1116,21 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
     # Build figure
 
     ### Column: x axis is time
+    subplot_titles = ['Traces sorted by PC1', 'Ethogram', 'Kymograph']
     fig = make_subplots(rows=rows, cols=cols, shared_xaxes=False, shared_yaxes=False,
-                        row_heights=row_heights, vertical_spacing=0.05,)
+                        row_heights=row_heights, vertical_spacing=0.05,
+                        subplot_titles=subplot_titles)
 
     fig.add_trace(heatmap, **heatmap_opt)
     for opt in ethogram_opt:
         fig.add_shape(**opt, row=2, col=1)
     fig.add_trace(kymograph, **kymograph_opt)
-    subplot_titles = ['Traces sorted by PC1', 'Ethogram', 'Kymograph']
 
     ### Final updates
     fig.update_xaxes(dict(showticklabels=False), col=1, overwrite=True, matches='x')
     fig.update_yaxes(dict(showticklabels=False), col=1, overwrite=True)
 
-    fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800,
-                      subplot_titles=subplot_titles)
+    fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
     # Fonts
     fig.update_layout(font=dict(size=18))
     # Get the colormaps in the right places
@@ -1324,12 +1324,13 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         weights_opt_list.append(dict(row=1, col=2 + i, secondary_y=False))
     ### Ethogram
     # Include manual annotations
-    beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True)
-    ethogram_opt = options_for_ethogram(beh_vec)
+    beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True,
+                                                                    keep_reversal_turns=True)
+    ethogram_opt = options_for_ethogram(beh_vec, include_reversal_turns=True)
     ### 3d phase plot
     base_colormap = BehaviorCodes.base_colormap()
     beh_trace = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True,
-                                                                      keep_reversal_turns=False)
+                                                                      keep_reversal_turns=True)
     # Subset the behavior to be reversal, forward, or turn
     df_pca_modes['behavior'] = beh_trace
     df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,

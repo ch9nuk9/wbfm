@@ -46,7 +46,7 @@ class BehaviorCodes(IntEnum):
         return px.colors.qualitative.Bold_r
 
     @classmethod
-    def ethogram_cmap(cls):
+    def ethogram_cmap(cls, include_reversal_turns=False):
         """Colormap for shading as a stand-alone ethogram"""
         base_cmap = cls.base_colormap()
         cmap = {cls.UNKNOWN: None,
@@ -55,10 +55,13 @@ class BehaviorCodes(IntEnum):
                 cls.FWD_VENTRAL_TURN: base_cmap[2],
                 cls.FWD_DORSAL_TURN: base_cmap[3],
                 # Same as REV
-                cls.REV_VENTRAL_TURN: base_cmap[1],
-                cls.REV_DORSAL_TURN: base_cmap[1],
+                # cls.REV_VENTRAL_TURN: base_cmap[1],
+                # cls.REV_DORSAL_TURN: base_cmap[1],
                 # Unclear
                 cls.QUIESCENCE: base_cmap[4]}
+        if include_reversal_turns:
+            cmap[cls.REV_VENTRAL_TURN] = base_cmap[5]
+            cmap[cls.REV_DORSAL_TURN] = base_cmap[6]
         return cmap
 
     @classmethod
@@ -82,7 +85,7 @@ class BehaviorCodes(IntEnum):
         return value not in (cls.FWD, cls.REV, cls.NOT_ANNOTATED, cls.UNKNOWN)
 
 
-def options_for_ethogram(beh_vec, shading=False):
+def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False):
     """
     Returns a list of dictionaries that can be passed to plotly to draw an ethogram
 
@@ -101,7 +104,7 @@ def options_for_ethogram(beh_vec, shading=False):
     if shading:
         cmap = BehaviorCodes.shading_cmap()
     else:
-        cmap = BehaviorCodes.ethogram_cmap()
+        cmap = BehaviorCodes.ethogram_cmap(include_reversal_turns=include_reversal_turns)
 
     # Loop over all behaviors in the colormap (some may not be present in the vector)
     for behavior_code, color in cmap.items():
