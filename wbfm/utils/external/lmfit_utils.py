@@ -56,8 +56,11 @@ def fit_multi_exponential_model(x, y, to_plot=True, num_exponentials=2,
         plt.scatter(x, y, color='gray', label='data')
         plt.plot(x, result.best_fit, label='best fit')
         if num_exponentials > 1:
+            num_components = num_exponentials
             for i in range(num_exponentials):
                 plt.plot(x, components[f'e{i}_'], '--', label=f'exp{i}')
+            if cumulative:
+                plt.plot(x, np.ones(len(x))*components[f'const_'], '--', label=f'const')
         plt.legend()
 
     return result
