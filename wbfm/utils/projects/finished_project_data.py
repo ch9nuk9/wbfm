@@ -852,15 +852,18 @@ class ProjectData:
                 #     self.logger.warning("Requested nan interpolation, but then nan were added due to tracking failures")
 
         if nan_using_ppca_manifold:
-            to_remove_all_names = self.calc_indices_to_remove_using_ppca()
-            # Subset the full removal matrix to only the neurons in this dataframe
-            # to_remove_all_names is a matrix, so we can't directly index using pandas syntax
-            names = get_names_from_df(df)
-            original_names = self.neuron_names
-            # Get the mapping between the names that have survived so far and the original names
-            name_ind = [original_names.index(n) for n in names]
-            to_remove = to_remove_all_names[:, name_ind]
-            df[to_remove] = np.nan
+            try:
+                to_remove_all_names = self.calc_indices_to_remove_using_ppca()
+                # Subset the full removal matrix to only the neurons in this dataframe
+                # to_remove_all_names is a matrix, so we can't directly index using pandas syntax
+                names = get_names_from_df(df)
+                original_names = self.neuron_names
+                # Get the mapping between the names that have survived so far and the original names
+                name_ind = [original_names.index(n) for n in names]
+                to_remove = to_remove_all_names[:, name_ind]
+                df[to_remove] = np.nan
+            except ValueError as e:
+                self.logger.warning(f"PPCA failed with error: {e}, skipping manifold-based outlier removal")
 
         # Optional: separate fast and slow components, and return only one
         if return_fast_scale_separation and return_slow_scale_separation:
