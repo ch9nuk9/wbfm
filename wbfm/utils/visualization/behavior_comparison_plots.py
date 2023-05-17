@@ -821,7 +821,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         df = pd.DataFrame({x_name: x, neuron_name: y, 'reversal': binary_state})
         return df, x_train_name
 
-    def _savefig(self, fig, fname, saving_folder):
+    def _savefig(self, fig, fname, saving_folder, also_save_svg=True):
         fname = os.path.join(saving_folder, f"{self.shortened_name}-{fname}")
         print(f"Saving figure to {fname}")
 
@@ -830,9 +830,13 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
                 vis_cfg = self.project_data.project_config.get_visualization_config(make_subfolder=True)
                 fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
             fig.savefig(fname)
+            if also_save_svg:
+                fig.savefig(fname.replace(".png", ".svg"))
         else:
             # Assume plotly
             fig.write_image(fname)
+            if also_save_svg:
+                fig.write_image(fname.replace(".png", ".svg"))
 
     def _plot_linear_regression_coefficients(self, X, y, df_name, model=None,
                                              only_plot_nonzero=True, also_plot_traces=True, y_name="speed"):

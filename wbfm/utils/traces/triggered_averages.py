@@ -40,7 +40,7 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         logging.warning("Found invalid neuron (empty triggered average)")
         return None, None
     # Plot
-    ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_lower_std, xmax, ax, **kwargs,
+    ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_lower_std, xmax, ax=ax, **kwargs,
                                                          std_vals_upper=triggered_upper_std)
     if show_individual_lines:
         for trace in triggered_avg_matrix:
@@ -926,6 +926,13 @@ class ClusteredTriggeredAverages:
             ax.set_xticks([])
             ax.set_yticks([])
         # ax.colorbar()
+
+        if output_folder is not None:
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder, exist_ok=True)
+            plt.savefig(os.path.join(output_folder, 'clustergram.png'), dpi=200)
+            # Also save svg for easy editing
+            plt.savefig(os.path.join(output_folder, 'clustergram.svg'), dpi=200)
 
     def plot_dendrogram_matplotlib(self, linkage_threshold=None):
         if linkage_threshold is None:
