@@ -394,7 +394,7 @@ class WormFullVideoPosture:
 
         return y
 
-    # @lru_cache(maxsize=8)
+    @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False) -> \
             Optional[pd.Series]:
         """Name is shortened to avoid US-UK spelling confusion"""
