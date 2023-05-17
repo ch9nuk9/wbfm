@@ -269,7 +269,7 @@ class WormFullVideoPosture:
             BehaviorCodes.assert_all_are_valid(self._beh_annotation)
         return self._beh_annotation
 
-    # @lru_cache(maxsize=8)
+    @lru_cache(maxsize=8)
     def manual_beh_annotation(self, fluorescence_fps=False, keep_reversal_turns=True, **kwargs) -> pd.DataFrame:
         """Ulises' manual annotations of behavior"""
         df = self._raw_manual_beh_annotation
@@ -394,7 +394,7 @@ class WormFullVideoPosture:
 
         return y
 
-    @lru_cache(maxsize=8)
+    # @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False) -> \
             Optional[pd.Series]:
         """Name is shortened to avoid US-UK spelling confusion"""
@@ -1269,6 +1269,18 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
 
 
 def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fname: str = None):
+    """
+    Reads from a directly passed filename, or from the config file if that fails
+
+    Parameters
+    ----------
+    cfg
+    behavior_fname
+
+    Returns
+    -------
+
+    """
     if behavior_fname is None:
         if cfg is not None:
             behavior_fname, is_old_style = get_manual_behavior_annotation_fname(cfg)
@@ -1277,11 +1289,17 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
             return None
     if behavior_fname is not None:
         if str(behavior_fname).endswith('.csv'):
-            behavior_annotations = pd.read_csv(behavior_fname, header=1, names=['annotation'], index_col=0)
+            # Old style had two columns with no header, manually corrected style has a header
+            if 'manual_corrected_timeseries' in str(behavior_fname):
+                df_behavior_annotations = pd.read_csv(behavior_fname)
+                behavior_annotations = df_behavior_annotations['Annotation']
+            else:
+                behavior_annotations = pd.read_csv(behavior_fname, header=1, names=['annotation'], index_col=0)
+                if behavior_annotations.shape[1] > 1:
+                    # Sometimes there is a messed up extra column
+                    behavior_annotations = pd.Series(behavior_annotations.iloc[:, 0])
             behavior_annotations.fillna(BehaviorCodes.UNKNOWN, inplace=True)
-            if behavior_annotations.shape[1] > 1:
-                # Sometimes there is a messed up extra column
-                behavior_annotations = pd.Series(behavior_annotations.iloc[:, 0])
+
         else:
             try:
                 behavior_annotations = pd.read_excel(behavior_fname, sheet_name='behavior')['Annotation']
