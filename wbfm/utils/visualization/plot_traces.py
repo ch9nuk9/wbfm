@@ -1175,7 +1175,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                                                  nan_tracking_failure_points=True,
                                                  nan_using_ppca_manifold=True,
                                                  channel_mode='dr_over_r_50')
-    x = project_data._x_physical_time
+    # x = project_data._x_physical_time
     df_traces = filter_rolling_mean(df_traces, window=3)
     df_traces_no_nan = fill_nan_in_dataframe(df_traces)
     # Calculate pca modes, and use them to sort
@@ -1254,11 +1254,11 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                                    hoverinfo="text"))
         weights_opt_list.append(dict(row=1, col=2 + i, secondary_y=False))
     ### Ethogram
-    # Include manual annotations
+    # Include manual annotations, if any
     beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True,
                                                                     keep_reversal_turns=True)
     if beh_vec is None:
-        project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
+        beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
     ethogram_cmap_opt = dict(include_reversal_turns=True)
 
     ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt)
