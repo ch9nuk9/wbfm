@@ -682,9 +682,7 @@ class ProjectData:
         Options are kept for compatibility with calc_default_traces, but most are not used
         """
 
-        behavior_codes = ['signed_stage_speed', 'summed_curvature', 'signed_speed_angular',
-                          'signed_middle_body_speed_smoothed',
-                          'signed_middle_body_speed', 'head_curvature', 'head_signed_curvature',
+        behavior_codes = ['signed_middle_body_speed', 'head_signed_curvature',
                           'fwd_empirical_distribution', 'rev_phase_counter',
                           'quantile_curvature', 'dorsal_quantile_curvature', 'quantile_head_curvature']
                           #'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature']

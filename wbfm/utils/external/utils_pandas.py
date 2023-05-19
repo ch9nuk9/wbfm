@@ -533,7 +533,7 @@ def get_column_name_from_time_and_column_value(df: pd.DataFrame, i_time: int, co
         return None, None
 
 
-def correlate_return_cross_terms(df0: pd.DataFrame, df1: pd.DataFrame) -> pd.DataFrame:
+def correlate_return_cross_terms(df0: pd.DataFrame, df1: pd.DataFrame = None) -> pd.DataFrame:
     """
     Like df.corr(), but acts on two dataframes, returning only the cross terms
 
@@ -546,6 +546,9 @@ def correlate_return_cross_terms(df0: pd.DataFrame, df1: pd.DataFrame) -> pd.Dat
     -------
 
     """
+    if df1 is None:
+        # This is already build-in to pandas
+        return df0.corr()
     df_corr = pd.concat([df0, df1], axis=1).corr()
     return get_corner_from_corr_df(df0, df_corr)
 

@@ -1463,6 +1463,8 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
         1 - REV (gray)
 
     See BehaviorCodes for valid codes
+
+    See options_for_ethogram for a plotly-compatible version
     """
 
     if cmap is None:
