@@ -684,9 +684,10 @@ class ProjectData:
 
         behavior_codes = ['signed_stage_speed', 'summed_curvature', 'signed_speed_angular',
                           'signed_middle_body_speed_smoothed',
-                          'signed_middle_body_speed', 'head_curvature',
+                          'signed_middle_body_speed', 'head_curvature', 'head_signed_curvature',
                           'fwd_empirical_distribution', 'rev_phase_counter',
-                          'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature']
+                          'quantile_curvature', 'dorsal_quantile_curvature', 'quantile_head_curvature']
+                          #'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature']
 
         behavior_dict = {}
         for code in behavior_codes:
