@@ -334,9 +334,7 @@ class TriggeredAverageIndices:
             self.prep_triggered_average_for_plotting(triggered_avg_matrix, self.min_lines)
         if not is_valid:
             return []
-        upper_shading = triggered_avg + triggered_upper_std
-        lower_shading = triggered_avg - triggered_lower_std
-        x_significant = np.where(np.logical_or(lower_shading > raw_trace_mean, upper_shading < raw_trace_mean))[0]
+        x_significant = np.where(np.logical_or(triggered_lower_std > raw_trace_mean, triggered_upper_std < raw_trace_mean))[0]
         return x_significant
 
     def calc_p_value_using_zeta(self, trace, num_baseline_lines=100, DEBUG=False) -> float:
