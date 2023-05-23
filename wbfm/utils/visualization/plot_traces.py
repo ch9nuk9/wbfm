@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 from functools import partial
 from pathlib import Path
@@ -31,6 +32,7 @@ import matplotlib.style as mplstyle
 from plotly.subplots import make_subplots
 from plotly import graph_objects as go
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivariateEncoding
 from wbfm.utils.visualization.filtering_traces import filter_rolling_mean, fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 import plotly.express as px
@@ -1285,3 +1287,68 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     var_explained_line = go.Scatter(y=var_explained)
     var_explained_line_opt = dict(row=6, col=2, secondary_y=False)
     return column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list
+
+
+def make_summary_hilbert_triggered_average_grid_plot(project_cfg, i_body_segment=41,
+                                                     return_fast_scale_separation=False, residual_mode=None,
+                                                     to_save=True,
+                                                     **kwargs):
+    """
+    Make a grid plot of the hilbert-phase triggered average for a given body segment
+
+    Neurons that oscillate should show a strong signal, and others will be flat.
+    This signal should be present regardless of the segment chosen
+
+    kwargs are passed to calc_default_traces
+
+    Parameters
+    ----------
+    project_cfg
+    i_body_segment
+    kwargs
+
+    Returns
+    -------
+
+    """
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+
+    # Get traces
+    trace_opt = dict(interpolate_nan=False,
+                     filter_mode='rolling_mean',
+                     min_nonnan=0.9,
+                     nan_tracking_failure_points=True,
+                     nan_using_ppca_manifold=False,
+                     channel_mode='dr_over_r_20',
+                     residual_mode=residual_mode,
+                     return_fast_scale_separation=return_fast_scale_separation)
+    trace_opt.update(kwargs)
+
+    df_traces = project_data.calc_default_traces(**trace_opt)
+
+    phase = project_data.worm_posture_class.hilbert_phase(fluorescence_fps=True, reset_index=True)
+    phase = phase.loc[:, i_body_segment].copy() % (2 * math.pi)
+    phase -= np.nanmean(phase)
+
+    trigger_opt = dict(min_duration=0, min_lines=10, ind_preceding=10, behavioral_annotation=phase,
+                       behavioral_annotation_is_continuous=True, )
+    min_significant = 10
+    ind_class_fast = project_data.worm_posture_class.calc_triggered_average_indices(**trigger_opt)
+    triggered_averages_class = FullDatasetTriggeredAverages(df_traces, ind_class_fast,
+                                                            min_points_for_significance=min_significant)
+
+    # Options for the traces within the grid plot
+    trace_and_plot_opt = dict(color_using_behavior=False, share_y_axis=False)
+    subset_neurons = project_data.well_tracked_neuron_names(0.9)
+
+    func = partial(triggered_averages_class.ax_plot_func_for_grid_plot,
+                   show_individual_lines=False, color_significant_times=True)
+    fig = make_grid_plot_from_dataframe(df_traces, neuron_names_to_plot=subset_neurons, **trace_and_plot_opt,
+                                        ax_plot_func=func)
+
+    # Make a title for the plot based on the options, and save in the project
+    if to_save:
+        fname = f'hilbert_triggered_average_grid_plot-fast_{return_fast_scale_separation}-residual_{residual_mode}.png'
+        project_data.save_fig_in_project(fname)
+
+    return fig

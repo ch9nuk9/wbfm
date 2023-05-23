@@ -278,7 +278,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             pass
         return str(foldername)
 
-    def get_visualization_config(self, make_subfolder=False):
+    def get_visualization_config(self, make_subfolder=False) -> SubfolderConfigFile:
         fname = self.config['subfolder_configs'].get('visualization', None)
         if fname is None:
             # Assume the local folder is correct
