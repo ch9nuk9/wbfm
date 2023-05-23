@@ -645,7 +645,8 @@ class ProjectData:
         """All names of neurons"""
         return get_names_from_df(self.red_traces)
 
-    def well_tracked_neuron_names(self, min_nonnan=0.5, remove_invalid_neurons=False):
+    def well_tracked_neuron_names(self, min_nonnan=0.5, remove_invalid_neurons=False,
+                                  rename_neurons_using_manual_ids=False):
         """
         Subset of neurons that pass a given tracking threshold
         """
@@ -656,6 +657,11 @@ class ProjectData:
         if remove_invalid_neurons:
             invalid_names = self.finished_neuron_names(finished_not_invalid=False)
             neuron_names = [n for n in neuron_names if n not in invalid_names]
+
+        # Optional: rename columns to use manual ids, if found
+        if rename_neurons_using_manual_ids:
+            mapping = self.neuron_name_to_manual_id_mapping()
+            neuron_names = [mapping[n] if n in mapping else n for n in neuron_names]
         return neuron_names
 
     def calc_default_behaviors(self, min_nonnan: Optional[float] = None, interpolate_nan: bool = False,

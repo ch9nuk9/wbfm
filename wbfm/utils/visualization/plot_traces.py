@@ -1313,6 +1313,7 @@ def make_summary_hilbert_triggered_average_grid_plot(project_cfg, i_body_segment
                      nan_tracking_failure_points=True,
                      nan_using_ppca_manifold=False,
                      channel_mode='dr_over_r_20',
+                     rename_neurons_using_manual_ids=True,
                      residual_mode=residual_mode,
                      return_fast_scale_separation=return_fast_scale_separation)
     trace_opt.update(kwargs)
@@ -1332,7 +1333,7 @@ def make_summary_hilbert_triggered_average_grid_plot(project_cfg, i_body_segment
 
     # Options for the traces within the grid plot
     trace_and_plot_opt = dict(color_using_behavior=False, share_y_axis=False)
-    subset_neurons = project_data.well_tracked_neuron_names(0.9)
+    subset_neurons = project_data.well_tracked_neuron_names(0.9, rename_neurons_using_manual_ids=trace_opt['rename_neurons_using_manual_ids'])
 
     func = partial(triggered_averages_class.ax_plot_func_for_grid_plot,
                    show_individual_lines=False, color_significant_times=True)
