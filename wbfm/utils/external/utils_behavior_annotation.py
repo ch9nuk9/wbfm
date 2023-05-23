@@ -84,6 +84,8 @@ class BehaviorCodes(IntEnum):
     @classmethod
     def must_be_manually_annotated(cls, value):
         """As of 23-03-2023, everything except FWD and REV must be manually annotated"""
+        if value is None:
+            return False
         return value not in (cls.FWD, cls.REV, cls.NOT_ANNOTATED, cls.UNKNOWN)
 
 
