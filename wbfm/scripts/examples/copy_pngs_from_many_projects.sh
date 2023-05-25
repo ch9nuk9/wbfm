@@ -7,14 +7,16 @@
 #       - visualization
 #         - target.png
 #     - project_folder_2 (new name)
-#       - visualization (same name; hardcoded)
+#       - visualization (same name)
 #         - target.png (same name)
 #
 # Usage:
-#   ./copy_pngs_from_many_projects.sh -s source_folder -t target.png -d destination_folder
+#   ./copy_pngs_from_many_projects.sh -s source_folder -t visualization/target.png -d destination_folder
 #
 # Example:
-#   ./copy_pngs_from_many_projects.sh -s ~/Desktop/parent_folder -t target.png -d ~/Desktop/destination_folder
+#   ./copy_pngs_from_many_projects.sh -s ~/Desktop/parent_folder -t visualization/target.png -d ~/Desktop/destination_folder
+#
+# Note that the target does not need to be in a subfolder called "visualization"
 
 # Parse arguments
 while getopts s:t:d: flag
@@ -34,10 +36,8 @@ mkdir -p "$destination_folder"
 for folder in "$source_folder"/*; do
     # Get project name
     project_name=$(basename "$folder")
-    # Get visualization folder
-    visualization_folder=$folder/visualization
     # Get target png
-    target_png=$visualization_folder/$target
+    target_png=$folder/$target
     # Copy target png to destination folder, renaming it to the project name
     cp "$target_png" "$destination_folder"/"$project_name".png
 done
