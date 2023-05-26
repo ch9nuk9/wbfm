@@ -669,7 +669,7 @@ class FullDatasetTriggeredAverages:
                 all_p_values[name] = p
                 to_keep = p < 0.05
             elif self.significance_calculation_method == 'num_points':
-                logging.warning("Number of points calculation is not statistically justified!")
+                # logging.warning("Number of points calculation is not statistically justified!")
                 mat = self.triggered_average_matrix_from_name(name)
                 x_significant = self.ind_class.calc_significant_points_from_triggered_matrix(mat)
                 all_p_values[name] = x_significant
@@ -1699,7 +1699,6 @@ class ClusteredTriggeredAverages:
         per_cluster_names = self.per_cluster_names
         per_id_counts_per_cluster = defaultdict(lambda: defaultdict(int))
         for key_clust, clust_names in per_cluster_names.items():
-            # clust_names_manual = []
             for name in clust_names:
                 dataset_name, neuron_name = split_flattened_index([name])[name]
 
