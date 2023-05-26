@@ -13,6 +13,34 @@
 # Set the path to the folder with the excel files
 excel_folder="/home/charles/Downloads/wbfm_neuron_ids"
 
+# The actual folder will be zipped, with the above path as the base name but with an additional number suffix
+# First, find the exact folder and unzip it. Then continue with moving individual files.
+zipped_excel_folder=$(find "$excel_folder" -type f -name "*.zip")
+if [ -f "$zipped_excel_folder" ]; then
+    echo "Found zipped excel folder: $zipped_excel_folder"
+
+    # Unzip the folder
+    unzip "$zipped_excel_folder" -d "$excel_folder"
+
+    # Remove the zipped folder
+    rm "$zipped_excel_folder"
+else
+    echo "Could not find zipped excel folder: $zipped_excel_folder"
+    echo "You must manually download from google drive!"
+    # Exit with error
+    exit 1
+fi
+
+# The unzipped folder may have a subfolder called "wbfm_neuron_ids"; if so we need to update excel_folder
+unzipped_excel_folder=$(find "$excel_folder" -type d -name "wbfm_neuron_ids")
+if [ -d "$unzipped_excel_folder" ]; then
+    echo "Found nested unzipped excel folder: $unzipped_excel_folder"
+    # Update the excel folder
+    excel_folder="$unzipped_excel_folder"
+else
+    echo "Excel folder was not nested, and remains: $excel_folder"
+fi
+
 # Set the path to the folder with the projects
 project_parent_folder="/scratch/neurobiology/zimmer/Charles/dlc_stacks"
 
