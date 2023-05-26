@@ -11,19 +11,27 @@
 #
 
 # Set the path to the folder with the excel files
-excel_folder="/home/charles/Downloads/wbfm_neuron_ids"
+excel_file_prefix="wbfm_neuron_ids"
+excel_parent_folder="/home/charles/Downloads"
+excel_target_folder="$excel_parent_folder/$excel_file_prefix"
+log_fname="$excel_parent_folder/log.txt"
+
+# Check if the unzipped excel folder exists, and crash if so
+if [ -d "$excel_target_folder" ]; then
+    echo "Excel folder already exists: $excel_target_folder"
+    echo "You must manually delete it!"
+    # Exit with error
+    exit 1
+fi
 
 # The actual folder will be zipped, with the above path as the base name but with an additional number suffix
 # First, find the exact folder and unzip it. Then continue with moving individual files.
-zipped_excel_folder=$(find "$excel_folder" -type f -name "*.zip")
+zipped_excel_folder=$(find "$excel_parent_folder" -type f -name "$excel_file_prefix*.zip")
 if [ -f "$zipped_excel_folder" ]; then
     echo "Found zipped excel folder: $zipped_excel_folder"
 
     # Unzip the folder
-    unzip "$zipped_excel_folder" -d "$excel_folder"
-
-    # Remove the zipped folder
-    rm "$zipped_excel_folder"
+    unzip "$zipped_excel_folder" -d "$excel_target_folder" > $log_fname
 else
     echo "Could not find zipped excel folder: $zipped_excel_folder"
     echo "You must manually download from google drive!"
@@ -32,13 +40,13 @@ else
 fi
 
 # The unzipped folder may have a subfolder called "wbfm_neuron_ids"; if so we need to update excel_folder
-unzipped_excel_folder=$(find "$excel_folder" -type d -name "wbfm_neuron_ids")
-if [ -d "$unzipped_excel_folder" ]; then
-    echo "Found nested unzipped excel folder: $unzipped_excel_folder"
+nested_excel_folder="$excel_target_folder/$excel_file_prefix"
+if [ -d $nested_excel_folder ]; then
+    echo "Found nested unzipped excel folder: $nested_excel_folder, updating target folder to that path"
     # Update the excel folder
-    excel_folder="$unzipped_excel_folder"
+    excel_target_folder="$nested_excel_folder"
 else
-    echo "Excel folder was not nested, and remains: $excel_folder"
+    echo "Nested folder $nested_excel_folder was not found; target remains: $excel_target_folder"
 fi
 
 # Set the path to the folder with the projects
@@ -58,7 +66,7 @@ for project_parent in "$project_parent_folder"/*; do
                 project_name=$(basename "$project")
 
                 # Get the path to the excel file
-                excel_file="$excel_folder/$project_name.xlsx"
+                excel_file="$excel_target_folder/$project_name.xlsx"
 
                 # Check if the excel file exists
                 if [ -f "$excel_file" ]; then
@@ -69,12 +77,14 @@ for project_parent in "$project_parent_folder"/*; do
 
                     # Check if the manual annotation folder exists
                     if [ -d "$manual_annotation_folder" ]; then
-                        echo "Found manual annotation folder: $manual_annotation_folder"
+                        # Print with green text
+                        echo -e "\e[32mFound manual annotation folder: $manual_annotation_folder\e[0m"
 
                         # Move the excel file to the manual annotation folder
                         mv "$excel_file" "$manual_annotation_folder"
                     else
-                        echo "Could not find manual annotation folder: $manual_annotation_folder"
+                        # Print with red text
+                        echo -e "\e[31mCould not find manual annotation folder: $manual_annotation_folder\e[0m"
                     fi
                 else
                     echo "Could not find excel file: $excel_file"
