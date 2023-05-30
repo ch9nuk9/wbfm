@@ -21,7 +21,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
-from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError
+from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
@@ -186,6 +186,8 @@ class WormFullVideoPosture:
     def _raw_curvature(self):
         df = read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
         # Remove the first column, which is the frame number
+        if df is None:
+            raise NoBehaviorAnnotationsError("(curvature)")
         df = df.iloc[:, 1:]
         return df
 
@@ -246,6 +248,8 @@ class WormFullVideoPosture:
     @lru_cache(maxsize=8)
     def centerline_absolute_coordinates(self, fluorescence_fps=False) -> pd.DataFrame:
         """Returns a multi-index dataframe, where each body segment looks like the stage_position dataframe"""
+        if self.centerlineX() is None:
+            raise NoBehaviorAnnotationsError("(centerline)")
         # Depends on camera and magnification
         mm_per_pixel = 0.00245
         # Offset depends on camera and frame size

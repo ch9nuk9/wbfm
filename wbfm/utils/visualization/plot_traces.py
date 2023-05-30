@@ -11,7 +11,7 @@ import numpy as np
 import scipy.io
 from sklearn.decomposition import PCA
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes, options_for_ethogram
-from wbfm.utils.general.custom_errors import NoNeuronsError
+from wbfm.utils.general.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
@@ -1191,8 +1191,11 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     # Trying to do physical time doesn't work unless everything is aligned (especially ethogram)
     # df_pca_modes.set_index(x, inplace=True)
 
-    speed = project_data.worm_posture_class.worm_speed(fluorescence_fps=True, use_stage_position=False,
-                                                       signed=True)
+    try:
+        speed = project_data.worm_posture_class.worm_speed(fluorescence_fps=True, use_stage_position=False,
+                                                           signed=True)
+    except NoBehaviorAnnotationsError:
+        speed = pd.Series(np.zeros(df_pca_modes.shape[0]))
     # speed = pd.DataFrame(speed)
     # speed.set_index(x, inplace=True)
 
@@ -1214,15 +1217,19 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                          coloraxis='coloraxis1')
     heatmap_opt = dict(row=1, col=1)
 
-    ### Aternate: Kymograph heatmap
-    kymo_dat = project_data.worm_posture_class.curvature(fluorescence_fps=True, reset_index=True).T
-    # Instead of zmin and zmax on the plot, actually modify the data (options seem to not propagate to the plot)
-    kymo_dat[kymo_dat < -0.04] = -0.04
-    kymo_dat[kymo_dat > 0.04] = 0.04
-    kymo_dat = kymo_dat.iloc[3:-3, :]
-    kymograph = go.Heatmap(y=kymo_dat.index, z=kymo_dat, colorscale='RdBu', xaxis="x", yaxis="y",
-                         coloraxis='coloraxis2')
-    kymograph_opt = dict(row=3, col=1)
+    ### Alternate: Kymograph heatmap
+    try:
+        kymo_dat = project_data.worm_posture_class.curvature(fluorescence_fps=True, reset_index=True).T
+        # Instead of zmin and zmax on the plot, actually modify the data (options seem to not propagate to the plot)
+        kymo_dat[kymo_dat < -0.04] = -0.04
+        kymo_dat[kymo_dat > 0.04] = 0.04
+        kymo_dat = kymo_dat.iloc[3:-3, :]
+        kymograph = go.Heatmap(y=kymo_dat.index, z=kymo_dat, colorscale='RdBu', xaxis="x", yaxis="y",
+                             coloraxis='coloraxis2')
+        kymograph_opt = dict(row=3, col=1)
+    except NoBehaviorAnnotationsError:
+        kymograph = None
+        kymograph_opt = dict()
 
     ### PCA modes
     mode_colormap = px.colors.qualitative.Plotly
@@ -1234,7 +1241,10 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
     #### Shading on top of the PCA modes
     beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
-    trace_shading_opt = options_for_ethogram(beh_vec, shading=True)
+    if beh_vec is not None:
+        trace_shading_opt = options_for_ethogram(beh_vec, shading=True)
+    else:
+        trace_shading_opt = dict()
     ### Speed plot (below pca modes)
     trace_list.append(go.Scatter(y=speed, x=speed.index))
     trace_opt_list.append(dict(row=num_pca_modes_to_plot + 3, col=1, secondary_y=False))
@@ -1255,8 +1265,12 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     if beh_vec is None:
         beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
     ethogram_cmap_opt = dict(include_reversal_turns=True)
-
-    ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt)
+    if beh_vec is None:
+        # If still none, that means there are no annotations (e.g. it is immobilized)
+        beh_vec = pd.Series(np.ones(df_pca_modes.shape[0])*BehaviorCodes.UNKNOWN)
+        ethogram_opt = dict()
+    else:
+        ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt)
     ### 3d phase plot
     ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_opt)
     # Use the same behaviors as the ethogram
