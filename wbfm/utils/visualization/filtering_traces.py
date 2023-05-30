@@ -213,8 +213,9 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
     return calc_single_trace
 
 
-def fill_nan_in_dataframe(df):
-    df = filter_rolling_mean(df.copy(), window=3)
+def fill_nan_in_dataframe(df, do_filtering=True):
+    if do_filtering:
+        df = filter_rolling_mean(df.copy(), window=3)
     df = df.copy().interpolate()
     df.fillna(df.mean(), inplace=True)
     return df
