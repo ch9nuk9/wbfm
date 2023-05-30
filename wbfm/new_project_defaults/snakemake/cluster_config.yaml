@@ -19,7 +19,7 @@ preprocessing:
 segmentation:
     time: 0-18:00:00
     mem: 256G
-    cpus_per_task: 68
+    cpus_per_task: 64
 
 match_frame_pairs:
     partition: gpu
