@@ -716,3 +716,36 @@ def save_valid_ind_1d_or_2d(df, valid_ind):
     else:
         raise NotImplementedError("Must be 1d or 2d")
     return df
+
+
+def make_binary_vector_from_starts_and_ends(starts, ends, original_vals, pad_nan_points=0):
+    """
+    Makes a binary vector from a list of starts and ends
+
+    See get_contiguous_blocks_from_column
+
+    Parameters
+    ----------
+    starts
+    ends
+    original_vals
+    pad_nan_points
+
+    Returns
+    -------
+
+    """
+
+    # Split pad_nan_points if it has different values for starts and ends
+    if isinstance(pad_nan_points, (list, tuple)):
+        pad_nan_points_start, pad_nan_points_end = pad_nan_points
+    else:
+        pad_nan_points_start = pad_nan_points_end = pad_nan_points
+
+    idx_boolean = np.zeros_like(original_vals)
+    for s, e in zip(starts, ends):
+        s = np.clip(s - pad_nan_points_start, a_min=0, a_max=len(original_vals))
+        e = np.clip(e + pad_nan_points_end, a_min=0, a_max=len(original_vals))
+        idx_boolean[s:e] = 1
+
+    return idx_boolean

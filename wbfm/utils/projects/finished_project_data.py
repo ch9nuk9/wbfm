@@ -29,7 +29,8 @@ import zarr
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
-    get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns, get_contiguous_blocks_from_column
+    get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns, \
+    get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_project_status import get_project_status
@@ -1380,11 +1381,7 @@ class ProjectData:
             starts, ends = get_contiguous_blocks_from_column(df_vals, already_boolean=True)
             if DEBUG:
                 print(starts, ends)
-            idx_boolean = np.zeros_like(vals, dtype=bool)
-            for s, e in zip(starts, ends):
-                s = np.clip(s - pad_nan_points, a_min=0, a_max=len(vals))
-                e = np.clip(e + pad_nan_points, a_min=0, a_max=len(vals))
-                idx_boolean[s:e] = True
+            idx_boolean = make_binary_vector_from_starts_and_ends(starts, ends, vals).astype(bool)
         else:
             idx_boolean = vals == -1
 

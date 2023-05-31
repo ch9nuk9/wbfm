@@ -1171,8 +1171,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                                                  nan_using_ppca_manifold=True,
                                                  channel_mode='dr_over_r_50')
     # x = project_data._x_physical_time
-    df_traces = filter_rolling_mean(df_traces, window=3)
-    df_traces_no_nan = fill_nan_in_dataframe(df_traces)
+    df_traces_no_nan = fill_nan_in_dataframe(df_traces, do_filtering=True)
     # Calculate pca modes, and use them to sort
     pca_weights = PCA(n_components=10)
     pca_modes = PCA(n_components=10)
