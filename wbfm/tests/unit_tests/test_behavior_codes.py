@@ -3,7 +3,7 @@ import unittest
 import pandas as pd
 import pytest
 
-from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError
 
 

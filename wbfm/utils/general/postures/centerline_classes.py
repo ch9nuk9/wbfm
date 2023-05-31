@@ -17,9 +17,8 @@ from skimage import transform
 from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
-from tqdm.auto import tqdm
 
-from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
@@ -27,7 +26,7 @@ from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
     assign_id_based_on_closest_onset_in_split_lists
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std, remove_outliers_via_rolling_mean, \
+from wbfm.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, \
     filter_gaussian_moving_average
 from wbfm.utils.visualization.hardcoded_paths import forward_distribution_statistics, reverse_distribution_statistics
 

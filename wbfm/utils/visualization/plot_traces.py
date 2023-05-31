@@ -10,7 +10,7 @@ from matplotlib.colors import TwoSlopeNorm
 import numpy as np
 import scipy.io
 from sklearn.decomposition import PCA
-from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes, options_for_ethogram
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, options_for_ethogram
 from wbfm.utils.general.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
@@ -26,7 +26,7 @@ from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 import matplotlib.style as mplstyle
 from plotly.subplots import make_subplots
 from plotly import graph_objects as go
-from wbfm.utils.visualization.filtering_traces import filter_rolling_mean, fill_nan_in_dataframe
+from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 import plotly.express as px
 

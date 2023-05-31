@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from scipy.signal import detrend
 from sklearn.decomposition import PCA
 
-from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError

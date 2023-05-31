@@ -1,11 +1,11 @@
 import os
 from pathlib import Path
-from typing import Union, List, Dict
+from typing import Union, List
 
 import numpy as np
 import pandas as pd
 
-from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.visualization.behavior_comparison_plots import NeuronToUnivariateEncoding
 

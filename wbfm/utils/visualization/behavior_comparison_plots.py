@@ -23,7 +23,7 @@ from sklearn.model_selection import cross_validate, RepeatedKFold, cross_val_sco
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 
-from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import correlate_return_cross_terms, save_valid_ind_1d_or_2d, \
     fill_missing_indices_with_nan
 from wbfm.utils.external.utils_sklearn import middle_40_cv_split

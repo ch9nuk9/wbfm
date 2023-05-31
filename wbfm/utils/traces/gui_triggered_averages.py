@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 import plotly.express as px
 
 from wbfm.gui.utils.utils_dash import save_folder_for_two_dataframe_dashboard
-from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.general.custom_errors import NoBehaviorAnnotationsError
 from wbfm.utils.projects.finished_project_data import ProjectData
