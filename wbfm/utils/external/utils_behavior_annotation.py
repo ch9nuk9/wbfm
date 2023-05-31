@@ -174,6 +174,10 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None,
 def approximate_behavioral_annotation_using_pc1(project_cfg):
     """
     Uses the first principal component of the traces to approximate annotations for forward and reversal
+    IMPORTANT: Although pc0 should correspond to rev/fwd, the sign of the PC is arbitrary, so we need to check
+    that the sign is correct. Currently there's no way to do that without ID'ing a neuron that should correlate to fwd
+    or rev, and checking that the sign is correct
+    TODO: Add a check for the sign of the PC
 
     Saves an excel file within the project's behavior folder, and updates the behavioral config
 
