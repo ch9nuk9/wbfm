@@ -1295,7 +1295,7 @@ class ProjectData:
             df_manual_tracking = read_if_exists(str(fname), reader=pd.read_excel)
         return df_manual_tracking
 
-    @cached_property
+    @property
     def dict_numbers_to_neuron_names(self) -> Dict[str, Tuple[str, int]]:
         """
         Uses df_manual_tracking to map neuron numbers to names and confidence. Example:
