@@ -126,7 +126,8 @@ class ConfigFileWithProjectContext:
 
     def save_data_in_local_project(self, data: pd.DataFrame, relative_path: str,
                                    suffix='.h5',
-                                   allow_overwrite=True, make_sequential_filename=False, also_save_csv=False):
+                                   allow_overwrite=True, make_sequential_filename=False, also_save_csv=False,
+                                   **kwargs):
         abs_path = self.resolve_relative_path(relative_path)
         Path(abs_path).parent.mkdir(parents=True, exist_ok=True)
         if not abs_path.endswith(suffix):
@@ -140,7 +141,7 @@ class ConfigFileWithProjectContext:
         elif suffix == '.csv':
             data.to_csv(abs_path)
         elif suffix == '.xlsx':
-            data.to_excel(abs_path)
+            data.to_excel(abs_path, **kwargs)
         else:
             raise ValueError(f"Unknown suffix: {suffix}")
 

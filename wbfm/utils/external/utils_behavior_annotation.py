@@ -1,11 +1,17 @@
 from enum import IntEnum
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
 import plotly.express as px
 from matplotlib import pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.signal import find_peaks
+from sklearn.decomposition import PCA
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
-from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column
+from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError
 
 
@@ -163,3 +169,56 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None,
         plt.legend()
 
     return x, y_interp, interp_obj
+
+
+def approximate_behavioral_annotation_using_pc1(project_cfg):
+    """
+    Uses the first principal component of the traces to approximate annotations for forward and reversal
+
+    Saves an excel file within the project's behavior folder, and updates the behavioral config
+
+    This file should be found by get_manual_behavior_annotation_fname
+
+    Parameters
+    ----------
+    project_cfg
+
+    Returns
+    -------
+
+    """
+    # Load project
+    from wbfm.utils.projects.finished_project_data import ProjectData
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+
+    # Calculate traces of the project
+    opt = dict(interpolate_nan=True,
+               filter_mode='rolling_mean',
+               min_nonnan=0.9,
+               nan_tracking_failure_points=True,
+               nan_using_ppca_manifold=True,
+               channel_mode='dr_over_r_50')
+    df_traces = project_data.calc_default_traces(**opt)
+    from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
+    df_traces_no_nan = fill_nan_in_dataframe(df_traces, do_filtering=True)
+    # Then PCA
+    pipe = make_pipeline(StandardScaler(), PCA(n_components=2))
+    pipe.fit(df_traces_no_nan.T)
+
+    # Using a threshold of 0, assign forward and reversal
+    pc0 = pipe.steps[1][1].components_[0, :]
+    starts, ends = get_contiguous_blocks_from_column(pd.Series(pc0) > 0, already_boolean=True)
+    beh_vec = pd.DataFrame(make_binary_vector_from_starts_and_ends(starts, ends, pc0, pad_nan_points=(5, 0)),
+                           columns=['Annotation'])
+    beh_vec[beh_vec == 1] = BehaviorCodes.REV
+    beh_vec[beh_vec == 0] = BehaviorCodes.FWD
+
+    # Save within the behavior folder
+    beh_cfg = project_data.project_config.get_behavior_config()
+    fname = 'immobilized_beh_annotation'
+    beh_cfg.save_data_in_local_project(beh_vec, fname,
+                                       prepend_subfolder=True, suffix='.xlsx', sheet_name='behavior')
+    beh_cfg.config['manual_behavior_annotation'] = str(Path(fname).with_suffix('.xlsx'))
+    beh_cfg.update_self_on_disk()
+
+    return beh_vec
