@@ -150,14 +150,13 @@ def calculate_alignment_matrix_two_stacks(stack_template: np.ndarray, stack_rota
     """
     Takes two z stacks (format: ZXY) and rigidly aligns plane, returning only the warp matrices
 
-
     Parameters
     ----------
-    stack_template
-    stack_rotated
+    stack_template: stack to align to
+    stack_rotated: stack to align
     hide_progress
     use_only_first_pair: flag for using the first pair only (stacks might be full videos)
-    gauss_filt_sigma
+    gauss_filt_sigma: sigma for gaussian filter to apply to images before alignment
 
     Returns
     -------
