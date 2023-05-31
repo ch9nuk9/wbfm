@@ -96,7 +96,7 @@ def track_using_barlow_from_config(project_config: ModularProjectConfig,
     df_combined = tracker.track_using_global_clusterer()
 
     fname = os.path.join(results_subfolder, f'df_barlow_tracks.h5')
-    project_config.h5_data_in_local_project(df_combined, fname, make_sequential_filename=True)
+    project_config.save_data_in_local_project(df_combined, fname, make_sequential_filename=True)
 
     if to_plot_relative_accuracy:
         plot_relative_accuracy(df_combined, results_subfolder, project_data)

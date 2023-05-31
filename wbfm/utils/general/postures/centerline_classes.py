@@ -99,12 +99,17 @@ class WormFullVideoPosture:
         return pca_proj
 
     def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool,
-                                 reset_index=False) -> Union[pd.DataFrame, pd.Series]:
-        if df is not None:
-            # Get cleaned dataframe
+                                 reset_index=False) -> Optional[Union[pd.DataFrame, pd.Series]]:
+        if df is None:
+            return df
+        elif self.beh_annotation_already_converted_to_fluorescence_fps and not fluorescence_fps:
+            raise ValueError("Full fps annotation requested, but only low resolution exists")
+        else:
+            # Get cleaned and downsampled dataframe
+            needs_subsampling = fluorescence_fps and not self.beh_annotation_already_converted_to_fluorescence_fps
             try:
                 df = self.remove_idx_of_tracking_failures(df, fluorescence_fps=fluorescence_fps)
-                if fluorescence_fps:
+                if needs_subsampling:
                     if len(df.shape) == 2:
                         df = df.iloc[self.subsample_indices, :]
                     elif len(df.shape) == 1:
@@ -121,7 +126,7 @@ class WormFullVideoPosture:
             if reset_index:
                 df.reset_index(drop=True, inplace=True)
             # Shorten to the correct length, if necessary. Note that we have to check for series or dataframe
-            if fluorescence_fps:
+            if needs_subsampling:
                 df = self._shorten_to_trace_length(df)
 
         return df
@@ -415,14 +420,7 @@ class WormFullVideoPosture:
                 logging.warning("Using automatic annotation instead")
                 beh = self._raw_beh_annotation
 
-        if beh is None:
-            return beh
-        elif self.beh_annotation_already_converted_to_fluorescence_fps and fluorescence_fps:
-            return beh
-        elif self.beh_annotation_already_converted_to_fluorescence_fps and not fluorescence_fps:
-            raise ValueError("Full fps behavioral annotation requested, but only low resolution exists")
-        else:
-            return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
+        return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
 
     @lru_cache(maxsize=64)
     def summed_curvature_from_kymograph(self, fluorescence_fps=False, start_segment=30, end_segment=80,
@@ -1219,14 +1217,18 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
     try:
         behavior_cfg = cfg.get_behavior_config()
         behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
-        if behavior_fname is not None and not Path(behavior_fname).is_absolute():
-            # Assume it is in this project's behavior folder
-            behavior_fname = behavior_cfg.resolve_relative_path(behavior_fname, prepend_subfolder=True)
-            if str(behavior_fname).endswith('.xlsx'):
-                # This means the user probably did it by hand... but is a fragile check
-                is_likely_manually_annotated = True
-            if not os.path.exists(behavior_fname):
-                behavior_fname = None
+        if behavior_fname is not None:
+            if Path(behavior_fname).exists():
+                # Unclear if it is manually annotated or not
+                return behavior_fname, is_likely_manually_annotated
+            if not Path(behavior_fname).is_absolute():
+                # Assume it is in this project's behavior folder
+                behavior_fname = behavior_cfg.resolve_relative_path(behavior_fname, prepend_subfolder=True)
+                if str(behavior_fname).endswith('.xlsx'):
+                    # This means the user probably did it by hand... but is a fragile check
+                    is_likely_manually_annotated = True
+                if not os.path.exists(behavior_fname):
+                    behavior_fname = None
     except FileNotFoundError:
         # Old style project
         behavior_fname = None

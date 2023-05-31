@@ -148,7 +148,7 @@ def get_already_covered_indices(df_tracklets, previous_matches):
 def _save_combined_dataframe(DEBUG, combined_df, output_df_fname, project_dir, track_config):
     with safe_cd(project_dir):
         # Actually save
-        track_config.h5_data_in_local_project(combined_df, output_df_fname, also_save_csv=True)
+        track_config.save_data_in_local_project(combined_df, output_df_fname, also_save_csv=True)
         # logging.info(f"Saving to: {output_df_fname}")
         # combined_df.to_hdf(output_df_fname, key='df_with_missing')
 

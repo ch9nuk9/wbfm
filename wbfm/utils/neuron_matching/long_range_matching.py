@@ -55,7 +55,7 @@ def long_range_matches_from_config(project_path, to_save=True, verbose=2):
         track_config = project_data.project_config.get_tracking_config()
 
         output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
-        track_config.h5_data_in_local_project(df_new, output_df_fname, also_save_csv=True, make_sequential_filename=True)
+        track_config.save_data_in_local_project(df_new, output_df_fname, also_save_csv=True, make_sequential_filename=True)
 
     return df_new, final_matching, global_tracklet_neuron_graph, worm_obj, all_long_range_matches
 
@@ -87,8 +87,8 @@ def _save_graphs_and_combined_tracks(df_new, final_matching_no_conflict, final_m
     track_config.logger.info("Finished calculations, now saving")
     # Save both main products
     output_df_fname = track_config.config['final_3d_postprocessing']['output_df_fname']
-    output_df_fname = track_config.h5_data_in_local_project(df_new, output_df_fname, also_save_csv=True,
-                                                            make_sequential_filename=True)
+    output_df_fname = track_config.save_data_in_local_project(df_new, output_df_fname, also_save_csv=True,
+                                                              make_sequential_filename=True)
     output_fname = track_config.config['global2tracklet_matches_fname']
     global2tracklet = final_matching_no_conflict.get_mapping_0_to_1(unique=False)
     output_fname = track_config.pickle_data_in_local_project(global2tracklet, output_fname,

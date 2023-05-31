@@ -213,8 +213,8 @@ def correct_tracks_dataframe_using_project(project_data: ProjectData, overwrite:
     # Save
     if len(updated_neurons_and_times) > 0 and actually_save:
         tracking_cfg = project_data.project_config.get_tracking_config()
-        tracking_cfg.h5_data_in_local_project(df, df_fname, allow_overwrite=overwrite,
-                                              make_sequential_filename=~overwrite)
+        tracking_cfg.save_data_in_local_project(df, df_fname, allow_overwrite=overwrite,
+                                                make_sequential_filename=~overwrite)
     else:
         print("No updates needed")
     return df

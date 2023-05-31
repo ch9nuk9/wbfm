@@ -124,17 +124,25 @@ class ConfigFileWithProjectContext:
 
         return abs_path
 
-    def h5_data_in_local_project(self, data: pd.DataFrame, relative_path: str,
-                                 allow_overwrite=True, make_sequential_filename=False, also_save_csv=False):
+    def save_data_in_local_project(self, data: pd.DataFrame, relative_path: str,
+                                   suffix='.h5',
+                                   allow_overwrite=True, make_sequential_filename=False, also_save_csv=False):
         abs_path = self.resolve_relative_path(relative_path)
         Path(abs_path).parent.mkdir(parents=True, exist_ok=True)
-        if not abs_path.endswith('.h5'):
-            abs_path += ".h5"
+        if not abs_path.endswith(suffix):
+            abs_path += suffix
         if make_sequential_filename:
             abs_path = get_sequential_filename(abs_path)
         self.logger.info(f"Saving at: {self.unresolve_absolute_path(abs_path)}")
         check_exists(abs_path, allow_overwrite)
-        ensure_dense_dataframe(data).to_hdf(abs_path, key="df_with_missing")
+        if suffix == '.h5':
+            ensure_dense_dataframe(data).to_hdf(abs_path, key="df_with_missing")
+        elif suffix == '.csv':
+            data.to_csv(abs_path)
+        elif suffix == '.xlsx':
+            data.to_excel(abs_path)
+        else:
+            raise ValueError(f"Unknown suffix: {suffix}")
 
         if also_save_csv:
             csv_fname = Path(abs_path).with_suffix('.csv')
@@ -180,10 +188,10 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
             final_path = os.path.join(self.project_dir, val)
         return final_path
 
-    def h5_data_in_local_project(self, data: pd.DataFrame, relative_path: str, prepend_subfolder=False,
-                                 **kwargs):
+    def save_data_in_local_project(self, data: pd.DataFrame, relative_path: str, prepend_subfolder=False,
+                                   **kwargs):
         path = self._prepend_subfolder(relative_path, prepend_subfolder)
-        abs_path = super().h5_data_in_local_project(data, path, **kwargs)
+        abs_path = super().save_data_in_local_project(data, path, **kwargs)
         return abs_path
 
 

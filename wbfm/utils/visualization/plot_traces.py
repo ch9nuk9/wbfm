@@ -185,7 +185,7 @@ def make_grid_plot_using_project(project_data: ProjectData,
         save_grid_plot(out_fname)
 
         fname = Path(fname).with_suffix('.h5')
-        traces_cfg.h5_data_in_local_project(df_traces, str(fname), prepend_subfolder=True)
+        traces_cfg.save_data_in_local_project(df_traces, str(fname), prepend_subfolder=True)
 
     return fig
 

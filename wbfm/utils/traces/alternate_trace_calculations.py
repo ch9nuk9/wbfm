@@ -115,6 +115,6 @@ def save_alternate_trace_dataframes(project_data, percentage_list=None):
         fname = fname.replace('.', '-')
         fname = os.path.join('visualization', f"{fname}")
         red_fname = f"{fname}_red.h5"
-        project_data.project_config.h5_data_in_local_project(df_extracted_red, red_fname)
+        project_data.project_config.save_data_in_local_project(df_extracted_red, red_fname)
         green_fname = f"{fname}_green.h5"
-        project_data.project_config.h5_data_in_local_project(df_extracted_green, green_fname)
+        project_data.project_config.save_data_in_local_project(df_extracted_green, green_fname)

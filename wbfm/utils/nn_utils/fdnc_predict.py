@@ -254,7 +254,7 @@ def track_using_fdnc_random_from_config(project_cfg: ModularProjectConfig,
 def _save_final_tracks(df, tracks_cfg, output_df_fname):
     Path(output_df_fname).parent.mkdir(exist_ok=True)
 
-    tracks_cfg.h5_data_in_local_project(df, output_df_fname, also_save_csv=True)
+    tracks_cfg.save_data_in_local_project(df, output_df_fname, also_save_csv=True)
     tracks_cfg.config['final_3d_tracks_df'] = str(output_df_fname)
     tracks_cfg.update_self_on_disk()
 

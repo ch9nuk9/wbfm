@@ -70,7 +70,7 @@ def save_all_final_dataframes(project_data: Union[ProjectData, str]):
     df_final = pd.concat([df_all_traces, df_all_behaviors], axis=1, keys=['traces', 'behavior'])
 
     fname = os.path.join(output_folder, 'df_final.h5')
-    project_config.h5_data_in_local_project(df_final, fname)
+    project_config.save_data_in_local_project(df_final, fname)
 
     # fname = os.path.join(output_folder, 'behavior', 'df_curvature_high_fps.h5')
     # df_curvature = worm.curvature(fluorescence_fps=False)
