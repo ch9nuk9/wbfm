@@ -1003,7 +1003,14 @@ class ClusteredTriggeredAverages:
                                       output_folder, **kwargs)
 
     @staticmethod
-    def plot_clusters_from_names(get_matrix_from_names, per_cluster_names, min_lines=2,
+    def cluster_color_func(i):
+        # The dendrogram has a funny default, where the 0 color is reserved for non-clusters, and is skipped
+        # So in principle I want the modular division of i, but if i > 10 I have to add 1
+        # We want to skip 0, 10, 20, etc.
+        i = int((i + (i - 1) // 9) % 10)
+        return matplotlib.colormaps['tab10'](i)
+
+    def plot_clusters_from_names(self, get_matrix_from_names, per_cluster_names, min_lines=2,
                                  ind_preceding=20, xlim=None, z_score=False, output_folder=None,
                                  show_individual_lines=True, cluster_color_func: Callable = None,
                                  fig_opt=None):
@@ -1013,13 +1020,7 @@ class ClusteredTriggeredAverages:
         default_fig_opt.update(fig_opt)
 
         if cluster_color_func is None:
-            # The dendrogram has a funny default, where the 0 color is reservered for non-clusters, and is skipped
-            # So in principle I want the modular division of i, but if i > 10 I have to add 1
-            def cluster_color_func(i):
-                # We want to skip 0, 10, 20, etc.
-                i = int((i + (i-1)//9) % 10)
-                return matplotlib.colormaps['tab10'](i)
-            # cluster_color_func = lambda i: matplotlib.cm.get_cmap('tab10')(i % 10)
+            cluster_color_func = self.cluster_color_func
         i_clust_actually_plotted = 0  # Used for determining the color
         for i_clust, name_list in per_cluster_names.items():
             name_list = list(name_list)

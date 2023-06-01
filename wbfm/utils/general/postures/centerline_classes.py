@@ -352,7 +352,7 @@ class WormFullVideoPosture:
         elif behavior_alias == 'quantile_head_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=5, end_segment=30,
-                                                     do_quantile=True, which_quantile=0.9)
+                                                     do_quantile=True, which_quantile=0.75)
         elif behavior_alias == 'ventral_quantile_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,

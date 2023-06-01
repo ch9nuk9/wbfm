@@ -417,8 +417,9 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             score_list, model, y_total, y_pred, y_train_name, best_neuron = \
                 self.calc_single_neuron_encoding(df_name, **opt)
             y_name = f"single_best_neuron_{y_train_name}"
+
         fig = self._plot_predictions(df_name, y_pred, y_total, y_name=y_name, score_list=score_list, best_neuron=best_neuron,
-                               **plot_kwargs)
+                                     **plot_kwargs)
 
         return fig, model, best_neuron
 
