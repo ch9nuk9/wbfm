@@ -1123,22 +1123,26 @@ class ClusteredTriggeredAverages:
 
         return len(unique_labels) - 1, label_counts
 
-    def get_subset_triggered_average_matrix(self, name_list):
+    def get_subset_triggered_average_matrix(self, name_list: List[str] = None) -> np.ndarray:
         # Build a pseudo-triggered average matrix, made of the means of each neuron
         pseudo_mat = []
+        if name_list is None:
+            name_list = list(self.df_triggered.keys())
         for name in name_list:
             triggered_avg = self.df_triggered[name].copy()
             pseudo_mat.append(triggered_avg)
         pseudo_mat = np.stack(pseudo_mat)
         return pseudo_mat
 
-    def get_triggered_matrix_all_events_from_names(self, name_list: List[str]) -> \
+    def get_triggered_matrix_all_events_from_names(self, name_list: List[str] = None) -> \
             Tuple[np.ndarray, Dict[str, List[int]]]:
         # Gets all the individual events from all neurons in the list
         if self.dict_of_triggered_traces is None:
             get_df_trigger = self.triggered_averages_class.triggered_average_matrix_from_name
         else:
             get_df_trigger = self.dict_of_triggered_traces.get
+        if name_list is None:
+            name_list = list(self.df_triggered.keys())
         clust_traces = [get_df_trigger(name) for name in name_list]
         # If there is a maximum length set, loop through and reduce the length of the traces
         # Loop through and pad array with nan if some arrays are shorter
