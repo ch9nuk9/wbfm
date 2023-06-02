@@ -46,6 +46,7 @@ class WormFullVideoPosture:
     filename_x: str = None
     filename_y: str = None
     filename_beh_annotation: str = None
+    # Does not always exist
     filename_manual_beh_annotation: str = None
 
     filename_hilbert_amplitude: str = None
@@ -53,6 +54,9 @@ class WormFullVideoPosture:
     filename_hilbert_phase: str = None
     filename_hilbert_carrier: str = None
 
+    filename_self_collision: str = None
+
+    # Exists without running Ulises' code, but not for immobilized worms
     filename_table_position: str = None
 
     # This will be true for old manual annotations
@@ -235,6 +239,17 @@ class WormFullVideoPosture:
     @cached_property
     def _raw_hilbert_carrier(self):
         return read_if_exists(self.filename_hilbert_carrier, reader=pd.read_csv, header=None)
+
+    @lru_cache(maxsize=8)
+    def self_collision(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        df = self._raw_self_collision
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
+
+    @cached_property
+    def _raw_self_collision(self):
+        # This one has a header
+        return read_if_exists(self.filename_self_collision, reader=pd.read_csv, index_col=0)
 
     @lru_cache(maxsize=8)
     def stage_position(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
@@ -1095,6 +1110,8 @@ class WormFullVideoPosture:
                     all_files['filename_hilbert_phase'] = str(file)
                 elif file.name.endswith('hilbert_regenerated_carrier.csv'):
                     all_files['filename_hilbert_carrier'] = str(file)
+                elif file.name.endswith('self_touch.csv'):
+                    all_files['filename_self_collision'] = str(file)
 
             # Third, get the table stage position
             # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)
