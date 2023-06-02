@@ -67,7 +67,10 @@ class BehaviorCodes(Flag):
 
     def __add__(self, other):
         # Allows adding vectors as well
-        return self | other
+        if other in (self.NOT_ANNOTATED, self.UNKNOWN):
+            return self
+        else:
+            return self | other
 
     @classmethod
     def _load_from_list(cls, vec: List[int]) -> pd.Series:

@@ -248,9 +248,13 @@ class WormFullVideoPosture:
         return df
 
     @cached_property
-    def _raw_self_collision(self):
+    def _raw_self_collision(self) -> pd.Series:
         # This one has a header
-        return read_if_exists(self.filename_self_collision, reader=pd.read_csv, index_col=0)
+        _raw_vector = read_if_exists(self.filename_self_collision, reader=pd.read_csv, index_col=0)['self_touch']
+        # Convert 1's to BehaviorCodes.SELF_COLLISION and 0's to BehaviorCodes.NOT_ANNOTATED
+        _raw_vector = _raw_vector.replace(1, BehaviorCodes.SELF_COLLISION)
+        _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
+        return _raw_vector
 
     @lru_cache(maxsize=8)
     def stage_position(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
@@ -441,7 +445,9 @@ class WormFullVideoPosture:
 
         if self._self_collision is not None:
             # Add the self-collision annotation
-            beh = beh + self._self_collision(fluorescence_fps=fluorescence_fps, reset_index=reset_index)
+            # Note that the collision annotation is one frame shorter than the behavior annotation
+            # err
+            beh = beh.iloc[:-1] + self._self_collision(fluorescence_fps=False, reset_index=False)
 
         return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
 
