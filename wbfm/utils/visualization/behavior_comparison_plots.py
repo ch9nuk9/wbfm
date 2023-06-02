@@ -663,7 +663,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         df = pd.DataFrame(df_dict)
         return df
 
-    def plot_multineuron_weights(self, saving_folder=None):
+    def plot_multineuron_weights(self, saving_folder=None, to_show=True):
         """
         Uses saved model, and plots the weights
 
@@ -696,7 +696,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             fname = f"regression_weights_{df_name}_{y_train}.png"
             self._savefig(fig, fname, saving_folder)
 
-    def plot_permutation_feature_importance(self, df_name, y_train, saving_folder=None, **kwargs):
+        if to_show:
+            plt.show()
+
+    def plot_permutation_feature_importance(self, df_name, y_train, saving_folder=None, to_show=True, **kwargs):
         """
         Does pfi on the saved _multi_neuron_cv_results, which assumes that the model has just been trained by the same
         arguments as passed to this function
@@ -724,14 +727,15 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         all_pfi = np.hstack(all_pfi)
         df_pfi = pd.DataFrame(all_pfi.T, columns=X.columns)
         fig = px.box(df_pfi, title=f"Feature importance for predicting: {y_train}")
-        fig.show()
+        if to_show:
+            fig.show()
 
         if saving_folder is not None:
             fname = f"pfi_{df_name}_{y_train}.png"
             self._savefig(fig, fname, saving_folder)
 
     def _plot_predictions(self, df_name, y_pred, y_train, y_name="", score_list: list = None, best_neuron="",
-                          saving_folder=None):
+                          saving_folder=None, to_show=True):
         """
         Plots predictions and training data
 
@@ -778,7 +782,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
             # Make a dataframe for plotly
             df = pd.DataFrame({'Prediction': y_pred, 'Target': y_train})
             fig = px.line(df, title=title_str, labels={'index': 'Time (volumes)', 'value': f"{y_name}"})
-            fig.show()
+            if to_show:
+                fig.show()
 
         if saving_folder is not None:
             fname = f"regression_fit_{df_name}_{y_name}.png"

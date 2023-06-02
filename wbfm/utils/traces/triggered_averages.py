@@ -1013,7 +1013,7 @@ class ClusteredTriggeredAverages:
     def plot_clusters_from_names(self, get_matrix_from_names, per_cluster_names, min_lines=2,
                                  ind_preceding=20, xlim=None, z_score=False, output_folder=None,
                                  show_individual_lines=True, cluster_color_func: Callable = None,
-                                 fig_opt=None):
+                                 fig_opt=None, to_show=True, **kwargs):
         if fig_opt is None:
             fig_opt = {}
         default_fig_opt = dict(dpi=200)
@@ -1052,7 +1052,8 @@ class ClusteredTriggeredAverages:
                 if not os.path.exists(output_folder):
                     os.makedirs(output_folder, exist_ok=True)
                 plt.savefig(os.path.join(output_folder, f"cluster_{i_clust}.png"))
-            plt.show()
+            if to_show:
+                plt.show()
 
     def plot_all_clusters_grid_plot(self, i_clust, num_columns=1, **kwargs):
         """Like plot_all_clusters, but plots the full times series instead of the triggered average"""
