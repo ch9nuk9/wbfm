@@ -65,6 +65,10 @@ class BehaviorCodes(Flag):
         }
         return original_mapping[value]
 
+    def __add__(self, other):
+        # Allows adding vectors as well
+        return self | other
+
     @classmethod
     def _load_from_list(cls, vec: List[int]) -> pd.Series:
         """
@@ -77,7 +81,7 @@ class BehaviorCodes(Flag):
         return pd.Series([cls(i) for i in vec])
 
     @classmethod
-    def load_using_dict_mapping(cls, vec: List[int]) -> pd.Series:
+    def load_using_dict_mapping(cls, vec: Union[pd.Series, List[int]]) -> pd.Series:
         """
         Load using the hardcoded mapping between Ulises' integers and BehaviorCodes
 

@@ -241,7 +241,8 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_hilbert_carrier, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def self_collision(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+    def _self_collision(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        """This is a binary vector, and should not be used directly"""
         df = self._raw_self_collision
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
@@ -289,7 +290,7 @@ class WormFullVideoPosture:
         if isinstance(self._beh_annotation, pd.DataFrame):
             self._beh_annotation = self._beh_annotation.annotation
         if self._beh_annotation is not None:
-            BehaviorCodes.assert_all_are_valid(self._beh_annotation)
+            self._beh_annotation = BehaviorCodes.load_using_dict_mapping(self._beh_annotation)
         return self._beh_annotation
 
     @lru_cache(maxsize=8)
@@ -310,6 +311,8 @@ class WormFullVideoPosture:
             return None
         # Assume we only want the Annotation column
         df = df['Annotation']
+        # Convert to BehaviorCodes
+        df = BehaviorCodes.load_using_dict_mapping(df)
         return df
 
     def calc_behavior_from_alias(self, behavior_alias: str, **kwargs) -> pd.Series:
@@ -418,9 +421,6 @@ class WormFullVideoPosture:
             y = self.calc_interpolated_curvature_using_peak_detection(i_segment=4, fluorescence_fps=True, flip=False)
         elif behavior_alias == 'interpolated_dorsal_head_curvature':
             y = self.calc_interpolated_curvature_using_peak_detection(i_segment=4, fluorescence_fps=True, flip=True)
-        elif behavior_alias == 'self_collision':
-            # Binary behavior, outside of the normal BehaviorCodes enum
-            y = self.self_collision(fluorescence_fps=True)
         else:
             raise NotImplementedError(behavior_alias)
 
@@ -438,6 +438,10 @@ class WormFullVideoPosture:
                 logging.warning("Requested manual annotation, but none exists")
                 logging.warning("Using automatic annotation instead")
                 beh = self._raw_beh_annotation
+
+        if self._self_collision is not None:
+            # Add the self-collision annotation
+            beh = beh + self._self_collision(fluorescence_fps=fluorescence_fps, reset_index=reset_index)
 
         return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
 
