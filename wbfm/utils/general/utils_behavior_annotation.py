@@ -35,6 +35,7 @@ class BehaviorCodes(Flag):
 
     NOT_ANNOTATED = auto()
     UNKNOWN = auto()
+    TRACKING_FAILURE = auto()
 
     @classmethod
     def from_ulises_int(cls, value: int) -> 'BehaviorCodes':
@@ -63,12 +64,17 @@ class BehaviorCodes(Flag):
             0: cls.NOT_ANNOTATED,
             -99: cls.UNKNOWN,  # Should not be in any files that Ulises produces
         }
-        return original_mapping[value]
+        if np.isnan(value):
+            return cls.UNKNOWN
+        else:
+            return original_mapping[value]
 
     def __add__(self, other):
         # Allows adding vectors as well
         if other in (self.NOT_ANNOTATED, self.UNKNOWN):
             return self
+        elif self in (self.NOT_ANNOTATED, self.UNKNOWN):
+            return other
         else:
             return self | other
 
@@ -94,7 +100,9 @@ class BehaviorCodes(Flag):
         -------
 
         """
-        return pd.Series([cls.from_ulises_int(i) for i in vec])
+        beh_vec = pd.Series([cls.from_ulises_int(i) for i in vec])
+        cls.assert_all_are_valid(beh_vec)
+        return beh_vec
 
     @classmethod
     def vector_equality(cls, enum_list: Union[list, pd.Series], query_enum, exact=False):
@@ -121,6 +129,20 @@ class BehaviorCodes(Flag):
             return pd.Series(binary_vector, index=enum_list.index)
         else:
             return pd.Series(binary_vector)
+
+    @classmethod
+    def vector_diff(cls, enum_list: Union[list, pd.Series], exact=False):
+        """
+        Calculates the vector np.diff, which can't be done directly because these aren't integers
+
+        Returns
+        -------
+
+        """
+        if exact:
+            return pd.Series([e2 != e1 for e1, e2 in zip(enum_list[:-1], enum_list[1:])])
+        else:
+            return pd.Series([e2 not in e1 for e1, e2 in zip(enum_list[:-1], enum_list[1:])])
 
     @classmethod
     def shading_cmap(cls):
@@ -156,19 +178,19 @@ class BehaviorCodes(Flag):
             cmap[cls.QUIESCENCE] = base_cmap[6]
         return cmap
 
-    @classmethod
-    def has_value(cls, value):
-        return value in cls._value2member_map_
+    # @classmethod
+    # def has_value(cls, value):
+    #     return value in cls._value2member_map_
 
     @classmethod
     def assert_is_valid(cls, value):
-        if not cls.has_value(value):
+        if value not in cls:
             raise InvalidBehaviorAnnotationsError(f"Value {value} is not a valid behavioral code "
                                                   f"({cls._value2member_map_})")
 
     @classmethod
     def assert_all_are_valid(cls, vec):
-        for v in np.unique(vec):
+        for v in vec:
             cls.assert_is_valid(v)
 
     @classmethod

@@ -242,7 +242,7 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=8)
     def _self_collision(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
-        """This is a binary vector, and should not be used directly"""
+        """This is intended to be summed with the main behavioral vector"""
         df = self._raw_self_collision
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
@@ -254,6 +254,8 @@ class WormFullVideoPosture:
         # Convert 1's to BehaviorCodes.SELF_COLLISION and 0's to BehaviorCodes.NOT_ANNOTATED
         _raw_vector = _raw_vector.replace(1, BehaviorCodes.SELF_COLLISION)
         _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
+        _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
+        BehaviorCodes.assert_all_are_valid(_raw_vector)
         return _raw_vector
 
     @lru_cache(maxsize=8)
@@ -1198,7 +1200,10 @@ class WormFullVideoPosture:
         if tracking_failure_idx is not None and len(tracking_failure_idx) > 0 and vec is not None:
             vec = vec.copy()
             logging.debug(f"Setting these indices as tracking failures: {tracking_failure_idx}")
-            vec.iloc[tracking_failure_idx] = np.nan
+            if vec.iat[0] in BehaviorCodes:
+                vec.iloc[tracking_failure_idx] = BehaviorCodes.TRACKING_FAILURE
+            else:
+                vec.iloc[tracking_failure_idx] = np.nan
         return vec
 
     def estimate_tracking_failures_from_kymo(self, fluorescence_fps):
