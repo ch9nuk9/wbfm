@@ -1842,10 +1842,10 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
         beh = beh[:t_end]
     if t_start is not None:
         beh = beh[t_start:]
-    beh_rev = beh == BehaviorCodes.REV
+    beh_rev = BehaviorCodes.vector_equality(beh, BehaviorCodes.REV)
     starts_rev, ends_rev = get_contiguous_blocks_from_column(beh_rev, already_boolean=True)
 
-    beh_fwd = beh == BehaviorCodes.FWD
+    beh_fwd = BehaviorCodes.vector_equality(beh, BehaviorCodes.FWD)
     starts_fwd, ends_fwd = get_contiguous_blocks_from_column(beh_fwd, already_boolean=True)
 
     if verbose:

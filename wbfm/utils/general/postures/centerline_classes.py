@@ -336,9 +336,11 @@ class WormFullVideoPosture:
         if behavior_alias == 'signed_stage_speed':
             y = self.worm_speed(fluorescence_fps=True, signed=True)
         elif behavior_alias == 'rev':
-            y = self.beh_annotation(fluorescence_fps=True, reset_index=True) == BehaviorCodes.REV
+            y = BehaviorCodes.vector_equality(self.beh_annotation(fluorescence_fps=True, reset_index=True),
+                                              BehaviorCodes.REV)
         elif behavior_alias == 'fwd':
-            y = self.beh_annotation(fluorescence_fps=True, reset_index=True) == BehaviorCodes.FWD
+            y = BehaviorCodes.vector_equality(self.beh_annotation(fluorescence_fps=True, reset_index=True),
+                                              BehaviorCodes.FWD)
         elif behavior_alias == 'abs_stage_speed':
             y = self.worm_speed(fluorescence_fps=True)
         elif behavior_alias == 'middle_body_speed':
@@ -795,7 +797,7 @@ class WormFullVideoPosture:
         -------
 
         """
-        binary_fwd = self.beh_annotation(fluorescence_fps=True) == BehaviorCodes.FWD
+        binary_fwd = BehaviorCodes.vector_equality(self.beh_annotation(fluorescence_fps=True), BehaviorCodes.FWD)
         all_durations = get_durations_from_column(binary_fwd, already_boolean=True, remove_edges=False)
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_fwd, already_boolean=True)
         start2duration_and_end_dict = {}
@@ -880,7 +882,7 @@ class WormFullVideoPosture:
 
         # Get the binary state
         beh_vec = self.beh_annotation(fluorescence_fps=True)
-        rev_ind = beh_vec == BehaviorCodes.REV
+        rev_ind = BehaviorCodes.vector_equality(beh_vec, BehaviorCodes.REV)
         all_starts, all_ends = get_contiguous_blocks_from_column(rev_ind, already_boolean=True)
         # Also get the speed
         speed = self.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True)
@@ -944,7 +946,7 @@ class WormFullVideoPosture:
 
         # Get the binary state
         beh_vec = self.beh_annotation(fluorescence_fps=True)
-        rev_ind = beh_vec == BehaviorCodes.REV
+        rev_ind = BehaviorCodes.vector_equality(beh_vec, BehaviorCodes.REV)
         all_starts, all_ends = get_contiguous_blocks_from_column(rev_ind, already_boolean=True)
         # Also get the speed
         speed = self.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing_before_derivative=True)
@@ -1012,10 +1014,12 @@ class WormFullVideoPosture:
         if not state in (BehaviorCodes.FWD, BehaviorCodes.REV):
             raise ValueError("Only fwd and rev are implemented")
         # Load the hardcoded empirical distribution
-        if state == BehaviorCodes.FWD:
+        if BehaviorCodes.FWD == state:
             duration_dict = forward_distribution_statistics()
-        else:
+        elif BehaviorCodes.REV == state:
             duration_dict = reverse_distribution_statistics()
+        else:
+            raise ValueError("Only fwd and rev are implemented")
         y_dat = duration_dict['y_dat']
 
         # Load this dataset

@@ -952,8 +952,8 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         kymo = self.get_kymo_like_df()
 
         # New: only do certain indices
-        ind = self.project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True) \
-              == BehaviorCodes.FWD
+        _beh_ind = self.project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
+        ind = BehaviorCodes.vector_equality(_beh_ind, BehaviorCodes.FWD)
         all_dfs = self.all_dfs
         df_kymo = kymo.loc[ind, :].copy()
         all_dfs_corr = {key: correlate_return_cross_terms(df.loc[ind, :], df_kymo) for key, df in all_dfs.items()}
@@ -965,8 +965,8 @@ class NeuronToMultivariateEncoding(NeuronEncodingBase):
         kymo = self.get_kymo_like_df()
 
         # New: only do certain indices
-        ind = self.project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True) \
-              == BehaviorCodes.REV
+        _beh_ind = self.project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
+        ind = BehaviorCodes.vector_equality(_beh_ind, BehaviorCodes.REV)
         all_dfs = self.all_dfs
 
         df_kymo = kymo.loc[ind, :].copy()

@@ -110,87 +110,10 @@ class BehaviorCodes(Flag):
             binary_vector = [query_enum == e for e in enum_list]
         else:
             binary_vector = [query_enum in e for e in enum_list]
-        return pd.Series(binary_vector)
-
-    @classmethod
-    def shading_cmap(cls):
-        """Colormap for shading on top of traces"""
-        cmap = {cls.UNKNOWN: None,
-                cls.FWD: None,
-                cls.REV: 'lightgray'}
-        return cmap
-
-    @classmethod
-    def base_colormap(cls):
-        # See: https://plotly.com/python/discrete-color/
-        return px.colors.qualitative.Set1_r
-
-    @classmethod
-    def ethogram_cmap(cls, include_reversal_turns=False):
-        """Colormap for shading as a stand-alone ethogram"""
-        base_cmap = cls.base_colormap()
-        cmap = {cls.UNKNOWN: None,
-                cls.FWD: base_cmap[0],
-                cls.REV: base_cmap[1],
-                cls.FWD_VENTRAL_TURN: base_cmap[2],
-                cls.FWD_DORSAL_TURN: base_cmap[3],
-                # Same as REV
-                cls.REV_VENTRAL_TURN: base_cmap[1],
-                cls.REV_DORSAL_TURN: base_cmap[1],
-                # Unclear
-                cls.QUIESCENCE: base_cmap[4],
-                }
-        if include_reversal_turns:
-            cmap[cls.REV_VENTRAL_TURN] = base_cmap[4]
-            cmap[cls.REV_DORSAL_TURN] = base_cmap[5]
-            cmap[cls.QUIESCENCE] = base_cmap[6]
-        return cmap
-
-    @classmethod
-    def has_value(cls, value):
-        return value in cls._value2member_map_
-
-    @classmethod
-    def assert_is_valid(cls, value):
-        if not cls.has_value(value):
-            raise InvalidBehaviorAnnotationsError(f"Value {value} is not a valid behavioral code "
-                                                  f"({cls._value2member_map_})")
-
-    @classmethod
-    def assert_all_are_valid(cls, vec):
-        for v in np.unique(vec):
-            cls.assert_is_valid(v)
-
-    @classmethod
-    def must_be_manually_annotated(cls, value):
-        """As of 23-03-2023, everything except FWD and REV must be manually annotated"""
-        if value is None:
-            return False
-        return value not in (cls.FWD, cls.REV, cls.NOT_ANNOTATED, cls.UNKNOWN)
-
-
-class OLDBehaviorCodes(IntEnum):
-    """
-    Top-level behaviors that are discretely annotated. Designed to work with Ulises' automatic annotations
-
-    Note that float adds comparison operators
-    """
-    FWD = -1
-    REV = 1
-    FWD_VENTRAL_TURN = 2  # Manually annotated
-    FWD_DORSAL_TURN = 3  # Manually annotated
-    REV_VENTRAL_TURN = 4  # Manually annotated
-    REV_DORSAL_TURN = 5  # Manually annotated
-    SUPERCOIL = 6  # Manually annotated
-    QUIESCENCE = 7  # Manually annotated
-
-    # These don't work properly
-    # VENTRAL_TURN = FWD_VENTRAL_TURN | REV_VENTRAL_TURN
-    # DORSAL_TURN = FWD_DORSAL_TURN | REV_DORSAL_TURN
-    # ALL_TURNS = VENTRAL_TURN | DORSAL_TURN
-
-    NOT_ANNOTATED = 0
-    UNKNOWN = -99
+        if isinstance(enum_list, pd.Series):
+            return pd.Series(binary_vector, index=enum_list.index)
+        else:
+            return pd.Series(binary_vector)
 
     @classmethod
     def shading_cmap(cls):
