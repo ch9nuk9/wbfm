@@ -135,17 +135,17 @@ class BehaviorCodes(Flag):
         cmap = {cls.UNKNOWN: None,
                 cls.FWD: base_cmap[0],
                 cls.REV: base_cmap[1],
-                cls.FWD_VENTRAL_TURN: base_cmap[2],
-                cls.FWD_DORSAL_TURN: base_cmap[3],
+                cls.FWD | cls.VENTRAL_TURN: base_cmap[2],
+                cls.FWD | cls.DORSAL_TURN: base_cmap[3],
                 # Same as REV
-                cls.REV_VENTRAL_TURN: base_cmap[1],
-                cls.REV_DORSAL_TURN: base_cmap[1],
+                cls.REV | cls.VENTRAL_TURN: base_cmap[1],
+                cls.REV | cls.DORSAL_TURN: base_cmap[1],
                 # Unclear
                 cls.QUIESCENCE: base_cmap[4],
                 }
         if include_reversal_turns:
-            cmap[cls.REV_VENTRAL_TURN] = base_cmap[4]
-            cmap[cls.REV_DORSAL_TURN] = base_cmap[5]
+            cmap[cls.REV | cls.VENTRAL_TURN] = base_cmap[4]
+            cmap[cls.REV | cls.DORSAL_TURN] = base_cmap[5]
             cmap[cls.QUIESCENCE] = base_cmap[6]
         return cmap
 

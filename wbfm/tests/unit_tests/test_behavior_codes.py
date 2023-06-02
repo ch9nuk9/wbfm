@@ -11,16 +11,16 @@ class TestBehaviorCodes(unittest.TestCase):
 
     def setUp(self) -> None:
         # Generate a Series with valid BehaviorCode values
-        self.beh_valid = pd.Series([BehaviorCodes.FWD, BehaviorCodes.REV, BehaviorCodes.FWD_VENTRAL_TURN,
-                                    BehaviorCodes.FWD_DORSAL_TURN, BehaviorCodes.REV_VENTRAL_TURN,
-                                    BehaviorCodes.REV_DORSAL_TURN, BehaviorCodes.SUPERCOIL,
+        self.beh_valid = pd.Series([BehaviorCodes.FWD, BehaviorCodes.REV, BehaviorCodes.FWD | BehaviorCodes.VENTRAL_TURN,
+                                    BehaviorCodes.FWD | BehaviorCodes.DORSAL_TURN, BehaviorCodes.REV | BehaviorCodes.VENTRAL_TURN,
+                                    BehaviorCodes.REV | BehaviorCodes.DORSAL_TURN, BehaviorCodes.SUPERCOIL,
                                     BehaviorCodes.QUIESCENCE, BehaviorCodes.NOT_ANNOTATED,
                                     BehaviorCodes.UNKNOWN])
 
         # Generate a Series with invalid BehaviorCode values
-        self.beh_invalid = pd.Series([BehaviorCodes.FWD, BehaviorCodes.REV, BehaviorCodes.FWD_VENTRAL_TURN,
-                                    BehaviorCodes.FWD_DORSAL_TURN, BehaviorCodes.REV_VENTRAL_TURN,
-                                    BehaviorCodes.REV_DORSAL_TURN, BehaviorCodes.SUPERCOIL,
+        self.beh_invalid = pd.Series([BehaviorCodes.FWD, BehaviorCodes.REV, BehaviorCodes.FWD | BehaviorCodes.VENTRAL_TURN,
+                                    BehaviorCodes.FWD | BehaviorCodes.DORSAL_TURN, BehaviorCodes.REV | BehaviorCodes.VENTRAL_TURN,
+                                    BehaviorCodes.REV | BehaviorCodes.DORSAL_TURN, BehaviorCodes.SUPERCOIL,
                                     BehaviorCodes.QUIESCENCE, BehaviorCodes.NOT_ANNOTATED,
                                     BehaviorCodes.UNKNOWN, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000])
 
@@ -34,10 +34,10 @@ class TestBehaviorCodes(unittest.TestCase):
 
     def test_must_be_manually_annotated(self):
         # Test the specific behaviors that must be manually annotated
-        self.assertTrue(BehaviorCodes.must_be_manually_annotated(BehaviorCodes.FWD_VENTRAL_TURN))
-        self.assertTrue(BehaviorCodes.must_be_manually_annotated(BehaviorCodes.FWD_DORSAL_TURN))
-        self.assertTrue(BehaviorCodes.must_be_manually_annotated(BehaviorCodes.REV_VENTRAL_TURN))
-        self.assertTrue(BehaviorCodes.must_be_manually_annotated(BehaviorCodes.REV_DORSAL_TURN))
+        self.assertTrue(BehaviorCodes.must_be_manually_annotated(BehaviorCodes.FWD | BehaviorCodes.VENTRAL_TURN))
+        self.assertTrue(BehaviorCodes.must_be_manually_annotated(BehaviorCodes.FWD | BehaviorCodes.DORSAL_TURN))
+        self.assertTrue(BehaviorCodes.must_be_manually_annotated(BehaviorCodes.REV | BehaviorCodes.VENTRAL_TURN))
+        self.assertTrue(BehaviorCodes.must_be_manually_annotated(BehaviorCodes.REV | BehaviorCodes.DORSAL_TURN))
         self.assertTrue(BehaviorCodes.must_be_manually_annotated(BehaviorCodes.SUPERCOIL))
         self.assertTrue(BehaviorCodes.must_be_manually_annotated(BehaviorCodes.QUIESCENCE))
 

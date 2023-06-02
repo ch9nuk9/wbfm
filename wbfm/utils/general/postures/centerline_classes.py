@@ -298,8 +298,8 @@ class WormFullVideoPosture:
         df = self._raw_manual_beh_annotation
         if not keep_reversal_turns:
             # Map reversal turns to regular reversal state
-            df = df.replace(BehaviorCodes.REV_VENTRAL_TURN, BehaviorCodes.REV)
-            df = df.replace(BehaviorCodes.REV_DORSAL_TURN, BehaviorCodes.REV)
+            df = df.replace(BehaviorCodes.REV | BehaviorCodes.VENTRAL_TURN, BehaviorCodes.REV)
+            df = df.replace(BehaviorCodes.REV | BehaviorCodes.DORSAL_TURN, BehaviorCodes.REV)
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
