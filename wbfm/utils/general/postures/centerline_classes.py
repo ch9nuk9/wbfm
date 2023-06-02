@@ -374,19 +374,21 @@ class WormFullVideoPosture:
         elif behavior_alias == 'quantile_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
-                                                     do_quantile=True, which_quantile=0.9)
+                                                     do_quantile=True, which_quantile=0.9, reset_index=True)
         elif behavior_alias == 'quantile_head_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=5, end_segment=30,
-                                                     do_quantile=True, which_quantile=0.75)
+                                                     do_quantile=True, which_quantile=0.75, reset_index=True)
         elif behavior_alias == 'ventral_quantile_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
-                                                     do_quantile=True, which_quantile=0.9)
+                                                     do_abs=False,
+                                                     do_quantile=True, which_quantile=0.9, reset_index=True)
         elif behavior_alias == 'dorsal_quantile_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
-                                                     do_quantile=True, which_quantile=0.1)
+                                                     do_abs=False,
+                                                     do_quantile=True, which_quantile=0.1, reset_index=True)
         elif behavior_alias == 'pirouette':
             y = self.calc_pseudo_pirouette_state()
         elif behavior_alias == 'plateau':
@@ -455,8 +457,9 @@ class WormFullVideoPosture:
 
     @lru_cache(maxsize=64)
     def summed_curvature_from_kymograph(self, fluorescence_fps=False, start_segment=30, end_segment=80,
-                                        do_abs=True, do_quantile=False, which_quantile=0.9) -> pd.Series:
-        """Average over absolute value of segments (default) 30 to 80"""
+                                        do_abs=True, do_quantile=False, which_quantile=0.9,
+                                        reset_index=False) -> pd.Series:
+        """Average over value of segments (default) 30 to 80 (optional: absolute value)"""
         mat = self.curvature().loc[:, start_segment:end_segment]
         if do_abs:
             mat = mat.abs()
@@ -464,7 +467,7 @@ class WormFullVideoPosture:
             mat = mat.mean(axis=1)
         else:
             mat = mat.quantile(axis=1, q=which_quantile)
-        curvature = self._validate_and_downsample(mat, fluorescence_fps=fluorescence_fps)
+        curvature = self._validate_and_downsample(mat, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
         return curvature
 
     ##
@@ -1202,12 +1205,12 @@ class WormFullVideoPosture:
             vec = vec.copy()
             logging.debug(f"Setting these indices as tracking failures: {tracking_failure_idx}")
             if isinstance(vec, pd.DataFrame):
-                if BehaviorCodes.assert_is_valid(vec.iat[0, 0]):
+                if isinstance(vec.iat[0, 0], BehaviorCodes):
                     vec.iloc[tracking_failure_idx] = BehaviorCodes.TRACKING_FAILURE
                 else:
                     vec.iloc[tracking_failure_idx, :] = np.nan
             elif isinstance(vec, pd.Series):
-                if BehaviorCodes.assert_is_valid(vec.iat[0]):
+                if isinstance(vec.iat[0], BehaviorCodes):
                     vec.iloc[tracking_failure_idx] = BehaviorCodes.TRACKING_FAILURE
                 else:
                     vec.iloc[tracking_failure_idx] = np.nan
