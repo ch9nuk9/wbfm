@@ -179,12 +179,18 @@ class BehaviorCodes(Flag):
         return cmap
 
     # @classmethod
-    # def has_value(cls, value):
-    #     return value in cls._value2member_map_
+    # def __contains__(cls, value):
+    #     # NOTE: I would have to do a metaclass instead of a normal override to make this work
+    #     # Backport the python 3.12 feature of allowing "in" to work with non-integers
+    #     try:
+    #         super().__contains__(value)
+    #         return True
+    #     except TypeError:
+    #         return False
 
     @classmethod
     def assert_is_valid(cls, value):
-        if value not in cls:
+        if not isinstance(value, BehaviorCodes):
             raise InvalidBehaviorAnnotationsError(f"Value {value} is not a valid behavioral code "
                                                   f"({cls._value2member_map_})")
 

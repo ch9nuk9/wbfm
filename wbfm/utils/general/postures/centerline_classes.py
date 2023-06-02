@@ -1187,7 +1187,8 @@ class WormFullVideoPosture:
                      len(self._raw_stage_position),
                      self.frames_per_volume)
 
-    def remove_idx_of_tracking_failures(self, vec: pd.Series, estimate_failures_from_kymograph=True,
+    def remove_idx_of_tracking_failures(self, vec: Union[pd.Series, pd.DataFrame],
+                                        estimate_failures_from_kymograph=True,
                                         fluorescence_fps=True) -> pd.Series:
         """
         Removes indices of known tracking failures, if any
@@ -1200,10 +1201,16 @@ class WormFullVideoPosture:
         if tracking_failure_idx is not None and len(tracking_failure_idx) > 0 and vec is not None:
             vec = vec.copy()
             logging.debug(f"Setting these indices as tracking failures: {tracking_failure_idx}")
-            if vec.iat[0] in BehaviorCodes:
-                vec.iloc[tracking_failure_idx] = BehaviorCodes.TRACKING_FAILURE
-            else:
-                vec.iloc[tracking_failure_idx] = np.nan
+            if isinstance(vec, pd.DataFrame):
+                if BehaviorCodes.assert_is_valid(vec.iat[0, 0]):
+                    vec.iloc[tracking_failure_idx] = BehaviorCodes.TRACKING_FAILURE
+                else:
+                    vec.iloc[tracking_failure_idx, :] = np.nan
+            elif isinstance(vec, pd.Series):
+                if BehaviorCodes.assert_is_valid(vec.iat[0]):
+                    vec.iloc[tracking_failure_idx] = BehaviorCodes.TRACKING_FAILURE
+                else:
+                    vec.iloc[tracking_failure_idx] = np.nan
         return vec
 
     def estimate_tracking_failures_from_kymo(self, fluorescence_fps):
