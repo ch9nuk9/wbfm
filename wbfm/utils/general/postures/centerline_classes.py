@@ -416,6 +416,9 @@ class WormFullVideoPosture:
             y = self.calc_interpolated_curvature_using_peak_detection(i_segment=4, fluorescence_fps=True, flip=False)
         elif behavior_alias == 'interpolated_dorsal_head_curvature':
             y = self.calc_interpolated_curvature_using_peak_detection(i_segment=4, fluorescence_fps=True, flip=True)
+        elif behavior_alias == 'self_collision':
+            # Binary behavior, outside of the normal BehaviorCodes enum
+            y = self.self_collision(fluorescence_fps=True)
         else:
             raise NotImplementedError(behavior_alias)
 

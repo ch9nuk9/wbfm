@@ -1,5 +1,6 @@
-from enum import IntEnum
+from enum import IntEnum, Flag, auto
 from pathlib import Path
+from typing import List, Union
 
 import numpy as np
 import pandas as pd
@@ -15,7 +16,160 @@ from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, 
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError
 
 
-class BehaviorCodes(IntEnum):
+class BehaviorCodes(Flag):
+    """
+    Top-level behaviors that are discretely annotated.
+    Designed to work with Ulises' automatic annotations via a hardcoded mapping. See also: from_ulises_int
+
+    Note that this should always be loaded using this mapping, not directly from integers!
+    """
+    # Basic automatically annotated behaviors
+    FWD = auto()
+    REV = auto()
+
+    VENTRAL_TURN = auto()  # Manually annotated
+    DORSAL_TURN = auto()  # Manually annotated
+    SUPERCOIL = auto()  # Manually annotated
+    QUIESCENCE = auto()  # Manually annotated
+    SELF_COLLISION = auto()  # Annotated using a different pipeline
+
+    NOT_ANNOTATED = auto()
+    UNKNOWN = auto()
+
+    @classmethod
+    def from_ulises_int(cls, value: int) -> 'BehaviorCodes':
+        """
+        Convert from Ulises' integer value to the corresponding BehaviorCodes value
+
+        HARDCODED!
+
+        Parameters
+        ----------
+        value
+
+        Returns
+        -------
+
+        """
+        original_mapping = {
+            -1: cls.FWD,
+            1: cls.REV,
+            2: cls.FWD | cls.VENTRAL_TURN,
+            3: cls.FWD | cls.DORSAL_TURN,
+            4: cls.REV | cls.VENTRAL_TURN,
+            5: cls.REV | cls.DORSAL_TURN,
+            6: cls.SUPERCOIL,
+            7: cls.QUIESCENCE,
+            0: cls.NOT_ANNOTATED,
+            -99: cls.UNKNOWN,  # Should not be in any files that Ulises produces
+        }
+        return original_mapping[value]
+
+    @classmethod
+    def _load_from_list(cls, vec: List[int]) -> pd.Series:
+        """
+        Load from a list of int; DO NOT USE DIRECTLY!
+
+        Returns
+        -------
+
+        """
+        return pd.Series([cls(i) for i in vec])
+
+    @classmethod
+    def load_using_dict_mapping(cls, vec: List[int]) -> pd.Series:
+        """
+        Load using the hardcoded mapping between Ulises' integers and BehaviorCodes
+
+        See also: from_ulises_int
+
+        Returns
+        -------
+
+        """
+        return pd.Series([cls.from_ulises_int(i) for i in vec])
+
+    @classmethod
+    def vector_equality(cls, enum_list: Union[list, pd.Series], query_enum, exact=False):
+        """
+        Compares a query enum to a list of enums, returning a binary vector
+
+        By default allows complex comparisons, e.g. FWD_VENTRAL_TURN == FWD because FWD_VENTRAL_TURN is a subset of FWD
+
+        Parameters
+        ----------
+        enum_list
+        query_enum
+        exact
+
+        Returns
+        -------
+
+        """
+        if exact:
+            binary_vector = [query_enum == e for e in enum_list]
+        else:
+            binary_vector = [query_enum in e for e in enum_list]
+        return pd.Series(binary_vector)
+
+    @classmethod
+    def shading_cmap(cls):
+        """Colormap for shading on top of traces"""
+        cmap = {cls.UNKNOWN: None,
+                cls.FWD: None,
+                cls.REV: 'lightgray'}
+        return cmap
+
+    @classmethod
+    def base_colormap(cls):
+        # See: https://plotly.com/python/discrete-color/
+        return px.colors.qualitative.Set1_r
+
+    @classmethod
+    def ethogram_cmap(cls, include_reversal_turns=False):
+        """Colormap for shading as a stand-alone ethogram"""
+        base_cmap = cls.base_colormap()
+        cmap = {cls.UNKNOWN: None,
+                cls.FWD: base_cmap[0],
+                cls.REV: base_cmap[1],
+                cls.FWD_VENTRAL_TURN: base_cmap[2],
+                cls.FWD_DORSAL_TURN: base_cmap[3],
+                # Same as REV
+                cls.REV_VENTRAL_TURN: base_cmap[1],
+                cls.REV_DORSAL_TURN: base_cmap[1],
+                # Unclear
+                cls.QUIESCENCE: base_cmap[4],
+                }
+        if include_reversal_turns:
+            cmap[cls.REV_VENTRAL_TURN] = base_cmap[4]
+            cmap[cls.REV_DORSAL_TURN] = base_cmap[5]
+            cmap[cls.QUIESCENCE] = base_cmap[6]
+        return cmap
+
+    @classmethod
+    def has_value(cls, value):
+        return value in cls._value2member_map_
+
+    @classmethod
+    def assert_is_valid(cls, value):
+        if not cls.has_value(value):
+            raise InvalidBehaviorAnnotationsError(f"Value {value} is not a valid behavioral code "
+                                                  f"({cls._value2member_map_})")
+
+    @classmethod
+    def assert_all_are_valid(cls, vec):
+        for v in np.unique(vec):
+            cls.assert_is_valid(v)
+
+    @classmethod
+    def must_be_manually_annotated(cls, value):
+        """As of 23-03-2023, everything except FWD and REV must be manually annotated"""
+        if value is None:
+            return False
+        return value not in (cls.FWD, cls.REV, cls.NOT_ANNOTATED, cls.UNKNOWN)
+
+
+class OLDBehaviorCodes(IntEnum):
     """
     Top-level behaviors that are discretely annotated. Designed to work with Ulises' automatic annotations
 
