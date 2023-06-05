@@ -1587,7 +1587,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return self.build_tracks_from_name()
 
     def color_using_behavior(self):
-        self.dat.shade_axis_using_behavior(self.static_ax)
+        if self.dat.worm_posture_class.has_beh_annotation():
+            self.dat.shade_axis_using_behavior(self.static_ax)
 
     # def save_annotations(self):
     #     self.update_dataframe_using_points()
