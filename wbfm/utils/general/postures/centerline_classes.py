@@ -1227,10 +1227,12 @@ class WormFullVideoPosture:
             if file.is_dir():
                 continue
             if file.name.endswith('Ch0-BHbigtiff_AVG_background_subtracted.avi'):
-                return file
-            elif file.name.endswith('raw_stack_AVG_background_subtracted.avi'):
+                if file.with_suffix('.btf').exists():
+                    return file
+            elif file.name.endswith('raw_stack_AVG_background_subtracted_normalised.avi'):
                 # Newer naming convention
-                return file
+                if file.with_suffix('.btf').exists():
+                    return file
         return None
 
     def __repr__(self):
