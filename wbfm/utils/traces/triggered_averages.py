@@ -136,7 +136,7 @@ class TriggeredAverageIndices:
         if self.behavioral_annotation_is_continuous:
             binary_state = self.behavioral_annotation > self.behavioral_annotation_threshold
         else:
-            binary_state = self.behavioral_annotation == self.behavioral_state
+            binary_state = BehaviorCodes.vector_equality(self.behavioral_annotation, self.behavioral_state)
         if self.gap_size_to_remove is not None:
             binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
         return binary_state

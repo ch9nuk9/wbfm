@@ -131,7 +131,7 @@ class BehaviorCodes(Flag):
             return pd.Series(binary_vector)
 
     @classmethod
-    def vector_diff(cls, enum_list: Union[list, pd.Series], exact=False):
+    def vector_diff(cls, enum_list: Union[list, pd.Series], exact=False) -> pd.Series:
         """
         Calculates the vector np.diff, which can't be done directly because these aren't integers
 
@@ -140,9 +140,9 @@ class BehaviorCodes(Flag):
 
         """
         if exact:
-            return pd.Series([e2 != e1 for e1, e2 in zip(enum_list[:-1], enum_list[1:])])
+            return pd.Series([e2 != e1 for e1, e2 in zip(enum_list.iloc[:-1], enum_list.iloc[1:])])
         else:
-            return pd.Series([e2 not in e1 for e1, e2 in zip(enum_list[:-1], enum_list[1:])])
+            return pd.Series([e2 not in e1 for e1, e2 in zip(enum_list.iloc[:-1], enum_list.iloc[1:])])
 
     @classmethod
     def shading_cmap(cls):
@@ -198,6 +198,11 @@ class BehaviorCodes(Flag):
     def assert_all_are_valid(cls, vec):
         for v in vec:
             cls.assert_is_valid(v)
+
+    @classmethod
+    def is_successful_behavior(cls, value):
+        """Returns True if the behavior is a successful behavior, i.e. not a tracking or other pipeline failure"""
+        return value not in (cls.NOT_ANNOTATED, cls.UNKNOWN, cls.TRACKING_FAILURE)
 
     @classmethod
     def must_be_manually_annotated(cls, value):

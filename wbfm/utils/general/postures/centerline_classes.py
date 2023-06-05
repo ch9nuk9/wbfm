@@ -1526,8 +1526,9 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
     if ax is None:
         ax = plt.gca()
     bh = np.array(bh)
+    behavior_diff = BehaviorCodes.vector_diff(pd.Series(bh))
 
-    block_final_indices = np.where(np.diff(bh))[0]
+    block_final_indices = np.where(behavior_diff)[0]
     block_final_indices = np.concatenate([block_final_indices, np.array([len(bh) - 1])])
     block_values = bh[block_final_indices]
     if DEBUG:
@@ -1540,7 +1541,7 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
 
     block_start = 0
     for val, block_end in zip(block_values, block_final_indices):
-        if val is None or np.isnan(val):
+        if val is None or not BehaviorCodes.is_successful_behavior(val):
             continue
         try:
             color = cmap.get(val, None)
@@ -1548,7 +1549,7 @@ def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
             logging.warning(f"Ignored behavior of value: {val}")
             # Just ignore
             continue
-
+        # err
         if DEBUG:
             print(color, val, block_start, block_end)
         if color is not None:
