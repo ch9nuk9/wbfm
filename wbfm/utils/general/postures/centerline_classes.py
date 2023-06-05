@@ -1228,6 +1228,9 @@ class WormFullVideoPosture:
                 continue
             if file.name.endswith('Ch0-BHbigtiff_AVG_background_subtracted.avi'):
                 return file
+            elif file.name.endswith('raw_stack_AVG_background_subtracted.avi'):
+                # Newer naming convention
+                return file
         return None
 
     def __repr__(self):
