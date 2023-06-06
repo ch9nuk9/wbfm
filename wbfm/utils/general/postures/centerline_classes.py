@@ -18,6 +18,7 @@ from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
 
+from wbfm.utils.external.utils_self_collision import calculate_self_collision_using_pairwise_distances
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError
@@ -248,12 +249,17 @@ class WormFullVideoPosture:
         return df
 
     @cached_property
-    def _raw_self_collision(self) -> pd.Series:
+    def _raw_self_collision(self) -> Optional[pd.Series]:
+        # Ulises' file is not really working right now, so calculate one ourselves
         # This one has a header
-        _raw_vector = read_if_exists(self.filename_self_collision, reader=pd.read_csv, index_col=0)['self_touch']
+        # _raw_vector = read_if_exists(self.filename_self_collision, reader=pd.read_csv, index_col=0)['self_touch']
+        if self.centerlineY() is None:
+            return None
+        _raw_vector, _ = calculate_self_collision_using_pairwise_distances(self.centerlineX(), self.centerlineY())
+
         # Convert 1's to BehaviorCodes.SELF_COLLISION and 0's to BehaviorCodes.NOT_ANNOTATED
-        _raw_vector = _raw_vector.replace(1, BehaviorCodes.SELF_COLLISION)
-        _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
+        _raw_vector = _raw_vector.replace(True, BehaviorCodes.SELF_COLLISION)
+        _raw_vector = _raw_vector.replace(False, BehaviorCodes.NOT_ANNOTATED)
         _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
         BehaviorCodes.assert_all_are_valid(_raw_vector)
         return _raw_vector
@@ -447,10 +453,9 @@ class WormFullVideoPosture:
                 logging.warning("Using automatic annotation instead")
                 beh = self._raw_beh_annotation
 
-        if self._self_collision is not None:
+        if self._self_collision() is not None:
             # Add the self-collision annotation
             # Note that the collision annotation is one frame shorter than the behavior annotation
-            # err
             beh = beh.iloc[:-1] + self._self_collision(fluorescence_fps=False, reset_index=False)
 
         return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
