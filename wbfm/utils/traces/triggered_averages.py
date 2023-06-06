@@ -640,9 +640,13 @@ class FullDatasetTriggeredAverages:
         df_triggered = {}
         for name in self.neuron_names:
             mat = self.triggered_average_matrix_from_name(name)
+            if mat is None:
+                continue
             raw_trace_mean, triggered_avg, _, _, xmax, is_valid = \
                 self.ind_class.prep_triggered_average_for_plotting(mat, min_lines=self.min_lines,
                                                                    shorten_to_last_valid=False)
+            if not is_valid:
+                continue
             df_triggered[name] = triggered_avg
 
         df_triggered = pd.DataFrame(df_triggered)
@@ -1840,7 +1844,8 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt
     """
     See ClusteredTriggeredAverages.load_from_project for kwargs
 
-
+    if trigger_opt is in kwargs, it will be passed to calc_triggered_average_indices
+    if trace_opt is in kwargs, it will be passed to calc_default_traces
 
     Parameters
     ----------
