@@ -705,6 +705,7 @@ class WormFullVideoPosture:
     def calc_triggered_average_indices(self, state=BehaviorCodes.FWD, min_duration=5, ind_preceding=20,
                                        behavior_name=None,
                                        use_manual_annotation=None,
+                                       use_hilbert_phase=False,
                                        **kwargs):
         """
         Calculates a list of indices that can be used to calculate triggered averages of 'state' ONSET
@@ -720,6 +721,7 @@ class WormFullVideoPosture:
         Alternatively, can pass a behavioral_annotation, which will be used directly
             See TriggeredAverageIndices for more details
             Note: this overrides the state and behavior_name parameters
+        Similarly, use_hilbert_phase will create and use a commonly used continuous signal
 
         Parameters
         ----------
@@ -732,6 +734,7 @@ class WormFullVideoPosture:
         -------
 
         """
+        # First: Check if manual annotation can be calculated
         if use_manual_annotation is None:
             if BehaviorCodes.must_be_manually_annotated(state):
                 use_manual_annotation = True
@@ -739,13 +742,22 @@ class WormFullVideoPosture:
                     raise NoManualBehaviorAnnotationsError()
             else:
                 use_manual_annotation = False
+        # If the behavior is passed directly, use that
         behavioral_annotation = kwargs.get('behavioral_annotation', None)
+        # Calculate the behavioral annotation, either from an alias or directly from the behavioral annotation
         if behavioral_annotation is None:
-            if behavior_name is None:
+            if use_hilbert_phase:
+                df_behavioral_annotation = self.hilbert_phase(fluorescence_fps=True, reset_index=True)
+                # Choose one body segment
+                behavioral_annotation = df_behavioral_annotation.loc[:, 41]
+                behavioral_annotation = behavioral_annotation - behavioral_annotation.mean()
+                kwargs['behavioral_annotation_is_continuous'] = True
+            elif behavior_name is None:
                 behavioral_annotation = self.beh_annotation(fluorescence_fps=True,
                                                             use_manual_annotation=use_manual_annotation)
             else:
                 behavioral_annotation = self.calc_behavior_from_alias(behavior_name)
+        # Build the class
         opt = dict(behavioral_annotation=behavioral_annotation,
                    min_duration=min_duration,
                    ind_preceding=ind_preceding,
