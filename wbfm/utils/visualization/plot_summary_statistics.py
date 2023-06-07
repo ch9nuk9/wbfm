@@ -81,8 +81,11 @@ def calc_speed_dataframe(all_projects):
 
     all_speeds = defaultdict(dict)
     for name, p in tqdm(all_projects.items()):
-        for speed_type in speed_types:
-            all_speeds[speed_type][name] = calc_speed_vector(p, speed_type)
+        try:
+            for speed_type in speed_types:
+                all_speeds[speed_type][name] = calc_speed_vector(p, speed_type)
+        except ValueError:
+            continue
     df_speed = pd.DataFrame(all_speeds)
 
     return df_speed
