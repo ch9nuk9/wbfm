@@ -576,11 +576,15 @@ class TriggeredAverageIndices:
     def num_events(self):
         return len(self.idx_onsets)
 
-    def all_durations_with_censoring(self):
+    def all_state_durations(self, include_censored=True):
         # Note that this doesn't account for gaps caused by incorrect annotation
         binary_vec = self.cleaned_binary_state
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_vec, already_boolean=True)
         duration_vec, censored_vec = calc_surpyval_durations_and_censoring(all_starts, all_ends)
+        if not include_censored:
+            # Remove the censored ones (the ones at the edges)
+            duration_vec = np.array(duration_vec)[np.array(censored_vec) == 0]
+            duration_vec = list(duration_vec)
         return duration_vec, censored_vec
 
 

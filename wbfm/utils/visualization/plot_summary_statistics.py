@@ -4,6 +4,7 @@ import tifffile
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import melt_nested_dict
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 
 def apply_function_to_pages(video_fname,
@@ -79,7 +80,8 @@ def calc_speed_vector(p, speed_type):
 
 def calc_speed_dataframe(all_projects):
     speed_types = ['abs_stage_speed', 'middle_body_speed', 'signed_middle_body_speed',
-                   'worm_speed_average_all_segments', 'signed_speed_angular']
+                   'worm_speed_average_all_segments']
+    # Note that the signed_speed_angular does not have a well-defined sign across datasets
 
     all_speeds = defaultdict(dict)
     for name, p in tqdm(all_projects.items()):
@@ -91,3 +93,22 @@ def calc_speed_dataframe(all_projects):
     df_speed = melt_nested_dict(all_speeds)
 
     return df_speed#, all_speeds
+
+
+def calc_durations_dataframe(all_projects):
+    states = [BehaviorCodes.FWD, BehaviorCodes.REV]
+    # Note that the signed_speed_angular does not have a well-defined sign across datasets
+
+    all_durations = defaultdict(dict)
+    for name, p in tqdm(all_projects.items()):
+        try:
+            for state in states:
+                ind_class = p.worm_posture_class.calc_triggered_average_indices(state=state,
+                                                                                min_duration=0)
+                all_durations[str(state)][name] = ind_class.all_state_durations(include_censored=False)[0]
+                # err
+        except ValueError:
+            continue
+    df_durations = melt_nested_dict(all_durations, all_same_lengths=False)
+
+    return df_durations
