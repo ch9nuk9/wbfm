@@ -572,6 +572,45 @@ def get_corner_from_corr_df(df0: pd.DataFrame, df_corr: pd.DataFrame):
     return df_corr.iloc[ind_neurons, ind_nonneuron]
 
 
+def melt_nested_dict(nested_dict: dict):
+    """
+    Assuming a nested dict of the form:
+    {'key_outer': {'key_inner': vector}}
+
+    Returns a dataframe of the form:
+    key_name | key_outer
+    key_inner, val1
+    key_inner, val2
+    ...
+
+    i.e. the inner key is repeated in a new column, and the vector is expanded into a column with the same name as the
+    outer key
+
+    Parameters
+    ----------
+    nested_dict
+
+    Returns
+    -------
+
+    """
+
+    all_melted_dfs = []
+    for i, (k, v) in enumerate(nested_dict.items()):
+        two_col_dataframe = pd.DataFrame(v).melt()
+        two_col_dataframe.astype({'variable': str})
+        two_col_dataframe.columns = ['dataset_name', k]
+        if i > 0:
+            two_col_dataframe.drop(columns=['dataset_name'], inplace=True)
+        all_melted_dfs.append(two_col_dataframe)
+
+    df_melted = all_melted_dfs[0].copy()
+    for df in all_melted_dfs[1:]:
+        # merging on the dataset name somehow doesn't properly match names, so just drop that
+        df_melted = df_melted.join(df)
+    return df_melted
+
+
 def flatten_multiindex_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
     Flattens the columns of a dataframe with a multiindex

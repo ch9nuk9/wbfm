@@ -3,6 +3,8 @@ import pandas as pd
 import tifffile
 from tqdm.auto import tqdm
 
+from wbfm.utils.external.utils_pandas import melt_nested_dict
+
 
 def apply_function_to_pages(video_fname,
                             func,
@@ -86,6 +88,6 @@ def calc_speed_dataframe(all_projects):
                 all_speeds[speed_type][name] = calc_speed_vector(p, speed_type)
         except ValueError:
             continue
-    df_speed = pd.DataFrame(all_speeds)
+    df_speed = melt_nested_dict(all_speeds)
 
-    return df_speed
+    return df_speed#, all_speeds
