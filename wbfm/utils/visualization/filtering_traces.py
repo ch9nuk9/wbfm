@@ -243,3 +243,24 @@ def fast_slow_decomposition(y, fast_window=0, slow_window=9):
     y_slow = filter_gaussian_moving_average(y, std=slow_window)
     y_fast = y_fast - y_slow
     return y_fast, y_slow
+
+
+def filter_trace_using_mode(y, filter_mode="no_filtering"):
+    if filter_mode == "rolling_mean":
+        y = filter_rolling_mean(y, window=5)
+    elif filter_mode == "strong_rolling_mean":
+        y = filter_gaussian_moving_average(y, std=5)
+    elif filter_mode == "linear_interpolation":
+        y = filter_linear_interpolation(y, window=15)
+    elif filter_mode == "3d_pca":
+        y = filter_exponential_moving_average(y)
+    elif filter_mode == "tvdiff":
+        assert all(~np.isnan(y)), "tvdiff doesn't work with nans"
+        y = filter_tv_diff(y)
+    elif filter_mode == "bilateral":
+        y = filter_bilateral(y, win_size=7, sigma_d=2.0, sigma_i=0.1)
+    elif filter_mode == "no_filtering":
+        pass
+    else:
+        logging.warning(f"Unrecognized filter mode: {filter_mode}")
+    return y

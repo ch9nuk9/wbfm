@@ -10,7 +10,6 @@ from copy import deepcopy
 import napari
 import numpy as np
 import pandas as pd
-import sklearn.linear_model
 import zarr
 from backports.cached_property import cached_property
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
@@ -28,9 +27,9 @@ from wbfm.gui.utils.utils_gui import build_tracks_from_dataframe
 from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
-    filter_rolling_mean, filter_linear_interpolation, remove_outliers_using_std, filter_exponential_moving_average, \
-    filter_tv_diff, filter_bilateral, filter_gaussian_moving_average, fast_slow_decomposition, fill_nan_in_dataframe
-from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit, bleach_correct_gaussian_moving_average
+    remove_outliers_using_std, fast_slow_decomposition, fill_nan_in_dataframe, \
+    filter_trace_using_mode
+from wbfm.utils.traces.bleach_correction import bleach_correct_gaussian_moving_average
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
 
@@ -312,23 +311,8 @@ class TracePlotter:
         if self.remove_outliers:
             y = remove_outliers_using_std(y, std_factor=5)
 
-        if self.filter_mode == "rolling_mean":
-            y = filter_rolling_mean(y, window=5)
-        elif self.filter_mode == "strong_rolling_mean":
-            y = filter_gaussian_moving_average(y, std=5)
-        elif self.filter_mode == "linear_interpolation":
-            y = filter_linear_interpolation(y, window=15)
-        elif self.filter_mode == "3d_pca":
-            y = filter_exponential_moving_average(y)
-        elif self.filter_mode == "tvdiff":
-            assert all(~np.isnan(y)), "tvdiff doesn't work with nans"
-            y = filter_tv_diff(y)
-        elif self.filter_mode == "bilateral":
-            y = filter_bilateral(y, win_size=7, sigma_d=2.0, sigma_i=0.1)
-        elif self.filter_mode == "no_filtering":
-            pass
-        else:
-            logging.warning(f"Unrecognized filter mode: {self.filter_mode}")
+        filter_mode = self.filter_mode
+        y = filter_trace_using_mode(y, filter_mode)
 
         # Optional: final postprocessing to remove very slow drifts
         if self.high_pass_bleach_correct:
