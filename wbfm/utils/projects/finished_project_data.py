@@ -50,7 +50,7 @@ from wbfm.utils.projects.utils_project import safe_cd
 from backports.cached_property import cached_property
 
 from wbfm.utils.utils_cache import cache_to_disk_class
-from wbfm.utils.visualization.filtering_traces import fast_slow_decomposition
+from wbfm.utils.visualization.filtering_traces import fast_slow_decomposition, filter_trace_using_mode
 
 
 @dataclass
@@ -696,7 +696,7 @@ class ProjectData:
 
         behavior_dict = {}
         for code in behavior_codes:
-            behavior_dict[code] = self.worm_posture_class.calc_behavior_from_alias(code).reset_index(drop=True)
+            behavior_dict[code] = self.calculate_behavior_trace(code)
 
         df = pd.DataFrame(behavior_dict)
         # Optional: nan time points that are estimated to have a tracking error (either global or per-neuron)
@@ -719,6 +719,13 @@ class ProjectData:
                     continue
 
         return df
+
+    @lru_cache(maxsize=128)
+    def calculate_behavior_trace(self, behavior_code, **kwargs):
+        y = self.worm_posture_class.calc_behavior_from_alias(behavior_code).reset_index(drop=True)
+        if "filter_mode" in kwargs:
+            y = filter_trace_using_mode(y, kwargs['filter_mode'])
+        return y
 
     @lru_cache(maxsize=128)
     def calc_default_traces(self, min_nonnan: Optional[float] = None, interpolate_nan: bool = False,
