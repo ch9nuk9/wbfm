@@ -327,6 +327,20 @@ class WormFullVideoPosture:
         df = BehaviorCodes.load_using_dict_mapping(df)
         return df
 
+    @property
+    def beh_aliases_stable(self):
+        """A list of behavior aliases that are stable, i.e. not currently an experimental function"""
+        return ['signed_stage_speed', 'rev', 'fwd', 'abs_stage_speed',
+                'middle_body_speed', 'signed_middle_body_speed', 'signed_speed_angular',
+                'summed_curvature',
+                'summed_signed_curvature', 'head_curvature', 'head_signed_curvature',
+                'quantile_curvature', 'quantile_head_curvature',
+                'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature',
+                'interpolated_dorsal_midbody_curvature', 'interpolated_dorsal_head_curvature',
+                'speed_plateau_piecewise_constant',
+                'speed_plateau_piecewise_linear_onset', 'speed_plateau_piecewise_linear_offset',
+                'fwd_empirical_distribution', 'rev_empirical_distribution',]
+
     def calc_behavior_from_alias(self, behavior_alias: str, **kwargs) -> pd.Series:
         """
         This calls worm_speed or summed_curvature_from_kymograph with defined key word arguments

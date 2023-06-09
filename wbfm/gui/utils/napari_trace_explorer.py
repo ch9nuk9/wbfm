@@ -192,10 +192,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeBleachCorrectionCheckBox.stateChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Do bleach correction?", self.changeBleachCorrectionCheckBox)
 
-        # Add reference neuron trace (dropdown)
+        # Add reference neuron trace (also allows behaviors) (dropdown)
         self.changeReferenceTrace = QtWidgets.QComboBox()
         neuron_names_and_none = self.dat.neuron_names
         neuron_names_and_none.insert(0, "None")
+        neuron_names_and_none.extend(self.dat.worm_posture_class.beh_aliases_stable)
         self.changeReferenceTrace.addItems(neuron_names_and_none)
         self.changeReferenceTrace.currentIndexChanged.connect(self.update_reference_trace)
         self.formlayout3.addRow("Reference trace:", self.changeReferenceTrace)
@@ -1288,7 +1289,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 self.finish_subplot_update_and_draw(preserve_xlims=True)
         else:
             # Plot other trace
-            t, y = self.calculate_trace(neuron_name=ref_name)
+            t, y = self.calculate_trace(trace_name=ref_name)
             self.reference_line.set_data(t, y)
             # self.reference_line.set_ydata(y)
             if force_draw:
@@ -1540,12 +1541,29 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.y_trace_mode: pd.Series = y
         self.tspan = t
 
-    def calculate_trace(self, neuron_name=None) -> Tuple[List, pd.Series]:
-        if neuron_name is None:
-            neuron_name = self.current_neuron_name
+    def calculate_trace(self, trace_name=None) -> Tuple[List, pd.Series]:
+        """
+        Uses project_data class to calculate the trace for the current neuron, or the neuron specified by trace_name
+
+        Can also calculate behaviors
+
+        Parameters
+        ----------
+        trace_name
+
+        Returns
+        -------
+
+        """
+        if trace_name is None:
+            trace_name = self.current_neuron_name
 
         trace_opt = self.get_trace_opt()
-        t, y = self.dat.calculate_traces(neuron_name=neuron_name, **trace_opt)
+        if trace_name in self.dat.neuron_names:
+            t, y = self.dat.calculate_traces(neuron_name=trace_name, **trace_opt)
+        else:
+            # Assume it is a behavior name
+            t, y = self.dat.calculate_behavior_trace(trace_name, **trace_opt)
         return t, y
 
     def get_trace_opt(self):
