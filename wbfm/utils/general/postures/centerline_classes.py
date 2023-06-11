@@ -532,7 +532,7 @@ class WormFullVideoPosture:
             velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
             velocity = pd.Series(velocity).interpolate()
         # Sign to be consistent with the regular speed
-        stage_speed = self.worm_speed(fluorescence_fps=fluorescence_fps, **kwargs)
+        stage_speed = self.worm_speed(fluorescence_fps=fluorescence_fps, signed=True, strong_smoothing=True)
         # Flip if the correlation is negative
         if np.corrcoef(stage_speed, velocity)[0, 1] < 0:
             velocity *= -1
@@ -607,22 +607,30 @@ class WormFullVideoPosture:
         -------
 
         """
-        single_segment_opt = kwargs.copy()
-        single_segment_opt['use_stage_position'] = False
-        sign_after_mean = single_segment_opt.get('signed', False)
-        single_segment_opt['signed'] = False
+        # Do not sign this initial speed calculation
+        sign_after_mean = kwargs.get('signed', False)
+        kwargs['signed'] = False
 
-        all_speeds = []
-        for i in range(start_segment, end_segment):
-            single_segment_opt['body_segment'] = i
-            all_speeds.append(self.worm_speed(**single_segment_opt))
-        mean_speed = pd.DataFrame(all_speeds).mean(axis=0)
+        all_speeds = self.calc_speed_kymograph(start_segment, end_segment, **kwargs)
+        mean_speed = all_speeds.mean(axis=0)
 
         if sign_after_mean:
-            fluorescence_fps = single_segment_opt.get('fluorescence_fps', False)
+            fluorescence_fps = kwargs.get('fluorescence_fps', False)
             mean_speed = self.flip_of_vector_during_state(mean_speed, fluorescence_fps)
 
         return mean_speed
+
+    def calc_speed_kymograph(self, start_segment=10, end_segment=90, **kwargs):
+        single_segment_opt = kwargs.copy()
+        single_segment_opt['use_stage_position'] = False
+        fluorescence_fps = single_segment_opt.get('fluorescence_fps', False)
+        all_speeds = np.zeros(
+            (end_segment - start_segment, len(self.stage_position(fluorescence_fps=fluorescence_fps))))
+        for i, i_seg in enumerate(range(start_segment, end_segment)):
+            single_segment_opt['body_segment'] = i_seg
+            all_speeds[i, :] = self.worm_speed(**single_segment_opt)
+        all_speeds = pd.DataFrame(all_speeds)
+        return all_speeds
 
     def worm_nose_residual_speed(self, **kwargs):
         """
