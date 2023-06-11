@@ -33,7 +33,7 @@ def main():
     # Kymograph subplot
     mpl_widget = PlotQWidget()
     static_ax = mpl_widget.canvas.fig.subplots()
-    static_ax.imshow(df_kymo.T, aspect=20, vmin=-0.05, vmax=0.05, cmap='RdBu')
+    static_ax.imshow(df_kymo.T, aspect=1, vmin=-0.05, vmax=0.05, cmap='RdBu')
     viewer.window.add_dock_widget(mpl_widget, area='bottom')
 
     # Callback: click on the kymograph to change the viewer time
