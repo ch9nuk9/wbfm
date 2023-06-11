@@ -521,7 +521,8 @@ class WormFullVideoPosture:
         """
         This is the angular velocity in PCA space (first two modes)
 
-        Note: remove outliers by default"""
+        Note: remove outliers by default
+        """
         velocity = self._raw_worm_angular_velocity
         velocity = self._validate_and_downsample(velocity, fluorescence_fps=fluorescence_fps, **kwargs)
         if fluorescence_fps:
@@ -530,6 +531,12 @@ class WormFullVideoPosture:
             window = 10
             velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
             velocity = pd.Series(velocity).interpolate()
+        # Sign to be consistent with the regular speed
+        stage_speed = self.worm_speed(fluorescence_fps=fluorescence_fps, **kwargs)
+        # Flip if the correlation is negative
+        if np.corrcoef(stage_speed, velocity)[0, 1] < 0:
+            velocity *= -1
+
         return velocity
 
     # @lru_cache(maxsize=256)
@@ -995,8 +1002,8 @@ class WormFullVideoPosture:
         beh_vec = self.beh_annotation(fluorescence_fps=True)
         rev_ind = BehaviorCodes.vector_equality(beh_vec, BehaviorCodes.REV)
         all_starts, all_ends = get_contiguous_blocks_from_column(rev_ind, already_boolean=True)
-        # Also get the speed
-        speed = self.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing_before_derivative=True)
+        # Get the speed; use angular speed because sometimes the reversal annotations are wrong
+        speed = self.worm_angular_velocity(fluorescence_fps=True)
         # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
         new_starts_with_nan, new_ends_with_nan, new_times_series_starts, new_times_series_ends = \
             fit_3_break_piecewise_regression(speed, all_ends, all_starts, min_length, end_padding,
