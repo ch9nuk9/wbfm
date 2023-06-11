@@ -1770,6 +1770,7 @@ def fit_piecewise_regression(dat, all_ends, all_starts, min_length=10,
         new_ends.append(end_absolute_coords)
 
         if DEBUG:
+            pw_fit.summary()
             # import json
             # print(json.dumps(results, indent=2, default=str))
             pw_fit.plot_data(color="grey", s=20)
@@ -1782,6 +1783,9 @@ def fit_piecewise_regression(dat, all_ends, all_starts, min_length=10,
             plt.xlabel("x")
             plt.ylabel("y")
             plt.title(f"Difference: {end - start} vs {end_absolute_coords - start_absolute_coords}")
+
+            # Also test multiple breakpoints
+            ms = piecewise_regression.ModelSelection(x, y, max_breakpoints=5, n_boot=100)
 
             if DEBUG_base_fname is not None:
                 if not os.path.exists(DEBUG_base_fname):
