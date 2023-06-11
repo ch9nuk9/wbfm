@@ -14,11 +14,13 @@ def main():
     project_data = ProjectData.load_final_project_data_from_config(fname)
 
     # Load specific data
-    df_kymo = project_data.worm_posture_class.curvature(fluorescence_fps=False)
+    df_kymo = project_data.worm_posture_class.curvature(fluorescence_fps=True)
     video_fname = project_data.worm_posture_class.behavior_video_avi_fname()
     video_fname = video_fname.with_suffix('.btf')
     store = tifffile.imread(video_fname, aszarr=True)
     video_zarr = zarr.open(store, mode='r')
+    # Subset video to be the same fps as the fluorescence
+    video_zarr = video_zarr[::project_data.worm_posture_class.frames_per_volume, :, :]
     video = video_zarr
 
     # dask_chunk = list(video_zarr.chunks).copy()
