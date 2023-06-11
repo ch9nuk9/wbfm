@@ -980,7 +980,7 @@ class WormFullVideoPosture:
         plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
         return pd.Series(plateau_state)
 
-    def calc_piecewise_linear_plateau_state(self, min_length=10, end_padding=-1, n_breakpoints=3,
+    def calc_piecewise_linear_plateau_state(self, min_length=10, start_padding=3, end_padding=3, n_breakpoints=3,
                                             return_last_breakpoint=False, DEBUG=False):
         """
         Calculates a state that is high when the worm speed is in a "semi-plateau", and low otherwise
@@ -1014,7 +1014,8 @@ class WormFullVideoPosture:
         speed = self.worm_angular_velocity(fluorescence_fps=True)
         # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
         new_starts_with_nan, new_ends_with_nan, new_times_series_starts, new_times_series_ends = \
-            fit_3_break_piecewise_regression(speed, all_ends, all_starts, min_length, end_padding,
+            fit_3_break_piecewise_regression(speed, all_ends, all_starts, min_length,
+                                             start_padding=start_padding, end_padding=end_padding,
                                              n_breakpoints=n_breakpoints,
                                              DEBUG=DEBUG)
         if return_last_breakpoint:
