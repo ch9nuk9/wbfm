@@ -725,7 +725,7 @@ class ProjectData:
         y = self.worm_posture_class.calc_behavior_from_alias(behavior_code).reset_index(drop=True)
         if "filter_mode" in kwargs:
             y = filter_trace_using_mode(y, kwargs['filter_mode'])
-        return y
+        return self.x_for_plots, y
 
     @lru_cache(maxsize=128)
     def calc_default_traces(self, min_nonnan: Optional[float] = None, interpolate_nan: bool = False,

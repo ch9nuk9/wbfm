@@ -332,6 +332,7 @@ class WormFullVideoPosture:
         """A list of behavior aliases that are stable, i.e. not currently an experimental function"""
         return ['signed_stage_speed', 'rev', 'fwd', 'abs_stage_speed',
                 'middle_body_speed', 'signed_middle_body_speed', 'signed_speed_angular',
+                'worm_speed_average_all_segments',
                 'summed_curvature',
                 'summed_signed_curvature', 'head_curvature', 'head_signed_curvature',
                 'quantile_curvature', 'quantile_head_curvature',
@@ -427,8 +428,8 @@ class WormFullVideoPosture:
             y = self.worm_angular_velocity(fluorescence_fps=True)
         elif behavior_alias == 'worm_speed_average_all_segments':
             y = self.worm_speed_average_all_segments(fluorescence_fps=True)
-        elif behavior_alias == 'worm_nose_residual_speed':
-            y = self.worm_speed_average_all_segments(fluorescence_fps=True)
+        # elif behavior_alias == 'worm_nose_residual_speed':
+        #     y = self.worm_speed_average_all_segments(fluorescence_fps=True)
         elif behavior_alias == 'fwd_counter':
             y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.FWD)
         elif behavior_alias == 'fwd_phase_counter':
@@ -585,7 +586,7 @@ class WormFullVideoPosture:
 
         return speed_mm_per_s
 
-    def worm_speed_average_all_segments(self, **kwargs):
+    def worm_speed_average_all_segments(self, start_segment=10, end_segment=90, **kwargs):
         """
         Computes the speed of each individual segment (absolute magnitude), then takes an average
 
@@ -605,7 +606,7 @@ class WormFullVideoPosture:
         single_segment_opt['signed'] = False
 
         all_speeds = []
-        for i in range(100):
+        for i in range(start_segment, end_segment):
             single_segment_opt['body_segment'] = i
             all_speeds.append(self.worm_speed(**single_segment_opt))
         mean_speed = pd.DataFrame(all_speeds).mean(axis=0)
