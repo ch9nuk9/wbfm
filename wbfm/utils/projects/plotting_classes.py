@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 import zarr
 from backports.cached_property import cached_property
+from sklearn.pipeline import Pipeline
+
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from matplotlib import pyplot as plt
 

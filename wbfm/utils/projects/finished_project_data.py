@@ -944,6 +944,22 @@ class ProjectData:
         df = df.reindex(sorted(df.columns), axis=1)
         return df
 
+    def calc_pca_modes(self, n_components=10, **trace_kwargs):
+        trace_kwargs['interpolate_nan'] = True
+        X = self.calc_default_traces(**trace_kwargs)
+        pca = PCA(n_components=n_components, whiten=False)
+        pca.fit(X.T)
+        pca_modes = pca.components_.T
+        return pca, pca_modes
+
+    def calc_plateau_state_using_pc1(self, **trace_kwargs):
+        # Get the trace that will be used to calculate the plateau state
+        pca, pca_modes = self.calc_pca_modes(n_components=1, **trace_kwargs)
+        pc1 = pd.Series(pca_modes[:, 0])
+        # Calculate plateaus using worm posture class method
+        plateaus = self.worm_posture_class.calc_plateau_state_from_trace(pc1, n_breakpoints=2)
+        return plateaus
+
     def plot_neuron_with_kymograph(self, neuron_name: str):
         """
         Plots a subplot with a neuron trace and the kymograph, if found
@@ -1805,12 +1821,7 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
     if trace_kwargs is None:
         trace_kwargs = {}
 
-    X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
-    # X = detrend(X, axis=0)
-    n_components = 3
-    pca = PCA(n_components=n_components, whiten=False)
-    pca.fit(X.T)
-    pca_modes = pca.components_.T
+    n_components, pca, pca_modes = calc_pca_modes(project_data, trace_kwargs)
 
     # Use physical time axis
     x = project_data.x_for_plots

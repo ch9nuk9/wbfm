@@ -412,10 +412,6 @@ class WormFullVideoPosture:
                                                      do_quantile=True, which_quantile=0.1, reset_index=True)
         elif behavior_alias == 'pirouette':
             y = self.calc_pseudo_pirouette_state()
-        elif behavior_alias == 'plateau':
-            raise NotImplementedError
-            # TODO: build a plateau using PC1 as a reversal trace
-            # y = self.calc_plateau_state()
         elif behavior_alias == 'speed_plateau_piecewise_linear_onset':
             y = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=False, **kwargs)
         elif behavior_alias == 'speed_plateau_piecewise_linear_offset':
@@ -980,8 +976,7 @@ class WormFullVideoPosture:
         plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
         return pd.Series(plateau_state)
 
-    def calc_piecewise_linear_plateau_state(self, min_length=10, start_padding=3, end_padding=3, n_breakpoints=3,
-                                            return_last_breakpoint=False, DEBUG=False):
+    def calc_piecewise_linear_plateau_state(self, **plateau_kwargs):
         """
         Calculates a state that is high when the worm speed is in a "semi-plateau", and low otherwise
         A semi-plateau is defined in two steps:
@@ -991,7 +986,7 @@ class WormFullVideoPosture:
         Alternatively, if return_last_breakpoint is true, return the last breakpoint as the onset and the index of the
         reversal end + end_padding as the end
 
-        See fit_3_break_piecewise_regression for more details
+        See fit_3_break_piecewise_regression and calc_plateau_state_from_trace for more details
 
         Parameters
         ----------
@@ -1004,27 +999,32 @@ class WormFullVideoPosture:
         -------
 
         """
+
+        # Get the speed; use angular speed because sometimes the reversal annotations are wrong
+        speed = self.worm_angular_velocity(fluorescence_fps=True)
+        plateau_state = self.calc_plateau_state_from_trace(speed, **plateau_kwargs)
+        return plateau_state
+
+    def calc_plateau_state_from_trace(self, plateau_trace, min_length=10, start_padding=3, end_padding=3,
+                                      n_breakpoints=3, return_last_breakpoint=False, DEBUG=False):
         from wbfm.utils.traces.triggered_averages import calc_time_series_from_starts_and_ends
 
         # Get the binary state
         beh_vec = self.beh_annotation(fluorescence_fps=True)
         rev_ind = BehaviorCodes.vector_equality(beh_vec, BehaviorCodes.REV)
         all_starts, all_ends = get_contiguous_blocks_from_column(rev_ind, already_boolean=True)
-        # Get the speed; use angular speed because sometimes the reversal annotations are wrong
-        speed = self.worm_angular_velocity(fluorescence_fps=True)
         # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
         new_starts_with_nan, new_ends_with_nan, new_times_series_starts, new_times_series_ends = \
-            fit_3_break_piecewise_regression(speed, all_ends, all_starts, min_length,
-                                             start_padding=start_padding, end_padding=end_padding,
-                                             n_breakpoints=n_breakpoints,
-                                             DEBUG=DEBUG)
+            fit_piecewise_regression(plateau_trace, all_ends, all_starts, min_length,
+                                     start_padding=start_padding, end_padding=end_padding,
+                                     n_breakpoints=n_breakpoints,
+                                     DEBUG=DEBUG)
         if return_last_breakpoint:
             new_starts_with_nan = new_ends_with_nan
             new_ends_with_nan = new_times_series_ends  # Not a fit point, but the end of the reversal with padding
         # Remove values that were nan in either the start or end
         new_starts = [s for s, e in zip(new_starts_with_nan, new_ends_with_nan) if not np.isnan(s) and not np.isnan(e)]
         new_ends = [e for s, e in zip(new_starts_with_nan, new_ends_with_nan) if not np.isnan(s) and not np.isnan(e)]
-
         num_pts = len(beh_vec)
         plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
         return pd.Series(plateau_state)
@@ -1045,6 +1045,7 @@ class WormFullVideoPosture:
 
         """
         BehaviorCodes.assert_is_valid(state)
+        # TODO: Use vector_equality
         binary_state = self.beh_annotation(fluorescence_fps=fluorescence_fps) == state
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_state, already_boolean=True)
 
@@ -1086,6 +1087,8 @@ class WormFullVideoPosture:
         y_dat = duration_dict['y_dat']
 
         # Load this dataset
+
+        # TODO: Use vector_equality
         binary_vec = self.beh_annotation(fluorescence_fps=True) == state
         all_starts, all_ends = get_contiguous_blocks_from_column(binary_vec, already_boolean=True)
 
@@ -1670,11 +1673,11 @@ def plot_highest_correlations(df_traces, df_speed):
     _plot(min_vals, min_names)
 
 
-def fit_3_break_piecewise_regression(dat, all_ends, all_starts, min_length=10,
-                                     end_padding=0, start_padding=0,
-                                     n_breakpoints=3,
-                                     DEBUG=False,
-                                     DEBUG_base_fname=None):
+def fit_piecewise_regression(dat, all_ends, all_starts, min_length=10,
+                             end_padding=0, start_padding=0,
+                             n_breakpoints=3,
+                             DEBUG=False,
+                             DEBUG_base_fname=None):
     """
     Within a time series (dat), fit a piecewise regression model to each segment between start and end points
     given by zip(all_starts, all_ends)
