@@ -572,7 +572,8 @@ def get_corner_from_corr_df(df0: pd.DataFrame, df_corr: pd.DataFrame):
     return df_corr.iloc[ind_neurons, ind_nonneuron]
 
 
-def melt_nested_dict(nested_dict: dict, all_same_lengths=True):
+def melt_nested_dict(nested_dict: dict, all_same_lengths=True,
+                     new_column_name='dataset_name'):
     """
     Assuming a nested dict of the form:
     {'key_outer': {'key_inner': vector}}
@@ -603,9 +604,9 @@ def melt_nested_dict(nested_dict: dict, all_same_lengths=True):
             df_square = pd.DataFrame.from_dict(v, orient='index').T
         two_col_dataframe = df_square.melt()
         two_col_dataframe.astype({'variable': str})
-        two_col_dataframe.columns = ['dataset_name', k]
+        two_col_dataframe.columns = [new_column_name, k]
         if i > 0:
-            two_col_dataframe.drop(columns=['dataset_name'], inplace=True)
+            two_col_dataframe.drop(columns=[new_column_name], inplace=True)
         all_melted_dfs.append(two_col_dataframe)
 
     df_melted = all_melted_dfs[0].copy()
