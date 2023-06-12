@@ -383,10 +383,10 @@ class WormFullVideoPosture:
                                 strong_smoothing_before_derivative=True)
         elif behavior_alias == 'summed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(start_segment=30, fluorescence_fps=True)
+            y = self.summed_curvature_from_kymograph(start_segment=30, fluorescence_fps=True, **kwargs)
         elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_signed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, do_abs=False)
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, do_abs=False, **kwargs)
         elif behavior_alias == 'head_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=5, end_segment=30)
@@ -1287,6 +1287,42 @@ class WormFullVideoPosture:
         kymo = self.curvature(fluorescence_fps=fluorescence_fps, reset_index=True)
         tracking_failure_idx = np.where(kymo.isnull())[0]
         return tracking_failure_idx
+
+    def get_peaks_post_reversal(self, y: pd.Series, num_points_after_reversal=50,
+                                allow_reversal_before_peak=False,
+                                use_idx_of_absolute_max=False):
+        """
+        Calculates the peaks of a trace after each reversal period
+
+        Parameters
+        ----------
+        y
+
+        Returns
+        -------
+
+        """
+
+        beh_annotation = self.beh_annotation(fluorescence_fps=True, reset_index=True)
+        y_rev = BehaviorCodes.vector_equality(beh_annotation, BehaviorCodes.REV)
+        rev_starts, rev_ends = get_contiguous_blocks_from_column(y_rev, already_boolean=True)
+
+        peaks = []
+        for i, rev_end in enumerate(rev_ends):
+            if rev_end == len(y):
+                break
+            # Check to see if there was an intervening reversal
+            end_of_check_period = rev_end + num_points_after_reversal
+            if not allow_reversal_before_peak and i+1 < len(rev_starts):
+                # Set next reversal start to be end if it is within the check period
+                end_of_check_period = rev_starts[i+1] if rev_starts[i+1] < end_of_check_period else end_of_check_period
+            if not use_idx_of_absolute_max:
+                this_peak = y.iloc[rev_end:end_of_check_period].max()
+            else:
+                idx = y.iloc[rev_end:end_of_check_period].abs().idxmax()
+                this_peak = y.iloc[idx]
+            peaks.append(this_peak)
+        return peaks
 
     # Raw videos
     def behavior_video_avi_fname(self):
