@@ -18,6 +18,7 @@ from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
 from sklearn.neighbors import NearestNeighbors
 
+from wbfm.utils.external.utils_breakpoints import plot_with_offset_x
 from wbfm.utils.external.utils_self_collision import calculate_self_collision_using_pairwise_distances
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
@@ -1025,15 +1026,24 @@ class WormFullVideoPosture:
         # Remove values that were nan in either the start or end
         new_starts = [s for s, e in zip(new_starts_with_nan, new_ends_with_nan) if not np.isnan(s) and not np.isnan(e)]
         new_ends = [e for s, e in zip(new_starts_with_nan, new_ends_with_nan) if not np.isnan(s) and not np.isnan(e)]
+        time_series_starts = [s for s, e in zip(new_times_series_starts, new_times_series_ends) if
+                              not np.isnan(s) and not np.isnan(e)]
         working_pw_fits = [fit for fit, s, e in zip(all_pw_fits, new_starts_with_nan, new_ends_with_nan) if
                            not np.isnan(s) and not np.isnan(e)]
         num_pts = len(beh_vec)
         plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
-        return pd.Series(plateau_state), working_pw_fits
+        return pd.Series(plateau_state), (working_pw_fits, time_series_starts)
 
-    # def plot_plateau_state(self, **kwargs):
-    #     plateau_state = self.calc_plateau_state_from_trace(**kwargs)
-    #     plot_time_series(plateau_state, self.subsample_indices, y_label="Plateau state", title=self.title)
+    def plot_plateau_state(self, ax=None, **kwargs):
+        # Assume there is already a plot present, and we are plotting on top
+        plateau_state, (working_pw_fits, new_starts) = self.calc_plateau_state_from_trace(**kwargs)
+        for fit, start in zip(working_pw_fits, new_starts):
+            # The fit object has a plotting function, but the internal xx variable must be changed to be absolute
+            # coordinates (they all start at 0 by default)
+            plot_with_offset_x(start, fit, color="red", linewidth=2)
+            # fit.plot_fit(color="red", linewidth=4)
+            # fit.plot_breakpoints()
+            # fit.plot_breakpoint_confidence_intervals()
 
     def calc_counter_state(self, state=BehaviorCodes.FWD,
                            fluorescence_fps=True, phase_not_real_time=False):
