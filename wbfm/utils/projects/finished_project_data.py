@@ -957,9 +957,9 @@ class ProjectData:
         pca, pca_modes = self.calc_pca_modes(n_components=1, **trace_kwargs)
         pc1 = pd.Series(pca_modes[:, 0])
         # Calculate plateaus using worm posture class method
-        plateaus = self.worm_posture_class.calc_plateau_state_from_trace(pc1, n_breakpoints=2,
-                                                                         DEBUG=DEBUG)
-        return plateaus
+        plateaus, working_pw_fits = self.worm_posture_class.calc_plateau_state_from_trace(pc1, n_breakpoints=2,
+                                                                                          DEBUG=DEBUG)
+        return plateaus, working_pw_fits
 
     def plot_neuron_with_kymograph(self, neuron_name: str):
         """

@@ -413,9 +413,9 @@ class WormFullVideoPosture:
         elif behavior_alias == 'pirouette':
             y = self.calc_pseudo_pirouette_state()
         elif behavior_alias == 'speed_plateau_piecewise_linear_onset':
-            y = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=False, **kwargs)
+            y, _ = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=False, **kwargs)
         elif behavior_alias == 'speed_plateau_piecewise_linear_offset':
-            y = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=True, **kwargs)
+            y, _ = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=True, **kwargs)
         elif behavior_alias == 'speed_plateau_piecewise_constant':
             y = self.calc_constant_offset_plateau_state(**kwargs)
         elif behavior_alias == 'signed_stage_speed_strongly_smoothed':
@@ -1002,8 +1002,8 @@ class WormFullVideoPosture:
 
         # Get the speed; use angular speed because sometimes the reversal annotations are wrong
         speed = self.worm_angular_velocity(fluorescence_fps=True)
-        plateau_state = self.calc_plateau_state_from_trace(speed, **plateau_kwargs)
-        return plateau_state
+        plateau_state, working_pw_fits = self.calc_plateau_state_from_trace(speed, **plateau_kwargs)
+        return plateau_state, working_pw_fits
 
     def calc_plateau_state_from_trace(self, plateau_trace, min_length=10, start_padding=3, end_padding=3,
                                       n_breakpoints=3, return_last_breakpoint=False, DEBUG=False):
@@ -1014,7 +1014,7 @@ class WormFullVideoPosture:
         rev_ind = BehaviorCodes.vector_equality(beh_vec, BehaviorCodes.REV)
         all_starts, all_ends = get_contiguous_blocks_from_column(rev_ind, already_boolean=True)
         # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
-        new_starts_with_nan, new_ends_with_nan, new_times_series_starts, new_times_series_ends = \
+        new_starts_with_nan, new_ends_with_nan, new_times_series_starts, new_times_series_ends, all_pw_fits = \
             fit_piecewise_regression(plateau_trace, all_ends, all_starts, min_length,
                                      start_padding=start_padding, end_padding=end_padding,
                                      n_breakpoints=n_breakpoints,
@@ -1025,9 +1025,15 @@ class WormFullVideoPosture:
         # Remove values that were nan in either the start or end
         new_starts = [s for s, e in zip(new_starts_with_nan, new_ends_with_nan) if not np.isnan(s) and not np.isnan(e)]
         new_ends = [e for s, e in zip(new_starts_with_nan, new_ends_with_nan) if not np.isnan(s) and not np.isnan(e)]
+        working_pw_fits = [fit for fit, s, e in zip(all_pw_fits, new_starts_with_nan, new_ends_with_nan) if
+                           not np.isnan(s) and not np.isnan(e)]
         num_pts = len(beh_vec)
         plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
-        return pd.Series(plateau_state)
+        return pd.Series(plateau_state), working_pw_fits
+
+    # def plot_plateau_state(self, **kwargs):
+    #     plateau_state = self.calc_plateau_state_from_trace(**kwargs)
+    #     plot_time_series(plateau_state, self.subsample_indices, y_label="Plateau state", title=self.title)
 
     def calc_counter_state(self, state=BehaviorCodes.FWD,
                            fluorescence_fps=True, phase_not_real_time=False):
@@ -1711,6 +1717,7 @@ def fit_piecewise_regression(dat, all_ends, all_starts, min_length=10,
     new_ends = []
     new_times_series_starts = []
     new_times_series_ends = []
+    all_pw_fits = []
     for i_event, (start, end) in enumerate(zip(all_starts, all_ends)):
         if end - start < min_length:
             continue
@@ -1722,6 +1729,24 @@ def fit_piecewise_regression(dat, all_ends, all_starts, min_length=10,
         x = np.arange(len(y))
 
         pw_fit = piecewise_regression.Fit(x, y, n_breakpoints=n_breakpoints, n_boot=25)
+        all_pw_fits.append(pw_fit)
+        if DEBUG:
+            # Plot even if it isn't kept
+            pw_fit.summary()
+            # import json
+            # print(json.dumps(results, indent=2, default=str))
+            pw_fit.plot_data(color="grey", s=20)
+            # Pass in standard matplotlib keywords to control any of the plots
+            pw_fit.plot_fit(color="red", linewidth=4)
+            pw_fit.plot_breakpoints()
+            pw_fit.plot_breakpoint_confidence_intervals()
+
+            if DEBUG_base_fname is None:
+                plt.show()
+
+            # Test multiple breakpoints
+            ms = piecewise_regression.ModelSelection(x, y, max_breakpoints=5, n_boot=100)
+
         results = pw_fit.get_results()['estimates']
         if results is None:
             new_starts.append(np.nan)
@@ -1770,22 +1795,12 @@ def fit_piecewise_regression(dat, all_ends, all_starts, min_length=10,
         new_ends.append(end_absolute_coords)
 
         if DEBUG:
-            pw_fit.summary()
-            # import json
-            # print(json.dumps(results, indent=2, default=str))
-            pw_fit.plot_data(color="grey", s=20)
-            # Pass in standard matplotlib keywords to control any of the plots
-            pw_fit.plot_fit(color="red", linewidth=4)
-            pw_fit.plot_breakpoints()
-            pw_fit.plot_breakpoint_confidence_intervals()
+            # Add final chosen points to the plot (if any are successfully chosen)
             plt.plot(breakpoint_start, y[int(breakpoint_start)], 'o', color='black')
             plt.plot(breakpoint_end, y[int(breakpoint_end)], 'o', color='black')
             plt.xlabel("x")
             plt.ylabel("y")
             plt.title(f"Difference: {end - start} vs {end_absolute_coords - start_absolute_coords}")
-
-            # Also test multiple breakpoints
-            ms = piecewise_regression.ModelSelection(x, y, max_breakpoints=5, n_boot=100)
 
             if DEBUG_base_fname is not None:
                 if not os.path.exists(DEBUG_base_fname):
@@ -1797,4 +1812,4 @@ def fit_piecewise_regression(dat, all_ends, all_starts, min_length=10,
     if DEBUG:
         print(f"Original starts: {all_starts}")
         print(f"New starts: {new_starts}")
-    return new_starts, new_ends, new_times_series_starts, new_times_series_ends
+    return new_starts, new_ends, new_times_series_starts, new_times_series_ends, all_pw_fits
