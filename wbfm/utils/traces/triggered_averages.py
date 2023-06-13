@@ -1738,6 +1738,7 @@ class ClusteredTriggeredAverages:
         return df_id_counts
 
     def plot_manual_ids_per_cluster(self, all_projects, use_bar_plot=True, **kwargs):
+        # TODO: the colors will be offset if there is a cluster that has no id'ed neurons
         df_id_counts = self.calc_dataframe_of_manual_ids_per_cluster(all_projects)
         if not use_bar_plot:
             fig = px.imshow(df_id_counts, title=f"Number of neurons per manual ID per cluster", **kwargs)
