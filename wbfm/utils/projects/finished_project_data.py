@@ -1369,7 +1369,8 @@ class ProjectData:
         if remove_unnamed_neurons:
             name_mapping = {k: v for k, v in name_mapping.items() if k != v}
         if flip_names_and_ids:
-            name_mapping = {v: k for k, v in name_mapping.items()}
+            # If the neuron name is '', then save the key instead
+            name_mapping = {k if v == '' else v: k for k, v in name_mapping.items()}
         return name_mapping
 
     def estimate_tracking_failures_from_project(self, pad_nan_points=3, contamination='auto', DEBUG=False):
