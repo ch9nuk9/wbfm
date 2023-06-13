@@ -1740,7 +1740,6 @@ class ClusteredTriggeredAverages:
         return df_id_counts
 
     def plot_manual_ids_per_cluster(self, all_projects, use_bar_plot=True, **kwargs):
-        # TODO: the colors will be offset if there is a cluster that has no id'ed neurons
         df_id_counts = self.calc_dataframe_of_manual_ids_per_cluster(all_projects)
         if not use_bar_plot:
             fig = px.imshow(df_id_counts, title=f"Number of neurons per manual ID per cluster", **kwargs)
@@ -1749,20 +1748,31 @@ class ClusteredTriggeredAverages:
             df_id_counts_sparse = pd.melt(df_id_counts, ignore_index=False).dropna().reset_index()
             df_id_counts_sparse.columns = ['cluster', 'neuron', 'count']
 
-            cluster_names = df_id_counts_sparse['cluster'].unique()
-            cluster_names.sort()
             # Plotly wants a string for the color
             # https://stackoverflow.com/questions/63460213/how-to-define-colors-in-a-figure-using-plotly-graph-objects-and-plotly-express
             # color_map = {name: f"rgba{self.cluster_color_func(i + 1)}" for i, name in enumerate(cluster_names)}
             # fig.show()
 
+            # We want a color for every cluster, even if there isn't a plot here
+            cluster_names = list(self.per_cluster_names.keys())
             color_sequence = [self.cluster_color_func(i + 1) for i, name in enumerate(cluster_names)]
             custom_cmap = LinearSegmentedColormap.from_list('clusters', color_sequence)
 
+            # However, we also need to add an empty row for any clusters that are not present
+            # But these ids are renamed to be strings like 'cluster_01', so we need to convert back from ints
+            for i in cluster_names:
+                name = f"cluster_{i:02d}"
+                if name not in df_id_counts.index:
+                    df_id_counts.loc[name, :] = np.nan
+            # Then re-sort
+            df_id_counts = df_id_counts.sort_index()
+
+            # Final plot
             fig, ax = plt.subplots(dpi=200)
             df_id_counts.T.plot(kind='bar', stacked=True, colormap=custom_cmap, ax=ax)
 
             plt.tight_layout()
+        return df_id_counts
 
 
 def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4, **kwargs):
