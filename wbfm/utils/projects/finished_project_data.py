@@ -746,12 +746,12 @@ class ProjectData:
         Note that all steps that can be calculated per-trace are implemented in the TracePlotter class.
             Other steps that require the full dataframe are implemented in this function
 
-        Uses the currently recommended 'best' settings:
+        Uses the currently recommended 'best' settings (which are the default):
         opt = dict(
-            channel_mode='ratio',
+            channel_mode='dr_over_r_50',
             calculation_mode='integration',
             remove_outliers=True,
-            filter_mode='no_filtering',
+            filter_mode='rolling_mean',
             high_pass_bleach_correct=True
         )
 
@@ -779,10 +779,10 @@ class ProjectData:
 
         """
         opt = dict(
-            channel_mode='ratio',
+            channel_mode='dr_over_r_50',
             calculation_mode='integration',
             remove_outliers=True,
-            filter_mode='no_filtering',
+            filter_mode='rolling_mean',
             high_pass_bleach_correct=True
         )
         opt.update(kwargs)
