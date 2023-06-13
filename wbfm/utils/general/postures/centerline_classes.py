@@ -447,6 +447,14 @@ class WormFullVideoPosture:
             y = self.calc_interpolated_curvature_using_peak_detection(i_segment=4, fluorescence_fps=True, flip=False)
         elif behavior_alias == 'interpolated_dorsal_head_curvature':
             y = self.calc_interpolated_curvature_using_peak_detection(i_segment=4, fluorescence_fps=True, flip=True)
+        elif behavior_alias == 'interpolated_ventral_minus_dorsal_head_curvature':
+            y1 = self.calc_behavior_from_alias('interpolated_ventral_head_curvature', **kwargs)
+            y0 = self.calc_behavior_from_alias('interpolated_dorsal_head_curvature', **kwargs)
+            y = y1 + y0
+        elif behavior_alias == 'interpolated_ventral_minus_dorsal_midbody_curvature':
+            y1 = self.calc_behavior_from_alias('interpolated_ventral_midbody_curvature', **kwargs)
+            y0 = self.calc_behavior_from_alias('interpolated_dorsal_midbody_curvature', **kwargs)
+            y = y1 + y0
         else:
             raise NotImplementedError(behavior_alias)
 
