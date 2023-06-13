@@ -659,7 +659,7 @@ class FullDatasetTriggeredAverages:
 
         df_triggered = pd.DataFrame(df_triggered)
         df_triggered = df_triggered.loc[:df_triggered.last_valid_index()]
-        df_triggered = fill_nan_in_dataframe(df_triggered)
+        # df_triggered = fill_nan_in_dataframe(df_triggered)
         return df_triggered
 
     def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100,
