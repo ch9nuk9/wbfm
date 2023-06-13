@@ -13,6 +13,7 @@ import scipy
 import sklearn
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt, cm
+from matplotlib.colors import LinearSegmentedColormap
 from methodtools import lru_cache
 from scipy.cluster import hierarchy
 from scipy.stats import permutation_test
@@ -1722,6 +1723,32 @@ class ClusteredTriggeredAverages:
                     per_id_counts_per_cluster[manual_name][f"cluster_{key_clust:02d}"] += 1
         df_id_counts = pd.DataFrame(per_id_counts_per_cluster).sort_index()
         return df_id_counts
+
+    def plot_manual_ids_per_cluster(self, all_projects, use_bar_plot=True, **kwargs):
+        df_id_counts = self.calc_dataframe_of_manual_ids_per_cluster(all_projects)
+        if not use_bar_plot:
+            fig = px.imshow(df_id_counts, title=f"Number of neurons per manual ID per cluster", **kwargs)
+            fig.show()
+        else:
+            df_id_counts_sparse = pd.melt(df_id_counts, ignore_index=False).dropna().reset_index()
+            df_id_counts_sparse.columns = ['cluster', 'neuron', 'count']
+
+            # Box plot instead
+            cluster_names = df_id_counts_sparse['cluster'].unique()
+            cluster_names.sort()
+            # Plotly wants a string for the color
+            # https://stackoverflow.com/questions/63460213/how-to-define-colors-in-a-figure-using-plotly-graph-objects-and-plotly-express
+            # color_map = {name: f"rgba{self.cluster_color_func(i + 1)}" for i, name in enumerate(cluster_names)}
+            # fig.show()
+
+            color_sequence = [self.cluster_color_func(i + 1) for i, name in enumerate(cluster_names)]
+            custom_cmap = LinearSegmentedColormap.from_list('clusters', color_sequence)
+
+            fig, ax = plt.subplots(dpi=200)
+            df_id_counts.T.plot(kind='bar', stacked=True, colormap=custom_cmap, ax=ax)
+
+            plt.tight_layout()
+
 
 
 def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4, **kwargs):
