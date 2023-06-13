@@ -1739,7 +1739,7 @@ class ClusteredTriggeredAverages:
         df_id_counts = pd.DataFrame(per_id_counts_per_cluster).sort_index()
         return df_id_counts
 
-    def plot_manual_ids_per_cluster(self, all_projects, use_bar_plot=True, **kwargs):
+    def plot_manual_ids_per_cluster(self, all_projects, use_bar_plot=True, output_folder=None, **kwargs):
         df_id_counts = self.calc_dataframe_of_manual_ids_per_cluster(all_projects)
         if not use_bar_plot:
             fig = px.imshow(df_id_counts, title=f"Number of neurons per manual ID per cluster", **kwargs)
@@ -1770,8 +1770,11 @@ class ClusteredTriggeredAverages:
             # Final plot
             fig, ax = plt.subplots(dpi=200)
             df_id_counts.T.plot(kind='bar', stacked=True, colormap=custom_cmap, ax=ax)
-
             plt.tight_layout()
+
+            if output_folder is not None:
+                fname = os.path.join(output_folder, f"manual_ids_per_cluster.png")
+                plt.savefig(fname, dpi=200)
         return df_id_counts
 
 
