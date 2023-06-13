@@ -601,6 +601,7 @@ class FullDatasetTriggeredAverages:
 
     # Calculating indices
     ind_class: TriggeredAverageIndices
+    _ind_preceding: int = None  # Only used if ind_class is None
 
     # Calculating full average
     mean_subtract_each_trace: bool = False
@@ -777,6 +778,7 @@ class ClusteredTriggeredAverages:
     # For plotting individual traces
     _df_traces: pd.DataFrame = None
     _df_behavior: pd.DataFrame = None
+    _ind_preceding: int = None
 
     verbose: int = 0
 
@@ -997,10 +999,12 @@ class ClusteredTriggeredAverages:
             ind_class.plot_triggered_average_from_matrix(pseudo_mat, ax, show_individual_lines=True)
             plt.title(f"Triggered Averages of cluster {i_clust} ({pseudo_mat.shape[0]} traces)")
 
-    def plot_all_clusters_simple(self, min_lines=2, ind_preceding=20, xlim=None, z_score=False,
+    def plot_all_clusters_simple(self, min_lines=2, ind_preceding=None, xlim=None, z_score=False,
                                  output_folder=None, use_individual_triggered_events=False,
                                  per_cluster_names=None, **kwargs):
         """Like plot_all_clusters, but doesn't require a triggered_averages_class to be saved"""
+        if ind_preceding is None:
+            ind_preceding = self._ind_preceding
         if per_cluster_names is None:
             per_cluster_names = self.per_cluster_names
         if use_individual_triggered_events:
@@ -1020,9 +1024,13 @@ class ClusteredTriggeredAverages:
         return matplotlib.colormaps['tab10'](i)
 
     def plot_clusters_from_names(self, get_matrix_from_names, per_cluster_names, min_lines=2,
-                                 ind_preceding=20, xlim=None, z_score=False, output_folder=None,
+                                 ind_preceding=None, xlim=None, z_score=False, output_folder=None,
                                  show_individual_lines=True, cluster_color_func: Callable = None,
                                  fig_opt=None, to_show=True, **kwargs):
+
+        if ind_preceding is None:
+            ind_preceding = self._ind_preceding
+
         if fig_opt is None:
             fig_opt = {}
         default_fig_opt = dict(dpi=200)
@@ -1048,7 +1056,8 @@ class ClusteredTriggeredAverages:
             plot_opt = dict(show_individual_lines=show_individual_lines, is_second_plot=False, xlim=xlim)
             if cluster_color_func is not None:
                 i_clust_actually_plotted += 1
-                cluster_color = cluster_color_func(i_clust_actually_plotted)
+                # cluster_color = cluster_color_func(i_clust_actually_plotted)
+                cluster_color = cluster_color_func(i_clust)
                 plot_opt['color'] = cluster_color
             # these_corr = self.df_corr.loc[name_list[0], name_list[1:]]
             # avg_corr = these_corr.mean()
@@ -1097,8 +1106,12 @@ class ClusteredTriggeredAverages:
                                                       num_columns=num_columns, shade_plot_func=shade_plot_func, **kwargs)
             plt.show()
 
-    def plot_two_clusters_simple(self, i_clust0, i_clust1, min_lines=2, ind_preceding=20, z_score=False,
+    def plot_two_clusters_simple(self, i_clust0, i_clust1, min_lines=2, ind_preceding=None, z_score=False,
                                  show_individual_lines=False):
+
+        if ind_preceding is None:
+            ind_preceding = self._ind_preceding
+
         name_list0 = list(self.per_cluster_names[i_clust0])
         name_list1 = list(self.per_cluster_names[i_clust1])
         fig, ax = plt.subplots(dpi=200)
@@ -1733,7 +1746,6 @@ class ClusteredTriggeredAverages:
             df_id_counts_sparse = pd.melt(df_id_counts, ignore_index=False).dropna().reset_index()
             df_id_counts_sparse.columns = ['cluster', 'neuron', 'count']
 
-            # Box plot instead
             cluster_names = df_id_counts_sparse['cluster'].unique()
             cluster_names.sort()
             # Plotly wants a string for the color
@@ -1748,7 +1760,6 @@ class ClusteredTriggeredAverages:
             df_id_counts.T.plot(kind='bar', stacked=True, colormap=custom_cmap, ax=ax)
 
             plt.tight_layout()
-
 
 
 def ax_plot_func_for_grid_plot(t, y, ax, name, project_data, state, min_lines=4, **kwargs):
@@ -1924,12 +1935,21 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt
         dict_of_triggered_traces[name] = c.dict_of_all_triggered_averages()
     dict_of_triggered_traces = flatten_nested_dict(dict_of_triggered_traces)
 
+    # Check that the ind_preceding between all ind_class, and save it
+    ind_preceding = None
+    for name, c in all_triggered_average_classes.items():
+        if ind_preceding is None:
+            ind_preceding = c.ind_class.ind_preceding
+        else:
+            assert ind_preceding == c.ind_class.ind_preceding, "ind_preceding must be the same for all datasets"
+
     # Build a combined class
     default_cluster_opt = dict(linkage_threshold=4, verbose=1)
     default_cluster_opt.update(cluster_opt)
     good_dataset_clusterer = ClusteredTriggeredAverages(df_triggered_good, **default_cluster_opt,
                                                         dict_of_triggered_traces=dict_of_triggered_traces,
                                                         _df_traces=df_traces_good,
-                                                        _df_behavior=df_behavior)
+                                                        _df_behavior=df_behavior,
+                                                        _ind_preceding=ind_preceding)
 
     return good_dataset_clusterer, (all_triggered_average_classes, df_triggered_good, dict_of_triggered_traces)
