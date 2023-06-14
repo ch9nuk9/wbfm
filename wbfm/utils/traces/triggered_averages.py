@@ -723,7 +723,7 @@ class FullDatasetTriggeredAverages:
         plot_kwargs.update(kwargs)
 
         mat = self.ind_class.calc_triggered_average_matrix(y)
-        self.ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
+        ax = self.ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
         # ax.axhline(0, c='black', ls='--')
         # ax.plot(self.ind_class.ind_preceding, 0, "r>", markersize=10)
 
