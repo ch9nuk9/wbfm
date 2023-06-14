@@ -38,7 +38,25 @@ class BehaviorCodes(Flag):
     TRACKING_FAILURE = auto()
 
     @classmethod
-    def from_ulises_int(cls, value: int) -> 'BehaviorCodes':
+    def _ulises_int_2_flag(cls, flip: bool = False):
+        original_mapping = {
+            -1: cls.FWD,
+            1: cls.REV,
+            2: cls.FWD | cls.VENTRAL_TURN,
+            3: cls.FWD | cls.DORSAL_TURN,
+            4: cls.REV | cls.VENTRAL_TURN,
+            5: cls.REV | cls.DORSAL_TURN,
+            6: cls.SUPERCOIL,
+            7: cls.QUIESCENCE,
+            0: cls.NOT_ANNOTATED,
+            -99: cls.UNKNOWN,  # Should not be in any files that Ulises produces
+        }
+        if flip:
+            original_mapping = {v: k for k, v in original_mapping.items()}
+        return original_mapping
+
+    @classmethod
+    def ulises_int_to_enum(cls, value: int) -> 'BehaviorCodes':
         """
         Convert from Ulises' integer value to the corresponding BehaviorCodes value
 
@@ -52,22 +70,29 @@ class BehaviorCodes(Flag):
         -------
 
         """
-        original_mapping = {
-            -1: cls.FWD,
-            1: cls.REV,
-            2: cls.FWD | cls.VENTRAL_TURN,
-            3: cls.FWD | cls.DORSAL_TURN,
-            4: cls.REV | cls.VENTRAL_TURN,
-            5: cls.REV | cls.DORSAL_TURN,
-            6: cls.SUPERCOIL,
-            7: cls.QUIESCENCE,
-            0: cls.NOT_ANNOTATED,
-            -99: cls.UNKNOWN,  # Should not be in any files that Ulises produces
-        }
+        original_mapping = cls._ulises_int_2_flag()
         if np.isnan(value):
             return cls.UNKNOWN
         else:
             return original_mapping[value]
+
+    @classmethod
+    def enum_to_ulises_int(cls, value: 'BehaviorCodes') -> int:
+        """
+        Convert from BehaviorCodes to the corresponding Ulises' integer value
+
+        HARDCODED!
+
+        Parameters
+        ----------
+        value
+
+        Returns
+        -------
+
+        """
+        original_mapping = cls._ulises_int_2_flag(flip=True)
+        return original_mapping[value]
 
     def __add__(self, other):
         # Allows adding vectors as well
@@ -100,7 +125,7 @@ class BehaviorCodes(Flag):
         -------
 
         """
-        beh_vec = pd.Series([cls.from_ulises_int(i) for i in vec])
+        beh_vec = pd.Series([cls.ulises_int_to_enum(i) for i in vec])
         cls.assert_all_are_valid(beh_vec)
         return beh_vec
 
@@ -331,8 +356,9 @@ def approximate_behavioral_annotation_using_pc1(project_cfg):
     starts, ends = get_contiguous_blocks_from_column(pd.Series(pc0) > 0, already_boolean=True)
     beh_vec = pd.DataFrame(make_binary_vector_from_starts_and_ends(starts, ends, pc0, pad_nan_points=(5, 0)),
                            columns=['Annotation'])
-    beh_vec[beh_vec == 1] = BehaviorCodes.REV
-    beh_vec[beh_vec == 0] = BehaviorCodes.FWD
+    # Should save using Ulises' convention, because that's what all other files are using
+    beh_vec[beh_vec == 1] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.REV)
+    beh_vec[beh_vec == 0] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.FWD)
 
     # Save within the behavior folder
     beh_cfg = project_data.project_config.get_behavior_config()
