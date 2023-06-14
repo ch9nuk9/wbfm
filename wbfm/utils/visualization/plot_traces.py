@@ -939,6 +939,43 @@ def make_default_triggered_average_plots(project_cfg, to_save=True):
                                                  triggered_averages_class, vis_cfg)
 
 
+def make_fwd_and_vt_average_plots(project_cfg, to_save=True):
+    """
+    Makes a grid plot with forward and ventral turn triggered averages plotted on top of each other
+
+    Parameters
+    ----------
+    project_cfg
+    to_save
+
+    Returns
+    -------
+
+    """
+
+    # Load data class
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    vis_cfg = project_data.project_config.get_visualization_config()
+    project_data.verbose = 0
+    # Build triggered average class
+    trigger_class_fwd = FullDatasetTriggeredAverages.load_from_project(project_data,
+                                                                       trigger_opt=dict(state=BehaviorCodes.FWD))
+    trigger_class_vt = FullDatasetTriggeredAverages.load_from_project(project_data, trigger_opt=dict(
+        state=BehaviorCodes.VENTRAL_TURN))
+
+    # Actually make the plot
+    func1 = trigger_class_fwd.ax_plot_func_for_grid_plot
+    func2 = lambda *args, **kwargs: trigger_class_vt.ax_plot_func_for_grid_plot(*args, is_second_plot=True, **kwargs)
+
+    df_traces = trigger_class_vt.df_traces.copy()
+    fig, original_axes = make_grid_plot_from_dataframe(df_traces, ax_plot_func=func1)
+    fig, original_axes = make_grid_plot_from_dataframe(df_traces, ax_plot_func=func2, fig=fig)
+
+    # Save
+    if to_save:
+        project_data.save_fig_in_project(suffix='fwd_vt_triggered_average.png')
+
+
 def _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_and_plot_opt,
                                              triggered_averages_class, vis_cfg):
     # First, simple gridplot
