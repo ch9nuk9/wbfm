@@ -1004,12 +1004,12 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
                                              triggered_averages_class, vis_cfg)
 
 
-def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show=False):
+def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show=False, trace_opt=None):
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     num_pca_modes_to_plot = 3
     column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
-        project_data, num_pca_modes_to_plot)
+        project_data, num_pca_modes_to_plot, trace_opt=trace_opt)
 
     rows = 1 + num_pca_modes_to_plot + 2
     cols = 1 + num_pca_modes_to_plot
@@ -1163,13 +1163,16 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
     return fig
 
 
-def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plot=3):
-    df_traces = project_data.calc_default_traces(interpolate_nan=True,
-                                                 filter_mode='rolling_mean',
-                                                 min_nonnan=0.9,
-                                                 nan_tracking_failure_points=True,
-                                                 nan_using_ppca_manifold=True,
-                                                 channel_mode='dr_over_r_50')
+def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plot=3, trace_opt: dict = None,):
+    default_trace_opt = dict(interpolate_nan=True,
+                             filter_mode='rolling_mean',
+                             min_nonnan=0.9,
+                             nan_tracking_failure_points=True,
+                             nan_using_ppca_manifold=True,
+                             channel_mode='dr_over_r_50')
+    if trace_opt is not None:
+        default_trace_opt.update(trace_opt)
+    df_traces = project_data.calc_default_traces(**default_trace_opt)
     # x = project_data._x_physical_time
     df_traces_no_nan = fill_nan_in_dataframe(df_traces, do_filtering=True)
     # Calculate pca modes, and use them to sort
@@ -1260,7 +1263,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     ### Ethogram
     # Include manual annotations, if any
     beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True,
-                                                                    keep_reversal_turns=True)
+                                                                    keep_reversal_turns=False)
     if beh_vec is None:
         beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
     ethogram_cmap_opt = dict(include_reversal_turns=True)
@@ -1278,7 +1281,6 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                                                                   ['mode 0', 'mode 1', 'mode 2'],
                                                                   'behavior')
     state_codes = beh_vec.unique()
-
     phase_plot_list = []
     for i, state_code in enumerate(state_codes):
         try:
