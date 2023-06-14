@@ -687,7 +687,8 @@ class WormFullVideoPosture:
     def flip_of_vector_during_state(self, vector, fluorescence_fps=False, state=BehaviorCodes.REV) -> pd.Series:
         """By default changes sign during reversal"""
         BehaviorCodes.assert_is_valid(state)
-        rev_ind = pd.Series(self.beh_annotation(fluorescence_fps=fluorescence_fps, reset_index=True) == state)
+        rev_ind = BehaviorCodes.vector_equality(
+            self.beh_annotation(fluorescence_fps=fluorescence_fps, reset_index=True), state)
         velocity = copy.copy(vector)
         if len(velocity) == len(rev_ind):
             velocity[rev_ind] *= -1
