@@ -1266,7 +1266,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     ethogram_cmap_opt = dict(include_reversal_turns=True)
     if beh_vec is None:
         # If still none, that means there are no annotations (e.g. it is immobilized)
-        beh_vec = pd.Series(np.ones(df_pca_modes.shape[0])*BehaviorCodes.UNKNOWN)
+        beh_vec = pd.Series([BehaviorCodes.UNKNOWN for i in range(df_pca_modes.shape[0])])
         ethogram_opt = dict()
     else:
         ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt)
@@ -1277,14 +1277,14 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
                                                                   ['mode 0', 'mode 1', 'mode 2'],
                                                                   'behavior')
-    state_names = beh_vec.unique()
+    state_codes = beh_vec.unique()
 
     phase_plot_list = []
-    for i, state_name in enumerate(state_names):
+    for i, state_code in enumerate(state_codes):
         try:
             phase_plot_list.append(
                 go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]], mode='lines',
-                             name=state_name, line=dict(color=ethogram_cmap[state_name], width=4)))
+                             name=state_code.name, line=dict(color=ethogram_cmap[state_code], width=4)))
         except KeyError:
             pass
 
