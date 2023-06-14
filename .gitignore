@@ -60,3 +60,4 @@ wbfm/new_project_defaults/snakemake/.snakemake/
 /wbfm/notebooks/paper/Old/
 /wbfm/notebooks/presentations_and_grants/manuel_presentation_may_2023/
 /wbfm/notebooks/paper/iframe_figures/
+*.svg
