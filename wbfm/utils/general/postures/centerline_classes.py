@@ -312,8 +312,12 @@ class WormFullVideoPosture:
         df = self._raw_manual_beh_annotation
         if not keep_reversal_turns:
             # Map reversal turns to regular reversal state
-            df = df.replace(BehaviorCodes.REV | BehaviorCodes.VENTRAL_TURN, BehaviorCodes.REV)
-            df = df.replace(BehaviorCodes.REV | BehaviorCodes.DORSAL_TURN, BehaviorCodes.REV)
+            # Can't use regular pandas replace, because we have an enum
+            # So I will find the indices myself and replace them
+            ind = BehaviorCodes.vector_equality(df, BehaviorCodes.REV | BehaviorCodes.DORSAL_TURN)
+            df.iloc[ind] = BehaviorCodes.REV
+            ind = BehaviorCodes.vector_equality(df, BehaviorCodes.REV | BehaviorCodes.VENTRAL_TURN)
+            df.iloc[ind] = BehaviorCodes.REV
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
