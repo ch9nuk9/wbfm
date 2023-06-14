@@ -11,7 +11,8 @@ from sacred import Experiment
 # main function
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.visualization.plot_traces import make_default_triggered_average_plots, \
-    make_pirouette_split_triggered_average_plots, make_summary_hilbert_triggered_average_grid_plot
+    make_pirouette_split_triggered_average_plots, make_summary_hilbert_triggered_average_grid_plot, \
+    make_fwd_and_vt_triggered_average_plots
 
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
@@ -31,8 +32,9 @@ def main(_config, _run):
     # Load the project to speed up the trace calculations
     project_data = ProjectData.load_final_project_data_from_config(_config['project_path'])
 
-    # Reversal and forward
+    # Reversal and forward, and two in one
     make_default_triggered_average_plots(project_data)
+    make_fwd_and_vt_triggered_average_plots(project_data)
 
     # Hilbert phase
     make_summary_hilbert_triggered_average_grid_plot(project_data)

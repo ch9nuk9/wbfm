@@ -939,7 +939,7 @@ def make_default_triggered_average_plots(project_cfg, to_save=True):
                                                  triggered_averages_class, vis_cfg)
 
 
-def make_fwd_and_vt_average_plots(project_cfg, to_save=True):
+def make_fwd_and_vt_triggered_average_plots(project_cfg, to_save=True):
     """
     Makes a grid plot with forward and ventral turn triggered averages plotted on top of each other
 
@@ -955,7 +955,6 @@ def make_fwd_and_vt_average_plots(project_cfg, to_save=True):
 
     # Load data class
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
-    vis_cfg = project_data.project_config.get_visualization_config()
     project_data.verbose = 0
     # Build triggered average class
     trigger_class_fwd = FullDatasetTriggeredAverages.load_from_project(project_data,
