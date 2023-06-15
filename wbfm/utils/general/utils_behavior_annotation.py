@@ -71,7 +71,7 @@ class BehaviorCodes(Flag):
 
         """
         original_mapping = cls._ulises_int_2_flag()
-        original_mapping.get(value, cls.UNKNOWN)
+        return original_mapping.get(value, cls.UNKNOWN)
 
     @classmethod
     def enum_to_ulises_int(cls, value: 'BehaviorCodes') -> int:
@@ -93,12 +93,24 @@ class BehaviorCodes(Flag):
 
     def __add__(self, other):
         # Allows adding vectors as well
-        if other in (self.NOT_ANNOTATED, self.UNKNOWN):
+        if other in (BehaviorCodes.NOT_ANNOTATED, BehaviorCodes.UNKNOWN):
             return self
-        elif self in (self.NOT_ANNOTATED, self.UNKNOWN):
+        elif self in (BehaviorCodes.NOT_ANNOTATED, BehaviorCodes.UNKNOWN):
             return other
         else:
             return self | other
+
+    def __radd__(self, other):
+        # Required for sum to work
+        # https://stackoverflow.com/questions/5082190/typeerror-after-overriding-the-add-method
+        return self.__add__(other)
+
+    def __eq__(self, other):
+        # Allows equality comparisons, but only between this enum
+        if isinstance(other, BehaviorCodes):
+            return self.value == other.value
+        else:
+            return False
 
     @classmethod
     def _load_from_list(cls, vec: List[int]) -> pd.Series:
