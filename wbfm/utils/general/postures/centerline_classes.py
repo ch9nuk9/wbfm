@@ -282,6 +282,8 @@ class WormFullVideoPosture:
         #     return None
         # _raw_vector, _ = calculate_self_collision_using_pairwise_distances(self.centerlineX(), self.centerlineY())
 
+        if _raw_vector is None:
+            return None
         # Specific code for these files :(
         _raw_vector = _raw_vector.replace(1, BehaviorCodes.VENTRAL_TURN)
         _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
