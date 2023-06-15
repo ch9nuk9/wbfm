@@ -987,7 +987,7 @@ class ProjectData:
         plt.xlim(0, self.num_frames)
         self.shade_axis_using_behavior()
 
-    def save_fig_in_project(self, suffix=''):
+    def save_fig_in_project(self, suffix='', overwrite=False):
         """
         Saves current figure within the project visualization directory, with optional suffix
 
@@ -1003,7 +1003,8 @@ class ProjectData:
         out_fname = f'fig-{suffix}.png'
         foldername = self.project_config.get_visualization_config(make_subfolder=True).absolute_subfolder
         out_fname = os.path.join(foldername, out_fname)
-        out_fname = get_sequential_filename(out_fname)
+        if not overwrite:
+            out_fname = get_sequential_filename(out_fname)
 
         plt.savefig(out_fname)
 

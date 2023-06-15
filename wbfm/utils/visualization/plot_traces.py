@@ -972,7 +972,7 @@ def make_fwd_and_vt_triggered_average_plots(project_cfg, to_save=True):
 
     # Save
     if to_save:
-        project_data.save_fig_in_project(suffix='fwd_vt_triggered_average.png')
+        project_data.save_fig_in_project(suffix='fwd_vt_triggered_average', overwrite=True)
 
 
 def _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_and_plot_opt,
@@ -981,24 +981,20 @@ def _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_
     func = triggered_averages_class.ax_plot_func_for_grid_plot
     make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
     if to_save:
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_simple.png", prepend_subfolder=True)
-        plt.savefig(fname)
+        project_data.save_fig_in_project(suffix='triggered_average_simple', overwrite=True)
     # Second, gridplot with "significant" points marked
     func = partial(triggered_averages_class.ax_plot_func_for_grid_plot,
                    show_individual_lines=True, color_significant_times=True)
     make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
     if to_save:
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_significant_points_marked.png",
-                                              prepend_subfolder=True)
-        plt.savefig(fname)
+        project_data.save_fig_in_project(suffix='triggered_average_significant_points_marked', overwrite=True)
     # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
     subset_neurons, _, _ = triggered_averages_class.which_neurons_are_significant()
     func = partial(triggered_averages_class.ax_plot_func_for_grid_plot)
     make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func,
                                  neuron_names_to_plot=subset_neurons)
     if to_save:
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset", prepend_subfolder=True)
-        plt.savefig(fname)
+        project_data.save_fig_in_project(suffix='triggered_average_neuron_subset', overwrite=True)
 
 
 def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
@@ -1394,6 +1390,6 @@ def make_summary_hilbert_triggered_average_grid_plot(project_cfg, i_body_segment
     # Make a title for the plot based on the options, and save in the project
     if to_save:
         fname = f'hilbert_triggered_average_grid_plot-fast_{return_fast_scale_separation}-residual_{residual_mode}.png'
-        project_data.save_fig_in_project(fname)
+        project_data.save_fig_in_project(fname, overwrite=True)
 
     return fig
