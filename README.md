@@ -85,6 +85,8 @@ You should check two things: the correct files were found, and the correct metad
 2. preprocessing_config.yaml
    1. raw_number_of_planes (before any removal)
    2. starting_plane (set 1 to remove a single plane)
+3. segment_config.yaml
+   1. max_number_of_objects (increase for immobilized projects)
 
 For all other settings, the defaults should work well.
 
