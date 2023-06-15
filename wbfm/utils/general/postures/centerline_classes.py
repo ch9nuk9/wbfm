@@ -277,13 +277,15 @@ class WormFullVideoPosture:
     def _raw_turn_annotation(self) -> Optional[pd.Series]:
         # Ulises' file is not really working right now, so calculate one ourselves
         # This one has a header
-        _raw_vector = read_if_exists(self.filename_turn_annotation, reader=pd.read_csv, index_col=0)['turn']
+        _raw_vector = read_if_exists(self.filename_turn_annotation, reader=pd.read_csv, index_col=0)
         # if self.centerlineY() is None:
         #     return None
         # _raw_vector, _ = calculate_self_collision_using_pairwise_distances(self.centerlineX(), self.centerlineY())
 
         if _raw_vector is None:
             return None
+        else:
+            _raw_vector = _raw_vector['turn']
         # Specific code for these files :(
         _raw_vector = _raw_vector.replace(1, BehaviorCodes.VENTRAL_TURN)
         _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
