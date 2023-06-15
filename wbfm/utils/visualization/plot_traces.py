@@ -968,6 +968,11 @@ def make_fwd_and_turn_triggered_average_plots(project_cfg, turn_state=BehaviorCo
                                                                         trigger_opt=dict(state=turn_state),
                                                                         trace_opt=trace_opt)
 
+    # Make sure there are any events
+    if trigger_class_turn.ind_class.num_events == 0:
+        print("Skipping turn triggered average plot because there are no events")
+        return
+
     # Actually make the plot
     func1 = trigger_class_fwd.ax_plot_func_for_grid_plot
     func2 = lambda *args, **kwargs: trigger_class_turn.ax_plot_func_for_grid_plot(*args, is_second_plot=True, **kwargs)
