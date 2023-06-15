@@ -112,6 +112,10 @@ class BehaviorCodes(Flag):
         else:
             return False
 
+    def __hash__(self):
+        # Allows this enum to be used as a key in a dictionary
+        return hash(self.value)
+
     @classmethod
     def _load_from_list(cls, vec: List[int]) -> pd.Series:
         """
