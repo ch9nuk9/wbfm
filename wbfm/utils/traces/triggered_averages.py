@@ -91,6 +91,8 @@ class TriggeredAverageIndices:
     Has all postprocessing functions, so that analysis is consistent when calculated for multiple traces
 
     The traces themselves are not stored here
+
+    Does not work well with multiple datasets
     """
     # Initial calculation of indices
     behavioral_annotation: pd.Series
@@ -605,7 +607,7 @@ class FullDatasetTriggeredAverages:
     df_traces: pd.DataFrame
 
     # Calculating indices
-    ind_class: TriggeredAverageIndices
+    ind_class: TriggeredAverageIndices  # Optional
     _ind_preceding: int = None  # Only used if ind_class is None
 
     # Calculating full average
@@ -1699,6 +1701,26 @@ class ClusteredTriggeredAverages:
     @staticmethod
     def load_from_project(project_data, trigger_opt=None, trace_opt=None, to_filter=True,
                           **kwargs):
+        """
+        Convenience function to load from a project
+
+        Default: triggers to FWD. To change this, pass in trigger_opt. Example:
+            trigger_opt = dict(min_duration=10, state=BehaviorCodes.REV, ind_preceding=30)
+
+        See FullDatasetTriggeredAverages for full documentation of trigger_opt
+
+        Parameters
+        ----------
+        project_data
+        trigger_opt
+        trace_opt
+        to_filter
+        kwargs
+
+        Returns
+        -------
+
+        """
         if trigger_opt is None:
             trigger_opt = {}
         if trace_opt is None:
