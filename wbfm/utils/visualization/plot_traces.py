@@ -997,7 +997,7 @@ def _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_
     make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func,
                                  neuron_names_to_plot=subset_neurons)
     if to_save:
-        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset.png", prepend_subfolder=True)
+        fname = vis_cfg.resolve_relative_path(f"{name}_triggered_average_neuron_subset", prepend_subfolder=True)
         plt.savefig(fname)
 
 
