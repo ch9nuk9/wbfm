@@ -57,6 +57,7 @@ class WormFullVideoPosture:
     filename_hilbert_carrier: str = None
 
     filename_self_collision: str = None
+    filename_turn_annotation: str = None
 
     # Exists without running Ulises' code, but not for immobilized worms
     filename_table_position: str = None
@@ -261,6 +262,30 @@ class WormFullVideoPosture:
         # Convert 1's to BehaviorCodes.SELF_COLLISION and 0's to BehaviorCodes.NOT_ANNOTATED
         _raw_vector = _raw_vector.replace(True, BehaviorCodes.SELF_COLLISION)
         _raw_vector = _raw_vector.replace(False, BehaviorCodes.NOT_ANNOTATED)
+        _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
+        BehaviorCodes.assert_all_are_valid(_raw_vector)
+        return _raw_vector
+
+    @lru_cache(maxsize=8)
+    def _turn_annotation(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        """This is intended to be summed with the main behavioral vector"""
+        df = self._raw_turn_annotation
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
+
+    @cached_property
+    def _raw_turn_annotation(self) -> Optional[pd.Series]:
+        # Ulises' file is not really working right now, so calculate one ourselves
+        # This one has a header
+        _raw_vector = read_if_exists(self.filename_turn_annotation, reader=pd.read_csv, index_col=0)['turn']
+        # if self.centerlineY() is None:
+        #     return None
+        # _raw_vector, _ = calculate_self_collision_using_pairwise_distances(self.centerlineX(), self.centerlineY())
+
+        # Specific code for these files :(
+        _raw_vector = _raw_vector.replace(1, BehaviorCodes.VENTRAL_TURN)
+        _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
+        _raw_vector = _raw_vector.replace(-1, BehaviorCodes.DORSAL_TURN)
         _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
         BehaviorCodes.assert_all_are_valid(_raw_vector)
         return _raw_vector
@@ -477,10 +502,15 @@ class WormFullVideoPosture:
                 logging.warning("Using automatic annotation instead")
                 beh = self._raw_beh_annotation
 
+        # Add additional annotations from other files
+        # Note that these other annotations are one frame shorter than the behavior annotation
+        beh = beh.iloc[:-1]
         if self._self_collision() is not None:
-            # Add the self-collision annotation
-            # Note that the collision annotation is one frame shorter than the behavior annotation
-            beh = beh.iloc[:-1] + self._self_collision(fluorescence_fps=False, reset_index=False)
+            beh = beh + self._self_collision(fluorescence_fps=False, reset_index=False)
+
+        if self._turn_annotation() is not None:
+            # Note that the turn annotation is one frame shorter than the behavior annotation
+            beh = beh + self._turn_annotation(fluorescence_fps=False, reset_index=False)
 
         return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
 
@@ -1214,6 +1244,8 @@ class WormFullVideoPosture:
                     all_files['filename_hilbert_carrier'] = str(file)
                 elif file.name.endswith('self_touch.csv'):
                     all_files['filename_self_collision'] = str(file)
+                elif file.name.endswith('turns_annotation.csv'):
+                    all_files['filename_turn_annotation'] = str(file)
 
             # Third, get the table stage position
             # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)

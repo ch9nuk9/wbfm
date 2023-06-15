@@ -132,6 +132,9 @@ class TriggeredAverageIndices:
             beh = self.behavioral_annotation_for_rectification
             self.dict_of_events_to_keep = {i: beh[i] == state for i in range(len(self.behavioral_annotation))}
 
+        if self.num_events == 0:
+            logging.warning(f"No instances of state {self.behavioral_state} found in behavioral annotation!!")
+
     @property
     def binary_state(self):
         if self.behavioral_annotation_is_continuous:
