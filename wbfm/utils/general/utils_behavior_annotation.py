@@ -71,10 +71,7 @@ class BehaviorCodes(Flag):
 
         """
         original_mapping = cls._ulises_int_2_flag()
-        if np.isnan(value):
-            return cls.UNKNOWN
-        else:
-            return original_mapping[value]
+        original_mapping.get(value, cls.UNKNOWN)
 
     @classmethod
     def enum_to_ulises_int(cls, value: 'BehaviorCodes') -> int:
