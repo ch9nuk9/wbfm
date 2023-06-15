@@ -8,11 +8,12 @@ from pathlib import Path
 import sacred
 from sacred import Experiment
 
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 # main function
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.visualization.plot_traces import make_default_triggered_average_plots, \
     make_pirouette_split_triggered_average_plots, make_summary_hilbert_triggered_average_grid_plot, \
-    make_fwd_and_vt_triggered_average_plots
+    make_fwd_and_turn_triggered_average_plots
 
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
@@ -34,7 +35,8 @@ def main(_config, _run):
 
     # Reversal and forward, and two in one
     make_default_triggered_average_plots(project_data)
-    make_fwd_and_vt_triggered_average_plots(project_data)
+    make_fwd_and_turn_triggered_average_plots(project_data, turn_state=BehaviorCodes.VENTRAL_TURN)
+    make_fwd_and_turn_triggered_average_plots(project_data, turn_state=BehaviorCodes.DORSAL_TURN)
 
     # Hilbert phase
     make_summary_hilbert_triggered_average_grid_plot(project_data)

@@ -939,13 +939,15 @@ def make_default_triggered_average_plots(project_cfg, to_save=True):
                                                  triggered_averages_class, vis_cfg)
 
 
-def make_fwd_and_vt_triggered_average_plots(project_cfg, to_save=True):
+def make_fwd_and_turn_triggered_average_plots(project_cfg, turn_state=BehaviorCodes.VENTRAL_TURN,
+                                              to_save=True):
     """
     Makes a grid plot with forward and ventral turn triggered averages plotted on top of each other
 
     Parameters
     ----------
     project_cfg
+    turn_state
     to_save
 
     Returns
@@ -956,19 +958,27 @@ def make_fwd_and_vt_triggered_average_plots(project_cfg, to_save=True):
     # Load data class
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     project_data.verbose = 0
+    # Options for the traces
+    trace_opt = dict(rename_neurons_using_manual_ids=True)
     # Build triggered average class
     trigger_class_fwd = FullDatasetTriggeredAverages.load_from_project(project_data,
-                                                                       trigger_opt=dict(state=BehaviorCodes.FWD))
-    trigger_class_vt = FullDatasetTriggeredAverages.load_from_project(project_data, trigger_opt=dict(
-        state=BehaviorCodes.VENTRAL_TURN))
+                                                                       trigger_opt=dict(state=BehaviorCodes.FWD),
+                                                                       trace_opt=trace_opt)
+    trigger_class_turn = FullDatasetTriggeredAverages.load_from_project(project_data,
+                                                                        trigger_opt=dict(state=turn_state),
+                                                                        trace_opt=trace_opt)
 
     # Actually make the plot
     func1 = trigger_class_fwd.ax_plot_func_for_grid_plot
-    func2 = lambda *args, **kwargs: trigger_class_vt.ax_plot_func_for_grid_plot(*args, is_second_plot=True, **kwargs)
+    func2 = lambda *args, **kwargs: trigger_class_turn.ax_plot_func_for_grid_plot(*args, is_second_plot=True, **kwargs)
 
-    df_traces = trigger_class_vt.df_traces.copy()
+    df_traces = trigger_class_turn.df_traces.copy()
     fig, original_axes = make_grid_plot_from_dataframe(df_traces, ax_plot_func=func1)
     fig, original_axes = make_grid_plot_from_dataframe(df_traces, ax_plot_func=func2, fig=fig)
+
+    title_str = project_data.shortened_name
+    plt.suptitle(title_str, y=1.02, fontsize='xx-large')
+    plt.tight_layout()
 
     # Save
     if to_save:
