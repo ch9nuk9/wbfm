@@ -27,8 +27,8 @@ class BehaviorCodes(Flag):
     FWD = auto()
     REV = auto()
 
-    VENTRAL_TURN = auto()  # Manually annotated
-    DORSAL_TURN = auto()  # Manually annotated
+    VENTRAL_TURN = auto()
+    DORSAL_TURN = auto()
     SUPERCOIL = auto()  # Manually annotated
     QUIESCENCE = auto()  # Manually annotated
     SELF_COLLISION = auto()  # Annotated using a different pipeline
@@ -247,7 +247,7 @@ class BehaviorCodes(Flag):
         """As of 23-03-2023, everything except FWD and REV must be manually annotated"""
         if value is None:
             return False
-        return value not in (cls.FWD, cls.REV, cls.NOT_ANNOTATED, cls.UNKNOWN)
+        return value in (cls.SUPERCOIL, cls.QUIESCENCE)
 
 
 def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False):
