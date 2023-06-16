@@ -1094,24 +1094,34 @@ class ClusteredTriggeredAverages:
         """
         Like plot_all_clusters_grid_plot, but assumes that traces come from different projects, which need different shading
         """
+        from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
+        from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
+
         if self.df_traces is None:
             raise ValueError("df_traces is None, cannot plot")
-        name_list = list(self.per_cluster_names[i_clust])
-        from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
+
         # Use the grid plot function to plot
-        from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
         for project_name, project in all_projects.items():
             bh = self.df_behavior[project_name]
             shade_plot_func = lambda ax: shade_using_behavior(bh, ax=ax)
 
             # Only get the names that are in this project
-            this_name_list = [name for name in name_list if project_name in name]
+            this_name_list = self.get_neurons_in_cluster_and_project(i_clust, project_name)
             if len(this_name_list) < min_neurons_per_project:
                 continue
 
             fig, axes = make_grid_plot_from_dataframe(self.df_traces, this_name_list,
                                                       num_columns=num_columns, shade_plot_func=shade_plot_func, **kwargs)
             plt.show()
+
+    def get_neurons_in_cluster_and_project(self, i_clust, project_name):
+        """Get the names of the neurons in a cluster and project"""
+        if self.df_traces is None:
+            raise ValueError("df_traces is None")
+        name_list = list(self.per_cluster_names[i_clust])
+        # Only get the names that are in this project
+        this_name_list = [name for name in name_list if project_name in name]
+        return this_name_list
 
     def plot_two_clusters_simple(self, i_clust0, i_clust1, min_lines=2, ind_preceding=None, z_score=False,
                                  show_individual_lines=False):
@@ -1748,6 +1758,17 @@ class ClusteredTriggeredAverages:
                                           **kwargs)
 
     def calc_dataframe_of_manual_ids_per_cluster(self, all_projects):
+        """
+        Calculate a dataframe of manual ids per cluster
+
+        Parameters
+        ----------
+        all_projects
+
+        Returns
+        -------
+
+        """
         per_cluster_names = self.per_cluster_names
         per_id_counts_per_cluster = defaultdict(lambda: defaultdict(int))
         for key_clust, clust_names in per_cluster_names.items():
