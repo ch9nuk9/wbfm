@@ -1764,7 +1764,25 @@ class ClusteredTriggeredAverages:
         df_id_counts = pd.DataFrame(per_id_counts_per_cluster).sort_index()
         return df_id_counts
 
-    def plot_manual_ids_per_cluster(self, all_projects, use_bar_plot=True, output_folder=None, **kwargs):
+    def plot_manual_ids_per_cluster(self, all_projects, use_bar_plot=True, neuron_threshold=0,
+                                    normalize_by_number_of_ids=False,
+                                    output_folder=None, **kwargs):
+        """
+        Plots a bar chart of the number of neurons per manual ID per cluster
+
+        Parameters
+        ----------
+        all_projects
+        use_bar_plot
+        neuron_threshold - if > 0, only plot neurons with at least this many identifications
+        normalize_by_max - if True, normalize each neuron by the max number of identifications it has
+        output_folder
+        kwargs
+
+        Returns
+        -------
+
+        """
         df_id_counts = self.calc_dataframe_of_manual_ids_per_cluster(all_projects)
         if not use_bar_plot:
             fig = px.imshow(df_id_counts, title=f"Number of neurons per manual ID per cluster", **kwargs)
@@ -1792,9 +1810,23 @@ class ClusteredTriggeredAverages:
             # Then re-sort
             df_id_counts = df_id_counts.sort_index()
 
+            # Postprocess: filter out too few, and normalize
+            if neuron_threshold > 0:
+                df_id_counts = df_id_counts.loc[:, df_id_counts.sum(axis=0) >= neuron_threshold]
+            if normalize_by_number_of_ids:
+                df_id_counts = df_id_counts / df_id_counts.sum(axis=0)
+            df_id_counts = df_id_counts.dropna(axis='columns', how='all')
+
             # Final plot
             fig, ax = plt.subplots(dpi=200)
             df_id_counts.T.plot(kind='bar', stacked=True, colormap=custom_cmap, ax=ax)
+
+            plt.xlabel("Manual ID")
+            if normalize_by_number_of_ids:
+                plt.ylabel("Fraction of neurons")
+            else:
+                plt.ylabel("Number of neurons")
+
             plt.tight_layout()
 
             if output_folder is not None:
