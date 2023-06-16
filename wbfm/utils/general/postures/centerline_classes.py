@@ -494,7 +494,8 @@ class WormFullVideoPosture:
         return y
 
     @lru_cache(maxsize=8)
-    def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False) -> \
+    def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
+                       include_collision=True, include_turns=True) -> \
             Optional[pd.Series]:
         """Name is shortened to avoid US-UK spelling confusion"""
         if not use_manual_annotation:
@@ -509,10 +510,10 @@ class WormFullVideoPosture:
         # Add additional annotations from other files
         # Note that these other annotations are one frame shorter than the behavior annotation
         beh = beh.iloc[:-1]
-        if self._self_collision() is not None:
+        if include_collision and self._self_collision() is not None:
             beh = beh + self._self_collision(fluorescence_fps=False, reset_index=False)
 
-        if self._turn_annotation() is not None:
+        if include_turns and self._turn_annotation() is not None:
             # Note that the turn annotation is one frame shorter than the behavior annotation
             beh = beh + self._turn_annotation(fluorescence_fps=False, reset_index=False)
 
@@ -1663,63 +1664,71 @@ class WormSinglePosture:
         return new_pts_zxy
 
 
-def shade_using_behavior(bh, ax=None, behaviors_to_ignore='none',
+def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore='none',
                          cmap=None, index_conversion=None,
                          DEBUG=False):
     """
-    Type one:
-        Shades current plot using a 3-code behavioral annotation:
-        0 - Invalid data (no shade)
-        -1 - FWD (no shade)
-        1 - REV (gray)
+    Shades current plot using a 3-code behavioral annotation:
+    0 - Invalid data (no shade)
+    -1 - FWD (no shade)
+    1 - REV (gray)
 
     See BehaviorCodes for valid codes
 
     See options_for_ethogram for a plotly-compatible version
+
+    Parameters
+    ----------
+    beh_vector - vector of behavioral codes
+    ax - axis to plot on
+    behaviors_to_ignore - list of behaviors to ignore. See BehaviorCodes for valid codes
+    cmap - colormap to use. See BehaviorCodes for default
+    index_conversion - function to convert indices from the beh_vector to the plot indices
+    DEBUG
+
+    Returns
+    -------
+
     """
 
     if cmap is None:
         cmap = BehaviorCodes.shading_cmap()
     if ax is None:
         ax = plt.gca()
-    bh = np.array(bh)
-    behavior_diff = BehaviorCodes.vector_diff(pd.Series(bh))
 
-    block_final_indices = np.where(behavior_diff)[0]
-    block_final_indices = np.concatenate([block_final_indices, np.array([len(bh) - 1])])
-    block_values = bh[block_final_indices]
-    if DEBUG:
-        print(block_values)
-        print(block_final_indices)
+    # Get all behaviors that exist in the data and the cmap
+    beh_vector = pd.Series(beh_vector)
+    data_behaviors = beh_vector.unique()
+    cmap_behaviors = pd.Series(list(cmap.keys())).unique()
+    # Note that this returns a numpy array in the end
+    all_behaviors = pd.Series(data_behaviors).append(pd.Series(cmap_behaviors)).unique()
 
+    # Remove behaviors to ignore
     if behaviors_to_ignore != 'none':
         for b in behaviors_to_ignore:
-            cmap[b] = None
+            all_behaviors = all_behaviors[all_behaviors != b]
+    for b in [BehaviorCodes.UNKNOWN, BehaviorCodes.NOT_ANNOTATED, BehaviorCodes.TRACKING_FAILURE]:
+        all_behaviors = all_behaviors[all_behaviors != b]
 
-    block_start = 0
-    for val, block_end in zip(block_values, block_final_indices):
-        if val is None or not BehaviorCodes.is_successful_behavior(val):
+    # Loop through the remaining behaviors, and use the binary vector to shade per behavior
+    beh_vector = pd.Series(beh_vector)
+    for b in all_behaviors:
+        binary_vec = BehaviorCodes.vector_equality(beh_vector, b)
+        color = cmap.get(b, None)
+        if color is None:
             continue
-        try:
-            color = cmap.get(val, None)
-        except TypeError:
-            logging.warning(f"Ignored behavior of value: {val}")
-            # Just ignore
-            continue
-        # err
-        if DEBUG:
-            print(color, val, block_start, block_end)
-        if color is not None:
+
+        # Get the start and end indices of the binary vector
+        starts, ends = get_contiguous_blocks_from_column(binary_vec, already_boolean=True)
+        for start, end in zip(starts, ends):
             if index_conversion is not None:
-                ax_start = index_conversion[block_start]
-                ax_end = index_conversion[block_end]
+                ax_start = index_conversion[start]
+                ax_end = index_conversion[end]
             else:
-                ax_start = block_start
-                ax_end = block_end
+                ax_start = start
+                ax_end = end
 
             ax.axvspan(ax_start, ax_end, alpha=0.9, color=color, zorder=-10)
-
-        block_start = block_end + 1
 
 
 def calc_pairwise_corr_of_dataframes(df_traces, df_speed):
