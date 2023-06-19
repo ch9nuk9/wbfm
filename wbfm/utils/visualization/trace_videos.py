@@ -49,7 +49,7 @@ def save_video_of_single_neuron(project_data, neuron_name, t0=0, t1=None):
     project_data.shade_axis_using_behavior()
 
     # Set up an animation to plot the trace with a vertical line moving across time
-    line = ax.axvline(x=t0)
+    line = ax.axvline(x=t0, color='k', lw=2)
 
     # def init():
     #     # line.set_data([], [])
