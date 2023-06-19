@@ -1,8 +1,13 @@
 import numpy as np
+import zarr
 from matplotlib import animation, pyplot as plt
+from tifffile import tifffile
+
+from wbfm.utils.general.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
+from wbfm.utils.projects.finished_project_data import ProjectData
 
 
-def save_video_of_single_neuron(project_data, neuron_name, t0=0, t1=None):
+def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=None):
     """
     Save a video of the trace for a single neuron.
 
@@ -70,3 +75,35 @@ def save_video_of_single_neuron(project_data, neuron_name, t0=0, t1=None):
     return fname
 
 
+def save_video_of_behavior(project_data: ProjectData, t0=0, t1=None):
+    """
+    Save a video of the behavior, i.e. IR video
+
+    Parameters
+    ----------
+    project_data
+    t0
+    t1
+
+    Returns
+    -------
+
+    """
+
+    if t1 is None:
+        t1 = project_data.num_frames
+
+    video_fname = project_data.worm_posture_class.behavior_video_avi_fname()
+    video_fname = video_fname.with_suffix('.btf')
+    # Note that this reads the entire behavioral video into memory if it wasn't chunked
+    store = tifffile.imread(video_fname, aszarr=True)
+    video_zarr = zarr.open(store, mode='r')
+    # Subset video to be the same fps as the fluorescence
+    video_zarr = video_zarr[::project_data.worm_posture_class.frames_per_volume, :, :]
+
+    vis_cfg = project_data.project_config.get_visualization_config()
+    fname = f"behavior_{t0}-{t1}.avi"
+    fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+
+    write_numpy_as_avi(video_zarr[t0:t1, ...], fname, fps=7)
+    print(f"Saved video of behavior to {fname}")

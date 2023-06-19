@@ -243,8 +243,6 @@ def write_video_from_ome_file_subset(input_fname, output_fname, which_slice=None
 def write_numpy_as_avi(data,
                        out_fname="output.avi",
                        fps=10,
-                       frame_width=608,
-                       frame_height=610,
                        is_color=False,
                        verbose=0):
     """
@@ -263,8 +261,15 @@ def write_numpy_as_avi(data,
     if verbose >= 1:
         print("Writing to {}".format(out_fname))
 
+    frame_width = data.shape[2]
+    frame_height = data.shape[1]
+
     # Set up the video writer
-    options = {'fourcc': 0,
+    # On each system, different codecs are available
+    # FOURCC is a 4-byte code used to specify the video codec.
+    # The list of available codes can be found by setting fourcc = -1, which will print the list of available codecs
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    options = {'fourcc': fourcc,#-1,
                'fps': fps,
                'isColor': is_color,
                'frameSize': (frame_width, frame_height)}
