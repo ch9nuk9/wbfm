@@ -1701,7 +1701,7 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore='none',
     data_behaviors = beh_vector.unique()
     cmap_behaviors = pd.Series(list(cmap.keys())).unique()
     # Note that this returns a numpy array in the end
-    all_behaviors = pd.Series(data_behaviors).append(pd.Series(cmap_behaviors)).unique()
+    all_behaviors = pd.concat([pd.Series(data_behaviors), pd.Series(cmap_behaviors)]).unique()
 
     # Remove behaviors to ignore
     if behaviors_to_ignore != 'none':
