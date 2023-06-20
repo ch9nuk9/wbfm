@@ -1123,35 +1123,33 @@ class ClusteredTriggeredAverages:
         this_name_list = [name for name in name_list if project_name in name]
         return this_name_list
 
-    def plot_two_clusters_simple(self, i_clust0, i_clust1, min_lines=2, ind_preceding=None, z_score=False,
-                                 show_individual_lines=False, **kwargs):
+    def plot_multiple_clusters_simple(self, i_clust_list: List[int], min_lines=2, ind_preceding=None, z_score=False,
+                                      show_individual_lines=False, use_dendrogram_colors=True, **kwargs):
 
         if ind_preceding is None:
             ind_preceding = self._ind_preceding
 
-        name_list0 = list(self.per_cluster_names[i_clust0])
-        name_list1 = list(self.per_cluster_names[i_clust1])
+        already_plotted_clusters = []
         fig, ax = plt.subplots(dpi=200)
-        pseudo_mat0 = self.get_subset_triggered_average_matrix(name_list0)
-        pseudo_mat1 = self.get_subset_triggered_average_matrix(name_list1)
-        # Normalize the traces to be similar to the correlation, i.e. z-score them
-        if z_score:
-            pseudo_mat0 = pseudo_mat0 - np.nanmean(pseudo_mat0, axis=1, keepdims=True)
-            pseudo_mat0 = pseudo_mat0 / np.nanstd(pseudo_mat0, axis=1, keepdims=True)
-            pseudo_mat1 = pseudo_mat1 - np.nanmean(pseudo_mat1, axis=1, keepdims=True)
-            pseudo_mat1 = pseudo_mat1 / np.nanstd(pseudo_mat1, axis=1, keepdims=True)
-        # Plot, using same color as dendrogram
-        color0 = self.cluster_color_func(i_clust0)
-        two_unique_clusters = i_clust0 != i_clust1
-        plot_triggered_average_from_matrix_low_level(pseudo_mat0, ind_preceding, min_lines,
-                                                     show_individual_lines=show_individual_lines,
-                                                     is_second_plot=False, ax=ax,
-                                                     color=color0, **kwargs)
-        if two_unique_clusters:
-            color1 = self.cluster_color_func(i_clust1)
-            plot_triggered_average_from_matrix_low_level(pseudo_mat1, ind_preceding, min_lines,
-                                                         show_individual_lines=False, is_second_plot=True, ax=ax,
-                                                         color=color1, **kwargs)
+        for i_clust in i_clust_list:
+            if i_clust in already_plotted_clusters:
+                continue
+            name_list = list(self.per_cluster_names[i_clust])
+            pseudo_mat = self.get_subset_triggered_average_matrix(name_list)
+            # Normalize the traces to be similar to the correlation, i.e. z-score them
+            if z_score:
+                pseudo_mat = pseudo_mat - np.nanmean(pseudo_mat, axis=1, keepdims=True)
+                pseudo_mat = pseudo_mat / np.nanstd(pseudo_mat, axis=1, keepdims=True)
+            # Plot
+            if use_dendrogram_colors:
+                color = self.cluster_color_func(i_clust)
+                kwargs['color'] = color
+            is_second_plot = already_plotted_clusters != []
+            ax, _ = plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
+                                                                 show_individual_lines=show_individual_lines,
+                                                                 is_second_plot=is_second_plot, ax=ax,
+                                                                 **kwargs)
+            already_plotted_clusters.append(i_clust)
 
     def get_optimal_clusters_using_hdbscan(self, min_cluster_size=10):
         """
