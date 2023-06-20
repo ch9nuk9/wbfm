@@ -1124,7 +1124,7 @@ class ClusteredTriggeredAverages:
         return this_name_list
 
     def plot_two_clusters_simple(self, i_clust0, i_clust1, min_lines=2, ind_preceding=None, z_score=False,
-                                 show_individual_lines=False):
+                                 show_individual_lines=False, **kwargs):
 
         if ind_preceding is None:
             ind_preceding = self._ind_preceding
@@ -1140,13 +1140,18 @@ class ClusteredTriggeredAverages:
             pseudo_mat0 = pseudo_mat0 / np.nanstd(pseudo_mat0, axis=1, keepdims=True)
             pseudo_mat1 = pseudo_mat1 - np.nanmean(pseudo_mat1, axis=1, keepdims=True)
             pseudo_mat1 = pseudo_mat1 / np.nanstd(pseudo_mat1, axis=1, keepdims=True)
-        # Plot
+        # Plot, using same color as dendrogram
+        color0 = self.cluster_color_func(i_clust0)
         two_unique_clusters = i_clust0 != i_clust1
         plot_triggered_average_from_matrix_low_level(pseudo_mat0, ind_preceding, min_lines,
-                                                     show_individual_lines=show_individual_lines, is_second_plot=False, ax=ax)
+                                                     show_individual_lines=show_individual_lines,
+                                                     is_second_plot=False, ax=ax,
+                                                     color=color0, **kwargs)
         if two_unique_clusters:
+            color1 = self.cluster_color_func(i_clust1)
             plot_triggered_average_from_matrix_low_level(pseudo_mat1, ind_preceding, min_lines,
-                                                         show_individual_lines=False, is_second_plot=True, ax=ax)
+                                                         show_individual_lines=False, is_second_plot=True, ax=ax,
+                                                         color=color1, **kwargs)
 
     def get_optimal_clusters_using_hdbscan(self, min_cluster_size=10):
         """
