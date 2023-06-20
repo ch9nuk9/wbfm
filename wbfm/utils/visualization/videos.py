@@ -7,7 +7,9 @@ from wbfm.utils.general.video_and_data_conversion.video_conversion_utils import 
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 
-def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=None):
+def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=None, fps=7,
+                               line_cmap_vec=None,
+                               to_save=True, shade_kwargs=None):
     """
     Save a video of the trace for a single neuron.
 
@@ -26,6 +28,8 @@ def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=
     """
 
     # Get the data for this neuron
+    if shade_kwargs is None:
+        shade_kwargs = {}
     df_traces = project_data.calc_default_traces()
     y = df_traces[neuron_name]
 
@@ -51,7 +55,7 @@ def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=
     ax.set_ylim(y.min(), y.max())
     ax.plot(t, y, lw=2)
 
-    project_data.shade_axis_using_behavior()
+    project_data.shade_axis_using_behavior(**shade_kwargs)
 
     # Set up an animation to plot the trace with a vertical line moving across time
     line = ax.axvline(x=t0, color='k', lw=2)
@@ -64,18 +68,22 @@ def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=
         x = t[i]
         # y = df_traces[neuron_name][x]
         line.set_xdata(x)
+        if line_cmap_vec is not None:
+            line.set_color(line_cmap_vec[i])
         return line,
 
     # Save the animation as a video
-    anim = animation.FuncAnimation(fig, animate, frames=t1-t0, interval=20, blit=True)
-    anim.save(fname, fps=7, extra_args=['-vcodec', 'libx264'])
-    plt.close(fig)
+    if to_save:
+        anim = animation.FuncAnimation(fig, animate, frames=t1-t0, interval=20, blit=True)
+        anim.save(fname, fps=fps, extra_args=['-vcodec', 'libx264'])
+        plt.close(fig)
     print(f"Saved video of trace for neuron {neuron_name} to {fname}")
 
     return fname
 
 
-def save_video_of_behavior(project_data: ProjectData, t0=0, t1=None):
+def save_video_of_behavior(project_data: ProjectData, t0=0, t1=None, fps=7,
+                           to_save=True):
     """
     Save a video of the behavior, i.e. IR video
 
@@ -101,9 +109,10 @@ def save_video_of_behavior(project_data: ProjectData, t0=0, t1=None):
     # Subset video to be the same fps as the fluorescence
     video_zarr = video_zarr[::project_data.worm_posture_class.frames_per_volume, :, :]
 
-    vis_cfg = project_data.project_config.get_visualization_config()
-    fname = f"behavior_{t0}-{t1}.avi"
-    fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+    if to_save:
+        vis_cfg = project_data.project_config.get_visualization_config()
+        fname = f"behavior_{t0}-{t1}.avi"
+        fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
 
-    write_numpy_as_avi(video_zarr[t0:t1, ...], fname, fps=7)
-    print(f"Saved video of behavior to {fname}")
+        write_numpy_as_avi(video_zarr[t0:t1, ...], fname, fps=fps)
+        print(f"Saved video of behavior to {fname}")

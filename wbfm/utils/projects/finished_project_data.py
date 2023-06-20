@@ -1135,7 +1135,7 @@ class ProjectData:
         for t in self.tracklet_annotator.t_buffer_masks:
             self.raw_segmentation[t, ...] = self.tracklet_annotator.buffer_masks[t, ...]
 
-    def shade_axis_using_behavior(self, ax=None, behaviors_to_ignore='none'):
+    def shade_axis_using_behavior(self, ax=None, **kwargs):
         """
         Shades the currently active matplotlib axis using externally annotated behavior annotation
 
@@ -1163,8 +1163,7 @@ class ProjectData:
             index_conversion = self._x_physical_time
         else:
             index_conversion = None
-        self.worm_posture_class.shade_using_behavior(ax=ax, behaviors_to_ignore=behaviors_to_ignore,
-                                                     index_conversion=index_conversion)
+        self.worm_posture_class.shade_using_behavior(ax=ax, index_conversion=index_conversion, **kwargs)
 
     def get_centroids_as_numpy(self, i_frame):
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""

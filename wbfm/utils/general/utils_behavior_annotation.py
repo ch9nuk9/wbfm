@@ -187,7 +187,8 @@ class BehaviorCodes(Flag):
         """Colormap for shading on top of traces"""
         cmap = {cls.UNKNOWN: None,
                 cls.FWD: None,
-                cls.REV: 'lightgray'}
+                cls.REV: 'lightgray',
+                cls.SELF_COLLISION: 'red'}
         return cmap
 
     @classmethod

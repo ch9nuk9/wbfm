@@ -1664,7 +1664,7 @@ class WormSinglePosture:
         return new_pts_zxy
 
 
-def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore='none',
+def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes.SELF_COLLISION, ),
                          cmap=None, index_conversion=None,
                          DEBUG=False):
     """
@@ -1690,7 +1690,6 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore='none',
     -------
 
     """
-
     if cmap is None:
         cmap = BehaviorCodes.shading_cmap()
     if ax is None:
@@ -1704,9 +1703,10 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore='none',
     all_behaviors = pd.concat([pd.Series(data_behaviors), pd.Series(cmap_behaviors)]).unique()
 
     # Remove behaviors to ignore
-    if behaviors_to_ignore != 'none':
+    if behaviors_to_ignore is not None:
         for b in behaviors_to_ignore:
             all_behaviors = all_behaviors[all_behaviors != b]
+            # err
     for b in [BehaviorCodes.UNKNOWN, BehaviorCodes.NOT_ANNOTATED, BehaviorCodes.TRACKING_FAILURE]:
         all_behaviors = all_behaviors[all_behaviors != b]
 
