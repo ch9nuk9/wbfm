@@ -1138,7 +1138,8 @@ class ClusteredTriggeredAverages:
         return this_name_list
 
     def plot_multiple_clusters_simple(self, i_clust_list: List[int], min_lines=2, ind_preceding=None, z_score=False,
-                                      show_individual_lines=False, use_dendrogram_colors=True, **kwargs):
+                                      show_individual_lines=False, use_dendrogram_colors=True, output_folder=None,
+                                      **kwargs):
 
         if ind_preceding is None:
             ind_preceding = self._ind_preceding
@@ -1162,8 +1163,15 @@ class ClusteredTriggeredAverages:
             ax, _ = plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
                                                                  show_individual_lines=show_individual_lines,
                                                                  is_second_plot=is_second_plot, ax=ax,
-                                                                 **kwargs)
+                                                                 label=f"Cluster {i_clust}", **kwargs)
             already_plotted_clusters.append(i_clust)
+        plt.xlabel("Time")
+        plt.legend()
+        plt.tight_layout()
+        if output_folder is not None:
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder, exist_ok=True)
+            plt.savefig(os.path.join(output_folder, f"multiple_clusters_{i_clust_list}.png"))
 
     def get_optimal_clusters_using_hdbscan(self, min_cluster_size=10):
         """
