@@ -3,7 +3,7 @@ import os
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional, Callable, Dict
+from typing import List, Tuple, Optional, Callable, Dict, Union
 import matplotlib
 import hdbscan
 import plotly.express as px
@@ -782,7 +782,7 @@ class ClusteredTriggeredAverages:
 
     cluster_func: Callable = field(default=hierarchy.fcluster)
 
-    cluster_cmap: str = 'tab20'
+    cluster_cmap: Union[str, dict, list] = 'tab20'
 
     # For plotting individual traces
     _df_traces: pd.DataFrame = None
@@ -1043,6 +1043,50 @@ class ClusteredTriggeredAverages:
             return self.cluster_cmap[i]
         else:
             raise ValueError(f"Unknown cluster_cmap type {type(self.cluster_cmap)}")
+
+    def set_paper_cluster_cmap(self, verbose=0):
+        """
+        Uses hard-coded colors as determined by belonging of target neurons in an example dataset
+
+        Sets other clusters to be black
+
+        Returns
+        -------
+
+        """
+        base_cmap = matplotlib.colormaps['tab10']
+
+        # Hard code the mapping of specific neurons to clusters
+        neuron2color = {
+            "neuron_008": 0,  # RIS, blue
+            "neuron_060": 1,  # AVAL, orange
+            "neuron_033": 2,  # Turning neuron (SMDDR?), green
+            "neuron_076": 3,  # RID (after turn), red
+            "neuron_029": 4,  # Unknown FWD neuron, purple
+        }
+        # Prepend project name to keys
+        project_name = "ZIM2165_Gcamp7b_worm1-2022_11_28"
+        neuron2color = {f"{project_name}_{k}": v for k, v in neuron2color.items()}
+        # Get which cluster each neuron belongs to
+        # Note that each cluster could have multiple neurons... for now, allow them to overwrite each other
+        custom_cmap = {}
+        for i_clust, names_in_clust in self.per_cluster_names.items():
+            names_in_clust = set(names_in_clust)
+            for neuron_name, color in neuron2color.items():
+                if neuron_name in names_in_clust:
+                    custom_cmap[i_clust] = base_cmap(color)
+                    if verbose >= 1:
+                        print(f"Setting cluster {i_clust} to color {color} ({neuron_name})")
+                    break
+            else:
+                if verbose >= 2:
+                    print(f"Setting cluster {i_clust} to black")
+                custom_cmap[i_clust] = (0, 0, 0, 1)
+        # Convert from floats to hex strings
+        custom_cmap = {k: matplotlib.colors.to_hex(v) for k, v in custom_cmap.items()}
+
+        # Finally set the cmap
+        self.cluster_cmap = custom_cmap
 
     def plot_clusters_from_names(self, get_matrix_from_names, per_cluster_names, min_lines=2,
                                  ind_preceding=None, xlim=None, z_score=False, output_folder=None,
