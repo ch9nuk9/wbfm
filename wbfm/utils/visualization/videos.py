@@ -8,12 +8,14 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 
 
 def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=None, fps=7,
-                               line_cmap_vec=None,
+                               line_cmap_vec: np.array=None,
                                to_save=True, shade_kwargs=None):
     """
     Save a video of the trace for a single neuron.
 
     Default fps is 7, which is twice the real-time speed of the video.
+
+    Note that t0 and t1 are in frames, not seconds.
 
     Parameters
     ----------
@@ -21,6 +23,7 @@ def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=
     neuron_name
     t0
     t1
+    line_cmap_vec
 
     Returns
     -------
@@ -37,8 +40,10 @@ def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=
     if t1 is None:
         t1 = project_data.num_frames
 
-    t = np.arange(t0, t1)
+    t = project_data.x_for_plots[t0:t1]
     y = y[t0:t1]
+    if line_cmap_vec is not None:
+        line_cmap_vec = line_cmap_vec[t0:t1]
 
     # Create the filename for the video
     vis_cfg = project_data.project_config.get_visualization_config()
@@ -46,12 +51,12 @@ def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=
     fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
 
     # Plot the initial trace
-    fig, ax = plt.subplots()
-    ax.set_xlabel("Time (frames)")
+    fig, ax = plt.subplots(dpi=200)
+    ax.set_xlabel(project_data.x_label_for_plots)
     ax.set_ylabel("Fluorescence (dR/R0)")
     ax.set_title(f"Trace for {neuron_name}")
 
-    ax.set_xlim(t0, t1)
+    ax.set_xlim(t[0], t[-1])
     ax.set_ylim(y.min(), y.max())
     ax.plot(t, y, lw=2)
 

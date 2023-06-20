@@ -1591,6 +1591,19 @@ class ProjectData:
         return x
 
     @property
+    def x_label_for_plots(self) -> str:
+        """
+        Helper for reindexing plots from volumes to seconds
+
+        Uses self._x_physical_time and self.use_physical_x_axis to return the desired string
+        """
+        if self.use_physical_x_axis:
+            label = "Time (s)"
+        else:
+            label = "Time (volumes)"
+        return label
+
+    @property
     def x_lim(self):
         """
         Returns first and last element of self.x_for_plots

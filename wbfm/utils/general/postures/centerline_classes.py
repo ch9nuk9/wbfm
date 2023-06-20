@@ -1723,7 +1723,11 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
         for start, end in zip(starts, ends):
             if index_conversion is not None:
                 ax_start = index_conversion[start]
-                ax_end = index_conversion[end]
+                if end >= len(index_conversion):
+                    # Often have an off by one error
+                    ax_end = index_conversion[-1]
+                else:
+                    ax_end = index_conversion[end]
             else:
                 ax_start = start
                 ax_end = end
