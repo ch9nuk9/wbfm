@@ -776,6 +776,8 @@ class ClusteredTriggeredAverages:
     cluster_criterion: str = 'distance'  # Alternate: 'maxclust'
     linkage_method: str = 'average'
 
+    _R: np.ndarray = None  # The actual dendrogram
+
     # For plotting or calculating p values with all triggered traces, not just averages
     dict_of_triggered_traces: Dict[str, np.ndarray] = None
     max_trace_len: int = None
@@ -965,12 +967,15 @@ class ClusteredTriggeredAverages:
         plt.axis('off')
         plt.xticks([])
 
-    def recalculate_dendrogram(self, linkage_threshold, no_plot=False, ax=None):
+    def recalculate_dendrogram(self, linkage_threshold=None, no_plot=False, ax=None):
+        if linkage_threshold is None:
+            linkage_threshold = self.linkage_threshold
         Z = self.Z
         if self.cluster_criterion != 'distance':
             logging.warning("Cluster criterion is not distance, dendrogram will not be matched to clusters")
         R = hierarchy.dendrogram(Z, orientation='top', no_labels=True, color_threshold=linkage_threshold,
                                  above_threshold_color='black', ax=ax, no_plot=no_plot)
+        self._R = R
         return R
 
     def plot_subcluster_clustergram(self, i_clust, linkage_threshold=None):
@@ -1025,7 +1030,7 @@ class ClusteredTriggeredAverages:
                                       output_folder, **kwargs)
 
     def cluster_color_func(self, i):
-        # By default self.cluster_cmap is a string, but it may be a list
+        # By default, self.cluster_cmap is a string, but it may be a list
         if isinstance(self.cluster_cmap, str):
             # The dendrogram has a funny default, where the 0 color is reserved for non-clusters, and is skipped
             # So in principle I want the modular division of i, but if i > 10 I have to add 1
@@ -1044,17 +1049,19 @@ class ClusteredTriggeredAverages:
         else:
             raise ValueError(f"Unknown cluster_cmap type {type(self.cluster_cmap)}")
 
-    def set_paper_cluster_cmap(self, verbose=0):
+    def set_paper_cluster_cmap(self, base_cmap=None, other_color_offset=None, verbose=0):
         """
         Uses hard-coded colors as determined by belonging of target neurons in an example dataset
 
-        Sets other clusters to be black
+        Sets other clusters to be black if other_color_offset is None, otherwise sets them to be the same colormap, but
+        offset by other_color_offset (specifically so as to not overlap with with another clustering)
 
         Returns
         -------
 
         """
-        base_cmap = matplotlib.colormaps['tab10']
+        if base_cmap is None:
+            base_cmap = matplotlib.colormaps['tab20']
 
         # Hard code the mapping of specific neurons to clusters
         neuron2color = {
@@ -1070,6 +1077,8 @@ class ClusteredTriggeredAverages:
         # Get which cluster each neuron belongs to
         # Note that each cluster could have multiple neurons... for now, allow them to overwrite each other
         custom_cmap = {}
+        other_colors_used = 0
+        custom_colors_used = max(neuron2color.values())
         for i_clust, names_in_clust in self.per_cluster_names.items():
             names_in_clust = set(names_in_clust)
             for neuron_name, color in neuron2color.items():
@@ -1079,9 +1088,15 @@ class ClusteredTriggeredAverages:
                         print(f"Setting cluster {i_clust} to color {color} ({neuron_name})")
                     break
             else:
-                if verbose >= 2:
-                    print(f"Setting cluster {i_clust} to black")
-                custom_cmap[i_clust] = (0, 0, 0, 1)
+                if other_color_offset is None:
+                    if verbose >= 2:
+                        print(f"Setting cluster {i_clust} to black")
+                    custom_cmap[i_clust] = (0, 0, 0, 1)
+                else:
+                    custom_cmap[i_clust] = base_cmap(1 + custom_colors_used + other_colors_used + other_color_offset)
+                    other_colors_used += 1
+                    if verbose >= 2:
+                        print(f"Setting cluster {i_clust} to color {custom_cmap[i_clust]}")
         # Convert from floats to hex strings
         custom_cmap = {k: matplotlib.colors.to_hex(v) for k, v in custom_cmap.items()}
 
