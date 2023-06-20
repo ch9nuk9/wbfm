@@ -782,6 +782,8 @@ class ClusteredTriggeredAverages:
 
     cluster_func: Callable = field(default=hierarchy.fcluster)
 
+    cluster_cmap: str = 'tab20'
+
     # For plotting individual traces
     _df_traces: pd.DataFrame = None
     _df_behavior: pd.DataFrame = None
@@ -1022,13 +1024,25 @@ class ClusteredTriggeredAverages:
         self.plot_clusters_from_names(get_matrix_from_names, per_cluster_names, min_lines, ind_preceding, xlim, z_score,
                                       output_folder, **kwargs)
 
-    @staticmethod
-    def cluster_color_func(i):
-        # The dendrogram has a funny default, where the 0 color is reserved for non-clusters, and is skipped
-        # So in principle I want the modular division of i, but if i > 10 I have to add 1
-        # We want to skip 0, 10, 20, etc.
-        i = int((i + (i - 1) // 9) % 10)
-        return matplotlib.colormaps['tab10'](i)
+    def cluster_color_func(self, i):
+        # By default self.cluster_cmap is a string, but it may be a list
+        if isinstance(self.cluster_cmap, str):
+            # The dendrogram has a funny default, where the 0 color is reserved for non-clusters, and is skipped
+            # So in principle I want the modular division of i, but if i > 10 I have to add 1
+            # We want to skip 0, 10, 20, etc.
+            i = int((i + (i - 1) // 9) % 10)
+            cmap = matplotlib.colormaps[self.cluster_cmap]
+            # This is a global variable... probably shouldn't be reset every time
+            hierarchy.set_link_color_palette(cmap)
+            return cmap(i)
+        elif isinstance(self.cluster_cmap, list):
+            hierarchy.set_link_color_palette(self.cluster_cmap)
+            return self.cluster_cmap[i]
+        elif isinstance(self.cluster_cmap, dict):
+            hierarchy.set_link_color_palette(list(self.cluster_cmap.values()))
+            return self.cluster_cmap[i]
+        else:
+            raise ValueError(f"Unknown cluster_cmap type {type(self.cluster_cmap)}")
 
     def plot_clusters_from_names(self, get_matrix_from_names, per_cluster_names, min_lines=2,
                                  ind_preceding=None, xlim=None, z_score=False, output_folder=None,
@@ -1414,6 +1428,7 @@ class ClusteredTriggeredAverages:
 
         def link_color_func(node_id):
             return link_color_dict.get(node_id, 'black')
+
         return link_color_func
 
     @staticmethod
