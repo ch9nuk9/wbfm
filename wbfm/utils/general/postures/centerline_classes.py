@@ -1669,9 +1669,9 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
                          DEBUG=False):
     """
     Shades current plot using a 3-code behavioral annotation:
-    0 - Invalid data (no shade)
-    -1 - FWD (no shade)
-    1 - REV (gray)
+        Invalid data (no shade)
+        FWD (no shade)
+        REV (gray)
 
     See BehaviorCodes for valid codes
 

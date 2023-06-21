@@ -21,6 +21,7 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score, silhouette_samples
 from tqdm.auto import tqdm
 
+from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
@@ -954,7 +955,7 @@ class ClusteredTriggeredAverages:
             # Also save svg for easy editing
             plt.savefig(os.path.join(output_folder, 'clustergram.svg'), dpi=200)
 
-    def plot_dendrogram_matplotlib(self, linkage_threshold=None):
+    def plot_dendrogram_matplotlib(self, linkage_threshold=None, output_folder=None):
         if linkage_threshold is None:
             linkage_threshold = self.linkage_threshold
 
@@ -966,6 +967,13 @@ class ClusteredTriggeredAverages:
         self.recalculate_dendrogram(linkage_threshold, no_plot, ax)
         plt.axis('off')
         plt.xticks([])
+
+        if output_folder is not None:
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder, exist_ok=True)
+            plt.savefig(os.path.join(output_folder, 'dendrogram.png'), dpi=200)
+            # Also save svg for easy editing
+            plt.savefig(os.path.join(output_folder, 'dendrogram.svg'), dpi=200)
 
     def recalculate_dendrogram(self, linkage_threshold=None, no_plot=False, ax=None):
         if linkage_threshold is None:
@@ -1106,7 +1114,7 @@ class ClusteredTriggeredAverages:
     def plot_clusters_from_names(self, get_matrix_from_names, per_cluster_names, min_lines=2,
                                  ind_preceding=None, xlim=None, z_score=False, output_folder=None,
                                  show_individual_lines=True, cluster_color_func: Callable = None,
-                                 fig_opt=None, to_show=True, **kwargs):
+                                 fig_opt=None, to_show=True, behavior_shading_type=None, **kwargs):
 
         if ind_preceding is None:
             ind_preceding = self._ind_preceding
@@ -1146,6 +1154,9 @@ class ClusteredTriggeredAverages:
             plt.title(f"Triggered Averages of cluster {i_clust} ({pseudo_mat.shape[0]} traces)")
             plt.xlabel("Time")
             plt.tight_layout()
+
+            self.shade_triggered_average(ax, behavior_shading_type, ind_preceding, xlim)
+
             if output_folder is not None:
                 if not os.path.exists(output_folder):
                     os.makedirs(output_folder, exist_ok=True)
@@ -1198,7 +1209,7 @@ class ClusteredTriggeredAverages:
 
     def plot_multiple_clusters_simple(self, i_clust_list: List[int], min_lines=2, ind_preceding=None, z_score=False,
                                       show_individual_lines=False, show_shading_error_bars=True, xlim=None,
-                                      use_dendrogram_colors=True, output_folder=None,
+                                      use_dendrogram_colors=True, output_folder=None, behavior_shading_type=None,
                                       **plot_kwargs):
 
         if ind_preceding is None:
@@ -1239,10 +1250,29 @@ class ClusteredTriggeredAverages:
         plt.xlabel("Time")
         plt.legend()
         plt.tight_layout()
+
+        self.shade_triggered_average(ax, behavior_shading_type, ind_preceding, xlim)
+
         if output_folder is not None:
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder, exist_ok=True)
             plt.savefig(os.path.join(output_folder, f"multiple_clusters_{i_clust_list}.png"))
+
+    @staticmethod
+    def shade_triggered_average(ax, behavior_shading_type, ind_preceding, xlim):
+        # Shade using behavior either before or after the ind_preceding line
+        # If 'rev' this is reversal triggered, so the shading should go after the line
+        if behavior_shading_type is not None:
+            # Initialize empty
+            beh_vec = np.array([BehaviorCodes.FWD for _ in range(xlim[1])])
+            if behavior_shading_type == 'fwd':
+                beh_vec[xlim[0] + ind_preceding:] = BehaviorCodes.REV
+            elif behavior_shading_type == 'rev':
+                beh_vec[xlim[0] + ind_preceding:] = BehaviorCodes.REV
+            else:
+                raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
+            # Shade
+            shade_using_behavior(beh_vec, ax=ax)
 
     def get_optimal_clusters_using_hdbscan(self, min_cluster_size=10):
         """
