@@ -1080,12 +1080,13 @@ class ClusteredTriggeredAverages:
             base_cmap = matplotlib.colormaps['tab10']
 
         # Hard code the mapping of specific neurons to clusters
+        # Prioritization goes from top to bottom, if there are multiple neurons within the same cluster
         neuron2color = {
+            "neuron_029": 4,  # Unknown FWD neuron, purple
             "neuron_008": 0,  # RIS, blue
             "neuron_060": 1,  # AVAL, orange
             "neuron_033": 2,  # Turning neuron (SMDDR?), green
             "neuron_076": 3,  # RID (after turn), red
-            "neuron_029": 4,  # Unknown FWD neuron, purple
         }
         # Prepend project name to keys
         project_name = "ZIM2165_Gcamp7b_worm1-2022_11_28"
@@ -1106,13 +1107,13 @@ class ClusteredTriggeredAverages:
             else:
                 if other_color_offset is None:
                     if verbose >= 2:
-                        print(f"Setting cluster {i_clust} to black")
+                        print(f"Setting unknown cluster {i_clust} to black")
                     custom_cmap[i_clust] = (0, 0, 0, 1)
                 else:
                     custom_cmap[i_clust] = base_cmap(1 + custom_colors_used + other_colors_used + other_color_offset)
                     other_colors_used += 1
                     if verbose >= 2:
-                        print(f"Setting cluster {i_clust} to color {custom_cmap[i_clust]}")
+                        print(f"Setting unknown cluster {i_clust} to color {custom_cmap[i_clust]}")
         # Convert from floats to hex strings
         custom_cmap = {k: matplotlib.colors.to_hex(v) for k, v in custom_cmap.items()}
 

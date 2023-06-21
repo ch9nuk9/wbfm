@@ -1706,7 +1706,6 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
     if behaviors_to_ignore is not None:
         for b in behaviors_to_ignore:
             all_behaviors = all_behaviors[all_behaviors != b]
-            # err
     for b in [BehaviorCodes.UNKNOWN, BehaviorCodes.NOT_ANNOTATED, BehaviorCodes.TRACKING_FAILURE]:
         all_behaviors = all_behaviors[all_behaviors != b]
 
