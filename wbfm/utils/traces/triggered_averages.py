@@ -958,12 +958,7 @@ class ClusteredTriggeredAverages:
             ax.set_yticks([])
         # ax.colorbar()
 
-        if output_folder is not None:
-            if not os.path.exists(output_folder):
-                os.makedirs(output_folder, exist_ok=True)
-            plt.savefig(os.path.join(output_folder, 'clustergram.png'), dpi=200)
-            # Also save svg for easy editing
-            plt.savefig(os.path.join(output_folder, 'clustergram.svg'), dpi=200)
+        self._save_plot("clustergram.png", output_folder)
 
     def plot_dendrogram_matplotlib(self, linkage_threshold=None, output_folder=None):
         if linkage_threshold is None:
@@ -978,12 +973,7 @@ class ClusteredTriggeredAverages:
         plt.axis('off')
         plt.xticks([])
 
-        if output_folder is not None:
-            if not os.path.exists(output_folder):
-                os.makedirs(output_folder, exist_ok=True)
-            plt.savefig(os.path.join(output_folder, 'dendrogram.png'), dpi=200)
-            # Also save svg for easy editing
-            plt.savefig(os.path.join(output_folder, 'dendrogram.svg'), dpi=200)
+        self._save_plot("dendrogram.png", output_folder)
 
     def recalculate_dendrogram(self, linkage_threshold=None, no_plot=False, ax=None):
         if linkage_threshold is None:
@@ -1168,12 +1158,18 @@ class ClusteredTriggeredAverages:
 
             shade_triggered_average(ind_preceding, xlim, behavior_shading_type, ax)
 
-            if output_folder is not None:
-                if not os.path.exists(output_folder):
-                    os.makedirs(output_folder, exist_ok=True)
-                plt.savefig(os.path.join(output_folder, f"cluster_{i_clust}.png"))
+            base_fname = f"cluster_{i_clust}.png"
+            self._save_plot(base_fname, output_folder)
             if to_show:
                 plt.show()
+
+    def _save_plot(self, base_fname, output_folder):
+        if output_folder is not None:
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder, exist_ok=True)
+            plt.savefig(os.path.join(output_folder, base_fname), dpi=200)
+            # Also save .svg
+            plt.savefig(os.path.join(output_folder, base_fname.replace(".png", ".svg")), dpi=200)
 
     def plot_all_clusters_grid_plot(self, i_clust, num_columns=1, **kwargs):
         """Like plot_all_clusters, but plots the full times series instead of the triggered average"""
@@ -1221,7 +1217,7 @@ class ClusteredTriggeredAverages:
     def plot_multiple_clusters_simple(self, i_clust_list: List[int], min_lines=2, ind_preceding=None, z_score=False,
                                       show_individual_lines=False, show_shading_error_bars=True, xlim=None,
                                       use_dendrogram_colors=True, output_folder=None, behavior_shading_type=None,
-                                      **plot_kwargs):
+                                      show_guide_lines=True, legend=False, **plot_kwargs):
 
         if ind_preceding is None:
             ind_preceding = self._ind_preceding
@@ -1242,7 +1238,10 @@ class ClusteredTriggeredAverages:
             if use_dendrogram_colors:
                 color = self.cluster_color_func(i_clust)
                 plot_kwargs['color'] = color
-            is_second_plot = already_plotted_clusters != []
+            if show_guide_lines:
+                is_second_plot = already_plotted_clusters != []
+            else:
+                is_second_plot = True
             ax, _ = plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
                                                                  show_individual_lines=show_individual_lines,
                                                                  is_second_plot=is_second_plot, ax=ax,
@@ -1250,15 +1249,13 @@ class ClusteredTriggeredAverages:
                                                                  xlim=xlim, label=f"Cluster {i_clust}", **plot_kwargs)
             already_plotted_clusters.append(i_clust)
         plt.xlabel("Time")
-        plt.legend()
+        if legend:
+            plt.legend()
         plt.tight_layout()
 
         shade_triggered_average(ind_preceding, xlim, behavior_shading_type, ax)
 
-        if output_folder is not None:
-            if not os.path.exists(output_folder):
-                os.makedirs(output_folder, exist_ok=True)
-            plt.savefig(os.path.join(output_folder, f"multiple_clusters_{i_clust_list}.png"))
+        self._save_plot(f"multiple_clusters_{i_clust_list}.png", output_folder)
 
     def get_optimal_clusters_using_hdbscan(self, min_cluster_size=10):
         """
@@ -1963,9 +1960,7 @@ class ClusteredTriggeredAverages:
 
             plt.tight_layout()
 
-            if output_folder is not None:
-                fname = os.path.join(output_folder, f"manual_ids_per_cluster.png")
-                plt.savefig(fname, dpi=200)
+            self._save_plot(f"manual_ids_per_cluster.png", output_folder=output_folder)
         return df_id_counts
 
 
