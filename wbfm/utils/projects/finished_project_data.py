@@ -1827,7 +1827,7 @@ def load_all_projects_from_list(list_of_project_folders: List[Union[str, Path]],
     return all_projects_dict
 
 
-def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, title=""):
+def plot_pca_modes_from_project(project_data: ProjectData, n_components=3, trace_kwargs=None, title=""):
     """
     Plots 2d pca modes of traces.
 
@@ -1836,7 +1836,7 @@ def plot_pca_modes_from_project(project_data: ProjectData, trace_kwargs=None, ti
     if trace_kwargs is None:
         trace_kwargs = {}
 
-    n_components, pca, pca_modes = calc_pca_modes(project_data, trace_kwargs)
+    pca, pca_modes = project_data.calc_pca_modes(n_components=n_components, **trace_kwargs)
 
     # Use physical time axis
     x = project_data.x_for_plots

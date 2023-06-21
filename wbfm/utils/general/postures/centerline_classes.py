@@ -1920,3 +1920,20 @@ def fit_piecewise_regression(dat, all_ends, all_starts, min_length=10,
         print(f"Original starts: {all_starts}")
         print(f"New starts: {new_starts}")
     return new_starts, new_ends, new_times_series_starts, new_times_series_ends, all_pw_fits
+
+
+def shade_triggered_average(ind_preceding, xlim, behavior_shading_type='fwd', ax=None):
+    # Shade using behavior either before or after the ind_preceding line
+    if behavior_shading_type is not None:
+        # Initialize empty
+        beh_vec = np.array([BehaviorCodes.FWD for _ in range(xlim[1])])
+        if behavior_shading_type == 'fwd':
+            # If 'fwd' triggered, the shading should go BEFORE the line
+            beh_vec[:xlim[0] + ind_preceding] = BehaviorCodes.REV
+        elif behavior_shading_type == 'rev':
+            # If 'rev' triggered, the shading should go AFTER the line
+            beh_vec[xlim[0] + ind_preceding:] = BehaviorCodes.REV
+        else:
+            raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
+        # Shade
+        shade_using_behavior(beh_vec, ax=ax)

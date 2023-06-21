@@ -21,13 +21,14 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score, silhouette_samples
 from tqdm.auto import tqdm
 
+from wbfm.utils.general.postures.centerline_classes import shade_triggered_average
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
     calc_surpyval_durations_and_censoring
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
-from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average, fill_nan_in_dataframe
+from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 
@@ -1165,7 +1166,7 @@ class ClusteredTriggeredAverages:
             plt.xlabel("Time")
             plt.tight_layout()
 
-            self.shade_triggered_average(ax, behavior_shading_type, ind_preceding, xlim)
+            shade_triggered_average(ind_preceding, xlim, behavior_shading_type, ax)
 
             if output_folder is not None:
                 if not os.path.exists(output_folder):
@@ -1252,30 +1253,12 @@ class ClusteredTriggeredAverages:
         plt.legend()
         plt.tight_layout()
 
-        self.shade_triggered_average(ax, behavior_shading_type, ind_preceding, xlim)
+        shade_triggered_average(ind_preceding, xlim, behavior_shading_type, ax)
 
         if output_folder is not None:
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder, exist_ok=True)
             plt.savefig(os.path.join(output_folder, f"multiple_clusters_{i_clust_list}.png"))
-
-    @staticmethod
-    def shade_triggered_average(ax, behavior_shading_type, ind_preceding, xlim):
-        # Shade using behavior either before or after the ind_preceding line
-        if behavior_shading_type is not None:
-            # Initialize empty
-            beh_vec = np.array([BehaviorCodes.FWD for _ in range(xlim[1])])
-            if behavior_shading_type == 'fwd':
-                # If 'fwd' triggered, the shading should go BEFORE the line
-                beh_vec[:xlim[0] + ind_preceding] = BehaviorCodes.REV
-            elif behavior_shading_type == 'rev':
-                # If 'rev' triggered, the shading should go AFTER the line
-                beh_vec[xlim[0] + ind_preceding:] = BehaviorCodes.REV
-            else:
-                raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
-            # Shade
-            from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
-            shade_using_behavior(beh_vec, ax=ax)
 
     def get_optimal_clusters_using_hdbscan(self, min_cluster_size=10):
         """
