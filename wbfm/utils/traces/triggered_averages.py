@@ -1061,7 +1061,7 @@ class ClusteredTriggeredAverages:
 
         """
         if base_cmap is None:
-            base_cmap = matplotlib.colormaps['tab20']
+            base_cmap = matplotlib.colormaps['tab10']
 
         # Hard code the mapping of specific neurons to clusters
         neuron2color = {
@@ -1197,12 +1197,14 @@ class ClusteredTriggeredAverages:
         return this_name_list
 
     def plot_multiple_clusters_simple(self, i_clust_list: List[int], min_lines=2, ind_preceding=None, z_score=False,
-                                      show_individual_lines=False, use_dendrogram_colors=True, output_folder=None,
-                                      **kwargs):
+                                      show_individual_lines=False, show_shading_error_bars=True, xlim=None,
+                                      use_dendrogram_colors=True, output_folder=None,
+                                      **plot_kwargs):
 
         if ind_preceding is None:
             ind_preceding = self._ind_preceding
 
+        #
         already_plotted_clusters = []
         fig, ax = plt.subplots(dpi=200)
         for i_clust in i_clust_list:
@@ -1217,12 +1219,22 @@ class ClusteredTriggeredAverages:
             # Plot
             if use_dendrogram_colors:
                 color = self.cluster_color_func(i_clust)
-                kwargs['color'] = color
-            is_second_plot = already_plotted_clusters != []
-            ax, _ = plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
-                                                                 show_individual_lines=show_individual_lines,
-                                                                 is_second_plot=is_second_plot, ax=ax,
-                                                                 label=f"Cluster {i_clust}", **kwargs)
+                plot_kwargs['color'] = color
+            if show_shading_error_bars:
+                is_second_plot = already_plotted_clusters != []
+                ax, _ = plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
+                                                                     show_individual_lines=show_individual_lines,
+                                                                     is_second_plot=is_second_plot, ax=ax,
+                                                                     label=f"Cluster {i_clust}", **plot_kwargs)
+            else:
+                _, triggered_avg, _, _, xmax, is_valid = \
+                    TriggeredAverageIndices.prep_triggered_average_for_plotting(pseudo_mat,
+                                                                                min_lines=min_lines,
+                                                                                z_score=z_score)
+                ax.plot(triggered_avg[:xmax], label=f"Cluster {i_clust}", **plot_kwargs)
+                ax.set_ylabel("Activity")
+                if xlim is not None:
+                    ax.set_xlim(xlim)
             already_plotted_clusters.append(i_clust)
         plt.xlabel("Time")
         plt.legend()
