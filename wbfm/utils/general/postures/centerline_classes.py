@@ -416,16 +416,17 @@ class WormFullVideoPosture:
                                 strong_smoothing_before_derivative=True)
         elif behavior_alias == 'summed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(start_segment=30, fluorescence_fps=True, **kwargs)
+            y = self.summed_curvature_from_kymograph(start_segment=30, reset_index=True, fluorescence_fps=True, **kwargs)
         elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_signed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, do_abs=False, **kwargs)
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, reset_index=True, do_abs=False, **kwargs)
         elif behavior_alias == 'head_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=5, end_segment=30)
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, reset_index=True, start_segment=5, end_segment=30)
         elif behavior_alias == 'head_signed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, do_abs=False, start_segment=5, end_segment=30)
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, do_abs=False, reset_index=True,
+                                                     start_segment=5, end_segment=30)
         elif behavior_alias == 'quantile_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
@@ -1358,6 +1359,7 @@ class WormFullVideoPosture:
         rev_starts, rev_ends = get_contiguous_blocks_from_column(y_rev, already_boolean=True)
 
         peaks = []
+        peak_times = []
         for i, rev_end in enumerate(rev_ends):
             if rev_end == len(y):
                 break
@@ -1367,12 +1369,14 @@ class WormFullVideoPosture:
                 # Set next reversal start to be end if it is within the check period
                 end_of_check_period = rev_starts[i+1] if rev_starts[i+1] < end_of_check_period else end_of_check_period
             if not use_idx_of_absolute_max:
-                this_peak = y.iloc[rev_end:end_of_check_period].max()
+                idx = y.iloc[rev_end:end_of_check_period].idxmax()
+                this_peak = y.iloc[idx]
             else:
                 idx = y.iloc[rev_end:end_of_check_period].abs().idxmax()
                 this_peak = y.iloc[idx]
             peaks.append(this_peak)
-        return peaks
+            peak_times.append(idx)
+        return peaks, peak_times
 
     # Raw videos
     def behavior_video_avi_fname(self):
