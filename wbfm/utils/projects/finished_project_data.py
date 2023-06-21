@@ -830,6 +830,28 @@ class ProjectData:
         else:
             df = df_drop
 
+        # Optional: nan time points that are estimated to have a tracking error (either global or per-neuron)
+        if nan_tracking_failure_points:
+            invalid_ind = self.estimate_tracking_failures_from_project(pad_nan_points=5)
+            if invalid_ind is not None:
+                df.loc[invalid_ind, :] = np.nan
+                # if interpolate_nan:
+                #     self.logger.warning("Requested nan interpolation, but then nan were added due to tracking failures")
+
+        if nan_using_ppca_manifold:
+            try:
+                to_remove_all_names = self.calc_indices_to_remove_using_ppca()
+                # Subset the full removal matrix to only the neurons in this dataframe
+                # to_remove_all_names is a matrix, so we can't directly index using pandas syntax
+                names = get_names_from_df(df)
+                original_names = self.neuron_names
+                # Get the mapping between the names that have survived so far and the original names
+                name_ind = [original_names.index(n) for n in names]
+                to_remove = to_remove_all_names[:, name_ind]
+                df[to_remove] = np.nan
+            except ValueError as e:
+                self.logger.warning(f"PPCA failed with error: {e}, skipping manifold-based outlier removal")
+
         # Optional: fill all gaps
         if interpolate_nan:
             df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
@@ -855,28 +877,6 @@ class ProjectData:
                 df, _ = calculate_residual_subtract_nmf(df, n_components=2)
             else:
                 raise NotImplementedError(f"Unrecognized residual mode: {residual_mode}")
-
-        # Optional: nan time points that are estimated to have a tracking error (either global or per-neuron)
-        if nan_tracking_failure_points:
-            invalid_ind = self.estimate_tracking_failures_from_project(pad_nan_points=5)
-            if invalid_ind is not None:
-                df.loc[invalid_ind, :] = np.nan
-                # if interpolate_nan:
-                #     self.logger.warning("Requested nan interpolation, but then nan were added due to tracking failures")
-
-        if nan_using_ppca_manifold:
-            try:
-                to_remove_all_names = self.calc_indices_to_remove_using_ppca()
-                # Subset the full removal matrix to only the neurons in this dataframe
-                # to_remove_all_names is a matrix, so we can't directly index using pandas syntax
-                names = get_names_from_df(df)
-                original_names = self.neuron_names
-                # Get the mapping between the names that have survived so far and the original names
-                name_ind = [original_names.index(n) for n in names]
-                to_remove = to_remove_all_names[:, name_ind]
-                df[to_remove] = np.nan
-            except ValueError as e:
-                self.logger.warning(f"PPCA failed with error: {e}, skipping manifold-based outlier removal")
 
         # Optional: separate fast and slow components, and return only one
         if return_fast_scale_separation and return_slow_scale_separation:
