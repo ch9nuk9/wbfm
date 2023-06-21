@@ -34,6 +34,7 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines,
                                                  show_individual_lines, is_second_plot, ax, xlim=None, z_score=False,
+                                                 show_shading=True,
                                                  **kwargs):
     raw_trace_mean, triggered_avg, triggered_lower_std, triggered_upper_std, xmax, is_valid = \
         TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines=min_lines,
@@ -42,14 +43,21 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         logging.warning("Found invalid neuron (empty triggered average)")
         return None, None
     # Plot
-    ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_lower_std, xmax, ax=ax, **kwargs,
-                                                         std_vals_upper=triggered_upper_std)
+    if show_shading:
+        ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_lower_std, xmax, ax=ax, **kwargs,
+                                                             std_vals_upper=triggered_upper_std)
+    else:
+        ax.plot(triggered_avg[:xmax], **kwargs)
     if show_individual_lines:
         for trace in triggered_avg_matrix:
             ax.plot(trace[:xmax], 'black', alpha=3.0 / (triggered_avg_matrix.shape[0] + 10.0))
     if not is_second_plot:
         ax.set_ylabel("Activity")
-        ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
+        # Set y limits because sometimes individual traces are very large
+        if show_shading:
+            ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
+        else:
+            ax.set_ylim(np.nanmin(triggered_avg), np.nanmax(triggered_avg))
         # Reference points
         ax.axhline(raw_trace_mean, c='black', ls='--')
         ax.axvline(x=ind_preceding, color='r', ls='--')
@@ -1231,21 +1239,12 @@ class ClusteredTriggeredAverages:
             if use_dendrogram_colors:
                 color = self.cluster_color_func(i_clust)
                 plot_kwargs['color'] = color
-            if show_shading_error_bars:
-                is_second_plot = already_plotted_clusters != []
-                ax, _ = plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
-                                                                     show_individual_lines=show_individual_lines,
-                                                                     is_second_plot=is_second_plot, ax=ax,
-                                                                     label=f"Cluster {i_clust}", **plot_kwargs)
-            else:
-                _, triggered_avg, _, _, xmax, is_valid = \
-                    TriggeredAverageIndices.prep_triggered_average_for_plotting(pseudo_mat,
-                                                                                min_lines=min_lines,
-                                                                                z_score=z_score)
-                ax.plot(triggered_avg[:xmax], label=f"Cluster {i_clust}", **plot_kwargs)
-                ax.set_ylabel("Activity")
-                if xlim is not None:
-                    ax.set_xlim(xlim)
+            is_second_plot = already_plotted_clusters != []
+            ax, _ = plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
+                                                                 show_individual_lines=show_individual_lines,
+                                                                 is_second_plot=is_second_plot, ax=ax,
+                                                                 show_shading=show_shading_error_bars,
+                                                                 xlim=xlim, label=f"Cluster {i_clust}", **plot_kwargs)
             already_plotted_clusters.append(i_clust)
         plt.xlabel("Time")
         plt.legend()
@@ -1261,13 +1260,14 @@ class ClusteredTriggeredAverages:
     @staticmethod
     def shade_triggered_average(ax, behavior_shading_type, ind_preceding, xlim):
         # Shade using behavior either before or after the ind_preceding line
-        # If 'rev' this is reversal triggered, so the shading should go after the line
         if behavior_shading_type is not None:
             # Initialize empty
             beh_vec = np.array([BehaviorCodes.FWD for _ in range(xlim[1])])
             if behavior_shading_type == 'fwd':
-                beh_vec[xlim[0] + ind_preceding:] = BehaviorCodes.REV
+                # If 'fwd' triggered, the shading should go BEFORE the line
+                beh_vec[:xlim[0] + ind_preceding] = BehaviorCodes.REV
             elif behavior_shading_type == 'rev':
+                # If 'rev' triggered, the shading should go AFTER the line
                 beh_vec[xlim[0] + ind_preceding:] = BehaviorCodes.REV
             else:
                 raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
