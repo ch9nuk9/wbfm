@@ -50,7 +50,8 @@ from wbfm.utils.projects.utils_project import safe_cd
 from backports.cached_property import cached_property
 
 from wbfm.utils.utils_cache import cache_to_disk_class
-from wbfm.utils.visualization.filtering_traces import fast_slow_decomposition, filter_trace_using_mode
+from wbfm.utils.visualization.filtering_traces import fast_slow_decomposition, filter_trace_using_mode, \
+    fill_nan_in_dataframe
 
 
 @dataclass
@@ -947,6 +948,7 @@ class ProjectData:
     def calc_pca_modes(self, n_components=10, **trace_kwargs):
         trace_kwargs['interpolate_nan'] = True
         X = self.calc_default_traces(**trace_kwargs)
+        X = fill_nan_in_dataframe(X, do_filtering=False)
         pca = PCA(n_components=n_components, whiten=False)
         pca.fit(X.T)
         pca_modes = pca.components_.T
