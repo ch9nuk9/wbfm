@@ -541,9 +541,11 @@ class TriggeredAverageIndices:
 
         min_lines = self.min_lines
         ind_preceding = self.ind_preceding
-        ax, triggered_avg = plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding,
-                                                                         min_lines, show_individual_lines,
-                                                                         is_second_plot, ax, **kwargs)
+        ax, triggered_avg = plot_triggered_average_from_matrix_low_level(triggered_avg_matrix,
+                                                                         ind_preceding=ind_preceding,
+                                                                         min_lines=min_lines,
+                                                                         show_individual_lines=show_individual_lines,
+                                                                         is_second_plot=is_second_plot, ax=ax, **kwargs)
         if ax is None:
             return
         # Optional orange points
