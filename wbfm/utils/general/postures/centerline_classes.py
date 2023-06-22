@@ -1360,6 +1360,7 @@ class WormFullVideoPosture:
 
         peaks = []
         peak_times = []
+        all_rev_ends = []
         for i, rev_end in enumerate(rev_ends):
             if rev_end == len(y):
                 break
@@ -1370,13 +1371,15 @@ class WormFullVideoPosture:
                 end_of_check_period = rev_starts[i+1] if rev_starts[i+1] < end_of_check_period else end_of_check_period
             if not use_idx_of_absolute_max:
                 idx = y.iloc[rev_end:end_of_check_period].idxmax()
-                this_peak = y.iloc[idx]
             else:
                 idx = y.iloc[rev_end:end_of_check_period].abs().idxmax()
-                this_peak = y.iloc[idx]
+            if np.isnan(idx):
+                continue
+            this_peak = y.iloc[idx]
             peaks.append(this_peak)
             peak_times.append(idx)
-        return peaks, peak_times
+            all_rev_ends.append(rev_end)
+        return peaks, peak_times, all_rev_ends
 
     # Raw videos
     def behavior_video_avi_fname(self):
