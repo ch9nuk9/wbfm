@@ -19,8 +19,8 @@ def calculate_residual_subtract_pca(df: pd.DataFrame, n_components=2) -> Tuple[p
     dat_reconstructed = scaler.inverse_transform(dat_reprojected)
 
     dat_residual = df_dat - dat_reconstructed
-    df_residual = pd.DataFrame(data=dat_residual, columns=df.columns)
-    df_reconstructed = pd.DataFrame(data=dat_reconstructed, columns=df.columns)
+    df_residual = pd.DataFrame(data=dat_residual, columns=df.columns, index=df.index)
+    df_reconstructed = pd.DataFrame(data=dat_reconstructed, columns=df.columns, index=df.index)
 
     return df_residual, df_reconstructed
 

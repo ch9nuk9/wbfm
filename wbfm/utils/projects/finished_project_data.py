@@ -865,6 +865,8 @@ class ProjectData:
                     if i == 0:
                         self.logger.warning("SVD did not converge, trying again")
                     continue
+            # Finally, really make sure there are no nan
+            df = fill_nan_in_dataframe(df, do_filtering=False)
 
         # Optional: reindex to physical time
         df.index = self.x_for_plots
@@ -893,6 +895,10 @@ class ProjectData:
         if rename_neurons_using_manual_ids:
             mapping = self.neuron_name_to_manual_id_mapping()
             df = df.rename(columns=mapping)
+
+        # Optional: set the index to be physical units
+        if self.use_physical_x_axis:
+            df.index = self.x_for_plots
 
         return df
 
