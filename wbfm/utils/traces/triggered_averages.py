@@ -52,7 +52,7 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
     # Plot
     if show_shading:
         ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_lower_std, xmax, ax=ax, **kwargs,
-                                                             std_vals_upper=triggered_upper_std, x=x_vals)
+                                                             std_vals_upper=triggered_upper_std)#, x=x_vals)
     else:
         # ax.plot(x_vals[:xmax], triggered_avg[:xmax], **kwargs)
         ax.plot(triggered_avg[:xmax], **kwargs)
@@ -1269,7 +1269,7 @@ class ClusteredTriggeredAverages:
                                                                  fps=fps, xlim=xlim,
                                                                  label=f"Cluster {i_clust}", **plot_kwargs)
             already_plotted_clusters.append(i_clust)
-        plt.xlabel("Time")
+        plt.xlabel("Time (volumes)")
         plt.ylabel("Amplitude (z-score)")
         plt.title(f"Cluster triggered average")
         if legend:
