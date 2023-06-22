@@ -15,6 +15,7 @@ from backports.cached_property import cached_property
 from matplotlib import pyplot as plt, cm
 from matplotlib.colors import LinearSegmentedColormap
 from methodtools import lru_cache
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.cluster import hierarchy
 from scipy.stats import permutation_test
 from sklearn.decomposition import PCA
@@ -951,11 +952,17 @@ class ClusteredTriggeredAverages:
         # Needs to be reversed if the orientation is left
         # dendrogram_idx.reverse()
 
-        ax.imshow(df.iloc[dendrogram_idx, dendrogram_idx], cmap='BrBG')
+        im = ax.imshow(df.iloc[dendrogram_idx, dendrogram_idx], cmap='BrBG')
         if not use_labels:
             ax.set_xticks([])
             ax.set_yticks([])
         # ax.colorbar()
+        # plt.colorbar()
+        # From: https://stackoverflow.com/questions/32462881/add-colorbar-to-existing-axis
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        fig.colorbar(im, cax=cax, orientation='vertical')
+        ax.set_title("Correlation")
 
         self._save_plot("clustergram.png", output_folder)
 
@@ -1249,6 +1256,8 @@ class ClusteredTriggeredAverages:
                                                                  xlim=xlim, label=f"Cluster {i_clust}", **plot_kwargs)
             already_plotted_clusters.append(i_clust)
         plt.xlabel("Time")
+        plt.ylabel("Amplitude (z-score)")
+        plt.title(f"Cluster triggered average")
         if legend:
             plt.legend()
 
@@ -1954,6 +1963,7 @@ class ClusteredTriggeredAverages:
                 ax.get_legend().remove()
 
             plt.xlabel("Manual ID")
+            plt.title("Cluster Membership")
             if normalize_by_number_of_ids:
                 plt.ylabel("Fraction")
             else:
