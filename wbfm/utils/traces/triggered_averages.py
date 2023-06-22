@@ -940,7 +940,7 @@ class ClusteredTriggeredAverages:
             if no_dendrogram:
                 fig, ax = plt.subplots(dpi=200)
                 ax_dend = None
-                ax.set_title("Dendrogram-matched correlations")
+                # ax.set_title("Dendrogram-matched correlations")
             else:
                 fig, (ax_dend, ax) = plt.subplots(2, 1, dpi=200)
                 ax.set_box_aspect(1)
@@ -967,7 +967,7 @@ class ClusteredTriggeredAverages:
         # link_color_func = good_dataset_clusterer.map_list_of_cluster_ids_to_colors(split_dict)
         # R = hierarchy.dendrogram(Z, orientation='left', no_labels=True, link_color_func=link_color_func)
 
-        fig, ax = plt.subplots(dpi=200)
+        fig, ax = plt.subplots(dpi=200, figsize=(5/4, 1))
         no_plot = False
         self.recalculate_dendrogram(linkage_threshold, no_plot, ax)
         plt.axis('off')
@@ -1007,7 +1007,7 @@ class ClusteredTriggeredAverages:
     def plot_all_clusters(self):
         ind_class = self.triggered_averages_class.ind_class
         for i_clust, name_list in self.per_cluster_names.items():
-            fig, ax = plt.subplots(dpi=200)
+            fig, ax = plt.subplots(dpi=200, figsize=(5/4, 1))
             # Build a pseudo-triggered average matrix, made of the means of each neuron
             pseudo_mat = []
             for name in name_list:
@@ -1224,7 +1224,7 @@ class ClusteredTriggeredAverages:
 
         #
         already_plotted_clusters = []
-        fig, ax = plt.subplots(dpi=200)
+        fig, ax = plt.subplots(dpi=200, figsize=(5/2, 2))
         for i_clust in i_clust_list:
             if i_clust in already_plotted_clusters:
                 continue
@@ -1896,7 +1896,7 @@ class ClusteredTriggeredAverages:
         return df_id_counts
 
     def plot_manual_ids_per_cluster(self, all_projects, use_bar_plot=True, neuron_threshold=0,
-                                    normalize_by_number_of_ids=False,
+                                    normalize_by_number_of_ids=False, legend=False,
                                     output_folder=None, **kwargs):
         """
         Plots a bar chart of the number of neurons per manual ID per cluster
@@ -1949,14 +1949,16 @@ class ClusteredTriggeredAverages:
             df_id_counts = df_id_counts.dropna(axis='columns', how='all')
 
             # Final plot
-            fig, ax = plt.subplots(dpi=200)
+            fig, ax = plt.subplots(dpi=200, figsize=(5/2, 1))
             df_id_counts.T.plot(kind='bar', stacked=True, colormap=custom_cmap, ax=ax)
+            if not legend:
+                ax.get_legend().remove()
 
             plt.xlabel("Manual ID")
             if normalize_by_number_of_ids:
-                plt.ylabel("Fraction of neurons")
+                plt.ylabel("Fraction")
             else:
-                plt.ylabel("Number of neurons")
+                plt.ylabel("Count")
 
             plt.tight_layout()
 
