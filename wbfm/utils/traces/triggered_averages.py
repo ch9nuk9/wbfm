@@ -1167,9 +1167,9 @@ class ClusteredTriggeredAverages:
         if output_folder is not None:
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder, exist_ok=True)
-            plt.savefig(os.path.join(output_folder, base_fname), dpi=200)
+            plt.savefig(os.path.join(output_folder, base_fname), dpi=200, transparent=True)
             # Also save .svg
-            plt.savefig(os.path.join(output_folder, base_fname.replace(".png", ".svg")), dpi=200)
+            plt.savefig(os.path.join(output_folder, base_fname.replace(".png", ".svg")), dpi=200, transparent=True)
 
     def plot_all_clusters_grid_plot(self, i_clust, num_columns=1, **kwargs):
         """Like plot_all_clusters, but plots the full times series instead of the triggered average"""
