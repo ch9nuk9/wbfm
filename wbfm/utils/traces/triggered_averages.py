@@ -21,8 +21,7 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score, silhouette_samples
 from tqdm.auto import tqdm
 
-from wbfm.utils.general.postures.centerline_classes import shade_triggered_average
-from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior, shade_triggered_average
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
     calc_surpyval_durations_and_censoring
@@ -1188,7 +1187,6 @@ class ClusteredTriggeredAverages:
         Like plot_all_clusters_grid_plot, but assumes that traces come from different projects, which need different shading
         """
         from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
-        from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
 
         if self.df_traces is None:
             raise ValueError("df_traces is None, cannot plot")

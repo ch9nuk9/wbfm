@@ -10,12 +10,11 @@ from matplotlib.colors import TwoSlopeNorm
 import numpy as np
 import scipy.io
 from sklearn.decomposition import PCA
-from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, options_for_ethogram
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, options_for_ethogram, shade_using_behavior
 from wbfm.utils.general.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
-from wbfm.utils.general.postures.centerline_classes import shade_using_behavior
 from matplotlib import transforms, pyplot as plt
 from matplotlib.ticker import NullFormatter, MultipleLocator
 from tqdm.auto import tqdm

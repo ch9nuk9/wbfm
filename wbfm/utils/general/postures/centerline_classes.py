@@ -20,7 +20,8 @@ from sklearn.neighbors import NearestNeighbors
 
 from wbfm.utils.external.utils_breakpoints import plot_with_offset_x
 from wbfm.utils.external.utils_self_collision import calculate_self_collision_using_pairwise_distances
-from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate, \
+    shade_using_behavior
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
@@ -1671,76 +1672,6 @@ class WormSinglePosture:
         return new_pts_zxy
 
 
-def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes.SELF_COLLISION, ),
-                         cmap=None, index_conversion=None,
-                         DEBUG=False):
-    """
-    Shades current plot using a 3-code behavioral annotation:
-        Invalid data (no shade)
-        FWD (no shade)
-        REV (gray)
-
-    See BehaviorCodes for valid codes
-
-    See options_for_ethogram for a plotly-compatible version
-
-    Parameters
-    ----------
-    beh_vector - vector of behavioral codes
-    ax - axis to plot on
-    behaviors_to_ignore - list of behaviors to ignore. See BehaviorCodes for valid codes
-    cmap - colormap to use. See BehaviorCodes for default
-    index_conversion - function to convert indices from the beh_vector to the plot indices
-    DEBUG
-
-    Returns
-    -------
-
-    """
-    if cmap is None:
-        cmap = BehaviorCodes.shading_cmap()
-    if ax is None:
-        ax = plt.gca()
-
-    # Get all behaviors that exist in the data and the cmap
-    beh_vector = pd.Series(beh_vector)
-    data_behaviors = beh_vector.unique()
-    cmap_behaviors = pd.Series(list(cmap.keys())).unique()
-    # Note that this returns a numpy array in the end
-    all_behaviors = pd.concat([pd.Series(data_behaviors), pd.Series(cmap_behaviors)]).unique()
-
-    # Remove behaviors to ignore
-    if behaviors_to_ignore is not None:
-        for b in behaviors_to_ignore:
-            all_behaviors = all_behaviors[all_behaviors != b]
-    for b in [BehaviorCodes.UNKNOWN, BehaviorCodes.NOT_ANNOTATED, BehaviorCodes.TRACKING_FAILURE]:
-        all_behaviors = all_behaviors[all_behaviors != b]
-
-    # Loop through the remaining behaviors, and use the binary vector to shade per behavior
-    beh_vector = pd.Series(beh_vector)
-    for b in all_behaviors:
-        binary_vec = BehaviorCodes.vector_equality(beh_vector, b)
-        color = cmap.get(b, None)
-        if color is None:
-            continue
-
-        # Get the start and end indices of the binary vector
-        starts, ends = get_contiguous_blocks_from_column(binary_vec, already_boolean=True)
-        for start, end in zip(starts, ends):
-            if index_conversion is not None:
-                ax_start = index_conversion[start]
-                if end >= len(index_conversion):
-                    # Often have an off by one error
-                    ax_end = index_conversion[-1]
-                else:
-                    ax_end = index_conversion[end]
-            else:
-                ax_start = start
-                ax_end = end
-
-            ax.axvspan(ax_start, ax_end, alpha=0.9, color=color, zorder=-10)
-
-
 def calc_pairwise_corr_of_dataframes(df_traces, df_speed):
     """
     Columns are data, rows are time
@@ -1929,18 +1860,3 @@ def fit_piecewise_regression(dat, all_ends, all_starts, min_length=10,
     return new_starts, new_ends, new_times_series_starts, new_times_series_ends, all_pw_fits
 
 
-def shade_triggered_average(ind_preceding, xlim, behavior_shading_type='fwd', ax=None):
-    # Shade using behavior either before or after the ind_preceding line
-    if behavior_shading_type is not None:
-        # Initialize empty
-        beh_vec = np.array([BehaviorCodes.FWD for _ in range(xlim[1])])
-        if behavior_shading_type == 'fwd':
-            # If 'fwd' triggered, the shading should go BEFORE the line
-            beh_vec[:xlim[0] + ind_preceding] = BehaviorCodes.REV
-        elif behavior_shading_type == 'rev':
-            # If 'rev' triggered, the shading should go AFTER the line
-            beh_vec[xlim[0] + ind_preceding:] = BehaviorCodes.REV
-        else:
-            raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
-        # Shade
-        shade_using_behavior(beh_vec, ax=ax)
