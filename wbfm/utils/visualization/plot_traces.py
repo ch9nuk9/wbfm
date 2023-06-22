@@ -1110,7 +1110,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
             zaxis=dict(showticklabels=False),
             xaxis_title='PC1',
             yaxis_title='PC2',
-            zaxis_title='PC2'
+            zaxis_title='PC3'
         )
     )
 
@@ -1335,6 +1335,9 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     ### 3d phase plot
     ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_opt)
     # Use the same behaviors as the ethogram
+    # Check lengths; sometimes beh_vec is one too short
+    if len(beh_vec) == df_pca_modes.shape[0] - 1:
+        beh_vec = pd.concat([beh_vec, pd.Series([BehaviorCodes.UNKNOWN])])
     df_pca_modes['behavior'] = list(beh_vec)
     df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
                                                                   ['mode 0', 'mode 1', 'mode 2'],

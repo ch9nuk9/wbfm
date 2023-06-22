@@ -337,9 +337,12 @@ class WormFullVideoPosture:
         return self._beh_annotation
 
     @lru_cache(maxsize=8)
-    def manual_beh_annotation(self, fluorescence_fps=False, keep_reversal_turns=True, **kwargs) -> pd.DataFrame:
+    def manual_beh_annotation(self, fluorescence_fps=False, keep_reversal_turns=True, **kwargs) -> \
+            Optional[pd.DataFrame]:
         """Ulises' manual annotations of behavior"""
         df = self._raw_manual_beh_annotation
+        if df is None:
+            return None
         if not keep_reversal_turns:
             # Map reversal turns to regular reversal state
             # Can't use regular pandas replace, because we have an enum
