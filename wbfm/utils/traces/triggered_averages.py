@@ -34,22 +34,31 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines,
                                                  show_individual_lines, is_second_plot, ax, xlim=None, z_score=False,
-                                                 show_shading=True,
+                                                 show_shading=True, fps=1,
                                                  **kwargs):
+    # Get y values
     raw_trace_mean, triggered_avg, triggered_lower_std, triggered_upper_std, xmax, is_valid = \
         TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines=min_lines,
                                                                     z_score=z_score)
+    # Get x values, with the vertical line set to be at 0
+    # x_vals = np.arange(-ind_preceding, triggered_avg.shape[0] - ind_preceding) / fps
+    # Move the xlim to the right if necessary
+    # if xlim is not None:
+    #     xlim = (xlim[0] - ind_preceding, xlim[1] - ind_preceding)
+
     if not is_valid:
         logging.warning("Found invalid neuron (empty triggered average)")
         return None, None
     # Plot
     if show_shading:
         ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_lower_std, xmax, ax=ax, **kwargs,
-                                                             std_vals_upper=triggered_upper_std)
+                                                             std_vals_upper=triggered_upper_std, x=x_vals)
     else:
+        # ax.plot(x_vals[:xmax], triggered_avg[:xmax], **kwargs)
         ax.plot(triggered_avg[:xmax], **kwargs)
     if show_individual_lines:
         for trace in triggered_avg_matrix:
+            # ax.plot(x_vals[:xmax], trace[:xmax], 'black', alpha=3.0 / (triggered_avg_matrix.shape[0] + 10.0))
             ax.plot(trace[:xmax], 'black', alpha=3.0 / (triggered_avg_matrix.shape[0] + 10.0))
     if not is_second_plot:
         ax.set_ylabel("Activity")
@@ -61,6 +70,7 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         # Reference points
         ax.axhline(raw_trace_mean, c='black', ls='--')
         ax.axvline(x=ind_preceding, color='r', ls='--')
+        # ax.axvline(x=0, color='r', ls='--')
     else:
         ax.autoscale()
     if xlim is not None:
@@ -1224,10 +1234,13 @@ class ClusteredTriggeredAverages:
     def plot_multiple_clusters_simple(self, i_clust_list: List[int], min_lines=2, ind_preceding=None, z_score=False,
                                       show_individual_lines=False, show_shading_error_bars=True, xlim=None,
                                       use_dendrogram_colors=True, output_folder=None, behavior_shading_type=None,
-                                      show_guide_lines=True, legend=False, **plot_kwargs):
+                                      show_guide_lines=True, legend=False, fps=1, **plot_kwargs):
 
         if ind_preceding is None:
             ind_preceding = self._ind_preceding
+
+        # if xlim is not None:
+        #     xlim = np.array(xlim) / fps
 
         #
         already_plotted_clusters = []
@@ -1253,7 +1266,8 @@ class ClusteredTriggeredAverages:
                                                                  show_individual_lines=show_individual_lines,
                                                                  is_second_plot=is_second_plot, ax=ax,
                                                                  show_shading=show_shading_error_bars,
-                                                                 xlim=xlim, label=f"Cluster {i_clust}", **plot_kwargs)
+                                                                 fps=fps, xlim=xlim,
+                                                                 label=f"Cluster {i_clust}", **plot_kwargs)
             already_plotted_clusters.append(i_clust)
         plt.xlabel("Time")
         plt.ylabel("Amplitude (z-score)")

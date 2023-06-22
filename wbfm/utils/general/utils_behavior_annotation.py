@@ -455,18 +455,30 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
             ax.axvspan(ax_start, ax_end, alpha=0.9, color=color, zorder=-10)
 
 
-def shade_triggered_average(ind_preceding, xlim, behavior_shading_type='fwd', ax=None):
+def shade_triggered_average(ind_preceding, xlim=None, behavior_shading_type='fwd', ax=None):
+    if xlim is None:
+        if ax is None:
+            xlim = plt.xlim()
+        else:
+            xlim = ax.get_xlim()
+        # xlim has to be int
+        xlim = (int(xlim[0]), int(xlim[1]))
     # Shade using behavior either before or after the ind_preceding line
     if behavior_shading_type is not None:
         # Initialize empty
-        beh_vec = np.array([BehaviorCodes.FWD for _ in range(xlim[1])])
+        beh_vec = np.array([BehaviorCodes.FWD for _ in range(xlim[1] - xlim[0])])
+        # beh_vec = np.array([BehaviorCodes.FWD for _ in range(int(np.ceil(xlim[1])))])
         if behavior_shading_type == 'fwd':
             # If 'fwd' triggered, the shading should go BEFORE the line
-            beh_vec[:xlim[0] + ind_preceding] = BehaviorCodes.REV
+            beh_vec[:ind_preceding] = BehaviorCodes.REV
+            # beh_vec[:xlim[0] + ind_preceding] = BehaviorCodes.REV
         elif behavior_shading_type == 'rev':
             # If 'rev' triggered, the shading should go AFTER the line
-            beh_vec[xlim[0] + ind_preceding:] = BehaviorCodes.REV
+            beh_vec[ind_preceding:] = BehaviorCodes.REV
         else:
             raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
+        # Set up index conversion: ind_preceding should be set to 0
+        # index_conversion = np.arange(xlim[0] - ind_preceding, xlim[1] - ind_preceding)
+
         # Shade
-        shade_using_behavior(beh_vec, ax=ax)
+        shade_using_behavior(beh_vec, ax=ax)#, index_conversion=index_conversion)
