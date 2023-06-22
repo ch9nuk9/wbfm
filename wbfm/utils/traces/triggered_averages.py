@@ -938,11 +938,11 @@ class ClusteredTriggeredAverages:
 
         if ax is None:
             if no_dendrogram:
-                fig, ax = plt.subplots(dpi=200)
+                fig, ax = plt.subplots(dpi=200, figsize=(5/2, 2))
                 ax_dend = None
                 # ax.set_title("Dendrogram-matched correlations")
             else:
-                fig, (ax_dend, ax) = plt.subplots(2, 1, dpi=200)
+                fig, (ax_dend, ax) = plt.subplots(2, 1, dpi=200, figsize=(5, 2))
                 ax.set_box_aspect(1)
                 ax_dend.set_box_aspect(1)
                 ax_dend.set_title("Dendrogram-matched correlations")
@@ -967,7 +967,7 @@ class ClusteredTriggeredAverages:
         # link_color_func = good_dataset_clusterer.map_list_of_cluster_ids_to_colors(split_dict)
         # R = hierarchy.dendrogram(Z, orientation='left', no_labels=True, link_color_func=link_color_func)
 
-        fig, ax = plt.subplots(dpi=200, figsize=(5/4, 1))
+        fig, ax = plt.subplots(dpi=200, figsize=(5/2, 2))
         no_plot = False
         self.recalculate_dendrogram(linkage_threshold, no_plot, ax)
         plt.axis('off')
@@ -1007,7 +1007,7 @@ class ClusteredTriggeredAverages:
     def plot_all_clusters(self):
         ind_class = self.triggered_averages_class.ind_class
         for i_clust, name_list in self.per_cluster_names.items():
-            fig, ax = plt.subplots(dpi=200, figsize=(5/4, 1))
+            fig, ax = plt.subplots(dpi=200, figsize=(5/2, 2))
             # Build a pseudo-triggered average matrix, made of the means of each neuron
             pseudo_mat = []
             for name in name_list:
@@ -1164,6 +1164,8 @@ class ClusteredTriggeredAverages:
                 plt.show()
 
     def _save_plot(self, base_fname, output_folder):
+
+        plt.tight_layout()
         if output_folder is not None:
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder, exist_ok=True)
@@ -1224,7 +1226,7 @@ class ClusteredTriggeredAverages:
 
         #
         already_plotted_clusters = []
-        fig, ax = plt.subplots(dpi=200, figsize=(5/2, 2))
+        fig, ax = plt.subplots(dpi=200, figsize=(5, 4))
         for i_clust in i_clust_list:
             if i_clust in already_plotted_clusters:
                 continue
@@ -1251,7 +1253,6 @@ class ClusteredTriggeredAverages:
         plt.xlabel("Time")
         if legend:
             plt.legend()
-        plt.tight_layout()
 
         shade_triggered_average(ind_preceding, xlim, behavior_shading_type, ax)
 
@@ -1949,7 +1950,7 @@ class ClusteredTriggeredAverages:
             df_id_counts = df_id_counts.dropna(axis='columns', how='all')
 
             # Final plot
-            fig, ax = plt.subplots(dpi=200, figsize=(5/2, 1))
+            fig, ax = plt.subplots(dpi=200, figsize=(5, 2))
             df_id_counts.T.plot(kind='bar', stacked=True, colormap=custom_cmap, ax=ax)
             if not legend:
                 ax.get_legend().remove()
@@ -1959,8 +1960,6 @@ class ClusteredTriggeredAverages:
                 plt.ylabel("Fraction")
             else:
                 plt.ylabel("Count")
-
-            plt.tight_layout()
 
             self._save_plot(f"manual_ids_per_cluster.png", output_folder=output_folder)
         return df_id_counts
