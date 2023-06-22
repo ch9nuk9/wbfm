@@ -1101,8 +1101,21 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     fig.update_xaxes(dict(showticklabels=False), row=1, overwrite=True)
     fig.update_yaxes(dict(showticklabels=False), row=1, overwrite=True, matches='y')
 
-    fig.update_xaxes(dict(showticklabels=True), row=6, col=1, overwrite=True)
-    fig.update_yaxes(dict(showticklabels=True), row=6, col=1, overwrite=True)
+    # Remove ticks on the 3d plot
+    # https://community.plotly.com/t/dont-show-ticks-on-3d-scatter/35695/2
+    fig.update_layout(
+        scene=dict(
+            xaxis=dict(showticklabels=False),
+            yaxis=dict(showticklabels=False),
+            zaxis=dict(showticklabels=False),
+            xaxis_title='PC1',
+            yaxis_title='PC2',
+            zaxis_title='PC2'
+        )
+    )
+
+    # fig.update_xaxes(dict(showticklabels=True), row=6, col=1, overwrite=True)
+    # fig.update_yaxes(dict(showticklabels=True), row=6, col=1, overwrite=True)
 
     fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
     # Transparent background and remove lines
