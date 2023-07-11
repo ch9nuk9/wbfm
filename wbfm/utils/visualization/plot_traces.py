@@ -282,14 +282,14 @@ def factory_correlate_trace_to_behavior_variable(project_data,
         y = posture_class.worm_speed(fluorescence_fps=True, signed=True)
     elif behavioral_correlation_shading == 'positive_speed':
         y = posture_class.worm_speed(fluorescence_fps=True, signed=True)
-        if posture_class.beh_annotation is not None:
-            reversal_ind = posture_class.beh_annotation == BehaviorCodes.REV
-            y[reversal_ind] = 0
+        beh_ind = posture_class.beh_annotation(fluorescence_fps=True)
+        rev_ind = BehaviorCodes.vector_equality(beh_ind, BehaviorCodes.REV)
+        y[rev_ind] = 0
     elif behavioral_correlation_shading == 'negative_speed':
         y = posture_class.worm_speed(fluorescence_fps=True, signed=True)
-        if posture_class.beh_annotation is not None:
-            forward_ind = posture_class.beh_annotation == BehaviorCodes.FWD
-            y[forward_ind] = 0
+        beh_ind = posture_class.beh_annotation(fluorescence_fps=True)
+        fwd_ind = BehaviorCodes.vector_equality(beh_ind, BehaviorCodes.FWD)
+        y[fwd_ind] = 0
     elif behavioral_correlation_shading == 'curvature':
         y = posture_class.summed_curvature_from_kymograph(fluorescence_fps=True)
     elif behavioral_correlation_shading == 'pc1':
@@ -1301,10 +1301,10 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                                      line=dict(color=mode_colormap[i], width=2)))
         trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
     #### Shading on top of the PCA modes
-    beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
-    if beh_vec is not None:
+    try:
+        beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
         trace_shading_opt = options_for_ethogram(beh_vec, shading=True)
-    else:
+    except NoBehaviorAnnotationsError:
         trace_shading_opt = dict()
     ### Speed plot (below pca modes)
     trace_list.append(go.Scatter(y=speed, x=speed.index))
@@ -1321,9 +1321,10 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         weights_opt_list.append(dict(row=1, col=2 + i, secondary_y=False))
     ### Ethogram
     # Include manual annotations, if any
-    beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True,
-                                                                    keep_reversal_turns=False)
-    if beh_vec is None:
+    try:
+        beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True,
+                                                                        keep_reversal_turns=False)
+    except NoBehaviorAnnotationsError:
         beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
     ethogram_cmap_opt = dict(include_reversal_turns=True)
     if beh_vec is None:

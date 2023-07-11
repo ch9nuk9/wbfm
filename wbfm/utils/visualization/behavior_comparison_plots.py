@@ -23,6 +23,7 @@ from sklearn.model_selection import cross_validate, RepeatedKFold, cross_val_sco
 from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 from tqdm.auto import tqdm
 
+from wbfm.utils.general.custom_errors import NoBehaviorAnnotationsError
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_pandas import correlate_return_cross_terms, save_valid_ind_1d_or_2d, \
     fill_missing_indices_with_nan
@@ -350,19 +351,26 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         # Also build a binary class variable; possibly used for cross validation or as a null model
         if self.project_data is not None:
             worm = self.project_data.worm_posture_class
-            y_binary = (worm.beh_annotation(fluorescence_fps=True) == binary_state).copy()
-            y_binary.index = y.index
+            try:
+                y_binary = (worm.beh_annotation(fluorescence_fps=True) == binary_state).copy()
+                y_binary.index = y.index
+            except NoBehaviorAnnotationsError:
+                y_binary = y.copy()
         else:
             y_binary = y.copy()
 
         # Optionally subset the data to be only a specific state
         if only_model_single_state is not None:
-            BehaviorCodes.assert_is_valid(only_model_single_state)
-            beh = worm.beh_annotation(fluorescence_fps=True).reset_index(drop=True)
-            ind = beh == only_model_single_state
-            X = X.loc[ind, :]
-            y = y.loc[ind]
-            y_binary = y_binary.loc[ind]
+            try:
+                BehaviorCodes.assert_is_valid(only_model_single_state)
+                beh = worm.beh_annotation(fluorescence_fps=True).reset_index(drop=True)
+                ind = beh == only_model_single_state
+                X = X.loc[ind, :]
+                y = y.loc[ind]
+                y_binary = y_binary.loc[ind]
+            except NoBehaviorAnnotationsError:
+                logging.warning("No behavior annotations found, can't subset data")
+                pass
 
         # z-score the data
         if self.z_score:

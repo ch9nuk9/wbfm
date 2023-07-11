@@ -78,7 +78,10 @@ class MustBeFiniteError(Exception):
 
 class NoBehaviorAnnotationsError(Exception):
     def __init__(self, message=""):
-        self.message = "No behavior annotations found; " + message
+        if len(message) > 0:
+            self.message = "No behavior annotations found; " + message
+        else:
+            self.message = "No behavior annotations found"
         super().__init__(self.message)
 
 

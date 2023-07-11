@@ -328,6 +328,15 @@ class WormFullVideoPosture:
 
     @cached_property
     def _raw_beh_annotation(self) -> pd.Series:
+        """
+        Reads behavior from the annotation file, and converts it to the BehaviorCodes enum
+
+        Raises NoBehaviorAnnotationsError if the annotation file is not found
+
+        Returns
+        -------
+
+        """
         if self._beh_annotation is None:
             self._beh_annotation = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
         if isinstance(self._beh_annotation, pd.DataFrame):
@@ -341,8 +350,6 @@ class WormFullVideoPosture:
             Optional[pd.DataFrame]:
         """Ulises' manual annotations of behavior"""
         df = self._raw_manual_beh_annotation
-        if df is None:
-            return None
         if not keep_reversal_turns:
             # Map reversal turns to regular reversal state
             # Can't use regular pandas replace, because we have an enum
@@ -355,10 +362,19 @@ class WormFullVideoPosture:
         return df
 
     @cached_property
-    def _raw_manual_beh_annotation(self) -> Optional[pd.Series]:
+    def _raw_manual_beh_annotation(self) -> pd.Series:
+        """
+        Reads behavior from the annotation file, and converts it to the BehaviorCodes enum
+
+        Raises NoManualBehaviorAnnotationsError if the annotation file is not found
+
+        Returns
+        -------
+
+        """
         df = read_if_exists(self.filename_manual_beh_annotation, reader=pd.read_csv)
         if df is None:
-            return None
+            raise NoManualBehaviorAnnotationsError(self.filename_manual_beh_annotation)
         # Assume we only want the Annotation column
         df = df['Annotation']
         # Convert to BehaviorCodes
@@ -502,12 +518,17 @@ class WormFullVideoPosture:
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
                        include_collision=True, include_turns=True) -> \
             Optional[pd.Series]:
-        """Name is shortened to avoid US-UK spelling confusion"""
+        """
+        Name is shortened to avoid US-UK spelling confusion
+
+        Note that _raw_beh_annotation raises NoBehaviorAnnotationsError if no behavior annotation is found
+        """
         if not use_manual_annotation:
             beh = self._raw_beh_annotation
         else:
-            beh = self._raw_manual_beh_annotation
-            if beh is None:
+            try:
+                beh = self._raw_manual_beh_annotation
+            except NoManualBehaviorAnnotationsError:
                 logging.warning("Requested manual annotation, but none exists")
                 logging.warning("Using automatic annotation instead")
                 beh = self._raw_beh_annotation
@@ -1300,9 +1321,11 @@ class WormFullVideoPosture:
 
     def shade_using_behavior(self, **kwargs):
         """Takes care of fps conversion and new vs. old annotation format"""
-        bh = self.beh_annotation(fluorescence_fps=True) 
-        if bh is not None:
+        try:
+            bh = self.beh_annotation(fluorescence_fps=True)
             shade_using_behavior(bh, **kwargs)
+        except NoBehaviorAnnotationsError:
+            pass
 
     @property
     def subsample_indices(self):
@@ -1513,7 +1536,7 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
             behavior_fname, is_old_style = get_manual_behavior_annotation_fname(cfg)
         else:
             # Only None was passed
-            return None
+            raise NoBehaviorAnnotationsError("Filename not passed")
     if behavior_fname is not None:
         if str(behavior_fname).endswith('.csv'):
             # Old style had two columns with no header, manually corrected style has a header
@@ -1539,6 +1562,9 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
                 behavior_annotations = None
     else:
         behavior_annotations = None
+
+    if behavior_annotations is None:
+        raise NoBehaviorAnnotationsError()
 
     return behavior_annotations
 
