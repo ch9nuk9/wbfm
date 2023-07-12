@@ -394,6 +394,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def red_data_layer(self):
         return self.viewer.layers['Red data']
 
+    @property
+    def final_data_layer(self):
+        return self.viewer.layers['final_track']
+
+    @property
+    def track_of_point_layer(self):
+        return self.viewer.layers['track_of_point']
+
     def refresh_default_napari_layers(self):
         self.logger.warning("Undocumented shortcut!")
         self.dat.add_layers_to_viewer(self.viewer, which_layers='all', check_if_layers_exist=True,
@@ -494,9 +502,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_track_layers(self):
         point_layer_data, track_layer_data = self.get_track_data()
-        self.viewer.layers['final_track'].data = point_layer_data
+        self.final_track_layer.data = point_layer_data
         if self.use_track_of_point:
-            self.viewer.layers['track_of_point'].data = track_layer_data
+            self.track_of_point_layer.data = track_layer_data
 
         self.zoom_using_current_neuron_or_tracklet()
 
@@ -628,7 +636,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.add_neuron_selection_callback()
 
     def add_neuron_selection_callback(self):
-        layer_to_add_callback = self.viewer.layers['Colored segmentation']
+        layer_to_add_callback = self.colored_seg_layer
 
         @layer_to_add_callback.mouse_drag_callbacks.append
         def on_click(layer, event):
@@ -1684,7 +1692,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def build_df_of_current_points(self) -> pd.DataFrame:
         name = self.current_neuron_name
-        new_points = self.viewer.layers['final_track'].data
+        new_points = self.final_data_layer.data
 
         # Initialize as dict and immediately create dataframe
         coords = ['z', 'x', 'y', 'likelihood']
