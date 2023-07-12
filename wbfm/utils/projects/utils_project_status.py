@@ -162,8 +162,9 @@ def check_zarr_file_integrity(project_config: ModularProjectConfig, verbose=0):
             tmp = frame.shape
 
 
-def print_sacred_log(project_config: ModularProjectConfig) -> None:
+def print_sacred_log(project_config: str) -> None:
     from sacred.observers import TinyDbReader
+    project_config = ModularProjectConfig(project_config)
 
     reader = TinyDbReader(project_config.get_log_dir())
     results = reader.fetch_report(indices=-1)
