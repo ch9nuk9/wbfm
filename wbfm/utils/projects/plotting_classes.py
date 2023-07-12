@@ -19,6 +19,7 @@ from matplotlib import pyplot as plt
 
 from wbfm.utils.general.custom_errors import DataSynchronizationError
 from wbfm.utils.general.utils_piecewise import predict_using_rolling_ransac_filter_single_trace
+from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet_within_sparse_dataframe, get_tracklet_at_time
@@ -441,6 +442,7 @@ class TrackletAndSegmentationAnnotator:
     # Visualization options
     segmentation_callbacks: List[callable] = None
     tracklet_callbacks: List[callable] = None
+    select_neuron_callback: callable = None
     to_add_layer_to_viewer: bool = True
     verbose: int = 1
 
@@ -1052,9 +1054,11 @@ class TrackletAndSegmentationAnnotator:
     def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer: napari.Viewer,
                                            added_segmentation_callbacks,
                                            added_tracklet_callbacks,
+                                           select_neuron_callback,
                                            max_dist=1.0):
         self.segmentation_callbacks = added_segmentation_callbacks
         self.tracklet_callbacks = added_tracklet_callbacks
+        self.select_neuron_callback = select_neuron_callback
 
         @layer_to_add_callback.mouse_drag_callbacks.append
         def on_click(layer, event):
@@ -1067,7 +1071,8 @@ class TrackletAndSegmentationAnnotator:
         """
         Callback for click (select tracklet), or:
             control click (select segmentation)
-            alt click (select segmentation and split)
+            alt click (INACTIVE: select segmentation and split)
+            shift click (select neuron)
 
         Parameters
         ----------
@@ -1088,25 +1093,34 @@ class TrackletAndSegmentationAnnotator:
                 self.logger.debug(f"Event triggered on segmentation {seg_index} at time {int(event.position[0])} "
                                   f"and position {event.position[1:]}")
 
-            # Decide which mode: segmentation or tracklet
+            # Branch based on higher leve mode: segmentation or tracklet
 
             # The modifiers field is a list of Key objects
             # Class definition: https://github.com/vispy/vispy/blob/ef982591e223fff09d91d8c2697489c7193a85aa/vispy/util/keys.py
-            # print([m.name for m in event.modifiers])
             click_modifiers = [m.name.lower() for m in event.modifiers]
             if 'control' in click_modifiers:
                 # Just add neuron, no automatic splitting
                 self.append_segmentation_to_list(time_index, seg_index)
-                segment_mode_not_tracklet_mode = True
+                segmentation_click_type = True
+            # elif 'shift' in click_modifiers:
+                # Select the neuron that was clicked
+                # ... unfortunately, this raw segmentation layer doesn't know the final neuron name
+                # self.logger.info(f"Selecting neuron {i_neuron + 1} from segmentation {seg_index} at time {time_index}")
+                # Then set that to be the active neuron
+                # This requires the parent object, so use a callback
+                # self.select_neuron_callback(neuron_name)
+                # segmentation_click_type = True
             elif 'alt' in click_modifiers:
+                self.logger.warning("Alt-click is not implemented")
+                return
                 # Shortcut for clearing all neurons, adding this one, and attempting to split
-                self.set_selected_segmentation(time_index, seg_index)
-                self.split_current_neuron_and_add_napari_layer(viewer, split_method="Gaussian")
-                segment_mode_not_tracklet_mode = True
+                # self.set_selected_segmentation(time_index, seg_index)
+                # self.split_current_neuron_and_add_napari_layer(viewer, split_method="Gaussian")
+                # segmentation_click_type = True
             else:
-                segment_mode_not_tracklet_mode = False
+                segmentation_click_type = False
 
-            if not segment_mode_not_tracklet_mode:
+            if not segmentation_click_type:
                 # Split tracklet, not segmentation
                 tracklet_name = self.df_tracklet_obj.get_tracklet_from_segmentation_index(
                     i_time=time_index,

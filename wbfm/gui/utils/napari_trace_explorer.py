@@ -109,7 +109,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeNeuronDropdown = QtWidgets.QComboBox()
         self.changeNeuronDropdown.addItems(neuron_names)
         self.changeNeuronDropdown.setItemText(0, self.current_neuron_name)
-        self.changeNeuronDropdown.currentIndexChanged.connect(self.change_neurons)
+        self.changeNeuronDropdown.currentIndexChanged.connect(self._select_neuron_using_dropdown)
         self.vbox1.addWidget(self.changeNeuronDropdown)
 
         self.changeChannelDropdown = QtWidgets.QComboBox()
@@ -399,7 +399,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat.segmentation_metadata.modify_segmentation_metadata(t, new_mask, red_volume)
         self.logger.debug(f"Finished updating metadata")
 
-    def change_neurons(self):
+    def _select_neuron_using_dropdown(self):
         self.logger.debug("USER: change neuron")
         self.update_gt_correction_interactivity()
         if not self._disable_callbacks:
@@ -605,13 +605,22 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.change_tracklets_from_click,
             self.set_segmentation_layer_invisible
         ]
+        select_neuron_callback = self.select_neuron
         self.dat.tracklet_annotator.connect_tracklet_clicking_callback(
             layer_to_add_callback,
             self.viewer,
             added_segmentation_callbacks=added_segmentation_callbacks,
-            added_tracklet_callbacks=added_tracklet_callbacks
+            added_tracklet_callbacks=added_tracklet_callbacks,
+            select_neuron_callback=select_neuron_callback
         )
         self.update_neuron_in_tracklet_annotator()
+
+        # Also add interactivity to the colored segmentation layer, for selecting neurons
+
+        # layer = self.viewer.layers['colored_segmentation']
+        # @layer_to_add_callback.mouse_drag_callbacks.append
+        # def on_click(layer, event):
+        #     pass
 
     def connect_napari_callbacks(self):
         viewer = self.viewer
@@ -844,7 +853,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.logger.info(f"Jumped to conflict at t={t} on {neuron_name} and {tracklet_name} "
                          f"with incorrect match: {model_mismatch} and correct match: {gt_mismatch}")
         change_viewer_time_point(self.viewer, t_target=t)
-        self.changeNeuronDropdown.setCurrentText(neuron_name)
+        self.select_neuron(neuron_name)
         self.zoom_using_current_neuron_or_tracklet()
         # Also display the incorrect match
         # incorrect_match = self.dat.napari_tracks_layer_of_single_neuron_match(neuron_name, t)
@@ -865,6 +874,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.viewer.add_tracks(correct_match_tracks, name="GT match", colormap='twilight', **opt)
         else:
             self.logger.warning("Did not find match")
+
+    def select_neuron(self, neuron_name):
+        # This runs all the callbacks that happen when a neuron is selected
+        self.changeNeuronDropdown.setCurrentText(neuron_name)
 
     def resolve_current_ground_truth_conflict(self):
         # if self.dat.tracklet_annotator.gt_mismatches is None:
