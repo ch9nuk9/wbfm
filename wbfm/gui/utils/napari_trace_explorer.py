@@ -395,7 +395,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return self.viewer.layers['Red data']
 
     @property
-    def final_data_layer(self):
+    def final_track_layer(self):
         return self.viewer.layers['final_track']
 
     @property
@@ -1692,7 +1692,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def build_df_of_current_points(self) -> pd.DataFrame:
         name = self.current_neuron_name
-        new_points = self.final_data_layer.data
+        new_points = self.final_track_layer.data
 
         # Initialize as dict and immediately create dataframe
         coords = ['z', 'x', 'y', 'likelihood']
