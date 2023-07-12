@@ -556,9 +556,14 @@ class TrackedWorm:
         if previous_matches is not None:
             if self.logger is not None:
                 self.logger.info(f"Found {len(previous_matches)} previously matched neurons")
+            all_tracklet_names = set(df_tracklets.columns)
             for neuron_name, match_names in previous_matches.items():
                 neuron = self.global_name_to_neuron[neuron_name]
                 for name in match_names:
+                    if name not in all_tracklet_names:
+                        if self.logger is not None:
+                            self.logger.error(f"Tracklet {name} not found in tracklets dataframe... attempting to skip")
+                        continue
                     previously_matched_tracklet = df_tracklets[[name]]
                     conf = 1.0  # Assume it was good
                     neuron.add_tracklet(conf, previously_matched_tracklet, metadata=name,
