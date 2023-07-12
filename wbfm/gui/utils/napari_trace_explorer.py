@@ -770,6 +770,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def clear_current_tracklet(viewer):
             self.clear_current_tracklet()
 
+        @viewer.bind_key('Shift-w', overwrite=True)
+        def toggle_neuron_ids(viewer):
+            self.toggle_neuron_ids()
+
         @viewer.bind_key('s', overwrite=True)
         def toggle_seg(viewer):
             self.toggle_raw_segmentation_layer()
@@ -777,10 +781,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         @viewer.bind_key('Shift-s', overwrite=True)
         def toggle_neuron_ids(viewer):
             self.toggle_colored_segmentation_layer()
-
-        @viewer.bind_key('Alt-s', overwrite=True)
-        def toggle_neuron_ids(viewer):
-            self.toggle_neuron_ids()
 
         @viewer.bind_key('c', overwrite=True)
         def save_tracklet(viewer):
