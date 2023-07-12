@@ -225,6 +225,13 @@ Do this:
 ```python -X utf8 /path/to/code.py```
 
 
+### Other
+
+There are many problems that can be recovered from by rerunning.
+In theory, the snakemake pipeline is designed to be rerun from any step, and it should detect which steps are finished.
+See [detailed pipeline steps](docs/detailed_pipeline_steps.md) to rerun individual steps or the full pipeline.
+
+
 # More details
 
 [Detailed pipeline steps](docs/detailed_pipeline_steps.md)
