@@ -93,17 +93,24 @@ def get_times_of_conflicting_dataframes(tracklet_list: List[Union[pd.Series, pd.
     """
     all_indices = [t.dropna().index for t in tracklet_list]
     overlapping_tracklet_conflict_points = defaultdict(list)
+    known_empty_tracklets = set()
     for i1, (idx1, base_tracklet_name) in enumerate(zip(all_indices, tracklet_network_names)):
+        if base_tracklet_name in known_empty_tracklets:
+            continue
         if len(idx1) == 0:
             logging.warning(f"Skipping empty tracklet {base_tracklet_name}")
+            known_empty_tracklets.add(base_tracklet_name)
             continue
         idx1_edges = [int(idx1[0]), int(idx1[-1])+1]
         for idx2, target_tracklet_name in zip(all_indices[i1 + 1:], tracklet_network_names[i1 + 1:]):
             if base_tracklet_name == target_tracklet_name:
                 logging.warning("Attempted to compare tracklet to itself; continuing")
                 continue
+            if target_tracklet_name in known_empty_tracklets:
+                continue
             if len(idx2) <= 1:
-                logging.warning("Tracklet was empty; continuing")
+                # logging.warning("Tracklet was empty; continuing")
+                known_empty_tracklets.add(target_tracklet_name)
                 continue
             intersecting_ind = list(idx1.intersection(idx2))
             idx2_edges = [int(idx2[0]), int(idx2[-1])+1]
