@@ -132,6 +132,7 @@ class NapariLayerInitializer:
             viewer = napari.Viewer(ndisplay=3)
 
         basic_valid_layers = ['Red data', 'Green data', 'Raw segmentation',
+                              'Colored segmentation',
                               'Neuron IDs', 'Intermediate global IDs']
         if which_layers == 'all':
             which_layers = basic_valid_layers

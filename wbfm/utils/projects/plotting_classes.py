@@ -1102,14 +1102,6 @@ class TrackletAndSegmentationAnnotator:
                 # Just add neuron, no automatic splitting
                 self.append_segmentation_to_list(time_index, seg_index)
                 segmentation_click_type = True
-            # elif 'shift' in click_modifiers:
-                # Select the neuron that was clicked
-                # ... unfortunately, this raw segmentation layer doesn't know the final neuron name
-                # self.logger.info(f"Selecting neuron {i_neuron + 1} from segmentation {seg_index} at time {time_index}")
-                # Then set that to be the active neuron
-                # This requires the parent object, so use a callback
-                # self.select_neuron_callback(neuron_name)
-                # segmentation_click_type = True
             elif 'alt' in click_modifiers:
                 self.logger.warning("Alt-click is not implemented")
                 return

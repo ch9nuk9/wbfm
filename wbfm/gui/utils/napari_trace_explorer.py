@@ -20,6 +20,7 @@ from backports.cached_property import cached_property
 from tqdm.auto import tqdm
 from PyQt5.QtWidgets import QApplication, QProgressDialog
 from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
+from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
     build_tracks_from_dataframe, zoom_using_viewer, add_fps_printer, on_close
@@ -378,12 +379,20 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         ]
 
     @property
-    def seg_layer(self):
+    def raw_seg_layer(self):
         return self.viewer.layers['Raw segmentation']
+
+    @property
+    def colored_seg_layer(self):
+        return self.viewer.layers['Colored segmentation']
 
     @property
     def neuron_id_layer(self):
         return self.viewer.layers['Neuron IDs']
+
+    @property
+    def red_data_layer(self):
+        return self.viewer.layers['Red data']
 
     def refresh_default_napari_layers(self):
         self.logger.warning("Undocumented shortcut!")
@@ -394,8 +403,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.logger.warning("Undocumented shortcut!")
         t = self.t
         self.logger.info(f"Updating segmentation metadata at t={t}")
-        red_volume = self.viewer.layers['Red data'].data[t, ...]
-        new_mask = self.seg_layer.data[t, ...]
+        red_volume = self.red_data_layer.data[t, ...]
+        new_mask = self.raw_seg_layer.data[t, ...]
         self.dat.segmentation_metadata.modify_segmentation_metadata(t, new_mask, red_volume)
         self.logger.debug(f"Finished updating metadata")
 
@@ -532,7 +541,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def modify_segmentation_using_manual_correction(self):
         """Uses candidate mask layer to modify the segmentation in the GUI, but not on disk"""
         self.dat.modify_segmentation_using_manual_correction()
-        self.dat.tracklet_annotator.update_segmentation_layer_using_buffer(self.seg_layer)
+        self.dat.tracklet_annotator.update_segmentation_layer_using_buffer(self.raw_seg_layer)
         self.dat.tracklet_annotator.clear_currently_selected_segmentations()
         self.remove_layer_of_candidate_segmentation()
         self.set_segmentation_layer_visible()
@@ -596,7 +605,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.viewer.add_tracks(track_layer_data, name="track_of_point", visible=False)
         self.zoom_using_current_neuron_or_tracklet()
 
-        layer_to_add_callback = self.seg_layer
+        layer_to_add_callback = self.raw_seg_layer
         added_segmentation_callbacks = [
             self.update_segmentation_status_label,
             self.toggle_highlight_selected_neuron
@@ -616,11 +625,31 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.update_neuron_in_tracklet_annotator()
 
         # Also add interactivity to the colored segmentation layer, for selecting neurons
+        self.add_neuron_selection_callback()
 
-        # layer = self.viewer.layers['colored_segmentation']
-        # @layer_to_add_callback.mouse_drag_callbacks.append
-        # def on_click(layer, event):
-        #     pass
+    def add_neuron_selection_callback(self):
+        layer_to_add_callback = self.viewer.layers['Colored segmentation']
+
+        @layer_to_add_callback.mouse_drag_callbacks.append
+        def on_click(layer, event):
+            click_modifiers = [m.name.lower() for m in event.modifiers]
+            if 'shift' in click_modifiers:
+                # Get the index of the clicked segmentation
+
+                # Get information about clicked-on neuron
+                seg_index = layer.get_value(
+                    position=event.position,
+                    view_direction=event.view_direction,
+                    dims_displayed=event.dims_displayed,
+                    world=True
+                )
+                if seg_index == 0:
+                    self.logger.debug("Clicked on background, not a neuron")
+
+                # The segmentation index should be the same as the name
+                neuron_name = int2name_neuron(seg_index)
+                self.logger.info(f"Clicked on segmentation {seg_index}, corresponding to {neuron_name}")
+                self.select_neuron(neuron_name)
 
     def connect_napari_callbacks(self):
         viewer = self.viewer
@@ -697,10 +726,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def jump_time4(viewer):
             self.jump_time_using_shortcut(4)
 
-        @viewer.bind_key('Shift-s', overwrite=True)
-        def toggle_neuron_ids(viewer):
-            self.toggle_neuron_ids()
-
         @viewer.bind_key('f', overwrite=True)
         def zoom_to_next_nan(viewer):
             self.zoom_to_next_nan()
@@ -740,6 +765,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         @viewer.bind_key('s', overwrite=True)
         def toggle_seg(viewer):
             self.toggle_raw_segmentation_layer()
+
+        @viewer.bind_key('Shift-s', overwrite=True)
+        def toggle_neuron_ids(viewer):
+            self.toggle_colored_segmentation_layer()
+
+        @viewer.bind_key('Alt-s', overwrite=True)
+        def toggle_neuron_ids(viewer):
+            self.toggle_neuron_ids()
 
         @viewer.bind_key('c', overwrite=True)
         def save_tracklet(viewer):
@@ -974,7 +1007,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.tracklet_updated_psuedo_event(which_tracklets_to_update={current_tracklet_name: 'remove'})
 
     def toggle_raw_segmentation_layer(self):
-        self._toggle_layer(self.seg_layer)
+        self._toggle_layer(self.raw_seg_layer)
+
+    def toggle_colored_segmentation_layer(self):
+        self._toggle_layer(self.colored_seg_layer)
 
     def toggle_neuron_ids(self):
         self.neuron_id_layer.visible = not self.neuron_id_layer.visible
@@ -1475,13 +1511,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             zoom_using_viewer(position, self.viewer, zoom=None)
 
     def set_segmentation_layer_invisible(self):
-        self.seg_layer.visible = False
+        self.raw_seg_layer.visible = False
 
     def set_segmentation_layer_visible(self):
-        self.seg_layer.visible = True
+        self.raw_seg_layer.visible = True
 
     def set_segmentation_layer_do_not_show_selected_label(self):
-        self.seg_layer.show_selected_label = False
+        self.raw_seg_layer.show_selected_label = False
 
     def time_changed_callbacks(self):
         # Check to make sure there was actually a change
