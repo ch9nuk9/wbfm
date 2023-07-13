@@ -1255,7 +1255,7 @@ class ProjectData:
         tracks = this_pair.napari_tracks_of_matches(this_match)
         return tracks
 
-    def add_layers_to_viewer(self, viewer=None, which_layers: Union[str, List[str]] = 'all',
+    def add_layers_to_viewer(self, viewer=None, which_layers: Union[str, List[Union[str, Tuple]]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
                              dask_for_segmentation=True, **kwargs) -> napari.Viewer:
         """
