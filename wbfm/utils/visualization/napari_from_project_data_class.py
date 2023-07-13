@@ -125,15 +125,15 @@ class NapariLayerInitializer:
     def add_layers_to_viewer(project_data, viewer=None, which_layers: Union[str, List[str], List[tuple]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
                              dask_for_segmentation=True, force_all_visible=False,
-                             gt_neuron_name_dict=None, heatmap_kwargs=None):
+                             gt_neuron_name_dict=None, heatmap_kwargs=None,
+                             error_if_missing_layers=True):
         if heatmap_kwargs is None:
             heatmap_kwargs = {}
         if viewer is None:
             viewer = napari.Viewer(ndisplay=3)
 
         basic_valid_layers = ['Red data', 'Green data', 'Raw segmentation',
-                              'Colored segmentation',
-                              'Neuron IDs', 'Intermediate global IDs']
+                              'Colored segmentation', 'Neuron IDs', 'Intermediate global IDs']
         if which_layers == 'all':
             which_layers = basic_valid_layers
         if check_if_layers_exist:
@@ -141,7 +141,7 @@ class NapariLayerInitializer:
             new_layers = set(which_layers) - set([layer.name for layer in viewer.layers])
             which_layers = list(new_layers)
 
-        project_data.logger.info(f"Finished loading data, adding following layers: {which_layers}")
+        project_data.logger.info(f"Finished loading data, trying to add following layers: {which_layers}")
         layers_actually_added = []
         z_to_xy_ratio = project_data.physical_unit_conversion.z_to_xy_ratio
         if to_remove_flyback:
@@ -168,7 +168,9 @@ class NapariLayerInitializer:
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=force_all_visible,
                               rendering='translucent')
             layers_actually_added.append('Raw segmentation')
-        if 'Colored segmentation' in which_layers and project_data.segmentation is not None:
+        if 'Colored segmentation' in which_layers:
+            if project_data.segmentation is None:
+                project_data.logger.warning("Colored segmentation requested but not available, skipping")
             viewer.add_labels(project_data.segmentation, name="Colored segmentation",
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=force_all_visible)
             layers_actually_added.append('Colored segmentation')
@@ -243,10 +245,14 @@ class NapariLayerInitializer:
             _layer.color_mode = 'direct'
 
         project_data.logger.debug(f"Finished adding layers {which_layers}")
-        missed_layers = set(which_layers) - set(layers_actually_added)
+        missed_layers = list(set(which_layers) - set(layers_actually_added))
         if len(missed_layers) > 0:
-            project_data.logger.warning(f"Did not add unknown layers: {missed_layers}; "
-                                        f"did you mean one of {basic_valid_layers}?")
+            message = f"Did not add unknown layers: {missed_layers}; " \
+                      f"did you mean one of {basic_valid_layers}?"
+            if error_if_missing_layers:
+                raise MissingAnalysisError(message)
+            else:
+                project_data.logger.warning(message)
 
         return viewer
 
