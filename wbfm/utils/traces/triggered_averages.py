@@ -5,7 +5,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Callable, Dict, Union
 import matplotlib
-import hdbscan
 import plotly.express as px
 import numpy as np
 import pandas as pd
@@ -1288,6 +1287,7 @@ class ClusteredTriggeredAverages:
 
         """
 
+        import hdbscan
         clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, metric='precomputed')
         cluster_labels = clusterer.fit_predict(1 - self.df_corr)
         unique_labels, label_counts = np.unique(cluster_labels, return_counts=True)

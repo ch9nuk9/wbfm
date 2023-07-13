@@ -16,6 +16,7 @@ dependencies:
   - lmfit
   - pip:
     - tables
+    - statsmodels
     - ppca
     - scikit-learn
     - openpyxl

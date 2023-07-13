@@ -5,7 +5,6 @@ import math
 import os
 from pathlib import Path
 from typing import Union, Optional
-import statsmodels.api as sm
 
 import numpy as np
 import pandas as pd
@@ -985,6 +984,7 @@ class WormFullVideoPosture:
         probability_to_reverse = pd.Series(onset_vec_pad).rolling(center=True, window=window, win_type='gaussian',
                                                                   min_periods=1).mean(std=std)
 
+        import statsmodels.api as sm
         mod = sm.tsa.MarkovRegression(probability_to_reverse, k_regimes=2)
         res = mod.fit()
         binarized_probability_to_reverse = res.predict()
