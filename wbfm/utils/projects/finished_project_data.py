@@ -729,7 +729,7 @@ class ProjectData:
         return self.x_for_plots, y
 
     @lru_cache(maxsize=128)
-    def calc_default_traces(self, min_nonnan: Optional[float] = None, interpolate_nan: bool = False,
+    def calc_default_traces(self, min_nonnan: Optional[float] = 0.75, interpolate_nan: bool = False,
                             raise_error_on_empty: bool = True,
                             neuron_names: tuple = None,
                             residual_mode: Optional[str] = None,
@@ -791,9 +791,6 @@ class ProjectData:
         if neuron_names is None:
             user_passed_neuron_names = False
             neuron_names = tuple(self.neuron_names)
-            if min_nonnan is None:
-                # Default if there is no user input about which neurons to use
-                min_nonnan = 0.75
         else:
             user_passed_neuron_names = True
         if remove_invalid_neurons:
