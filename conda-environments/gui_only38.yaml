@@ -17,7 +17,7 @@ dependencies:
   - pip:
     - tables
     - ppca
-    - sklearn
+    - scikit-learn
     - openpyxl
     - matplotlib
     - sacred
