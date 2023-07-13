@@ -217,14 +217,17 @@ class NapariPropertyHeatMapper:
         return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
 
     def custom_val_to_plot(self, val_to_plot: pd.Series):
-        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+        prop_dict = property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+        return prop_dict
 
 
 def property_vector_to_colormap(val_to_plot, vec_of_labels, cmap=plt.cm.RdBu):
     prop = np.array(val_to_plot)
+    # Scale values to [0, 1]
     prop_scaled = (
-            (prop - prop.min()) / (prop.max() - prop.min())
+            (prop - np.nanmin(prop)) / (np.nanmax(prop) - np.nanmin(prop))
     )  # matplotlib cmaps need values in [0, 1]
+
     colors = cmap(prop_scaled)
     prop_dict = dict(zip(vec_of_labels, colors))
     return prop_dict
