@@ -116,6 +116,7 @@ class ProjectData:
 
     # Will be set as loaded
     final_tracks_fname: str = None
+    intermediate_tracks_fname: str = None
     global2tracklet_fname: str = None
     df_all_tracklets_fname: str = None
     force_tracklets_to_be_sparse: bool = False
@@ -161,6 +162,7 @@ class ProjectData:
         self.all_used_fnames.append(fname)
 
         global_tracks = read_if_exists(fname)
+        self.intermediate_tracks_fname = fname
         return global_tracks
 
     @cached_property

@@ -20,11 +20,11 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None, DEBUG=False)
+ex.add_config(project_path=None, allow_only_global_tracker=False, DEBUG=False)
 
 
 @ex.config
-def cfg(project_path, DEBUG):
+def cfg(project_path, allow_only_global_tracker, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
     cfg.setup_logger('step_4.log')
@@ -43,5 +43,6 @@ def main(_config, _run):
 
     DEBUG = _config['DEBUG']
     project_cfg = _config['cfg']
+    allow_only_global_tracker = _config['allow_only_global_tracker']
 
-    full_step_4_make_traces_from_config(project_cfg, DEBUG)
+    full_step_4_make_traces_from_config(project_cfg, allow_only_global_tracker, DEBUG)

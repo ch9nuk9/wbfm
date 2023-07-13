@@ -20,6 +20,7 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
                                                track_cfg: SubfolderConfigFile,
                                                traces_cfg: SubfolderConfigFile,
                                                project_cfg: ModularProjectConfig,
+                                               allow_only_global_tracker: bool = False,
                                                DEBUG: bool = False) -> None:
     """
     Connect the 3d traces to previously segmented masks
@@ -32,6 +33,14 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     final_tracks = project_data.final_tracks
+
+    # Sanity check: make sure that this is not just the global tracker, unless that is explicitly allowed
+    if not allow_only_global_tracker:
+        # Load the file, which saves which filename was used for the global tracks
+        _ = project_data.intermediate_global_tracks
+        if project_data.final_tracks_fname == project_data.intermediate_tracks_fname:
+            raise ValueError("Final tracks and global tracks are the same. "
+                             "If you want to use the global tracker, set allow_only_global_tracker=True")
 
     # Match -> Reindex raw segmentation -> Get traces
     final_neuron_names = get_names_from_df(final_tracks)
@@ -102,7 +111,7 @@ def reindex_segmentation_using_config(traces_cfg: SubfolderConfigFile,
     return out_fname
 
 
-def full_step_4_make_traces_from_config(project_cfg, DEBUG):
+def full_step_4_make_traces_from_config(project_cfg, allow_only_global_tracker=False, DEBUG=False):
     project_dir = project_cfg.project_dir
     seg_cfg = project_cfg.get_segmentation_config()
     track_cfg = project_cfg.get_tracking_config()
@@ -116,6 +125,7 @@ def full_step_4_make_traces_from_config(project_cfg, DEBUG):
                                                    track_cfg,
                                                    traces_cfg,
                                                    project_cfg,
+                                                   allow_only_global_tracker=allow_only_global_tracker,
                                                    DEBUG=DEBUG)
 
         # Creates segmentations indexed to tracking
