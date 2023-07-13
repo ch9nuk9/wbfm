@@ -115,6 +115,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.changeChannelDropdown = QtWidgets.QComboBox()
         self.changeChannelDropdown.addItems(['green', 'red', 'ratio', 'linear_model', 'df_over_f_20', 'dr_over_r_20'])
+        self.changeChannelDropdown.setCurrentText('ratio')
         self.changeChannelDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.vbox1.addWidget(self.changeChannelDropdown)
 
@@ -174,6 +175,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceFilteringDropdown = QtWidgets.QComboBox()
         self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation',
                                                     'strong_rolling_mean', 'bilateral'])
+        self.changeTraceFilteringDropdown.setCurrentText('rolling_mean')
         self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Trace filtering:", self.changeTraceFilteringDropdown)
         # Change trace outlier removal (checkbox)
