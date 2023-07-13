@@ -654,6 +654,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     )
                     if seg_index == 0:
                         self.logger.debug("Clicked on background, not a neuron")
+                        return
 
                     # The segmentation index should be the same as the name
                     neuron_name = int2name_neuron(seg_index)
