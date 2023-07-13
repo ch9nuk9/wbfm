@@ -23,7 +23,8 @@ from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
-    build_tracks_from_dataframe, zoom_using_viewer, add_fps_printer, on_close
+    zoom_using_viewer, add_fps_printer, on_close
+from wbfm.utils.external.utils_pandas import build_tracks_from_dataframe
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 cgitb.enable(format='text')

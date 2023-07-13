@@ -22,7 +22,6 @@ from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 import os
 from dataclasses import dataclass
 from typing import Tuple, Dict, Union, List, Optional
-import napari
 import numpy as np
 import pandas as pd
 import zarr
@@ -1217,7 +1216,7 @@ class ProjectData:
         return self.which_training_frames[i]
 
     def napari_of_single_match(self, pair, which_matches='final_matches', this_match: FramePair = None,
-                               rigidly_align_volumetric_images=False, min_confidence=0.0) -> napari.Viewer:
+                               rigidly_align_volumetric_images=False, min_confidence=0.0):
         """
         Visualize the matches between two volumes, including the raw segmentation
 
@@ -1256,7 +1255,7 @@ class ProjectData:
 
     def add_layers_to_viewer(self, viewer=None, which_layers: Union[str, List[Union[str, Tuple]]] = 'all',
                              to_remove_flyback=False, check_if_layers_exist=False,
-                             dask_for_segmentation=True, **kwargs) -> napari.Viewer:
+                             dask_for_segmentation=True, **kwargs):
         """
         Add layers corresponding to any analysis steps to a napari viewer object
 

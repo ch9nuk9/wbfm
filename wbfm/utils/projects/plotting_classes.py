@@ -7,14 +7,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Union, Dict, Tuple, Optional, Set
 from copy import deepcopy
-import napari
 import numpy as np
 import pandas as pd
 import zarr
 from backports.cached_property import cached_property
 from sklearn.pipeline import Pipeline
 
-from wbfm.utils.external.utils_pandas import cast_int_or_nan
+from wbfm.utils.external.utils_pandas import cast_int_or_nan, build_tracks_from_dataframe
 from matplotlib import pyplot as plt
 
 from wbfm.utils.general.custom_errors import DataSynchronizationError
@@ -26,7 +25,6 @@ from wbfm.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_t
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from segmentation.util.utils_metadata import DetectedNeurons
 from segmentation.util.utils_postprocessing import split_neuron_interactive
-from wbfm.gui.utils.utils_gui import build_tracks_from_dataframe
 from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \
@@ -1051,7 +1049,7 @@ class TrackletAndSegmentationAnnotator:
     def tracklet_updated_callbacks(self):
         [callback() for callback in self.tracklet_callbacks]
 
-    def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer: napari.Viewer,
+    def connect_tracklet_clicking_callback(self, layer_to_add_callback, viewer,
                                            added_segmentation_callbacks,
                                            added_tracklet_callbacks,
                                            select_neuron_callback,

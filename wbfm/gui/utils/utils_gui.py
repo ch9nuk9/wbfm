@@ -5,11 +5,8 @@ import sys
 
 import napari
 import numpy as np
-from PIL.Image import Image
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QPushButton, QComboBox, QVBoxLayout, QWidget, QApplication, QMessageBox
-from imageio import imread
-from matplotlib import pyplot as plt
 
 from wbfm.utils.general.postprocessing.base_cropping_utils import get_crop_coords3d
 from wbfm.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume, \
@@ -168,42 +165,6 @@ def change_viewer_time_point(viewer: napari.Viewer,
     viewer.dims.current_step = tzxy
 
     return tzxy
-
-
-def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None, z_to_xy_ratio=1.0):
-    # Just visualize one neuron for now
-    # 5 columns:
-    # track_id, t, z, y, x
-    try:
-        coords = ['z', 'x', 'y']
-        zxy_array = df_single_track[coords].to_numpy(copy=True)
-    except KeyError:
-        coords = ['z_dlc', 'x_dlc', 'y_dlc']
-        zxy_array = df_single_track[coords].to_numpy(copy=True)
-
-    zxy_array = np.copy(zxy_array)
-
-    all_tracks_list = []
-    t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
-
-    if likelihood_thresh is not None and 'likelihood' in df_single_track:
-        to_remove = df_single_track['likelihood'] < likelihood_thresh
-    else:
-        to_remove = np.zeros_like(zxy_array[:, 0], dtype=bool)
-    zxy_array[to_remove, :] = 0
-
-    # Also remove values that are entirely nan
-    rows_not_nan = ~(np.isnan(zxy_array)[:, 0])
-    zxy_array = zxy_array[rows_not_nan, :]
-    zxy_array[:, 0] *= z_to_xy_ratio
-    t_array = t_array[rows_not_nan, :]
-
-    all_tracks_list.append(np.hstack([t_array, zxy_array]))
-    all_tracks_array = np.vstack(all_tracks_list)
-
-    track_of_point = np.hstack([np.ones((all_tracks_array.shape[0], 1)), all_tracks_array])
-
-    return all_tracks_array, track_of_point, to_remove
 
 
 def add_fps_printer(viewer):

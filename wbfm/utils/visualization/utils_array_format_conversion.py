@@ -1,9 +1,4 @@
-import os
-import napari
 import numpy as np
-import zarr
-
-from wbfm.utils.projects.utils_project import safe_cd
 
 
 def dlc_to_napari_tracks(df, likelihood_thresh=0.4):

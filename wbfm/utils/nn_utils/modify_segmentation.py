@@ -1,9 +1,8 @@
-import napari
 import numpy as np
 import skimage
 
 
-def remove_local_percentile_using_napari(viewer: napari.Viewer, sigma=1, percentile=10):
+def remove_local_percentile_using_napari(viewer, sigma=1, percentile=10):
 
     t = viewer.dims.current_step[0]
     red_dat = np.array(viewer.layers['red_dat'].data[t, ...])

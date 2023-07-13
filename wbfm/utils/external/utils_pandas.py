@@ -800,3 +800,39 @@ def make_binary_vector_from_starts_and_ends(starts, ends, original_vals, pad_nan
         idx_boolean[s:e] = 1
 
     return idx_boolean
+
+
+def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None, z_to_xy_ratio=1.0):
+    # Just visualize one neuron for now
+    # 5 columns:
+    # track_id, t, z, y, x
+    try:
+        coords = ['z', 'x', 'y']
+        zxy_array = df_single_track[coords].to_numpy(copy=True)
+    except KeyError:
+        coords = ['z_dlc', 'x_dlc', 'y_dlc']
+        zxy_array = df_single_track[coords].to_numpy(copy=True)
+
+    zxy_array = np.copy(zxy_array)
+
+    all_tracks_list = []
+    t_array = np.expand_dims(np.arange(zxy_array.shape[0]), axis=1)
+
+    if likelihood_thresh is not None and 'likelihood' in df_single_track:
+        to_remove = df_single_track['likelihood'] < likelihood_thresh
+    else:
+        to_remove = np.zeros_like(zxy_array[:, 0], dtype=bool)
+    zxy_array[to_remove, :] = 0
+
+    # Also remove values that are entirely nan
+    rows_not_nan = ~(np.isnan(zxy_array)[:, 0])
+    zxy_array = zxy_array[rows_not_nan, :]
+    zxy_array[:, 0] *= z_to_xy_ratio
+    t_array = t_array[rows_not_nan, :]
+
+    all_tracks_list.append(np.hstack([t_array, zxy_array]))
+    all_tracks_array = np.vstack(all_tracks_list)
+
+    track_of_point = np.hstack([np.ones((all_tracks_array.shape[0], 1)), all_tracks_array])
+
+    return all_tracks_array, track_of_point, to_remove

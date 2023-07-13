@@ -6,7 +6,7 @@ import scipy.ndimage as ndi
 import cv2
 import numpy as np
 import pandas as pd
-from wbfm.utils.visualization.napari_from_config import napari_tracks_from_match_list
+from wbfm.utils.visualization.utils_array_format_conversion import napari_tracks_from_match_list
 from napari.utils.transforms import Affine
 from segmentation.util.utils_metadata import DetectedNeurons
 from wbfm.utils.external.utils_cv2 import cast_matches_as_array
