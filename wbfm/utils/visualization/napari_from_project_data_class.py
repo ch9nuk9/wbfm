@@ -8,6 +8,7 @@ import zarr
 from tqdm.auto import tqdm
 
 from wbfm.gui.utils.utils_gui import change_viewer_time_point
+from wbfm.utils.general.custom_errors import MissingAnalysisError
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 import napari
 
