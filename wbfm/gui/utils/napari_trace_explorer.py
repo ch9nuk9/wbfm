@@ -660,7 +660,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
                     # The segmentation index should be the same as the name
                     neuron_name = int2name_neuron(seg_index)
-                    self.logger.info(f"Clicked on segmentation {seg_index}, corresponding to {neuron_name}")
+                    self.logger.debug(f"Clicked on segmentation {seg_index}, corresponding to {neuron_name}")
                     self.select_neuron(neuron_name)
 
     def connect_napari_callbacks(self):
