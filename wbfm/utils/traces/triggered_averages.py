@@ -930,7 +930,8 @@ class ClusteredTriggeredAverages:
 
         return clustergram
 
-    def plot_clustergram_matplotlib(self, output_folder=None, use_labels=False, no_dendrogram=True, ax=None):
+    def plot_clustergram_matplotlib(self, output_folder=None, use_labels=False,
+                                    no_dendrogram=True, ax=None, figsize=(5, 2)):
         """
         Similar to plot_clustergram but uses matplotlib (not interactive) instead of plotly
 
@@ -947,11 +948,12 @@ class ClusteredTriggeredAverages:
 
         if ax is None:
             if no_dendrogram:
-                fig, ax = plt.subplots(dpi=200, figsize=(5/2, 2))
+                figsize = (figsize[0] / 2, figsize[1])
+                fig, ax = plt.subplots(dpi=200, figsize=figsize)
                 ax_dend = None
                 # ax.set_title("Dendrogram-matched correlations")
             else:
-                fig, (ax_dend, ax) = plt.subplots(2, 1, dpi=200, figsize=(5, 2))
+                fig, (ax_dend, ax) = plt.subplots(2, 1, dpi=200, figsize=figsize)
                 ax.set_box_aspect(1)
                 ax_dend.set_box_aspect(1)
                 ax_dend.set_title("Dendrogram-matched correlations")
@@ -1061,7 +1063,8 @@ class ClusteredTriggeredAverages:
             i = int((i + (i - 1) // 9) % 10)
             cmap = matplotlib.colormaps[self.cluster_cmap]
             # This is a global variable... probably shouldn't be reset every time
-            hierarchy.set_link_color_palette(cmap)
+            cmap_hex = [matplotlib.colors.rgb2hex(rgba) for rgba in cmap.colors]
+            hierarchy.set_link_color_palette(cmap_hex)
             return cmap(i)
         elif isinstance(self.cluster_cmap, list):
             hierarchy.set_link_color_palette(self.cluster_cmap)
@@ -2107,7 +2110,9 @@ def calc_time_series_from_starts_and_ends(all_starts, all_ends, num_pts, min_dur
     return state_trace
 
 
-def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt=None, **kwargs):
+def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt=None, **kwargs) \
+        -> Tuple[ClusteredTriggeredAverages,
+        Tuple[Dict[str, FullDatasetTriggeredAverages], pd.DataFrame, Dict[str, pd.DataFrame]]]:
     """
     See ClusteredTriggeredAverages.load_from_project for kwargs
 
