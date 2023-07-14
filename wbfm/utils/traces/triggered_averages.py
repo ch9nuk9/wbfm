@@ -323,7 +323,9 @@ class TriggeredAverageIndices:
             triggered_avg = triggered_avg[:xmax]
             triggered_lower_std = triggered_lower_std[:xmax]
             triggered_upper_std = triggered_upper_std[:xmax]
-        raw_trace_mean = np.nanmean(triggered_avg)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            raw_trace_mean = np.nanmean(triggered_avg)
         is_valid = len(triggered_avg) > 0 and np.count_nonzero(~np.isnan(triggered_avg)) > 0
         return raw_trace_mean, triggered_avg, triggered_lower_std, triggered_upper_std, xmax, is_valid
 
@@ -822,6 +824,7 @@ class ClusteredTriggeredAverages:
         if self.verbose >= 1:
             print("Calculating correlation")
         df_corr = self.df_triggered.corr()
+        df_corr.replace(np.nan, 0, inplace=True)
         self.df_corr = df_corr
 
         # Calculate clustering using a cache for further analysis
@@ -1032,8 +1035,11 @@ class ClusteredTriggeredAverages:
                 pseudo_mat.append(triggered_avg)
             # Normalize the traces to be similar to the correlation, i.e. z-score them
             pseudo_mat = np.stack(pseudo_mat)
-            pseudo_mat = pseudo_mat - np.nanmean(pseudo_mat, axis=1, keepdims=True)
-            pseudo_mat = pseudo_mat / np.nanstd(pseudo_mat, axis=1, keepdims=True)
+            # Ignore runtime warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                pseudo_mat = pseudo_mat - np.nanmean(pseudo_mat, axis=1, keepdims=True)
+                pseudo_mat = pseudo_mat / np.nanstd(pseudo_mat, axis=1, keepdims=True)
             # Plot
             ind_class.plot_triggered_average_from_matrix(pseudo_mat, ax, show_individual_lines=True)
             plt.title(f"Triggered Averages of cluster {i_clust} ({pseudo_mat.shape[0]} traces)")
