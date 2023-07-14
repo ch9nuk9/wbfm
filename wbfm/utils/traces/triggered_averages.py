@@ -804,7 +804,7 @@ class ClusteredTriggeredAverages:
 
     cluster_func: Callable = field(default=hierarchy.fcluster)
 
-    cluster_cmap: Union[str, dict, list] = 'tab20'
+    cluster_cmap: Union[str, dict, list] = 'tab10'
 
     # For plotting individual traces
     _df_traces: pd.DataFrame = None
