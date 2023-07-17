@@ -216,9 +216,9 @@ class BehaviorCodes(Flag):
                 cls.REV | cls.SELF_COLLISION | cls.DORSAL_TURN: base_cmap[1],
                 cls.REV | cls.SELF_COLLISION | cls.VENTRAL_TURN: base_cmap[1],
                 # Unclear
-                cls.QUIESCENCE: base_cmap[4],
-                cls.QUIESCENCE | cls.VENTRAL_TURN: base_cmap[4],
-                cls.QUIESCENCE | cls.DORSAL_TURN: base_cmap[4],
+                cls.QUIESCENCE: base_cmap[6],
+                cls.QUIESCENCE | cls.VENTRAL_TURN: base_cmap[6],
+                cls.QUIESCENCE | cls.DORSAL_TURN: base_cmap[6],
                 }
         if include_turns:
             cmap[cls.FWD | cls.VENTRAL_TURN] = base_cmap[2]

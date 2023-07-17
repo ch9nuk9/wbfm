@@ -1904,9 +1904,6 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     if t_start is not None:
         pca_proj = pca_proj[t_start:, :]
 
-    # TODO: color by fwd/rev
-    # TODO: smooth
-    # TODO: Remove outlier
     c = 'tab:red'
     for s, e in zip(starts_rev, ends_rev):
         e += 1
