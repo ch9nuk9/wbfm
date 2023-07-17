@@ -197,20 +197,34 @@ class BehaviorCodes(Flag):
         return px.colors.qualitative.Set1_r
 
     @classmethod
-    def ethogram_cmap(cls, include_reversal_turns=False):
+    def ethogram_cmap(cls, include_turns=True, include_reversal_turns=False):
         """Colormap for shading as a stand-alone ethogram"""
         base_cmap = cls.base_colormap()
         cmap = {cls.UNKNOWN: None,
                 cls.FWD: base_cmap[0],
                 cls.REV: base_cmap[1],
-                cls.FWD | cls.VENTRAL_TURN: base_cmap[2],
-                cls.FWD | cls.DORSAL_TURN: base_cmap[3],
-                # Same as REV
+                # Same as FWD by default
+                cls.FWD | cls.VENTRAL_TURN: base_cmap[0],
+                cls.FWD | cls.DORSAL_TURN: base_cmap[0],
+                cls.FWD | cls.SELF_COLLISION: base_cmap[0],
+                cls.FWD | cls.SELF_COLLISION | cls.DORSAL_TURN: base_cmap[0],
+                cls.FWD | cls.SELF_COLLISION | cls.VENTRAL_TURN: base_cmap[0],
+                # Same as REV by default
                 cls.REV | cls.VENTRAL_TURN: base_cmap[1],
                 cls.REV | cls.DORSAL_TURN: base_cmap[1],
+                cls.REV | cls.SELF_COLLISION: base_cmap[1],
+                cls.REV | cls.SELF_COLLISION | cls.DORSAL_TURN: base_cmap[1],
+                cls.REV | cls.SELF_COLLISION | cls.VENTRAL_TURN: base_cmap[1],
                 # Unclear
                 cls.QUIESCENCE: base_cmap[4],
+                cls.QUIESCENCE | cls.VENTRAL_TURN: base_cmap[4],
+                cls.QUIESCENCE | cls.DORSAL_TURN: base_cmap[4],
                 }
+        if include_turns:
+            cmap[cls.FWD | cls.VENTRAL_TURN] = base_cmap[2]
+            cmap[cls.FWD | cls.DORSAL_TURN] = base_cmap[3]
+            cmap[cls.REV | cls.VENTRAL_TURN] = base_cmap[1]
+            cmap[cls.REV | cls.DORSAL_TURN] = base_cmap[1]
         if include_reversal_turns:
             cmap[cls.REV | cls.VENTRAL_TURN] = base_cmap[4]
             cmap[cls.REV | cls.DORSAL_TURN] = base_cmap[5]
