@@ -228,6 +228,35 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name, connect_at
     Plotly can't handle gaps in a dataframe when splitting by state, so new columns should be created with explicit gaps
     where the state is off
 
+    Note that this creates a large number of segments, which should be plotted using a loop
+
+    Example:
+        # Load data
+        df = pd.DataFrame({'mode 0': [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                            'mode 1': [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                            'mode 2': [1, 2, 3, 4, 5, 6, 7, 8, 9]})
+
+        # Get state information, with optional coloring. Note that the states will be an enum
+        df['state'] = project_data_gcamp.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True,
+                                                                                  include_collision=False)
+        ethogram_cmap = BehaviorCodes.ethogram_cmap(include_turns=True, include_reversal_turns=False)
+
+        # Create modified dataframe using this function
+        df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df, [0, 1, 2], 'state')
+
+        # Loop to prep each line, then plot
+        state_codes = df['state'].unique()
+        phase_plot_list = []
+        for i, state_code in enumerate(state_codes):
+            phase_plot_list.append(
+                        go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]], mode='lines',
+                                     name=state_code.full_name, line=dict(color=ethogram_cmap.get(state_code, None), width=4)))
+
+        fig = go.Figure()
+        fig.add_traces(phase_plot_list)
+        fig.show()
+
+
     See:
     https://stackoverflow.com/questions/70407755/plotly-express-conditional-coloring-doesnt-work-properly/70408557#70408557
 
@@ -235,7 +264,7 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name, connect_at
     ----------
     df
     x_name
-    state_name: Should be the name of a binary column
+    state_name: Should be the name of a BehaviorCodes enum or binary column
     connect_at_transition
 
     Returns
