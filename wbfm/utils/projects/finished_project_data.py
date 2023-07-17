@@ -698,7 +698,7 @@ class ProjectData:
 
         behavior_dict = {}
         for code in behavior_codes:
-            behavior_dict[code] = self.calculate_behavior_trace(code, **kwargs)
+            behavior_dict[code] = self.calculate_behavior_trace(code, **kwargs)[1]
 
         df = pd.DataFrame(behavior_dict)
         # Optional: nan time points that are estimated to have a tracking error (either global or per-neuron)
