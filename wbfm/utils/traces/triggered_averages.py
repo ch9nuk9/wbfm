@@ -1121,7 +1121,7 @@ class ClusteredTriggeredAverages:
             "neuron_029": 4,  # Unknown FWD neuron, purple
             "neuron_008": 0,  # RIS, blue
             "neuron_060": 1,  # AVAL, orange
-            "neuron_033": 2,  # Turning neuron (SMDDR?), green
+            "neuron_033": 2,  # Ventral turning neuron (SMDDR?), green
             "neuron_076": 3,  # RID (after turn), red
         }
         # Prepend project name to keys
@@ -1138,7 +1138,7 @@ class ClusteredTriggeredAverages:
                 if neuron_name in names_in_clust:
                     custom_cmap[i_clust] = base_cmap(color)
                     if verbose >= 1:
-                        print(f"Setting cluster {i_clust} to color {color} ({neuron_name})")
+                        print(f"Setting cluster {i_clust} ({len(names_in_clust)} traces) to color {color} ({neuron_name})")
                     break
             else:
                 if other_color_offset is None:
@@ -1172,9 +1172,11 @@ class ClusteredTriggeredAverages:
 
         if cluster_color_func is None:
             cluster_color_func = self.cluster_color_func
-        i_clust_actually_plotted = 0  # Used for determining the color
+        i_clust_non_singleton = 0  # The scipy function skips colors for singleton clusters
         for i_clust, name_list in per_cluster_names.items():
             name_list = list(name_list)
+            if len(name_list) > 1:
+                i_clust_non_singleton += 1
             if len(name_list) < min_lines:
                 print(f"Skipping cluster {i_clust} with {len(name_list)} lines")
                 continue
@@ -1189,9 +1191,8 @@ class ClusteredTriggeredAverages:
                 continue
             plot_opt = dict(show_individual_lines=show_individual_lines, is_second_plot=False, xlim=xlim)
             if cluster_color_func is not None:
-                i_clust_actually_plotted += 1
-                # cluster_color = cluster_color_func(i_clust_actually_plotted)
-                cluster_color = cluster_color_func(i_clust)
+                cluster_color = cluster_color_func(i_clust_non_singleton)
+                # cluster_color = cluster_color_func(i_clust)
                 plot_opt['color'] = cluster_color
             # these_corr = self.df_corr.loc[name_list[0], name_list[1:]]
             # avg_corr = these_corr.mean()
