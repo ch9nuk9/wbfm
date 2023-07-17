@@ -1097,6 +1097,10 @@ class ClusteredTriggeredAverages:
             raise ValueError(f"Unknown cluster_cmap type {type(self.cluster_cmap)}")
         return color
 
+    def reset_cluster_cmap(self):
+        self.cluster_cmap = 'tab10'
+        self.set_global_scipy_cmap(force_reset=True)
+
     def map_clusters_using_paper_cmap(self, base_cmap=None, other_color_offset=None, verbose=0):
         """
         Uses hard-coded colors as determined by belonging of target neurons in an example dataset
