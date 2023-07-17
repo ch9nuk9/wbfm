@@ -1120,7 +1120,7 @@ class ClusteredTriggeredAverages:
         # Hard code the mapping of specific neurons to clusters
         # Prioritization goes from top to bottom, if there are multiple neurons within the same cluster
         neuron2color = {
-            "neuron_029": 4,  # Unknown FWD neuron, purple
+            "neuron_056": 4,  # Unknown FWD neuron, possibly RIBL, purple... alt: neuron_029
             "neuron_008": 0,  # RIS, blue
             "neuron_060": 1,  # AVAL, orange
             "neuron_033": 2,  # Ventral turning neuron (SMDDR?), green
