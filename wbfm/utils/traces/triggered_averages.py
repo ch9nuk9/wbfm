@@ -1987,6 +1987,8 @@ class ClusteredTriggeredAverages:
 
             # We want a color for every cluster, even if there isn't a plot here
             cluster_names = list(self.per_cluster_names.keys())
+            # Remove singleton clusters
+            cluster_names = [i for i in cluster_names if len(self.per_cluster_names[i]) > 1]
             color_sequence = [self.cluster_color_func(i + 1) for i, name in enumerate(cluster_names)]
             custom_cmap = LinearSegmentedColormap.from_list('clusters', color_sequence)
 
