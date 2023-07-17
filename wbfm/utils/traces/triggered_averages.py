@@ -1074,7 +1074,9 @@ class ClusteredTriggeredAverages:
         elif isinstance(self.cluster_cmap, list):
             hierarchy.set_link_color_palette(self.cluster_cmap)
         elif isinstance(self.cluster_cmap, dict):
-            hierarchy.set_link_color_palette(list(self.cluster_cmap.values()))
+            # We need a list, but we want to remove any keys associated with singleton clusters
+            cmap_list = [self.cluster_cmap[i] for i in self.cluster_cmap.keys() if len(self.per_cluster_names[i]) > 1]
+            hierarchy.set_link_color_palette(cmap_list)
         else:
             raise ValueError("cluster_cmap must be a string, list or dict")
 
@@ -1191,8 +1193,11 @@ class ClusteredTriggeredAverages:
                 continue
             plot_opt = dict(show_individual_lines=show_individual_lines, is_second_plot=False, xlim=xlim)
             if cluster_color_func is not None:
-                cluster_color = cluster_color_func(i_clust_non_singleton)
-                # cluster_color = cluster_color_func(i_clust)
+                # I need to account for singleton clusters here, unless it is a dictionary
+                if isinstance(self.cluster_cmap, dict):
+                    cluster_color = cluster_color_func(i_clust)
+                else:
+                    cluster_color = cluster_color_func(i_clust_non_singleton)
                 plot_opt['color'] = cluster_color
             # these_corr = self.df_corr.loc[name_list[0], name_list[1:]]
             # avg_corr = these_corr.mean()
