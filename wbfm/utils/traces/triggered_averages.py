@@ -807,6 +807,7 @@ class ClusteredTriggeredAverages:
     cluster_func: Callable = field(default=hierarchy.fcluster)
 
     cluster_cmap: Union[str, dict, list] = 'tab10'
+    cluster_cmap_is_set: bool = False
 
     # For plotting individual traces
     _df_traces: pd.DataFrame = None
@@ -831,6 +832,9 @@ class ClusteredTriggeredAverages:
         self._do_clustering(*self.clust_args)
         if self.verbose >= 1:
             print(f"Finished initializing with {len(self.per_cluster_names)} clusters")
+
+        if not self.cluster_cmap_is_set:
+            self.set_global_scipy_cmap()
 
     @lru_cache(maxsize=16)
     def _do_clustering(self, linkage_threshold, cluster_criterion, linkage_method):
@@ -970,8 +974,6 @@ class ClusteredTriggeredAverages:
         if not use_labels:
             ax.set_xticks([])
             ax.set_yticks([])
-        # ax.colorbar()
-        # plt.colorbar()
         # From: https://stackoverflow.com/questions/32462881/add-colorbar-to-existing-axis
         divider = make_axes_locatable(ax)
         cax = divider.append_axes('right', size='5%', pad=0.05)
@@ -1060,28 +1062,42 @@ class ClusteredTriggeredAverages:
         self.plot_clusters_from_names(get_matrix_from_names, per_cluster_names, min_lines, ind_preceding, xlim, z_score,
                                       output_folder, **kwargs)
 
+    def set_global_scipy_cmap(self, force_reset=False):
+        if not force_reset and self.cluster_cmap_is_set:
+            return
+        # Set the cluster color map depending on type of cluster_cmap
+        if isinstance(self.cluster_cmap, str):
+            cmap = matplotlib.colormaps[self.cluster_cmap]
+            # This is a global variable... probably shouldn't be reset every time
+            cmap_hex = [matplotlib.colors.rgb2hex(rgba) for rgba in cmap.colors[1:]]
+            hierarchy.set_link_color_palette(cmap_hex)
+        elif isinstance(self.cluster_cmap, list):
+            hierarchy.set_link_color_palette(self.cluster_cmap)
+        elif isinstance(self.cluster_cmap, dict):
+            hierarchy.set_link_color_palette(list(self.cluster_cmap.values()))
+        else:
+            raise ValueError("cluster_cmap must be a string, list or dict")
+
+        self.cluster_cmap_is_set = True
+
     def cluster_color_func(self, i):
-        # By default, self.cluster_cmap is a string, but it may be a list
+        # By default, self.cluster_cmap is a string, but map_clusters_using_paper_cmap changes it to a list
         if isinstance(self.cluster_cmap, str):
             # The dendrogram has a funny default, where the 0 color is reserved for non-clusters, and is skipped
             # So in principle I want the modular division of i, but if i > 10 I have to add 1
             # We want to skip 0, 10, 20, etc.
             i = int((i + (i - 1) // 9) % 10)
             cmap = matplotlib.colormaps[self.cluster_cmap]
-            # This is a global variable... probably shouldn't be reset every time
-            cmap_hex = [matplotlib.colors.rgb2hex(rgba) for rgba in cmap.colors]
-            hierarchy.set_link_color_palette(cmap_hex)
-            return cmap(i)
+            color = cmap(i)
         elif isinstance(self.cluster_cmap, list):
-            hierarchy.set_link_color_palette(self.cluster_cmap)
-            return self.cluster_cmap[i]
+            color = self.cluster_cmap[i]
         elif isinstance(self.cluster_cmap, dict):
-            hierarchy.set_link_color_palette(list(self.cluster_cmap.values()))
-            return self.cluster_cmap[i]
+            color = self.cluster_cmap[i]
         else:
             raise ValueError(f"Unknown cluster_cmap type {type(self.cluster_cmap)}")
+        return color
 
-    def set_paper_cluster_cmap(self, base_cmap=None, other_color_offset=None, verbose=0):
+    def map_clusters_using_paper_cmap(self, base_cmap=None, other_color_offset=None, verbose=0):
         """
         Uses hard-coded colors as determined by belonging of target neurons in an example dataset
 
@@ -1135,6 +1151,7 @@ class ClusteredTriggeredAverages:
 
         # Finally set the cmap
         self.cluster_cmap = custom_cmap
+        self.set_global_scipy_cmap(force_reset=True)
 
     def plot_clusters_from_names(self, get_matrix_from_names, per_cluster_names, min_lines=2,
                                  ind_preceding=None, xlim=None, z_score=False, output_folder=None,
