@@ -264,6 +264,25 @@ class BehaviorCodes(Flag):
             return False
         return value in (cls.SUPERCOIL, cls.QUIESCENCE)
 
+    @property
+    def full_name(self):
+        """
+        Simple states will properly return a name, but if it is a compound state it will be None by default
+        ... unfortunately the enum class relies on certain names being None, so I have to have a separate
+        property for this
+
+        Returns
+        -------
+
+        """
+        if self._name_ is not None:
+            return self._name_
+        else:
+            # Convert a string like 'BehaviorCodes.DORSAL_TURN|REV' to 'DORSAL_TURN and REV'
+            split_name = self.__str__().split('.')[-1]
+            full_name = split_name.replace('|', ' and ')
+            return full_name
+
 
 def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False):
     """
