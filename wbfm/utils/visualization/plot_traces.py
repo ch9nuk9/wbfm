@@ -1114,7 +1114,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         )
     )
 
-    # fig.update_xaxes(dict(showticklabels=True), row=6, col=1, overwrite=True)
+    fig.update_xaxes(dict(showticklabels=True, title='Time (seconds)'), row=6, col=1, overwrite=True,)
     # fig.update_yaxes(dict(showticklabels=True), row=6, col=1, overwrite=True)
 
     fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
@@ -1260,7 +1260,6 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     # TODO: move the reindexing to the worm posture class itself
     speed = pd.DataFrame(speed)
     speed.set_index(x, inplace=True)
-    print(speed)
 
     df_pca_weights = pd.DataFrame(pca_weights.components_[0:num_pca_modes_to_plot, :].T)
     col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
@@ -1313,7 +1312,6 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         trace_shading_opt = dict()
     ### Speed plot (below pca modes)
     trace_list.append(go.Scatter(y=speed.iloc[:, 0], x=speed.index))
-    print(trace_list)
     trace_opt_list.append(dict(row=num_pca_modes_to_plot + 3, col=1, secondary_y=False))
     ### PCA weights (same names as pca modes)
     mode_colormap = px.colors.qualitative.Plotly
