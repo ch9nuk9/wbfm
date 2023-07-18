@@ -33,8 +33,29 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines,
                                                  show_individual_lines, is_second_plot, ax, xlim=None, z_score=False,
-                                                 show_shading=True, fps=1,
+                                                 show_shading=True,
                                                  **kwargs):
+    """
+    Plot a triggered average from a matrix of traces
+
+    Parameters
+    ----------
+    triggered_avg_matrix: shape should be (n_lines, n_timepoints); if a dataframe, then time should be the column names
+    ind_preceding: index of the timepoint of the event
+    min_lines
+    show_individual_lines
+    is_second_plot: if true, doesn't plot the reference lines again or set the labels
+    ax
+    xlim
+    z_score
+    show_shading
+    fps
+    kwargs
+
+    Returns
+    -------
+
+    """
     # Get y values
     raw_trace_mean, triggered_avg, triggered_lower_std, triggered_upper_std, xmax, is_valid = \
         TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines=min_lines,
@@ -1210,7 +1231,9 @@ class ClusteredTriggeredAverages:
                 pseudo_mat = pseudo_mat - np.nanmean(pseudo_mat, axis=1, keepdims=True)
                 pseudo_mat = pseudo_mat / np.nanstd(pseudo_mat, axis=1, keepdims=True)
             # Plot
-            if np.isnan(pseudo_mat).all():
+            if isinstance(pseudo_mat, pd.DataFrame) and np.isnan(pseudo_mat).values.all():
+                continue
+            elif isinstance(pseudo_mat, np.ndarray) and np.isnan(pseudo_mat).all():
                 continue
             plot_opt = dict(show_individual_lines=show_individual_lines, is_second_plot=False, xlim=xlim)
             if cluster_color_func is not None:
@@ -1225,7 +1248,7 @@ class ClusteredTriggeredAverages:
             plot_triggered_average_from_matrix_low_level(pseudo_mat, ind_preceding, min_lines,
                                                          ax=ax, **plot_opt)
             plt.title(f"Triggered Averages of cluster {i_clust} ({pseudo_mat.shape[0]} traces)")
-            plt.xlabel("Time")
+            plt.xlabel("Time (seconds)")
             plt.tight_layout()
 
             shade_triggered_average(ind_preceding, xlim, behavior_shading_type, ax)
@@ -1351,7 +1374,7 @@ class ClusteredTriggeredAverages:
 
         return len(unique_labels) - 1, label_counts
 
-    def get_subset_triggered_average_matrix(self, name_list: List[str] = None) -> np.ndarray:
+    def get_subset_triggered_average_matrix(self, name_list: List[str] = None) -> pd.DataFrame:
         # Build a pseudo-triggered average matrix, made of the means of each neuron
         pseudo_mat = []
         if name_list is None:
@@ -1359,7 +1382,8 @@ class ClusteredTriggeredAverages:
         for name in name_list:
             triggered_avg = self.df_triggered[name].copy()
             pseudo_mat.append(triggered_avg)
-        pseudo_mat = np.stack(pseudo_mat)
+        pseudo_mat = pd.concat(pseudo_mat, axis=1)
+        pseudo_mat = pseudo_mat.T
         return pseudo_mat
 
     def get_triggered_matrix_all_events_from_names(self, name_list: List[str] = None) -> \
