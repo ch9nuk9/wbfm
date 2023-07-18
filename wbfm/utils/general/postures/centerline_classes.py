@@ -22,7 +22,8 @@ from wbfm.utils.external.utils_self_collision import calculate_self_collision_us
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate, \
     shade_using_behavior
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
-from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError
+from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
+    MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
@@ -109,7 +110,7 @@ class WormFullVideoPosture:
         if df is None:
             return df
         elif self.beh_annotation_already_converted_to_fluorescence_fps and not fluorescence_fps:
-            raise ValueError("Full fps annotation requested, but only low resolution exists")
+            raise MissingAnalysisError("Full fps annotation requested, but only low resolution exists")
         else:
             # Get cleaned and downsampled dataframe
             needs_subsampling = fluorescence_fps and not self.beh_annotation_already_converted_to_fluorescence_fps
@@ -541,8 +542,9 @@ class WormFullVideoPosture:
         if include_turns and self._turn_annotation() is not None:
             # Note that the turn annotation is one frame shorter than the behavior annotation
             beh = beh + self._turn_annotation(fluorescence_fps=False, reset_index=False)
-
-        return self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
+        beh_vec = self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
+        BehaviorCodes.assert_all_are_valid(beh_vec)
+        return beh_vec
 
     @lru_cache(maxsize=64)
     def summed_curvature_from_kymograph(self, fluorescence_fps=False, start_segment=30, end_segment=80,
@@ -760,7 +762,7 @@ class WormFullVideoPosture:
                 print(velocity, rev_ind)
                 raise e
         else:
-            raise ValueError(f"Velocity ({len(velocity)}) and reversal indices ({len(rev_ind)}) are desynchronized")
+            raise DataSynchronizationError(f"Velocity ({len(velocity)}) and reversal indices ({len(rev_ind)}) are desynchronized")
 
         return velocity
 
@@ -1166,14 +1168,14 @@ class WormFullVideoPosture:
         if not fluorescence_fps:
             raise NotImplementedError("Empirical distribution is only implemented for fluorescence fps")
         if not state in (BehaviorCodes.FWD, BehaviorCodes.REV):
-            raise ValueError("Only fwd and rev are implemented")
+            raise NotImplementedError("Only fwd and rev are implemented")
         # Load the hardcoded empirical distribution
         if BehaviorCodes.FWD == state:
             duration_dict = forward_distribution_statistics()
         elif BehaviorCodes.REV == state:
             duration_dict = reverse_distribution_statistics()
         else:
-            raise ValueError("Only fwd and rev are implemented")
+            raise NotImplementedError("Only fwd and rev are implemented")
         y_dat = duration_dict['y_dat']
 
         # Load this dataset
@@ -1188,7 +1190,7 @@ class WormFullVideoPosture:
         for start, end in zip(all_starts, all_ends):
             duration = end - start
             if duration >= len(y_dat):
-                raise ValueError(f"Duration {duration} is too long for the empirical distribution"
+                raise NotImplementedError(f"Duration {duration} is too long for the empirical distribution"
                                  f"It could be padded with 1s, but this probably means it needs to be recalculated")
             state_trace[start:end] = y_dat[:duration].copy()
 
