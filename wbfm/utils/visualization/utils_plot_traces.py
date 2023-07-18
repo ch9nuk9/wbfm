@@ -311,12 +311,15 @@ def plot_with_shading(mean_vals, std_vals, xmax=None, x=None,
         lower_shading = mean_vals - std_vals
     if ax is None:
         fig, ax = plt.subplots(dpi=100)
-    if xmax is None:
-        xmax = len(mean_vals)
-    if x is None:
-        x = np.arange(xmax)
+    if isinstance(mean_vals, pd.Series):
+        x = mean_vals.index
     else:
-        x = x[:xmax]
+        if xmax is None:
+            xmax = len(mean_vals)
+        if x is None:
+            x = np.arange(xmax)
+        else:
+            x = x[:xmax]
     # Main line
     ax.plot(x, mean_vals, **kwargs)
     # Shading

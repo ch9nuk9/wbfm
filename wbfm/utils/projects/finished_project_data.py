@@ -740,6 +740,7 @@ class ProjectData:
                             return_fast_scale_separation: bool = False,
                             return_slow_scale_separation: bool = False,
                             rename_neurons_using_manual_ids: bool = False,
+                            use_physical_time: Optional[bool] = None,
                             verbose=0,
                             **kwargs):
         """
@@ -868,6 +869,9 @@ class ProjectData:
 
         # Optional: reindex to physical time
         df.index = self.x_for_plots
+        if use_physical_time:
+            # Force reindexing, even if the class doesn't have the flag set
+            df.index = self._x_physical_time
 
         # Optional: substract a dominant mode to get a residual
         if residual_mode is not None:

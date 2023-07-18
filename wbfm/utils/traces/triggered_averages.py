@@ -68,7 +68,11 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
             ax.set_ylim(np.nanmin(triggered_avg), np.nanmax(triggered_avg))
         # Reference points
         ax.axhline(raw_trace_mean, c='black', ls='--')
-        ax.axvline(x=ind_preceding, color='r', ls='--')
+        if isinstance(triggered_avg, pd.Series):
+            x_for_vertical_line = 0  # Assume the series has been properly indexed
+        else:
+            x_for_vertical_line = ind_preceding
+        ax.axvline(x=x_for_vertical_line, color='r', ls='--')
         # ax.axvline(x=0, color='r', ls='--')
     else:
         ax.autoscale()
@@ -209,9 +213,9 @@ class TriggeredAverageIndices:
         all_ind = calculate_and_filter_triggered_average_indices(binary_state, **opt)
         return all_ind
 
-    def calc_triggered_average_matrix(self, trace, custom_ind: List[np.ndarray]=None,
+    def calc_triggered_average_matrix(self, raw_trace: pd.Series, custom_ind: List[np.ndarray]=None,
                                       nan_times_with_too_few=False, max_len=None,
-                                      **ind_kwargs) -> Optional[np.ndarray]:
+                                      **ind_kwargs) -> Optional[pd.DataFrame]:
         """
         Uses triggered_average_indices to extract a matrix of traces at each index, with nan padding to equalize the
         lengths of the traces
@@ -220,7 +224,7 @@ class TriggeredAverageIndices:
 
         Parameters
         ----------
-        trace
+        raw_trace
         custom_ind: instead of using self.triggered_average_indices. If not None, ind_kwargs are not used
         nan_times_with_too_few
         max_len: Cut off matrix at a time point. Usually if there aren't enough data points that far
@@ -241,7 +245,7 @@ class TriggeredAverageIndices:
         else:
             max_len_subset = max_len
         # Pad with nan in case there are negative indices, but only the end
-        trace = np.pad(trace, max_len_subset, mode='constant', constant_values=(np.nan, np.nan))[max_len_subset:]
+        trace = np.pad(raw_trace, max_len_subset, mode='constant', constant_values=(np.nan, np.nan))[max_len_subset:]
         triggered_avg_matrix = np.zeros((len(all_ind), max_len_subset))
         triggered_avg_matrix[:] = np.nan
         # Save either entire traces, or traces up to a point
@@ -266,6 +270,16 @@ class TriggeredAverageIndices:
             num_lines_at_each_time = np.sum(~np.isnan(triggered_avg_matrix), axis=0)
             times_to_remove = num_lines_at_each_time < self.min_lines
             triggered_avg_matrix[:, times_to_remove] = np.nan
+
+        # If the trace has a nontrivial index, then use that for the columns of this matrix
+        # try:
+        raw_index = raw_trace.index
+        # However, the event itself should be at t=0, and times previous to that should be negative
+        index = raw_index - raw_index[self.ind_preceding]
+        index = index[:triggered_avg_matrix.shape[1]]
+        triggered_avg_matrix = pd.DataFrame(triggered_avg_matrix, columns=index)
+        # except AttributeError:
+        #     triggered_avg_matrix = pd.DataFrame(triggered_avg_matrix)
 
         return triggered_avg_matrix
 
@@ -342,6 +356,13 @@ class TriggeredAverageIndices:
             triggered_upper_std = np.nanquantile(triggered_avg_matrix, 0.84, axis=0)
             triggered_lower_std = np.nanquantile(triggered_avg_matrix, 0.16, axis=0)
             triggered_avg_counts = np.nansum(~np.isnan(triggered_avg_matrix), axis=0)
+        if isinstance(triggered_avg_matrix, pd.DataFrame):
+            # Preserve the index, which are actually the columns of the matrix
+            triggered_avg = pd.Series(triggered_avg, index=triggered_avg_matrix.columns)
+            triggered_lower_std = pd.Series(triggered_lower_std, index=triggered_avg_matrix.columns)
+            triggered_upper_std = pd.Series(triggered_upper_std, index=triggered_avg_matrix.columns)
+            triggered_avg_counts = pd.Series(triggered_avg_counts, index=triggered_avg_matrix.columns)
+
         return triggered_avg, triggered_lower_std, triggered_upper_std, triggered_avg_counts
 
     def calc_significant_points_from_triggered_matrix(self, triggered_avg_matrix):

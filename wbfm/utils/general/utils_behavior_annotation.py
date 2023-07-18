@@ -476,14 +476,14 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
 
     """
     if cmap is None:
-        cmap = BehaviorCodes.shading_cmap_func()
+        cmap = BehaviorCodes.shading_cmap_func
     if ax is None:
         ax = plt.gca()
 
     # Get all behaviors that exist in the data and the cmap
     beh_vector = pd.Series(beh_vector)
     data_behaviors = beh_vector.unique()
-    cmap_behaviors = pd.Series(list(cmap.keys())).unique()
+    cmap_behaviors = pd.Series(BehaviorCodes.possible_colors())
     # Note that this returns a numpy array in the end
     all_behaviors = pd.concat([pd.Series(data_behaviors), pd.Series(cmap_behaviors)]).unique()
 
@@ -498,7 +498,7 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
     beh_vector = pd.Series(beh_vector)
     for b in all_behaviors:
         binary_vec = BehaviorCodes.vector_equality(beh_vector, b)
-        color = cmap.get(b, None)
+        color = cmap(b)
         if color is None:
             continue
 
