@@ -183,17 +183,20 @@ class BehaviorCodes(Flag):
             return pd.Series([e2 not in e1 for e1, e2 in zip(enum_list.iloc[:-1], enum_list.iloc[1:])])
 
     @classmethod
-    def shading_colors(cls):
-        return [cls.FWD, cls.REV, cls.SELF_COLLISION]
+    def possible_colors(cls):
+        # Because I'm refactoring the colormaps to functions, I want a list to loop over
+        return [cls.FWD, cls.REV, cls.SELF_COLLISION,
+                cls.FWD | cls.VENTRAL_TURN, cls.FWD | cls.DORSAL_TURN,
+                cls.REV | cls.VENTRAL_TURN, cls.REV | cls.DORSAL_TURN]
 
     @classmethod
-    def shading_cmap_func(cls, state: 'BehaviorCodes'):
+    def shading_cmap_func(cls, state: 'BehaviorCodes', include_collision=False):
         """Colormap for shading on top of traces, but using 'in' logic instead of '==' logic"""
         if cls.FWD in state:
             return None
         elif cls.REV in state:
             return 'lightgray'
-        elif cls.SELF_COLLISION in state:
+        elif cls.SELF_COLLISION in state and include_collision:
             return 'red'
         else:
             return None
@@ -295,7 +298,7 @@ class BehaviorCodes(Flag):
             return full_name
 
 
-def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False):
+def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, include_collision=False):
     """
     Returns a list of dictionaries that can be passed to plotly to draw an ethogram
 
@@ -312,18 +315,20 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False):
     """
     all_shape_opt = []
     if shading:
-        cmap_func = BehaviorCodes.shading_cmap_func
+        cmap_func = lambda state: BehaviorCodes.shading_cmap_func(state, include_collision=include_collision)
     else:
         cmap_func = lambda state: \
             BehaviorCodes.ethogram_cmap(include_reversal_turns=include_reversal_turns).get(state, None)
 
     # Loop over all behaviors in the colormap (some may not be present in the vector)
-    for behavior_code in BehaviorCodes.shading_colors():
+    for behavior_code in BehaviorCodes.possible_colors():
         binary_behavior = BehaviorCodes.vector_equality(beh_vec, behavior_code)
+        if cmap_func(behavior_code) is None:
+            # Do not draw anything for this behavior
+            continue
         starts, ends = get_contiguous_blocks_from_column(binary_behavior, already_boolean=True)
+        color = cmap_func(behavior_code)
         for s, e in zip(starts, ends):
-            this_state = beh_vec[s]
-            color = cmap_func(this_state)
             # Note that yref is ignored if this is a subplot. If yref is manually set, then it refers to the entire plot
             shape_opt = dict(type="rect", x0=s, x1=e, yref='paper', y0=0, y1=1,
                              fillcolor=color, line_width=0, layer="below")
