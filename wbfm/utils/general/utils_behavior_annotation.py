@@ -159,6 +159,11 @@ class BehaviorCodes(Flag):
         -------
 
         """
+        if isinstance(enum_list, pd.DataFrame):
+            # Check that there is only one column, then convert to series
+            assert len(enum_list.columns) == 1, "Can only compare to one column at a time"
+            enum_list = enum_list.iloc[:, 0]
+
         if exact:
             binary_vector = [query_enum == e for e in enum_list]
         else:
@@ -329,6 +334,15 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
         starts, ends = get_contiguous_blocks_from_column(binary_behavior, already_boolean=True)
         color = cmap_func(behavior_code)
         for s, e in zip(starts, ends):
+            # If there is an index in the behavior vector, convert the starts and ends
+            # to the corresponding time
+            s = beh_vec.index[s]
+            if e < len(beh_vec):
+                e = beh_vec.index[e]
+            else:
+                # If the last behavior is the same as the one we are plotting, then we need to
+                # extend the end of the last block to the end of the vector
+                e = beh_vec.index[-1]
             # Note that yref is ignored if this is a subplot. If yref is manually set, then it refers to the entire plot
             shape_opt = dict(type="rect", x0=s, x1=e, yref='paper', y0=0, y1=1,
                              fillcolor=color, line_width=0, layer="below")

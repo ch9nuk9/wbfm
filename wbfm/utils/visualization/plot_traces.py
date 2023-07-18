@@ -1232,7 +1232,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     if trace_opt is not None:
         default_trace_opt.update(trace_opt)
     df_traces = project_data.calc_default_traces(**default_trace_opt)
-    # x = project_data._x_physical_time
+    x = project_data.x_for_plots
     df_traces_no_nan = fill_nan_in_dataframe(df_traces, do_filtering=True)
     # Calculate pca modes, and use them to sort
     pca_weights = PCA(n_components=10)
@@ -1250,15 +1250,17 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
     df_pca_modes.columns = col_names
     # Trying to do physical time doesn't work unless everything is aligned (especially ethogram)
-    # df_pca_modes.set_index(x, inplace=True)
+    df_pca_modes.set_index(x, inplace=True)
 
     try:
         speed = project_data.worm_posture_class.worm_speed(fluorescence_fps=True, use_stage_position=False,
                                                            signed=True)
     except NoBehaviorAnnotationsError:
         speed = pd.Series(np.zeros(df_pca_modes.shape[0]))
-    # speed = pd.DataFrame(speed)
-    # speed.set_index(x, inplace=True)
+    # TODO: move the reindexing to the worm posture class itself
+    speed = pd.DataFrame(speed)
+    speed.set_index(x, inplace=True)
+    print(speed)
 
     df_pca_weights = pd.DataFrame(pca_weights.components_[0:num_pca_modes_to_plot, :].T)
     col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
@@ -1274,7 +1276,8 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     column_widths = [0.7, 0.1, 0.1, 0.1]
 
     ### Main heatmap
-    heatmap = go.Heatmap(y=dat.index, z=dat, zmin=0, zmax=1, colorscale='jet', xaxis="x", yaxis="y",
+    heatmap = go.Heatmap(y=dat.index, z=dat, x=x,
+                         zmin=0, zmax=1, colorscale='jet', xaxis="x", yaxis="y",
                          coloraxis='coloraxis1')
     heatmap_opt = dict(row=1, col=1)
 
@@ -1303,11 +1306,14 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     #### Shading on top of the PCA modes
     try:
         beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
+        beh_vec = pd.DataFrame(beh_vec)
+        beh_vec.set_index(x, inplace=True)
         trace_shading_opt = options_for_ethogram(beh_vec, shading=True)
     except NoBehaviorAnnotationsError:
         trace_shading_opt = dict()
     ### Speed plot (below pca modes)
-    trace_list.append(go.Scatter(y=speed, x=speed.index))
+    trace_list.append(go.Scatter(y=speed.iloc[:, 0], x=speed.index))
+    print(trace_list)
     trace_opt_list.append(dict(row=num_pca_modes_to_plot + 3, col=1, secondary_y=False))
     ### PCA weights (same names as pca modes)
     mode_colormap = px.colors.qualitative.Plotly
@@ -1332,6 +1338,8 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         beh_vec = pd.Series([BehaviorCodes.UNKNOWN for i in range(df_pca_modes.shape[0])])
         ethogram_opt = dict()
     else:
+        beh_vec = pd.DataFrame(beh_vec)
+        beh_vec.set_index(x, inplace=True)
         ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt)
     ### 3d phase plot
     ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_opt)
@@ -1339,11 +1347,11 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     # Check lengths; sometimes beh_vec is one too short
     if len(beh_vec) == df_pca_modes.shape[0] - 1:
         beh_vec = pd.concat([beh_vec, pd.Series([BehaviorCodes.UNKNOWN])])
-    df_pca_modes['behavior'] = list(beh_vec)
+    df_pca_modes['behavior'] = list(beh_vec.iloc[:, 0])
     df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
                                                                   ['mode 0', 'mode 1', 'mode 2'],
                                                                   'behavior')
-    state_codes = beh_vec.unique()
+    state_codes = beh_vec.iloc[:, 0].unique()  # Get unique state codes; there is only one column
     phase_plot_list = []
     for i, state_code in enumerate(state_codes):
         try:
