@@ -533,6 +533,9 @@ class WormFullVideoPosture:
                 logging.warning("Using automatic annotation instead")
                 beh = self._raw_beh_annotation
 
+        # Make sure there are no nan values
+        beh.replace(np.nan, BehaviorCodes.UNKNOWN, inplace=True)
+
         # Add additional annotations from other files
         # Note that these other annotations are one frame shorter than the behavior annotation
         beh = beh.iloc[:-1]
