@@ -183,13 +183,24 @@ class BehaviorCodes(Flag):
             return pd.Series([e2 not in e1 for e1, e2 in zip(enum_list.iloc[:-1], enum_list.iloc[1:])])
 
     @classmethod
-    def shading_cmap(cls):
-        """Colormap for shading on top of traces"""
-        cmap = {cls.UNKNOWN: None,
-                cls.FWD: None,
-                cls.REV: 'lightgray',
-                cls.SELF_COLLISION: 'red'}
-        return cmap
+    def shading_colors(cls):
+        return [cls.FWD, cls.REV, cls.SELF_COLLISION]
+
+    @classmethod
+    def shading_cmap_func(cls, state: 'BehaviorCodes'):
+        """Colormap for shading on top of traces, but using 'in' logic instead of '==' logic"""
+        if cls.FWD in state:
+            return None
+        elif cls.REV in state:
+            return 'lightgray'
+        elif cls.SELF_COLLISION in state:
+            return 'red'
+        else:
+            return None
+        # cmap = {cls.UNKNOWN: None,
+        #         cls.FWD: None,
+        #         cls.REV: 'lightgray',
+        #         cls.SELF_COLLISION: 'red'}
 
     @classmethod
     def base_colormap(cls):
@@ -301,17 +312,18 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False):
     """
     all_shape_opt = []
     if shading:
-        cmap = BehaviorCodes.shading_cmap()
+        cmap_func = BehaviorCodes.shading_cmap_func
     else:
-        cmap = BehaviorCodes.ethogram_cmap(include_reversal_turns=include_reversal_turns)
+        cmap_func = lambda state: \
+            BehaviorCodes.ethogram_cmap(include_reversal_turns=include_reversal_turns).get(state, None)
 
     # Loop over all behaviors in the colormap (some may not be present in the vector)
-    for behavior_code, color in cmap.items():
-        binary_behavior = beh_vec == behavior_code
+    for behavior_code in BehaviorCodes.shading_colors():
+        binary_behavior = BehaviorCodes.vector_equality(beh_vec, behavior_code)
         starts, ends = get_contiguous_blocks_from_column(binary_behavior, already_boolean=True)
         for s, e in zip(starts, ends):
-            this_val = beh_vec[s]
-            color = cmap[this_val]
+            this_state = beh_vec[s]
+            color = cmap_func(this_state)
             # Note that yref is ignored if this is a subplot. If yref is manually set, then it refers to the entire plot
             shape_opt = dict(type="rect", x0=s, x1=e, yref='paper', y0=0, y1=1,
                              fillcolor=color, line_width=0, layer="below")
@@ -445,7 +457,7 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
 
     """
     if cmap is None:
-        cmap = BehaviorCodes.shading_cmap()
+        cmap = BehaviorCodes.shading_cmap_func()
     if ax is None:
         ax = plt.gca()
 
