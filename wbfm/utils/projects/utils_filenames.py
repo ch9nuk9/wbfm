@@ -126,7 +126,7 @@ def pickle_load_binary(fname, verbose=0):
             # Pandas 2.0.0 can break compatibility
             # https://stackoverflow.com/questions/75953279/modulenotfounderror-no-module-named-pandas-core-indexes-numeric-using-metaflo
             dat = pd.read_pickle(fname)
-            logging.warning(f"Using pandas to read pickle file {fname};"
+            logging.warning(f"Using pandas to read pickle file {fname}; "
                             f"May have unknown format changes due to pandas version")
 
     if verbose >= 1:
