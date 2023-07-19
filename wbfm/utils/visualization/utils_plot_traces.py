@@ -312,7 +312,7 @@ def plot_with_shading(mean_vals, std_vals, xmax=None, x=None,
     if ax is None:
         fig, ax = plt.subplots(dpi=100)
     if isinstance(mean_vals, pd.Series):
-        x = mean_vals.index
+        x = list(mean_vals.index)
     else:
         if xmax is None:
             xmax = len(mean_vals)
