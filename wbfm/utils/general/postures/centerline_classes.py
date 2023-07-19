@@ -24,6 +24,7 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_p
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
     MissingAnalysisError, DataSynchronizationError
+from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
@@ -78,6 +79,7 @@ class WormFullVideoPosture:
 
     # Postprocessing the time series
     tracking_failure_idx: np.ndarray = None
+    physical_unit_conversion: PhysicalUnitConversion = None
 
     # If additional files are needed
     behavior_subfolder: str = None
@@ -106,7 +108,7 @@ class WormFullVideoPosture:
         return pca_proj
 
     def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool,
-                                 reset_index=False) -> Optional[Union[pd.DataFrame, pd.Series]]:
+                                 reset_index=False, use_physical_time=False) -> Optional[Union[pd.DataFrame, pd.Series]]:
         if df is None:
             return df
         elif self.beh_annotation_already_converted_to_fluorescence_fps and not fluorescence_fps:
@@ -136,7 +138,28 @@ class WormFullVideoPosture:
             if needs_subsampling:
                 df = self._shorten_to_trace_length(df)
 
+        # Convert to physical time
+        if use_physical_time:
+            if fluorescence_fps:
+                df.index = self._x_physical_time_volumes
+            else:
+                df.index = self._x_physical_time_frames
+
         return df
+
+    @property
+    def _x_physical_time_frames(self):
+        """Helper for reindexing plots from frames to seconds"""
+        x = np.arange(self.num_trace_frames)
+        x = x / self.physical_unit_conversion.frames_per_second
+        return x
+
+    @property
+    def _x_physical_time_volumes(self):
+        """Helper for reindexing plots from frames to seconds"""
+        x = np.arange(self.num_trace_frames)
+        x = x / self.physical_unit_conversion.frames_per_second
+        return x
 
     def _shorten_to_trace_length(self, df: Union[pd.DataFrame, pd.Series]):
         if len(df.shape) == 2:
@@ -1320,6 +1343,9 @@ class WormFullVideoPosture:
                 filename_beh_annotation = None
             all_files['filename_beh_annotation'] = filename_beh_annotation
         all_files['behavior_subfolder'] = behavior_subfolder
+
+        # Add class for converting physical units
+        opt['physical_unit_conversion'] = project_data.physical_unit_conversion
 
         # Even if no files found, at least save the fps
         return WormFullVideoPosture(**all_files, **opt)

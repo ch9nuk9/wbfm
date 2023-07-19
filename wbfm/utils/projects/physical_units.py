@@ -16,6 +16,12 @@ class PhysicalUnitConversion:
     volumes_per_second: float = None
     exposure_time: int = 12
 
+    num_z_slices: int = None
+
+    @property
+    def frames_per_second(self):
+        return self.volumes_per_second * self.num_z_slices
+
     @property
     def z_to_xy_ratio(self):
         return self.zimmer_um_per_pixel_z / self.zimmer_fluroscence_um_per_pixel_xy
@@ -95,6 +101,7 @@ class PhysicalUnitConversion:
 
         from wbfm.utils.general.postures.centerline_classes import get_behavior_fluorescence_fps_conversion
         if 'physical_units' in project_cfg.config:
+            # Main units
             opt = project_cfg.config['physical_units']
             if 'volumes_per_second' not in opt:
                 project_cfg.logger.debug("Using hard coded camera fps; this depends on the exposure time")
@@ -102,6 +109,14 @@ class PhysicalUnitConversion:
                 exposure_time = opt.get('exposure_time', 12)
                 frames_per_volume = get_behavior_fluorescence_fps_conversion(project_cfg)
                 opt['volumes_per_second'] = camera_fps / exposure_time / frames_per_volume
+            # Additional dataset unit
+            opt_dataset = project_cfg.config['dataset_params']
+            if 'num_slices' in opt_dataset:
+                opt['num_z_slices'] = opt_dataset['num_slices']
+            else:
+                # This is a very old parameter, and should be in all projects
+                raise ValueError("num_slices not found in dataset_params")
+
             return PhysicalUnitConversion(**opt)
         else:
             project_cfg.logger.warning("Using default physical unit conversions")
