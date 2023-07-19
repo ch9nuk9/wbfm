@@ -1306,6 +1306,9 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     try:
         beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
         beh_vec = pd.DataFrame(beh_vec)
+        # Check lengths; sometimes beh_vec is one too short
+        if len(beh_vec) == df_pca_modes.shape[0] - 1:
+            beh_vec = pd.concat([beh_vec, pd.Series([BehaviorCodes.UNKNOWN])])
         beh_vec.set_index(x, inplace=True)
         trace_shading_opt = options_for_ethogram(beh_vec, shading=True)
     except NoBehaviorAnnotationsError:
@@ -1337,14 +1340,14 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         ethogram_opt = dict()
     else:
         beh_vec = pd.DataFrame(beh_vec)
+        # Check lengths; sometimes beh_vec is one too short
+        if len(beh_vec) == df_pca_modes.shape[0] - 1:
+            beh_vec = pd.concat([beh_vec, pd.Series([BehaviorCodes.UNKNOWN])])
         beh_vec.set_index(x, inplace=True)
         ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt)
     ### 3d phase plot
     ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_opt)
     # Use the same behaviors as the ethogram
-    # Check lengths; sometimes beh_vec is one too short
-    if len(beh_vec) == df_pca_modes.shape[0] - 1:
-        beh_vec = pd.concat([beh_vec, pd.Series([BehaviorCodes.UNKNOWN])])
     df_pca_modes['behavior'] = list(beh_vec.iloc[:, 0])
     df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
                                                                   ['mode 0', 'mode 1', 'mode 2'],

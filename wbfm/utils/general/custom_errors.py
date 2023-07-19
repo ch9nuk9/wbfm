@@ -94,7 +94,10 @@ class NoBehaviorAnnotationsError(Exception):
 
 class NoManualBehaviorAnnotationsError(NoBehaviorAnnotationsError):
     def __init__(self, message=""):
-        self.message = "No manual behavior annotations found; " + message
+        if message is not None:
+            self.message = "No manual behavior annotations found; " + message
+        else:
+            self.message = "No manual behavior annotations found"
         super().__init__(self.message)
 
 
