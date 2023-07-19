@@ -106,8 +106,7 @@ def save_video_of_behavior(project_data: ProjectData, t0=0, t1=None, fps=7,
     if t1 is None:
         t1 = project_data.num_frames
 
-    video_fname = project_data.worm_posture_class.behavior_video_avi_fname()
-    video_fname = video_fname.with_suffix('.btf')
+    video_fname = project_data.worm_posture_class.behavior_video_btf_fname()
     # Note that this reads the entire behavioral video into memory if it wasn't chunked
     store = tifffile.imread(video_fname, aszarr=True)
     video_zarr = zarr.open(store, mode='r')

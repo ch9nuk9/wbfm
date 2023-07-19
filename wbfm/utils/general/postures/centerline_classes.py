@@ -1415,29 +1415,49 @@ class WormFullVideoPosture:
 
     # Raw videos
     def behavior_video_avi_fname(self):
+        """Loops through the behavior subfolder and returns the first AVI file found"""
         for file in Path(self.behavior_subfolder).iterdir():
             if file.is_dir():
                 continue
             if file.name.endswith('Ch0-BHbigtiff_AVG_background_subtracted.avi'):
-                if file.with_suffix('.btf').exists():
-                    return file
+                return file
             elif file.name.endswith('raw_stack_AVG_background_subtracted_normalised.avi'):
                 # Newer naming convention
-                if file.with_suffix('.btf').exists():
-                    return file
+                return file
+        return None
+
+    def behavior_video_btf_fname(self):
+        """
+        Note that the newer naming convention for the btf files is raw_stack_AVG_background_subtracted.btf,
+        and not the file with _normalised in the name
+
+        See behavior_video_avi_fname
+        """
+        for file in Path(self.behavior_subfolder).iterdir():
+            if file.is_dir():
+                continue
+            if file.name.endswith('Ch0-BHbigtiff_AVG_background_subtracted.btf'):
+                return file
+            elif file.name.endswith('raw_stack_AVG_background_subtracted.btf'):
+                # Newer naming convention
+                return file
         return None
 
     def __repr__(self):
-        return f"=======================================\n\
+        return \
+f"=========================================\n\
 Posture class with the following files:\n\
-============Centerline====================\n\
+============Centerline=====================\n\
 filename_x:                 {self.filename_x is not None}\n\
 filename_y:                 {self.filename_y is not None}\n\
 filename_curvature:         {self.filename_curvature is not None}\n\
-============Annotations================\n\
+============Annotations===================\n\
 filename_beh_annotation:    {self.has_beh_annotation}\n\
 ============Stage Position================\n\
-filename_table_position:    {self.filename_table_position is not None}\n"
+filename_table_position:    {self.filename_table_position is not None}\n\
+=========Raw Behavior Videos==============\n\
+behavior_video_avi:         {self.behavior_video_avi_fname() is not None}\n\
+behavior_video_btf:         {self.behavior_video_btf_fname() is not None}\n"
 
 
 def get_behavior_fluorescence_fps_conversion(project_config):

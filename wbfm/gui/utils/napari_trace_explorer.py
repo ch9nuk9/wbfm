@@ -1823,8 +1823,7 @@ def napari_behavior_explorer_from_config(project_path, DEBUG=False):
 
     # Load specific data
     df_kymo = project_data.worm_posture_class.curvature(fluorescence_fps=True)
-    video_fname = project_data.worm_posture_class.behavior_video_avi_fname()
-    video_fname = video_fname.with_suffix('.btf')
+    video_fname = project_data.worm_posture_class.behavior_video_btf_fname()
     store = tifffile.imread(video_fname, aszarr=True)
     video_zarr = zarr.open(store, mode='r')
     # Subset video to be the same fps as the fluorescence
