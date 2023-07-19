@@ -623,23 +623,44 @@ class TriggeredAverageIndices:
 
         """
 
-        plt.figure(dpi=100)
-        plt.plot(trace)
+        fig, ax = plt.subplots(dpi=100)
+        ax.plot(trace)
+        self.plot_events_over_trace(trace, ax)
 
-        for ind in self.triggered_average_indices():
-            ind = np.array(ind)
-            ind = ind[ind > 0]
-            plt.plot(ind, trace[ind], '.', color='tab:orange')
-            plt.plot(ind[self.ind_preceding], trace[ind[self.ind_preceding]], 'o', color='tab:red')
+    def plot_events_over_trace(self, trace, ax, vertical_lines=True, dots=True, DEBUG=False):
+        """
+        Plots dots where the preceding indices start, and vertical lines where the event onsets are
+
+        Parameters
+        ----------
+        trace
+        ax
+        vertical_lines
+        dots
+
+        Returns
+        -------
+
+        """
+        for i_start in self.idx_onsets:
+            if dots:
+                i_start_clipped = np.clip(i_start - self.ind_preceding, 0, len(trace) - 1)
+                ax.plot(i_start_clipped, trace[i_start_clipped], '.', color='tab:orange')
+                if DEBUG:
+                    print(f"i_start: {i_start}, i_start_clipped: {i_start_clipped}")
+            if vertical_lines:
+                ax.axvline(i_start, trace[i_start], linestyle='--', color='tab:red')
 
     @property
     def idx_onsets(self):
+        """Returns the indices of the onsets"""
         local_idx_of_onset = self.ind_preceding
         idx_onsets = np.array([vec[local_idx_of_onset] for vec in self.triggered_average_indices() if
                                vec[local_idx_of_onset] > 0])
         return idx_onsets
 
     def onset_vector(self):
+        """Binary vector: 0s everywhere except for the onsets"""
         onset_vec = np.zeros(self.trace_len)
         onset_vec[self.idx_onsets] = 1
         return onset_vec
