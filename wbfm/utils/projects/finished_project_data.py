@@ -964,7 +964,7 @@ class ProjectData:
             # Calculate the speed, and define the sign of the first PC to be anticorrelated to speed
             speed = self.worm_posture_class.worm_speed(fluorescence_fps=True, reset_index=True)
             correlation = np.corrcoef(pca_modes[:, 0], speed)[0, 1]
-            if correlation < 0:
+            if correlation > 0:
                 pca_modes[:, 0] = -pca_modes[:, 0]
         return pca, pca_modes
 
