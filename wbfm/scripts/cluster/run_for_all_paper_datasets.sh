@@ -15,7 +15,7 @@ do
 done
 
 # Loop over all datasets
-for DATASET in ${DATASET_LIST[@]}; do
+for DATASET in "${DATASET_LIST[@]}"; do
     # Run the command, using my folder wrapper
     bash $SCRIPT_DIR/apply_step_to_all_in_folder.sh -t $PARENT_DIR/"$DATASET" -s "$step_reference"
 done

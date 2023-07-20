@@ -17,7 +17,7 @@ do
 done
 
 # Loop over all datasets
-for DATASET in ${DATASET_LIST[@]}; do
+for DATASET in "${DATASET_LIST[@]}"; do
     # Run the command, using my folder wrapper
     bash $SCRIPT -t "$target" -d "$destination_folder" -s $PARENT_DIR/"$DATASET"
 done
