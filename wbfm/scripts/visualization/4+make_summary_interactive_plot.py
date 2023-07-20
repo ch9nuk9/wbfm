@@ -11,7 +11,8 @@ from sacred.observers import TinyDbObserver
 
 # main function
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.visualization.plot_traces import make_summary_interactive_heatmap_with_pca
+from wbfm.utils.visualization.plot_traces import make_summary_interactive_heatmap_with_pca, \
+    make_summary_interactive_heatmap_with_kymograph
 
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
@@ -30,3 +31,4 @@ def main(_config, _run):
 
     project_cfg = ModularProjectConfig(_config['project_path'])
     make_summary_interactive_heatmap_with_pca(project_cfg, to_show=False, to_save=True)
+    make_summary_interactive_heatmap_with_kymograph(project_cfg, to_show=False, to_save=True)

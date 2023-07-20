@@ -639,7 +639,7 @@ class WormFullVideoPosture:
     # @lru_cache(maxsize=256)
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
                    strong_smoothing=False, use_stage_position=True, remove_outliers=True, body_segment=50,
-                   strong_smoothing_before_derivative=False) -> pd.Series:
+                   strong_smoothing_before_derivative=False, reset_index=True) -> pd.Series:
         """
         Calculates derivative of position
 
@@ -652,6 +652,7 @@ class WormFullVideoPosture:
         use_stage_position - whether to use the stage position (default) or body segment 50
         remove_outliers - whether to remove outliers (replace with nan and interpolate)
         body_segment - only used if use_stage_position=False
+        reset_index - Used for compatibility, but is not used. Always True.
 
         Returns
         -------

@@ -1154,7 +1154,8 @@ def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html'):
     # fig.write_image(str(fname))
 
 
-def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, to_show=False):
+def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, to_show=False,
+                                                    keep_reversal_turns=False):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of PCA modes
     The total effect is to remove all but the first column
@@ -1173,7 +1174,7 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     num_pca_modes_to_plot = 3
     column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
-        project_data, num_pca_modes_to_plot)
+        project_data, num_pca_modes_to_plot, keep_reversal_turns=keep_reversal_turns)
 
     # One column with a heatmap, (short) ethogram, and kymograph
     rows = 3
@@ -1228,7 +1229,8 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
     return fig
 
 
-def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plot=3, trace_opt: dict = None,):
+def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plot=3, keep_reversal_turns=False,
+                                              trace_opt: dict = None,):
     default_trace_opt = dict(interpolate_nan=True,
                              filter_mode='rolling_mean',
                              min_nonnan=0.9,
@@ -1255,7 +1257,6 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     df_pca_modes = pd.DataFrame(pca_modes.components_[0:num_pca_modes_to_plot, :].T)
     col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
     df_pca_modes.columns = col_names
-    # Trying to do physical time doesn't work unless everything is aligned (especially ethogram)
     df_pca_modes.set_index(x, inplace=True)
 
     try:
@@ -1310,7 +1311,8 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
     #### Shading on top of the PCA modes
     try:
-        beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
+        beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True,
+                                                                 reset_index=True)
         beh_vec = pd.DataFrame(beh_vec)
         # Check lengths; sometimes beh_vec is one too short
         if len(beh_vec) == df_pca_modes.shape[0] - 1:
@@ -1335,11 +1337,14 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     ### Ethogram
     # Include manual annotations, if any
     try:
-        beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True, reset_index=True,
-                                                                        keep_reversal_turns=False)
+        beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True,
+                                                                        reset_index=True,
+                                                                        keep_reversal_turns=keep_reversal_turns)
     except NoBehaviorAnnotationsError:
-        beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, reset_index=True)
-    ethogram_cmap_opt = dict(include_reversal_turns=True)
+        beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True,
+                                                                 include_turns=keep_reversal_turns,
+                                                                 reset_index=True)
+    ethogram_cmap_opt = dict(include_reversal_turns=keep_reversal_turns)
     if beh_vec is None:
         # If still none, that means there are no annotations (e.g. it is immobilized)
         beh_vec = pd.Series([BehaviorCodes.UNKNOWN for i in range(df_pca_modes.shape[0])])
