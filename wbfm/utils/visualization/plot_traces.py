@@ -1224,7 +1224,12 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
         fig.show()
 
     if to_save:
-        _save_plotly_all_types(fig, project_data, fname='summary_trace_plot_kymograph.html')
+        # Change fname depending on whether we're keeping reversal turns
+        if keep_reversal_turns:
+            fname = 'summary_trace_plot_kymograph_with_reversal_turns.html'
+        else:
+            fname = 'summary_trace_plot_kymograph.html'
+        _save_plotly_all_types(fig, project_data, fname=fname)
 
     return fig
 
