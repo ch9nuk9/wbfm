@@ -643,6 +643,8 @@ class TriggeredAverageIndices:
 
         """
         for i_start in self.idx_onsets:
+            if isinstance(trace, pd.Series):
+                trace = trace.values
             if dots:
                 i_start_clipped = np.clip(i_start - self.ind_preceding, 0, len(trace) - 1)
                 ax.plot(i_start_clipped, trace[i_start_clipped], '.', color='tab:orange')
