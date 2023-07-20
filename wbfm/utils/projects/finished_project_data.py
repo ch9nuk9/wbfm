@@ -962,12 +962,13 @@ class ProjectData:
         pca_modes = pca.components_.T
         return pca, pca_modes
 
-    def calc_plateau_state_using_pc1(self, DEBUG=False, **trace_kwargs):
+    def calc_plateau_state_using_pc1(self, replace_nan=True, DEBUG=False, **trace_kwargs):
         # Get the trace that will be used to calculate the plateau state
         pca, pca_modes = self.calc_pca_modes(n_components=1, **trace_kwargs)
         pc1 = pd.Series(pca_modes[:, 0])
         # Calculate plateaus using worm posture class method
         plateaus, working_pw_fits = self.worm_posture_class.calc_plateau_state_from_trace(pc1, n_breakpoints=2,
+                                                                                          replace_nan=replace_nan,
                                                                                           DEBUG=DEBUG)
         return plateaus, working_pw_fits
 

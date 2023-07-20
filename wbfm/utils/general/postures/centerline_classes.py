@@ -1084,7 +1084,10 @@ class WormFullVideoPosture:
         Calculates a state that is high when the worm speed is in a "semi-plateau", and low otherwise
         A semi-plateau is defined in two steps:
             1. Find all reversals that are longer than min_length
-            2. Fit a piecewise regression (default 3 breaks), and keep all points between the first and last breakpoints
+            2. Fit a piecewise regression (default 3 breaks) to speed, and keep all points between the first and last breakpoints
+
+        (this is not called a plateau, because none of the segments actually have to be flat)
+        (see calc_constant_offset_plateau_state if that is needed)
 
         Alternatively, if return_last_breakpoint is true, return the last breakpoint as the onset and the index of the
         reversal end + end_padding as the end
@@ -1109,7 +1112,7 @@ class WormFullVideoPosture:
         return plateau_state, working_pw_fits
 
     def calc_plateau_state_from_trace(self, plateau_trace, min_length=10, start_padding=3, end_padding=3,
-                                      n_breakpoints=3, return_last_breakpoint=False, DEBUG=False):
+                                      n_breakpoints=3, return_last_breakpoint=False, replace_nan=True, DEBUG=False):
         from wbfm.utils.traces.triggered_averages import calc_time_series_from_starts_and_ends
 
         # Get the binary state
@@ -1134,7 +1137,10 @@ class WormFullVideoPosture:
                            not np.isnan(s) and not np.isnan(e)]
         num_pts = len(beh_vec)
         plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
-        return pd.Series(plateau_state), (working_pw_fits, time_series_starts)
+        plateau_state = pd.Series(plateau_state)
+        if replace_nan:
+            plateau_state = plateau_state.fillna(False)
+        return plateau_state, (working_pw_fits, time_series_starts)
 
     def plot_plateau_state(self, ax=None, **kwargs):
         # Assume there is already a plot present, and we are plotting on top
