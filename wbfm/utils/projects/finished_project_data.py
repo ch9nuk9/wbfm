@@ -953,13 +953,19 @@ class ProjectData:
         df = df.reindex(sorted(df.columns), axis=1)
         return df
 
-    def calc_pca_modes(self, n_components=10, **trace_kwargs):
+    def calc_pca_modes(self, n_components=10, flip_pc1_to_have_reversals_high=True, **trace_kwargs):
         trace_kwargs['interpolate_nan'] = True
         X = self.calc_default_traces(**trace_kwargs)
         X = fill_nan_in_dataframe(X, do_filtering=False)
         pca = PCA(n_components=n_components, whiten=False)
         pca.fit(X.T)
         pca_modes = pca.components_.T
+        if flip_pc1_to_have_reversals_high:
+            # Calculate the speed, and define the sign of the first PC to be anticorrelated to speed
+            speed = self.worm_posture_class.worm_speed(fluorescence_fps=True, reset_index=True)
+            correlation = np.corrcoef(pca_modes[:, 0], speed)[0, 1]
+            if correlation < 0:
+                pca_modes[:, 0] = -pca_modes[:, 0]
         return pca, pca_modes
 
     def calc_plateau_state_using_pc1(self, replace_nan=True, DEBUG=False, **trace_kwargs):
