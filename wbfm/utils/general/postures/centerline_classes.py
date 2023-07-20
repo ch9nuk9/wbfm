@@ -158,7 +158,7 @@ class WormFullVideoPosture:
     def _x_physical_time_volumes(self):
         """Helper for reindexing plots from frames to seconds"""
         x = np.arange(self.num_trace_frames)
-        x = x / self.physical_unit_conversion.frames_per_second
+        x = x / self.physical_unit_conversion.volumes_per_second
         return x
 
     def _shorten_to_trace_length(self, df: Union[pd.DataFrame, pd.Series]):
