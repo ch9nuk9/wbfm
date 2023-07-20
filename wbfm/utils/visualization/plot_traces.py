@@ -1155,7 +1155,7 @@ def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html'):
 
 
 def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, to_show=False,
-                                                    keep_reversal_turns=False):
+                                                    keep_reversal_turns=False, use_manual_annotations=False):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of PCA modes
     The total effect is to remove all but the first column
@@ -1174,7 +1174,7 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     num_pca_modes_to_plot = 3
     column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
-        project_data, num_pca_modes_to_plot, keep_reversal_turns=keep_reversal_turns)
+        project_data, num_pca_modes_to_plot, keep_reversal_turns=keep_reversal_turns, use_manual_annotations=use_manual_annotations)
 
     # One column with a heatmap, (short) ethogram, and kymograph
     rows = 3
@@ -1234,7 +1234,8 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
     return fig
 
 
-def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plot=3, keep_reversal_turns=False,
+def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plot=3,
+                                              keep_reversal_turns=False, use_manual_annotations=False,
                                               trace_opt: dict = None,):
     default_trace_opt = dict(interpolate_nan=True,
                              filter_mode='rolling_mean',
@@ -1341,11 +1342,15 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         weights_opt_list.append(dict(row=1, col=2 + i, secondary_y=False))
     ### Ethogram
     # Include manual annotations, if any
-    try:
-        beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True,
-                                                                        reset_index=True,
-                                                                        keep_reversal_turns=keep_reversal_turns)
-    except NoBehaviorAnnotationsError:
+    beh_vec = None
+    if use_manual_annotations:
+        try:
+            beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True,
+                                                                            reset_index=True,
+                                                                            keep_reversal_turns=keep_reversal_turns)
+        except NoBehaviorAnnotationsError:
+            beh_vec = None
+    if beh_vec is None:
         beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True,
                                                                  include_turns=keep_reversal_turns,
                                                                  reset_index=True)
