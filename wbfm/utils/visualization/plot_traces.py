@@ -908,6 +908,12 @@ def make_default_summary_plots_using_config(project_cfg):
         logger.info("Failed to make PC1 grid plot; if this is a test project this may be expected")
         logger.info(e)
         pass
+    # Also make a residual plot
+    grid_opt['residual_mode'] = 'pca'
+    try:
+        make_grid_plot_using_project(proj_dat, **grid_opt)
+    except (np.linalg.LinAlgError, ValueError, NoNeuronsError) as e:
+        pass
 
 
 def make_default_triggered_average_plots(project_cfg, to_save=True):
