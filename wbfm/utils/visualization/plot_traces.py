@@ -1173,8 +1173,7 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     num_pca_modes_to_plot = 3
-    column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
-        project_data, num_pca_modes_to_plot, keep_reversal_turns=keep_reversal_turns, use_manual_annotations=use_manual_annotations)
+    column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(        project_data, num_pca_modes_to_plot, keep_reversal_turns=keep_reversal_turns, use_manual_annotations=use_manual_annotations)
 
     # One column with a heatmap, (short) ethogram, and kymograph
     rows = 3
@@ -1348,7 +1347,9 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
             beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True,
                                                                             reset_index=True,
                                                                             keep_reversal_turns=keep_reversal_turns)
+            logging.info('Using manual annotations')
         except NoBehaviorAnnotationsError:
+            logging.warning('No manual annotations found')
             beh_vec = None
     if beh_vec is None:
         beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True,
