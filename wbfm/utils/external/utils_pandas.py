@@ -305,6 +305,63 @@ def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boole
     return block_starts, block_ends
 
 
+def calc_eventwise_cooccurrence_matrix(df: pd.DataFrame, column1: str, column2: str, column_state: str,
+                                       normalize=True,
+                                       DEBUG=False):
+    """
+    Given a dataframe with two binary columns, calculate a co-occurrence matrix per event.
+    An event is defined as a contiguous block of True values in either column1 or column2
+
+    Parameters
+    ----------
+    df
+    column1
+    column2
+    normalize
+    DEBUG
+
+    Returns
+    -------
+
+    """
+    if DEBUG:
+        print(df[column1].value_counts())
+        print(df[column2].value_counts())
+
+    # Get the contiguous blocks of True values in each column
+    starts1, ends1 = get_contiguous_blocks_from_column(df[column1], already_boolean=True, DEBUG=DEBUG)
+    starts2, ends2 = get_contiguous_blocks_from_column(df[column2], already_boolean=True, DEBUG=DEBUG)
+    # Get the contiguous blocks of the state to check (may be same as column1 or column2)
+    starts_state, ends_state = get_contiguous_blocks_from_column(df[column_state], already_boolean=True, DEBUG=DEBUG)
+
+    # Get the co-occurrence matrix for each event
+    cooccurrence_matrices = []
+    for start_state, end_state in zip(starts_state, ends_state):
+        # Do not need indices, just classify each state as one of the 4 cases
+        # 0: no overlap, 1: column1 overlap, 2: column2 overlap, 3: both overlap
+        # Check each event type independently
+        col1_overlap = False
+        col2_overlap = False
+        for start1, end1 in zip(starts1, ends1):
+            if (start1 <= start_state <= end1) or (start_state <= start1 <= end_state):
+                # column1 overlaps
+                col1_overlap = True
+                break
+        for start2, end2 in zip(starts2, ends2):
+            # Check if the two events overlap
+            if (start2 <= start_state <= end2) or (start_state <= start2 <= end_state):
+                # Only column2 overlaps
+                col2_overlap = True
+                break
+        this_df = pd.DataFrame([[col1_overlap, col2_overlap]], columns=[column1, column2])
+        cooccurrence_matrices.append(this_df)
+
+    # Combine the co-occurrence matrices
+    cooccurrence_matrix = pd.concat(cooccurrence_matrices, axis=0, ignore_index=True)
+    # cooccurrence_matrix = pd.DataFrame(cooccurrence_matrices)
+    return cooccurrence_matrix
+
+
 def calc_surpyval_durations_and_censoring(all_starts, all_ends):
     """
     Uses the conventions of the surpyval package and checks for censoring
