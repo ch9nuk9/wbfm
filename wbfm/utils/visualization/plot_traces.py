@@ -1200,6 +1200,10 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
     fig.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
 
     fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
+
+    # Flip the kymograph in the y direction, so that the head is on top
+    fig.update_yaxes(autorange="reversed", col=1, row=3, overwrite=True)
+
     # Fonts
     fig.update_layout(font=dict(size=18))
     # Get the colormaps in the right places
@@ -1300,7 +1304,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         kymo_dat[kymo_dat > 0.04] = 0.04
         kymo_dat = kymo_dat.iloc[3:-3, :]
         kymograph = go.Heatmap(y=kymo_dat.index, z=kymo_dat, colorscale='RdBu', xaxis="x", yaxis="y",
-                             coloraxis='coloraxis2')
+                               coloraxis='coloraxis2')
         kymograph_opt = dict(row=3, col=1)
     except NoBehaviorAnnotationsError:
         kymograph = None
