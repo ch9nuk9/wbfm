@@ -1056,12 +1056,13 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
                                              triggered_averages_class, vis_cfg)
 
 
-def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show=False, trace_opt=None):
+def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show=False, trace_opt=None,
+                                              **kwargs):
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     num_pca_modes_to_plot = 3
     column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
-        project_data, num_pca_modes_to_plot, trace_opt=trace_opt)
+        project_data, num_pca_modes_to_plot, trace_opt=trace_opt, **kwargs)
 
     rows = 1 + num_pca_modes_to_plot + 2
     cols = 1 + num_pca_modes_to_plot
@@ -1154,8 +1155,7 @@ def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html'):
     # fig.write_image(str(fname))
 
 
-def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, to_show=False,
-                                                    keep_reversal_turns=False, use_manual_annotations=False):
+def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, to_show=False, **kwargs):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of PCA modes
     The total effect is to remove all but the first column
@@ -1173,7 +1173,8 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     num_pca_modes_to_plot = 3
-    column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(        project_data, num_pca_modes_to_plot, keep_reversal_turns=keep_reversal_turns, use_manual_annotations=use_manual_annotations)
+    column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
+        project_data, num_pca_modes_to_plot, **kwargs)
 
     # One column with a heatmap, (short) ethogram, and kymograph
     rows = 3
