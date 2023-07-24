@@ -172,13 +172,19 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # , 'likelihood' ... Too short in time, so crashes
         self.changeTraceCalculationDropdown.currentIndexChanged.connect(self.update_trace_or_tracklet_subplot)
         self.formlayout3.addRow("Trace calculation (y axis):", self.changeTraceCalculationDropdown)
-        # Change trace filtering (checkbox)
+        # Change trace filtering (dropdown)
         self.changeTraceFilteringDropdown = QtWidgets.QComboBox()
         self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation',
                                                     'strong_rolling_mean', 'bilateral'])
         self.changeTraceFilteringDropdown.setCurrentText('rolling_mean')
         self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Trace filtering:", self.changeTraceFilteringDropdown)
+        # Change trace filtering (dropdown)
+        self.changeResidualModeDropdown = QtWidgets.QComboBox()
+        self.changeResidualModeDropdown.addItems(['none', 'pca', 'nmf'])
+        self.changeResidualModeDropdown.setCurrentText('none')
+        self.changeResidualModeDropdown.currentIndexChanged.connect(self.update_trace_subplot)
+        self.formlayout3.addRow("Residual Mode:", self.changeResidualModeDropdown)
         # Change trace outlier removal (checkbox)
         self.changeTraceOutlierCheckBox = QtWidgets.QCheckBox()
         self.changeTraceOutlierCheckBox.setChecked(True)
@@ -1637,11 +1643,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         remove_outliers_activity = self.changeTraceOutlierCheckBox.isChecked()
         bleach_correct = self.changeBleachCorrectionCheckBox.isChecked()
         filter_mode = self.changeTraceFilteringDropdown.currentText()
+        residual_mode = self.changeResidualModeDropdown.currentText()
         trace_opt = dict(channel_mode=channel, calculation_mode=calc_mode,
                          remove_outliers=remove_outliers_activity,
                          filter_mode=filter_mode,
                          min_confidence=min_confidence,
-                         bleach_correct=bleach_correct)
+                         bleach_correct=bleach_correct,
+                         residual_mode=residual_mode)
         return trace_opt
 
     @property

@@ -874,7 +874,7 @@ class ProjectData:
             df.index = self._x_physical_time
 
         # Optional: substract a dominant mode to get a residual
-        if residual_mode is not None:
+        if residual_mode is not None and residual_mode != 'none':
             assert interpolate_nan, "Residual mode only works if nan are interpolated!"
             if residual_mode == 'pca':
                 df, _ = calculate_residual_subtract_pca(df, n_components=2)
