@@ -34,3 +34,4 @@ dependencies:
     - ruptures
     - backports.cached_property
     - methodtools
+    - seaborn
