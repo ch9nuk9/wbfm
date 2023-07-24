@@ -1628,11 +1628,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if trace_name is None:
             trace_name = self.current_neuron_name
 
-        trace_opt = self.get_trace_opt()
         if trace_name in self.dat.neuron_names:
-            t, y = self.dat.calculate_traces(neuron_name=trace_name, **trace_opt)
+            # Calculate the entire dataframe, because some options require it
+            y = self.df_of_current_traces[trace_name]
+            t = self.dat.x_for_plots
+            # t, y = self.dat.calculate_traces(neuron_name=trace_name, **trace_opt)
         else:
             # Assume it is a behavior name
+            trace_opt = self.get_trace_opt()
             t, y = self.dat.calculate_behavior_trace(trace_name, **trace_opt)
         return t, y
 
