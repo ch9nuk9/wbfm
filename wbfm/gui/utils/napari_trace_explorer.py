@@ -1644,12 +1644,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         bleach_correct = self.changeBleachCorrectionCheckBox.isChecked()
         filter_mode = self.changeTraceFilteringDropdown.currentText()
         residual_mode = self.changeResidualModeDropdown.currentText()
+        if residual_mode != 'none':
+            interpolate_nan = True
+        else:
+            interpolate_nan = False
         trace_opt = dict(channel_mode=channel, calculation_mode=calc_mode,
                          remove_outliers=remove_outliers_activity,
                          filter_mode=filter_mode,
                          min_confidence=min_confidence,
                          bleach_correct=bleach_correct,
-                         residual_mode=residual_mode)
+                         residual_mode=residual_mode,
+                         interpolate_nan=interpolate_nan)
         return trace_opt
 
     @property
