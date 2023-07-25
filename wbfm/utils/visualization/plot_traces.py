@@ -905,7 +905,7 @@ def make_default_summary_plots_using_config(project_cfg):
         make_grid_plot_using_project(proj_dat, **grid_opt)
     except (np.linalg.LinAlgError, ValueError, NoNeuronsError) as e:
         # For test projects, this will fail due to too little data
-        logger.info("Failed to make PC1 grid plot; if this is a test project this may be expected")
+        logger.warning("Failed to make PC1 grid plot; if this is a test project this may be expected")
         logger.info(e)
         pass
     # Also make a residual plot
@@ -913,6 +913,8 @@ def make_default_summary_plots_using_config(project_cfg):
     try:
         make_grid_plot_using_project(proj_dat, **grid_opt)
     except (np.linalg.LinAlgError, ValueError, NoNeuronsError) as e:
+        logging.warning("Failed to make residual grid plot; if this is a test project this may be expected")
+        logger.info(e)
         pass
 
 
