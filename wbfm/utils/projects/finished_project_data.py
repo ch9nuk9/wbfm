@@ -895,7 +895,7 @@ class ProjectData:
 
         # Optional: rename columns to use manual ids, if found
         if rename_neurons_using_manual_ids:
-            mapping = self.neuron_name_to_manual_id_mapping()
+            mapping = self.neuron_name_to_manual_id_mapping(confidence_threshold=1)
             df = df.rename(columns=mapping)
 
         # Optional: set the index to be physical units
