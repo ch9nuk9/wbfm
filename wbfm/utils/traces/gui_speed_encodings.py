@@ -7,7 +7,7 @@ from sklearn.model_selection import KFold
 from wbfm.gui.utils.utils_dash import save_folder_for_two_dataframe_dashboard
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.visualization.behavior_comparison_plots import NeuronToUnivariateEncoding
-from wbfm.utils.visualization.multiproject_wrappers import MultiProjectBehaviorPlotter
+from wbfm.utils.visualization.multiproject_wrappers import MultiProjectBehaviorPlotterWithBehavior
 
 
 def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
@@ -81,8 +81,8 @@ def build_all_gui_dfs_speed_encoding(all_projects_gcamp: Dict[str, ProjectData],
 
 def calculate_all_dfs_using_encoder(all_projects, genotype='gcamp', only_model_single_state=None,
                                     encoder_opt=None, constructor_kwargs=None, cv_factory=None):
-    multi_encoder = MultiProjectBehaviorPlotter(all_projects=all_projects, constructor_kwargs=constructor_kwargs,
-                                                class_constructor=NeuronToUnivariateEncoding)
+    multi_encoder = MultiProjectBehaviorPlotterWithBehavior(all_projects=all_projects, constructor_kwargs=constructor_kwargs,
+                                                            class_constructor=NeuronToUnivariateEncoding)
     multi_encoder.set_for_all_classes({'cv_factory': cv_factory})
 
     _encoder_opt = encoder_opt.copy()

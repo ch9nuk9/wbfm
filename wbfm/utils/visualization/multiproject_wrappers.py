@@ -24,36 +24,30 @@ from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std
 
 @dataclass
 class MultiProjectWrapper:
+    """
+    A wrapper for multiple projects, allowing for easy access to the same function across all projects
+
+    This dispatches function calls to the project directly
+    """
     all_project_paths: list = None
     all_projects: Dict = None
-
-    class_constructor: callable = None
-    constructor_kwargs: dict = field(default_factory=dict)
-    use_threading: bool = True
-
-    _all_behavior_plotters: List = None
 
     def __post_init__(self):
         if self.all_projects is None:
             assert self.all_project_paths is not None, "Must pass either projects or paths"
             self.all_projects = load_all_projects_from_list(self.all_project_paths)
-        # Initialize the behavior plotters
-        self._all_behavior_plotters = [self.class_constructor(p, **self.constructor_kwargs) for
-                                       p in self.all_projects.values()]
 
     def __getattr__(self, item):
-        # Transform all unknown function calls into a loop of calls to the subobjects
+        # Transform all unknown function calls into a loop of calls to the projects
         def method(*args, **kwargs):
             print(f"Dynamically dispatching method: {item}")
-            if item == '_all_behavior_plotters':
-                return self._all_behavior_plotters
             output = {}
-            for p in tqdm(self._all_behavior_plotters):
-                if not p.is_valid:
-                    logging.warning(f"Skipping invalid project {p.shortened_name}")
-                    continue
+            for name, p in tqdm(self.all_projects.items()):
+                # if not p.is_valid:
+                #     logging.warning(f"Skipping invalid project {name}")
+                #     continue
                 out = getattr(p, item)(*args, **kwargs)
-                output[p.shortened_name] = out
+                output[name] = out
             return output
         return method
 
@@ -76,16 +70,59 @@ class MultiProjectWrapper:
 
     def set_for_all_classes(self, updates: dict):
         for key, val in updates.items():
+            for p in self.all_projects.values():
+                p.__setattr__(key, val)
+
+
+@dataclass
+class MultiProjectWrapperWithBehavior(MultiProjectWrapper):
+    """
+    A wrapper for multiple projects, allowing for easy access to the same function across all projects
+
+    This does not dispatch function calls to the project directly, but to the behavior plotters
+    Most usage of this class is the subclasses: MultiProjectTriggeredAverages and MultiProjectBehaviorPlotter
+    """
+
+    class_constructor: callable = None
+    constructor_kwargs: dict = field(default_factory=dict)
+    use_threading: bool = True
+
+    _all_behavior_plotters: List = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        # Initialize the behavior plotters
+        self._all_behavior_plotters = [self.class_constructor(p, **self.constructor_kwargs) for
+                                       p in self.all_projects.values()]
+
+    def __getattr__(self, item):
+        # Transform all unknown function calls into a loop of calls to the subobjects
+        def method(*args, **kwargs):
+            print(f"Dynamically dispatching method: {item}")
+            if item == '_all_behavior_plotters':
+                return self._all_behavior_plotters
+            output = {}
+            for p in tqdm(self._all_behavior_plotters):
+                if not p.is_valid:
+                    logging.warning(f"Skipping invalid project {p.shortened_name}")
+                    continue
+                out = getattr(p, item)(*args, **kwargs)
+                output[p.shortened_name] = out
+            return output
+        return method
+
+    def set_for_all_classes(self, updates: dict):
+        for key, val in updates.items():
             for b in self._all_behavior_plotters:
                 b.__setattr__(key, val)
 
 
-class MultiProjectTriggeredAverages(MultiProjectWrapper):
+class MultiProjectTriggeredAveragesWithBehavior(MultiProjectWrapperWithBehavior):
 
     class_constructor: callable = FullDatasetTriggeredAverages
 
 
-class MultiProjectBehaviorPlotter(MultiProjectWrapper):
+class MultiProjectBehaviorPlotterWithBehavior(MultiProjectWrapperWithBehavior):
 
     class_constructor: callable = NeuronToMultivariateEncoding
 

@@ -16,7 +16,7 @@ from wbfm.utils.projects.finished_project_data import load_all_projects_in_folde
 # main function
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.visualization.behavior_comparison_plots import NeuronToUnivariateEncoding
-from wbfm.utils.visualization.multiproject_wrappers import MultiProjectBehaviorPlotter
+from wbfm.utils.visualization.multiproject_wrappers import MultiProjectBehaviorPlotterWithBehavior
 from wbfm.utils.visualization.hardcoded_paths import load_paper_datasets, get_summary_visualization_dir
 
 # Initialize sacred experiment
@@ -44,8 +44,8 @@ def main(_config, _run):
         all_projects = load_all_projects_in_folder(folder_path)
         output_folder = Path(folder_path)
 
-    behavior_plotter = MultiProjectBehaviorPlotter(all_projects=all_projects,
-                                                   class_constructor=NeuronToUnivariateEncoding)
+    behavior_plotter = MultiProjectBehaviorPlotterWithBehavior(all_projects=all_projects,
+                                                               class_constructor=NeuronToUnivariateEncoding)
     plot_opt = dict(df_name='ratio', to_save=True, saving_folder=output_folder)
 
     # See _unpack_data_from_name for valid values
