@@ -981,6 +981,30 @@ class ProjectData:
         else:
             return pca_modes
 
+    def calc_correlation_to_pc1(self, **trace_kwargs):
+        """
+        Calculates the correlation of a trace to the first PC
+
+        Parameters
+        ----------
+        name
+        trace_kwargs
+
+        Returns
+        -------
+
+        """
+        trace_kwargs['interpolate_nan'] = True
+        X = self.calc_default_traces(**trace_kwargs)
+        X = fill_nan_in_dataframe(X, do_filtering=False)
+        X -= X.mean()
+        pca = PCA(n_components=1, whiten=False)
+        pca.fit(X.T)
+        pca_modes = pca.components_.T
+        pc1 = pca_modes[:, 0]
+        correlation = np.corrcoef(X.T, pc1)[0, 1:]
+        return correlation
+
     def calc_plateau_state_using_pc1(self, replace_nan=True, DEBUG=False, **trace_kwargs):
         # Get the trace that will be used to calculate the plateau state
         pca_modes = self.calc_pca_modes(n_components=1, **trace_kwargs)
