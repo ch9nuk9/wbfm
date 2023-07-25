@@ -953,24 +953,37 @@ class ProjectData:
         df = df.reindex(sorted(df.columns), axis=1)
         return df
 
-    def calc_pca_modes(self, n_components=10, flip_pc1_to_have_reversals_high=True, **trace_kwargs):
+    def calc_pca_modes(self, n_components=10, flip_pc1_to_have_reversals_high=True, return_pca_weights=False,
+                       **trace_kwargs):
         trace_kwargs['interpolate_nan'] = True
         X = self.calc_default_traces(**trace_kwargs)
         X = fill_nan_in_dataframe(X, do_filtering=False)
+        X -= X.mean()
         pca = PCA(n_components=n_components, whiten=False)
+        if return_pca_weights:
+            pca.fit(X)
+            pca_weights = pca.components_.T
         pca.fit(X.T)
         pca_modes = pca.components_.T
+
         if flip_pc1_to_have_reversals_high:
             # Calculate the speed, and define the sign of the first PC to be anticorrelated to speed
             speed = self.worm_posture_class.worm_speed(fluorescence_fps=True, reset_index=True)
             correlation = np.corrcoef(pca_modes[:, 0], speed)[0, 1]
             if correlation > 0:
-                pca_modes[:, 0] = -pca_modes[:, 0]
-        return pca, pca_modes
+                if return_pca_weights:
+                    pca_weights[:, 0] = -pca_weights[:, 0]
+                else:
+                    pca_modes[:, 0] = -pca_modes[:, 0]
+
+        if return_pca_weights:
+            return pca_weights
+        else:
+            return pca_modes
 
     def calc_plateau_state_using_pc1(self, replace_nan=True, DEBUG=False, **trace_kwargs):
         # Get the trace that will be used to calculate the plateau state
-        pca, pca_modes = self.calc_pca_modes(n_components=1, **trace_kwargs)
+        pca_modes = self.calc_pca_modes(n_components=1, **trace_kwargs)
         pc1 = pd.Series(pca_modes[:, 0])
         # Calculate plateaus using worm posture class method
         plateaus, working_pw_fits = self.worm_posture_class.calc_plateau_state_from_trace(pc1, n_breakpoints=2,
@@ -1853,7 +1866,7 @@ def plot_pca_modes_from_project(project_data: ProjectData, n_components=3, trace
     if trace_kwargs is None:
         trace_kwargs = {}
 
-    pca, pca_modes = project_data.calc_pca_modes(n_components=n_components, **trace_kwargs)
+    pca_modes = project_data.calc_pca_modes(n_components=n_components, **trace_kwargs)
 
     # Use physical time axis
     x = project_data.x_for_plots
@@ -1875,8 +1888,6 @@ def plot_pca_modes_from_project(project_data: ProjectData, n_components=3, trace
     fname = 'pca_modes.png'
     fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
     plt.savefig(fname)
-
-    return pca
 
 
 def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_start=None, t_end=None,
