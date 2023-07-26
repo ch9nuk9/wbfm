@@ -1459,7 +1459,7 @@ class WormFullVideoPosture:
                 return file
         return None
 
-    def behavior_video_btf_fname(self):
+    def behavior_video_btf_fname(self, raw=False):
         """
         Note that the newer naming convention for the btf files is raw_stack_AVG_background_subtracted.btf,
         and not the file with _normalised in the name
@@ -1469,7 +1469,9 @@ class WormFullVideoPosture:
         for file in Path(self.behavior_subfolder).iterdir():
             if file.is_dir():
                 continue
-            if file.name.endswith('Ch0-BHbigtiff_AVG_background_subtracted.btf'):
+            if raw and file.name.endswith('raw_stack.btf'):
+                return file
+            elif file.name.endswith('Ch0-BHbigtiff_AVG_background_subtracted.btf'):
                 return file
             elif file.name.endswith('raw_stack_AVG_background_subtracted.btf'):
                 # Newer naming convention
