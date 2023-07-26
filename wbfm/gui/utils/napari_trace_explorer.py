@@ -41,6 +41,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     current_time_point_before_callback = 0
     dict_of_saved_times = None
 
+    # If False, will load faster but can't use tracklet correcting features
+    load_tracklets = True
+
     # For optional napari layers
     use_track_of_point: bool = False
 
@@ -51,7 +54,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def __init__(self, project_data: ProjectData, app: QApplication, **kwargs):
         check_all_needed_data_for_step(project_data.project_config,
                                        step_index=5, raise_error=True, training_data_required=False)
-        project_data.check_data_desyncing(raise_error=True)
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        if self.load_tracklets:
+            project_data.check_data_desyncing(raise_error=True)
 
         super(QtWidgets.QWidget, self).__init__()
         self.verticalLayoutWidget = QtWidgets.QWidget(self)
@@ -93,9 +99,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dict_of_saved_times = dict()
 
         self.list_of_gt_correction_widgets = []
-
-        for k, v in kwargs.items():
-            setattr(self, k, v)
 
     def setupUi(self, viewer: napari.Viewer):
 
@@ -1767,7 +1770,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat.add_layers_to_viewer(self.viewer, which_layers=which_layers, heatmap_kwargs=heatmap_kwargs)
 
 
-def napari_trace_explorer_from_config(project_path: str, app=None, force_tracklets_to_be_sparse=True,
+def napari_trace_explorer_from_config(project_path: str, app=None,
+                                      load_tracklets=True, force_tracklets_to_be_sparse=True,
                                       DEBUG=False, **kwargs):
     # A parent QT application must be initialized first
     os.environ["NAPARI_ASYNC"] = "1"
@@ -1783,7 +1787,7 @@ def napari_trace_explorer_from_config(project_path: str, app=None, force_trackle
     initialization_kwargs = dict(use_custom_padded_dataframe=False,
                                  force_tracklets_to_be_sparse=force_tracklets_to_be_sparse)
     project_data = ProjectData.load_final_project_data_from_config(project_path,
-                                                                   to_load_tracklets=True,
+                                                                   to_load_tracklets=load_tracklets,
                                                                    # to_load_interactivity=True,
                                                                    to_load_segmentation_metadata=True,
                                                                    to_load_frames=True,
@@ -1793,7 +1797,7 @@ def napari_trace_explorer_from_config(project_path: str, app=None, force_trackle
     # If I don't set this to false, need to debug custom dataframe here
     project_data.use_custom_padded_dataframe = False
     project_data.load_interactive_properties()
-    ui, viewer = napari_trace_explorer(project_data, app=app, **kwargs)
+    ui, viewer = napari_trace_explorer(project_data, app=app, load_tracklets=load_tracklets, **kwargs)
 
     # Note: don't use this in jupyter
     napari.run()
