@@ -998,11 +998,11 @@ class ProjectData:
         X = self.calc_default_traces(**trace_kwargs)
         X = fill_nan_in_dataframe(X, do_filtering=False)
         X -= X.mean()
-        pca = PCA(n_components=1, whiten=False)
+        pca = PCA(n_components=1, whiten=True)
         pca.fit(X.T)
         pca_modes = pca.components_.T
-        pc1 = pca_modes[:, 0]
-        correlation = np.corrcoef(X.T, pc1)[0, 1:]
+        pc1 = pd.Series(pca_modes[:, 0])
+        correlation = X.corrwith(pc1)
         return correlation
 
     def calc_plateau_state_using_pc1(self, replace_nan=True, DEBUG=False, **trace_kwargs):
