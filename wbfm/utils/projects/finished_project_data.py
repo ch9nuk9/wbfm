@@ -878,6 +878,8 @@ class ProjectData:
             assert interpolate_nan, "Residual mode only works if nan are interpolated!"
             if residual_mode == 'pca':
                 df, _ = calculate_residual_subtract_pca(df, n_components=2)
+            elif residual_mode == 'pca_global':
+                _, df = calculate_residual_subtract_nmf(df, n_components=2)
             elif residual_mode == 'nmf':
                 df, _ = calculate_residual_subtract_nmf(df, n_components=2)
             else:
