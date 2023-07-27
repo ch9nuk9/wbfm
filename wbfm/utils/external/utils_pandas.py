@@ -760,13 +760,24 @@ def split_flattened_index(flattened_index: list) -> Dict[str, Tuple[str, str]]:
             # Or a string like 'ZIM2165_Gcamp7b_worm3-2022-12-05_summed_curvature' into
             # ['ZIM2165_Gcamp7b_worm3-2022-12-05', 'summed_curvature']
             # The name of the actual trace (second name) may have multiple underscores, so this is not consistent
-            # But all project names end with a number, and no second names have any
+            # But all project names end with a number. Some second names have a number, but not at the beginning
             try:
-                last_num_index = max([i for i, c in enumerate(key) if c.isdigit()])
-                dataset_name = key[:last_num_index + 1]
-                trace_name = key[last_num_index + 2:]  # Assume there is a single character as a splitter
+                split_key = key.split('_')
+                has_any_digits = lambda x: any([c.isdigit() for c in x])
+                last_num_index = max([i for i, c in enumerate(split_key) if has_any_digits(c)])
+                # If the last number is at the end, then split on the second-to-last instead
+                if last_num_index == len(split_key) - 1:
+                    last_num_index -= 1
+                dataset_name = '_'.join(split_key[:last_num_index + 1])
+                trace_name = '_'.join(split_key[last_num_index + 1:])
                 unflattened_dict[key] = (dataset_name, trace_name)
-            except ValueError:
+
+                # last_num_index = max([i for i, c in enumerate(key) if c.isdigit()])
+                # dataset_name = key[:last_num_index + 1]
+                # trace_name = key[last_num_index + 2:]  # Assume there is a single character as a splitter
+                # unflattened_dict[key] = (dataset_name, trace_name)
+            except ValueError as e:
+                print(e)
                 raise ValueError(f"Could not split key {key}")
 
     return unflattened_dict
