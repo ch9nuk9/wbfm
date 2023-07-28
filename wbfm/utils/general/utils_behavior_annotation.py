@@ -1,6 +1,6 @@
 from enum import IntEnum, Flag, auto
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -32,6 +32,7 @@ class BehaviorCodes(Flag):
     SUPERCOIL = auto()  # Manually annotated
     QUIESCENCE = auto()  # Manually annotated
     SELF_COLLISION = auto()  # Annotated using a different pipeline
+    HEAD_CAST = auto()  # Manually annotated
 
     NOT_ANNOTATED = auto()
     UNKNOWN = auto()
@@ -195,13 +196,20 @@ class BehaviorCodes(Flag):
                 cls.REV | cls.VENTRAL_TURN, cls.REV | cls.DORSAL_TURN]
 
     @classmethod
-    def shading_cmap_func(cls, state: 'BehaviorCodes', include_collision=False):
+    def shading_cmap_func(cls, query_state: 'BehaviorCodes', include_collision=False,
+                          custom_shaded_state: Optional['BehaviorCodes']=None):
         """Colormap for shading on top of traces, but using 'in' logic instead of '==' logic"""
-        if cls.FWD in state:
+        if custom_shaded_state is not None:
+            if custom_shaded_state in query_state:
+                return 'lightgray'
+            else:
+                return None
+        # Otherwise use a hardcoded colormap
+        if cls.FWD in query_state:
             return None
-        elif cls.REV in state:
+        elif cls.REV in query_state:
             return 'lightgray'
-        elif cls.SELF_COLLISION in state and include_collision:
+        elif cls.SELF_COLLISION in query_state and include_collision:
             return 'red'
         else:
             return None
@@ -303,7 +311,8 @@ class BehaviorCodes(Flag):
             return full_name
 
 
-def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, include_collision=False):
+def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, include_collision=False,
+                         custom_shaded_state: Optional['BehaviorCodes']=None):
     """
     Returns a list of dictionaries that can be passed to plotly to draw an ethogram
 
@@ -313,6 +322,9 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
     ----------
     beh_vec
     shading
+    include_reversal_turns
+    include_collision
+    custom_shaded_state
 
     Returns
     -------
@@ -320,7 +332,8 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
     """
     all_shape_opt = []
     if shading:
-        cmap_func = lambda state: BehaviorCodes.shading_cmap_func(state, include_collision=include_collision)
+        cmap_func = lambda state: BehaviorCodes.shading_cmap_func(state, include_collision=include_collision,
+                                                                  custom_shaded_state=custom_shaded_state)
     else:
         cmap_func = lambda state: \
             BehaviorCodes.ethogram_cmap(include_reversal_turns=include_reversal_turns).get(state, None)
@@ -450,8 +463,8 @@ def approximate_behavioral_annotation_using_pc1(project_cfg):
 
 
 def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes.SELF_COLLISION, ),
-                         cmap=None, index_conversion=None,
-                         DEBUG=False):
+                         cmap=None, index_conversion=None, custom_shaded_state: Optional['BehaviorCodes']=None,
+                         include_collision=False, DEBUG=False):
     """
     Shades current plot using a 3-code behavioral annotation:
         Invalid data (no shade)
@@ -476,7 +489,8 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
 
     """
     if cmap is None:
-        cmap = BehaviorCodes.shading_cmap_func
+        cmap = lambda state: BehaviorCodes.shading_cmap_func(state, include_collision=include_collision,
+                                                             custom_shaded_state=custom_shaded_state)
     if ax is None:
         ax = plt.gca()
 
