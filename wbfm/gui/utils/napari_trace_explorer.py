@@ -664,7 +664,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                         dims_displayed=event.dims_displayed,
                         world=True
                     )
-                    if seg_index == 0:
+                    if seg_index is None or seg_index == 0:
                         self.logger.debug("Clicked on background, not a neuron")
                         return
 
