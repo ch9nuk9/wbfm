@@ -533,7 +533,8 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
             ax.axvspan(ax_start, ax_end, alpha=0.9, color=color, zorder=-10)
 
 
-def shade_triggered_average(ind_preceding, xlim=None, behavior_shading_type='fwd', ax=None):
+def shade_triggered_average(ind_preceding, index_conversion=None,
+                            xlim=None, behavior_shading_type='fwd', ax=None):
     if xlim is None:
         if ax is None:
             xlim = plt.xlim()
@@ -543,7 +544,7 @@ def shade_triggered_average(ind_preceding, xlim=None, behavior_shading_type='fwd
         xlim = (int(xlim[0]), int(xlim[1]))
     # Shade using behavior either before or after the ind_preceding line
     if behavior_shading_type is not None:
-        # Initialize empty
+        # Initialize empty (FWD = no annotation)
         beh_vec = np.array([BehaviorCodes.FWD for _ in range(xlim[1] - xlim[0])])
         # beh_vec = np.array([BehaviorCodes.FWD for _ in range(int(np.ceil(xlim[1])))])
         if behavior_shading_type == 'fwd':
@@ -559,4 +560,4 @@ def shade_triggered_average(ind_preceding, xlim=None, behavior_shading_type='fwd
         # index_conversion = np.arange(xlim[0] - ind_preceding, xlim[1] - ind_preceding)
 
         # Shade
-        shade_using_behavior(beh_vec, ax=ax)#, index_conversion=index_conversion)
+        shade_using_behavior(beh_vec, ax=ax, index_conversion=index_conversion)
