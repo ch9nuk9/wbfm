@@ -1336,7 +1336,7 @@ class ClusteredTriggeredAverages:
     def plot_multiple_clusters_simple(self, i_clust_list: List[int], min_lines=2, ind_preceding=None, z_score=False,
                                       show_individual_lines=False, show_shading_error_bars=True, xlim=None,
                                       use_dendrogram_colors=True, output_folder=None, behavior_shading_type=None,
-                                      show_guide_lines=True, legend=False, fps=1, **plot_kwargs):
+                                      show_guide_lines=True, legend=False, **plot_kwargs):
 
         if ind_preceding is None:
             ind_preceding = self._ind_preceding
@@ -1368,7 +1368,7 @@ class ClusteredTriggeredAverages:
                                                                  show_individual_lines=show_individual_lines,
                                                                  is_second_plot=is_second_plot, ax=ax,
                                                                  show_shading=show_shading_error_bars,
-                                                                 fps=fps, xlim=xlim,
+                                                                 xlim=xlim,
                                                                  label=f"Cluster {i_clust}", **plot_kwargs)
             already_plotted_clusters.append(i_clust)
         plt.xlabel("Time (volumes)")
