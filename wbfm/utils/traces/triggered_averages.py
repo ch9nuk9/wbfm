@@ -862,6 +862,7 @@ class ClusteredTriggeredAverages:
     linkage_threshold: float = 4.0  # Not a great default; depends strongly on dataset
     cluster_criterion: str = 'distance'  # Alternate: 'maxclust'
     linkage_method: str = 'average'
+    min_correlation: float = 0.0  # Used to filter out weakly correlated neurons
 
     _R: np.ndarray = None  # The actual dendrogram
 
@@ -910,6 +911,15 @@ class ClusteredTriggeredAverages:
         names = self.names
         cluster_func = self.cluster_func
 
+        # Remove neurons that are weakly correlated with everything
+        # if self.min_correlation > 0.0:
+        #     df = self.df_corr
+        #     df_max = df[df < 1].max()
+        #     neurons_to_keep = df_max[df_max > self.min_correlation].index
+        #     df_corr = df_corr.loc[neurons_to_keep, neurons_to_keep]
+            # TODO: fix name offsets later
+
+        # Calculate clustering
         Z = hierarchy.linkage(df_corr.to_numpy(), method=linkage_method, optimal_ordering=True)
         clust_ind = cluster_func(Z, t=linkage_threshold, criterion=cluster_criterion)
 
@@ -1047,7 +1057,7 @@ class ClusteredTriggeredAverages:
 
         self._save_plot("clustergram.png", output_folder)
 
-    def plot_dendrogram_matplotlib(self, linkage_threshold=None, output_folder=None):
+    def plot_dendrogram_matplotlib(self, linkage_threshold=None, output_folder=None, show_xticks=False):
         if linkage_threshold is None:
             linkage_threshold = self.linkage_threshold
 
@@ -1057,8 +1067,9 @@ class ClusteredTriggeredAverages:
         fig, ax = plt.subplots(dpi=200, figsize=(5/2, 2))
         no_plot = False
         self.recalculate_dendrogram(linkage_threshold, no_plot, ax)
-        plt.axis('off')
-        plt.xticks([])
+        if not show_xticks:
+            plt.axis('off')
+            plt.xticks([])
 
         self._save_plot("dendrogram.png", output_folder)
 
