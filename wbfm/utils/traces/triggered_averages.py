@@ -1274,7 +1274,7 @@ class ClusteredTriggeredAverages:
             plt.xlabel("Time (seconds)")
             plt.tight_layout()
 
-            shade_triggered_average(ind_preceding, pseudo_mat.columns, xlim, behavior_shading_type, ax)
+            shade_triggered_average(ind_preceding, pseudo_mat.columns, behavior_shading_type, ax)
 
             base_fname = f"cluster_{i_clust}.png"
             self._save_plot(base_fname, output_folder)
@@ -1377,8 +1377,8 @@ class ClusteredTriggeredAverages:
         if legend:
             plt.legend()
 
-        index_conversion = pseudo_mat.columns # Should always exist
-        shade_triggered_average(ind_preceding, index_conversion, xlim, behavior_shading_type, ax)
+        index_conversion = pseudo_mat.columns  # Should always exist
+        shade_triggered_average(ind_preceding, index_conversion, behavior_shading_type, ax)
 
         self._save_plot(f"multiple_clusters_{i_clust_list}.png", output_folder)
 

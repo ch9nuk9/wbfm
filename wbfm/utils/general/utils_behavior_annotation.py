@@ -534,14 +534,14 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
 
 
 def shade_triggered_average(ind_preceding, index_conversion=None,
-                            xlim=None, behavior_shading_type='fwd', ax=None):
-    if xlim is None:
+                            behavior_shading_type='fwd', ax=None):
+    if True: #xlim is None:
+        # Instead of the xlim, we want the length of the vector
         if ax is None:
-            xlim = plt.xlim()
+            x = plt.get_xdata()
         else:
-            xlim = ax.get_xlim()
-        # xlim has to be int
-        xlim = (int(xlim[0]), int(xlim[1]))
+            x = ax.get_lines()[0].get_xdata()
+        xlim = (0, len(x))
     # Shade using behavior either before or after the ind_preceding line
     if behavior_shading_type is not None:
         # Initialize empty (FWD = no annotation)
@@ -556,8 +556,6 @@ def shade_triggered_average(ind_preceding, index_conversion=None,
             beh_vec[ind_preceding:] = BehaviorCodes.REV
         else:
             raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
-        # Set up index conversion: ind_preceding should be set to 0
-        # index_conversion = np.arange(xlim[0] - ind_preceding, xlim[1] - ind_preceding)
 
         # Shade
         shade_using_behavior(beh_vec, ax=ax, index_conversion=index_conversion)
