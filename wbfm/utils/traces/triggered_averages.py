@@ -1084,7 +1084,19 @@ class ClusteredTriggeredAverages:
         self._R = R
         return R
 
-    def plot_subcluster_clustergram(self, i_clust, linkage_threshold=None):
+    def plot_subcluster_clustergram(self, i_clust, linkage_threshold=None, ax=None):
+        """
+        Reclusters a single cluster and plots a plotly (interactive) clustergram
+
+        Parameters
+        ----------
+        i_clust
+        linkage_threshold
+
+        Returns
+        -------
+
+        """
         if linkage_threshold is None:
             linkage_threshold = self.linkage_threshold
         # redo clustering of a single cluster
@@ -1093,14 +1105,26 @@ class ClusteredTriggeredAverages:
         X = df_corr.to_numpy()
         static_rendering_required, render_opt = check_plotly_rendering(X)
 
-        dist_fun = lambda X, metric: X  # df_corr is already the distance (similarity)
-        import dash_bio
-        opt = dict(height=800, width=800, link_method=self.linkage_method,
-                   color_threshold={'row': linkage_threshold, 'col': linkage_threshold},
-                   center_values=False)
-        opt.update(dict(row_labels=[], column_labels=[]))
-        clustergram = dash_bio.Clustergram(X, dist_fun=dist_fun, **opt)
-        clustergram.show(**render_opt)
+        if not static_rendering_required:
+            dist_fun = lambda X, metric: X  # df_corr is already the distance (similarity)
+            import dash_bio
+            opt = dict(height=800, width=800, link_method=self.linkage_method,
+                       color_threshold={'row': linkage_threshold, 'col': linkage_threshold},
+                       center_values=False)
+            # opt.update(dict(row_labels=[], column_labels=[]))
+            # opt['row_labels'] = []
+            # opt['column_labels'] = []
+            clustergram = dash_bio.Clustergram(X, dist_fun=dist_fun, **opt)
+            clustergram.show(**render_opt)
+
+            Z, R = None, None
+        else:
+            # Sometimes the colormap with matplotlib breaks dash_bio, so just go with matplotlib
+            Z = hierarchy.linkage(df_corr.to_numpy(), method=self.linkage_method, optimal_ordering=True)
+            R = hierarchy.dendrogram(Z, orientation='top', no_labels=True, color_threshold=linkage_threshold,
+                                     above_threshold_color='black', ax=ax, no_plot=False)
+
+        return Z, R
 
     def plot_all_clusters(self):
         ind_class = self.triggered_averages_class.ind_class
