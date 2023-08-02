@@ -537,7 +537,7 @@ class WormFullVideoPosture:
 
         return y
 
-    @lru_cache(maxsize=8)
+    # @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
                        include_collision=True, include_turns=True) -> \
             Optional[pd.Series]:
@@ -556,9 +556,6 @@ class WormFullVideoPosture:
                 logging.warning("Using automatic annotation instead")
                 beh = self._raw_beh_annotation
 
-        # Make sure there are no nan values
-        beh.replace(np.nan, BehaviorCodes.UNKNOWN, inplace=True)
-
         # Add additional annotations from other files
         # Note that these other annotations are one frame shorter than the behavior annotation
         beh = beh.iloc[:-1]
@@ -568,6 +565,9 @@ class WormFullVideoPosture:
         if include_turns and self._turn_annotation() is not None:
             # Note that the turn annotation is one frame shorter than the behavior annotation
             beh = beh + self._turn_annotation(fluorescence_fps=False, reset_index=False)
+
+        # Make sure there are no nan values
+        beh.replace(np.nan, BehaviorCodes.UNKNOWN, inplace=True)
         beh_vec = self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
         BehaviorCodes.assert_all_are_valid(beh_vec)
         return beh_vec
@@ -1381,6 +1381,15 @@ class WormFullVideoPosture:
 
         Assumes the high frame rate index
         """
+
+        # Get value to use for tracking failures
+        if isinstance(vec, pd.DataFrame):
+            invalid_value = BehaviorCodes.TRACKING_FAILURE if isinstance(vec.iat[0, 0], BehaviorCodes) else np.nan
+        elif isinstance(vec, pd.Series):
+            invalid_value = BehaviorCodes.TRACKING_FAILURE if isinstance(vec.iat[0], BehaviorCodes) else np.nan
+        else:
+            raise ValueError(f"Unknown type {type(vec)}")
+
         tracking_failure_idx = self.tracking_failure_idx
         if tracking_failure_idx is None and estimate_failures_from_kymograph:
             tracking_failure_idx = self.estimate_tracking_failures_from_kymo(fluorescence_fps)
@@ -1388,15 +1397,9 @@ class WormFullVideoPosture:
             vec = vec.copy()
             logging.debug(f"Setting these indices as tracking failures: {tracking_failure_idx}")
             if isinstance(vec, pd.DataFrame):
-                if isinstance(vec.iat[0, 0], BehaviorCodes):
-                    vec.iloc[tracking_failure_idx] = BehaviorCodes.TRACKING_FAILURE
-                else:
-                    vec.iloc[tracking_failure_idx, :] = np.nan
+                vec.iloc[tracking_failure_idx, :] = invalid_value
             elif isinstance(vec, pd.Series):
-                if isinstance(vec.iat[0], BehaviorCodes):
-                    vec.iloc[tracking_failure_idx] = BehaviorCodes.TRACKING_FAILURE
-                else:
-                    vec.iloc[tracking_failure_idx] = np.nan
+                vec.iloc[tracking_failure_idx] = invalid_value
         return vec
 
     def estimate_tracking_failures_from_kymo(self, fluorescence_fps):
