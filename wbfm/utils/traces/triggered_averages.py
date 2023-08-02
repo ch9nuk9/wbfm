@@ -350,9 +350,9 @@ class TriggeredAverageIndices:
         xmax = pd.Series(triggered_avg).last_valid_index()
         if shorten_to_last_valid:
             # Helps with plotting individual lines, but will likely produce traces of different lengths
-            triggered_avg = triggered_avg[:xmax]
-            triggered_lower_std = triggered_lower_std[:xmax]
-            triggered_upper_std = triggered_upper_std[:xmax]
+            triggered_avg = triggered_avg.loc[:xmax]
+            triggered_lower_std = triggered_lower_std.loc[:xmax]
+            triggered_upper_std = triggered_upper_std.loc[:xmax]
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
             raw_trace_mean = np.nanmean(triggered_avg)
