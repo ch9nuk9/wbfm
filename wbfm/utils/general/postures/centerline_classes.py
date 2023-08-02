@@ -334,7 +334,7 @@ class WormFullVideoPosture:
         if _raw_vector is None:
             return None
         else:
-            _raw_vector = _raw_vector['head cast']
+            _raw_vector = _raw_vector['head_cast']
         # Harcoded conversion for these files :(
         _raw_vector = _raw_vector.replace(1, BehaviorCodes.HEAD_CAST)
         _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
@@ -561,7 +561,7 @@ class WormFullVideoPosture:
 
         return y
 
-    @lru_cache(maxsize=8)
+    # @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
                        include_collision=True, include_turns=True, include_head_cast=True) -> \
             Optional[pd.Series]:
@@ -1339,7 +1339,7 @@ class WormFullVideoPosture:
                     all_files['filename_self_collision'] = str(file)
                 elif file.name.endswith('turns_annotation.csv'):
                     all_files['filename_turn_annotation'] = str(file)
-                elif file.name.endswith('head_cast_ground_truth_time_series.csv'):
+                elif file.name.endswith('head_cast_ground_truth_timeseries.csv'):
                     all_files['filename_head_cast'] = str(file)
 
             # Third, get the table stage position
