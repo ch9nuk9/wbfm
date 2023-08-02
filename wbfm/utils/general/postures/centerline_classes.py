@@ -319,7 +319,6 @@ class WormFullVideoPosture:
         BehaviorCodes.assert_all_are_valid(_raw_vector)
         return _raw_vector
 
-
     @lru_cache(maxsize=8)
     def _head_cast_annotation(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         """This is intended to be summed with the main behavioral vector"""
@@ -591,7 +590,7 @@ class WormFullVideoPosture:
             # Note that the turn annotation is one frame shorter than the behavior annotation
             beh = beh + self._turn_annotation(fluorescence_fps=False, reset_index=False)
 
-        if include_head_cast and self._turn_annotation() is not None:
+        if include_head_cast and self._head_cast_annotation() is not None:
             beh = beh + self._head_cast_annotation(fluorescence_fps=False, reset_index=False)
 
         # Make sure there are no nan values
