@@ -60,6 +60,7 @@ class WormFullVideoPosture:
 
     filename_self_collision: str = None
     filename_turn_annotation: str = None
+    filename_head_cast: str = None
 
     # Exists without running Ulises' code, but not for immobilized worms
     filename_table_position: str = None
@@ -310,10 +311,34 @@ class WormFullVideoPosture:
             return None
         else:
             _raw_vector = _raw_vector['turn']
-        # Specific code for these files :(
+        # Harcoded conversion for these files :(
         _raw_vector = _raw_vector.replace(1, BehaviorCodes.VENTRAL_TURN)
         _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
         _raw_vector = _raw_vector.replace(-1, BehaviorCodes.DORSAL_TURN)
+        _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
+        BehaviorCodes.assert_all_are_valid(_raw_vector)
+        return _raw_vector
+
+
+    @lru_cache(maxsize=8)
+    def _head_cast_annotation(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        """This is intended to be summed with the main behavioral vector"""
+        df = self._raw_head_cast_annotation
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
+
+    @cached_property
+    def _raw_head_cast_annotation(self) -> Optional[pd.Series]:
+        # This one has a header
+        _raw_vector = read_if_exists(self.filename_head_cast, reader=pd.read_csv, index_col=0)
+
+        if _raw_vector is None:
+            return None
+        else:
+            _raw_vector = _raw_vector['head cast']
+        # Harcoded conversion for these files :(
+        _raw_vector = _raw_vector.replace(1, BehaviorCodes.HEAD_CAST)
+        _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
         _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
         BehaviorCodes.assert_all_are_valid(_raw_vector)
         return _raw_vector
@@ -537,9 +562,9 @@ class WormFullVideoPosture:
 
         return y
 
-    # @lru_cache(maxsize=8)
+    @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
-                       include_collision=True, include_turns=True) -> \
+                       include_collision=True, include_turns=True, include_head_cast=True) -> \
             Optional[pd.Series]:
         """
         Name is shortened to avoid US-UK spelling confusion
@@ -565,6 +590,9 @@ class WormFullVideoPosture:
         if include_turns and self._turn_annotation() is not None:
             # Note that the turn annotation is one frame shorter than the behavior annotation
             beh = beh + self._turn_annotation(fluorescence_fps=False, reset_index=False)
+
+        if include_head_cast and self._turn_annotation() is not None:
+            beh = beh + self._head_cast_annotation(fluorescence_fps=False, reset_index=False)
 
         # Make sure there are no nan values
         beh.replace(np.nan, BehaviorCodes.UNKNOWN, inplace=True)
@@ -1312,6 +1340,8 @@ class WormFullVideoPosture:
                     all_files['filename_self_collision'] = str(file)
                 elif file.name.endswith('turns_annotation.csv'):
                     all_files['filename_turn_annotation'] = str(file)
+                elif file.name.endswith('head_cast_ground_truth_time_series.csv'):
+                    all_files['filename_head_cast'] = str(file)
 
             # Third, get the table stage position
             # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)
