@@ -60,11 +60,6 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
     raw_trace_mean, triggered_avg, triggered_lower_std, triggered_upper_std, xmax, is_valid = \
         TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines=min_lines,
                                                                     z_score=z_score)
-    # Get x values, with the vertical line set to be at 0
-    # x_vals = np.arange(-ind_preceding, triggered_avg.shape[0] - ind_preceding) / fps
-    # Move the xlim to the right if necessary
-    # if xlim is not None:
-    #     xlim = (xlim[0] - ind_preceding, xlim[1] - ind_preceding)
 
     if not is_valid:
         logging.warning("Found invalid neuron (empty triggered average)")
