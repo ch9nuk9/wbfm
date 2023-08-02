@@ -94,9 +94,10 @@ class BehaviorCodes(Flag):
 
     def __add__(self, other):
         # Allows adding vectors as well
-        if other in (BehaviorCodes.NOT_ANNOTATED, BehaviorCodes.UNKNOWN):
+        # Note that pandas will add np.nan values if the vectors are different lengths
+        if other in (BehaviorCodes.NOT_ANNOTATED, BehaviorCodes.UNKNOWN, np.nan):
             return self
-        elif self in (BehaviorCodes.NOT_ANNOTATED, BehaviorCodes.UNKNOWN):
+        elif self in (BehaviorCodes.NOT_ANNOTATED, BehaviorCodes.UNKNOWN, np.nan):
             return other
         else:
             return self | other
