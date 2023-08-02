@@ -2,6 +2,7 @@ from enum import IntEnum, Flag, auto
 from pathlib import Path
 from typing import List, Union, Optional
 
+import matplotlib
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -197,27 +198,40 @@ class BehaviorCodes(Flag):
                 cls.REV | cls.VENTRAL_TURN, cls.REV | cls.DORSAL_TURN]
 
     @classmethod
-    def shading_cmap_func(cls, query_state: 'BehaviorCodes', include_collision=False,
-                          custom_shaded_state: Optional['BehaviorCodes']=None):
-        """Colormap for shading on top of traces, but using 'in' logic instead of '==' logic"""
-        if custom_shaded_state is not None:
-            if custom_shaded_state in query_state:
-                return 'lightgray'
-            else:
-                return None
-        # Otherwise use a hardcoded colormap
-        if cls.FWD in query_state:
-            return None
-        elif cls.REV in query_state:
-            return 'lightgray'
-        elif cls.SELF_COLLISION in query_state and include_collision:
-            return 'red'
+    def shading_cmap_func(cls, query_state: 'BehaviorCodes',
+                          additional_shaded_states: Optional[List['BehaviorCodes']] = None):
+        """
+        Colormap for shading on top of traces, but using 'in' logic instead of '==' logic
+
+        The first color uses a gray shading
+        Additionally passed states will use a matplotlib colormap
+        """
+        base_cmap = matplotlib.cm.get_cmap('Pastel1')
+        cmap_dict = {cls.UNKNOWN: None,
+                     cls.FWD: None,
+                     cls.REV: 'lightgray'}
+        if additional_shaded_states is not None:
+            # Add states and colors using the matplotlib colormap
+            for i, state in enumerate(additional_shaded_states):
+                cmap_dict[state] = base_cmap(i)
+
+        for state, color in cmap_dict.items():
+            if state in query_state:
+                output_color = color
+                break
         else:
-            return None
-        # cmap = {cls.UNKNOWN: None,
-        #         cls.FWD: None,
-        #         cls.REV: 'lightgray',
-        #         cls.SELF_COLLISION: 'red'}
+            output_color = None
+        return output_color
+
+        # Otherwise use a hardcoded colormap
+        # if cls.FWD in query_state:
+        #     return None
+        # elif cls.REV in query_state:
+        #     return 'lightgray'
+        # elif cls.SELF_COLLISION in query_state and include_collision:
+        #     return 'red'
+        # else:
+        #     return None
 
     @classmethod
     def base_colormap(cls):
@@ -313,7 +327,7 @@ class BehaviorCodes(Flag):
 
 
 def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, include_collision=False,
-                         custom_shaded_state: Optional['BehaviorCodes']=None):
+                         additional_shaded_states: Optional[List['BehaviorCodes']]=None):
     """
     Returns a list of dictionaries that can be passed to plotly to draw an ethogram
 
@@ -333,8 +347,8 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
     """
     all_shape_opt = []
     if shading:
-        cmap_func = lambda state: BehaviorCodes.shading_cmap_func(state, include_collision=include_collision,
-                                                                  custom_shaded_state=custom_shaded_state)
+        cmap_func = lambda state: BehaviorCodes.shading_cmap_func(state,
+                                                                  additional_shaded_states=additional_shaded_states)
     else:
         cmap_func = lambda state: \
             BehaviorCodes.ethogram_cmap(include_reversal_turns=include_reversal_turns).get(state, None)
@@ -464,8 +478,9 @@ def approximate_behavioral_annotation_using_pc1(project_cfg):
 
 
 def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes.SELF_COLLISION, ),
-                         cmap=None, index_conversion=None, custom_shaded_state: Optional['BehaviorCodes']=None,
-                         include_collision=False, DEBUG=False):
+                         cmap=None, index_conversion=None,
+                         additional_shaded_states: Optional[List['BehaviorCodes']]=None,
+                         DEBUG=False):
     """
     Shades current plot using a 3-code behavioral annotation:
         Invalid data (no shade)
@@ -490,8 +505,8 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
 
     """
     if cmap is None:
-        cmap = lambda state: BehaviorCodes.shading_cmap_func(state, include_collision=include_collision,
-                                                             custom_shaded_state=custom_shaded_state)
+        cmap = lambda state: BehaviorCodes.shading_cmap_func(state,
+                                                             additional_shaded_states=additional_shaded_states)
     if ax is None:
         ax = plt.gca()
 
