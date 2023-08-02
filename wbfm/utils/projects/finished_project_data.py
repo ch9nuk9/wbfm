@@ -1417,14 +1417,20 @@ class ProjectData:
         return neuron_dict
 
     def neuron_name_to_manual_id_mapping(self, confidence_threshold=2, remove_unnamed_neurons=False,
-                                         flip_names_and_ids=False) -> Dict[str, str]:
+                                         flip_names_and_ids=False, error_on_duplicate=False) -> Dict[str, str]:
         name_ids = self.dict_numbers_to_neuron_names.copy()
         if len(name_ids) == 0:
             return {}
         name_mapping = {k: (v[0] if v[1] >= confidence_threshold else k) for k, v in name_ids.items()}
-        # Check that there are no duplicate values
-        assert len(set(name_mapping.values())) == len(name_mapping.values()), \
-            f"Duplicate values found in neuron_name_to_manual_id_mapping: {name_mapping}"
+        # Check that there are no duplicates within the values
+        value_counts = pd.Series(name_mapping.values()).value_counts()
+        message = f"Duplicate values found in neuron_name_to_manual_id_mapping: " \
+                  f"{list(value_counts[value_counts > 1].index)} (dataset: {self.shortened_name})"
+        if len(value_counts[value_counts > 1]) > 0:
+            if error_on_duplicate:
+                raise ValueError(message)
+            else:
+                self.logger.warning(message)
         if remove_unnamed_neurons:
             name_mapping = {k: v for k, v in name_mapping.items() if k != v}
         if flip_names_and_ids:
