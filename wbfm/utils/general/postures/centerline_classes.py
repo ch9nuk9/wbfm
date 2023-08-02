@@ -599,6 +599,15 @@ class WormFullVideoPosture:
         BehaviorCodes.assert_all_are_valid(beh_vec)
         return beh_vec
 
+    def all_found_behaviors(self, convert_to_strings=False, **kwargs):
+        beh = self.beh_annotation(**kwargs)
+        beh_unique = beh.unique()
+        if convert_to_strings:
+            beh_unique = [behavior.individual_names for behavior in beh_unique]
+            # Flatten the nested list, and only keep unique values
+            beh_unique = list({item for sublist in beh_unique for item in sublist})
+        return beh_unique
+
     @lru_cache(maxsize=64)
     def summed_curvature_from_kymograph(self, fluorescence_fps=False, start_segment=30, end_segment=80,
                                         do_abs=True, do_quantile=False, which_quantile=0.9,

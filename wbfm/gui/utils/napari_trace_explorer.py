@@ -18,8 +18,9 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from backports.cached_property import cached_property
 from tqdm.auto import tqdm
-from PyQt5.QtWidgets import QApplication, QProgressDialog
+from PyQt5.QtWidgets import QApplication, QProgressDialog, QListWidget
 from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
@@ -198,6 +199,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeOutlierOverlayCheckBox.setChecked(False)
         self.changeOutlierOverlayCheckBox.stateChanged.connect(self.add_or_remove_tracking_outliers)
         self.formlayout3.addRow("Display tracking outliers?", self.changeOutlierOverlayCheckBox)
+        # Change behavior shading (dropdown)
+        # Note: QListWidget allows multiple selection, but the display is very large... so use QComboBox instead
+        # Note also that most updates don't change the shading, so this has to fully rebuild the plot
+        self.changeSubplotShading = QtWidgets.QComboBox()
+        # self.changeSubplotShading.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        unique_behaviors = self.dat.worm_posture_class.all_found_behaviors(convert_to_strings=True,
+                                                                           fluorescence_fps=True)
+        unique_behaviors.insert(0, 'none')
+        self.changeSubplotShading.addItems(unique_behaviors)
+        self.changeSubplotShading.currentIndexChanged.connect(self.change_trace_tracklet_mode)
+        self.formlayout3.addRow("Shaded behaviors:", self.changeSubplotShading)
         # self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox()
         # self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         # self.formlayout3.addRow("Remove outliers (tracking confidence)?", self.changeTrackingOutlierCheckBox)
@@ -1689,7 +1701,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def color_using_behavior(self):
         if self.dat.worm_posture_class.has_beh_annotation:
-            self.dat.shade_axis_using_behavior(self.static_ax)
+            additional_shaded_state = self.changeSubplotShading.currentText()
+            # Convert to BehaviorCodes, if valid
+            if additional_shaded_state == 'none':
+                additional_shaded_states = []
+            else:
+                additional_shaded_states = [BehaviorCodes[additional_shaded_state.upper()]]
+            self.dat.shade_axis_using_behavior(self.static_ax, additional_shaded_states=additional_shaded_states)
 
     # def save_annotations(self):
     #     self.update_dataframe_using_points()

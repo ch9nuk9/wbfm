@@ -198,6 +198,11 @@ class BehaviorCodes(Flag):
                 cls.REV | cls.VENTRAL_TURN, cls.REV | cls.DORSAL_TURN]
 
     @classmethod
+    def possible_behavior_aliases(cls):
+        """A list of aliases for all the states. Each alias is just the lowercase version of the state name"""
+        return [state.name.lower() for state in cls]
+
+    @classmethod
     def shading_cmap_func(cls, query_state: 'BehaviorCodes',
                           additional_shaded_states: Optional[List['BehaviorCodes']] = None):
         """
@@ -207,9 +212,7 @@ class BehaviorCodes(Flag):
         Additionally passed states will use a matplotlib colormap
         """
         base_cmap = matplotlib.cm.get_cmap('Pastel1')
-        cmap_dict = {cls.UNKNOWN: None,
-                     cls.FWD: None,
-                     cls.REV: 'lightgray'}
+        cmap_dict = {cls.REV: 'lightgray'}
         if additional_shaded_states is not None:
             # Add states and colors using the matplotlib colormap
             for i, state in enumerate(additional_shaded_states):
@@ -324,6 +327,23 @@ class BehaviorCodes(Flag):
             split_name = self.__str__().split('.')[-1]
             full_name = split_name.replace('|', ' and ')
             return full_name
+
+    @property
+    def individual_names(self):
+        """
+        Returns a list of the individual names in the compound state, or the simple name if it is a simple state
+
+        Returns
+        -------
+
+        """
+        if self._name_ is not None:
+            return [self._name_]
+        else:
+            # Convert a string like 'BehaviorCodes.DORSAL_TURN|REV' to ['DORSAL_TURN', 'REV']
+            split_name = self.__str__().split('.')[-1]
+            individual_names = split_name.split('|')
+            return individual_names
 
 
 def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, include_collision=False,
