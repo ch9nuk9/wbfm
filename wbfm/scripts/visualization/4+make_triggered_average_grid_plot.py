@@ -40,7 +40,8 @@ def main(_config, _run):
 
     # Hilbert phase
     make_summary_hilbert_triggered_average_grid_plot(project_data)
-    make_summary_hilbert_triggered_average_grid_plot(project_data, return_fast_scale_separation=True)
+    # make_summary_hilbert_triggered_average_grid_plot(project_data, return_fast_scale_separation=True)
     make_summary_hilbert_triggered_average_grid_plot(project_data, residual_mode='pca', interpolate_nan=True)
+    make_summary_hilbert_triggered_average_grid_plot(project_data, residual_mode='pca_global', interpolate_nan=True)
 
     # make_pirouette_split_triggered_average_plots(project_data)
