@@ -663,7 +663,7 @@ class ProjectData:
 
         # Optional: rename columns to use manual ids, if found
         if rename_neurons_using_manual_ids:
-            mapping = self.neuron_name_to_manual_id_mapping()
+            mapping = self.neuron_name_to_manual_id_mapping(confidence_threshold=1)
             neuron_names = [mapping[n] if n in mapping else n for n in neuron_names]
         return neuron_names
 
@@ -1422,6 +1422,9 @@ class ProjectData:
         if len(name_ids) == 0:
             return {}
         name_mapping = {k: (v[0] if v[1] >= confidence_threshold else k) for k, v in name_ids.items()}
+        # Check that there are no duplicate values
+        assert len(set(name_mapping.values())) == len(name_mapping.values()), \
+            f"Duplicate values found in neuron_name_to_manual_id_mapping: {name_mapping}"
         if remove_unnamed_neurons:
             name_mapping = {k: v for k, v in name_mapping.items() if k != v}
         if flip_names_and_ids:
