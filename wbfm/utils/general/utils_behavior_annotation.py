@@ -204,7 +204,8 @@ class BehaviorCodes(Flag):
 
     @classmethod
     def shading_cmap_func(cls, query_state: 'BehaviorCodes',
-                          additional_shaded_states: Optional[List['BehaviorCodes']] = None):
+                          additional_shaded_states: Optional[List['BehaviorCodes']] = None,
+                          default_reversal_shading: bool = True) -> Optional[str]:
         """
         Colormap for shading on top of traces, but using 'in' logic instead of '==' logic
 
@@ -212,7 +213,10 @@ class BehaviorCodes(Flag):
         Additionally passed states will use a matplotlib colormap
         """
         base_cmap = matplotlib.cm.get_cmap('Pastel1')
-        cmap_dict = {cls.REV: 'lightgray'}
+        cmap_dict = {}
+        if default_reversal_shading:
+            cmap_dict[cls.REV] = 'lightgray'
+
         if additional_shaded_states is not None:
             # Add states and colors using the matplotlib colormap
             for i, state in enumerate(additional_shaded_states):
