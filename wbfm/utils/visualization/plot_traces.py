@@ -1106,7 +1106,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         for shade_opt in trace_shading_opt:
             shade_opt['y1'] = 0.5 # Will be half the overall plot
             fig.add_shape(**shade_opt, row=trace_opt['row'], col=trace_opt['col'])
-        # Force yref in all of these new shapes, which doens't really work for subplots
+        # Force yref in all of these new shapes, which doesn't really work for subplots
         # But here it is hardcoded as 50% of the overall plot (extending across subplots)
         for i in range(num_before_adding_shapes, len(fig.layout.shapes)):
             fig.layout.shapes[i]['yref'] = 'paper'

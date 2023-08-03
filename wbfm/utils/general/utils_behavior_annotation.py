@@ -403,6 +403,31 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
     return all_shape_opt
 
 
+def shade_using_behavior_plotly(beh_vector, fig=None, **kwargs):
+    """
+    Plotly version of shade_using_behavior
+
+    Parameters
+    ----------
+    beh_vector
+    fig
+    behaviors_to_ignore
+    cmap
+    index_conversion
+    additional_shaded_states
+    DEBUG
+
+    Returns
+    -------
+
+    """
+
+    ethogram_opt = options_for_ethogram(beh_vector, shading=True, **kwargs)
+
+    for opt in ethogram_opt:
+        fig.add_shape(**opt)
+
+
 def detect_peaks_and_interpolate(dat, to_plot=False, fig=None,
                                  height="mean", width=5):
     """
