@@ -596,7 +596,7 @@ class WormFullVideoPosture:
         # Make sure there are no nan values.
         # Necessary because sometimes removing tracking failures adds nan, even when they should be recognized
         beh_vec = self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
-        beh.replace(np.nan, BehaviorCodes.UNKNOWN, inplace=True)
+        beh_vec.replace(np.nan, BehaviorCodes.UNKNOWN, inplace=True)
         BehaviorCodes.assert_all_are_valid(beh_vec)
         return beh_vec
 
