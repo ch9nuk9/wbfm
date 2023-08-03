@@ -34,25 +34,25 @@ import plotly.express as px
 ## New functions for use with project_config files
 ##
 
-def make_grid_plot_using_project(project_data: ProjectData,
-                                 channel_mode: str = 'ratio',
-                                 calculation_mode: str = 'integration',
-                                 neuron_names_to_plot: list = None,
-                                 filter_mode: str = 'no_filtering',
-                                 color_using_behavior=True,
-                                 remove_outliers=False,
-                                 bleach_correct=True,
-                                 behavioral_correlation_shading=None,
-                                 direct_shading_dict=None,
-                                 df_traces: pd.DataFrame=None,
-                                 postprocessing_func: Optional[callable] = None,
-                                 min_nonnan=None,
-                                 share_y_axis=False,
-                                 to_save=True,
-                                 savename_suffix="",
-                                 title_str = None,
-                                 trace_kwargs=None,
-                                 **kwargs):
+def make_grid_plot_from_project(project_data: ProjectData,
+                                channel_mode: str = 'ratio',
+                                calculation_mode: str = 'integration',
+                                neuron_names_to_plot: list = None,
+                                filter_mode: str = 'no_filtering',
+                                color_using_behavior=True,
+                                remove_outliers=False,
+                                bleach_correct=True,
+                                behavioral_correlation_shading=None,
+                                direct_shading_dict=None,
+                                df_traces: pd.DataFrame=None,
+                                postprocessing_func: Optional[callable] = None,
+                                min_nonnan=None,
+                                share_y_axis=False,
+                                to_save=True,
+                                savename_suffix="",
+                                title_str = None,
+                                trace_kwargs=None,
+                                **kwargs):
     """
 
     See project_data.calculate_traces for details on the arguments, and TracePlotter for even more detail
@@ -98,17 +98,17 @@ def make_grid_plot_using_project(project_data: ProjectData,
                    color_using_behavior=color_using_behavior,
                    bleach_correct=bleach_correct)
         for mode in all_modes:
-            make_grid_plot_using_project(channel_mode=mode, **opt)
+            make_grid_plot_from_project(channel_mode=mode, **opt)
         # Second, remove outliers and filter
         all_modes = ['ratio']
         opt['remove_outliers'] = True
         opt['filter_mode'] = 'rolling_mean'
         for mode in all_modes:
-            make_grid_plot_using_project(channel_mode=mode, **opt)
+            make_grid_plot_from_project(channel_mode=mode, **opt)
         # Do share-y versions, with filtering but not colors
         opt['share_y_axis'] = True
         for mode in all_modes:
-            make_grid_plot_using_project(channel_mode=mode, **opt)
+            make_grid_plot_from_project(channel_mode=mode, **opt)
         return
 
     # Set up initial variables
@@ -655,7 +655,7 @@ class ClickableGridPlot:
 
         mplstyle.use('fast')
         with safe_cd(project_data.project_dir):
-            fig = make_grid_plot_using_project(project_data, **opt)
+            fig = make_grid_plot_from_project(project_data, **opt)
 
         self.fig = fig
         self.project_data = project_data
@@ -895,7 +895,7 @@ def make_default_summary_plots_using_config(project_cfg):
     logger.info("Making default grid plots")
     grid_opt = dict(channel_mode='all', calculation_mode='integration', min_nonnan=0.5)
     try:
-        make_grid_plot_using_project(proj_dat, **grid_opt)
+        make_grid_plot_from_project(proj_dat, **grid_opt)
     except NoNeuronsError:
         pass
     # Also save a heatmap and a colored plot
@@ -909,7 +909,7 @@ def make_default_summary_plots_using_config(project_cfg):
     grid_opt['behavioral_correlation_shading'] = 'pc1'
     grid_opt['sort_using_shade_value'] = True
     try:
-        make_grid_plot_using_project(proj_dat, **grid_opt)
+        make_grid_plot_from_project(proj_dat, **grid_opt)
     except (np.linalg.LinAlgError, ValueError, NoNeuronsError) as e:
         # For test projects, this will fail due to too little data
         logger.warning("Failed to make PC1 grid plot; if this is a test project this may be expected")
@@ -918,7 +918,7 @@ def make_default_summary_plots_using_config(project_cfg):
     # Also make a residual plot
     grid_opt['residual_mode'] = 'pca'
     try:
-        make_grid_plot_using_project(proj_dat, **grid_opt)
+        make_grid_plot_from_project(proj_dat, **grid_opt)
     except (np.linalg.LinAlgError, ValueError, NoNeuronsError) as e:
         logging.warning("Failed to make residual grid plot; if this is a test project this may be expected")
         logger.info(e)
@@ -1008,20 +1008,20 @@ def _make_three_triggered_average_grid_plots(name, project_data, to_save, trace_
                                              triggered_averages_class, vis_cfg):
     # First, simple gridplot
     func = triggered_averages_class.ax_plot_func_for_grid_plot
-    make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
+    make_grid_plot_from_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
     if to_save:
         project_data.save_fig_in_project(suffix='triggered_average_simple', overwrite=True)
     # Second, gridplot with "significant" points marked
     func = partial(triggered_averages_class.ax_plot_func_for_grid_plot,
                    show_individual_lines=True, color_significant_times=True)
-    make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
+    make_grid_plot_from_project(project_data, **trace_and_plot_opt, ax_plot_func=func)
     if to_save:
         project_data.save_fig_in_project(suffix='triggered_average_significant_points_marked', overwrite=True)
     # Finally, a smaller subset of the grid plot (only neurons with enough signficant points)
     subset_neurons, _, _ = triggered_averages_class.which_neurons_are_significant()
     func = partial(triggered_averages_class.ax_plot_func_for_grid_plot)
-    make_grid_plot_using_project(project_data, **trace_and_plot_opt, ax_plot_func=func,
-                                 neuron_names_to_plot=subset_neurons)
+    make_grid_plot_from_project(project_data, **trace_and_plot_opt, ax_plot_func=func,
+                                neuron_names_to_plot=subset_neurons)
     if to_save:
         project_data.save_fig_in_project(suffix='triggered_average_neuron_subset', overwrite=True)
 

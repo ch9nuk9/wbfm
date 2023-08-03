@@ -13,7 +13,7 @@ from sacred.observers import TinyDbObserver
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.visualization.napari_from_project_data_class import take_screenshot_using_project
-from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
+from wbfm.utils.visualization.plot_traces import make_grid_plot_from_project
 
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)

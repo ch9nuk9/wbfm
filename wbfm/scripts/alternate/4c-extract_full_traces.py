@@ -17,7 +17,7 @@ from wbfm.pipeline.traces import match_segmentation_and_tracks_using_config, ext
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_project import safe_cd
-from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
+from wbfm.utils.visualization.plot_traces import make_grid_plot_from_project
 import cgitb
 cgitb.enable(format='text')
 
@@ -63,4 +63,4 @@ def main(_config, _run):
         # Note: reloads the project data
         logging.info("Making default grid plots")
         proj_dat = ProjectData.load_final_project_data_from_config(project_cfg)
-        make_grid_plot_using_project(proj_dat, channel_mode='all', calculation_mode='integration')
+        make_grid_plot_from_project(proj_dat, channel_mode='all', calculation_mode='integration')

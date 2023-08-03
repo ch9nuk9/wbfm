@@ -35,7 +35,7 @@ import statsmodels.api as sm
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
-from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
+from wbfm.utils.visualization.plot_traces import make_grid_plot_from_project
 
 
 @dataclass
@@ -882,10 +882,10 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
         # gridplot of traces
         if also_plot_traces and self.project_data is not None:
             direct_shading_dict = coefs.mean().to_dict()
-            make_grid_plot_using_project(self.project_data, 'ratio', 'integration',
-                                         neuron_names_to_plot=get_names_from_df(coefs),
-                                         direct_shading_dict=direct_shading_dict,
-                                         sort_using_shade_value=True, savename_suffix=f"{y_name}_encoding")
+            make_grid_plot_from_project(self.project_data, 'ratio', 'integration',
+                                        neuron_names_to_plot=get_names_from_df(coefs),
+                                        direct_shading_dict=direct_shading_dict,
+                                        sort_using_shade_value=True, savename_suffix=f"{y_name}_encoding")
 
         os.environ["PYTHONWARNINGS"] = initial_val  # Also affect subprocesses
 
