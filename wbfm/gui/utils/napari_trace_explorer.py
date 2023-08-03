@@ -1201,10 +1201,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def initialize_trace_subplot(self):
         self.update_stored_trace_time_series()
         # If there is already a trace line, just empty it
-        if self.trace_line is not None:
-            self.trace_line.set_data([], [])
-        else:
-            self.trace_line = self.static_ax.plot(self.tspan, self.y_trace_mode)[0]
+        self.trace_line = self.static_ax.plot(self.tspan, self.y_trace_mode)[0]
         self.add_or_remove_tracking_outliers()
         # If there is already a reference line, just empty it
         if self.reference_line is not None:
