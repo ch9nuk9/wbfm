@@ -132,7 +132,7 @@ def make_grid_plot_from_project(project_data: ProjectData,
         neuron_names = get_names_from_df(df_traces)
 
     # Build functions to make a single subplot
-    shade_plot_func = lambda axis: project_data.shade_axis_using_behavior(axis)
+    shade_plot_func = lambda axis, **kwargs: project_data.shade_axis_using_behavior(axis, **kwargs)
     logger = project_data.logger
 
     # Optional function: correlate to a behavioral variable or passed list
@@ -174,6 +174,8 @@ def make_grid_plot_from_project(project_data: ProjectData,
                     prefix = f"{prefix}_beh_{behavioral_correlation_shading}"
                 else:
                     prefix = f"{prefix}_beh-custom"
+            if 'shade_plot_kwargs' in kwargs:
+                f"{prefix}_background_shading-custom"
             if trace_kwargs.get('rename_neurons_using_manual_ids', False):
                 prefix = f"{prefix}_manual_ids"
             fname = f"{prefix}-grid{savename_suffix}.png"
@@ -184,7 +186,11 @@ def make_grid_plot_from_project(project_data: ProjectData,
         save_grid_plot(out_fname)
 
         fname = Path(fname).with_suffix('.h5')
-        traces_cfg.save_data_in_local_project(df_traces, str(fname), prepend_subfolder=True)
+        try:
+            traces_cfg.save_data_in_local_project(df_traces, str(fname), prepend_subfolder=True)
+        except ValueError as e:
+            logger.warning(f"Couldn't save dataframe to {fname}; likely due to a duplicate column")
+            logger.warning(f"Error: {e}")
 
     return fig
 
@@ -376,6 +382,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   shade_plot_func: callable = None,
                                   background_shading_value_func: callable = None,
                                   color_using_behavior: bool = True,
+                                  shade_plot_kwargs: dict = None,
                                   share_y_axis: bool = False,
                                   logger: logging.Logger = None,
                                   num_columns: int = 5,
@@ -496,7 +503,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
 
             # Additional layers of information on the axes
             if color_using_behavior and shade_plot_func is not None:
-                shade_plot_func(ax)
+                shade_plot_func(ax, **shade_plot_kwargs)
 
             if background_shading_value_func is not None and not sort_without_shading:
                 color, val = correlation_shading_colors[i], background_shading_value_func(y, neuron_name)
