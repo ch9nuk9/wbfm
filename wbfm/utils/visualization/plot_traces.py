@@ -214,7 +214,14 @@ def make_grid_plot_from_dataframe(df: pd.DataFrame, neuron_names_to_plot: list =
 
     # Build functions to make a single subplot
     tspan = np.arange(df.shape[0])
-    get_data_func = lambda neuron_name: (tspan, df[neuron_name])
+
+    def get_data_func(neuron_name):
+        # Make sure only a single column is returned
+        y = df[neuron_name]
+        if y.ndim > 1:
+            y = y.iloc[:, 0]
+            logging.warning(f"Multiple columns found for {neuron_name}; using only the first")
+        return tspan, y
 
     fig, original_axes = make_grid_plot_from_callables(get_data_func, neuron_names, **kwargs)
 

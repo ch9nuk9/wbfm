@@ -250,6 +250,11 @@ class TriggeredAverageIndices:
         -------
 
         """
+        # If there are multiple neurons with the same name, then sometimes raw_trace can be a matrix, which is a problem
+        if raw_trace.ndim > 1:
+            raise ValueError("raw_trace must be a vector, not a matrix... "
+                             "This is probably caused by a duplicate name in the neuron manual annotation")
+
         if custom_ind is None:
             all_ind = self.triggered_average_indices(**ind_kwargs)
         else:
