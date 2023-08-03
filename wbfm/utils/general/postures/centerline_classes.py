@@ -593,9 +593,10 @@ class WormFullVideoPosture:
         if include_head_cast and self._head_cast_annotation() is not None:
             beh = beh + self._head_cast_annotation(fluorescence_fps=False, reset_index=False)
 
-        # Make sure there are no nan values
-        beh.replace(np.nan, BehaviorCodes.UNKNOWN, inplace=True)
+        # Make sure there are no nan values.
+        # Necessary because sometimes removing tracking failures adds nan, even when they should be recognized
         beh_vec = self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
+        beh.replace(np.nan, BehaviorCodes.UNKNOWN, inplace=True)
         BehaviorCodes.assert_all_are_valid(beh_vec)
         return beh_vec
 
@@ -1421,6 +1422,7 @@ class WormFullVideoPosture:
         """
 
         # Get value to use for tracking failures
+        # TODO: sometimes this check improperly fails to recognize BehaviorCodes
         if isinstance(vec, pd.DataFrame):
             invalid_value = BehaviorCodes.TRACKING_FAILURE if isinstance(vec.iat[0, 0], BehaviorCodes) else np.nan
         elif isinstance(vec, pd.Series):

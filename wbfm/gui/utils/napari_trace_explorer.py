@@ -35,6 +35,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     subplot_is_initialized = False
     tracklet_lines = None
+    trace_line = None
+    reference_line = None
     zoom_opt = None
     main_subplot_xlim = None
 
