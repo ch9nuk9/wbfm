@@ -238,10 +238,18 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_hilbert_amplitude, reader=pd.read_csv, header=None)
 
     @lru_cache(maxsize=8)
-    def hilbert_phase(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+    def hilbert_phase(self, fluorescence_fps=False, mod_2pi=True, **kwargs) -> pd.DataFrame:
         df = self._raw_hilbert_phase
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
-        df = (df % (2 * math.pi))
+        if mod_2pi:
+            df = (df % (2 * math.pi))
+        return df
+
+    @lru_cache(maxsize=8)
+    def hilbert_phase_derivative(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        df = self.hilbert_phase(fluorescence_fps, mod_2pi=False, **kwargs)
+        df = df.diff(axis=0)
+        # Sometimes the derivative has some singularities
         return df
 
     @cached_property
