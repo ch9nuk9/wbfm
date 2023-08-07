@@ -670,7 +670,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @layer_to_add_callback.mouse_drag_callbacks.append
         def on_click(layer, event):
-            if event.button == 1:
+            if event.button == 1 or event.button == 2:
                 click_modifiers = [m.name.lower() for m in event.modifiers]
                 if 'shift' not in click_modifiers:
                     # Get the index of the clicked segmentation
@@ -689,7 +689,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                     # The segmentation index should be the same as the name
                     neuron_name = int2name_neuron(seg_index)
                     self.logger.debug(f"Clicked on segmentation {seg_index}, corresponding to {neuron_name}")
-                    self.select_neuron(neuron_name)
+                    if event.button == 1:
+                        self.select_neuron(neuron_name)
+                    elif event.button == 2:
+                        self.changeReferenceTrace.setCurrentText(neuron_name)
 
     def connect_napari_callbacks(self):
         viewer = self.viewer
