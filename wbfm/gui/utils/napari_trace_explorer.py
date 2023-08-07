@@ -20,6 +20,7 @@ from backports.cached_property import cached_property
 from tqdm.auto import tqdm
 from PyQt5.QtWidgets import QApplication, QProgressDialog, QListWidget
 from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
+from wbfm.utils.general.custom_errors import NoBehaviorAnnotationsError
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
@@ -206,8 +207,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Note also that most updates don't change the shading, so this has to fully rebuild the plot
         self.changeSubplotShading = QtWidgets.QComboBox()
         # self.changeSubplotShading.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        unique_behaviors = self.dat.worm_posture_class.all_found_behaviors(convert_to_strings=True,
-                                                                           fluorescence_fps=True)
+        try:
+            unique_behaviors = self.dat.worm_posture_class.all_found_behaviors(convert_to_strings=True,
+                                                                               fluorescence_fps=True)
+        except NoBehaviorAnnotationsError:
+            unique_behaviors = []
         unique_behaviors.insert(0, 'none')
         self.changeSubplotShading.addItems(unique_behaviors)
         self.changeSubplotShading.currentIndexChanged.connect(self.change_trace_tracklet_mode)
