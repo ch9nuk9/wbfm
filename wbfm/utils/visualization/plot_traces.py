@@ -1075,6 +1075,8 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
 def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show=False, trace_opt=None,
                                               **kwargs):
 
+    base_font_size = 14
+
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     num_pca_modes_to_plot = 3
     column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
@@ -1088,7 +1090,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     ### First column: x axis is time
     fig = make_subplots(rows=rows, cols=cols, shared_xaxes=False, shared_yaxes=False,
                         row_heights=row_heights, column_widths=column_widths,
-                        horizontal_spacing=0.02, vertical_spacing=0.05,
+                        horizontal_spacing=0.04, vertical_spacing=0.05,
                         subplot_titles=subplot_titles,
                         specs=[[{}, {}, {}, {}],
                                [{}, {"rowspan": 4, "colspan": 3, "type": "scene"}, None, None],
@@ -1144,9 +1146,16 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     # Transparent background and remove lines
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     # Fonts
-    fig.update_layout(font=dict(size=18))
+    fig.update_layout(font=dict(size=base_font_size))
     # Unclear why the colorscale is not jet, but this fixes it
     fig.update_layout(coloraxis1=dict(colorscale='jet'))
+    # Fix the location and size of the colorbar
+    fig.update_coloraxes(colorbar=dict(
+        x=-0.07,  # Adjust the x position to move the colorbar to the right (1 is the rightmost position)
+        len=0.45,  # Set the length to determine the size of the colorbar (0.9 is 90% of the subplot's height)
+        y=0.8,  # Adjust the y position to center the colorbar vertically
+        title=dict(text='dR/R20', font=dict(size=base_font_size))
+    ))
 
     if to_show:
         fig.show()
@@ -1407,7 +1416,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
 
     phase_plot_list_opt = dict(rows=2, cols=2)
     ### Variance explained
-    var_explained_line = go.Scatter(y=var_explained)
+    var_explained_line = go.Scatter(x=np.arange(1, len(var_explained)+1), y=var_explained)
     var_explained_line_opt = dict(row=6, col=2, secondary_y=False)
     return column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list
 
