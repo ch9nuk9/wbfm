@@ -1075,7 +1075,7 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
 def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show=False, trace_opt=None,
                                               **kwargs):
 
-    base_font_size = 14
+    base_font_size = 18
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     num_pca_modes_to_plot = 3
@@ -1142,15 +1142,14 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     fig.update_xaxes(dict(showticklabels=True, title='Time (seconds)'), row=6, col=1, overwrite=True,)
     # fig.update_yaxes(dict(showticklabels=True), row=6, col=1, overwrite=True)
 
-    fig.update_layout(showlegend=True,
-                      autosize=False, width=1.5*1000, height=1.5*800)
+    fig.update_layout(showlegend=True, autosize=False, width=1.5*1000, height=1.5*800)
 
     # Add a single legend for behavior colors
     fig.update_layout(
         legend=dict(
             itemsizing='constant',  # Display legend items as colored boxes and text
             x=-0.07,  # Adjust the x position of the legend
-            y=0.25,  # Adjust the y position of the legend
+            y=0.52,  # Adjust the y position of the legend
             bgcolor='rgba(0, 0, 0, 0.00)',  # Set the background color of the legend
             bordercolor='Black',  # Set the border color of the legend
             borderwidth=1,  # Set the border width of the legend
@@ -1160,13 +1159,14 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     # Transparent background and remove lines
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     # Fonts
-    fig.update_layout(font=dict(size=base_font_size))
+    fig.update_layout(font=dict(size=base_font_size),
+                      title=dict(font=dict(size=base_font_size+2)))
     # Unclear why the colorscale is not jet, but this fixes it
     fig.update_layout(coloraxis1=dict(colorscale='jet'))
     # Fix the location and size of the colorbar
     fig.update_coloraxes(colorbar=dict(
         x=-0.07,  # Adjust the x position to move the colorbar to the right (1 is the rightmost position)
-        len=0.52,  # Set the length to determine the size of the colorbar (0.9 is 90% of the subplot's height)
+        len=0.45,  # Set the length to determine the size of the colorbar
         y=0.8,  # Adjust the y position to center the colorbar vertically
         title=dict(text='dR/R20', font=dict(size=base_font_size))
     ))
