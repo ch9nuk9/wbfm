@@ -1142,7 +1142,21 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     fig.update_xaxes(dict(showticklabels=True, title='Time (seconds)'), row=6, col=1, overwrite=True,)
     # fig.update_yaxes(dict(showticklabels=True), row=6, col=1, overwrite=True)
 
-    fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
+    fig.update_layout(showlegend=True,
+                      autosize=False, width=1.5*1000, height=1.5*800)
+
+    # Add a single legend for behavior colors
+    fig.update_layout(
+        legend=dict(
+            itemsizing='constant',  # Display legend items as colored boxes and text
+            x=-0.07,  # Adjust the x position of the legend
+            y=0.25,  # Adjust the y position of the legend
+            bgcolor='rgba(0, 0, 0, 0.00)',  # Set the background color of the legend
+            bordercolor='Black',  # Set the border color of the legend
+            borderwidth=1,  # Set the border width of the legend
+            font=dict(size=base_font_size)  # Set the font size of the legend text
+        )
+    )
     # Transparent background and remove lines
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     # Fonts
@@ -1152,7 +1166,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     # Fix the location and size of the colorbar
     fig.update_coloraxes(colorbar=dict(
         x=-0.07,  # Adjust the x position to move the colorbar to the right (1 is the rightmost position)
-        len=0.45,  # Set the length to determine the size of the colorbar (0.9 is 90% of the subplot's height)
+        len=0.52,  # Set the length to determine the size of the colorbar (0.9 is 90% of the subplot's height)
         y=0.8,  # Adjust the y position to center the colorbar vertically
         title=dict(text='dR/R20', font=dict(size=base_font_size))
     ))
@@ -1342,7 +1356,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     trace_opt_list = []
     for i, col in enumerate(col_names):
         trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index,
-                                     line=dict(color=mode_colormap[i], width=2)))
+                                     line=dict(color=mode_colormap[i], width=2), showlegend=False))
         trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
     #### Shading on top of the PCA modes
     try:
@@ -1357,7 +1371,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     except NoBehaviorAnnotationsError:
         trace_shading_opt = dict()
     ### Speed plot (below pca modes)
-    trace_list.append(go.Scatter(y=speed.iloc[:, 0], x=speed.index))
+    trace_list.append(go.Scatter(y=speed.iloc[:, 0], x=speed.index, showlegend=False))
     trace_opt_list.append(dict(row=num_pca_modes_to_plot + 3, col=1, secondary_y=False))
     ### PCA weights (same names as pca modes)
     mode_colormap = px.colors.qualitative.Plotly
@@ -1367,7 +1381,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         weights_list.append(go.Bar(x=df_pca_weights[col], y=df_pca_weights.index, orientation='h',
                                    marker=dict(color=mode_colormap[i]),
                                    hovertext=neuron_names,
-                                   hoverinfo="text"))
+                                   hoverinfo="text", showlegend=False))
         weights_opt_list.append(dict(row=1, col=2 + i, secondary_y=False))
     ### Ethogram
     # Include manual annotations, if any
@@ -1408,15 +1422,18 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     phase_plot_list = []
     for i, state_code in enumerate(state_codes):
         try:
+            # Only show the legend if the behavior is FWD or REV
+            showlegend = state_code.name in {'FWD', 'REV'}
             phase_plot_list.append(
                 go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]], mode='lines',
-                             name=state_code.name, line=dict(color=ethogram_cmap[state_code], width=4)))
+                             name=state_code.name, line=dict(color=ethogram_cmap[state_code], width=4),
+                             showlegend=showlegend),)
         except KeyError:
             pass
 
     phase_plot_list_opt = dict(rows=2, cols=2)
     ### Variance explained
-    var_explained_line = go.Scatter(x=np.arange(1, len(var_explained)+1), y=var_explained)
+    var_explained_line = go.Scatter(x=np.arange(1, len(var_explained)+1), y=var_explained, showlegend=False)
     var_explained_line_opt = dict(row=6, col=2, secondary_y=False)
     return column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list
 
