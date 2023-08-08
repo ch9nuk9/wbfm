@@ -9,7 +9,7 @@ class TestWormPostureClass(unittest.TestCase):
 
     def setUp(self):
         # Example project
-        fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/paper_datasets/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
+        fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/paper_datasets/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
         project_data = ProjectData.load_final_project_data_from_config(fname)
         self.project_data = project_data
         self.worm = project_data.worm_posture_class

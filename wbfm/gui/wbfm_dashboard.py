@@ -680,6 +680,6 @@ if __name__ == "__main__":
     DEBUG = args.DEBUG
 
     # DATA_FOLDER = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/alternative_ideas/tmp_data"
-    # project_path = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
+    # project_path = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
     dashboard = DashboardDataset(project_path, port=port, allow_public_access=allow_public_access)
     dashboard.serve_wbfm_dashboard()

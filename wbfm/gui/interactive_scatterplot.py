@@ -77,7 +77,7 @@ class InteractiveScatterplot:
 
 
 if __name__ == "__main__":
-    fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28"
+    fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28"
 
     obj = InteractiveScatterplot(fname)
     obj.make_interactive_scatterplot()

@@ -17,11 +17,11 @@ def get_summary_visualization_dir():
 
     """
 
-    return "/scratch/neurobiology/zimmer/Charles/multiproject_visualizations"
+    return "/scratch/neurobiology/zimmer/fieseler/multiproject_visualizations"
 
 
 def get_project_parent_folder():
-    return "/scratch/neurobiology/zimmer/Charles/dlc_stacks"
+    return "/scratch/neurobiology/zimmer/fieseler/wbfm_projects"
 
 
 def load_paper_datasets(genotype='gcamp', require_behavior=True) -> dict:
@@ -66,14 +66,14 @@ def load_paper_datasets(genotype='gcamp', require_behavior=True) -> dict:
         list_of_all_projects = _resolve_project_from_worm_id(folder_and_id_dict)
         good_projects = load_all_projects_from_list(list_of_all_projects)
     elif genotype == 'gfp':
-        folder_path = '/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-12-10_spacer_7b_2per_agar_GFP'
+        folder_path = '/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-12-10_spacer_7b_2per_agar_GFP'
         good_projects = load_all_projects_in_folder(folder_path)
     elif genotype == 'immob':
-        folder_path = '/scratch/neurobiology/zimmer/Charles/dlc_stacks/immobilization_tests/2022-11-03_immob_adj_settings_2'
+        folder_path = '/scratch/neurobiology/zimmer/fieseler/wbfm_projects/immobilization_tests/2022-11-03_immob_adj_settings_2'
         require_behavior = False  # No annotation of behavior here
         good_projects = load_all_projects_in_folder(folder_path)
         # Second folder, which extends above dictionary
-        folder_path = '/scratch/neurobiology/zimmer/Charles/dlc_stacks/immobilization_tests/2022-12-12_immob'
+        folder_path = '/scratch/neurobiology/zimmer/fieseler/wbfm_projects/immobilization_tests/2022-12-12_immob'
         good_projects.update(load_all_projects_in_folder(folder_path))
     else:
         raise NotImplementedError

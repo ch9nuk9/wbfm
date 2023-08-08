@@ -14,7 +14,7 @@ def double_gaussian_mixture_model_to_histogram(neuron, pixel_values_dict_red):
 
     example for input that is expected as pixel_values_dict_red:
     file = open(
-        "S:/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm3-2022_08_01//visualization/pixel_values_all_neurons_red.pickle",
+        "S:/neurobiology/zimmer/fieseler/wbfm_projects/exposure_12ms/C-exp12_worm3-2022_08_01//visualization/pixel_values_all_neurons_red.pickle",
         "rb")
     pixel_values_dict_red = pickle.load(file, encoding='bytes')"""
 
@@ -43,7 +43,7 @@ def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
 
     example for input that is expected as pixel_values_dict_red:
     file = open(
-        "S:/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms/C-exp12_worm3-2022_08_01//visualization/pixel_values_all_neurons_red.pickle",
+        "S:/neurobiology/zimmer/fieseler/wbfm_projects/exposure_12ms/C-exp12_worm3-2022_08_01//visualization/pixel_values_all_neurons_red.pickle",
         "rb")
     pixel_values_dict_red = pickle.load(file, encoding='bytes')"""
 

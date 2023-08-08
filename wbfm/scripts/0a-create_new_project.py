@@ -30,7 +30,7 @@ def main(_config, _run, _log):
     Example:
     python 0a-create_new_project.py with
         parent_data_folder='/scratch/neurobiology/zimmer/ulises/wbfm/20220824/data/ZIM2319_worm2'
-        project_dir='/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms'
+        project_dir='/scratch/neurobiology/zimmer/fieseler/wbfm_projects/exposure_12ms'
         task_name=gfp
         experimenter=C
     """

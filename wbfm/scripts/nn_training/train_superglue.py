@@ -42,7 +42,7 @@ def main():
         wandb_logger.watch(model, log='all', log_freq=1)
 
         trainer.fit(model, train_loader)
-    out_folder = '/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/nn_checkpoints'
+    out_folder = '/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/nn_checkpoints'
     model_fname = os.path.join(out_folder, 'superglue_neurons_4_datasets_06_22.ckpt')
     trainer.save_checkpoint(model_fname)
 

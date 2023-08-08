@@ -8,7 +8,7 @@ import os
 import numpy as np
 from tqdm.auto import tqdm
 
-DATA_PATH="/scratch/zimmer/Charles/github_repos/fDNC_Neuron_ID/Data"
+DATA_PATH="/scratch/zimmer/fieseler/github_repos/fDNC_Neuron_ID/Data"
 train_path = f"{DATA_PATH}/train_synthetic"
 eval_path = f"{DATA_PATH}/validation_synthetic"
 

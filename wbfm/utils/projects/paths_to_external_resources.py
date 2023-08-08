@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 
 # As of May 2022
-CAMERA_ALIGNMENT_MATRIX = "/scratch/neurobiology/zimmer/Charles/repos/dlc_for_wbfm/wbfm/nn_checkpoints/" \
+CAMERA_ALIGNMENT_MATRIX = "/scratch/neurobiology/zimmer/fieseler/repos/dlc_for_wbfm/wbfm/nn_checkpoints/" \
                           "warp_mat_green_to_red_2022-04-09.npy"
 
 

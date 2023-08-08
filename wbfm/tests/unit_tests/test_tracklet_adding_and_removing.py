@@ -12,7 +12,7 @@ class TestTrackletAddingAndRemoving(unittest.TestCase):
     def setUp(self) -> None:
         # Load a test project
         # See napari_trace_explorer_from_config.py for an example of how to load a project
-        project_path = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/project_pytest/project_config.yaml"
+        project_path = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/project_pytest/project_config.yaml"
         initialization_kwargs = dict(use_custom_padded_dataframe=False,
                                      force_tracklets_to_be_sparse=False,
                                      verbose=0)

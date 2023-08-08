@@ -853,7 +853,7 @@ class NeuronImageFeaturesDataModuleFromMultipleProjects(LightningDataModule):
 
 def load_data_with_ground_truth():
     ## Load the 4 datasets that have manual annotations
-    folder_name = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/"
+    folder_name = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/"
     fname = os.path.join(folder_name, "round1_worm1/project_config.yaml")
     project_data1 = ProjectData.load_final_project_data_from_config(fname, to_load_frames=True)
     fname = os.path.join(folder_name, "round1_worm4/project_config.yaml")
