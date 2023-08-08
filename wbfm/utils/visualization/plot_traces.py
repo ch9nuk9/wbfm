@@ -925,9 +925,9 @@ def make_default_summary_plots_using_config(project_cfg):
         logger.info(e)
         pass
     # Also make a residual plot
-    grid_opt['residual_mode'] = 'pca'
     try:
-        make_grid_plot_from_project(proj_dat, **grid_opt)
+        trace_kwargs = dict(residual_mode='pca')
+        make_grid_plot_from_project(proj_dat, **grid_opt, trace_kwargs=trace_kwargs)
     except (np.linalg.LinAlgError, ValueError, NoNeuronsError) as e:
         logging.warning("Failed to make residual grid plot; if this is a test project this may be expected")
         logger.info(e)
