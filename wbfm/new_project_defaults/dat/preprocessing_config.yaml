@@ -28,6 +28,12 @@ align_green_red_cameras: true # Not always saved
 gauss_filt_sigma: null # Gaussian blur parameter (Applied before calculating camera alignment, if not null)
 max_project_across_time: true # If true, max project across time before calculating camera alignment
 
+do_deconvolution: false
+do_sharpening: false
+sharpening_kwargs:
+  low_sigma: 1
+  high_sigma: 10
+
 # Datatypes and scaling
 initial_dtype: 'uint16' # Filtering etc. will act on this
 final_dtype: 'uint16'
