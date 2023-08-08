@@ -192,7 +192,7 @@ class BehaviorCodes(Flag):
 
     @classmethod
     def possible_colors(cls):
-        # Because I'm refactoring the colormaps to functions, I want a list to loop over
+        # Because I'm refactoring the colormaps to functions not dictionaries, I want a list to loop over
         return [cls.FWD, cls.REV, cls.SELF_COLLISION,
                 cls.FWD | cls.VENTRAL_TURN, cls.FWD | cls.DORSAL_TURN,
                 cls.REV | cls.VENTRAL_TURN, cls.REV | cls.DORSAL_TURN]
@@ -208,6 +208,10 @@ class BehaviorCodes(Flag):
                           default_reversal_shading: bool = True) -> Optional[str]:
         """
         Colormap for shading on top of traces, but using 'in' logic instead of '==' logic
+
+        There are two common use cases: shading behind a trace, and shading a standalone ethogram.
+            By default, shading behind a trace will use a gray color for reversals, and no shading for anything else
+        See ethogram_cmap for shading a standalone ethogram
 
         The first color uses a gray shading
         Additionally passed states will use a matplotlib colormap
@@ -246,7 +250,7 @@ class BehaviorCodes(Flag):
         return px.colors.qualitative.Set1_r
 
     @classmethod
-    def ethogram_cmap(cls, include_turns=True, include_reversal_turns=False):
+    def ethogram_cmap(cls, include_turns=True, include_reversal_turns=False, include_quiescence=False):
         """Colormap for shading as a stand-alone ethogram"""
         base_cmap = cls.base_colormap()
         cmap = {cls.UNKNOWN: None,
@@ -270,13 +274,16 @@ class BehaviorCodes(Flag):
                 cls.QUIESCENCE | cls.DORSAL_TURN: base_cmap[6],
                 }
         if include_turns:
+            # Turns during FWD are differentiated, but not during REV
             cmap[cls.FWD | cls.VENTRAL_TURN] = base_cmap[2]
             cmap[cls.FWD | cls.DORSAL_TURN] = base_cmap[3]
             cmap[cls.REV | cls.VENTRAL_TURN] = base_cmap[1]
             cmap[cls.REV | cls.DORSAL_TURN] = base_cmap[1]
         if include_reversal_turns:
+            # Turns during REV are differentiated, but not during FWD
             cmap[cls.REV | cls.VENTRAL_TURN] = base_cmap[4]
             cmap[cls.REV | cls.DORSAL_TURN] = base_cmap[5]
+        if include_quiescence:
             cmap[cls.QUIESCENCE] = base_cmap[6]
         return cmap
 
@@ -351,7 +358,8 @@ class BehaviorCodes(Flag):
 
 
 def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, include_collision=False,
-                         additional_shaded_states: Optional[List['BehaviorCodes']]=None):
+                         additional_shaded_states: Optional[List['BehaviorCodes']]=None,
+                         **kwargs):
     """
     Returns a list of dictionaries that can be passed to plotly to draw an ethogram
 
@@ -372,10 +380,11 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
     all_shape_opt = []
     if shading:
         cmap_func = lambda state: BehaviorCodes.shading_cmap_func(state,
-                                                                  additional_shaded_states=additional_shaded_states)
+                                                                  additional_shaded_states=additional_shaded_states,
+                                                                  **kwargs)
     else:
         cmap_func = lambda state: \
-            BehaviorCodes.ethogram_cmap(include_reversal_turns=include_reversal_turns).get(state, None)
+            BehaviorCodes.ethogram_cmap(include_reversal_turns=include_reversal_turns, **kwargs).get(state, None)
 
     # Loop over all behaviors in the colormap (some may not be present in the vector)
     for behavior_code in BehaviorCodes.possible_colors():
