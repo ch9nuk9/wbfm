@@ -421,6 +421,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
     """
     if fig_opt is None:
         fig_opt = {}
+    if shade_plot_kwargs is None:
+        shade_plot_kwargs = {}
     if ax_plot_func is None:
         _ax_plot_func = lambda t, y, ax, name, **kwargs: ax.plot(t, y, **kwargs)
     elif isinstance(ax_plot_func, list):
