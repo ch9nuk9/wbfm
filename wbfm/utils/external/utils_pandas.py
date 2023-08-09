@@ -425,6 +425,7 @@ def remove_short_state_changes(bool_column: pd.Series, min_length, only_replace_
     """
     starts, ends = get_contiguous_blocks_from_column(bool_column, already_boolean=True)
     new_column = bool_column.copy()
+    new_column.loc[:] = False
 
     # Compare the end to the next start, i.e. the gap between states
     if DEBUG:
