@@ -405,7 +405,8 @@ def calc_surpyval_durations_and_censoring(all_starts, all_ends):
 
 
 def remove_short_state_changes(bool_column: pd.Series, min_length, only_replace_these_states=None,
-                               replace_with_next_state=True, DEBUG=False):
+                               replace_with_next_state=True, depth=0, remove_small_false_first=True,
+                               DEBUG=False):
     """
     Removes very small states from an integer series, assuming they are noise. Replaces the tiny states with the
     surrounding state index. If the before and after are not the same, chooses based on 'replace_with_preceding_state'
@@ -423,9 +424,23 @@ def remove_short_state_changes(bool_column: pd.Series, min_length, only_replace_
     -------
 
     """
+    # Apply this function to both the column and its inverse
+    if depth == 0:
+        kwargs = dict(min_length=min_length, only_replace_these_states=only_replace_these_states,
+                      replace_with_next_state=replace_with_next_state, depth=1, DEBUG=DEBUG)
+        # Do two steps: remove small True and False
+        # Decide which to keep based on the remove_small_false_first parameter
+        if remove_small_false_first:
+            small_false_removed = ~remove_short_state_changes(~bool_column, **kwargs)
+            final_vec = remove_short_state_changes(small_false_removed, **kwargs)
+        else:
+            small_true_removed = remove_short_state_changes(bool_column, **kwargs)
+            final_vec = remove_short_state_changes(small_true_removed, **kwargs)
+
+        return final_vec
+
     starts, ends = get_contiguous_blocks_from_column(bool_column, already_boolean=True)
     new_column = bool_column.copy()
-    new_column.loc[:] = False
 
     # Compare the end to the next start, i.e. the gap between states
     if DEBUG:
