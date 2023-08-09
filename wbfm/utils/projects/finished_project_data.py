@@ -970,16 +970,29 @@ class ProjectData:
 
         if flip_pc1_to_have_reversals_high:
             # Calculate the speed, and define the sign of the first PC to be anticorrelated to speed
+            reversal_time_series = None
             try:
-                speed = self.worm_posture_class.worm_speed(fluorescence_fps=True, reset_index=True)
-                correlation = np.corrcoef(pca_modes[:, 0], speed)[0, 1]
+                reversal_time_series = self.worm_posture_class.worm_speed(fluorescence_fps=True, reset_index=True)
+            except NoBehaviorAnnotationsError:
+                self.logger.warning("Could not calculate speed, so not flipping PC1")
+
+            # Instead of behavior, see if there is an ID'ed AVA neuron
+            if reversal_time_series is None:
+                manual_ids = self.neuron_name_to_manual_id_mapping(confidence_threshold=1, flip_names_and_ids=True)
+                for candidate_name in ['AVA', 'AVAL', 'AVAR']:
+                    if candidate_name in manual_ids:
+                        neuron_name = manual_ids[candidate_name]
+                        reversal_time_series = X[neuron_name]
+                        break
+
+            # If we have a reversal time series, flip the first PC to be anticorrelated with it
+            if reversal_time_series is not None:
+                correlation = np.corrcoef(pca_modes[:, 0], reversal_time_series)[0, 1]
                 if correlation > 0:
                     if return_pca_weights:
                         pca_weights[:, 0] = -pca_weights[:, 0]
                     else:
                         pca_modes[:, 0] = -pca_modes[:, 0]
-            except NoBehaviorAnnotationsError:
-                self.logger.warning("Could not calculate speed, so not flipping PC1")
 
         if return_pca_weights:
             return pca_weights
