@@ -193,11 +193,13 @@ class BehaviorCodes(Flag):
             return pd.Series([e2 not in e1 for e1, e2 in zip(enum_list.iloc[:-1], enum_list.iloc[1:])])
 
     @classmethod
-    def possible_colors(cls):
+    def possible_colors(cls, include_complex_states=True):
         # Because I'm refactoring the colormaps to functions not dictionaries, I want a list to loop over
-        return [cls.FWD, cls.REV, cls.SELF_COLLISION,
-                cls.FWD | cls.VENTRAL_TURN, cls.FWD | cls.DORSAL_TURN,
-                cls.REV | cls.VENTRAL_TURN, cls.REV | cls.DORSAL_TURN]
+        states = [cls.FWD, cls.REV, cls.SELF_COLLISION]
+        if include_complex_states:
+            states.extend([cls.FWD | cls.VENTRAL_TURN, cls.FWD | cls.DORSAL_TURN,
+                           cls.REV | cls.VENTRAL_TURN, cls.REV | cls.DORSAL_TURN])
+        return states
 
     @classmethod
     def possible_behavior_aliases(cls):
@@ -539,7 +541,7 @@ def approximate_behavioral_annotation_using_pc1(project_cfg):
 
 def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes.SELF_COLLISION, ),
                          cmap=None, index_conversion=None,
-                         additional_shaded_states: Optional[List['BehaviorCodes']]=None,
+                         additional_shaded_states: Optional[List['BehaviorCodes']]=None, alpha=1.0,
                          DEBUG=False):
     """
     Shades current plot using a 3-code behavioral annotation:
@@ -572,10 +574,17 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
 
     # Get all behaviors that exist in the data and the cmap
     beh_vector = pd.Series(beh_vector)
-    data_behaviors = beh_vector.unique()
-    cmap_behaviors = pd.Series(BehaviorCodes.possible_colors())
+    # data_behaviors = beh_vector.unique()
+    # cmap_behaviors = pd.Series(BehaviorCodes.possible_colors(include_complex_states=include_complex_states))
     # Note that this returns a numpy array in the end
-    all_behaviors = pd.concat([pd.Series(data_behaviors), pd.Series(cmap_behaviors)]).unique()
+    # all_behaviors = pd.concat([pd.Series(data_behaviors), pd.Series(cmap_behaviors)]).unique()
+
+    # Define the list of simple behaviors we will shade
+    all_behaviors = [BehaviorCodes.REV]  # Default
+    # Insert new states at the front, so they are shaded first
+    if additional_shaded_states is not None:
+        all_behaviors = additional_shaded_states + all_behaviors
+    all_behaviors = pd.Series(all_behaviors)
 
     # Remove behaviors to ignore
     if behaviors_to_ignore is not None:
@@ -591,7 +600,7 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
         color = cmap(b)
         if color is None:
             continue
-
+        # err
         # Get the start and end indices of the binary vector
         starts, ends = get_contiguous_blocks_from_column(binary_vec, already_boolean=True)
         for start, end in zip(starts, ends):
@@ -605,8 +614,9 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
             else:
                 ax_start = start
                 ax_end = end
-
-            ax.axvspan(ax_start, ax_end, alpha=0.9, color=color, zorder=-10)
+            if DEBUG:
+                print(f'Behavior {b} from {ax_start} to {ax_end}')
+            ax.axvspan(ax_start, ax_end, alpha=alpha, color=color, zorder=-10)
 
 
 def shade_triggered_average(ind_preceding, index_conversion=None,
