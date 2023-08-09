@@ -21,7 +21,8 @@ from wbfm.utils.external.utils_breakpoints import plot_with_offset_x
 from wbfm.utils.external.utils_self_collision import calculate_self_collision_using_pairwise_distances
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate, \
     shade_using_behavior
-from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column
+from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
+    remove_short_state_changes
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
     MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
@@ -300,6 +301,60 @@ class WormFullVideoPosture:
         return _raw_vector
 
     @lru_cache(maxsize=8)
+    def _pause(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        """This is intended to be summed with the main behavioral vector"""
+        df = self._raw_pause
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
+
+    @cached_property
+    def _raw_pause(self) -> Optional[pd.Series]:
+        # Ulises does not really believe in this one
+        if self.curvature() is None:
+            return None
+
+        # Hardcoded thresholds for what "slow" body curvature is
+        # df_freq = self.hilbert_frequency(fluorescence_fps=False)
+        # df_pause = df_freq.T.copy()
+        # df_pause[df_pause.abs() > 0.05] = 0
+        # df_pause[df_pause.abs() > 0] = 1
+        # _raw_vector = df_pause.iloc[5:10].mean()
+        # _raw_vector = _raw_vector > 0.25
+
+        # Simpler: just a threshold on the speed
+        _raw_vector = self.worm_speed(fluorescence_fps=False, signed=False) < 0.2
+
+        # Remove any hesitations that are too short (less than 3 volumes ~ 1 second)
+        _raw_vector = remove_short_state_changes(_raw_vector, min_length=3)
+
+        # Convert 1's to BehaviorCodes.PAUSE and 0's to BehaviorCodes.NOT_ANNOTATED
+        _raw_vector = _raw_vector.replace(True, BehaviorCodes.PAUSE)
+        _raw_vector = _raw_vector.replace(False, BehaviorCodes.NOT_ANNOTATED)
+        _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
+        BehaviorCodes.assert_all_are_valid(_raw_vector)
+        return _raw_vector
+
+    @lru_cache(maxsize=8)
+    def worm_length(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        """"""
+        df = self._raw_worm_length
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
+
+    @cached_property
+    def _raw_worm_length(self) -> Optional[pd.Series]:
+        # Ulises does not really believe in this one
+        if self.centerlineX() is None:
+            return None
+
+        # Just calculate the summed distance between all points
+        x = self.centerlineX()
+        y = self.centerlineY()
+        _raw_vector = np.sum(np.sqrt(np.diff(x, axis=1) ** 2 + np.diff(y, axis=1) ** 2), axis=1)
+        _raw_vector = pd.Series(_raw_vector, index=x.index)
+        return _raw_vector
+
+    @lru_cache(maxsize=8)
     def _turn_annotation(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         """This is intended to be summed with the main behavioral vector"""
         df = self._raw_turn_annotation
@@ -573,7 +628,7 @@ class WormFullVideoPosture:
 
     # @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
-                       include_collision=True, include_turns=True, include_head_cast=True) -> \
+                       include_collision=True, include_turns=True, include_head_cast=True, include_pause=True) -> \
             Optional[pd.Series]:
         """
         Name is shortened to avoid US-UK spelling confusion
@@ -595,11 +650,11 @@ class WormFullVideoPosture:
         beh = beh.iloc[:-1]
         if include_collision and self._self_collision() is not None:
             beh = beh + self._self_collision(fluorescence_fps=False, reset_index=False)
-
+        if include_pause and self._pause() is not None:
+            beh = beh + self._pause(fluorescence_fps=False, reset_index=False)
         if include_turns and self._turn_annotation() is not None:
             # Note that the turn annotation is one frame shorter than the behavior annotation
             beh = beh + self._turn_annotation(fluorescence_fps=False, reset_index=False)
-
         if include_head_cast and self._head_cast_annotation() is not None:
             beh = beh + self._head_cast_annotation(fluorescence_fps=False, reset_index=False)
 
@@ -738,6 +793,25 @@ class WormFullVideoPosture:
 
         return speed_mm_per_s
 
+    def worm_acceleration(self, fluorescence_fps=False, **kwargs):
+        """
+        Calculates derivative of speed
+
+        Parameters
+        ----------
+        fluorescence_fps - Whether to downsample
+
+        Returns
+        -------
+
+        """
+        speed = self.worm_speed(fluorescence_fps=False, strong_smoothing=True, signed=True, **kwargs)
+        acceleration = pd.Series(np.gradient(speed), index=speed.index)
+
+        # Downsample after gradient
+        acceleration = self._validate_and_downsample(acceleration, fluorescence_fps=fluorescence_fps, **kwargs)
+        return acceleration
+
     def worm_speed_average_all_segments(self, start_segment=10, end_segment=90, **kwargs):
         """
         Computes the speed of each individual segment (absolute magnitude), then takes an average
@@ -835,8 +909,14 @@ class WormFullVideoPosture:
             except Exception as e:
                 print(velocity, rev_ind)
                 raise e
+        elif len(velocity) == len(rev_ind) - 1:
+            try:
+                velocity[rev_ind.iloc[:-1]] *= -1
+            except Exception as e:
+                print(velocity, rev_ind)
+                raise e
         else:
-            raise DataSynchronizationError(f"Velocity ({len(velocity)}) and reversal indices ({len(rev_ind)}) are desynchronized")
+            raise DataSynchronizationError(f"velocity ({len(velocity)})", f"reversal indices ({len(rev_ind)})")
 
         return velocity
 

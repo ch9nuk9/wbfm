@@ -32,8 +32,10 @@ class BehaviorCodes(Flag):
     DORSAL_TURN = auto()
     SUPERCOIL = auto()  # Manually annotated
     QUIESCENCE = auto()  # Manually annotated
-    SELF_COLLISION = auto()  # Annotated using a different pipeline
+    SELF_COLLISION = auto()  # Annotated using Charlie's pipeline
     HEAD_CAST = auto()  # Manually annotated
+    HESITATION = auto()  # Annotated using Charlie's pipeline
+    PAUSE = auto()  # Annotated using Charlie's pipeline
 
     NOT_ANNOTATED = auto()
     UNKNOWN = auto()
