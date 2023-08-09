@@ -957,6 +957,21 @@ class ProjectData:
 
     def calc_pca_modes(self, n_components=10, flip_pc1_to_have_reversals_high=True, return_pca_weights=False,
                        **trace_kwargs):
+        """
+        Calculates the PCA modes of the traces, and optionally flips the first mode to have reversals high
+        This allows comparison of PC1 across datasets
+
+        Parameters
+        ----------
+        n_components
+        flip_pc1_to_have_reversals_high
+        return_pca_weights
+        trace_kwargs
+
+        Returns
+        -------
+
+        """
         trace_kwargs['interpolate_nan'] = True
         X = self.calc_default_traces(**trace_kwargs)
         X = fill_nan_in_dataframe(X, do_filtering=False)
@@ -972,9 +987,10 @@ class ProjectData:
             # Calculate the speed, and define the sign of the first PC to be anticorrelated to speed
             reversal_time_series = None
             try:
-                reversal_time_series = self.worm_posture_class.worm_speed(fluorescence_fps=True, reset_index=True)
+                reversal_time_series = self.worm_posture_class.worm_speed(fluorescence_fps=True, reset_index=True,
+                                                                          signed=True)
             except NoBehaviorAnnotationsError:
-                self.logger.warning("Could not calculate speed, so not flipping PC1")
+                pass
 
             # Instead of behavior, see if there is an ID'ed AVA neuron
             if reversal_time_series is None:
@@ -982,8 +998,14 @@ class ProjectData:
                 for candidate_name in ['AVA', 'AVAL', 'AVAR']:
                     if candidate_name in manual_ids:
                         neuron_name = manual_ids[candidate_name]
-                        reversal_time_series = X[neuron_name]
+                        reversal_time_series = -X[neuron_name]
                         break
+                else:
+                    self.logger.warning("Could not calculate speed or AVA, so not flipping PC1")
+
+            # import plotly.express as px
+            # fig = px.line(reversal_time_series)
+            # fig.show()
 
             # If we have a reversal time series, flip the first PC to be anticorrelated with it
             if reversal_time_series is not None:
