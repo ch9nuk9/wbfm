@@ -322,7 +322,7 @@ class WormFullVideoPosture:
         # _raw_vector = _raw_vector > 0.25
 
         # Simpler: just a threshold on the speed
-        _raw_vector = self.worm_speed(fluorescence_fps=False, signed=False) < 0.2
+        _raw_vector = self.worm_speed(fluorescence_fps=False, signed=False) < 0.02
 
         # Remove any hesitations that are too short (less than 3 volumes ~ 1 second)
         _raw_vector = remove_short_state_changes(_raw_vector, min_length=3)
