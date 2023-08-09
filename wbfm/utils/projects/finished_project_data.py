@@ -1476,7 +1476,9 @@ class ProjectData:
             name_mapping = {k if v == '' else v: k for k, v in name_mapping.items()}
         return name_mapping
 
-    def estimate_tracking_failures_from_project(self, pad_nan_points=3, contamination='auto', DEBUG=False):
+    def estimate_tracking_failures_from_project(self, pad_nan_points=3, contamination=0.1,#'auto',
+                                                min_decrease_threshold=40,
+                                                DEBUG=False):
         """
         Uses sudden dips in the number of detected objects to guess where the tracking might fail
 
@@ -1487,6 +1489,7 @@ class ProjectData:
         ----------
         pad_nan_points
         contamination
+        min_decrease_threshold - minimum number of objects that must be lost to be considered a tracking failure
 
         Returns
         -------
@@ -1503,6 +1506,10 @@ class ProjectData:
         vals = model.fit_predict(all_num_objs.reshape(-1, 1))
         # Get outliers, but only care about decreases in objects, not increases
         vals[all_num_objs > 0] = 1
+        # Additionally filter by an absolute large-enough decrease in objects
+        all_object_deviations = all_num_objs - np.mean(all_num_objs)
+        vals[np.abs(all_object_deviations) < min_decrease_threshold] = 1
+
         if DEBUG:
             print(np.where(vals == -1))
 

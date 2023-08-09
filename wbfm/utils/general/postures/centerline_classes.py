@@ -79,7 +79,7 @@ class WormFullVideoPosture:
     num_trace_frames: int = None
 
     # Postprocessing the time series
-    tracking_failure_idx: np.ndarray = None
+    tracking_failure_idx: np.ndarray = None  # See estimate_tracking_failures_from_project
     physical_unit_conversion: PhysicalUnitConversion = None
 
     # If additional files are needed
