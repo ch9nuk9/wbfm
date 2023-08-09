@@ -322,13 +322,39 @@ class WormFullVideoPosture:
         # _raw_vector = _raw_vector > 0.25
 
         # Simpler: just a threshold on the speed
-        _raw_vector = self.worm_speed(fluorescence_fps=False, signed=False) < 0.02
+        _raw_vector = self.worm_speed(fluorescence_fps=False, signed=False, strong_smoothing=True) < 0.025
 
-        # Remove any hesitations that are too short (less than 3 volumes ~ 1 second)
-        _raw_vector = remove_short_state_changes(_raw_vector, min_length=3)
+        # Remove any hesitations that are too short (less than 1 second)
+        _raw_vector = remove_short_state_changes(_raw_vector, min_length=3*24)
 
         # Convert 1's to BehaviorCodes.PAUSE and 0's to BehaviorCodes.NOT_ANNOTATED
         _raw_vector = _raw_vector.replace(True, BehaviorCodes.PAUSE)
+        _raw_vector = _raw_vector.replace(False, BehaviorCodes.NOT_ANNOTATED)
+        _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
+        BehaviorCodes.assert_all_are_valid(_raw_vector)
+        return _raw_vector
+    
+    @lru_cache(maxsize=8)
+    def _hesitation(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        """This is intended to be summed with the main behavioral vector"""
+        df = self._raw_hesitation
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
+
+    @cached_property
+    def _raw_hesitation(self) -> Optional[pd.Series]:
+        # Ulises does not really believe in this one
+        if self.curvature() is None:
+            return None
+
+        # Simpler: just a threshold on the speed
+        _raw_vector = self.worm_speed(fluorescence_fps=False, signed=False, strong_smoothing=True) < 0.05
+
+        # Remove any hesitations that are too short (less than 1 second)
+        _raw_vector = remove_short_state_changes(_raw_vector, min_length=3*24)
+
+        # Convert 1's to BehaviorCodes.HESITATION and 0's to BehaviorCodes.NOT_ANNOTATED
+        _raw_vector = _raw_vector.replace(True, BehaviorCodes.HESITATION)
         _raw_vector = _raw_vector.replace(False, BehaviorCodes.NOT_ANNOTATED)
         _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
         BehaviorCodes.assert_all_are_valid(_raw_vector)
@@ -628,7 +654,8 @@ class WormFullVideoPosture:
 
     # @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
-                       include_collision=True, include_turns=True, include_head_cast=True, include_pause=True) -> \
+                       include_collision=True, include_turns=True, include_head_cast=True, include_pause=True,
+                       include_hesitation=True) -> \
             Optional[pd.Series]:
         """
         Name is shortened to avoid US-UK spelling confusion
@@ -652,6 +679,8 @@ class WormFullVideoPosture:
             beh = beh + self._self_collision(fluorescence_fps=False, reset_index=False)
         if include_pause and self._pause() is not None:
             beh = beh + self._pause(fluorescence_fps=False, reset_index=False)
+        if include_hesitation and self._hesitation() is not None:
+            beh = beh + self._hesitation(fluorescence_fps=False, reset_index=False)
         if include_turns and self._turn_annotation() is not None:
             # Note that the turn annotation is one frame shorter than the behavior annotation
             beh = beh + self._turn_annotation(fluorescence_fps=False, reset_index=False)
