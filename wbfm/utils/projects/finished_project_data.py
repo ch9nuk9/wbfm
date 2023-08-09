@@ -12,7 +12,7 @@ from sklearn.decomposition import PCA
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
+from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.general.postprocessing.position_postprocessing import impute_missing_values_in_dataframe
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
@@ -970,13 +970,16 @@ class ProjectData:
 
         if flip_pc1_to_have_reversals_high:
             # Calculate the speed, and define the sign of the first PC to be anticorrelated to speed
-            speed = self.worm_posture_class.worm_speed(fluorescence_fps=True, reset_index=True)
-            correlation = np.corrcoef(pca_modes[:, 0], speed)[0, 1]
-            if correlation > 0:
-                if return_pca_weights:
-                    pca_weights[:, 0] = -pca_weights[:, 0]
-                else:
-                    pca_modes[:, 0] = -pca_modes[:, 0]
+            try:
+                speed = self.worm_posture_class.worm_speed(fluorescence_fps=True, reset_index=True)
+                correlation = np.corrcoef(pca_modes[:, 0], speed)[0, 1]
+                if correlation > 0:
+                    if return_pca_weights:
+                        pca_weights[:, 0] = -pca_weights[:, 0]
+                    else:
+                        pca_modes[:, 0] = -pca_modes[:, 0]
+            except NoBehaviorAnnotationsError:
+                self.logger.warning("Could not calculate speed, so not flipping PC1")
 
         if return_pca_weights:
             return pca_weights

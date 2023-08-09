@@ -359,6 +359,8 @@ class WormFullVideoPosture:
 
     @cached_property
     def _raw_stage_position(self):
+        if self.filename_table_position is None:
+            raise NoBehaviorAnnotationsError("stage_position; may be missing in immobilized recordings")
         df = pd.read_csv(self.filename_table_position, index_col='time')
         df.index = pd.DatetimeIndex(df.index)
         return df
