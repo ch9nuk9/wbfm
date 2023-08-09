@@ -322,10 +322,10 @@ class WormFullVideoPosture:
         # _raw_vector = _raw_vector > 0.25
 
         # Simpler: just a threshold on the speed
-        _raw_vector = self.worm_speed(fluorescence_fps=False, signed=False, strong_smoothing=True) < 0.025
+        _raw_vector = self.worm_speed(fluorescence_fps=False, signed=False, strong_smoothing=True) < 0.01
 
-        # Remove any hesitations that are too short (less than 1 second)
-        _raw_vector = remove_short_state_changes(_raw_vector, min_length=3*24)
+        # Remove any pauses that are too short (less than 0.5 seconds)
+        _raw_vector = remove_short_state_changes(_raw_vector, min_length=30)
 
         # Convert 1's to BehaviorCodes.PAUSE and 0's to BehaviorCodes.NOT_ANNOTATED
         _raw_vector = _raw_vector.replace(True, BehaviorCodes.PAUSE)
@@ -347,11 +347,11 @@ class WormFullVideoPosture:
         if self.curvature() is None:
             return None
 
-        # Simpler: just a threshold on the speed
-        _raw_vector = self.worm_speed(fluorescence_fps=False, signed=False, strong_smoothing=True) < 0.05
+        # Threshold on the speed, set at about 50% of the average
+        _raw_vector = self.worm_speed(fluorescence_fps=False, signed=False, strong_smoothing=True) < 0.04
 
-        # Remove any hesitations that are too short (less than 1 second)
-        _raw_vector = remove_short_state_changes(_raw_vector, min_length=3*24)
+        # Remove any hesitations that are too short (less than ~0.5 seconds)
+        _raw_vector = remove_short_state_changes(_raw_vector, min_length=30)
 
         # Convert 1's to BehaviorCodes.HESITATION and 0's to BehaviorCodes.NOT_ANNOTATED
         _raw_vector = _raw_vector.replace(True, BehaviorCodes.HESITATION)
