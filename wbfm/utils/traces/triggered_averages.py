@@ -72,9 +72,9 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         # ax.plot(x_vals[:xmax], triggered_avg[:xmax], **kwargs)
         ax.plot(triggered_avg[:xmax], **kwargs)
     if show_individual_lines:
-        for trace in triggered_avg_matrix:
+        for i, trace in triggered_avg_matrix.iterrows():
             # ax.plot(x_vals[:xmax], trace[:xmax], 'black', alpha=3.0 / (triggered_avg_matrix.shape[0] + 10.0))
-            ax.plot(trace[:xmax], 'black', alpha=3.0 / (triggered_avg_matrix.shape[0] + 10.0))
+            ax.plot(trace.loc[:xmax], 'black', alpha=3.0 / (triggered_avg_matrix.shape[0] + 10.0))
     if not is_second_plot:
         ax.set_ylabel("Activity")
         # Set y limits because sometimes individual traces are very large
