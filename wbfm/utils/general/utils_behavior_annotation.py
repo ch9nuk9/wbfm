@@ -416,7 +416,7 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
     return all_shape_opt
 
 
-def shade_using_behavior_plotly(beh_vector, fig=None, **kwargs):
+def shade_using_behavior_plotly(beh_vector, fig, **kwargs):
     """
     Plotly version of shade_using_behavior
 
@@ -463,6 +463,10 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None,
         height = np.mean(dat)
     peaks, properties = find_peaks(dat, height=height, width=width)
     y_peaks = dat[peaks]
+
+    # Add a dummy peak at height 0 at the beginning and end of the vector to help edge artifacts
+    peaks = np.concatenate([[0], peaks, [len(dat)-1]])
+    y_peaks = np.concatenate([[0], y_peaks, [0]])
 
     # Interpolate
     interp_obj = interp1d(peaks, y_peaks, kind='cubic', bounds_error=False, fill_value="extrapolate")
@@ -592,6 +596,8 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
             all_behaviors = all_behaviors[all_behaviors != b]
     for b in [BehaviorCodes.UNKNOWN, BehaviorCodes.NOT_ANNOTATED, BehaviorCodes.TRACKING_FAILURE]:
         all_behaviors = all_behaviors[all_behaviors != b]
+    if DEBUG:
+        print("all_behaviors: ", all_behaviors)
 
     # Loop through the remaining behaviors, and use the binary vector to shade per behavior
     beh_vector = pd.Series(beh_vector)
@@ -599,10 +605,14 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
         binary_vec = BehaviorCodes.vector_equality(beh_vector, b)
         color = cmap(b)
         if color is None:
+            if DEBUG:
+                print(f'No color for behavior {b}')
             continue
         # err
         # Get the start and end indices of the binary vector
         starts, ends = get_contiguous_blocks_from_column(binary_vec, already_boolean=True)
+        if DEBUG and len(starts) == 0:
+            print(f'No behavior {b} found')
         for start, end in zip(starts, ends):
             if index_conversion is not None:
                 ax_start = index_conversion[start]

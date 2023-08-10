@@ -886,6 +886,13 @@ def make_binary_vector_from_starts_and_ends(starts, ends, original_vals, pad_nan
     return idx_boolean
 
 
+def pad_events_in_binary_vector(vec, pad_length=(1, 1)):
+    starts, ends = get_contiguous_blocks_from_column(vec, already_boolean=True)
+    vec_padded = make_binary_vector_from_starts_and_ends(starts, ends, vec, pad_nan_points=pad_length)
+    return vec_padded
+
+
+
 def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None, z_to_xy_ratio=1.0):
     # Just visualize one neuron for now
     # 5 columns:

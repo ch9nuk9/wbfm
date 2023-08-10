@@ -22,7 +22,7 @@ from wbfm.utils.external.utils_self_collision import calculate_self_collision_us
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate, \
     shade_using_behavior
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
-    remove_short_state_changes
+    remove_short_state_changes, pad_events_in_binary_vector
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
     MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
@@ -380,26 +380,40 @@ class WormFullVideoPosture:
         _raw_vector = pd.Series(_raw_vector, index=x.index)
         return _raw_vector
 
-    @lru_cache(maxsize=8)
+    # @lru_cache(maxsize=8)
     def _turn_annotation(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         """This is intended to be summed with the main behavioral vector"""
         df = self._raw_turn_annotation
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
-    @cached_property
+    @property
     def _raw_turn_annotation(self) -> Optional[pd.Series]:
-        # Ulises' file is not really working right now, so calculate one ourselves
+        # Ulises' file uses the whole body, which gives very long turns... recalculate using the head
         # This one has a header
-        _raw_vector = read_if_exists(self.filename_turn_annotation, reader=pd.read_csv, index_col=0)
-        # if self.centerlineY() is None:
+        # _raw_vector = read_if_exists(self.filename_turn_annotation, reader=pd.read_csv, index_col=0)
+        # if _raw_vector is None:
         #     return None
-        # _raw_vector, _ = calculate_self_collision_using_pairwise_distances(self.centerlineX(), self.centerlineY())
+        # else:
+        #     _raw_vector = _raw_vector['turn']
 
-        if _raw_vector is None:
-            return None
-        else:
-            _raw_vector = _raw_vector['turn']
+        # See alias: ventral_only_head_curvature
+        opt = dict(fluorescence_fps=False, start_segment=2, end_segment=10, do_abs=False)
+        thresh = 0.035  # Threshold from looking at histograms of peaks
+        _raw_ventral = (self.summed_curvature_from_kymograph(only_positive=True, **opt) > thresh)
+        _raw_dorsal = (self.summed_curvature_from_kymograph(only_negative=True, **opt) > thresh)
+
+        # Remove any turns that are too short (less than about 0.5 seconds)
+        _raw_ventral = remove_short_state_changes(_raw_ventral, min_length=30)
+        _raw_dorsal = remove_short_state_changes(_raw_dorsal, min_length=30)
+
+        # Pad the edges of the surviving states
+        _raw_ventral = pad_events_in_binary_vector(_raw_ventral, pad_length=30)
+        _raw_dorsal = pad_events_in_binary_vector(_raw_dorsal, pad_length=30)
+
+        # Combine
+        _raw_vector = pd.Series(_raw_ventral.astype(int) - _raw_dorsal.astype(int))
+
         # Harcoded conversion for these files :(
         _raw_vector = _raw_vector.replace(1, BehaviorCodes.VENTRAL_TURN)
         _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
@@ -616,12 +630,12 @@ class WormFullVideoPosture:
         elif behavior_alias == 'ventral_only_head_curvature':
             # Same as Ulises curvature annotation
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=2, end_segment=15,
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=2, end_segment=10,
                                                      do_abs=False, only_positive=True, reset_index=True)
         elif behavior_alias == 'dorsal_only_head_curvature':
             # Same as Ulises curvature annotation
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=2, end_segment=15,
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=2, end_segment=10,
                                                      do_abs=False, only_negative=True, reset_index=True)
         elif behavior_alias == 'pirouette':
             y = self.calc_pseudo_pirouette_state()
@@ -651,14 +665,14 @@ class WormFullVideoPosture:
             y = self.calc_empirical_probability_to_end_state(fluorescence_fps=True, state=BehaviorCodes.FWD)
         elif behavior_alias == 'rev_empirical_distribution':
             y = self.calc_empirical_probability_to_end_state(fluorescence_fps=True, state=BehaviorCodes.REV)
-        elif behavior_alias == 'interpolated_ventral_midbody_curvature':
-            y = self.calc_interpolated_curvature_using_peak_detection(i_segment=41, fluorescence_fps=True, flip=False)
-        elif behavior_alias == 'interpolated_dorsal_midbody_curvature':
-            y = self.calc_interpolated_curvature_using_peak_detection(i_segment=41, fluorescence_fps=True, flip=True)
+        # elif behavior_alias == 'interpolated_ventral_midbody_curvature':
+        #     y = self.calc_interpolated_curvature_using_peak_detection(i_segment=41, fluorescence_fps=True, flip=False)
+        # elif behavior_alias == 'interpolated_dorsal_midbody_curvature':
+        #     y = self.calc_interpolated_curvature_using_peak_detection(i_segment=41, fluorescence_fps=True, flip=True)
         elif behavior_alias == 'interpolated_ventral_head_curvature':
-            y = self.calc_interpolated_curvature_using_peak_detection(i_segment=4, fluorescence_fps=True, flip=False)
+            y = self.calc_interpolated_curvature_using_peak_detection(fluorescence_fps=True, flip=False)
         elif behavior_alias == 'interpolated_dorsal_head_curvature':
-            y = self.calc_interpolated_curvature_using_peak_detection(i_segment=4, fluorescence_fps=True, flip=True)
+            y = self.calc_interpolated_curvature_using_peak_detection(fluorescence_fps=True, flip=True)
         elif behavior_alias == 'interpolated_ventral_minus_dorsal_head_curvature':
             y1 = self.calc_behavior_from_alias('interpolated_ventral_head_curvature', **kwargs)
             y0 = self.calc_behavior_from_alias('interpolated_dorsal_head_curvature', **kwargs)
@@ -749,6 +763,8 @@ class WormFullVideoPosture:
             mat = mat.mean(axis=1)
         else:
             mat = mat.quantile(axis=1, q=which_quantile)
+        # Sometimes there may be no values that are positive or negative, so the mean will be nan
+        mat.fillna(0, inplace=True)
         curvature = self._validate_and_downsample(mat, fluorescence_fps=fluorescence_fps, reset_index=reset_index)
         return curvature
 
@@ -1421,15 +1437,21 @@ class WormFullVideoPosture:
 
     def calc_interpolated_curvature_using_peak_detection(self, i_segment=41, fluorescence_fps=True, flip=False,
                                                          to_plot=False):
-        kymo = self.curvature(fluorescence_fps=fluorescence_fps, reset_index=True).T
-        dat = kymo.iloc[i_segment, :]
+        # Use the curvature calculation from Ulises, not just a single segment
         if flip:
-            # Ventral should be unflipped
-            dat = -dat
+            dat = self.calc_behavior_from_alias('dorsal_only_head_curvature')
+        else:
+            dat = self.calc_behavior_from_alias('ventral_only_head_curvature')
 
-        x, y_interp, interp_obj = detect_peaks_and_interpolate(dat, to_plot=to_plot)
-        if flip:
-            y_interp = -y_interp
+        # kymo = self.curvature(fluorescence_fps=fluorescence_fps, reset_index=True).T
+        # dat = kymo.iloc[i_segment, :]
+        # if flip:
+        #     # Ventral should be unflipped
+        #     dat = -dat
+
+        x, y_interp, interp_obj = detect_peaks_and_interpolate(dat, to_plot=to_plot, width=2)
+        # if flip:
+        #     y_interp = -y_interp
         return self._shorten_to_trace_length(pd.Series(y_interp))
 
     def calc_full_matrix_interpolated_curvature_using_peak_detection(self, fluorescence_fps=True, flip=False):
