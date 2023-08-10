@@ -568,77 +568,75 @@ class WormFullVideoPosture:
         -------
 
         """
+        
+        kwargs['fluorescence_fps'] = True
+        kwargs['reset_index'] = True
 
         if behavior_alias == 'signed_stage_speed':
             y = self.worm_speed(fluorescence_fps=True, signed=True)
         elif behavior_alias == 'rev':
-            y = BehaviorCodes.vector_equality(self.beh_annotation(fluorescence_fps=True, reset_index=True),
-                                              BehaviorCodes.REV)
+            y = BehaviorCodes.vector_equality(self.beh_annotation(**kwargs), BehaviorCodes.REV)
         elif behavior_alias == 'fwd':
-            y = BehaviorCodes.vector_equality(self.beh_annotation(fluorescence_fps=True, reset_index=True),
-                                              BehaviorCodes.FWD)
+            y = BehaviorCodes.vector_equality(self.beh_annotation(**kwargs), BehaviorCodes.FWD)
         elif behavior_alias == 'abs_stage_speed':
-            y = self.worm_speed(fluorescence_fps=True)
+            y = self.worm_speed(**kwargs)
         elif behavior_alias == 'middle_body_speed':
-            y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=False)
+            y = self.worm_speed(**kwargs, use_stage_position=False, signed=False)
         elif behavior_alias == 'signed_middle_body_speed':
-            y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=True)
+            y = self.worm_speed(**kwargs, use_stage_position=False, signed=True)
         elif behavior_alias == 'signed_middle_body_speed_smoothed':
-            y = self.worm_speed(fluorescence_fps=True, use_stage_position=False, signed=True,
-                                strong_smoothing_before_derivative=True)
+            y = self.worm_speed(**kwargs, use_stage_position=False, signed=True, strong_smoothing_before_derivative=True)
         elif behavior_alias == 'summed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(start_segment=30, reset_index=True, fluorescence_fps=True, **kwargs)
+            y = self.summed_curvature_from_kymograph(start_segment=30, **kwargs)
         elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_signed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, reset_index=True, do_abs=False, **kwargs)
+            y = self.summed_curvature_from_kymograph(do_abs=False, **kwargs)
         elif behavior_alias == 'head_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, reset_index=True, start_segment=5, end_segment=30)
+            y = self.summed_curvature_from_kymograph( start_segment=5, end_segment=30, **kwargs)
         elif behavior_alias == 'head_signed_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, do_abs=False, reset_index=True,
-                                                     start_segment=5, end_segment=30)
+            y = self.summed_curvature_from_kymograph(do_abs=False, 
+                                                     start_segment=5, end_segment=30, **kwargs)
         elif behavior_alias == 'quantile_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
-                                                     do_quantile=True, which_quantile=0.9, reset_index=True)
+            y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
+                                                     do_quantile=True, which_quantile=0.9, **kwargs)
         elif behavior_alias == 'quantile_head_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=5, end_segment=30,
-                                                     do_quantile=True, which_quantile=0.75, reset_index=True)
+            y = self.summed_curvature_from_kymograph(start_segment=5, end_segment=30,
+                                                     do_quantile=True, which_quantile=0.75, **kwargs)
         elif behavior_alias == 'ventral_quantile_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
-                                                     do_abs=False,
-                                                     do_quantile=True, which_quantile=0.9, reset_index=True)
+            y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
+                                                     do_abs=False, do_quantile=True, which_quantile=0.9, **kwargs)
         elif behavior_alias == 'dorsal_quantile_curvature':
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
-                                                     do_abs=False,
-                                                     do_quantile=True, which_quantile=0.1, reset_index=True)
+            y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
+                                                     do_abs=False, do_quantile=True, which_quantile=0.1, **kwargs)
         elif behavior_alias == 'ventral_only_curvature':
             # Same as Ulises curvature annotation
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
-                                                     do_abs=False, only_positive=True, reset_index=True)
+            y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
+                                                     do_abs=False, only_positive=True, **kwargs)
         elif behavior_alias == 'dorsal_only_curvature':
             # Same as Ulises curvature annotation
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
-                                                     do_abs=False, only_negative=True, reset_index=True)
+            y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
+                                                     do_abs=False, only_negative=True, **kwargs)
         elif behavior_alias == 'ventral_only_head_curvature':
             # Same as Ulises curvature annotation
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=2, end_segment=10,
-                                                     do_abs=False, only_positive=True, reset_index=True)
+            y = self.summed_curvature_from_kymograph(start_segment=2, end_segment=10,
+                                                     do_abs=False, only_positive=True, **kwargs)
         elif behavior_alias == 'dorsal_only_head_curvature':
             # Same as Ulises curvature annotation
             assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
-            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=2, end_segment=10,
-                                                     do_abs=False, only_negative=True, reset_index=True)
+            y = self.summed_curvature_from_kymograph(start_segment=2, end_segment=10,
+                                                     do_abs=False, only_negative=True, **kwargs)
         elif behavior_alias == 'pirouette':
-            y = self.calc_pseudo_pirouette_state()
+            y = self.calc_pseudo_pirouette_state(**kwargs)
         elif behavior_alias == 'speed_plateau_piecewise_linear_onset':
             y, _ = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=False, **kwargs)
         elif behavior_alias == 'speed_plateau_piecewise_linear_offset':
@@ -646,33 +644,33 @@ class WormFullVideoPosture:
         elif behavior_alias == 'speed_plateau_piecewise_constant':
             y = self.calc_constant_offset_plateau_state(**kwargs)
         elif behavior_alias == 'signed_stage_speed_strongly_smoothed':
-            y = self.worm_speed(fluorescence_fps=True, signed=True, strong_smoothing=True)
+            y = self.worm_speed(signed=True, strong_smoothing=True, **kwargs)
         elif behavior_alias == 'signed_speed_angular':
-            y = self.worm_angular_velocity(fluorescence_fps=True)
+            y = self.worm_angular_velocity(**kwargs)
         elif behavior_alias == 'worm_speed_average_all_segments':
-            y = self.worm_speed_average_all_segments(fluorescence_fps=True)
+            y = self.worm_speed_average_all_segments(**kwargs)
         # elif behavior_alias == 'worm_nose_residual_speed':
         #     y = self.worm_speed_average_all_segments(fluorescence_fps=True)
         elif behavior_alias == 'fwd_counter':
-            y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.FWD)
+            y = self.calc_counter_state(state=BehaviorCodes.FWD, **kwargs)
         elif behavior_alias == 'fwd_phase_counter':
-            y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.FWD, phase_not_real_time=True)
+            y = self.calc_counter_state(state=BehaviorCodes.FWD, phase_not_real_time=True, **kwargs)
         elif behavior_alias == 'rev_counter':
-            y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.REV)
+            y = self.calc_counter_state(state=BehaviorCodes.REV, **kwargs)
         elif behavior_alias == 'rev_phase_counter':
-            y = self.calc_counter_state(fluorescence_fps=True, state=BehaviorCodes.REV, phase_not_real_time=True)
+            y = self.calc_counter_state(state=BehaviorCodes.REV, phase_not_real_time=True, **kwargs)
         elif behavior_alias == 'fwd_empirical_distribution':
-            y = self.calc_empirical_probability_to_end_state(fluorescence_fps=True, state=BehaviorCodes.FWD)
+            y = self.calc_empirical_probability_to_end_state(state=BehaviorCodes.FWD, **kwargs)
         elif behavior_alias == 'rev_empirical_distribution':
-            y = self.calc_empirical_probability_to_end_state(fluorescence_fps=True, state=BehaviorCodes.REV)
+            y = self.calc_empirical_probability_to_end_state(state=BehaviorCodes.REV, **kwargs)
         # elif behavior_alias == 'interpolated_ventral_midbody_curvature':
-        #     y = self.calc_interpolated_curvature_using_peak_detection(i_segment=41, fluorescence_fps=True, flip=False)
+        #     y = self.calc_interpolated_curvature_using_peak_detection(i_segment=41, flip=False)
         # elif behavior_alias == 'interpolated_dorsal_midbody_curvature':
-        #     y = self.calc_interpolated_curvature_using_peak_detection(i_segment=41, fluorescence_fps=True, flip=True)
+        #     y = self.calc_interpolated_curvature_using_peak_detection(i_segment=41, flip=True)
         elif behavior_alias == 'interpolated_ventral_head_curvature':
-            y = self.calc_interpolated_curvature_using_peak_detection(fluorescence_fps=True, flip=False)
+            y = self.calc_interpolated_curvature_using_peak_detection(flip=False)
         elif behavior_alias == 'interpolated_dorsal_head_curvature':
-            y = self.calc_interpolated_curvature_using_peak_detection(fluorescence_fps=True, flip=True)
+            y = self.calc_interpolated_curvature_using_peak_detection(flip=True)
         elif behavior_alias == 'interpolated_ventral_minus_dorsal_head_curvature':
             y1 = self.calc_behavior_from_alias('interpolated_ventral_head_curvature', **kwargs)
             y0 = self.calc_behavior_from_alias('interpolated_dorsal_head_curvature', **kwargs)
