@@ -603,6 +603,26 @@ class WormFullVideoPosture:
             y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
                                                      do_abs=False,
                                                      do_quantile=True, which_quantile=0.1, reset_index=True)
+        elif behavior_alias == 'ventral_only_curvature':
+            # Same as Ulises curvature annotation
+            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
+                                                     do_abs=False, only_positive=True, reset_index=True)
+        elif behavior_alias == 'dorsal_only_curvature':
+            # Same as Ulises curvature annotation
+            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=10, end_segment=90,
+                                                     do_abs=False, only_negative=True, reset_index=True)
+        elif behavior_alias == 'ventral_only_head_curvature':
+            # Same as Ulises curvature annotation
+            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=2, end_segment=15,
+                                                     do_abs=False, only_positive=True, reset_index=True)
+        elif behavior_alias == 'dorsal_only_head_curvature':
+            # Same as Ulises curvature annotation
+            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            y = self.summed_curvature_from_kymograph(fluorescence_fps=True, start_segment=2, end_segment=15,
+                                                     do_abs=False, only_negative=True, reset_index=True)
         elif behavior_alias == 'pirouette':
             y = self.calc_pseudo_pirouette_state()
         elif behavior_alias == 'speed_plateau_piecewise_linear_onset':
@@ -706,9 +726,23 @@ class WormFullVideoPosture:
     @lru_cache(maxsize=64)
     def summed_curvature_from_kymograph(self, fluorescence_fps=False, start_segment=30, end_segment=80,
                                         do_abs=True, do_quantile=False, which_quantile=0.9,
-                                        reset_index=False) -> pd.Series:
-        """Average over value of segments (default) 30 to 80 (optional: absolute value)"""
+                                        only_positive=False, only_negative=False, reset_index=False) -> pd.Series:
+        """
+        Average over value of curvature of segments
+            default segments: 30 to 80
+            optional: absolute value, not signed
+            optional: quantile, not mean
+            optional: only take positive (ventral) or negative (dorsal) values
+        """
+        assert sum([only_positive, only_negative, do_abs]) <= 1, \
+            "Can only have one of only_positive, only_negative, or do_abs"
+
         mat = self.curvature().loc[:, start_segment:end_segment]
+        if only_positive:
+            mat = mat[mat > 0]
+        if only_negative:
+            # Ulises defines this as positive in the end, so flip the sign
+            mat = -mat[mat < 0]
         if do_abs:
             mat = mat.abs()
         if not do_quantile:
