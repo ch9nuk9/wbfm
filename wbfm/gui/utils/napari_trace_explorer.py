@@ -17,6 +17,7 @@ import zarr
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from backports.cached_property import cached_property
+from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 from PyQt5.QtWidgets import QApplication, QProgressDialog, QListWidget
 from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
@@ -224,12 +225,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             unique_behaviors = []
         unique_behaviors.insert(0, 'none')
         self.changeSubplotShading.addItems(unique_behaviors)
-        self.changeSubplotShading.currentIndexChanged.connect(self.change_trace_tracklet_mode)
+        self.changeSubplotShading.currentIndexChanged.connect(self.update_behavior_shading)
         self.formlayout3.addRow("Shaded behaviors:", self.changeSubplotShading)
         # self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox()
         # self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         # self.formlayout3.addRow("Remove outliers (tracking confidence)?", self.changeTrackingOutlierCheckBox)
-
 
         # Add reference neuron trace (also allows behaviors) (dropdown)
         self.changeReferenceTrace = QtWidgets.QComboBox()
@@ -1744,6 +1744,18 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             else:
                 additional_shaded_states = [BehaviorCodes[additional_shaded_state.upper()]]
             self.dat.shade_axis_using_behavior(self.static_ax, additional_shaded_states=additional_shaded_states)
+
+    def remove_behavior_shading(self):
+        ax = self.static_ax
+        # Remove axvspan elements while retaining lines
+        for artist in ax.get_children():
+            if isinstance(artist, plt.matplotlib.patches.Polygon):  # Check if it's an axvspan
+                artist.remove()
+
+    def update_behavior_shading(self):
+        self.remove_behavior_shading()
+        self.color_using_behavior()
+        self.draw_subplot()
 
     # def save_annotations(self):
     #     self.update_dataframe_using_points()
