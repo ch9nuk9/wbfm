@@ -178,8 +178,13 @@ class NapariLayerInitializer:
 
         # Add a text overlay
         if 'Neuron IDs' in which_layers:
+            # This has the same information as 'GT IDs' but displays the automatic names by default
             df = project_data.red_traces
-            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
+            if gt_neuron_name_dict is None:
+                gt_neuron_name_dict = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0)
+
+            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
+                                                          neuron_name_dict=gt_neuron_name_dict)
             options['visible'] = force_all_visible
             viewer.add_points(**options)
             layers_actually_added.append('Neuron IDs')

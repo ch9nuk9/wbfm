@@ -1468,7 +1468,11 @@ class ProjectData:
             if error_on_duplicate:
                 raise ValueError(message)
             else:
-                self.logger.warning(message)
+                # Check if the only duplicate is the empty string
+                if len(value_counts[value_counts > 1]) == 1 and '' in value_counts:
+                    pass
+                else:
+                    self.logger.warning(message)
         if remove_unnamed_neurons:
             name_mapping = {k: v for k, v in name_mapping.items() if k != v}
         if flip_names_and_ids:
