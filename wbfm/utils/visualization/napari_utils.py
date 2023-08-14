@@ -58,6 +58,8 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
 
         # Add two label fields: one for the automatic label, and one for the (optional) custom label
         this_gt_name = neuron_name_dict.get(n, '')
+        if 'neuron_' in this_gt_name:
+            this_gt_name = this_gt_name.split('_')[1]
         label_vec_gt = [this_gt_name] * len(df.index)
         if DEBUG:
             print(f"Found named neuron: {n} = {label_vec_gt[0]}")

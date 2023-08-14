@@ -181,7 +181,7 @@ class NapariLayerInitializer:
             # This has the same information as 'GT IDs' but displays the automatic names by default
             df = project_data.red_traces
             if gt_neuron_name_dict is None:
-                gt_neuron_name_dict = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0)
+                gt_neuron_name_dict = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=1)
 
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
                                                           neuron_name_dict=gt_neuron_name_dict)

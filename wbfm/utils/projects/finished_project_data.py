@@ -1456,6 +1456,21 @@ class ProjectData:
 
     def neuron_name_to_manual_id_mapping(self, confidence_threshold=2, remove_unnamed_neurons=False,
                                          flip_names_and_ids=False, error_on_duplicate=False) -> Dict[str, str]:
+        """
+        Note: if confidence_threshold is 0, then non-id'ed neuron names will be removed because
+        dict_numbers_to_neuron_names has a blank string at confidence 0
+
+        Parameters
+        ----------
+        confidence_threshold
+        remove_unnamed_neurons
+        flip_names_and_ids
+        error_on_duplicate
+
+        Returns
+        -------
+
+        """
         name_ids = self.dict_numbers_to_neuron_names.copy()
         if len(name_ids) == 0:
             return {}
