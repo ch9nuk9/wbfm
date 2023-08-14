@@ -48,57 +48,62 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
     t_vec = np.expand_dims(np.array(list(df.index), dtype=int), axis=1)
     # label_vec = np.ones(len(df.index), dtype=int)
     all_t_zxy = np.array([[0, 0, 0, 0]], dtype=int)
-    properties = dict(label=[])
+    properties = dict(automatic_label=[], custom_label=[])
     for n in all_neurons:
         coords = ['z', 'x', 'y']
         zxy = np.array(df[n][coords])
-
-        # if round_in_z:
-        #     zxy[:, 0] = np.round(zxy[:, 0])
+        # Note that this messes up the 2d view, because z values will be in-between real planes
         zxy[:, 0] *= z_to_xy_ratio
-        # zxy = df[n][zxy_names].to_numpy(dtype=int)
         t_zxy = np.hstack([t_vec, zxy])
 
-        this_gt_name = neuron_name_dict.get(n, None)
-        if this_gt_name is not None:
-            # label_vec[:] = this_name
-            label_vec = [this_gt_name] * len(df.index)
-            if DEBUG:
-                print(f"Found named neuron: {n} = {label_vec[0]}")
-        else:
-            # Get the index from the dataframe, or try to convert the column name into a label
-            if 'i_reindexed_segmentation' in df[n]:
-                # For old style
-                label_vec = list(map(int, df[n]['i_reindexed_segmentation']))
-            elif 'label' in df[n]:
-                # For traces dataframe
-                label_vec = [i for i in df[n]['label']]
-            elif 'raw_neuron_ind_in_list' in df[n]:
-                # For tracks dataframe
-                label_vec = [i for i in df[n]['raw_neuron_ind_in_list']]
-            else:
-                label_vec = [name2int_neuron_and_tracklet(n) for _ in range(t_vec.shape[0])]
+        # Add two label fields: one for the automatic label, and one for the (optional) custom label
+        this_gt_name = neuron_name_dict.get(n, '')
+        label_vec_gt = [this_gt_name] * len(df.index)
+        if DEBUG:
+            print(f"Found named neuron: {n} = {label_vec_gt[0]}")
+        properties['custom_label'].extend(label_vec_gt)
 
+        # Get the index from the dataframe, or try to convert the column name into a label
+        if 'i_reindexed_segmentation' in df[n]:
+            # For old style
+            label_vec = list(map(int, df[n]['i_reindexed_segmentation']))
+        elif 'label' in df[n]:
+            # For traces dataframe
+            label_vec = [i for i in df[n]['label']]
+        elif 'raw_neuron_ind_in_list' in df[n]:
+            # For tracks dataframe
+            label_vec = [i for i in df[n]['raw_neuron_ind_in_list']]
+        else:
+            label_vec = [name2int_neuron_and_tracklet(n) for _ in range(t_vec.shape[0])]
+        properties['automatic_label'].extend(label_vec)
+
+        # This should synchronize with any label fields
         all_t_zxy = np.vstack([all_t_zxy, t_zxy])
-        properties['label'].extend(label_vec)
+
     # Remove invalid positions
     # Some points are negative instead of nan
     all_t_zxy = np.where(all_t_zxy < 0, np.nan, all_t_zxy)
     to_keep = ~np.isnan(all_t_zxy).any(axis=1)
     all_t_zxy = all_t_zxy[to_keep, :]
     all_t_zxy = all_t_zxy[1:, :]  # Remove dummy starter point
-    properties['label'] = [p for p, good in zip(properties['label'], to_keep[1:]) if good]
+    properties['automatic_label'] = [p for p, good in zip(properties['automatic_label'], to_keep[1:]) if good]
+    properties['custom_label'] = [p for p, good in zip(properties['custom_label'], to_keep[1:]) if good]
     # Additionally remove invalid names
     try:
-        to_keep = np.array([not np.isnan(p) for p in properties['label']])
+        to_keep = np.array([not np.isnan(p) for p in properties['automatic_label']])
         all_t_zxy = all_t_zxy[to_keep, :]
-        properties['label'] = [cast_int_or_nan(p) for p, good in zip(properties['label'], to_keep) if good]
+        properties['automatic_label'] = [cast_int_or_nan(p) for p, good in zip(properties['automatic_label'], to_keep) if good]
+        properties['custom_label'] = [p for p, good in zip(properties['custom_label'], to_keep) if good]
     except TypeError:
         # Then the user is passing a non-int custom name, so just skip this
         pass
     # More info on text: https://github.com/napari/napari/blob/main/examples/add_points_with_text.py
+    text = {
+        'string': '{automatic_label}',  # If additional properties are added, can be accessed like an fstring
+    }
+    # Final package
     options = {'data': all_t_zxy, 'face_color': 'transparent', 'edge_color': 'transparent',
-               'text': {'text': 'label'},  # Can add color or size here
+               'text': text,  # Can add color or size here
                'properties': properties, 'name': 'Neuron IDs', 'blending': 'additive',
                'visible': False}
 
