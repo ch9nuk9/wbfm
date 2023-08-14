@@ -197,6 +197,16 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceOutlierCheckBox.setChecked(True)
         self.changeTraceOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Remove outliers?", self.changeTraceOutlierCheckBox)
+        # Do bleach correction
+        self.changeBleachCorrectionCheckBox = QtWidgets.QCheckBox()
+        self.changeBleachCorrectionCheckBox.setChecked(True)
+        self.changeBleachCorrectionCheckBox.stateChanged.connect(self.update_trace_subplot)
+        self.formlayout3.addRow("Do bleach correction?", self.changeBleachCorrectionCheckBox)
+        # Do bleach correction
+        self.changeNeuronIdLayer = QtWidgets.QCheckBox()
+        self.changeNeuronIdLayer.setChecked(False)
+        self.changeNeuronIdLayer.stateChanged.connect(self.switch_neuron_id_strings)
+        self.formlayout3.addRow("Display manual IDs?", self.changeNeuronIdLayer)
         # Display ppca outlier candidates (checkbox)
         self.changeOutlierOverlayCheckBox = QtWidgets.QCheckBox()
         self.changeOutlierOverlayCheckBox.setChecked(False)
@@ -219,11 +229,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.changeTrackingOutlierCheckBox = QtWidgets.QCheckBox()
         # self.changeTrackingOutlierCheckBox.stateChanged.connect(self.update_trace_subplot)
         # self.formlayout3.addRow("Remove outliers (tracking confidence)?", self.changeTrackingOutlierCheckBox)
-        # Do bleach correction
-        self.changeBleachCorrectionCheckBox = QtWidgets.QCheckBox()
-        self.changeBleachCorrectionCheckBox.setChecked(True)
-        self.changeBleachCorrectionCheckBox.stateChanged.connect(self.update_trace_subplot)
-        self.formlayout3.addRow("Do bleach correction?", self.changeBleachCorrectionCheckBox)
+
 
         # Add reference neuron trace (also allows behaviors) (dropdown)
         self.changeReferenceTrace = QtWidgets.QComboBox()
@@ -1247,6 +1253,22 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.logger.debug("Removing tracking outliers")
             self.remove_tracking_outliers_from_plot()
         self.draw_subplot()
+
+    def switch_neuron_id_strings(self):
+        """
+        Changes the Neuron ID layer to display either automatic or manually determined names
+
+        These correspond to two different fields produced on layer initialization
+
+        Returns
+        -------
+
+        """
+        if not self.changeNeuronIdLayer.isChecked():
+            # This is the default; see napari_labels_from_traces_dataframe
+            self.neuron_id_layer.text = {'string': '{automatic_label}'}
+        else:
+            self.neuron_id_layer.text = {'string': '{custom_label}'}
 
     def add_tracking_outliers_to_plot(self):
         # TODO: will improperly jump to selected tracklets when added; should be able to loop over self.tracklet_lines
