@@ -88,8 +88,10 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
     to_keep = ~np.isnan(all_t_zxy).any(axis=1)
     all_t_zxy = all_t_zxy[to_keep, :]
     all_t_zxy = all_t_zxy[1:, :]  # Remove dummy starter point
-    properties['automatic_label'] = [p for p, good in zip(properties['automatic_label'], to_keep[1:]) if good]
-    properties['custom_label'] = [p for p, good in zip(properties['custom_label'], to_keep[1:]) if good]
+    for key in properties.keys():
+        properties[key] = [p for p, good in zip(properties[key], to_keep[1:]) if good]
+    # properties['automatic_label'] = [p for p, good in zip(properties['automatic_label'], to_keep[1:]) if good]
+    # properties['custom_label'] = [p for p, good in zip(properties['custom_label'], to_keep[1:]) if good]
     # Additionally remove invalid names
     try:
         to_keep = np.array([not np.isnan(p) for p in properties['automatic_label']])

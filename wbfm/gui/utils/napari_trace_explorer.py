@@ -26,7 +26,7 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
-    zoom_using_viewer, add_fps_printer, on_close
+    zoom_using_viewer, add_fps_printer, on_close, NeuronNameEditor
 from wbfm.utils.external.utils_pandas import build_tracks_from_dataframe
 from wbfm.utils.projects.finished_project_data import ProjectData
 
@@ -51,6 +51,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     # For optional napari layers
     use_track_of_point: bool = False
+    manualNeuronNameEditor: NeuronNameEditor = None
 
     logger: logging.Logger = None
 
@@ -163,6 +164,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             widget=self,
         )
 
+        # Open a new window with manual neuron name editing
+        df = self.dat.df_manual_tracking
+        # Replace NaNs with the neuron ID, if not already present. Should have dtype str
+        df['ID1'] = df['ID1'].fillna(df['Neuron ID']).astype(str)
+        self.manualNeuronNameEditor = NeuronNameEditor()
+        self.manualNeuronNameEditor.import_dataframe(df)
+        self.manualNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
+        self.manualNeuronNameEditor.show()
+
         self.logger.debug("Finished main UI setup")
 
     def _setup_trace_filtering_buttons(self):
@@ -203,7 +213,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeBleachCorrectionCheckBox.setChecked(True)
         self.changeBleachCorrectionCheckBox.stateChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Do bleach correction?", self.changeBleachCorrectionCheckBox)
-        # Do bleach correction
+        # Changing display in Neuron ID layer
         self.changeNeuronIdLayer = QtWidgets.QCheckBox()
         self.changeNeuronIdLayer.setChecked(False)
         self.changeNeuronIdLayer.stateChanged.connect(self.switch_neuron_id_strings)
@@ -676,7 +686,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         @layer_to_add_callback.mouse_drag_callbacks.append
         def on_click(layer, event):
-            if event.button == 1 or event.button == 2:
+            if event.button in (1, 2, 3):
                 click_modifiers = [m.name.lower() for m in event.modifiers]
                 if 'shift' not in click_modifiers:
                     # Get the index of the clicked segmentation
@@ -694,11 +704,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
                     # The segmentation index should be the same as the name
                     neuron_name = int2name_neuron(seg_index)
-                    self.logger.debug(f"Clicked on segmentation {seg_index}, corresponding to {neuron_name}")
+                    self.logger.debug(f"Clicked on segmentation {seg_index}, corresponding to {neuron_name},"
+                                      f" with button {event.button}")
                     if event.button == 1:
                         self.select_neuron(neuron_name)
                     elif event.button == 2:
                         self.changeReferenceTrace.setCurrentText(neuron_name)
+                    elif event.button == 3:
+                        # Jump to the clicked row in the external name editor gui
+                        self.manualNeuronNameEditor.select_row_and_manual_ID_column(neuron_name)
 
     def connect_napari_callbacks(self):
         viewer = self.viewer
@@ -1269,6 +1283,40 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.neuron_id_layer.text = {'string': '{automatic_label}'}
         else:
             self.neuron_id_layer.text = {'string': '{custom_label}'}
+
+    def update_neuron_id_strings_in_layer(self, original_name, old_name, new_name):
+        """
+        Modify the layer properties to change the displayed name of a neuron (across all time)
+
+        Parameters
+        ----------
+        old_name
+        new_name
+
+        Returns
+        -------
+
+        """
+        # Because the old name may have been blank, we need to use the automatic labels for indexing
+        original_names = self.neuron_id_layer.properties['automatic_label']
+        original_names = [int2name_neuron(n) for n in original_names]
+        manual_names = self.neuron_id_layer.properties['custom_label']
+        # The names in this layer are not the exact neuron_names, they are split for easier display
+        # i.e. not 'neuron_001', but '001'
+        # So first cast old_name to this format, IF it was not a custom name already
+        # if old_name.startswith('neuron_'):
+        #     old_name = old_name.split('_')[1]
+
+        # Zip the lists, and update the manual name based on match with original name
+        new_names = [new_name if o_name == original_name else m_name for m_name, o_name in zip(manual_names, original_names)]
+        self.logger.debug(f"Updating {sum([n == new_name for n in new_names])} names to {new_name}")
+        self.logger.debug(f"{original_name} -> {new_name}")
+        # print(original_names)
+        # print(new_names)
+
+        # Note that we need to change the features dataframe, not the properties dict
+        self.neuron_id_layer.features['custom_label'] = new_names
+        self.neuron_id_layer.refresh_text()
 
     def add_tracking_outliers_to_plot(self):
         # TODO: will improperly jump to selected tracklets when added; should be able to loop over self.tracklet_lines

@@ -5,8 +5,12 @@ import sys
 
 import napari
 import numpy as np
+import pandas as pd
 from PyQt5 import QtGui
-from PyQt5.QtWidgets import QPushButton, QComboBox, QVBoxLayout, QWidget, QApplication, QMessageBox
+from PyQt5.QtCore import pyqtSignal, Qt, QItemSelectionModel
+from PyQt5.QtWidgets import QComboBox, QVBoxLayout, QMessageBox, QStyledItemDelegate
+from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QTableView, QLineEdit, QAbstractItemView, QListWidget, QLabel, QPushButton
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
 
 from wbfm.utils.general.postprocessing.base_cropping_utils import get_crop_coords3d
 from wbfm.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume, \
@@ -324,3 +328,198 @@ def on_close(self, event, widget):
         event.accept()
     else:
         event.ignore()
+
+
+class NonEditableDelegate(QStyledItemDelegate):
+    def createEditor(self, parent, option, index):
+        return None  # Disable editing
+
+
+class NeuronNameEditor(QWidget):
+    """
+    Opens a table GUI for editing neuron names
+
+    Has additional information on the right side, including:
+    - A list of all neurons with the same Manual Annotation (duplicates)
+
+    """
+
+    annotation_updated = pyqtSignal(str, str, str)
+
+    def __init__(self):
+        super().__init__()
+
+        layout = QGridLayout()
+
+        self.tableView = QTableView()
+        self.model = QStandardItemModel(self)
+        self.tableView.setModel(self.model)
+        self.tableView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        # self.tableView.selectionModel().currentRowChanged.connect(self.update_editor)
+
+        self.duplicatesList = QListWidget()
+
+        layout.addWidget(QLabel("Editable table of neuron names"), 0, 0)
+        layout.addWidget(self.tableView, 1, 0, 2, 1)
+        # layout.addWidget(self.customNameEdit, 0, 1)
+        # layout.addWidget(self.metadataEdit, 1, 1)
+        # layout.addWidget(self.updateDuplicatesButton, 2, 1)
+        layout.addWidget(QLabel("Duplicated manual annotations:"), 0, 1)
+        layout.addWidget(self.duplicatesList, 1, 1, 2, 1)
+
+        self.setLayout(layout)
+
+        # Dummy data
+        column_names = ["Neuron ID", "ID1", "Metadata"]
+        data = [
+            ["neuron_001", "VB02", "Metadata 1"],
+            ["neuron_002", "VB02", "Metadata 2"],
+            ["neuron_003", "AVAL", "Metadata 3"],
+            ["neuron_004", "AVAL", "Metadata 4"],
+            ["neuron_005", "AVAR", "Metadata 5"] 
+        ]
+        self.df = pd.DataFrame(data, columns=column_names)
+        self.df_datatypes = None
+
+        # Actually set up
+        self.import_dataframe(self.df)
+
+        # When data is changed, update the duplicates list and the stored dataframe
+        self.model.dataChanged.connect(self.update_dataframe_range_from_table)
+        self.model.dataChanged.connect(self.update_duplicates_list)
+
+        # Set custom delegate to prevent editing
+        non_editable_delegate = NonEditableDelegate()
+        self.tableView.setItemDelegateForColumn(0, non_editable_delegate)
+
+    def _set_column_edit_flags(self):
+        # Set all columns to be editable, except the first one (the original names)
+        for row in range(self.model.rowCount()):
+            for col in range(self.model.columnCount()):
+                if col > 0:
+                    # self.model.item(row, col).setEditable(True)
+                    self.model.item(row, col).setFlags(
+                        self.model.item(row, col).flags() | Qt.ItemIsEditable
+                    )
+                else:
+                    # self.model.item(row, col).setEditable(False)
+                    self.model.item(row, col).setFlags(
+                        self.model.item(row, col).flags() | ~Qt.ItemIsEditable
+                    )
+
+    def select_row_and_manual_ID_column(self, neuron_name):
+        """
+        Select based on the 'Neuron ID' column in the table
+
+        Parameters
+        ----------
+        neuron_name
+
+        Returns
+        -------
+
+        """
+        row_index = self.df.index[self.df["Neuron ID"] == neuron_name].tolist()[0]
+        print(f"Selecting row: {row_index} with name {neuron_name}")
+        selection_model = self.tableView.selectionModel()
+        cell_index = self.model.index(row_index, self.manual_id_column_idx)
+        selection_model.select(cell_index, QItemSelectionModel.Select)
+        self.setFocus()
+
+    def update_table_from_dataframe(self):
+        """
+        Note that this doesn't emit the signal for updating manual annotations
+
+        Returns
+        -------
+
+        """
+        self.model.clear()
+        self.model.setHorizontalHeaderLabels(list(self.df.columns))
+        for row in self.df.values:
+            row_items = [QStandardItem(str(item)) for item in row]
+            self.model.appendRow(row_items)
+
+    def update_dataframe_from_table(self):
+        """
+        Update the dataframe from the table
+
+        Should preserve the original datatypes of the dataframe
+
+        Returns
+        -------
+
+        """
+        for row in range(self.model.rowCount()):
+            for col in range(self.model.columnCount()):
+                self.update_dataframe_cell_from_table(col, row)
+
+    def update_dataframe_cell_from_table(self, col, row, emit_signal=True):
+        dtype = self.df_datatypes[col]
+        string_data = self.model.item(row, col).text()
+        # Also emit a signal if this is the "ID1" column
+        # print(f"Updating dataframe cell: {row}, {col} to {string_data}")
+        if emit_signal and col == self.manual_id_column_idx:
+            original_name = str(self.df.at[row, "Neuron ID"])
+            old_name = str(self.df.at[row, "ID1"])
+            new_name = string_data
+            if old_name != new_name:
+                print(f"Emitted signal: {old_name} -> {new_name}")
+                self.annotation_updated.emit(original_name, old_name, new_name)
+
+        if dtype == np.int64:
+            self.df.iat[row, col] = int(string_data)
+        elif dtype == np.float64:
+            self.df.iat[row, col] = float(string_data)
+        else:
+            # Probably object
+            self.df.iat[row, col] = string_data
+
+    @property
+    def manual_id_column_idx(self):
+        return list(self.df.columns).index("ID1")
+
+    def update_dataframe_range_from_table(self, top_left, bottom_right):
+        for row in range(top_left.row(), bottom_right.row() + 1):
+            for column in range(top_left.column(), bottom_right.column() + 1):
+                item = self.model.item(row, column)
+                if item:
+                    self.update_dataframe_cell_from_table(column, row)
+
+    def import_dataframe(self, df):
+        self.df = df
+        self.update_table_from_dataframe()
+        self.update_duplicates_list()
+
+        self.df_datatypes = df.dtypes
+        self._set_column_edit_flags()
+
+    def update_duplicates_list(self):
+        # Clear the duplicate list
+        self.duplicatesList.clear()
+
+        # Get all duplicates of any Manual Annotation
+        df = self.df
+
+        custom_name_counts = df["ID1"].value_counts()
+        duplicate_series = custom_name_counts[custom_name_counts > 1]
+        duplicate_names = list(duplicate_series.index)
+        # Remove the name 'nan'
+        if 'nan' in duplicate_names:
+            duplicate_names.remove('nan')
+        elif np.nan in duplicate_names:
+            duplicate_names.remove(np.nan)
+        if len(duplicate_names) > 0:
+            print(f"Found {len(duplicate_names)} duplicate names: {duplicate_names}")
+        for name in duplicate_names:
+            # Get the original name as well
+            original_name_list = df[df["ID1"] == name]["Neuron ID"]
+            str_to_add = f"{name} ({', '.join(original_name_list)})"
+            self.duplicatesList.addItem(str_to_add)
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    example = NeuronNameEditor()
+    example.show()
+    sys.exit(app.exec_())
