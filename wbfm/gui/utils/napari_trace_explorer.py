@@ -1218,7 +1218,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.add_or_remove_tracking_outliers()
         # If there is already a reference line, just empty it
         if self.reference_line is not None:
-            self.reference_line.set_data([], [])
+            self.remove_reference_line()
         else:
             self.reference_line = self.reference_ax.plot([], color='tab:orange')[0]  # Initialize an empty line
         self.invalidate_y_min_max_on_plot()
@@ -1314,6 +1314,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if current_mode == 'tracklets':
             self.changeTraceCalculationDropdown.addItems(self.tracklet_mode_calculation_options)
             self.changeTraceCalculationDropdown.setCurrentText('z')
+            self.changeReferenceTrace.setCurrentText('None')
         elif current_mode == 'traces':
             self.changeTraceCalculationDropdown.addItems(self.traces_mode_calculation_options)
             self.changeTraceCalculationDropdown.setCurrentText('integration')
@@ -1394,17 +1395,32 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.init_subplot_post_clear()
         self.finish_subplot_update_and_draw(preserve_xlims=True)
 
-    def update_reference_trace(self, force_draw=True):
-        if not self.changeTraceTrackletDropdown.currentText() == 'traces':
-            print("Currently on tracklet setting, so this option didn't do anything")
-            return
-        ref_name = self.changeReferenceTrace.currentText()
+    def update_reference_trace(self, current_index=0, force_draw=True):
+        """
+        Extra arg to accept the unused arg passed to callbacks of comboboxes
+
+        Parameters
+        ----------
+        current_index
+        force_draw
+
+        Returns
+        -------
+
+        """
+        if self.changeTraceTrackletDropdown.currentText() == 'tracklets':
+            ref_name = "None"
+            print("Currently on tracklet setting, so not updating reference trace")
+        else:
+            ref_name = self.changeReferenceTrace.currentText()
+
         if ref_name == "None":
             # Reset line
             # self.static_ax.lines.remove(self.reference_line)
-            self.reference_line.set_data([], [])
+            self.remove_reference_line()
 
             if force_draw:
+                self.logger.debug("USER: force draw of reference line")
                 # For some reason, just the second call doesn't properly delete the line
                 self.update_trace_subplot()
                 self.finish_subplot_update_and_draw(preserve_xlims=True)
@@ -1412,9 +1428,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # Plot other trace
             t, y = self.calculate_trace(trace_name=ref_name)
             self.reference_line.set_data(t, y)
+            self.reference_line.set_visible(True)
             # self.reference_line.set_ydata(y)
             if force_draw:
                 self.finish_subplot_update_and_draw(preserve_xlims=True)
+
+    def remove_reference_line(self):
+        # self.reference_line.set_data([], [])
+        self.reference_line.set_visible(False)
 
     def get_subplot_title(self):
         ref_name = self.changeReferenceTrace.currentText()
@@ -1603,6 +1624,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         self.update_time_line()
         self.static_ax.set_title(title)
+        print(f"Updating subplot with {len(self.static_ax.lines)} lines and title {title}")
         if preserve_xlims:
             self.static_ax.autoscale(axis='y')
             self.reference_ax.autoscale(axis='y')
