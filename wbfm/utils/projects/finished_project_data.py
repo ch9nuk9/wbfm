@@ -1448,12 +1448,17 @@ class ProjectData:
             # Fill the first column with the default names
             df['Neuron ID'] = self.neuron_names
 
-            self.df_manual_tracking_fname = self.get_default_manual_annotation_fname()
+            fname = self.get_default_manual_annotation_fname()
+        elif not self.df_manual_tracking_fname.endswith('.xlsx'):
+            # Make sure the output is excel even if the input isn't
+            fname = str(Path(self.df_manual_tracking_fname).with_suffix('.xlsx'))
+        else:
+            fname = self.df_manual_tracking_fname
         # Replace NaNs with the neuron ID, if not already present. Should have dtype str
         df['ID1'] = df['ID1'].fillna(df['Neuron ID']).astype(str)
         df['ID2'] = df['ID2'].astype(str)
         manual_neuron_name_editor = NeuronNameEditor()
-        manual_neuron_name_editor.import_dataframe(df, self.df_manual_tracking_fname)
+        manual_neuron_name_editor.import_dataframe(df, fname)
 
         return manual_neuron_name_editor
 
