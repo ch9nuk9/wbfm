@@ -429,8 +429,10 @@ class NeuronNameEditor(QWidget):
         self.setFocus()
         self.activateWindow()
         self.raise_()
-        # Center the scroll bar on the selected cell
-        self.tableView.scrollTo(cell_index, QAbstractItemView.PositionAtCenter)
+
+        # Center the scroll bar on the first column of the selected cell
+        first_col_cell_index = self.model.index(row_index, 0)
+        self.tableView.scrollTo(first_col_cell_index, QAbstractItemView.PositionAtCenter)
 
         # Start editing the selected cell
         self.tableView.edit(cell_index)

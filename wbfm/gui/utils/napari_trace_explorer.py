@@ -173,6 +173,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.manualNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
         self.manualNeuronNameEditor.show()
 
+        # Set to t=10, which has the canonical set of neurons
+        self.change_time_point(10)
+
         self.logger.debug("Finished main UI setup")
 
     def _setup_trace_filtering_buttons(self):
