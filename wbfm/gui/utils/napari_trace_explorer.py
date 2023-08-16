@@ -211,10 +211,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeBleachCorrectionCheckBox.stateChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Do bleach correction?", self.changeBleachCorrectionCheckBox)
         # Changing display in Neuron ID layer
-        self.changeNeuronIdLayer = QtWidgets.QCheckBox()
-        self.changeNeuronIdLayer.setChecked(False)
-        self.changeNeuronIdLayer.stateChanged.connect(self.switch_neuron_id_strings)
-        self.formlayout3.addRow("Display manual IDs?", self.changeNeuronIdLayer)
+        # self.changeNeuronIdLayer = QtWidgets.QCheckBox()
+        # self.changeNeuronIdLayer.setChecked(False)
+        # self.changeNeuronIdLayer.stateChanged.connect(self.switch_neuron_id_strings)
+        # self.formlayout3.addRow("Display manual IDs?", self.changeNeuronIdLayer)
         # Display ppca outlier candidates (checkbox)
         self.changeOutlierOverlayCheckBox = QtWidgets.QCheckBox()
         self.changeOutlierOverlayCheckBox.setChecked(False)
@@ -432,6 +432,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     @property
     def neuron_id_layer(self):
         return self.viewer.layers['Neuron IDs']
+
+    @property
+    def manual_id_layer(self):
+        return self.viewer.layers['Manual IDs']
 
     @property
     def red_data_layer(self):
@@ -816,7 +820,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def resolve_current_ground_truth_conflict(viewer):
             self.resolve_current_ground_truth_conflict()
 
-        @viewer.bind_key('Ctrl-w', overwrite=True)
+        @viewer.bind_key('shift-e', overwrite=True)
         def toggle_manual_ids(viewer):
             self.toggle_manual_ids()
 
@@ -1099,7 +1103,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self._toggle_layer(self.neuron_id_layer)
 
     def toggle_manual_ids(self):
-        self.changeNeuronIdLayer.toggle()
+        self.manual_id_layer.visible = not self.manual_id_layer.visible
+
+    # def toggle_manual_ids(self):
+    #     self.changeNeuronIdLayer.toggle()
 
     def _toggle_layer(self, layer):
         if self.viewer.layers.selection.active == layer:
@@ -1290,21 +1297,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.remove_tracking_outliers_from_plot()
         self.draw_subplot()
 
-    def switch_neuron_id_strings(self):
-        """
-        Changes the Neuron ID layer to display either automatic or manually determined names
-
-        These correspond to two different fields produced on layer initialization
-
-        Returns
-        -------
-
-        """
-        if not self.changeNeuronIdLayer.isChecked():
-            # This is the default; see napari_labels_from_traces_dataframe
-            self.neuron_id_layer.text = {'string': '{automatic_label}'}
-        else:
-            self.neuron_id_layer.text = {'string': '{custom_label}'}
+    # def switch_neuron_id_strings(self):
+    #     """
+    #     Changes the Neuron ID layer to display either automatic or manually determined names
+    #
+    #     These correspond to two different fields produced on layer initialization
+    #
+    #     Returns
+    #     -------
+    #
+    #     """
+    #     if not self.changeNeuronIdLayer.isChecked():
+    #         # This is the default; see napari_labels_from_traces_dataframe
+    #         self.neuron_id_layer.text = {'string': '{automatic_label}'}
+    #     else:
+    #         self.neuron_id_layer.text = {'string': '{custom_label}'}
 
     def update_neuron_id_strings_in_layer(self, original_name, old_name, new_name):
         """
@@ -1320,9 +1327,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         """
         # Because the old name may have been blank, we need to use the automatic labels for indexing
-        original_names = self.neuron_id_layer.properties['automatic_label']
+        original_names = self.manual_id_layer.properties['automatic_label']
         original_names = [int2name_neuron(n) for n in original_names]
-        manual_names = self.neuron_id_layer.properties['custom_label']
+        manual_names = self.manual_id_layer.properties['custom_label']
         # The names in this layer are not the exact neuron_names, they are split for easier display
         # i.e. not 'neuron_001', but '001'
         # So first cast old_name to this format, IF it was not a custom name already
@@ -1337,8 +1344,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # print(new_names)
 
         # Note that we need to change the features dataframe, not the properties dict
-        self.neuron_id_layer.features['custom_label'] = new_names
-        self.neuron_id_layer.refresh_text()
+        self.manual_id_layer.features['custom_label'] = new_names
+        self.manual_id_layer.refresh_text()
 
     def add_tracking_outliers_to_plot(self):
         # TODO: will improperly jump to selected tracklets when added; should be able to loop over self.tracklet_lines

@@ -493,7 +493,7 @@ class NeuronNameEditor(QWidget):
             old_name = str(self.df.at[row, "ID1"])
             new_name = string_data
             if old_name != new_name:
-                print(f"Emitted signal: {old_name} -> {new_name}")
+                logging.info(f"Changing neuron name: {old_name} -> {new_name}")
                 self.annotation_updated.emit(original_name, old_name, new_name)
 
         if dtype == np.int64:

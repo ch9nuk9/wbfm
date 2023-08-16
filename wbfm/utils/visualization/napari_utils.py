@@ -15,7 +15,8 @@ from sklearn.linear_model import LinearRegression
 
 
 def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
-                                        z_to_xy_ratio=1, DEBUG=False):
+                                        z_to_xy_ratio=1, automatic_label_by_default=True,
+                                        DEBUG=False):
     """
     Expects dataframe with positions, with column names either:
         legacy format: ['z_dlc', 'x_dlc', 'y_dlc']
@@ -102,15 +103,14 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None,
         # Then the user is passing a non-int custom name, so just skip this
         pass
     # More info on text: https://github.com/napari/napari/blob/main/examples/add_points_with_text.py
-    text = {
-        'string': '{automatic_label}',  # If additional properties are added, can be accessed like an fstring
-    }
+    # If additional properties are added, can be accessed with fstring syntax
+    label_str = '{automatic_label}' if automatic_label_by_default else '{custom_label}'
+    text = {'string': label_str}
     # Final package
     options = {'data': all_t_zxy, 'face_color': 'transparent', 'edge_color': 'transparent',
                'text': text,  # Can add color or size here
                'properties': properties, 'name': 'Neuron IDs', 'blending': 'additive',
                'visible': False}
-
     return options
 
 

@@ -134,7 +134,7 @@ class NapariLayerInitializer:
             viewer = napari.Viewer(ndisplay=3)
 
         basic_valid_layers = ['Red data', 'Green data', 'Raw segmentation',
-                              'Colored segmentation', 'Neuron IDs', 'Intermediate global IDs']
+                              'Colored segmentation', 'Neuron IDs', 'Manual IDs', 'Intermediate global IDs']
         if which_layers == 'all':
             which_layers = basic_valid_layers
         if check_if_layers_exist:
@@ -176,19 +176,29 @@ class NapariLayerInitializer:
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=force_all_visible)
             layers_actually_added.append('Colored segmentation')
 
-        # Add a text overlay
+        # Text overlay with automatic names
         if 'Neuron IDs' in which_layers:
-            # This has the same information as 'GT IDs' but displays the automatic names by default
             df = project_data.red_traces
-            if gt_neuron_name_dict is None:
-                gt_neuron_name_dict = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=1,
-                                                                                    remove_unnamed_neurons=True)
-
-            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
-                                                          neuron_name_dict=gt_neuron_name_dict)
+            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
             options['visible'] = force_all_visible
             viewer.add_points(**options)
             layers_actually_added.append('Neuron IDs')
+
+        # Text overlay with manual IDs
+        if 'Manual IDs' in which_layers:
+            # This has the same information as 'GT IDs' but displays the automatic names by default
+            df = project_data.red_traces
+            if gt_neuron_name_dict is None:
+                gt_neuron_name_dict = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0,
+                                                                                    remove_unnamed_neurons=True)
+
+            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
+                                                          neuron_name_dict=gt_neuron_name_dict,
+                                                          automatic_label_by_default=False)
+            options['visible'] = force_all_visible
+            options['name'] = 'Manual IDs'
+            viewer.add_points(**options)
+            layers_actually_added.append('Manual IDs')
 
         if 'GT IDs' in which_layers:
             # Not added by default!
