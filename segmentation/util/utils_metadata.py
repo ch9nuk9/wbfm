@@ -221,6 +221,8 @@ class DetectedNeurons:
             # Note: dict of dataframes
             pickle.dump(self._segmentation_metadata, f)
 
+        return True
+
     def detect_neurons_from_file(self, i_volume: int, numpy_not_list=True) -> np.ndarray:
         """
         Designed to be used with centroids detected using a different pipeline
