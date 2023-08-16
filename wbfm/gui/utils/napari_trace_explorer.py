@@ -169,9 +169,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.manualNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
         self.manualNeuronNameEditor.show()
 
-        # Set to t=10, which has the canonical set of neurons
-        change_viewer_time_point(self.viewer, t_target=10, a_max=self.max_time)
-
         self.logger.debug("Finished main UI setup")
 
     def _setup_trace_filtering_buttons(self):
@@ -1963,7 +1960,7 @@ def napari_trace_explorer(project_data: ProjectData,
     ui.setupUi(viewer)
     viewer.window.add_dock_widget(ui)
     ui.show()
-    change_viewer_time_point(viewer, t_target=0)
+    change_viewer_time_point(viewer, t_target=10)
 
     ui.logger.info("Finished GUI setup. If nothing is showing, trying quitting and running again")
     if to_print_fps:
