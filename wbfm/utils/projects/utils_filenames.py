@@ -85,7 +85,26 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
     return path
 
 
-def read_if_exists(filename: str, reader=pd.read_hdf, **kwargs):
+def pandas_read_any_filetype(filename, **kwargs):
+    if filename is None:
+        return None
+    elif os.path.exists(filename):
+        if filename.endswith('.h5'):
+            return pd.read_hdf(filename, **kwargs)
+        elif filename.endswith('.pickle'):
+            return pickle_load_binary(filename, **kwargs)
+        elif filename.endswith('.csv'):
+            return pd.read_csv(filename, **kwargs)
+        elif filename.endswith('.xlsx'):
+            return pd.read_excel(filename, **kwargs)
+        else:
+            raise NotImplementedError
+    else:
+        logging.debug(f"Did not find file {filename}")
+        return None
+
+
+def read_if_exists(filename: str, reader=pandas_read_any_filetype, **kwargs):
     if filename is None:
         return None
     elif os.path.exists(filename):
@@ -94,21 +113,6 @@ def read_if_exists(filename: str, reader=pd.read_hdf, **kwargs):
         except UnicodeDecodeError:
             logging.warning(f"Encountered unicode error; aborting read of {filename}")
             return None
-    else:
-        logging.debug(f"Did not find file {filename}")
-        return None
-
-
-def pandas_read_any_filetype(filename):
-    if filename is None:
-        return None
-    elif os.path.exists(filename):
-        if filename.endswith('.h5'):
-            return pd.read_hdf(filename)
-        elif filename.endswith('.pickle'):
-            return pickle_load_binary(filename)
-        else:
-            raise NotImplementedError
     else:
         logging.debug(f"Did not find file {filename}")
         return None
