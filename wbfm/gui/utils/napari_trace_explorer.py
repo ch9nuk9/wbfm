@@ -1324,24 +1324,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         """
         # Because the old name may have been blank, we need to use the automatic labels for indexing
-        original_names = self.manual_id_layer.properties['automatic_label']
-        original_names = [int2name_neuron(n) for n in original_names]
-        manual_names = self.manual_id_layer.properties['custom_label']
-        # The names in this layer are not the exact neuron_names, they are split for easier display
-        # i.e. not 'neuron_001', but '001'
-        # So first cast old_name to this format, IF it was not a custom name already
-        # if old_name.startswith('neuron_'):
-        #     old_name = old_name.split('_')[1]
+        original_name_series = self.manual_id_layer.properties['automatic_label']
+        original_name_series = pd.Series([int2name_neuron(n) for n in original_name_series])
 
-        # Zip the lists, and update the manual name based on match with original name
-        new_names = [new_name if o_name == original_name else m_name for m_name, o_name in zip(manual_names, original_names)]
-        self.logger.debug(f"Updating {sum([n == new_name for n in new_names])} names to {new_name}")
-        self.logger.debug(f"{original_name} -> {new_name}")
-        # print(original_names)
-        # print(new_names)
+        # Only modify the rows that are being changed
+        rows_to_change = original_name_series == original_name
 
-        # Note that we need to change the features dataframe, not the properties dict
-        self.manual_id_layer.features['custom_label'] = new_names
+        # We need to change the features dataframe, not the properties dict
+        self.manual_id_layer.features.loc[rows_to_change, 'custom_label'] = new_name
         self.manual_id_layer.refresh_text()
 
     def add_tracking_outliers_to_plot(self):
