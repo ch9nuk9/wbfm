@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 import napari
 import numpy as np
@@ -346,7 +347,7 @@ class NeuronNameEditor(QWidget):
 
     annotation_updated = pyqtSignal(str, str, str)
 
-    def __init__(self):
+    def __init__(self, use_dummy_data=False):
         super().__init__()
 
         layout = QGridLayout()
@@ -369,20 +370,12 @@ class NeuronNameEditor(QWidget):
 
         self.setLayout(layout)
 
-        # Dummy data
-        column_names = ["Neuron ID", "ID1", "Metadata"]
-        data = [
-            ["neuron_001", "VB02", "Metadata 1"],
-            ["neuron_002", "VB02", "Metadata 2"],
-            ["neuron_003", "AVAL", "Metadata 3"],
-            ["neuron_004", "AVAL", "Metadata 4"],
-            ["neuron_005", "AVAR", "Metadata 5"] 
-        ]
-        self.df = pd.DataFrame(data, columns=column_names)
-        self.df_datatypes = None
-
-        # Actually set up
-        self.import_dataframe(self.df)
+        if use_dummy_data:
+            self.set_up_dummy_data()
+        else:
+            self.df = None
+            self.df_datatypes = None
+            self.filename = None
 
         # When data is changed, update the duplicates list and the stored dataframe
         self.model.dataChanged.connect(self.update_dataframe_range_from_table)
@@ -391,6 +384,21 @@ class NeuronNameEditor(QWidget):
         # Set custom delegate to prevent editing
         non_editable_delegate = NonEditableDelegate()
         self.tableView.setItemDelegateForColumn(0, non_editable_delegate)
+
+    def set_up_dummy_data(self):
+        # Dummy data
+        column_names = ["Neuron ID", "ID1", "Metadata"]
+        data = [
+            ["neuron_001", "VB02", "Metadata 1"],
+            ["neuron_002", "VB02", "Metadata 2"],
+            ["neuron_003", "AVAL", "Metadata 3"],
+            ["neuron_004", "AVAL", "Metadata 4"],
+            ["neuron_005", "AVAR", "Metadata 5"]
+        ]
+        self.df = pd.DataFrame(data, columns=column_names)
+        self.df_datatypes = None
+        # Actually set up
+        self.import_dataframe(self.df, None)
 
     def _set_column_edit_flags(self):
         # Set all columns to be editable, except the first one (the original names)
@@ -497,13 +505,42 @@ class NeuronNameEditor(QWidget):
                 if item:
                     self.update_dataframe_cell_from_table(column, row)
 
-    def import_dataframe(self, df):
+    def import_dataframe(self, df, filename):
+        # Set up data table
         self.df = df
         self.update_table_from_dataframe()
         self.update_duplicates_list()
-
         self.df_datatypes = df.dtypes
         self._set_column_edit_flags()
+
+        # Set up filename, which will be used to save the dataframe
+        self.filename = filename
+        self.save_df(use_h5=True)
+
+    def save_df(self, use_h5=False):
+        """
+        Saves the dataframe as a .h5 or .xlsx file, overwriting any existing file
+
+        In principle the .h5 version would be used as a backup, but the .xlsx version is actually read
+
+        """
+        if self.filename is None:
+            logging.warning("No filename set; not saving")
+            return
+
+        # Save
+        if use_h5:
+            fname = str(Path(self.filename).with_suffix('.h5'))
+            self.df.to_hdf(fname, key='df_with_missing', mode='w')
+        else:
+            assert self.filename.endswith(".xlsx"), f"Filename must end with .xlsx; found {self.filename}"
+            fname = self.filename
+            try:
+                self.df.to_excel(fname)
+            except PermissionError:
+                logging.warning(f"Permission error when saving {fname}; "
+                                f"Do you have the file open in another program?")
+                return
 
     def update_duplicates_list(self):
         # Clear the duplicate list
@@ -520,8 +557,8 @@ class NeuronNameEditor(QWidget):
             duplicate_names.remove('nan')
         elif np.nan in duplicate_names:
             duplicate_names.remove(np.nan)
-        if len(duplicate_names) > 0:
-            print(f"Found {len(duplicate_names)} duplicate names: {duplicate_names}")
+        # if len(duplicate_names) > 0:
+        #     print(f"Found {len(duplicate_names)} duplicate names: {duplicate_names}")
         for name in duplicate_names:
             # Get the original name as well
             original_name_list = df[df["ID1"] == name]["Neuron ID"]

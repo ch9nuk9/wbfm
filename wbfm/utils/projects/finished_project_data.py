@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 from scipy.signal import detrend
 from sklearn.decomposition import PCA
 
+from wbfm.gui.utils.utils_gui import NeuronNameEditor
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
@@ -128,6 +129,7 @@ class ProjectData:
 
     # Values for ground truth annotation (reading from excel or .csv)
     finished_neurons_column_name: str = "Finished?"
+    df_manual_tracking_fname: str = None
 
     # EXPERIMENTAL (but tested)
     use_custom_padded_dataframe: bool = False
@@ -1404,14 +1406,49 @@ class ProjectData:
 
     @cached_property
     def df_manual_tracking(self) -> Optional[pd.DataFrame]:
-        """Load a dataframe corresponding to manual tracking, i.e. which neurons have been manually corrected"""
+        """
+        Load a dataframe corresponding to manual tracking, i.e. which neurons have been manually corrected or ID'ed
+
+        """
         track_cfg = self.project_config.get_tracking_config()
-        fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.csv", prepend_subfolder=True)
-        df_manual_tracking = read_if_exists(fname, reader=pd.read_csv)
-        if df_manual_tracking is None:
-            fname = Path(fname).with_name(self.shortened_name).with_suffix('.xlsx')
-            df_manual_tracking = read_if_exists(str(fname), reader=pd.read_excel)
+
+        # Manual annotations take precedence by default
+        csv_fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.csv", prepend_subfolder=True)
+        possible_fnames = dict(excel=Path(csv_fname).with_name(self.shortened_name).with_suffix('.xlsx'),
+                               csv=csv_fname,
+                               h5=Path(csv_fname).with_name(self.shortened_name).with_suffix('.h5'))
+        possible_fnames = {k: str(v) for k, v in possible_fnames.items()}
+        fname_precedence = ['excel', 'csv', 'h5']
+        df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
+                                                                      this_reader=read_if_exists)
+
+        self.df_manual_tracking_fname = fname
+        # fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.csv", prepend_subfolder=True)
+        # df_manual_tracking = read_if_exists(fname, reader=pd.read_csv)
+        # if df_manual_tracking is None:
+        #     fname = Path(fname).with_name(self.shortened_name).with_suffix('.xlsx')
+        #     df_manual_tracking = read_if_exists(str(fname), reader=pd.read_excel)
         return df_manual_tracking
+
+    def build_neuron_editor_gui(self):
+        """
+        Initialize a QT table interface for editing neurons
+
+        Designed to be used with NapariTraceExplorer
+
+        Returns
+        -------
+
+        """
+
+        df = self.dat.df_manual_tracking
+        # Replace NaNs with the neuron ID, if not already present. Should have dtype str
+        df['ID1'] = df['ID1'].fillna(df['Neuron ID']).astype(str)
+        df['ID2'] = df['ID2'].astype(str)
+        manual_neuron_name_editor = NeuronNameEditor()
+        manual_neuron_name_editor.import_dataframe(df, self.df_manual_tracking_fname)
+
+        return manual_neuron_name_editor
 
     @property
     def dict_numbers_to_neuron_names(self) -> Dict[str, Tuple[str, int]]:

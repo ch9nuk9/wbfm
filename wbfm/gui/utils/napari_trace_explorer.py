@@ -165,16 +165,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         )
 
         # Open a new window with manual neuron name editing
-        df = self.dat.df_manual_tracking
-        # Replace NaNs with the neuron ID, if not already present. Should have dtype str
-        df['ID1'] = df['ID1'].fillna(df['Neuron ID']).astype(str)
-        self.manualNeuronNameEditor = NeuronNameEditor()
-        self.manualNeuronNameEditor.import_dataframe(df)
+        self.manualNeuronNameEditor = self.dat.build_neuron_editor_gui()
         self.manualNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
         self.manualNeuronNameEditor.show()
 
         # Set to t=10, which has the canonical set of neurons
-        self.change_time_point(10)
+        change_viewer_time_point(self.viewer, t_target=10, a_max=self.max_time)
 
         self.logger.debug("Finished main UI setup")
 
