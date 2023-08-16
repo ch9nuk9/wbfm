@@ -162,6 +162,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             on_close,
             self.viewer.window._qt_window,
             widget=self,
+            callbacks=[self.save_everything_to_disk]
         )
 
         # Open a new window with manual neuron name editing
@@ -400,8 +401,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.formlayout6.addRow("Save candidate mask: ", self.splitSegmentationSaveButton1)
 
         self.mainSaveButton = QtWidgets.QPushButton("SAVE ALL TO DISK")
-        self.mainSaveButton.pressed.connect(self.modify_segmentation_and_tracklets_on_disk)
-        self.formlayout6.addRow("***Masks and Tracklets***", self.mainSaveButton)
+        self.mainSaveButton.pressed.connect(self.save_everything_to_disk)
+        self.formlayout6.addRow("*Masks, Tracklets, and IDs*", self.mainSaveButton)
 
         self.saveSegmentationStatusLabel = QtWidgets.QLabel("No segmentation loaded")
         self.formlayout6.addRow("STATUS: ", self.saveSegmentationStatusLabel)
@@ -417,7 +418,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.candidateMaskButton,
             self.mergeSegmentationButton,
             self.splitSegmentationSaveButton1,
-            self.mainSaveButton,
+            # self.mainSaveButton,
         ]
 
     @property
@@ -596,24 +597,40 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.remove_layer_of_candidate_segmentation()
         self.set_segmentation_layer_visible()
 
-    def modify_segmentation_and_tracklets_on_disk(self):
-        """Uses segmentation as modified previously by candidate mask layer AND tracklet dataframe"""
-        progress = QProgressDialog("Saving to disk, you may quit when finished", None, 0, 3, self)
-        progress.setWindowModality(Qt.WindowModal)
+    def save_everything_to_disk(self):
+        """
+        Uses segmentation as modified previously by candidate mask layer, tracklet dataframe, and manual IDs
+        """
         # For some reason the progress bar doesn't show up until after the first segmentation_metadata call,
         # ... even if I add sleep and etc.
+        dict_of_saving_callbacks = {
+            'manual_ids': self.manualNeuronNameEditor.save_df_to_disk,
+            'segmentation_metadata': self.dat.segmentation_metadata.overwrite_original_detection_file,
+            'tracklets': self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch,
+            'segmentation': self.dat.modify_segmentation_on_disk_using_buffer
+        }
+        progress = QProgressDialog("Saving to disk, you may quit when finished", None,
+                                   0, len(dict_of_saving_callbacks), self)
+        progress.setWindowModality(Qt.WindowModal)
+
         import time
-        progress.forceShow()
-        progress.setValue(0)
-        self.dat.segmentation_metadata.overwrite_original_detection_file()
-        progress.setValue(1)
-        # Sleep to make sure that the progress bar is updated
-        time.sleep(0.1)
-        self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch()
-        progress.setValue(2)
-        self.dat.modify_segmentation_on_disk_using_buffer()
-        progress.setValue(3)
-        logging.info("Successfully saved to disk!")
+        all_flags = {}
+        for i, (name, callback) in enumerate(dict_of_saving_callbacks.items()):
+            progress.setValue(i)
+            flag = callback()
+            all_flags[name] = flag
+            # Sleep to make sure that the progress bar is updated
+            time.sleep(0.1)
+        if not all(all_flags.values()):
+            self.logger.error("Failed to save at least one step to disk!")
+            self.logger.error(f"Failed steps: {all_flags}")
+        else:
+            self.logger.info("")
+            self.logger.info("================================================================")
+            self.logger.info("Saving successful!")
+            self.logger.info("You may now quit (ctrl-c in the terminal)")
+            self.logger.info("================================================================")
+        progress.setValue(len(all_flags))
 
     def split_segmentation_manual(self):
         # Produces candidate mask layer

@@ -315,16 +315,21 @@ def build_gui_for_grid_plots(parent_folder, DEBUG=False):
     app.exec()
 
 
-def on_close(self, event, widget):
+def on_close(self, event, widget, callbacks):
     # Copied from deeplabcut-napari
     # https://github.com/DeepLabCut/napari-deeplabcut/blob/c05d4a8eb58716da96b97d362519d4ee14e21cac/src/napari_deeplabcut/_widgets.py#L121
     choice = QMessageBox.warning(
         widget,
         "Warning",
-        "Data may not be saved. Are you certain you want to quit? "
-        "Note: you additionally need to press ctrl-c in the terminal to fully quit the program",
+        "Automatically saving data... Are you certain you want to quit? \n"
+        "Note: you ADDITIONALLY need to press ctrl-c in the terminal to fully quit the program, "
+        "but please wait for the message: 'Saving successful!'",
         QMessageBox.Yes | QMessageBox.No,
     )
+    # To be used for auto-saving
+    for callback in callbacks:
+        callback()
+
     if choice == QMessageBox.Yes:
         event.accept()
     else:
@@ -515,9 +520,9 @@ class NeuronNameEditor(QWidget):
 
         # Set up filename, which will be used to save the dataframe
         self.filename = filename
-        self.save_df(use_h5=True)
+        self.save_df_to_disk(use_h5=True)
 
-    def save_df(self, use_h5=False):
+    def save_df_to_disk(self, use_h5=False):
         """
         Saves the dataframe as a .h5 or .xlsx file, overwriting any existing file
 
@@ -526,7 +531,7 @@ class NeuronNameEditor(QWidget):
         """
         if self.filename is None:
             logging.warning("No filename set; not saving")
-            return
+            return False
 
         # Save
         if use_h5:
@@ -540,7 +545,9 @@ class NeuronNameEditor(QWidget):
             except PermissionError:
                 logging.warning(f"Permission error when saving {fname}; "
                                 f"Do you have the file open in another program?")
-                return
+                return False
+
+        return True
 
     def update_duplicates_list(self):
         # Clear the duplicate list

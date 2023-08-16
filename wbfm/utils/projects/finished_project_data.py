@@ -1231,6 +1231,8 @@ class ProjectData:
         for t in self.tracklet_annotator.t_buffer_masks:
             self.raw_segmentation[t, ...] = self.tracklet_annotator.buffer_masks[t, ...]
 
+        return True
+
     def shade_axis_using_behavior(self, ax=None, **kwargs):
         """
         Shades the currently active matplotlib axis using externally annotated behavior annotation
@@ -1441,7 +1443,7 @@ class ProjectData:
 
         """
 
-        df = self.dat.df_manual_tracking
+        df = self.df_manual_tracking
         # Replace NaNs with the neuron ID, if not already present. Should have dtype str
         df['ID1'] = df['ID1'].fillna(df['Neuron ID']).astype(str)
         df['ID2'] = df['ID2'].astype(str)

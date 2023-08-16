@@ -960,6 +960,7 @@ class TrackletAndSegmentationAnnotator:
         self.logger.info("Acquired saving lock; currently saving")
         t = threading.Thread(target=self.save_manual_matches_to_disk)
         t.start()
+        return True
 
     def save_manual_matches_to_disk(self):
         with self.saving_lock:
@@ -982,7 +983,6 @@ class TrackletAndSegmentationAnnotator:
             self.tracking_cfg.pickle_data_in_local_project(self.tracklet_split_times, self.tracklet_split_times_fname)
 
             self.tracking_cfg.update_self_on_disk()
-        self.logger.info("Saving successful! You may now quit")
 
     def split_current_tracklet(self, i_split, set_right_half_to_current=True, verbose=1):
         """
