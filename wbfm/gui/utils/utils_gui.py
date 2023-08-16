@@ -354,7 +354,7 @@ class NeuronNameEditor(QWidget):
         self.tableView = QTableView()
         self.model = QStandardItemModel(self)
         self.tableView.setModel(self.model)
-        self.tableView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        # self.tableView.setSelectionBehavior(QAbstractItemView.SelectRows)
         # self.tableView.selectionModel().currentRowChanged.connect(self.update_editor)
 
         self.duplicatesList = QListWidget()
@@ -420,11 +420,20 @@ class NeuronNameEditor(QWidget):
 
         """
         row_index = self.df.index[self.df["Neuron ID"] == neuron_name].tolist()[0]
-        print(f"Selecting row: {row_index} with name {neuron_name}")
+        print(f"Selecting row: {row_index} with original name {neuron_name}")
         selection_model = self.tableView.selectionModel()
         cell_index = self.model.index(row_index, self.manual_id_column_idx)
         selection_model.select(cell_index, QItemSelectionModel.Select)
+
+        # Jump to that cell in the other window
         self.setFocus()
+        self.activateWindow()
+        self.raise_()
+        # Center the scroll bar on the selected cell
+        self.tableView.scrollTo(cell_index, QAbstractItemView.PositionAtCenter)
+
+        # Start editing the selected cell
+        self.tableView.edit(cell_index)
 
     def update_table_from_dataframe(self):
         """
