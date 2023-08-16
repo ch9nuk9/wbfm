@@ -1420,7 +1420,7 @@ class ProjectData:
         possible_fnames = {k: str(v) for k, v in possible_fnames.items()}
         fname_precedence = ['excel', 'csv', 'h5']
         df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                      this_reader=read_if_exists)
+                                                                      this_reader=read_if_exists, na_filter=False)
         self.df_manual_tracking_fname = fname
         return df_manual_tracking
 
@@ -1456,7 +1456,9 @@ class ProjectData:
             fname = self.df_manual_tracking_fname
         # Replace NaNs with the neuron ID, if not already present. Should have dtype str
         df['ID1'] = df['ID1'].fillna(df['Neuron ID']).astype(str)
-        df['ID2'] = df['ID2'].astype(str)
+        # Replace other NaNs with empty strings
+        df = df.fillna('')
+
         manual_neuron_name_editor = NeuronNameEditor()
         manual_neuron_name_editor.import_dataframe(df, fname)
 

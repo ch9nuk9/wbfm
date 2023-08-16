@@ -146,7 +146,7 @@ def lexigraphically_sort(strs_with_numbers):
 
 def load_file_according_to_precedence(fname_precedence: list,
                                       possible_fnames: Dict[str, str],
-                                      this_reader: callable = read_if_exists):
+                                      this_reader: callable = read_if_exists, **kwargs):
     most_recent_modified_key = get_most_recently_modified(possible_fnames)
 
     for i, key in enumerate(fname_precedence):
@@ -158,7 +158,7 @@ def load_file_according_to_precedence(fname_precedence: list,
             raise UnknownValueError(key)
 
         if fname is not None and Path(fname).exists():
-            data = this_reader(fname)
+            data = this_reader(fname, **kwargs)
             logging.debug(f"File for mode {key} exists at precendence: {i+1}/{len(possible_fnames)}")
             logging.debug(f"Read data from: {fname}")
             if key != most_recent_modified_key:

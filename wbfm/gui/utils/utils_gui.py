@@ -532,16 +532,19 @@ class NeuronNameEditor(QWidget):
         if self.filename is None:
             logging.warning("No filename set; not saving")
             return False
+        df = self.df.copy()
+        # Do not save 'ID1' column values that are the same as the original name
+        df['ID1'] = df['ID1'].where(df['ID1'] != df['Neuron ID'], '')
 
         # Save
         if use_h5:
             fname = str(Path(self.filename).with_suffix('.h5'))
-            self.df.to_hdf(fname, key='df_with_missing', mode='w')
+            df.to_hdf(fname, key='df_with_missing', mode='w')
         else:
             assert self.filename.endswith(".xlsx"), f"Filename must end with .xlsx; found {self.filename}"
             fname = self.filename
             try:
-                self.df.to_excel(fname, index=False)
+                df.to_excel(fname, index=False)
             except PermissionError:
                 logging.warning(f"Permission error when saving {fname}; "
                                 f"Do you have the file open in another program?")
