@@ -82,6 +82,9 @@ for project_parent in "$project_parent_folder"/*; do
 
                         # Move the excel file to the manual annotation folder
                         mv "$excel_file" "$manual_annotation_folder"
+
+                        # Rename to be called "manual_annotation.xlsx" instead of "$project_name.xlsx"
+                        mv "$manual_annotation_folder/$project_name.xlsx" "$manual_annotation_folder/manual_annotation.xlsx"
                     else
                         # Print with red text
                         echo -e "\e[31mCould not find manual annotation folder: $manual_annotation_folder\e[0m"
