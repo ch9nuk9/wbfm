@@ -1,6 +1,33 @@
-# GUIs for Whole Brain Freely Moving
+# GUIs for whole body fluorescence microscopy
 
-## If you have a working installation
+## Summary of GUIs
+
+All guis are in the folder: /TOP/FOLDER/wbfm/gui/example.py
+
+Assuming you are in the top-level folder, you can access 3 guis. Please read the next sections for installation instructions!
+
+1. Create a project. See "Summary of common problems" in main [README](../../README.md) on carefully checking paths in different operating systems:
+```bash
+python wbfm/gui/create_project_gui.py
+```
+
+2. Visualization of most steps in the analysis is also possible, and they can be accessed via the progress gui. This also tells you which steps are completed:
+```bash
+python wbfm/gui/progress_gui.py
+```
+Or, if you know the project already:
+```bash
+python wbfm/gui/progress_gui.py --project_path PATH-TO-YOUR-PROJECT
+```
+
+3. Manual annotation of IDs and correction of tracking, and generally more detailed visualization. 
+Note, this will take a minute or more to load:
+```bash
+python wbfm/gui/trace_explorer.py --project_path PATH-TO-YOUR-PROJECT
+```
+
+
+## Example: If you have a working installation
 
 If you do NOT have a working installation, read the next section.
 
@@ -9,21 +36,17 @@ For example:
 
 ```commandline
 conda activate gui_only
-cd /path/to/this/README
-python trace_explorer.py --project_path /path/to/your/project/project_config.yaml
+cd /path/to/FOLDER/of/this/README
+python progress_gui.py --project_path /path/to/your/project/project_config.yaml
 ```
 
 This command will bring a small GUI up that displays the status of the target project, with buttons to open more complex GUIs.
 Those will be described in the next major section.
 
 This command works with 4 assumptions:
-1. You are NOT on the cluster (this gui can only be run locally)
-2. You are in a terminal in this folder (/dlc_for_wbfm/wbfm/gui/)
-   1. Example command to get to this folder:
-   2. ```cd /dlc_for_wbfm/wbfm/gui/```
+1. Your terminal is NOT on the cluster (guis can only be run locally, but any data can be remote)
+2. You are in a terminal in this folder
 3. You are in the proper conda environment
-   1. Example command:
-   2. ```conda activate gui_only```
 4. You have initialized a project at /path/to/your/project/project_config.yaml
 
 Instructions to satisfy these assumptions are in the next sections.
@@ -45,12 +68,12 @@ If you are in a terminal, you can use this to create the proper conda environmen
 NOTE: you must clone this repository first, and cd to it (i.e. replace the path below with yours):
 
 ```commandline
-cd /scratch/zimmer/Charles/github_repos/dlc_for_wbfm/conda-environments
+cd /PATH/TO/YOUR/CODE/wbfm/conda-environments
 
 conda env create -f gui_only.yaml --name gui_only
 ```
 
-Note: this will take a while, ~5 minutes.
+Note: this will take a while, maybe 5 minutes.
 
 ### Step 2
 
@@ -63,15 +86,15 @@ conda activate gui_only
 ### Step 3
 After the overall packages are installed, the zimmer group private packages need to be installed:
 
-1. git clone dlc_for_wbfm and segmentation (from https://github.com/Zimmer-lab)
+1. git clone wbfm and segmentation (from https://github.com/Zimmer-lab)
 2. cd to the main folder of each repository, and run ```pip install -e .```
-   1. Note: you will run ```pip``` twice, and it is very fast
+   1. Note: you will run ```pip``` twice (once per folder), and it is very fast
 
 ## Project initialization
 
 See the main [README](../../README.md) file for instructions, or use a pre-generated project
 
-## More complex GUI: tracklet and segmentation correction
+## Detailed explanation of complex GUI: ID'ing and tracklet/segmentation correction
 
 Open the trace explorer gui:
 
@@ -82,16 +105,19 @@ python trace_explorer.py --project_path /path/to/your/project/project_config.yam
 ```
 
 This opens a new Napari window with several layers, designed to be used to view and modify the tracking and segmentation.
-This may take some time, ~30 seconds.
-Sometimes it simply won't open; if it takes longer than a minute, quit it and try again.
+This may take some time, ~1 minute.
+Rarely, it simply won't open; if it takes longer than 5 minutes, quit it and try again.
 
 ### Overall explanation
+
+We have created a [YouTube](https://youtube.com/playlist?list=PL0LLlJzm-VqQhX4Kw2KqoeccJVk4jhPS3) tutorial playlist.
+The first two videos are broadly useful, and the later ones are more specific to tracklet and segmentation correction.
 
 When you open the GUI, you will see 4 areas:
 1. Left - Napari layers
 2. Center - Main 3d data
 3. Right - Menus and buttons
-4. Bottom - Graph graph
+4. Bottom - Matplotlib graph
 
 Abstractly, each area of the GUI is designed to present information at either a high level or a detailed level:
 1. An overview of the entire worm body

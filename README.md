@@ -8,7 +8,8 @@ The segmentation portion of the algorithm is in a [sibling repository](https://g
 # Installation for running
 
 This project is designed to be installed with Anaconda, and requires two external local packages to be installed.
-The following are step-by-step instructions.
+
+## On the cluster
 
 If you just want to run the code, then you can use the pre-installed environments installed on the cluster, which can be activated using:
 ```
@@ -18,6 +19,9 @@ conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
 For more detail, see:
 [detailed installation instructions](docs/installation_instructions.md)
 
+## If you just want ot run the GUI
+
+See [GUI README](wbfm/gui/README.md)
 
 # Running the pipeline
 

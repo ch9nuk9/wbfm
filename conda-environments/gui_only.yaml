@@ -13,10 +13,12 @@ dependencies:
   - pip
   - opencv
   - scikit-image
-  - scikit-learn
   - lmfit
   - pip:
     - tables
+    - statsmodels
+    - ppca
+    - scikit-learn
     - openpyxl
     - matplotlib
     - sacred
@@ -29,7 +31,6 @@ dependencies:
     - napari[all]
     - easydict
     - pytest
-    - statsmodels
     - ruptures
     - backports.cached_property
     - methodtools
