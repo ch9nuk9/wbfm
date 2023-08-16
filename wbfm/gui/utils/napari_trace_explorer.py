@@ -816,11 +816,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def zoom_to_next_ground_truth_conflict(viewer):
             self.zoom_to_next_ground_truth_conflict()
 
-        @viewer.bind_key('shift-w', overwrite=True)
-        def resolve_current_ground_truth_conflict(viewer):
-            self.resolve_current_ground_truth_conflict()
+        # @viewer.bind_key('shift-w', overwrite=True)
+        # def resolve_current_ground_truth_conflict(viewer):
+        #     self.resolve_current_ground_truth_conflict()
 
-        @viewer.bind_key('shift-e', overwrite=True)
+        @viewer.bind_key('Shift-e', overwrite=True)
         def toggle_manual_ids(viewer):
             self.toggle_manual_ids()
 
@@ -1104,9 +1104,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def toggle_manual_ids(self):
         self.manual_id_layer.visible = not self.manual_id_layer.visible
-
-    # def toggle_manual_ids(self):
-    #     self.changeNeuronIdLayer.toggle()
 
     def _toggle_layer(self, layer):
         if self.viewer.layers.selection.active == layer:
