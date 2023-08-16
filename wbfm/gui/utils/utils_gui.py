@@ -360,21 +360,26 @@ class NeuronNameEditor(QWidget):
         self.tableView = QTableView()
         self.model = QStandardItemModel(self)
         self.tableView.setModel(self.model)
-        # self.tableView.setSelectionBehavior(QAbstractItemView.SelectRows)
-        # self.tableView.selectionModel().currentRowChanged.connect(self.update_editor)
 
+        # Set the initial size of the widget window
+        screen = QApplication.desktop().screenGeometry()
+        fraction_of_screen_width = 0.4
+        fraction_of_screen_height = 1.0
+        initial_width = int(screen.width() * fraction_of_screen_width)
+        initial_height = int(screen.height() * fraction_of_screen_height)
+        self.resize(initial_width, initial_height)
+
+        # Set up widgets
         self.duplicatesList = QListWidget()
 
         layout.addWidget(QLabel("Editable table of neuron names"), 0, 0)
         layout.addWidget(self.tableView, 1, 0, 2, 1)
-        # layout.addWidget(self.customNameEdit, 0, 1)
-        # layout.addWidget(self.metadataEdit, 1, 1)
-        # layout.addWidget(self.updateDuplicatesButton, 2, 1)
         layout.addWidget(QLabel("Duplicated manual annotations:"), 0, 1)
         layout.addWidget(self.duplicatesList, 1, 1, 2, 1)
 
         self.setLayout(layout)
 
+        # Set up dummy data, if using
         if use_dummy_data:
             self.set_up_dummy_data()
         else:
@@ -386,7 +391,7 @@ class NeuronNameEditor(QWidget):
         self.model.dataChanged.connect(self.update_dataframe_range_from_table)
         self.model.dataChanged.connect(self.update_duplicates_list)
 
-        # Set custom delegate to prevent editing
+        # Set custom delegate to prevent editing of first column
         non_editable_delegate = NonEditableDelegate()
         self.tableView.setItemDelegateForColumn(0, non_editable_delegate)
 
@@ -567,8 +572,9 @@ class NeuronNameEditor(QWidget):
             duplicate_names.remove('nan')
         elif np.nan in duplicate_names:
             duplicate_names.remove(np.nan)
-        # if len(duplicate_names) > 0:
-        #     print(f"Found {len(duplicate_names)} duplicate names: {duplicate_names}")
+        elif '' in duplicate_names:
+            duplicate_names.remove('')
+
         for name in duplicate_names:
             # Get the original name as well
             original_name_list = df[df["ID1"] == name]["Neuron ID"]

@@ -1447,6 +1447,7 @@ class ProjectData:
                                        'paired_neuron', 'Interesting_not_IDd', 'Notes'])
             # Fill the first column with the default names
             df['Neuron ID'] = self.neuron_names
+            df['Certainty'] = 0
 
             fname = self.get_default_manual_annotation_fname()
         elif not self.df_manual_tracking_fname.endswith('.xlsx'):
@@ -1454,10 +1455,16 @@ class ProjectData:
             fname = str(Path(self.df_manual_tracking_fname).with_suffix('.xlsx'))
         else:
             fname = self.df_manual_tracking_fname
-        # Replace NaNs with the neuron ID, if not already present. Should have dtype str
+
+        # Enforce certain datatypes
+        df['Neuron ID'] = df['Neuron ID'].astype(str)
         df['ID1'] = df['ID1'].fillna(df['Neuron ID']).astype(str)
+        df['ID2'] = df['ID2'].astype(str)
         # Replace other NaNs with empty strings
         df = df.fillna('')
+        df = df.replace('nan', '')
+        # For this column cast empty string entries as 0
+        df['Certainty'] = df['Certainty'].replace('', 0).replace('nan', 0).fillna(0).astype(int)
 
         manual_neuron_name_editor = NeuronNameEditor()
         manual_neuron_name_editor.import_dataframe(df, fname)
@@ -1499,6 +1506,8 @@ class ProjectData:
 
         # Get the certainty. If not present (nan), will be 0
         neuron_certainty = df['Certainty'].values
+        # First check that they are float or nan (i.e. not strings)
+        neuron_certainty = [i if isinstance(i, float) else np.nan for i in neuron_certainty]
         neuron_certainty = [0 if np.isnan(i) else int(i) for i in neuron_certainty]
 
         # Create a dictionary
