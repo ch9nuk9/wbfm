@@ -18,6 +18,7 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
+from napari._qt.qthreading import thread_worker
 from tqdm.auto import tqdm
 from PyQt5.QtWidgets import QApplication, QProgressDialog, QListWidget
 from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
@@ -1332,6 +1333,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         # We need to change the features dataframe, not the properties dict
         self.manual_id_layer.features.loc[rows_to_change, 'custom_label'] = new_name
+        # Unfortunately, this updates the entire text layer including all strings, so it takes a while...
+
+        worker = self.refresh_manual_id_layer()
+        worker.start()
+
+    @thread_worker
+    def refresh_manual_id_layer(self):
         self.manual_id_layer.refresh_text()
 
     def add_tracking_outliers_to_plot(self):
