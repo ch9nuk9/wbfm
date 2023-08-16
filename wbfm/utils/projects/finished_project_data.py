@@ -1412,25 +1412,22 @@ class ProjectData:
         Load a dataframe corresponding to manual tracking, i.e. which neurons have been manually corrected or ID'ed
 
         """
-        track_cfg = self.project_config.get_tracking_config()
-
         # Manual annotations take precedence by default
-        csv_fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.csv", prepend_subfolder=True)
-        possible_fnames = dict(excel=Path(csv_fname).with_name(self.shortened_name).with_suffix('.xlsx'),
-                               csv=csv_fname,
-                               h5=Path(csv_fname).with_name(self.shortened_name).with_suffix('.h5'))
+        excel_fname = self.get_default_manual_annotation_fname()
+        possible_fnames = dict(excel=excel_fname,
+                               csv=Path(excel_fname).with_name(self.shortened_name).with_suffix('.csv'),
+                               h5=Path(excel_fname).with_name(self.shortened_name).with_suffix('.h5'))
         possible_fnames = {k: str(v) for k, v in possible_fnames.items()}
         fname_precedence = ['excel', 'csv', 'h5']
         df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
                                                                       this_reader=read_if_exists)
-
         self.df_manual_tracking_fname = fname
-        # fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.csv", prepend_subfolder=True)
-        # df_manual_tracking = read_if_exists(fname, reader=pd.read_csv)
-        # if df_manual_tracking is None:
-        #     fname = Path(fname).with_name(self.shortened_name).with_suffix('.xlsx')
-        #     df_manual_tracking = read_if_exists(str(fname), reader=pd.read_excel)
         return df_manual_tracking
+
+    def get_default_manual_annotation_fname(self):
+        track_cfg = self.project_config.get_tracking_config()
+        excel_fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.xlsx", prepend_subfolder=True)
+        return excel_fname
 
     def build_neuron_editor_gui(self):
         """
@@ -1444,6 +1441,14 @@ class ProjectData:
         """
 
         df = self.df_manual_tracking
+        if df is None:
+            # Generate a default dataframe, with hardcoded names
+            df = pd.DataFrame(columns=['Neuron ID', 'Finished?', 'ID1', 'ID2', 'Certainty', 'does_activity_match_ID',
+                                       'paired_neuron', 'Interesting_not_IDd', 'Notes'])
+            # Fill the first column with the default names
+            df['Neuron ID'] = self.neuron_names
+
+            self.df_manual_tracking_fname = self.get_default_manual_annotation_fname()
         # Replace NaNs with the neuron ID, if not already present. Should have dtype str
         df['ID1'] = df['ID1'].fillna(df['Neuron ID']).astype(str)
         df['ID2'] = df['ID2'].astype(str)
