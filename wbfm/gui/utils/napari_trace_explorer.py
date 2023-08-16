@@ -814,7 +814,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def resolve_current_ground_truth_conflict(viewer):
             self.resolve_current_ground_truth_conflict()
 
-        @viewer.bind_key('ctrl-w', overwrite=True)
+        @viewer.bind_key('Ctrl-w', overwrite=True)
         def toggle_manual_ids(viewer):
             self.toggle_manual_ids()
 
