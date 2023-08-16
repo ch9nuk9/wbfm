@@ -541,7 +541,7 @@ class NeuronNameEditor(QWidget):
             assert self.filename.endswith(".xlsx"), f"Filename must end with .xlsx; found {self.filename}"
             fname = self.filename
             try:
-                self.df.to_excel(fname)
+                self.df.to_excel(fname, index=False)
             except PermissionError:
                 logging.warning(f"Permission error when saving {fname}; "
                                 f"Do you have the file open in another program?")

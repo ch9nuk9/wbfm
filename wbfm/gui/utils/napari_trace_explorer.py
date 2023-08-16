@@ -621,16 +621,18 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             all_flags[name] = flag
             # Sleep to make sure that the progress bar is updated
             time.sleep(0.1)
-        if not all(all_flags.values()):
-            self.logger.error("Failed to save at least one step to disk!")
-            self.logger.error(f"Failed steps: {all_flags}")
-        else:
-            self.logger.info("")
-            self.logger.info("================================================================")
-            self.logger.info("Saving successful!")
-            self.logger.info("You may now quit (ctrl-c in the terminal)")
-            self.logger.info("================================================================")
-        progress.setValue(len(all_flags))
+        # Some of the saving steps use threads, so wait for them to finish
+        with self.dat.tracklet_annotator.saving_lock:
+            if not all(all_flags.values()):
+                self.logger.error("Failed to save at least one step to disk!")
+                self.logger.error(f"Failed steps: {all_flags}")
+            else:
+                self.logger.info("")
+                self.logger.info("================================================================")
+                self.logger.info("Saving successful!")
+                self.logger.info("You may now fully quit (ctrl-c in this terminal)")
+                self.logger.info("================================================================")
+            progress.setValue(len(all_flags))
 
     def split_segmentation_manual(self):
         # Produces candidate mask layer
