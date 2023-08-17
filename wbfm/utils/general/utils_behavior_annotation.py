@@ -254,7 +254,8 @@ class BehaviorCodes(Flag):
         return px.colors.qualitative.Set1_r
 
     @classmethod
-    def ethogram_cmap(cls, include_turns=True, include_reversal_turns=False, include_quiescence=False):
+    def ethogram_cmap(cls, include_turns=True, include_reversal_turns=False, include_quiescence=False,
+                      additional_shaded_states=None):
         """Colormap for shading as a stand-alone ethogram"""
         base_cmap = cls.base_colormap()
         cmap = {cls.UNKNOWN: None,
@@ -289,6 +290,19 @@ class BehaviorCodes(Flag):
             cmap[cls.REV | cls.DORSAL_TURN] = base_cmap[5]
         if include_quiescence:
             cmap[cls.QUIESCENCE] = base_cmap[6]
+        if additional_shaded_states is not None:
+            # Add states and colors using the matplotlib colormap
+            # Start at the first color that isn't in the cmap
+            i_color_offset = 0
+            for i in range(10):
+                if base_cmap[i] not in cmap.values():
+                    i_color_offset = i
+                    break
+            else:
+                raise ValueError(f"Could not find a color in the base colormap that is not already in the ethogram "
+                                 f"colormap. Base colormap: {base_cmap}, ethogram colormap: {cmap}")
+            for i, state in enumerate(additional_shaded_states):
+                cmap[state] = base_cmap[i_color_offset + i]
         return cmap
 
     # @classmethod
@@ -362,7 +376,7 @@ class BehaviorCodes(Flag):
 
 
 def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, include_collision=False,
-                         additional_shaded_states: Optional[List['BehaviorCodes']]=None,
+                         additional_shaded_states: Optional[List['BehaviorCodes']]=None, DEBUG=False,
                          **kwargs):
     """
     Returns a list of dictionaries that can be passed to plotly to draw an ethogram
@@ -388,16 +402,26 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
                                                                   **kwargs)
     else:
         cmap_func = lambda state: \
-            BehaviorCodes.ethogram_cmap(include_reversal_turns=include_reversal_turns, **kwargs).get(state, None)
+            BehaviorCodes.ethogram_cmap(include_reversal_turns=include_reversal_turns,
+                                        additional_shaded_states=additional_shaded_states,
+                                        **kwargs).get(state, None)
 
     # Loop over all behaviors in the colormap (some may not be present in the vector)
-    for behavior_code in BehaviorCodes.possible_colors():
+    possible_behaviors = BehaviorCodes.possible_colors()
+    if additional_shaded_states is not None:
+        possible_behaviors.extend(additional_shaded_states)
+    for behavior_code in possible_behaviors:
         binary_behavior = BehaviorCodes.vector_equality(beh_vec, behavior_code)
         if cmap_func(behavior_code) is None:
             # Do not draw anything for this behavior
+            if DEBUG:
+                print(f'No color for behavior {behavior_code}')
             continue
         starts, ends = get_contiguous_blocks_from_column(binary_behavior, already_boolean=True)
         color = cmap_func(behavior_code)
+        if DEBUG:
+            print(f'Behavior {behavior_code} is {color}')
+            print(f"starts: {starts}, ends: {ends}")
         for s, e in zip(starts, ends):
             # If there is an index in the behavior vector, convert the starts and ends
             # to the corresponding time

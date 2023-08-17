@@ -1544,9 +1544,8 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         except ValueError:
             # Then we are working in behavioral space, and we don't need this
             pass
-
-        ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt,
-                                            additional_shaded_states=additional_shaded_states)
+        ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt, include_turns=False,
+                                            additional_shaded_states=additional_shaded_states, DEBUG=True)
     ### 3d phase plot
     ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_opt)
     # Use the same behaviors as the ethogram
