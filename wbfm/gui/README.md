@@ -17,13 +17,13 @@ python wbfm/gui/progress_gui.py
 ```
 Or, if you know the project already:
 ```bash
-python wbfm/gui/progress_gui.py --project_path PATH-TO-YOUR-PROJECT
+python wbfm/gui/progress_gui.py --project_path /path/to/your/project/project_config.yaml
 ```
 
 3. Manual annotation of IDs and correction of tracking, and generally more detailed visualization. 
 Note, this will take a minute or more to load:
 ```bash
-python wbfm/gui/trace_explorer.py --project_path PATH-TO-YOUR-PROJECT
+python wbfm/gui/trace_explorer.py --project_path /path/to/your/project/project_config.yaml
 ```
 
 
