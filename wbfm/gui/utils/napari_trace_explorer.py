@@ -1339,7 +1339,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         worker.start()
 
         # Change focus to the same row, but one column over
-        self.manualNeuronNameEditor.jump_focus_to_neuron(original_name, column_offset=1)
+        # self.manualNeuronNameEditor.jump_focus_to_neuron(original_name, column_offset=1)
 
     @thread_worker
     def refresh_manual_id_layer(self):

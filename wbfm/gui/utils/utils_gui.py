@@ -361,6 +361,10 @@ class NeuronNameEditor(QWidget):
         self.model = QStandardItemModel(self)
         self.tableView.setModel(self.model)
 
+        # Make sure that selecting programmatically overwrites the previous selection
+        self.tableView.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.tableView.setSelectionBehavior(QAbstractItemView.SelectItems)
+
         # Set the initial size of the widget window
         screen = QApplication.desktop().screenGeometry()
         fraction_of_screen_width = 0.4
@@ -449,7 +453,9 @@ class NeuronNameEditor(QWidget):
         # print(f"Selecting row: {row_index} with original name {neuron_name}")
         selection_model = self.tableView.selectionModel()
         cell_index = self.model.index(row_index, column_idx)
-        selection_model.select(cell_index, QItemSelectionModel.Select)
+        # Use setCurrentIndex instead of select, to overwrite the previous selection
+        selection_model.setCurrentIndex(cell_index, QItemSelectionModel.Select)
+        # selection_model.select(cell_index, QItemSelectionModel.Select)
 
         # Jump to that cell in this window (not focus of main gui)
         self.setFocus()
