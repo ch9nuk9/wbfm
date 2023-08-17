@@ -1196,6 +1196,115 @@ def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html'):
     # fig.write_image(str(fname))
 
 
+def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, to_show=False, keep_reversal_turns=False,
+                                                     **kwargs):
+    """
+    Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of the neural traces
+
+    In the end, only includes behavioral variables, not neural traces
+
+    Parameters
+    ----------
+    project_cfg
+    to_save
+    to_show
+
+    Returns
+    -------
+
+    """
+    base_font_size = 18
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    project_data.use_physical_x_axis = True
+    num_modes_to_plot = 3
+    behavior_alias_list = ['dorsal_only_head_curvature', 'ventral_only_head_curvature', 'ventral_only_curvature']
+    kwargs['behavior_kwargs'] = dict(fluorescence_fps=False, reset_index=False)
+    column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
+        project_data, num_modes_to_plot, use_behavior_traces=True, behavior_alias_list=behavior_alias_list, **kwargs)
+
+    # One column with a heatmap, (short) ethogram, and kymograph
+    rows = 1 + num_modes_to_plot + 2
+    cols = 1
+
+    row_heights = row_heights[:rows]
+    # row_heights.append(row_heights[0])
+
+    # Build figure
+
+    ### Column: x axis is time
+    subplot_titles = ['Kymograph', 'Ethogram']
+    subplot_titles.extend(behavior_alias_list)
+    subplot_titles.append('speed')
+    fig = make_subplots(rows=rows, cols=cols, shared_xaxes=False, shared_yaxes=False,
+                        row_heights=row_heights, vertical_spacing=0.05,
+                        subplot_titles=subplot_titles)
+
+    for opt in ethogram_opt:
+        fig.add_shape(**opt, row=2, col=1)
+    kymograph_opt['row'] = 1
+    fig.add_trace(kymograph, **kymograph_opt)
+
+    for trace, trace_opt in zip(trace_list, trace_opt_list):
+        fig.add_trace(trace, **trace_opt)
+        num_before_adding_shapes = len(fig.layout.shapes)
+        for shade_opt in trace_shading_opt:
+            shade_opt['y1'] = 0.5  # Will be half the overall plot
+            fig.add_shape(**shade_opt, row=trace_opt['row'], col=trace_opt['col'])
+        # Force yref in all of these new shapes, which doesn't really work for subplots
+        # But here it is hardcoded as 50% of the overall plot (extending across subplots)
+        for i in range(num_before_adding_shapes, len(fig.layout.shapes)):
+            fig.layout.shapes[i]['yref'] = 'paper'
+
+
+    ### Final updates
+    fig.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
+    fig.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
+    # Flip the kymograph
+    fig.update_yaxes(dict(autorange='reversed'), col=1, row=1, overwrite=True)
+
+    fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
+
+    # Fonts
+    fig.update_layout(font=dict(size=18))
+    # Get the colormaps in the right places
+    fig.update_layout(
+        coloraxis2=dict(colorscale='RdBu', colorbar=dict(
+            len=0.5,
+            yanchor='middle',
+            y=0.75,
+            xanchor='right',
+            x=1.1
+        ),),
+    )
+
+    # Add a single legend for behavior colors
+    # ... this doesn't work here because the shapes don't and can't have legends...
+    # fig.update_layout(
+    #     legend=dict(
+    #         itemsizing='constant',  # Display legend items as colored boxes and text
+    #         x=0.63,  # Adjust the x position of the legend
+    #         y=0.54,  # Adjust the y position of the legend
+    #         bgcolor='rgba(0, 0, 0, 0.00)',  # Set the background color of the legend
+    #         bordercolor='Black',  # Set the border color of the legend
+    #         borderwidth=1,  # Set the border width of the legend
+    #         font=dict(size=base_font_size)  # Set the font size of the legend text
+    #     )
+    # )
+
+    if to_show:
+        fig.show()
+
+    if to_save:
+        # Change fname depending on whether we're keeping reversal turns
+        if keep_reversal_turns:
+            fname = 'summary_trace_plot_kymograph_with_reversal_turns.html'
+        else:
+            fname = 'summary_trace_plot_kymograph.html'
+        _save_plotly_all_types(fig, project_data, fname=fname)
+
+    return fig
+
+
 def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, to_show=False, **kwargs):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of PCA modes
@@ -1214,6 +1323,7 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     num_pca_modes_to_plot = 3
+    kwargs['behavior_kwargs'] = dict(fluorescence_fps=False, reset_index=False)
     column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
         project_data, num_pca_modes_to_plot, **kwargs)
 
@@ -1281,7 +1391,12 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
 
 def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plot=3,
                                               keep_reversal_turns=False, use_manual_annotations=False,
-                                              trace_opt: dict = None,):
+                                              use_behavior_traces=False, behavior_alias_list=None, behavior_kwargs=None,
+                                              trace_opt: dict = None, ):
+    if behavior_kwargs is None:
+        behavior_kwargs = dict(fluorescence_fps=True, reset_index=True)
+    if behavior_alias_list is None:
+        behavior_alias_list = []
     default_trace_opt = dict(interpolate_nan=True,
                              filter_mode='rolling_mean',
                              min_nonnan=0.9,
@@ -1311,13 +1426,16 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     df_pca_modes.set_index(x, inplace=True)
 
     try:
-        speed = project_data.worm_posture_class.worm_speed(fluorescence_fps=True, use_stage_position=False,
-                                                           signed=True)
+        speed = project_data.worm_posture_class.worm_speed(**behavior_kwargs, use_stage_position=False, signed=True)
     except NoBehaviorAnnotationsError:
         speed = pd.Series(np.zeros(df_pca_modes.shape[0]))
     # TODO: move the reindexing to the worm posture class itself
     speed = pd.DataFrame(speed)
-    speed.set_index(x, inplace=True)
+    try:
+        speed.set_index(x, inplace=True)
+    except ValueError:
+        # Then we are working in behavioral space, and we don't need this
+        pass
 
     df_pca_weights = pd.DataFrame(pca_weights.components_[0:num_pca_modes_to_plot, :].T)
     col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
@@ -1340,11 +1458,13 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
 
     ### Alternate: Kymograph heatmap
     try:
-        kymo_dat = project_data.worm_posture_class.curvature(fluorescence_fps=True, reset_index=True).T
+        kymo_dat = project_data.worm_posture_class.curvature(**behavior_kwargs).T
         # Instead of zmin and zmax on the plot, actually modify the data (options seem to not propagate to the plot)
         kymo_dat[kymo_dat < -0.04] = -0.04
         kymo_dat[kymo_dat > 0.04] = 0.04
         kymo_dat = kymo_dat.iloc[3:-3, :]
+        # Flip the kymograph in the y direction, so that the head is on top
+        # kymo_dat = kymo_dat.iloc[::-1, :].reset_index(drop=True)
         kymograph = go.Heatmap(y=kymo_dat.index, z=kymo_dat, colorscale='RdBu', xaxis="x", yaxis="y",
                                coloraxis='coloraxis2')
         kymograph_opt = dict(row=3, col=1)
@@ -1352,23 +1472,35 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         kymograph = None
         kymograph_opt = dict()
 
-    ### PCA modes
+    ### Individual traces modes
     mode_colormap = px.colors.qualitative.Plotly
     trace_list = []
     trace_opt_list = []
     for i, col in enumerate(col_names):
-        trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index,
-                                     line=dict(color=mode_colormap[i], width=2), showlegend=False))
+        if not use_behavior_traces:
+            # Traces are pca modes
+            trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index,
+                                         line=dict(color=mode_colormap[i], width=2), showlegend=False))
+        else:
+            # Traces are specific behaviors
+            name = behavior_alias_list[i]
+            y = project_data.worm_posture_class.calc_behavior_from_alias(name, **behavior_kwargs)
+            trace_list.append(go.Scatter(y=y, x=y.index,
+                                         line=dict(color=mode_colormap[i], width=2), showlegend=False))
         trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
+
     #### Shading on top of the PCA modes
     try:
-        beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True,
-                                                                 reset_index=True)
+        beh_vec = project_data.worm_posture_class.beh_annotation(**behavior_kwargs)
         beh_vec = pd.DataFrame(beh_vec)
         # Check lengths; sometimes beh_vec is one too short
         if len(beh_vec) == df_pca_modes.shape[0] - 1:
             beh_vec = pd.concat([beh_vec, pd.Series([BehaviorCodes.UNKNOWN])])
-        beh_vec.set_index(x, inplace=True)
+        try:
+            beh_vec.set_index(x, inplace=True)
+        except ValueError:
+            # Then we are working in behavioral space, and we don't need this
+            pass
         trace_shading_opt = options_for_ethogram(beh_vec, shading=True)
     except NoBehaviorAnnotationsError:
         trace_shading_opt = dict()
@@ -1390,15 +1522,13 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     beh_vec = None
     if use_manual_annotations:
         try:
-            beh_vec = project_data.worm_posture_class.manual_beh_annotation(fluorescence_fps=True,
-                                                                            reset_index=True)
+            beh_vec = project_data.worm_posture_class.manual_beh_annotation(**behavior_kwargs)
             logging.info('Using manual annotations')
         except NoBehaviorAnnotationsError:
             logging.warning('No manual annotations found')
             beh_vec = None
     if beh_vec is None:
-        beh_vec = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True,
-                                                                 reset_index=True)
+        beh_vec = project_data.worm_posture_class.beh_annotation(**behavior_kwargs)
     ethogram_cmap_opt = dict(include_reversal_turns=keep_reversal_turns)
     if beh_vec is None:
         # If still none, that means there are no annotations (e.g. it is immobilized)
@@ -1409,38 +1539,52 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         # Check lengths; sometimes beh_vec is one too short
         if len(beh_vec) == df_pca_modes.shape[0] - 1:
             beh_vec = pd.concat([beh_vec, pd.Series([BehaviorCodes.UNKNOWN])])
-        beh_vec.set_index(x, inplace=True)
+        try:
+            beh_vec.set_index(x, inplace=True)
+        except ValueError:
+            # Then we are working in behavioral space, and we don't need this
+            pass
+
         ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt)
     ### 3d phase plot
     ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_opt)
     # Use the same behaviors as the ethogram
-    df_pca_modes['behavior'] = list(beh_vec.iloc[:, 0])
-    df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
-                                                                  ['mode 0', 'mode 1', 'mode 2'],
-                                                                  'behavior')
-    state_codes = beh_vec.iloc[:, 0].unique()  # Get unique state codes; there is only one column
-    phase_plot_list = []
-    for i, state_code in enumerate(state_codes):
-        try:
-            # Only show the legend if the behavior is FWD or REV
-            showlegend = state_code.full_name in {'FWD', 'REV', 'VENTRAL_TURN and FWD', 'FWD and VENTRAL_TURN'}
-            name = state_code.name
-            if name is None:
-                # If there is a complex state
-                name = state_code.full_name.split(' and ')[0]
-            phase_plot_list.append(
-                go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]], mode='lines',
-                             name=name, line=dict(color=ethogram_cmap[state_code], width=4),
-                             showlegend=showlegend),)
-        except KeyError:
-            pass
+    try:
+        df_pca_modes['behavior'] = list(beh_vec.iloc[:, 0])
+        df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_pca_modes,
+                                                                      ['mode 0', 'mode 1', 'mode 2'],
+                                                                      'behavior')
+
+        state_codes = beh_vec.iloc[:, 0].unique()  # Get unique state codes; there is only one column
+        phase_plot_list = []
+        for i, state_code in enumerate(state_codes):
+            try:
+                # Only show the legend if the behavior is FWD or REV
+                showlegend = state_code.full_name in {'FWD', 'REV', 'VENTRAL_TURN and FWD', 'FWD and VENTRAL_TURN'}
+                name = state_code.name
+                if name is None:
+                    # If there is a complex state
+                    name = state_code.full_name.split(' and ')[0]
+                phase_plot_list.append(
+                    go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]],
+                                 mode='lines',
+                                 name=name, line=dict(color=ethogram_cmap[state_code], width=4),
+                                 showlegend=showlegend), )
+            except KeyError:
+                pass
+
+    except ValueError:
+        # Then we are working in behavioral space, and we don't need a phase plot
+        phase_plot_list = []
 
     phase_plot_list_opt = dict(rows=2, cols=2)
     ### Variance explained
     var_explained_line = go.Scatter(x=np.arange(1, len(var_explained)+1), y=var_explained, showlegend=False)
     var_explained_line_opt = dict(row=6, col=2, secondary_y=False)
-    return column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list
 
+    return column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, \
+        phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, \
+        var_explained_line, var_explained_line_opt, weights_list, weights_opt_list
 
 def make_summary_hilbert_triggered_average_grid_plot(project_cfg, i_body_segment=41,
                                                      return_fast_scale_separation=False, residual_mode=None,

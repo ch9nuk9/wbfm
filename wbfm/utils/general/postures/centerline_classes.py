@@ -568,12 +568,13 @@ class WormFullVideoPosture:
         -------
 
         """
-        
-        kwargs['fluorescence_fps'] = True
-        kwargs['reset_index'] = True
+
+        # Default arguments
+        kwargs['fluorescence_fps'] = kwargs.get('fluorescence_fps', True)
+        kwargs['reset_index'] = kwargs.get('reset_index', True)
 
         if behavior_alias == 'signed_stage_speed':
-            y = self.worm_speed(fluorescence_fps=True, signed=True)
+            y = self.worm_speed(**kwargs, signed=True)
         elif behavior_alias == 'rev':
             y = BehaviorCodes.vector_equality(self.beh_annotation(**kwargs), BehaviorCodes.REV)
         elif behavior_alias == 'fwd':
@@ -818,7 +819,7 @@ class WormFullVideoPosture:
     # @lru_cache(maxsize=256)
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
                    strong_smoothing=False, use_stage_position=True, remove_outliers=True, body_segment=50,
-                   strong_smoothing_before_derivative=False, reset_index=True) -> pd.Series:
+                   clip_unrealistic_values=True, strong_smoothing_before_derivative=False, reset_index=True) -> pd.Series:
         """
         Calculates derivative of position
 
@@ -867,6 +868,9 @@ class WormFullVideoPosture:
             speed_mm_per_s = pd.Series(speed_mm_per_s).interpolate()
         if signed:
             speed_mm_per_s = self.flip_of_vector_during_state(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
+        if clip_unrealistic_values:
+            thresh = 0.5
+            speed_mm_per_s = speed_mm_per_s.clip(lower=-thresh, upper=thresh)
 
         return speed_mm_per_s
 
