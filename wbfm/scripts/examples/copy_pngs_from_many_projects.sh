@@ -38,6 +38,8 @@ for folder in "$source_folder"/*; do
     project_name=$(basename "$folder")
     # Get target png
     target_png=$folder/$target
+    # Get the extension of the target, which may be .png, .html, etc.
+    target_extension="${target##*.}"
     # Copy target png to destination folder, renaming it to the project name
-    cp "$target_png" "$destination_folder"/"$project_name".png
+    cp "$target_png" "$destination_folder"/"$project_name"."$target_extension"
 done
