@@ -588,52 +588,52 @@ class WormFullVideoPosture:
         elif behavior_alias == 'signed_middle_body_speed_smoothed':
             y = self.worm_speed(**kwargs, use_stage_position=False, signed=True, strong_smoothing_before_derivative=True)
         elif behavior_alias == 'summed_curvature':
-            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=30, **kwargs)
         elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_signed_curvature':
-            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(do_abs=False, **kwargs)
         elif behavior_alias == 'head_curvature':
-            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph( start_segment=5, end_segment=30, **kwargs)
         elif behavior_alias == 'head_signed_curvature':
-            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(do_abs=False, 
                                                      start_segment=5, end_segment=30, **kwargs)
         elif behavior_alias == 'quantile_curvature':
-            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
                                                      do_quantile=True, which_quantile=0.9, **kwargs)
         elif behavior_alias == 'quantile_head_curvature':
-            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=5, end_segment=30,
                                                      do_quantile=True, which_quantile=0.75, **kwargs)
         elif behavior_alias == 'ventral_quantile_curvature':
-            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
                                                      do_abs=False, do_quantile=True, which_quantile=0.9, **kwargs)
         elif behavior_alias == 'dorsal_quantile_curvature':
-            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
                                                      do_abs=False, do_quantile=True, which_quantile=0.1, **kwargs)
         elif behavior_alias == 'ventral_only_curvature':
             # Same as Ulises curvature annotation
-            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
                                                      do_abs=False, only_positive=True, **kwargs)
         elif behavior_alias == 'dorsal_only_curvature':
             # Same as Ulises curvature annotation
-            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
                                                      do_abs=False, only_negative=True, **kwargs)
         elif behavior_alias == 'ventral_only_head_curvature':
             # Same as Ulises curvature annotation
-            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=2, end_segment=10,
                                                      do_abs=False, only_positive=True, **kwargs)
         elif behavior_alias == 'dorsal_only_head_curvature':
             # Same as Ulises curvature annotation
-            assert self.has_full_kymograph, f"No kymograph found for project {self.project_config.project_dir}"
+            self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=2, end_segment=10,
                                                      do_abs=False, only_negative=True, **kwargs)
         elif behavior_alias == 'pirouette':
@@ -1017,6 +1017,10 @@ class WormFullVideoPosture:
     def has_full_kymograph(self):
         fnames = [self.filename_y, self.filename_x, self.filename_curvature]
         return all([f is not None for f in fnames]) and all([os.path.exists(f) for f in fnames])
+
+    def check_has_full_kymograph(self):
+        if not self.has_full_kymograph:
+            raise NoBehaviorAnnotationsError(self.project_config.project_dir)
 
     def validate_dataframes_of_correct_size(self):
         dfs = [self.centerlineX(), self.centerlineY(), self.curvature(), self.stage_position()]
