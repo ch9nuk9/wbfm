@@ -425,25 +425,33 @@ class NeuronNameEditor(QWidget):
                         self.model.item(row, col).flags() | ~Qt.ItemIsEditable
                     )
 
-    def select_row_and_manual_ID_column(self, neuron_name):
+    def jump_focus_to_neuron(self, neuron_name, column_name=None, column_offset=0):
         """
         Select based on the 'Neuron ID' column in the table
 
         Parameters
         ----------
         neuron_name
+        column_name: str or None (default: None) - if None, use the manual_id_column_idx column
+        column_offset: int (default: 0) - offset from the column index
 
         Returns
         -------
 
         """
+        if column_name is None:
+            column_idx = self.manual_id_column_idx
+        else:
+            column_idx = list(self.df.columns).index(column_name)
+        if column_offset != 0:
+            column_idx += column_offset
         row_index = self.df.index[self.df["Neuron ID"] == neuron_name].tolist()[0]
-        print(f"Selecting row: {row_index} with original name {neuron_name}")
+        # print(f"Selecting row: {row_index} with original name {neuron_name}")
         selection_model = self.tableView.selectionModel()
-        cell_index = self.model.index(row_index, self.manual_id_column_idx)
+        cell_index = self.model.index(row_index, column_idx)
         selection_model.select(cell_index, QItemSelectionModel.Select)
 
-        # Jump to that cell in the other window
+        # Jump to that cell in this window (not focus of main gui)
         self.setFocus()
         self.activateWindow()
         self.raise_()

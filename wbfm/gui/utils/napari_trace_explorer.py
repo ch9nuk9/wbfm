@@ -732,7 +732,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                         self.changeReferenceTrace.setCurrentText(neuron_name)
                     elif event.button == 3:
                         # Jump to the clicked row in the external name editor gui
-                        self.manualNeuronNameEditor.select_row_and_manual_ID_column(neuron_name)
+                        self.manualNeuronNameEditor.jump_focus_to_neuron(neuron_name)
 
     def connect_napari_callbacks(self):
         viewer = self.viewer
@@ -1333,10 +1333,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         # We need to change the features dataframe, not the properties dict
         self.manual_id_layer.features.loc[rows_to_change, 'custom_label'] = new_name
-        # Unfortunately, this updates the entire text layer including all strings, so it takes a while...
-
+        # Unfortunately, this updates the entire text layer including all strings, so it takes a while
+        # Therefore do a new thread
         worker = self.refresh_manual_id_layer()
         worker.start()
+
+        # Change focus to the same row, but one column over
+        self.manualNeuronNameEditor.jump_focus_to_neuron(original_name, column_offset=1)
 
     @thread_worker
     def refresh_manual_id_layer(self):
