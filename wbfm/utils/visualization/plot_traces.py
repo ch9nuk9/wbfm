@@ -1219,15 +1219,15 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     num_modes_to_plot = 3
     behavior_alias_list = ['dorsal_only_head_curvature', 'ventral_only_head_curvature', 'ventral_only_curvature']
     kwargs['behavior_kwargs'] = dict(fluorescence_fps=False, reset_index=False)
+    additional_shaded_states = [BehaviorCodes.HEAD_CAST]
     column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
-        project_data, num_modes_to_plot, use_behavior_traces=True, behavior_alias_list=behavior_alias_list, **kwargs)
+        project_data, num_modes_to_plot, use_behavior_traces=True, behavior_alias_list=behavior_alias_list,
+        additional_shaded_states=additional_shaded_states, **kwargs)
 
     # One column with a heatmap, (short) ethogram, and kymograph
     rows = 1 + num_modes_to_plot + 2
     cols = 1
-
     row_heights = row_heights[:rows]
-    # row_heights.append(row_heights[0])
 
     # Build figure
 
@@ -1392,7 +1392,7 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
 def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plot=3,
                                               keep_reversal_turns=False, use_manual_annotations=False,
                                               use_behavior_traces=False, behavior_alias_list=None, behavior_kwargs=None,
-                                              trace_opt: dict = None, ):
+                                              additional_shaded_states=None, trace_opt: dict = None):
     if behavior_kwargs is None:
         behavior_kwargs = dict(fluorescence_fps=True, reset_index=True)
     if behavior_alias_list is None:
@@ -1545,7 +1545,8 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
             # Then we are working in behavioral space, and we don't need this
             pass
 
-        ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt)
+        ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt,
+                                            additional_shaded_states=additional_shaded_states)
     ### 3d phase plot
     ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_opt)
     # Use the same behaviors as the ethogram
