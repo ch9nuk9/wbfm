@@ -1297,9 +1297,9 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     if to_save:
         # Change fname depending on whether we're keeping reversal turns
         if keep_reversal_turns:
-            fname = 'summary_trace_plot_kymograph_with_reversal_turns.html'
+            fname = 'summary_behavior_plot_kymograph_with_reversal_turns.html'
         else:
-            fname = 'summary_trace_plot_kymograph.html'
+            fname = 'summary_behavior_plot_kymograph.html'
         _save_plotly_all_types(fig, project_data, fname=fname)
 
     return fig
