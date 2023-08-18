@@ -547,7 +547,8 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
             # line_dict = px.line(df, x='local_time', y=name)['data'][0]
             # line_dict['line_color'] = cmap[i_trace]
             # line_dict['name'] = name
-            line_dict = go.Scatter(x=df['local_time'], y=df[name], name=f"{name}-{dataset_name}",
+            line_dict = go.Scatter(x=df['local_time'], y=df[name], name=name,#name=f"{name}-{dataset_name}",
+                                   legendgroup=name, showlegend=(i_dataset == 0),
                                    line_color=cmap[i_trace])
             fig.add_trace(line_dict, **opt)
         # Update the axes
@@ -570,8 +571,10 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
     fig.update_xaxes(title_text="Time", showticklabels=True, row=n_datasets, col=1)
     # Update the fig to be taller
     fig.update_layout(height=200*n_datasets)
-    # Show the legends
-    fig.update_layout(showlegend=True)
+    # Turn off legend in all subplots, then turn it on in the last one
+    # fig.update_layout(showlegend=False)
+
+    # fig.update_layout(showlegend=True, row=1, col=1)
 
     return fig
 
