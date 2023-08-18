@@ -573,7 +573,9 @@ class WormFullVideoPosture:
         kwargs['fluorescence_fps'] = kwargs.get('fluorescence_fps', True)
         kwargs['reset_index'] = kwargs.get('reset_index', True)
 
-        if behavior_alias == 'signed_stage_speed':
+        if behavior_alias == 'raw_annotations':
+            y = self.beh_annotation(**kwargs)
+        elif behavior_alias == 'signed_stage_speed':
             y = self.worm_speed(**kwargs, signed=True)
         elif behavior_alias == 'rev':
             y = BehaviorCodes.vector_equality(self.beh_annotation(**kwargs), BehaviorCodes.REV)

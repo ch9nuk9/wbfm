@@ -202,9 +202,9 @@ class MultiProjectBehaviorPlotterWithBehavior(MultiProjectWrapperWithBehavior):
         plt.ylim(-1.0, 1.0)
 
 
-def build_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData],
-                                             behavior_names: Union[str, List[str]],
-                                             z_score_beh=False) -> pd.DataFrame:
+def build_behavior_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData],
+                                                      behavior_names: Union[str, List[str]],
+                                                      z_score_beh=False) -> pd.DataFrame:
     """
     Builds a time series of behavior from multiple projects
 
@@ -212,8 +212,8 @@ def build_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData
 
     Parameters
     ----------
-    all_projects
-    behavior_names
+    all_projects: dict - a dictionary of project names to ProjectData objects
+    behavior_names: str or list of str - a behavior (or list) of behavior aliases. See calc_behavior_from_alias
     z_score_beh: bool (default False) - whether to z-score the behavior (per dataset)
 
     Returns
@@ -245,6 +245,35 @@ def build_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData
     df_beh = pd.concat(list_of_beh_dfs, axis=1)
     df_beh = df_beh.loc[:, ~df_beh.columns.duplicated()]
     return df_beh
+
+
+def build_trace_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData], **kwargs) -> pd.DataFrame:
+    """
+    Builds a time series of traces from multiple projects
+
+    This will generate a tall dataframe, where time is repeated for each dataset and stored in the column 'local_time_index'
+    Dataset names are stored in the column 'dataset_name'
+    Designed to be split using 'row_facet_column=dataset_name' in plotly
+
+    In principle the columns will be a single neuron, but for default named neurons this is not meaningful
+
+    Parameters
+    ----------
+    all_projects: dict - a dictionary of project names to ProjectData objects
+
+    Returns
+    -------
+
+    """
+    kwargs['rename_neurons_using_manual_ids'] = kwargs.get('rename_neurons_using_manual_ids', True)
+
+    all_dfs = {}
+    for dataset_name, p in all_projects.items():
+        df = p.calc_default_traces(**kwargs)
+        all_dfs[dataset_name] = df
+    df_traces = pd.concat(all_dfs)
+    df_traces = df_traces.reset_index(names=['dataset_name', 'local_time'])
+    return df_traces
 
 
 def build_time_series_from_multiple_project_clusters(all_projects: Dict[str, ProjectData],

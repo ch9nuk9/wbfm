@@ -376,8 +376,8 @@ class BehaviorCodes(Flag):
 
 
 def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, include_collision=False,
-                         additional_shaded_states: Optional[List['BehaviorCodes']]=None, DEBUG=False,
-                         **kwargs):
+                         additional_shaded_states: Optional[List['BehaviorCodes']]=None,
+                         yref='paper', DEBUG=False, **kwargs):
     """
     Returns a list of dictionaries that can be passed to plotly to draw an ethogram
 
@@ -389,7 +389,8 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
     shading
     include_reversal_turns
     include_collision
-    custom_shaded_state
+    yref: str - either 'paper' or a specific axis label (default 'paper'). If 'paper', then shades all subplots
+        See fig.add_shape on a plotly figure for more details
 
     Returns
     -------
@@ -433,7 +434,7 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
                 # extend the end of the last block to the end of the vector
                 e = beh_vec.index[-1]
             # Note that yref is ignored if this is a subplot. If yref is manually set, then it refers to the entire plot
-            shape_opt = dict(type="rect", x0=s, x1=e, yref='paper', y0=0, y1=1,
+            shape_opt = dict(type="rect", x0=s, x1=e, yref=yref, y0=0, y1=1,
                              fillcolor=color, line_width=0, layer="below")
             all_shape_opt.append(shape_opt)
 
@@ -458,11 +459,46 @@ def shade_using_behavior_plotly(beh_vector, fig, **kwargs):
     -------
 
     """
-
     ethogram_opt = options_for_ethogram(beh_vector, shading=True, **kwargs)
-
     for opt in ethogram_opt:
         fig.add_shape(**opt)
+
+
+def shade_stacked_figure_using_behavior_plotly(beh_df, fig, **kwargs):
+    """
+    Expects a dataframe with a column 'dataset_name' that will be used to annotate a complex figure with multiple
+    subplots
+
+    Example:
+        df_all_beh = build_behavior_time_series_from_multiple_projects(all_projects_gcamp, 'raw_annotations')
+        df_traces = build_trace_time_series_from_multiple_projects(all_projects_gcamp, rename_neurons_using_manual_ids=True, min_nonnan=0.7)
+
+        fig = px.line(df_traces, x='local_time', y='BAGL', facet_row='dataset_name', height=2000, facet_row_spacing=0.001)
+        def rename_y(y):
+            idx = y['anchor'].split('x')[1]
+            y.update(matches=f'y{idx}')
+        fig.for_each_yaxis(rename_y)
+
+        shade_stacked_figure_using_behavior_plotly(df_all_beh, fig)
+
+        fig.show()
+
+    Parameters
+    ----------
+    beh_df
+    fig
+    kwargs
+
+    Returns
+    -------
+
+    """
+
+    # Assume each y axis is named like 'y', y1', 'y2', etc.
+    # Gather the behavior dataframe by 'dataset_name', and loop over each dataset (one vector)
+    for i, (dataset_name, df) in enumerate(beh_df.groupby('dataset_name')):
+        yref = f'y{i} domain' if i > 0 else 'y'
+        shade_using_behavior_plotly(df['raw_annotations'].reset_index(drop=True), fig, yref=yref, **kwargs)
 
 
 def detect_peaks_and_interpolate(dat, to_plot=False, fig=None,
