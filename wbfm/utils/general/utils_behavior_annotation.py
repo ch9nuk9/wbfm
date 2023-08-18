@@ -7,11 +7,13 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from matplotlib import pyplot as plt
+from plotly.subplots import make_subplots
 from scipy.interpolate import interp1d
 from scipy.signal import find_peaks
 from sklearn.decomposition import PCA
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError
@@ -441,7 +443,7 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
     return all_shape_opt
 
 
-def shade_using_behavior_plotly(beh_vector, fig, **kwargs):
+def shade_using_behavior_plotly(beh_vector, fig, shape_opt=None, **kwargs):
     """
     Plotly version of shade_using_behavior
 
@@ -459,29 +461,19 @@ def shade_using_behavior_plotly(beh_vector, fig, **kwargs):
     -------
 
     """
+    if shape_opt is None:
+        shape_opt = {}
     ethogram_opt = options_for_ethogram(beh_vector, shading=True, **kwargs)
     for opt in ethogram_opt:
-        fig.add_shape(**opt)
+        fig.add_shape(**opt, **shape_opt)
 
 
 def shade_stacked_figure_using_behavior_plotly(beh_df, fig, **kwargs):
     """
+    NOTE: DOESN'T WORK
+
     Expects a dataframe with a column 'dataset_name' that will be used to annotate a complex figure with multiple
     subplots
-
-    Example:
-        df_all_beh = build_behavior_time_series_from_multiple_projects(all_projects_gcamp, 'raw_annotations')
-        df_traces = build_trace_time_series_from_multiple_projects(all_projects_gcamp, rename_neurons_using_manual_ids=True, min_nonnan=0.7)
-
-        fig = px.line(df_traces, x='local_time', y='BAGL', facet_row='dataset_name', height=2000, facet_row_spacing=0.001)
-        def rename_y(y):
-            idx = y['anchor'].split('x')[1]
-            y.update(matches=f'y{idx}')
-        fig.for_each_yaxis(rename_y)
-
-        shade_stacked_figure_using_behavior_plotly(df_all_beh, fig)
-
-        fig.show()
 
     Parameters
     ----------
@@ -494,11 +486,46 @@ def shade_stacked_figure_using_behavior_plotly(beh_df, fig, **kwargs):
 
     """
 
-    # Assume each y axis is named like 'y', y1', 'y2', etc.
+    # Assume each y axis is named like 'y', y2', 'y3', etc. (skips 'y1')
     # Gather the behavior dataframe by 'dataset_name', and loop over each dataset (one vector)
-    for i, (dataset_name, df) in enumerate(beh_df.groupby('dataset_name')):
-        yref = f'y{i} domain' if i > 0 else 'y'
+    for i, (dataset_name, df) in tqdm(enumerate(beh_df.groupby('dataset_name'))):
+        yref = f'y{i+1} domain' if i > 0 else 'y domain'
+        print(dataset_name)
         shade_using_behavior_plotly(df['raw_annotations'].reset_index(drop=True), fig, yref=yref, **kwargs)
+
+
+def plot_stacked_figure_with_behavior_shading_using_plotly(df_traces_and_behavior, neuron_name, **kwargs):
+    """
+    Expects a dataframe with a column 'dataset_name' that will be used to annotate a complex figure with multiple
+    subplots
+
+    Parameters
+    ----------
+    df_traces
+    df_behavior
+    kwargs
+
+    Returns
+    -------
+
+    """
+    all_dataset_names = df_traces_and_behavior['dataset_name'].unique()
+    n_datasets = len(all_dataset_names)
+
+    # Initialize the plotly figure with subplots
+
+    fig = make_subplots(rows=n_datasets, cols=1,)
+                        #horizontal_spacing=0.04, vertical_spacing=0.05)
+
+    for i, (dataset_name, df) in tqdm(enumerate(df_traces_and_behavior.groupby('dataset_name')), total=n_datasets):
+
+        # Add traces
+        fig.add_trace(px.line(df, x='local_time', y=neuron_name)['data'][0], row=i+1, col=1)
+        # Add shapes, but do not use top level function because I want to specify the axis via the row argument
+        beh_vector = df['raw_annotations'].reset_index(drop=True)
+        shade_using_behavior_plotly(beh_vector, fig, shape_opt=dict(row=i+1, col=1), **kwargs)
+
+    return fig
 
 
 def detect_peaks_and_interpolate(dat, to_plot=False, fig=None,
