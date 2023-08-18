@@ -1506,8 +1506,8 @@ class ProjectData:
 
         # Get the certainty. If not present (nan), will be 0
         neuron_certainty = df['Certainty'].values
-        # First check that they are float or nan (i.e. not strings)
-        neuron_certainty = [i if isinstance(i, (float, int)) else np.nan for i in neuron_certainty]
+        # First check that they are a good type, otherwise replace with nan
+        neuron_certainty = [i if isinstance(i, (float, int, np.integer)) else np.nan for i in neuron_certainty]
         neuron_certainty = [0 if np.isnan(i) else int(i) for i in neuron_certainty]
 
         # Create a dictionary
