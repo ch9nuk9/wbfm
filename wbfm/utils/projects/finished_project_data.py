@@ -1507,7 +1507,7 @@ class ProjectData:
         # Get the certainty. If not present (nan), will be 0
         neuron_certainty = df['Certainty'].values
         # First check that they are float or nan (i.e. not strings)
-        neuron_certainty = [i if isinstance(i, float) else np.nan for i in neuron_certainty]
+        neuron_certainty = [i if isinstance(i, (float, int)) else np.nan for i in neuron_certainty]
         neuron_certainty = [0 if np.isnan(i) else int(i) for i in neuron_certainty]
 
         # Create a dictionary
@@ -1515,7 +1515,8 @@ class ProjectData:
         return neuron_dict
 
     def neuron_name_to_manual_id_mapping(self, confidence_threshold=2, remove_unnamed_neurons=False,
-                                         flip_names_and_ids=False, error_on_duplicate=False) -> Dict[str, str]:
+                                         flip_names_and_ids=False, error_on_duplicate=False, remove_duplicates=True) -> \
+            Dict[str, str]:
         """
         Note: if confidence_threshold is 0, then non-id'ed neuron names will be removed because
         dict_numbers_to_neuron_names has a blank string at confidence 0
@@ -1548,6 +1549,14 @@ class ProjectData:
                     pass
                 else:
                     self.logger.warning(message)
+                    if remove_duplicates:
+                        # Keep the first instance of any duplicate, replacing the name with the original name
+                        replaced_names = []
+                        for (k_map, v_map), (k_orig, v_orig) in zip(name_mapping.items(), name_ids.items()):
+                            if list(name_mapping.values()).count(v_map) > 1 and k_map not in replaced_names:
+                                name_mapping[k_map] = k_orig
+                                replaced_names.append(k_map)
+                        self.logger.warning(f"Removed duplicates, leaving only the first instance of each")
         if remove_unnamed_neurons:
             name_mapping = {k: v for k, v in name_mapping.items() if k != v}
         if flip_names_and_ids:
