@@ -11,7 +11,7 @@ https://github.com/Zimmer-lab/protocols/tree/master/computational/zimmer_lab_cod
 ### Get the code
 
 Download or clone these repositories:
-1. wbfm (this repo): https://github.com/Zimmer-lab/dlc_for_wbfm
+1. wbfm (this repo): https://github.com/Zimmer-lab/wbfm
 2. Segmentation: https://github.com/Zimmer-lab/segmentation
 3. fDNC (leifer paper): https://github.com/Charles-Fieseler-Vienna/fDNC_Neuron_ID
 

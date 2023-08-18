@@ -9,7 +9,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gpus-per-node=1  # Does this actually reserve one?
 
-CMD_DIR="/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/scripts"
+CMD_DIR="/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/scripts"
 CMD="${CMD_DIR}/examples/check_gpu_calculation.py"
 
 python $CMD

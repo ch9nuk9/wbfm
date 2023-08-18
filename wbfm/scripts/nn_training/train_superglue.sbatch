@@ -16,7 +16,7 @@
 # Necessary because the default home directory is not writable from the cluster
 export HOME="/scratch/neurobiology/zimmer/Charles"
 
-CMD_DIR="/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/scripts/nn_training"
+CMD_DIR="/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/scripts/nn_training"
 CMD="${CMD_DIR}/train_superglue.py"
 
 python $CMD

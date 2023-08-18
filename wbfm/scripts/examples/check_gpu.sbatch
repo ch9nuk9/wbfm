@@ -8,7 +8,7 @@
 #SBATCH --time=0:10:00
 #SBATCH --partition=gpu
 
-CMD_DIR="/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/scripts"
+CMD_DIR="/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/scripts"
 CMD="${CMD_DIR}/examples/check_gpu.py"
 
 python $CMD

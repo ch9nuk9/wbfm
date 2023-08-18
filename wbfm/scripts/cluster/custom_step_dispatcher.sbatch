@@ -32,7 +32,7 @@ do
 done
 
 # Unpack the flag into an actual command
-CMD_DIR="/scratch/neurobiology/zimmer/Charles/github_repos/dlc_for_wbfm/wbfm/scripts"
+CMD_DIR="/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/scripts"
 
 CMD="${CMD_DIR}/${CMD_SUFFIX}"
 FULL_CMD="python $CMD with project_path=$project_path"
