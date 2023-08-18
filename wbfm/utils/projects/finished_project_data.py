@@ -731,7 +731,7 @@ class ProjectData:
             y = filter_trace_using_mode(y, kwargs['filter_mode'])
         return self.x_for_plots, y
 
-    @lru_cache(maxsize=128)
+    # @lru_cache(maxsize=128)
     def calc_default_traces(self, min_nonnan: Optional[float] = 0.75, interpolate_nan: bool = False,
                             raise_error_on_empty: bool = True,
                             neuron_names: tuple = None,
@@ -742,6 +742,7 @@ class ProjectData:
                             return_fast_scale_separation: bool = False,
                             return_slow_scale_separation: bool = False,
                             rename_neurons_using_manual_ids: bool = False,
+                            manual_id_confidence_threshold: int = 1,
                             use_physical_time: Optional[bool] = None,
                             verbose=0,
                             **kwargs):
@@ -899,7 +900,7 @@ class ProjectData:
 
         # Optional: rename columns to use manual ids, if found
         if rename_neurons_using_manual_ids:
-            mapping = self.neuron_name_to_manual_id_mapping(confidence_threshold=1)
+            mapping = self.neuron_name_to_manual_id_mapping(confidence_threshold=manual_id_confidence_threshold)
             df = df.rename(columns=mapping)
 
         # Optional: set the index to be physical units
@@ -1535,7 +1536,7 @@ class ProjectData:
         name_ids = self.dict_numbers_to_neuron_names.copy()
         if len(name_ids) == 0:
             return {}
-        name_mapping = {k: (v[0] if v[1] >= confidence_threshold else k) for k, v in name_ids.items()}
+        name_mapping = {k: (v[0] if (v[1] >= confidence_threshold and v[0] != '') else k) for k, v in name_ids.items()}
         # Check that there are no duplicates within the values
         value_counts = pd.Series(name_mapping.values()).value_counts()
         message = f"Duplicate values found in neuron_name_to_manual_id_mapping: " \

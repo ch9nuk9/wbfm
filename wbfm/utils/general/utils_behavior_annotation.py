@@ -1,3 +1,4 @@
+import os
 from enum import IntEnum, Flag, auto
 from pathlib import Path
 from typing import List, Union, Optional
@@ -18,6 +19,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError
 import plotly.graph_objects as go
+from wbfm.utils.visualization.hardcoded_paths import get_summary_visualization_dir
 
 
 class BehaviorCodes(Flag):
@@ -496,7 +498,7 @@ def shade_stacked_figure_using_behavior_plotly(beh_df, fig, **kwargs):
 
 
 def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_names: Union[str, List[str]],
-                                                           to_shade=True,
+                                                           to_shade=True, to_save=True, trace_kwargs=None,
                                                            DEBUG=False, **kwargs):
     """
     Expects a dataframe with a column 'dataset_name' that will be used to annotate a complex figure with multiple
@@ -513,6 +515,12 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
 
     """
     # First build the overall dataframe with traces and behavior
+    if trace_kwargs is None:
+        trace_kwargs = {}
+    trace_kwargs['min_nonnan'] = trace_kwargs.get('min_nonnan', None)
+    trace_kwargs['rename_neurons_using_manual_ids'] = trace_kwargs.get('rename_neurons_using_manual_ids', True)
+    trace_kwargs['manual_id_confidence_threshold'] = trace_kwargs.get('manual_id_confidence_threshold', True)
+
     from wbfm.utils.visualization.multiproject_wrappers import build_behavior_time_series_from_multiple_projects, \
         build_trace_time_series_from_multiple_projects
     from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
@@ -522,8 +530,7 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
         if name not in beh_columns and name in WormFullVideoPosture.beh_aliases_stable():
             beh_columns.append(name)
     df_all_beh = build_behavior_time_series_from_multiple_projects(all_projects, beh_columns)
-    df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, rename_neurons_using_manual_ids=True,
-                                                                   min_nonnan=None)
+    df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, **trace_kwargs)
     df_traces_and_behavior = pd.merge(df_all_traces, df_all_beh, how='inner', on=['dataset_name', 'local_time'])
 
     # Prepare for plotting
@@ -544,10 +551,9 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
         opt = dict(row=i_dataset + 1, col=1)
         # Add traces
         for i_trace, name in enumerate(column_names):
-            # line_dict = px.line(df, x='local_time', y=name)['data'][0]
-            # line_dict['line_color'] = cmap[i_trace]
-            # line_dict['name'] = name
-            line_dict = go.Scatter(x=df['local_time'], y=df[name], name=name,#name=f"{name}-{dataset_name}",
+            if name not in df.columns:
+                continue
+            line_dict = go.Scatter(x=df['local_time'], y=df[name], name=name,
                                    legendgroup=name, showlegend=(i_dataset == 0),
                                    line_color=cmap[i_trace])
             fig.add_trace(line_dict, **opt)
@@ -571,10 +577,15 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
     fig.update_xaxes(title_text="Time", showticklabels=True, row=n_datasets, col=1)
     # Update the fig to be taller
     fig.update_layout(height=200*n_datasets)
-    # Turn off legend in all subplots, then turn it on in the last one
-    # fig.update_layout(showlegend=False)
 
-    # fig.update_layout(showlegend=True, row=1, col=1)
+    if to_save:
+        folder = get_summary_visualization_dir()
+        fname = os.path.join(folder, "multi_dataset_IDed_neurons_and_behavior", f"{column_names}.html")
+        fig.write_html(str(fname))
+        fname = Path(fname).with_suffix('.png')
+        fig.write_image(str(fname))
+        # fname = Path(fname).with_suffix('.svg')
+        # fig.write_image(str(fname))
 
     return fig
 
