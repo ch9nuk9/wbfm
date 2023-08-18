@@ -232,15 +232,15 @@ def build_behavior_time_series_from_multiple_projects(all_projects: Dict[str, Pr
             trace = worm.calc_behavior_from_alias(b)
             output_dict[b].extend(trace)
             output_dict['dataset_name'].extend([dataset_name] * len(trace))
-            output_dict['local_time_index'].extend(np.arange(len(trace)))
+            output_dict['local_time'].extend(np.arange(len(trace)))
         # Make sure the final dataframe is sorted correctly
-        df_beh = pd.DataFrame(output_dict)
-        df_beh = df_beh.sort_values(['dataset_name', 'local_time_index']).reset_index(drop=True)
+        this_df_beh = pd.DataFrame(output_dict)
+        this_df_beh = this_df_beh.sort_values(['dataset_name', 'local_time']).reset_index(drop=True)
         if z_score_beh:
-            dataset_names_column = df_beh['dataset_name']
-            df_beh = df_beh.groupby('dataset_name', group_keys=False).apply(lambda x: (x - x.mean(numeric_only=True)) / x.std(numeric_only=True))
-            df_beh['dataset_name'] = dataset_names_column
-        list_of_beh_dfs.append(df_beh)
+            dataset_names_column = this_df_beh['dataset_name']
+            this_df_beh = this_df_beh.groupby('dataset_name', group_keys=False).apply(lambda x: (x - x.mean(numeric_only=True)) / x.std(numeric_only=True))
+            this_df_beh['dataset_name'] = dataset_names_column
+        list_of_beh_dfs.append(this_df_beh)
     # Combine all the dataframes, keeping only a single column of dataset names
     df_beh = pd.concat(list_of_beh_dfs, axis=1)
     df_beh = df_beh.loc[:, ~df_beh.columns.duplicated()]
