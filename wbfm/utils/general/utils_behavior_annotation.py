@@ -494,7 +494,8 @@ def shade_stacked_figure_using_behavior_plotly(beh_df, fig, **kwargs):
         shade_using_behavior_plotly(df['raw_annotations'].reset_index(drop=True), fig, yref=yref, **kwargs)
 
 
-def plot_stacked_figure_with_behavior_shading_using_plotly(df_traces_and_behavior, neuron_name, to_shade=True,
+def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_names: Union[str, List[str]],
+                                                           to_shade=True,
                                                            DEBUG=False, **kwargs):
     """
     Expects a dataframe with a column 'dataset_name' that will be used to annotate a complex figure with multiple
@@ -510,25 +511,47 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(df_traces_and_behavio
     -------
 
     """
+    # First build the overall dataframe with traces and behavior
+    from wbfm.utils.visualization.multiproject_wrappers import build_behavior_time_series_from_multiple_projects, \
+        build_trace_time_series_from_multiple_projects
+    from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
+    beh_columns = ['raw_annotations']
+    # Get any behaviors required in column names
+    for name in column_names:
+        if name not in beh_columns and name in WormFullVideoPosture.beh_aliases_stable():
+            beh_columns.append(name)
+    df_all_beh = build_behavior_time_series_from_multiple_projects(all_projects, beh_columns)
+    df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, rename_neurons_using_manual_ids=True)
+    df_traces_and_behavior = pd.merge(df_all_traces, df_all_beh, how='inner', on=['dataset_name', 'local_time'])
+
     all_dataset_names = df_traces_and_behavior['dataset_name'].unique()
     n_datasets = len(all_dataset_names)
+
+    if isinstance(column_names, str):
+        column_names = [column_names]
+    cmap = px.colors.qualitative.D3
 
     # Initialize the plotly figure with subplots
     subplot_titles = [f"placeholder" for dataset_name in all_dataset_names]
     fig = make_subplots(rows=n_datasets, cols=1, #row_heights=[500]*len(all_dataset_names),
                         vertical_spacing=0.01, subplot_titles=subplot_titles)
 
-    for i, (dataset_name, df) in tqdm(enumerate(df_traces_and_behavior.groupby('dataset_name')), total=n_datasets):
+    for i_dataset, (dataset_name, df) in tqdm(enumerate(df_traces_and_behavior.groupby('dataset_name')), total=n_datasets):
 
-        opt = dict(row=i+1, col=1)
+        opt = dict(row=i_dataset + 1, col=1)
         # Add traces
-        fig.add_trace(px.line(df, x='local_time', y=neuron_name, title=dataset_name)['data'][0], **opt)
+        for i_trace, name in enumerate(column_names):
+            # color = [cmap[i]]*df.shape[0]
+            line_dict = px.line(df, x='local_time', y=name)['data'][0]
+            line_dict['line_color'] = cmap[i_trace]
+            # line_dict['title'] = f"{column_names} for {dataset_name}"
+            fig.add_trace(line_dict, **opt)
         # Update the axes
         fig.update_yaxes(title_text="dR/R", **opt)
         # Remove x ticks
         fig.update_xaxes(showticklabels=False, **opt)
         # Goofy way to update the subplot titles: https://stackoverflow.com/questions/65563922/how-to-change-subplot-title-after-creation-in-plotly
-        fig.layout.annotations[i].update(text=f"{neuron_name} for {dataset_name}")
+        fig.layout.annotations[i_dataset].update(text=f"{column_names} for {dataset_name}")
         # Add shapes
         if to_shade:
             beh_vector = df['raw_annotations'].reset_index(drop=True)

@@ -533,8 +533,8 @@ class WormFullVideoPosture:
         df = BehaviorCodes.load_using_dict_mapping(df)
         return df
 
-    @property
-    def beh_aliases_stable(self):
+    @classmethod
+    def beh_aliases_stable(cls):
         """A list of behavior aliases that are stable, i.e. not currently an experimental function"""
         return ['signed_stage_speed', 'rev', 'fwd', 'abs_stage_speed',
                 'middle_body_speed', 'signed_middle_body_speed', 'signed_speed_angular',

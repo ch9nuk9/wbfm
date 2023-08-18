@@ -243,7 +243,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeReferenceTrace = QtWidgets.QComboBox()
         neuron_names_and_none = self.dat.neuron_names
         neuron_names_and_none.insert(0, "None")
-        neuron_names_and_none.extend(self.dat.worm_posture_class.beh_aliases_stable)
+        neuron_names_and_none.extend(self.dat.worm_posture_class.beh_aliases_stable())
         self.changeReferenceTrace.addItems(neuron_names_and_none)
         self.changeReferenceTrace.currentIndexChanged.connect(self.update_reference_trace)
         self.formlayout3.addRow("Reference trace:", self.changeReferenceTrace)
