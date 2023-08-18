@@ -731,7 +731,7 @@ class ProjectData:
             y = filter_trace_using_mode(y, kwargs['filter_mode'])
         return self.x_for_plots, y
 
-    # @lru_cache(maxsize=128)
+    @lru_cache(maxsize=128)
     def calc_default_traces(self, min_nonnan: Optional[float] = 0.75, interpolate_nan: bool = False,
                             raise_error_on_empty: bool = True,
                             neuron_names: tuple = None,
