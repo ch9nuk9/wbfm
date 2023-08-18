@@ -17,6 +17,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError
+import plotly.graph_objects as go
 
 
 class BehaviorCodes(Flag):
@@ -521,9 +522,11 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
         if name not in beh_columns and name in WormFullVideoPosture.beh_aliases_stable():
             beh_columns.append(name)
     df_all_beh = build_behavior_time_series_from_multiple_projects(all_projects, beh_columns)
-    df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, rename_neurons_using_manual_ids=True)
+    df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, rename_neurons_using_manual_ids=True,
+                                                                   min_nonnan=None)
     df_traces_and_behavior = pd.merge(df_all_traces, df_all_beh, how='inner', on=['dataset_name', 'local_time'])
 
+    # Prepare for plotting
     all_dataset_names = df_traces_and_behavior['dataset_name'].unique()
     n_datasets = len(all_dataset_names)
 
@@ -541,17 +544,18 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
         opt = dict(row=i_dataset + 1, col=1)
         # Add traces
         for i_trace, name in enumerate(column_names):
-            # color = [cmap[i]]*df.shape[0]
-            line_dict = px.line(df, x='local_time', y=name)['data'][0]
-            line_dict['line_color'] = cmap[i_trace]
-            # line_dict['title'] = f"{column_names} for {dataset_name}"
+            # line_dict = px.line(df, x='local_time', y=name)['data'][0]
+            # line_dict['line_color'] = cmap[i_trace]
+            # line_dict['name'] = name
+            line_dict = go.Scatter(x=df['local_time'], y=df[name], name=f"{name}-{dataset_name}",
+                                   line_color=cmap[i_trace])
             fig.add_trace(line_dict, **opt)
         # Update the axes
         fig.update_yaxes(title_text="dR/R", **opt)
         # Remove x ticks
         fig.update_xaxes(showticklabels=False, **opt)
         # Goofy way to update the subplot titles: https://stackoverflow.com/questions/65563922/how-to-change-subplot-title-after-creation-in-plotly
-        fig.layout.annotations[i_dataset].update(text=f"{column_names} for {dataset_name}")
+        fig.layout.annotations[i_dataset].update(text=f"{dataset_name}")
         # Add shapes
         if to_shade:
             beh_vector = df['raw_annotations'].reset_index(drop=True)
@@ -562,9 +566,12 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
                 print(f"dataset {dataset_name}: starts: {starts}, ends: {ends}")
                 break
 
-    fig.update_xaxes(title_text="Time", row=n_datasets, col=1)
+    # Show x ticks on the last subplot
+    fig.update_xaxes(title_text="Time", showticklabels=True, row=n_datasets, col=1)
     # Update the fig to be taller
     fig.update_layout(height=200*n_datasets)
+    # Show the legends
+    fig.update_layout(showlegend=True)
 
     return fig
 
