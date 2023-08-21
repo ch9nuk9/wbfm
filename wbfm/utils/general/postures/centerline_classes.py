@@ -688,7 +688,7 @@ class WormFullVideoPosture:
             # Check if there is a BehaviorCodes enum with this name
             try:
                 beh = BehaviorCodes[behavior_alias.upper()]
-                y = BehaviorCodes.vector_equality(self.beh_annotation(**kwargs), beh)
+                y = BehaviorCodes.vector_equality(self.beh_annotation(**kwargs), beh).astype(int)
             except KeyError:
                 raise NotImplementedError(behavior_alias)
 

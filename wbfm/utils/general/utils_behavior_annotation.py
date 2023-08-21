@@ -153,7 +153,7 @@ class BehaviorCodes(Flag):
         return beh_vec
 
     @classmethod
-    def vector_equality(cls, enum_list: Union[list, pd.Series], query_enum, exact=False):
+    def vector_equality(cls, enum_list: Union[list, pd.Series], query_enum, exact=False) -> pd.Series:
         """
         Compares a query enum to a list of enums, returning a binary vector
 
