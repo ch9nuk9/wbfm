@@ -1555,7 +1555,10 @@ class ProjectData:
                 if len(value_counts[value_counts > 1]) == 1 and '' in value_counts:
                     pass
                 else:
-                    self.logger.warning(message)
+                    if self.verbose >= 1:
+                        self.logger.warning(message)
+                    else:
+                        self.logger.debug(message)
                     if remove_duplicates:
                         # Keep the first instance of any duplicate, replacing the name with the original name
                         replaced_names = []
@@ -1563,7 +1566,12 @@ class ProjectData:
                             if list(name_mapping.values()).count(v_map) > 1 and k_map not in replaced_names:
                                 name_mapping[k_map] = k_orig
                                 replaced_names.append(k_map)
-                        self.logger.warning(f"Removed duplicates, leaving only the first instance of each")
+
+                        message = f"Removed duplicates, leaving only the first instance of each"
+                        if self.verbose >= 1:
+                            self.logger.warning(message)
+                        else:
+                            self.logger.debug(message)
         if remove_unnamed_neurons:
             name_mapping = {k: v for k, v in name_mapping.items() if k != v}
         if flip_names_and_ids:
