@@ -145,7 +145,7 @@ class TriggeredAverageIndices:
     behavioral_annotation_threshold: float = 0.0  # Not used if behavioral_annotation_is_continuous is False
 
     behavioral_annotation_for_rectification: pd.Series = None
-    only_allow_events_during_state: int = None  # If not None, only allow events that start during this state (only used if behavioral_annotation_is_continuous==True)
+    only_allow_events_during_state: int = None  # If not None, only allow events that start during this state
 
     # Postprocessing the trace matrix (per trace)
     trace_len: int = None
@@ -162,15 +162,18 @@ class TriggeredAverageIndices:
     def __post_init__(self):
         # Build a dict_of_events_to_keep if only_allow_events_during_state is not None
         state = self.only_allow_events_during_state
-        if state is not None and self.behavioral_annotation_is_continuous:
+        if state is not None:
+            if not self.behavioral_annotation_is_continuous:
+                logging.warning("Passed only_allow_events_during_state, but behavioral_annotation_is_continuous is False. "
+                                "This may give strange results if you are triggering to that state, or an adjacent state")
             if self.dict_of_events_to_keep is not None:
                 logging.warning("Passed custom dict_of_events_to_keep, but also passed only_allow_events_during_state. "
                                 "Using only_allow_events_during_state to overwrite dict_of_events_to_keep")
             if self.behavioral_annotation_for_rectification is None:
                 raise ValueError("Must pass behavioral_annotation_for_rectification if only_allow_events_during_state is not None")
-            # Note that this dictionary can be overcomplete
+            # Note that we use 'in' not '==' because the beh vector is a flag enum
             beh = self.behavioral_annotation_for_rectification
-            self.dict_of_events_to_keep = {i: beh[i] == state for i in range(len(self.behavioral_annotation))}
+            self.dict_of_events_to_keep = {i: state in beh[i] for i in range(len(self.behavioral_annotation))}
 
         if self.num_events == 0:
             logging.warning(f"No instances of state {self.behavioral_state} found in behavioral annotation!!")
@@ -824,6 +827,23 @@ class FullDatasetTriggeredAverages:
     @staticmethod
     def load_from_project(project_data, trigger_opt=None, trace_opt=None, triggered_time_series_mode="traces",
                           **kwargs):
+        """
+
+        Parameters
+        ----------
+        project_data
+        trigger_opt
+        trace_opt
+        triggered_time_series_mode - how to calculate the time series to be triggered on. Options:
+            "traces" - fluorescence traces
+            "behavior" - behavioral annotations
+            "curvature" - curvature from the kymograph
+        kwargs
+
+        Returns
+        -------
+
+        """
         if trigger_opt is None:
             trigger_opt = {}
         if trace_opt is None:
@@ -2304,7 +2324,7 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt
         dict_of_triggered_traces[name] = c.dict_of_all_triggered_averages()
     dict_of_triggered_traces = flatten_nested_dict(dict_of_triggered_traces)
 
-    # Check that the ind_preceding between all ind_class, and save it
+    # Check that the ind_preceding is the same between all ind_class, and save it
     ind_preceding = None
     for name, c in all_triggered_average_classes.items():
         if ind_preceding is None:
@@ -2313,7 +2333,8 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt
             assert ind_preceding == c.ind_class.ind_preceding, "ind_preceding must be the same for all datasets"
 
     # Build a combined class
-    default_cluster_opt = dict(linkage_threshold=4, verbose=1)
+    # Clustering settings don't matter much
+    default_cluster_opt = dict(linkage_threshold=12, verbose=1)
     default_cluster_opt.update(cluster_opt)
     good_dataset_clusterer = ClusteredTriggeredAverages(df_triggered_good, **default_cluster_opt,
                                                         dict_of_triggered_traces=dict_of_triggered_traces,

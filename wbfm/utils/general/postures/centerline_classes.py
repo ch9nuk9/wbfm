@@ -1094,6 +1094,8 @@ class WormFullVideoPosture:
                 use_manual_annotation = False
         # If the behavior is passed directly, use that
         behavioral_annotation = kwargs.get('behavioral_annotation', None)
+        behavioral_annotation_for_rectification = kwargs.get('behavioral_annotation_for_rectification',
+                                                             behavioral_annotation)
         # Calculate the behavioral annotation, either from an alias or directly from the behavioral annotation
         if behavioral_annotation is None:
             if use_hilbert_phase:
@@ -1107,8 +1109,14 @@ class WormFullVideoPosture:
                                                             use_manual_annotation=use_manual_annotation)
             else:
                 behavioral_annotation = self.calc_behavior_from_alias(behavior_name)
+        # This one is always from the raw annotation
+        if behavioral_annotation_for_rectification is None:
+            behavioral_annotation_for_rectification = self.beh_annotation(fluorescence_fps=True,
+                                                                          use_manual_annotation=use_manual_annotation,
+                                                                          reset_index=True)
         # Build the class
         opt = dict(behavioral_annotation=behavioral_annotation,
+                   behavioral_annotation_for_rectification=behavioral_annotation_for_rectification,
                    min_duration=min_duration,
                    ind_preceding=ind_preceding,
                    trace_len=self.num_trace_frames,
