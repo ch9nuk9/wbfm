@@ -1,17 +1,23 @@
 """
 Postprocessing functions for segmentation pipeline
 """
+import concurrent
 import logging
 from typing import List, Tuple, Union
-
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import scipy
+import zarr
+from skimage.morphology import erosion
+from skimage.segmentation import find_boundaries
+from tqdm.auto import tqdm
 import skimage
 from scipy.optimize import curve_fit
-
+from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.utils_networkx import calc_bipartite_from_candidates
+from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.utils_filenames import get_sequential_filename
 from wbfm.utils.tracklets.utils_tracklets import build_tracklets_dfs
 from scipy.signal import find_peaks
 from skimage.measure import regionprops
@@ -1085,3 +1091,109 @@ def get_split_point_from_centroids(sum_of_grads, threshold=4):
         return ind
     else:
         return None
+
+
+def zero_out_borders_using_config(project_config: ModularProjectConfig):
+    """
+    Modifies the segmentation to remove all boundaries (touching masks)
+
+    Same effect as setting 'zero_out_borders' and 'do_full_erosion' in the initial segmentation config file
+
+    Parameters
+    ----------
+    project_config
+
+    Returns
+    -------
+
+    """
+
+    segment_cfg = project_config.get_segmentation_config()
+    old_seg_fname = segment_cfg.resolve_relative_path_from_config('output_masks')
+    old_masks = zarr_reader_folder_or_zipstore(old_seg_fname)
+    num_frames = old_masks.shape[0]
+    do_full_erosion = segment_cfg.config['segmentation_params'].get('full_erosion', False)
+
+    new_seg_fname = get_sequential_filename(old_seg_fname)
+    new_masks = zarr.zeros_like(old_masks, store=new_seg_fname)
+    # new_masks = zarr.open(new_seg_fname, mode='a',
+    #                       shape=old_masks.shape, chunks=old_masks.chunks, dtype=np.uint16,
+    #                       fill_value=0,
+    #                       synchronizer=zarr.ThreadSynchronizer())
+
+    with tqdm(total=num_frames) as pbar:
+        def parallel_func(i):
+            labels = old_masks[i].copy()
+            if do_full_erosion:
+                labels = erosion(labels)
+            labels_bd = find_boundaries(labels, connectivity=2, mode='outer', background=0)
+            this_mask = labels
+            this_mask[labels_bd] = 0
+            new_masks[i] = this_mask
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            futures = {executor.submit(parallel_func, i): i for i in range(num_frames)}
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+                pbar.update(1)
+
+    updates = {'output_masks': segment_cfg.unresolve_absolute_path(new_seg_fname)}
+    segment_cfg.config.update(updates)
+
+    segment_cfg.update_self_on_disk()
+    segment_cfg.logger.info(f'Done with segmentation postprocessing! Mask data saved at {new_seg_fname}')
+
+
+def create_crop_masks_using_config(project_config: ModularProjectConfig, target_sz: np.ndarray):
+    """
+    Modifies the segmentation to be only a tiny mask around the centroid.
+    Note that the centroid is calculated from the original mask
+
+    Parameters
+    ----------
+    project_config
+    target_sz
+
+    Returns
+    -------
+
+    """
+
+    segment_cfg = project_config.get_segmentation_config()
+    old_seg_fname = segment_cfg.resolve_relative_path_from_config('output_masks')
+    old_masks = zarr_reader_folder_or_zipstore(old_seg_fname)
+    num_frames = old_masks.shape[0]
+    dz, dx, dy = (np.array(target_sz) / 2.0).astype(int)
+
+    new_seg_fname = get_sequential_filename(old_seg_fname)
+    new_masks = zarr.open(new_seg_fname, chunks=old_masks.chunks, shape=old_masks.shape, fill_value=0, dtype=int)
+    # new_masks = zarr.zeros_like(old_masks, store=new_seg_fname)
+
+    with tqdm(total=num_frames) as pbar:
+        def parallel_func(i):
+            labels = old_masks[i].copy()
+            props = regionprops(labels)
+            for p in tqdm(props, leave=False):
+                # Get centroids (just recalculate, unweighted)
+                label = int(p.label)
+                centroid = p.centroid
+
+                # Get bbox of the smaller size
+                z0, z1 = int(centroid[0] - dz), int(centroid[0] + dz)
+                x0, x1 = int(centroid[1] - dx), int(centroid[1] + dx)
+                y0, y1 = int(centroid[2] - dy), int(centroid[2] + dy)
+
+                # Apply
+                new_masks[i, z0:z1, x0:x1, y0:y1] = label
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {executor.submit(parallel_func, i): i for i in range(num_frames)}
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+                pbar.update(1)
+
+    updates = {'output_masks': segment_cfg.unresolve_absolute_path(new_seg_fname)}
+    segment_cfg.config.update(updates)
+
+    segment_cfg.update_self_on_disk()
+    segment_cfg.logger.info(f'Done with segmentation postprocessing! Mask data saved at {new_seg_fname}')

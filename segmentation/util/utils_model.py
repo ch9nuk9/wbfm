@@ -4,6 +4,7 @@ StarDist functions for segmentation
 import numpy as np
 import skimage
 import stardist.models
+from skimage.segmentation import find_boundaries
 from stardist.models import StarDist3D, StarDist2D
 import os
 from csbdeep.utils import Path, normalize
@@ -58,10 +59,10 @@ def get_stardist_model(model_name: str = 'students_and_lukas_3d_zarr',
         model = StarDist2D(None, name='stardistNiklas', basedir=folder)
     elif model_name == 'charlie':
         raise NotImplementedError
-        model = StarDist2D(None, name='stardistCharlie', basedir=folder)
+        # model = StarDist2D(None, name='stardistCharlie', basedir=folder)
     elif model_name == 'charlie_3d':
         raise NotImplementedError
-        model = StarDist3D(None, name='Charlie100-3d', basedir=folder)
+        # model = StarDist3D(None, name='Charlie100-3d', basedir=folder)
     elif model_name == 'lukas_3d_zarr':
         model = StarDist3D(None, name='Lukas3d_zarr', basedir=folder)
     elif model_name == 'students_and_lukas_3d_zarr':
@@ -72,7 +73,7 @@ def get_stardist_model(model_name: str = 'students_and_lukas_3d_zarr',
         model = StarDist3D(None, name='Lukas3d_zarr_local', basedir=folder_local)
     elif model_name == 'charlie_3d_party':
         raise NotImplementedError
-        model = StarDist3D(None, name='Charlie100-3d-party', basedir=folder)
+        # model = StarDist3D(None, name='Charlie100-3d-party', basedir=folder)
     else:
         raise NameError(f'No StarDist model found using {model_name}! Current models are {sd_options}')
 
@@ -128,7 +129,7 @@ def segment_with_stardist_2d(vol: np.ndarray,
         img = normalize(img, 1, 99.8, axis=axis_norm)
 
         # run the prediction
-        labels, details = model.predict_instances(img)
+        labels, details = model.predict_instances(img, show_tile_progress=False)
 
         # save labels in 3D array for output
         segmented_masks[idx] = labels
@@ -139,7 +140,7 @@ def segment_with_stardist_2d(vol: np.ndarray,
         if zero_out_borders:
             # Postprocess to add separation between labels
             # From: watershed.py in 3DeeCellTracker
-            labels_bd = skimage.segmentation.find_boundaries(labels, connectivity=2, mode='outer', background=0)
+            labels_bd = find_boundaries(labels, connectivity=2, mode='outer', background=0)
 
             boundary[idx, :, :] = labels_bd
 
@@ -152,7 +153,7 @@ def segment_with_stardist_2d(vol: np.ndarray,
     return segmented_masks
 
 
-def segment_with_stardist_3d(volume: np.array, model: stardist.models.StarDist3D, verbose=0) -> np.array:
+def segment_with_stardist_3d(volume: np.array, model: stardist.models.StarDist3D, verbose=0) -> np.ndarray:
     """
     Segments a 3D volume using stardists 3D-segmentation.
     For now, only one self-trained 3D model is available.
@@ -183,6 +184,6 @@ def segment_with_stardist_3d(volume: np.array, model: stardist.models.StarDist3D
     img = normalize(volume, 1, 99.8, axis=axis_norm)
 
     # run the prediction
-    labels, details = model.predict_instances(img)
+    labels, details = model.predict_instances(img, show_tile_progress=False)
 
     return labels

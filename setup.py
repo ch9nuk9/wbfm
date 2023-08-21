@@ -4,9 +4,9 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="segmentation", # Replace with your own username
-    version="0.2",
-    author="Example Author",
+    name="segmentation",
+    version="0.3",
+    author="Charles Fieseler and Niklas Khoss",
     author_email="author@example.com",
     description="A small example package",
     long_description=long_description,

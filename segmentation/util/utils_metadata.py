@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
 from wbfm.utils.general.postprocessing.utils_metadata import regionprops_one_volume_one_channel
+from wbfm.utils.projects.utils_filenames import pickle_load_binary
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 import numpy as np
@@ -132,9 +133,8 @@ class DetectedNeurons:
     def segmentation_metadata(self):
         assert Path(self.detection_fname).exists(), f"{self.detection_fname} doesn't exist!"
         if self._segmentation_metadata is None:
-            with open(self.detection_fname, 'rb') as f:
                 # Note: dict of dataframes
-                self._segmentation_metadata = pickle.load(f)
+            self._segmentation_metadata = pickle_load_binary(self.detection_fname)
         return self._segmentation_metadata
 
     @property
@@ -157,14 +157,14 @@ class DetectedNeurons:
                 empty_ind.append(t)
         return empty_ind
 
-    def get_all_brightnesses(self, i_volume: int, is_relative_index=False):
+    def get_all_brightnesses(self, i_volume: int, is_relative_index=False) -> pd.Series:
         if is_relative_index:
             i_volume = self.correct_relative_index(i_volume)
         if i_volume not in self._brightnesses_cache:
             self._brightnesses_cache[i_volume] = self.segmentation_metadata[i_volume]['total_brightness']
         return self._brightnesses_cache[i_volume]
 
-    def get_all_volumes(self, i_volume: int, is_relative_index=False):
+    def get_all_volumes(self, i_volume: int, is_relative_index=False) -> pd.Series:
         if is_relative_index:
             i_volume = self.correct_relative_index(i_volume)
         if i_volume not in self._volumes_cache:
@@ -221,6 +221,8 @@ class DetectedNeurons:
             # Note: dict of dataframes
             pickle.dump(self._segmentation_metadata, f)
 
+        return True
+
     def detect_neurons_from_file(self, i_volume: int, numpy_not_list=True) -> np.ndarray:
         """
         Designed to be used with centroids detected using a different pipeline
@@ -258,11 +260,26 @@ class DetectedNeurons:
         seg_index = self.mask_index_to_i_in_array(i_time, mask_index)
         return np.array(self.segmentation_metadata[i_time].iloc[seg_index]['centroids'])
 
+    def print_statistics(self, detail_level=1):
+        print(self)
+        if detail_level >= 1:
+            print(f"Number of empty volumes: {len(self.volumes_with_no_neurons)}")
+        else:
+            return
+
+        if detail_level >= 2:
+            t = 10
+            b = self.get_all_brightnesses(t)
+            v = self.get_all_volumes(t)
+            print(f"Found {len(v)} neurons at t={t}")
+            print(f"Mean brightness: {np.mean(b)}")
+            print(f"Mean volume: {np.mean(v)}")
+
     def __repr__(self):
         return f"DetectedNeurons object with {self.num_frames} frames"
 
 
-def recalculate_metadata_from_config(segment_cfg, project_cfg, name_mode, DEBUG=False):
+def recalculate_metadata_from_config(preprocessing_cfg, segment_cfg, project_cfg, name_mode, DEBUG=False):
     """
 
     Given a project that contains a segmentation, recalculate the metadata
@@ -283,7 +300,7 @@ def recalculate_metadata_from_config(segment_cfg, project_cfg, name_mode, DEBUG=
     """
 
     frame_list, mask_fname, metadata_fname, _, _, _, video_path, _, _ = _unpack_config_file(
-        segment_cfg, project_cfg, DEBUG)
+        preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     masks_zarr = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())
     video_dat = zarr.open(video_path, synchronizer=zarr.ThreadSynchronizer())

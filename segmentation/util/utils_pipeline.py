@@ -1,6 +1,9 @@
 import logging
 import os
 import threading
+
+import cv2
+from skimage.measure import regionprops
 from wbfm.utils.general.custom_errors import NoMatchesError
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_filenames import add_name_suffix
@@ -21,7 +24,8 @@ import zarr
 import concurrent.futures
 
 
-def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
+def segment_video_using_config_3d(preprocessing_cfg: ConfigFileWithProjectContext,
+                                  segment_cfg: ConfigFileWithProjectContext,
                                   project_cfg: ModularProjectConfig,
                                   continue_from_frame: int =None,
                                   DEBUG: bool = False) -> None:
@@ -41,18 +45,20 @@ def segment_video_using_config_3d(segment_cfg: ConfigFileWithProjectContext,
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, _, all_bounding_boxes = _unpack_config_file(
-        segment_cfg, project_cfg, DEBUG)
+        preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Open the file
     project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
     video_dat = project_dat.red_data
 
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
+    # For now don't worry about postprocessing the first volume
+    opt_postprocessing = segment_cfg.config['postprocessing_params']  # Most options are 2d-only
     # Do first volume outside the parallelization loop to initialize keras and zarr
     masks_zarr = _do_first_volume3d(frame_list, mask_fname, num_frames,
                                     sd_model, verbose, video_dat, all_bounding_boxes, continue_from_frame)
     # Main function
-    segmentation_options = {'masks_zarr': masks_zarr,
+    segmentation_options = {'masks_zarr': masks_zarr, 'opt_postprocessing': opt_postprocessing,
                             'all_bounding_boxes': all_bounding_boxes,
                             'sd_model': sd_model, 'verbose': verbose}
 
@@ -112,7 +118,8 @@ def _segment_full_video_3d(segment_cfg: ConfigFileWithProjectContext,
 ##
 
 
-def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
+def segment_video_using_config_2d(preprocessing_cfg: ConfigFileWithProjectContext,
+                                  segment_cfg: ConfigFileWithProjectContext,
                                   project_cfg: ModularProjectConfig,
                                   continue_from_frame: int = None,
                                   DEBUG: bool = False) -> None:
@@ -123,7 +130,7 @@ def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, zero_out_borders, all_bounding_boxes = _unpack_config_file(
-        segment_cfg, project_cfg, DEBUG)
+        preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Open the file
     project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
@@ -131,7 +138,7 @@ def segment_video_using_config_2d(segment_cfg: ConfigFileWithProjectContext,
 
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # Do first volume outside the parallelization loop to initialize keras and zarr
-    opt_postprocessing = segment_cfg.config['postprocessing_params']  # Unique to 2d
+    opt_postprocessing = segment_cfg.config['postprocessing_params']
     if verbose > 1:
         print("Postprocessing settings: ")
         print(opt_postprocessing)
@@ -231,7 +238,8 @@ def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int,
 
 def get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat):
     if all_bounding_boxes is None:
-        volume = video_dat[i_volume, ...]
+        raise NotImplementedError("Bounding box not found, but will cause significant artifacts")
+        # volume = video_dat[i_volume, ...]
     else:
         bbox = all_bounding_boxes[i_volume]
         if bbox is None or len(bbox) == 0:
@@ -265,7 +273,7 @@ def _do_first_volume3d(frame_list: list, mask_fname: str, num_frames: int,
     return masks_zarr
 
 
-def _create_or_continue_zarr(output_fname, num_frames, num_slices, x_sz, y_sz, mode='w-'):
+def _create_or_continue_zarr(output_fname, num_frames, num_slices, x_sz, y_sz, mode='w'):
     """
     Creates a new zarr file of the correct file, or, if it already exists, check for a stopping point
 
@@ -299,7 +307,7 @@ def _create_or_continue_zarr(output_fname, num_frames, num_slices, x_sz, y_sz, m
     return masks_zarr
 
 
-def segment_and_save3d(i, i_volume, masks_zarr,
+def segment_and_save3d(i, i_volume, masks_zarr, opt_postprocessing,
                        all_bounding_boxes,
                        sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
     """
@@ -324,11 +332,15 @@ def segment_and_save3d(i, i_volume, masks_zarr,
     volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
     from segmentation.util.utils_model import segment_with_stardist_3d
     if keras_lock is None:
-        final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
+        segmented_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     else:
         with keras_lock:  # Keras is not thread-safe in the end
-            final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
+            segmented_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
 
+    final_masks = perform_post_processing_3d(segmented_masks,
+                                             volume,
+                                             **opt_postprocessing,
+                                             verbose=verbose - 1)
     save_volume_using_bbox(all_bounding_boxes, final_masks, i, i_volume, masks_zarr)
 
 
@@ -379,7 +391,54 @@ def save_masks_and_metadata(final_masks, i, i_volume, masks_zarr, metadata, volu
     metadata[i_volume] = meta_df
 
 
-def perform_post_processing_2d(mask_array: np.ndarray, img_volume: np.ndarray, border_width_to_remove, to_remove_border=True,
+def perform_post_processing_3d(mask_array: np.ndarray, img_volume: np.ndarray, to_remove_dim_slices=False,
+                               max_number_of_objects=None,
+                               **kwargs) -> np.ndarray:
+    """
+    Post processes volumes in 3d. Similar to perform_post_processing_2d, but much simpler
+        Note: the function signature is designed to be similar, thus unused args are fine
+
+    Currently, only entirely removing dim objects is supported, based on keeping the brightest num_to_keep
+
+    Parameters
+    ----------
+    mask_array
+    img_volume
+    to_remove_dim_slices
+    kwargs
+
+    Returns
+    -------
+
+    """
+    if to_remove_dim_slices and max_number_of_objects is not None:
+        props = regionprops(mask_array, intensity_image=img_volume)
+        if len(props) > max_number_of_objects:
+            all_intensities = np.array([p.intensity_mean for p in props])
+            ind_sorted = np.argsort(-all_intensities)
+            for i in ind_sorted[max_number_of_objects:]:
+                if props[i].label == 0:
+                    continue
+                # Numpy wants individual lists
+                c = props[i].coords
+                z, x, y = c[:, 0], c[:, 1], c[:, 2]
+                try:
+                    mask_array[z, x, y] = 0
+                except IndexError:
+                    # The above should work, but it's giving me errors
+                    logging.debug("Initial indexing failed")
+                    try:
+                        mask_array[mask_array == props[i].label] = 0
+                    except IndexError as e:
+                        print(z, x, y)
+                        print(mask_array.shape)
+                        raise e
+
+    return mask_array
+
+
+def perform_post_processing_2d(mask_array: np.ndarray, img_volume: np.ndarray, border_width_to_remove,
+                               to_remove_border=True,
                                upper_length_threshold=12, lower_length_threshold=3,
                                to_remove_dim_slices=False,
                                stitch_via_watershed=False,
@@ -387,7 +446,8 @@ def perform_post_processing_2d(mask_array: np.ndarray, img_volume: np.ndarray, b
                                already_stitched=False,
                                also_split_using_centroids=False,
                                verbose=0,
-                               DEBUG=False):
+                               DEBUG=False,
+                               **kwargs):
     """
     Performs some post-processing steps including: Splitting long neurons, removing short neurons and
     removing too large areas
@@ -487,7 +547,8 @@ def perform_post_processing_2d(mask_array: np.ndarray, img_volume: np.ndarray, b
     return final_masks
 
 
-def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
+def resplit_masks_in_z_from_config(preprocessing_cfg: ConfigFileWithProjectContext,
+                                   segment_cfg: ConfigFileWithProjectContext,
                                    project_cfg: ModularProjectConfig,
                                    continue_from_frame: int = None, DEBUG=False) -> None:
     """
@@ -496,7 +557,7 @@ def resplit_masks_in_z_from_config(segment_cfg: ConfigFileWithProjectContext,
     """
 
     frame_list, mask_fname, metadata_fname, num_frames, _, verbose, video_path, zero_out_borders, all_bounding_boxes = _unpack_config_file(
-        segment_cfg, project_cfg, DEBUG)
+        preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Get data: needs both segmentation and raw video
     check_all_needed_data_for_step(project_cfg.self_path, 2)
@@ -571,3 +632,39 @@ def _only_postprocess2d(i, i_volume, masks_zarr, opt_postprocessing,
                                              verbose=verbose - 1)
     with read_lock:
         save_volume_using_bbox(all_bounding_boxes, final_masks, i_volume, i_volume, masks_zarr)
+
+
+#gaussian blur functions
+
+def gaussian_blur_volume(volume, kernel=(5, 5)):
+
+    """ takes volume """
+    restored = volume.copy()
+    for z in tqdm(range(volume.shape[0])):
+        restored[z, :, :] = cv2.GaussianBlur(volume[z, :, :], kernel, 0)
+
+    return restored
+
+
+def gaussian_blur_video(video, fname, kernel=(5, 5)):
+    """takes video"""
+
+    restored_video = _create_or_continue_zarr(fname + ".zarr", num_frames=video.shape[0], num_slices=video.shape[1],
+                                              x_sz=video.shape[2], y_sz=video.shape[3], mode='w-')
+
+    for i in tqdm(range(video.shape[0])):
+        volume = gaussian_blur_volume(video[i, :, :], kernel=kernel)
+        restored_video[i, :, :, :] = volume
+
+    return restored_video
+
+
+def gaussian_blur_using_config(project_cfg, fname_for_saving_red, fname_for_saving_green, kernel=(5, 5)):
+    """takes config file"""
+    # Open the file
+    project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
+    video_dat_red = project_dat.red_data
+    video_dat_green = project_dat.green_data
+
+    gaussian_blur_video(video_dat_red, fname=fname_for_saving_red, kernel=kernel)
+    gaussian_blur_video(video_dat_green, fname=fname_for_saving_green, kernel=kernel)
