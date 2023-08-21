@@ -266,6 +266,7 @@ class NapariLayerInitializer:
             # Note: this layer must be visible for the prop_dict to work correctly
             _layer = viewer.add_labels(seg, name=layer_name, scale=(z_to_xy_ratio, 1.0, 1.0),
                                        opacity=0.4, visible=True, rendering='translucent')
+            _layer.blending = 'translucent_no_depth'
             _layer.color = prop_dict
             _layer.color_mode = 'direct'
 
