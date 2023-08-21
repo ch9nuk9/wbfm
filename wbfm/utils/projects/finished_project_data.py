@@ -1464,8 +1464,14 @@ class ProjectData:
         # Replace other NaNs with empty strings
         df = df.fillna('')
         df = df.replace('nan', '')
-        # For this column cast empty string entries as 0
-        df['Certainty'] = df['Certainty'].replace('', 0).replace('nan', 0).fillna(0).astype(int)
+        # Certainty should be floats, first remove any non-numeric characters (but print a warning if found)
+        try:
+            df['Certainty'] = df['Certainty'].replace('', 0).replace('nan', 0).fillna(0).astype(int)
+        except ValueError:
+            self.logger.warning("Found non-numeric entries in Certainty column; replacing with 0")
+            non_numeric = df['Certainty'].apply(lambda x: not isinstance(x, (int, float, np.integer)))
+            df.loc[non_numeric, 'Certainty'] = 0
+            df['Certainty'] = df['Certainty'].fillna(0).astype(int)
 
         manual_neuron_name_editor = NeuronNameEditor()
         manual_neuron_name_editor.import_dataframe(df, fname)
