@@ -151,30 +151,38 @@ class NapariLayerInitializer:
             clipping_list = []
 
         if 'Red data' in which_layers:
-            viewer.add_image(project_data.red_data, name="Red data", opacity=0.5, colormap='PiYG',
+            layer_name = 'Red data'
+            viewer.add_image(project_data.red_data, name=layer_name, opacity=0.5, colormap='PiYG',
                              contrast_limits=[0, 2*np.max(project_data.red_data[0]+1)],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
-            layers_actually_added.append('Red data')
+            layers_actually_added.append(layer_name)
         if 'Green data' in which_layers:
-            viewer.add_image(project_data.green_data, name="Green data", opacity=0.5, colormap='green',
+            layer_name = 'Green data'
+            viewer.add_image(project_data.green_data, name=layer_name, opacity=0.5, colormap='green',
                              visible=force_all_visible,
                              contrast_limits=[0, 2*np.max(project_data.green_data[0]+1)],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
-            layers_actually_added.append('Green data')
+            layers_actually_added.append(layer_name)
         if 'Raw segmentation' in which_layers:
+            layer_name = 'Raw segmentation'
             seg_array = zarr.array(project_data.raw_segmentation)
-            viewer.add_labels(seg_array, name="Raw segmentation",
+            viewer.add_labels(seg_array, name=layer_name,
                               scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=force_all_visible,
                               rendering='translucent')
-            layers_actually_added.append('Raw segmentation')
+            layers_actually_added.append(layer_name)
+            # The rendering cannot be initialized to translucent_no_depth, so we do it here
+            viewer.layers[layer_name].blending = 'translucent_no_depth'
         if 'Colored segmentation' in which_layers:
+            layer_name = 'Colored segmentation'
             if project_data.segmentation is None:
                 project_data.logger.warning("Colored segmentation requested but not available, skipping")
-            viewer.add_labels(project_data.segmentation, name="Colored segmentation",
-                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=force_all_visible)
-            layers_actually_added.append('Colored segmentation')
+            else:
+                viewer.add_labels(project_data.segmentation, name=layer_name,
+                                  scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=force_all_visible)
+                layers_actually_added.append(layer_name)
+            viewer.layers[layer_name].blending = 'translucent_no_depth'
 
         # Text overlay with automatic names
         if 'Neuron IDs' in which_layers:
@@ -182,7 +190,7 @@ class NapariLayerInitializer:
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
             options['visible'] = force_all_visible
             viewer.add_points(**options)
-            layers_actually_added.append('Neuron IDs')
+            layers_actually_added.append(options['name'])
 
         # Text overlay with manual IDs
         if 'Manual IDs' in which_layers:
@@ -198,7 +206,7 @@ class NapariLayerInitializer:
             options['visible'] = force_all_visible
             options['name'] = 'Manual IDs'
             viewer.add_points(**options)
-            layers_actually_added.append('Manual IDs')
+            layers_actually_added.append(options['name'])
 
         if 'GT IDs' in which_layers:
             # Not added by default!
@@ -212,7 +220,7 @@ class NapariLayerInitializer:
             options['text']['color'] = 'red'
             options['visible'] = force_all_visible
             viewer.add_points(**options)
-            layers_actually_added.append('GT IDs')
+            layers_actually_added.append(options['name'])
 
         if 'Intermediate global IDs' in which_layers and project_data.intermediate_global_tracks is not None:
             df = project_data.intermediate_global_tracks
@@ -221,7 +229,7 @@ class NapariLayerInitializer:
             options['text']['color'] = 'green'
             options['visible'] = force_all_visible
             viewer.add_points(**options)
-            layers_actually_added.append('Intermediate global IDs')
+            layers_actually_added.append(options['name'])
 
         # Special layers from the heatmapper class
         for layer_tuple in which_layers:
