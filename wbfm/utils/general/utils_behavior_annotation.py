@@ -519,7 +519,9 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
         trace_kwargs = {}
     trace_kwargs['min_nonnan'] = trace_kwargs.get('min_nonnan', None)
     trace_kwargs['rename_neurons_using_manual_ids'] = trace_kwargs.get('rename_neurons_using_manual_ids', True)
-    trace_kwargs['manual_id_confidence_threshold'] = trace_kwargs.get('manual_id_confidence_threshold', True)
+    trace_kwargs['manual_id_confidence_threshold'] = trace_kwargs.get('manual_id_confidence_threshold', 0)
+    trace_kwargs['nan_tracking_failure_points'] = trace_kwargs.get('nan_tracking_failure_points', True)
+    trace_kwargs['nan_using_ppca_manifold'] = trace_kwargs.get('nan_using_ppca_manifold', 0)
 
     from wbfm.utils.visualization.multiproject_wrappers import build_behavior_time_series_from_multiple_projects, \
         build_trace_time_series_from_multiple_projects
