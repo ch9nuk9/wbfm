@@ -1,7 +1,7 @@
 import os
 from enum import IntEnum, Flag, auto
 from pathlib import Path
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Dict
 
 import matplotlib
 import numpy as np
@@ -207,7 +207,7 @@ class BehaviorCodes(Flag):
         return states
 
     @classmethod
-    def possible_behavior_aliases(cls):
+    def possible_behavior_aliases(cls) -> List[str]:
         """A list of aliases for all the states. Each alias is just the lowercase version of the state name"""
         return [state.name.lower() for state in cls]
 
@@ -254,13 +254,13 @@ class BehaviorCodes(Flag):
         #     return None
 
     @classmethod
-    def base_colormap(cls):
+    def base_colormap(cls) -> List[str]:
         # See: https://plotly.com/python/discrete-color/
         return px.colors.qualitative.Set1_r
 
     @classmethod
     def ethogram_cmap(cls, include_turns=True, include_reversal_turns=False, include_quiescence=False,
-                      additional_shaded_states=None):
+                      additional_shaded_states=None) -> Dict['BehaviorCodes', str]:
         """Colormap for shading as a stand-alone ethogram"""
         base_cmap = cls.base_colormap()
         cmap = {cls.UNKNOWN: None,
@@ -338,7 +338,7 @@ class BehaviorCodes(Flag):
 
     @classmethod
     def must_be_manually_annotated(cls, value):
-        """As of 23-03-2023, everything except FWD and REV must be manually annotated"""
+        """Returns True if the behavior must be manually annotated"""
         if value is None:
             return False
         return value in (cls.SUPERCOIL, cls.QUIESCENCE)

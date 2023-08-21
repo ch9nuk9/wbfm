@@ -534,19 +534,21 @@ class WormFullVideoPosture:
         return df
 
     @classmethod
-    def beh_aliases_stable(cls):
+    def beh_aliases_stable(cls) -> List[str]:
         """A list of behavior aliases that are stable, i.e. not currently an experimental function"""
-        return ['signed_stage_speed', 'rev', 'fwd', 'abs_stage_speed',
-                'middle_body_speed', 'signed_middle_body_speed', 'signed_speed_angular',
-                'worm_speed_average_all_segments',
-                'summed_curvature',
-                'summed_signed_curvature', 'head_curvature', 'head_signed_curvature',
-                'quantile_curvature', 'quantile_head_curvature',
-                'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature',
-                'interpolated_dorsal_midbody_curvature', 'interpolated_dorsal_head_curvature',
-                'speed_plateau_piecewise_constant',
-                'speed_plateau_piecewise_linear_onset', 'speed_plateau_piecewise_linear_offset',
-                'fwd_empirical_distribution', 'rev_empirical_distribution',]
+        behaviors = ['signed_stage_speed', 'rev', 'fwd', 'abs_stage_speed',
+                     'middle_body_speed', 'signed_middle_body_speed', 'signed_speed_angular',
+                     'worm_speed_average_all_segments',
+                     'summed_curvature',
+                     'summed_signed_curvature', 'head_curvature', 'head_signed_curvature',
+                     'quantile_curvature', 'quantile_head_curvature',
+                     'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature',
+                     'interpolated_dorsal_midbody_curvature', 'interpolated_dorsal_head_curvature',
+                     'speed_plateau_piecewise_constant',
+                     'speed_plateau_piecewise_linear_onset', 'speed_plateau_piecewise_linear_offset',
+                     'fwd_empirical_distribution', 'rev_empirical_distribution']
+        behaviors.extend(BehaviorCodes.possible_behavior_aliases())
+        return behaviors
 
     def calc_behavior_from_alias(self, behavior_alias: str, **kwargs) -> pd.Series:
         """
@@ -683,7 +685,12 @@ class WormFullVideoPosture:
             y0 = self.calc_behavior_from_alias('interpolated_dorsal_midbody_curvature', **kwargs)
             y = y1 + y0
         else:
-            raise NotImplementedError(behavior_alias)
+            # Check if there is a BehaviorCodes enum with this name
+            try:
+                beh = BehaviorCodes[behavior_alias.upper()]
+                y = BehaviorCodes.vector_equality(self.beh_annotation(**kwargs), beh)
+            except KeyError:
+                raise NotImplementedError(behavior_alias)
 
         return y
 
