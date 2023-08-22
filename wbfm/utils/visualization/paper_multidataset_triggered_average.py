@@ -39,7 +39,7 @@ class PaperMultiDatasetTriggeredAverage:
     def __post_init__(self):
         # Analyze the project data to get the clusterers and intermediates
         trace_base_opt = dict(interpolate_nan=True, channel_mode='dr_over_r_50', remove_outliers=True,
-                              rename_neurons_using_manual_ids=True)
+                              rename_neurons_using_manual_ids=True, manual_id_confidence_threshold=0)
 
         # Fast (residual)
         trigger_opt = dict(use_hilbert_phase=True, state=None)
@@ -118,9 +118,10 @@ class PaperMultiDatasetTriggeredAverage:
         return title_mapping[trigger_type]
 
     def get_fig_opt(self):
-        return dict(dpi=300, figsize=(5 / 3, 5 / 3))
+        return dict(dpi=300, figsize=(5, 5))
 
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_foldername=None,
+                                             ax=None,
                                              DEBUG=False):
         # clusterer = self.get_clusterer_from_trigger_type(trigger_type)
         color = self.get_color_from_trigger_type(trigger_type)
@@ -138,15 +139,20 @@ class PaperMultiDatasetTriggeredAverage:
             return
 
         # Plot the triggered average for each neuron
-        fig_opt_trigger = self.get_fig_opt()
-        fig, ax = plt.subplots(**fig_opt_trigger)
+        if ax is None:
+            fig_opt_trigger = self.get_fig_opt()
+            fig, ax = plt.subplots(**fig_opt_trigger)
+            is_second_plot = False
+        else:
+            is_second_plot = True
 
         # TODO: do not hardcode the ind_preceding
         df_subset = df.loc[:, neuron_names].T
         min_lines = min(3, len(neuron_names))
         if DEBUG:
             print(df_subset)
-        plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines, False, False, ax=ax,
+        plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines, False,
+                                                     is_second_plot=is_second_plot, ax=ax,
                                                      color=color)
         plt.ylabel("dR/R50")
         plt.title(f"{neuron_name} (n={len(neuron_names)}) {title}")
@@ -154,6 +160,9 @@ class PaperMultiDatasetTriggeredAverage:
         plt.tight_layout()
 
         if output_foldername is not None:
-            fname = os.path.join(output_foldername, 'rev_trigger_all_datasets.png')
+            fname = title.replace(" ", "_").replace(",", "").lower()
+            fname = os.path.join(output_foldername, f'{fname}.png')
             plt.savefig(fname)
-            fig.savefig(fname.replace(".png", ".svg"))
+            plt.savefig(fname.replace(".png", ".svg"))
+
+        return ax
