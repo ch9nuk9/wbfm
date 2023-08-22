@@ -3,7 +3,7 @@ Designed to plot the triggered average of the paper's datasets.
 """
 import os
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 from matplotlib import pyplot as plt
 
@@ -19,13 +19,18 @@ class PaperMultiDatasetTriggeredAverage:
 
     all_projects: Dict[str, ProjectData]
 
+    # Options for traces
+    min_nonnan: Optional[float] = 0.8
+
     # Three different sets of parameters: raw, global, and residual
     dataset_clusterer_raw: ClusteredTriggeredAverages = None
-    dataset_clusterer_global: ClusteredTriggeredAverages = None
+    dataset_clusterer_global_rev: ClusteredTriggeredAverages = None
+    dataset_clusterer_global_fwd: ClusteredTriggeredAverages = None
     dataset_clusterer_residual: ClusteredTriggeredAverages = None
 
     intermediates_raw = None
-    intermediates_global = None
+    intermediates_global_rev = None
+    intermediates_global_fwd = None
     intermediates_residual = None
 
     # Use these to build rectified (single-state only) triggered averages
@@ -39,7 +44,8 @@ class PaperMultiDatasetTriggeredAverage:
     def __post_init__(self):
         # Analyze the project data to get the clusterers and intermediates
         trace_base_opt = dict(interpolate_nan=True, channel_mode='dr_over_r_50', remove_outliers=True,
-                              rename_neurons_using_manual_ids=True, manual_id_confidence_threshold=0)
+                              rename_neurons_using_manual_ids=True, manual_id_confidence_threshold=0,
+                              min_nonnan=self.min_nonnan)
 
         try:
             # Note: these won't work for immobilized data
@@ -73,18 +79,25 @@ class PaperMultiDatasetTriggeredAverage:
             print("Hilbert triggered averages failed; this may be because the data is immobilized")
             print("Only 'global' triggered averages will be available")
 
-        # Slow (global)
+        # Slow reversal triggered (global)
         trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.REV)
         trace_opt = dict(residual_mode='pca_global')
         trace_opt.update(trace_base_opt)
         out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                  trace_opt=trace_opt)
-        self.dataset_clusterer_global = out[0]
-        self.intermediates_global = out[1]
+        self.dataset_clusterer_global_rev = out[0]
+        self.intermediates_global_rev = out[1]
+
+        # Slow forward triggered (global)
+        trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.FWD)
+        out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                 trace_opt=trace_opt)
+        self.dataset_clusterer_global_fwd = out[0]
+        self.intermediates_global_fwd = out[1]
 
     def get_clusterer_from_trigger_type(self, trigger_type):
         trigger_mapping = {'raw': self.dataset_clusterer_raw,
-                           'global': self.dataset_clusterer_global,
+                           'global_rev': self.dataset_clusterer_global_rev,
                            'residual': self.dataset_clusterer_residual,
                            'residual_rectified_fwd': self.dataset_clusterer_residual_rectified_fwd,
                            'residual_rectified_rev': self.dataset_clusterer_residual_rectified_rev}
@@ -94,7 +107,8 @@ class PaperMultiDatasetTriggeredAverage:
 
     def get_df_triggered_from_trigger_type(self, trigger_type):
         df_mapping = {#'raw': self.intermediates_raw[1],  # TODO: implement raw
-                      'global': self.intermediates_global[1],
+                      'global_rev': self.intermediates_global_rev[1],
+                      'global_fwd': self.intermediates_global_fwd[1],
                       'residual': self.intermediates_residual[1],
                       'residual_rectified_fwd': self.intermediates_residual_rectified_fwd[1],
                       'residual_rectified_rev': self.intermediates_residual_rectified_rev[1]}
@@ -104,7 +118,8 @@ class PaperMultiDatasetTriggeredAverage:
 
     def get_color_from_trigger_type(self, trigger_type):
         color_mapping = {'raw': 'tab:blue',
-                         'global': 'tab:orange',
+                         'global_rev': 'tab:orange',
+                         'global_fwd': 'tab:orange',
                          'residual': 'tab:green',
                          'residual_rectified_fwd': 'tab:green',
                          'residual_rectified_rev': 'tab:green',
@@ -115,7 +130,8 @@ class PaperMultiDatasetTriggeredAverage:
 
     def get_title_from_trigger_type(self, trigger_type):
         title_mapping = {'raw': 'Raw',
-                         'global': 'Global reversal triggered',
+                         'global_rev': 'Global reversal triggered',
+                         'global_fwd': 'Global forward triggered',
                          'residual': 'Residual undulation triggered',
                          'residual_rectified_fwd': 'Residual (rectified fwd, undulation triggered)',
                          'residual_rectified_rev': 'Residual (rectified rev, undulation triggered)',
@@ -153,7 +169,6 @@ class PaperMultiDatasetTriggeredAverage:
         else:
             is_second_plot = True
 
-        # TODO: do not hardcode the ind_preceding
         df_subset = df.loc[:, neuron_names].T
         min_lines = min(3, len(neuron_names))
         if DEBUG:
