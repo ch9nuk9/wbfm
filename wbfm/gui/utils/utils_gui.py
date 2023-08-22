@@ -353,7 +353,7 @@ class NeuronNameEditor(QWidget):
 
     annotation_updated = pyqtSignal(str, str, str)
 
-    def __init__(self, use_dummy_data=False):
+    def __init__(self, DEBUG=False):
         super().__init__()
 
         layout = QGridLayout()
@@ -374,6 +374,9 @@ class NeuronNameEditor(QWidget):
         initial_height = int(screen.height() * fraction_of_screen_height)
         self.resize(initial_width, initial_height)
 
+        layout.setRowStretch(0, 1)  # Row 0 gets 1 unit of space
+        layout.setRowStretch(1, 9)  # Row 1 gets 9 units of space
+
         # Set up widgets
         self.duplicatesList = QListWidget()
         self.notIdedList = QListWidget()
@@ -391,7 +394,7 @@ class NeuronNameEditor(QWidget):
         self.setLayout(layout)
 
         # Set up dummy data, if using
-        if use_dummy_data:
+        if DEBUG:
             self.set_up_dummy_data()
         else:
             self.df = None
@@ -410,8 +413,9 @@ class NeuronNameEditor(QWidget):
         non_editable_delegate = NonEditableDelegate()
         self.tableView.setItemDelegateForColumn(0, non_editable_delegate)
 
-        # Remove the close button
-        self.setWindowFlag(Qt.WindowCloseButtonHint, False)
+        # Remove the close button, if part of a larger gui (default)
+        if not DEBUG:
+            self.setWindowFlag(Qt.WindowCloseButtonHint, False)
 
     def set_up_dummy_data(self):
         # Dummy data
@@ -657,6 +661,6 @@ class NeuronNameEditor(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    example = NeuronNameEditor()
+    example = NeuronNameEditor(DEBUG=True)
     example.show()
     sys.exit(app.exec_())
