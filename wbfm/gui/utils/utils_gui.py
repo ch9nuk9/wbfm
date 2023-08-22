@@ -351,6 +351,8 @@ class NeuronNameEditor(QWidget):
 
     """
 
+    annotation_updated = pyqtSignal(str, str, str)
+
     def __init__(self, use_dummy_data=False):
         super().__init__()
 
@@ -375,13 +377,16 @@ class NeuronNameEditor(QWidget):
         # Set up widgets
         self.duplicatesList = QListWidget()
         self.notIdedList = QListWidget()
+        self.customIdedList = QListWidget()
 
         layout.addWidget(QLabel("Editable table of neuron names"), 0, 0)
         layout.addWidget(self.tableView, 1, 0, 2, 1)
-        layout.addWidget(QLabel("Duplicated manual annotations:"), 0, 1)
+        layout.addWidget(QLabel("Duplicated IDs (please fix!)"), 0, 1)
         layout.addWidget(self.duplicatesList, 1, 1, 2, 1)
-        layout.addWidget(QLabel("Neurons to ID:"), 0, 2)
+        layout.addWidget(QLabel("Neurons to ID"), 0, 2)
         layout.addWidget(self.notIdedList, 1, 2, 2, 1)
+        layout.addWidget(QLabel("Custom (non-list) IDs"), 0, 3)
+        layout.addWidget(self.customIdedList, 1, 3, 2, 1)
 
         self.setLayout(layout)
 
@@ -394,16 +399,19 @@ class NeuronNameEditor(QWidget):
             self.filename = None
 
         # Set up signal
-        self.annotation_updated = pyqtSignal(str, str, str)
 
         # When data is changed, update the duplicates list and the stored dataframe
         self.model.dataChanged.connect(self.update_dataframe_range_from_table)
         self.model.dataChanged.connect(self.update_duplicates_list)
         self.model.dataChanged.connect(self.update_not_ided_list)
+        self.model.dataChanged.connect(self.update_custom_ided_list)
 
         # Set custom delegate to prevent editing of first column
         non_editable_delegate = NonEditableDelegate()
         self.tableView.setItemDelegateForColumn(0, non_editable_delegate)
+
+        # Remove the close button
+        self.setWindowFlag(Qt.WindowCloseButtonHint, False)
 
     def set_up_dummy_data(self):
         # Dummy data
@@ -426,7 +434,7 @@ class NeuronNameEditor(QWidget):
         if df is None:
             return None
         else:
-            return set(df.values)
+            return set(df.T.values.astype(str)[0])
 
     def _set_column_edit_flags(self):
         # Set all columns to be editable, except the first one (the original names)
@@ -553,6 +561,7 @@ class NeuronNameEditor(QWidget):
         self.update_table_from_dataframe()
         self.update_duplicates_list()
         self.update_not_ided_list()
+        self.update_custom_ided_list()
         self.df_datatypes = df.dtypes
         self._set_column_edit_flags()
 
@@ -615,18 +624,35 @@ class NeuronNameEditor(QWidget):
             self.duplicatesList.addItem(str_to_add)
 
     def update_not_ided_list(self):
-        # Clear the duplicate list
         self.notIdedList.clear()
 
         # Remove any id's that have been finished
         df = self.df
         unique_ids = set(df[self.manual_id_column_name].unique())
         ids_to_do = self.get_set_of_neurons_to_id()
+        if ids_to_do is None:
+            return
 
-        not_yet_done_ids = list(ids_to_do - unique_ids)
+        not_yet_done_ids = list(ids_to_do.difference(unique_ids))
 
         # Update widget
         self.notIdedList.addItems(not_yet_done_ids)
+
+    def update_custom_ided_list(self):
+        # Clear the duplicate list
+        self.customIdedList.clear()
+
+        # Remove any id's that aren't on the hardcoded list
+        df = self.df
+        unique_ids = set(df[self.manual_id_column_name].unique())
+        ids_to_do = self.get_set_of_neurons_to_id()
+        if ids_to_do is None:
+            return
+
+        custom_ids = list(unique_ids.difference(ids_to_do))
+
+        # Update widget
+        self.customIdedList.addItems(custom_ids)
 
 
 if __name__ == '__main__':

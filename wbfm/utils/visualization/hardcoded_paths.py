@@ -121,9 +121,9 @@ def reverse_distribution_statistics():
 
 
 def names_of_neurons_to_id():
-    fname = "/lisc/scratch/neurobiology/zimmer/wbfm/id_resources/neurons_to_id.csv"
+    fname = "/scratch/neurobiology/zimmer/wbfm/id_resources/neurons_to_id.csv"
     if Path(fname).exists():
-        df = pd.read_csv(fname)
+        df = pd.read_csv(fname, header=None)
     else:
         df = None
     return df
