@@ -96,10 +96,26 @@ class PaperMultiDatasetTriggeredAverage:
         return df_mapping[trigger_type]
 
     def get_color_from_trigger_type(self, trigger_type):
-        color_mapping = {'raw': 'tab:blue', 'global': 'tab:orange', 'residual': 'tab:green', 'kymo': 'black'}
+        color_mapping = {'raw': 'tab:blue',
+                         'global': 'tab:orange',
+                         'residual': 'tab:green',
+                         'residual_rectified_fwd': 'tab:green',
+                         'residual_rectified_rev': 'tab:green',
+                         'kymo': 'black'}
         if trigger_type not in color_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(color_mapping.keys())}')
         return color_mapping[trigger_type]
+
+    def get_title_from_trigger_type(self, trigger_type):
+        title_mapping = {'raw': 'Raw',
+                         'global': 'Global reversal triggered',
+                         'residual': 'Residual undulation triggered',
+                         'residual_rectified_fwd': 'Residual (rectified fwd, undulation triggered)',
+                         'residual_rectified_rev': 'Residual (rectified rev, undulation triggered)',
+                         'kymo': 'Kymograph'}
+        if trigger_type not in title_mapping:
+            raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(title_mapping.keys())}')
+        return title_mapping[trigger_type]
 
     def get_fig_opt(self):
         return dict(dpi=300, figsize=(5 / 3, 5 / 3))
@@ -109,6 +125,7 @@ class PaperMultiDatasetTriggeredAverage:
         # clusterer = self.get_clusterer_from_trigger_type(trigger_type)
         color = self.get_color_from_trigger_type(trigger_type)
         df = self.get_df_triggered_from_trigger_type(trigger_type)
+        title = self.get_title_from_trigger_type(trigger_type)
 
         # Get the full names of all the neurons with this name
         # Names will be like '2022-11-23_worm9_BAGL' and we are checking for 'BAGL'
@@ -117,7 +134,7 @@ class PaperMultiDatasetTriggeredAverage:
             print(f"Found {len(neuron_names)} neurons with name {neuron_name}")
             print(f"Neuron names: {neuron_names}")
         if len(neuron_names) == 0:
-            print(f"Neuron name {neuron_name} not found in {list(df.columns)}")
+            print(f"Neuron name {neuron_name} not found, skipping")
             return
 
         # Plot the triggered average for each neuron
@@ -132,7 +149,7 @@ class PaperMultiDatasetTriggeredAverage:
         plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines, False, False, ax=ax,
                                                      color=color)
         plt.ylabel("dR/R50")
-        plt.title("Reversal triggered")
+        plt.title(f"{neuron_name} (n={len(neuron_names)}) {title}")
         plt.xlabel("Time (s)")
         plt.tight_layout()
 
