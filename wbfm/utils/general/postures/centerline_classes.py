@@ -277,7 +277,7 @@ class WormFullVideoPosture:
     def _raw_hilbert_carrier(self):
         return read_if_exists(self.filename_hilbert_carrier, reader=pd.read_csv, header=None)
 
-    @lru_cache(maxsize=8)
+    # @lru_cache(maxsize=8)
     def _self_collision(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         """This is intended to be summed with the main behavioral vector"""
         df = self._raw_self_collision
@@ -300,12 +300,15 @@ class WormFullVideoPosture:
         BehaviorCodes.assert_all_are_valid(_raw_vector)
         return _raw_vector
 
-    @lru_cache(maxsize=8)
-    def _pause(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+    # @lru_cache(maxsize=8)
+    def _pause(self, fluorescence_fps=False, **kwargs) -> Optional[pd.DataFrame]:
         """This is intended to be summed with the main behavioral vector"""
-        df = self._raw_pause
-        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
-        return df
+        try:
+            df = self._raw_pause
+            df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+            return df
+        except NoBehaviorAnnotationsError:
+            return None
 
     @cached_property
     def _raw_pause(self) -> Optional[pd.Series]:
@@ -334,12 +337,15 @@ class WormFullVideoPosture:
         BehaviorCodes.assert_all_are_valid(_raw_vector)
         return _raw_vector
     
-    @lru_cache(maxsize=8)
-    def _hesitation(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+    # @lru_cache(maxsize=8)
+    def _hesitation(self, fluorescence_fps=False, **kwargs) -> Optional[pd.DataFrame]:
         """This is intended to be summed with the main behavioral vector"""
-        df = self._raw_hesitation
-        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
-        return df
+        try:
+            df = self._raw_hesitation
+            df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+            return df
+        except NoBehaviorAnnotationsError:
+            return None
 
     @cached_property
     def _raw_hesitation(self) -> Optional[pd.Series]:
@@ -381,11 +387,14 @@ class WormFullVideoPosture:
         return _raw_vector
 
     # @lru_cache(maxsize=8)
-    def _turn_annotation(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+    def _turn_annotation(self, fluorescence_fps=False, **kwargs) -> Optional[pd.DataFrame]:
         """This is intended to be summed with the main behavioral vector"""
-        df = self._raw_turn_annotation
-        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
-        return df
+        try:
+            df = self._raw_turn_annotation
+            df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+            return df
+        except NoBehaviorAnnotationsError:
+            return None
 
     @property
     def _raw_turn_annotation(self) -> Optional[pd.Series]:

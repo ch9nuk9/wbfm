@@ -41,30 +41,37 @@ class PaperMultiDatasetTriggeredAverage:
         trace_base_opt = dict(interpolate_nan=True, channel_mode='dr_over_r_50', remove_outliers=True,
                               rename_neurons_using_manual_ids=True, manual_id_confidence_threshold=0)
 
-        # Fast (residual)
-        trigger_opt = dict(use_hilbert_phase=True, state=None)
-        trace_opt = dict(residual_mode='pca')
-        trace_opt.update(trace_base_opt)
-        out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
-                                                                 trace_opt=trace_opt)
-        self.dataset_clusterer_residual = out[0]
-        self.intermediates_residual = out[1]
+        try:
+            # Note: these won't work for immobilized data
 
-        # Residual rectified forward
-        trigger_opt['only_allow_events_during_state'] = BehaviorCodes.FWD
-        cluster_opt = {}
-        out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
-                                                                 trigger_opt=trigger_opt, trace_opt=trace_opt)
-        self.dataset_clusterer_residual_rectified_fwd = out[0]
-        self.intermediates_residual_rectified_fwd = out[1]
+            # Fast (residual)
+            trigger_opt = dict(use_hilbert_phase=True, state=None)
+            trace_opt = dict(residual_mode='pca')
+            trace_opt.update(trace_base_opt)
+            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                     trace_opt=trace_opt)
+            self.dataset_clusterer_residual = out[0]
+            self.intermediates_residual = out[1]
 
-        # Residual rectified reverse
-        trigger_opt['only_allow_events_during_state'] = BehaviorCodes.REV
-        cluster_opt = {}
-        out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
-                                                                 trigger_opt=trigger_opt, trace_opt=trace_opt)
-        self.dataset_clusterer_residual_rectified_rev = out[0]
-        self.intermediates_residual_rectified_rev = out[1]
+            # Residual rectified forward
+            trigger_opt['only_allow_events_during_state'] = BehaviorCodes.FWD
+            cluster_opt = {}
+            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
+                                                                     trigger_opt=trigger_opt, trace_opt=trace_opt)
+            self.dataset_clusterer_residual_rectified_fwd = out[0]
+            self.intermediates_residual_rectified_fwd = out[1]
+
+            # Residual rectified reverse
+            trigger_opt['only_allow_events_during_state'] = BehaviorCodes.REV
+            cluster_opt = {}
+            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
+                                                                     trigger_opt=trigger_opt, trace_opt=trace_opt)
+            self.dataset_clusterer_residual_rectified_rev = out[0]
+            self.intermediates_residual_rectified_rev = out[1]
+
+        except TypeError:
+            print("Hilbert triggered averages failed; this may be because the data is immobilized")
+            print("Only 'global' triggered averages will be available")
 
         # Slow (global)
         trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.REV)
