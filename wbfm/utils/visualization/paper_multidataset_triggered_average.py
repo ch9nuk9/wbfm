@@ -23,12 +23,14 @@ class PaperMultiDatasetTriggeredAverage:
     min_nonnan: Optional[float] = 0.8
 
     # Three different sets of parameters: raw, global, and residual
-    dataset_clusterer_raw: ClusteredTriggeredAverages = None
+    dataset_clusterer_raw_rev: ClusteredTriggeredAverages = None
+    dataset_clusterer_raw_fwd: ClusteredTriggeredAverages = None
     dataset_clusterer_global_rev: ClusteredTriggeredAverages = None
     dataset_clusterer_global_fwd: ClusteredTriggeredAverages = None
     dataset_clusterer_residual: ClusteredTriggeredAverages = None
 
-    intermediates_raw = None
+    intermediates_raw_rev = None
+    intermediates_raw_fwd = None
     intermediates_global_rev = None
     intermediates_global_fwd = None
     intermediates_residual = None
@@ -95,9 +97,26 @@ class PaperMultiDatasetTriggeredAverage:
         self.dataset_clusterer_global_fwd = out[0]
         self.intermediates_global_fwd = out[1]
 
+        # Raw reversal triggered and forward triggered
+        trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.REV)
+        trace_opt = dict(residual_mode=None)
+        trace_opt.update(trace_base_opt)
+        out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                 trace_opt=trace_opt)
+        self.dataset_clusterer_raw_rev = out[0]
+        self.intermediates_raw_rev = out[1]
+
+        trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.FWD)
+        out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                 trace_opt=trace_opt)
+        self.dataset_clusterer_raw_fwd = out[0]
+        self.intermediates_raw_fwd = out[1]
+
     def get_clusterer_from_trigger_type(self, trigger_type):
-        trigger_mapping = {'raw': self.dataset_clusterer_raw,
+        trigger_mapping = {'raw_rev': self.dataset_clusterer_raw_rev,
+                           'raw_fwd': self.dataset_clusterer_raw_fwd,
                            'global_rev': self.dataset_clusterer_global_rev,
+                           'global_fwd': self.dataset_clusterer_global_fwd,
                            'residual': self.dataset_clusterer_residual,
                            'residual_rectified_fwd': self.dataset_clusterer_residual_rectified_fwd,
                            'residual_rectified_rev': self.dataset_clusterer_residual_rectified_rev}
@@ -106,7 +125,8 @@ class PaperMultiDatasetTriggeredAverage:
         return trigger_mapping[trigger_type]
 
     def get_df_triggered_from_trigger_type(self, trigger_type):
-        df_mapping = {#'raw': self.intermediates_raw[1],  # TODO: implement raw
+        df_mapping = {'raw_rev': self.intermediates_raw_rev[1],
+                      'raw_fwd': self.intermediates_raw_fwd[1],
                       'global_rev': self.intermediates_global_rev[1],
                       'global_fwd': self.intermediates_global_fwd[1],
                       'residual': self.intermediates_residual[1],
@@ -117,7 +137,8 @@ class PaperMultiDatasetTriggeredAverage:
         return df_mapping[trigger_type]
 
     def get_color_from_trigger_type(self, trigger_type):
-        color_mapping = {'raw': 'tab:blue',
+        color_mapping = {'raw_rev': 'tab:blue',
+                         'raw_fwd': 'tab:blue',
                          'global_rev': 'tab:orange',
                          'global_fwd': 'tab:orange',
                          'residual': 'tab:green',
@@ -129,7 +150,8 @@ class PaperMultiDatasetTriggeredAverage:
         return color_mapping[trigger_type]
 
     def get_title_from_trigger_type(self, trigger_type):
-        title_mapping = {'raw': 'Raw',
+        title_mapping = {'raw_rev': 'Raw reversal triggered',
+                         'raw_fwd': 'Raw forward triggered',
                          'global_rev': 'Global reversal triggered',
                          'global_fwd': 'Global forward triggered',
                          'residual': 'Residual undulation triggered',
