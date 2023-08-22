@@ -16,6 +16,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from wbfm.utils.general.postprocessing.base_cropping_utils import get_crop_coords3d
 from wbfm.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume, \
     get_single_volume_specific_slices
+from wbfm.utils.visualization.hardcoded_paths import names_of_neurons_to_id
 
 
 def get_cropped_frame(fname, t, num_slices, zxy, crop_sz, to_flip=False):
@@ -350,8 +351,6 @@ class NeuronNameEditor(QWidget):
 
     """
 
-    annotation_updated = pyqtSignal(str, str, str)
-
     def __init__(self, use_dummy_data=False):
         super().__init__()
 
@@ -375,11 +374,14 @@ class NeuronNameEditor(QWidget):
 
         # Set up widgets
         self.duplicatesList = QListWidget()
+        self.notIdedList = QListWidget()
 
         layout.addWidget(QLabel("Editable table of neuron names"), 0, 0)
         layout.addWidget(self.tableView, 1, 0, 2, 1)
         layout.addWidget(QLabel("Duplicated manual annotations:"), 0, 1)
         layout.addWidget(self.duplicatesList, 1, 1, 2, 1)
+        layout.addWidget(QLabel("Neurons to ID:"), 0, 2)
+        layout.addWidget(self.notIdedList, 1, 2, 2, 1)
 
         self.setLayout(layout)
 
@@ -391,9 +393,13 @@ class NeuronNameEditor(QWidget):
             self.df_datatypes = None
             self.filename = None
 
+        # Set up signal
+        self.annotation_updated = pyqtSignal(str, str, str)
+
         # When data is changed, update the duplicates list and the stored dataframe
         self.model.dataChanged.connect(self.update_dataframe_range_from_table)
         self.model.dataChanged.connect(self.update_duplicates_list)
+        self.model.dataChanged.connect(self.update_not_ided_list)
 
         # Set custom delegate to prevent editing of first column
         non_editable_delegate = NonEditableDelegate()
@@ -401,7 +407,7 @@ class NeuronNameEditor(QWidget):
 
     def set_up_dummy_data(self):
         # Dummy data
-        column_names = ["Neuron ID", "ID1", "Metadata"]
+        column_names = ["Neuron ID", self.manual_id_column_name, "Metadata"]
         data = [
             ["neuron_001", "VB02", "Metadata 1"],
             ["neuron_002", "VB02", "Metadata 2"],
@@ -413,6 +419,14 @@ class NeuronNameEditor(QWidget):
         self.df_datatypes = None
         # Actually set up
         self.import_dataframe(self.df, None)
+
+    def get_set_of_neurons_to_id(self):
+        """Use hardcoded path to get a list of neurons that are normally ID'ed"""
+        df = names_of_neurons_to_id()
+        if df is None:
+            return None
+        else:
+            return set(df.values)
 
     def _set_column_edit_flags(self):
         # Set all columns to be editable, except the first one (the original names)
@@ -504,7 +518,7 @@ class NeuronNameEditor(QWidget):
         # print(f"Updating dataframe cell: {row}, {col} to {string_data}")
         if emit_signal and col == self.manual_id_column_idx:
             original_name = str(self.df.at[row, "Neuron ID"])
-            old_name = str(self.df.at[row, "ID1"])
+            old_name = str(self.df.at[row, self.manual_id_column_name])
             new_name = string_data
             if old_name != new_name:
                 logging.info(f"Changing neuron name: {old_name} -> {new_name}")
@@ -520,7 +534,11 @@ class NeuronNameEditor(QWidget):
 
     @property
     def manual_id_column_idx(self):
-        return list(self.df.columns).index("ID1")
+        return list(self.df.columns).index(self.manual_id_column_name)
+
+    @property
+    def manual_id_column_name(self):
+        return "ID1"
 
     def update_dataframe_range_from_table(self, top_left, bottom_right):
         for row in range(top_left.row(), bottom_right.row() + 1):
@@ -534,6 +552,7 @@ class NeuronNameEditor(QWidget):
         self.df = df
         self.update_table_from_dataframe()
         self.update_duplicates_list()
+        self.update_not_ided_list()
         self.df_datatypes = df.dtypes
         self._set_column_edit_flags()
 
@@ -578,7 +597,7 @@ class NeuronNameEditor(QWidget):
         # Get all duplicates of any Manual Annotation
         df = self.df
 
-        custom_name_counts = df["ID1"].value_counts()
+        custom_name_counts = df[self.manual_id_column_name].value_counts()
         duplicate_series = custom_name_counts[custom_name_counts > 1]
         duplicate_names = list(duplicate_series.index)
         # Remove the name 'nan'
@@ -591,9 +610,23 @@ class NeuronNameEditor(QWidget):
 
         for name in duplicate_names:
             # Get the original name as well
-            original_name_list = df[df["ID1"] == name]["Neuron ID"]
+            original_name_list = df[df[self.manual_id_column_name] == name]["Neuron ID"]
             str_to_add = f"{name} ({', '.join(original_name_list)})"
             self.duplicatesList.addItem(str_to_add)
+
+    def update_not_ided_list(self):
+        # Clear the duplicate list
+        self.notIdedList.clear()
+
+        # Remove any id's that have been finished
+        df = self.df
+        unique_ids = set(df[self.manual_id_column_name].unique())
+        ids_to_do = self.get_set_of_neurons_to_id()
+
+        not_yet_done_ids = list(ids_to_do - unique_ids)
+
+        # Update widget
+        self.notIdedList.addItems(not_yet_done_ids)
 
 
 if __name__ == '__main__':
