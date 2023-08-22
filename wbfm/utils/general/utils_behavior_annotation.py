@@ -664,7 +664,7 @@ def approximate_behavioral_annotation_using_pc1(project_cfg, to_save=True):
                filter_mode='rolling_mean',
                min_nonnan=0.9,
                nan_tracking_failure_points=True,
-               nan_using_ppca_manifold=True,
+               #nan_using_ppca_manifold=True,
                channel_mode='dr_over_r_50')
     pca_modes = project_data.calc_pca_modes(n_components=2, flip_pc1_to_have_reversals_high=True,
                                             **opt)
