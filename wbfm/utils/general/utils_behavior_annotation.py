@@ -636,13 +636,12 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None,
     return x, y_interp, interp_obj
 
 
-def approximate_behavioral_annotation_using_pc1(project_cfg):
+def approximate_behavioral_annotation_using_pc1(project_cfg, to_save=True):
     """
     Uses the first principal component of the traces to approximate annotations for forward and reversal
     IMPORTANT: Although pc0 should correspond to rev/fwd, the sign of the PC is arbitrary, so we need to check
     that the sign is correct. Currently there's no way to do that without ID'ing a neuron that should correlate to fwd
     or rev, and checking that the sign is correct
-    TODO: Add a check for the sign of the PC
 
     Saves an excel file within the project's behavior folder, and updates the behavioral config
 
@@ -660,22 +659,26 @@ def approximate_behavioral_annotation_using_pc1(project_cfg):
     from wbfm.utils.projects.finished_project_data import ProjectData
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
-    # Calculate traces of the project
+    # Calculate pca_modes of the project
     opt = dict(interpolate_nan=True,
                filter_mode='rolling_mean',
                min_nonnan=0.9,
                nan_tracking_failure_points=True,
                nan_using_ppca_manifold=True,
                channel_mode='dr_over_r_50')
-    df_traces = project_data.calc_default_traces(**opt)
-    from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
-    df_traces_no_nan = fill_nan_in_dataframe(df_traces, do_filtering=True)
-    # Then PCA
-    pipe = make_pipeline(StandardScaler(), PCA(n_components=2))
-    pipe.fit(df_traces_no_nan.T)
+    pca_modes = project_data.calc_pca_modes(n_components=2, flip_pc1_to_have_reversals_high=True,
+                                            **opt)
+    pc0 = pca_modes[0, :]
+
+    # df_traces = project_data.calc_default_traces(**opt)
+    # from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
+    # df_traces_no_nan = fill_nan_in_dataframe(df_traces, do_filtering=True)
+    # # Then PCA
+    # pipe = make_pipeline(StandardScaler(), PCA(n_components=2))
+    # pipe.fit(df_traces_no_nan.T)
+    # pc0 = pipe.steps[1][1].components_[0, :]
 
     # Using a threshold of 0, assign forward and reversal
-    pc0 = pipe.steps[1][1].components_[0, :]
     starts, ends = get_contiguous_blocks_from_column(pd.Series(pc0) > 0, already_boolean=True)
     beh_vec = pd.DataFrame(make_binary_vector_from_starts_and_ends(starts, ends, pc0, pad_nan_points=(5, 0)),
                            columns=['Annotation'])
@@ -684,12 +687,13 @@ def approximate_behavioral_annotation_using_pc1(project_cfg):
     beh_vec[beh_vec == 0] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.FWD)
 
     # Save within the behavior folder
-    beh_cfg = project_data.project_config.get_behavior_config()
-    fname = 'immobilized_beh_annotation'
-    beh_cfg.save_data_in_local_project(beh_vec, fname,
-                                       prepend_subfolder=True, suffix='.xlsx', sheet_name='behavior')
-    beh_cfg.config['manual_behavior_annotation'] = str(Path(fname).with_suffix('.xlsx'))
-    beh_cfg.update_self_on_disk()
+    if to_save:
+        beh_cfg = project_data.project_config.get_behavior_config()
+        fname = 'pc1_generated_reversal_annotation'
+        beh_cfg.save_data_in_local_project(beh_vec, fname,
+                                           prepend_subfolder=True, suffix='.xlsx', sheet_name='behavior')
+        beh_cfg.config['manual_behavior_annotation'] = str(Path(fname).with_suffix('.xlsx'))
+        beh_cfg.update_self_on_disk()
 
     return beh_vec
 
