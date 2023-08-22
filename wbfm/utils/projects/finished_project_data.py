@@ -976,6 +976,8 @@ class ProjectData:
 
         """
         trace_kwargs['interpolate_nan'] = True
+        trace_kwargs['rename_neurons_using_manual_ids'] = True
+
         X = self.calc_default_traces(**trace_kwargs)
         X = fill_nan_in_dataframe(X, do_filtering=False)
         X -= X.mean()
@@ -997,11 +999,9 @@ class ProjectData:
 
             # Instead of behavior, see if there is an ID'ed AVA neuron
             if reversal_time_series is None:
-                manual_ids = self.neuron_name_to_manual_id_mapping(confidence_threshold=1, flip_names_and_ids=True)
                 for candidate_name in ['AVA', 'AVAL', 'AVAR']:
-                    if candidate_name in manual_ids:
-                        neuron_name = manual_ids[candidate_name]
-                        reversal_time_series = -X[neuron_name]
+                    if candidate_name in X:
+                        reversal_time_series = -X[candidate_name]
                         break
                 else:
                     self.logger.warning("Could not calculate speed or AVA, so not flipping PC1")
