@@ -27,7 +27,7 @@ import numpy as np
 import pandas as pd
 import zarr
 from tqdm.auto import tqdm
-
+from wbfm.utils.visualization.hardcoded_paths import names_of_neurons_to_id
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
     get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns, \
     get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends
@@ -1472,8 +1472,20 @@ class ProjectData:
             non_numeric = df['Certainty'].apply(lambda x: not isinstance(x, (int, float, np.integer)))
             df.loc[non_numeric, 'Certainty'] = 0
             df['Certainty'] = df['Certainty'].fillna(0).astype(int)
+        
+        # Get the list of neuron ids that the user wants to id, if found
+        vis_config = self.project_config.get_visualization_config()
+        neurons_to_id = vis_config.config.get('neurons_to_id', None)
+        if neurons_to_id is None:
+            # Try to load from the cluster, if mounted linux-style
+            neurons_to_id = names_of_neurons_to_id()
+        else:
+            neurons_to_id = list(neurons_to_id)
+        if neurons_to_id is None:
+            self.logger.warning("Could not find neurons_to_id; that column will not work")
 
-        manual_neuron_name_editor = NeuronNameEditor()
+        # Actually build the class
+        manual_neuron_name_editor = NeuronNameEditor(neurons_to_id=neurons_to_id)
         manual_neuron_name_editor.import_dataframe(df, fname)
 
         return manual_neuron_name_editor

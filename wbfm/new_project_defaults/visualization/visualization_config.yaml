@@ -1,1 +1,54 @@
-Not a main pipeline folder, just for visualization
+# Not a main pipeline folder, just for the GUI
+
+neurons_to_id:
+  - AIBL
+  - AIBR
+  - ALA
+  - AVAL
+  - AVAR
+  - AVBL
+  - AVBR
+  - AVEL
+  - AVER
+  - BAGL
+  - BAGR
+  - DA01
+  - DB02
+  - DB01
+  - OLQDL
+  - OLQDR
+  - OLQVL
+  - OLQVR
+  - RIBL
+  - RIBR
+  - RID
+  - RIML
+  - RIMR
+  - RIS
+  - RIVL
+  - RIVR
+  - RMED
+  - RMEL
+  - RMER
+  - RMEV
+  - SIADL
+  - SIADR
+  - SIAVL
+  - SIAVR
+  - SMDDL
+  - SMDDR
+  - SMDVL
+  - SMDVR
+  - URADL
+  - URADR
+  - URAVR
+  - URAVL
+  - URYDL
+  - URYDR
+  - URYVL
+  - URYVR
+  - VA01
+  - VA02
+  - VB01
+  - VB02
+  - VB03

@@ -353,9 +353,13 @@ class NeuronNameEditor(QWidget):
 
     annotation_updated = pyqtSignal(str, str, str)
 
-    def __init__(self, DEBUG=False):
+    def __init__(self, neurons_to_id=None, DEBUG=False):
         super().__init__()
 
+        # Save options
+        self.neurons_to_id = neurons_to_id
+
+        # Set up the GUI
         layout = QGridLayout()
 
         self.tableView = QTableView()
@@ -433,12 +437,12 @@ class NeuronNameEditor(QWidget):
         self.import_dataframe(self.df, None)
 
     def get_set_of_neurons_to_id(self):
-        """Use hardcoded path to get a list of neurons that are normally ID'ed"""
-        df = names_of_neurons_to_id()
-        if df is None:
+        """Initial creation should load from a yaml file"""
+        neurons_to_id = self.neurons_to_id
+        if neurons_to_id is None:
             return None
         else:
-            return set(df.T.values.astype(str)[0])
+            return set(neurons_to_id)
 
     def _set_column_edit_flags(self):
         # Set all columns to be editable, except the first one (the original names)
