@@ -134,7 +134,7 @@ class ConfigFileWithProjectContext:
             abs_path += suffix
         if make_sequential_filename:
             abs_path = get_sequential_filename(abs_path)
-        self.logger.info(f"Saving at: {self.unresolve_absolute_path(abs_path)}")
+        self.logger.info(f"Saving at local path: {self.unresolve_absolute_path(abs_path)}")
         check_exists(abs_path, allow_overwrite)
         if suffix == '.h5':
             ensure_dense_dataframe(data).to_hdf(abs_path, key="df_with_missing")
