@@ -87,10 +87,10 @@ class PaperMultiDatasetTriggeredAverage:
 
     def get_df_triggered_from_trigger_type(self, trigger_type):
         df_mapping = {#'raw': self.intermediates_raw[1],  # TODO: implement raw
-                      'global': self.intermediates_global[1],
-                      'residual': self.intermediates_residual[1],
-                      'residual_rectified_fwd': self.intermediates_residual_rectified_fwd[1],
-                      'residual_rectified_rev': self.intermediates_residual_rectified_rev[1]}
+                      'global': None if not self.intermediates_global else self.intermediates_global[1],
+                      'residual': None if not self.intermediates_residual else self.intermediates_residual[1],
+                      'residual_rectified_fwd': None if not self.intermediates_residual_rectified_fwd else self.intermediates_residual_rectified_fwd[1],
+                      'residual_rectified_rev': None if not self.intermediates_residual_rectified_rev else self.intermediates_residual_rectified_rev[1]}
         if trigger_type not in df_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(df_mapping.keys())}')
         return df_mapping[trigger_type]
