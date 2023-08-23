@@ -668,7 +668,7 @@ def approximate_behavioral_annotation_using_pc1(project_cfg, to_save=True):
                channel_mode='dr_over_r_50')
     pca_modes = project_data.calc_pca_modes(n_components=2, flip_pc1_to_have_reversals_high=True,
                                             **opt)
-    pc0 = pca_modes[0, :]
+    pc0 = pca_modes[:, 0]
 
     # df_traces = project_data.calc_default_traces(**opt)
     # from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
