@@ -199,7 +199,9 @@ class PaperMultiDatasetTriggeredAverage:
         plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines, False,
                                                      is_second_plot=is_second_plot, ax=ax,
                                                      color=color)
-        if 'rev' in trigger_type:
+        if 'residual' in trigger_type or 'rectified' in trigger_type:
+            behavior_shading_type = None
+        elif 'rev' in trigger_type:
             behavior_shading_type = 'rev'
         elif 'fwd' in trigger_type:
             behavior_shading_type = 'fwd'
