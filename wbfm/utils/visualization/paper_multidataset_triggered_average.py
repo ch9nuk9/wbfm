@@ -205,7 +205,7 @@ class PaperMultiDatasetTriggeredAverage:
 
         if output_folder is not None:
             fname = title.replace(" ", "_").replace(",", "").lower()
-            fname = os.path.join(output_folder, f'{fname}.png')
+            fname = os.path.join(output_folder, f'{neuron_name}-{fname}.png')
             plt.savefig(fname)
             plt.savefig(fname.replace(".png", ".svg"))
 
