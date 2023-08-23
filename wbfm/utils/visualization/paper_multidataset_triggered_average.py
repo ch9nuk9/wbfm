@@ -165,7 +165,7 @@ class PaperMultiDatasetTriggeredAverage:
     def get_fig_opt(self):
         return dict(dpi=300, figsize=(5, 5))
 
-    def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_foldername=None,
+    def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
                                              ax=None,
                                              DEBUG=False):
         # clusterer = self.get_clusterer_from_trigger_type(trigger_type)
@@ -203,9 +203,9 @@ class PaperMultiDatasetTriggeredAverage:
         plt.xlabel("Time (s)")
         plt.tight_layout()
 
-        if output_foldername is not None:
+        if output_folder is not None:
             fname = title.replace(" ", "_").replace(",", "").lower()
-            fname = os.path.join(output_foldername, f'{fname}.png')
+            fname = os.path.join(output_folder, f'{fname}.png')
             plt.savefig(fname)
             plt.savefig(fname.replace(".png", ".svg"))
 
