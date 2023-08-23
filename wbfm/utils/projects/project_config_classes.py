@@ -260,6 +260,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         with safe_cd(project_dir):
             try:
                 cfg = load_config(subconfig_path)
+                if not isinstance(cfg, dict):
+                    # If files just have a string comment, they won't be loaded as a dict
+                    # In that case, the file is empty and we should just return an empty dict
+                    cfg = dict()
             except FileNotFoundError as e:
                 if allow_config_to_not_exist:
                     cfg = dict()
