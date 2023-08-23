@@ -591,11 +591,10 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
     if to_save:
         folder = get_summary_visualization_dir()
         fname = os.path.join(folder, "multi_dataset_IDed_neurons_and_behavior", f"{column_names}-{fname_suffix}.html")
+        print(f"Saving to {fname}")
         fig.write_html(str(fname))
         fname = Path(fname).with_suffix('.png')
         fig.write_image(str(fname))
-        # fname = Path(fname).with_suffix('.svg')
-        # fig.write_image(str(fname))
 
     return fig
 
