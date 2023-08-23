@@ -7,7 +7,7 @@ from typing import Dict, Optional
 
 from matplotlib import pyplot as plt
 
-from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_list_of_projects, \
     ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level
@@ -199,6 +199,17 @@ class PaperMultiDatasetTriggeredAverage:
         plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines, False,
                                                      is_second_plot=is_second_plot, ax=ax,
                                                      color=color)
+        if 'rev' in trigger_type:
+            behavior_shading_type = 'rev'
+        elif 'fwd' in trigger_type:
+            behavior_shading_type = 'fwd'
+        else:
+            behavior_shading_type = None
+        if behavior_shading_type is not None:
+            index_conversion = df_subset.columns
+            shade_triggered_average(ind_preceding=20, index_conversion=index_conversion,
+                                    behavior_shading_type=behavior_shading_type, ax=ax)
+
         plt.ylabel("dR/R50")
         plt.title(f"{neuron_name} (n={len(neuron_names)}) {title}")
         plt.xlabel("Time (s)")
