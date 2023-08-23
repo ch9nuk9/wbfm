@@ -1699,6 +1699,8 @@ class WormFullVideoPosture:
     # Raw videos
     def behavior_video_avi_fname(self):
         """Loops through the behavior subfolder and returns the first AVI file found"""
+        if self.behavior_subfolder is None:
+            return None
         for file in Path(self.behavior_subfolder).iterdir():
             if file.is_dir():
                 continue
@@ -1716,6 +1718,8 @@ class WormFullVideoPosture:
 
         See behavior_video_avi_fname
         """
+        if self.behavior_subfolder is None:
+            return None
         for file in Path(self.behavior_subfolder).iterdir():
             if file.is_dir():
                 continue
