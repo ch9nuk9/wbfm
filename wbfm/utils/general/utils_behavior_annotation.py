@@ -498,7 +498,8 @@ def shade_stacked_figure_using_behavior_plotly(beh_df, fig, **kwargs):
 
 
 def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_names: Union[str, List[str]],
-                                                           to_shade=True, to_save=True, trace_kwargs=None,
+                                                           to_shade=True, to_save=True, fname_suffix='',
+                                                           trace_kwargs=None,
                                                            DEBUG=False, **kwargs):
     """
     Expects a dataframe with a column 'dataset_name' that will be used to annotate a complex figure with multiple
@@ -589,7 +590,7 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
 
     if to_save:
         folder = get_summary_visualization_dir()
-        fname = os.path.join(folder, "multi_dataset_IDed_neurons_and_behavior", f"{column_names}.html")
+        fname = os.path.join(folder, "multi_dataset_IDed_neurons_and_behavior", f"{column_names}-{fname_suffix}.html")
         fig.write_html(str(fname))
         fname = Path(fname).with_suffix('.png')
         fig.write_image(str(fname))
