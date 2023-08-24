@@ -370,7 +370,7 @@ class NeuronNameEditor(QWidget):
         self.tableView.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tableView.setSelectionBehavior(QAbstractItemView.SelectItems)
 
-        # Set the initial size of the widget window
+        # Set the initial size of the widget window, rows, and columns
         screen = QApplication.desktop().screenGeometry()
         fraction_of_screen_width = 0.4
         fraction_of_screen_height = 1.0
@@ -378,8 +378,15 @@ class NeuronNameEditor(QWidget):
         initial_height = int(screen.height() * fraction_of_screen_height)
         self.resize(initial_width, initial_height)
 
+        # The titles should be small
         layout.setRowStretch(0, 1)  # Row 0 gets 1 unit of space
         layout.setRowStretch(1, 9)  # Row 1 gets 9 units of space
+
+        # The first column should be the largest
+        layout.setColumnStretch(0, 7)
+        layout.setColumnStretch(1, 1)
+        layout.setColumnStretch(2, 1)
+        layout.setColumnStretch(3, 1)
 
         # Set up widgets
         self.duplicatesList = QListWidget()
