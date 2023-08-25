@@ -20,7 +20,8 @@ from sklearn.neighbors import NearestNeighbors
 from wbfm.utils.external.utils_breakpoints import plot_with_offset_x
 from wbfm.utils.external.utils_self_collision import calculate_self_collision_using_pairwise_distances
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate, \
-    shade_using_behavior, get_same_phase_segment_pairs, get_heading_vector_from_phase_pair_segments
+    shade_using_behavior, get_same_phase_segment_pairs, get_heading_vector_from_phase_pair_segments, \
+    shade_using_behavior_plotly
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
     remove_short_state_changes, pad_events_in_binary_vector
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
@@ -32,7 +33,7 @@ from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
     assign_id_based_on_closest_onset_in_split_lists
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, \
-    filter_gaussian_moving_average
+    filter_gaussian_moving_average, fill_nan_in_dataframe
 from wbfm.utils.visualization.hardcoded_paths import forward_distribution_statistics, reverse_distribution_statistics
 
 
@@ -487,7 +488,7 @@ class WormFullVideoPosture:
         df = pd.concat([x_abs, y_abs], keys=['X', 'Y']).swaplevel().T
         return df
 
-    @lru_cache(maxsize=8)
+    # @lru_cache(maxsize=8)
     def heading_vector(self, fluorescence_fps=False, return_radians=False, signed=True, **kwargs) -> pd.DataFrame:
         """
         Returns a series of the heading vector, as a vector of XY or radians across time
@@ -501,6 +502,7 @@ class WormFullVideoPosture:
         -------
 
         """
+        kwargs['reset_index'] = kwargs.get('reset_index', fluorescence_fps)
 
         df_pos = self.centerline_absolute_coordinates(fluorescence_fps=fluorescence_fps, **kwargs)
         df_phase = self.hilbert_phase(fluorescence_fps=fluorescence_fps, **kwargs)
@@ -512,7 +514,9 @@ class WormFullVideoPosture:
             all_vec_means[t, :] = vec_mean
 
         if return_radians:
-            all_vec_means = np.unwrap(np.arctan2(all_vec_means[:, 1], all_vec_means[:, 0]))
+            # Requires no nan in the data
+            vec_filtered = fill_nan_in_dataframe(pd.DataFrame(all_vec_means)).values
+            all_vec_means = np.unwrap(np.arctan2(vec_filtered[:, 1], vec_filtered[:, 0]))
             df = pd.DataFrame(all_vec_means, index=df_pos.index, columns=['Radians'])
         else:
             if signed:
@@ -1640,7 +1644,11 @@ class WormFullVideoPosture:
         """Takes care of fps conversion and new vs. old annotation format"""
         try:
             bh = self.beh_annotation(fluorescence_fps=True)
-            shade_using_behavior(bh, **kwargs)
+            if 'plotly_fig' in kwargs:
+                kwargs['fig'] = kwargs.pop('plotly_fig')
+                shade_using_behavior_plotly(bh, **kwargs)
+            else:
+                shade_using_behavior(bh, **kwargs)
         except NoBehaviorAnnotationsError:
             pass
 
