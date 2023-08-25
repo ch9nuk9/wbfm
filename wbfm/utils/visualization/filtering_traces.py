@@ -67,7 +67,7 @@ def filter_exponential_moving_average(y: pd.Series, span=17) -> pd.Series:
     return y.ewm(span=span, min_periods=1).mean()
 
 
-def filter_bilateral(y: pd.Series, win_size, sigma_d, sigma_i):
+def filter_bilateral(y: pd.Series, win_size=7, sigma_d=2.0, sigma_i=0.1):
     """
     The default parameters work well for a dr / r20 trace with a range of approximately 0-1
     If the range is much larger (e.g. raw green values), this will not have any effect
