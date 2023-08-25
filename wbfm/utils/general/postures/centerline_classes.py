@@ -470,19 +470,19 @@ class WormFullVideoPosture:
         return df
 
     @lru_cache(maxsize=8)
-    def centerline_absolute_coordinates(self, fluorescence_fps=False) -> pd.DataFrame:
+    def centerline_absolute_coordinates(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         """Returns a multi-index dataframe, where each body segment looks like the stage_position dataframe"""
         if self.centerlineX() is None:
             raise NoBehaviorAnnotationsError("(centerline)")
         # Depends on camera and magnification
         mm_per_pixel = 0.00245
         # Offset depends on camera and frame size
-        x = (self.centerlineX(fluorescence_fps) - 340) * mm_per_pixel
-        y = (self.centerlineY(fluorescence_fps) - 324) * mm_per_pixel
+        x = (self.centerlineX(fluorescence_fps, **kwargs) - 340) * mm_per_pixel
+        y = (self.centerlineY(fluorescence_fps, **kwargs) - 324) * mm_per_pixel
 
         # Rotation depends on Ulises' pipeline and camera
-        x_abs = self.stage_position(fluorescence_fps).values[:, 0] - y.T
-        y_abs = self.stage_position(fluorescence_fps).values[:, 1] + x.T
+        x_abs = self.stage_position(fluorescence_fps, **kwargs).values[:, 0] - y.T
+        y_abs = self.stage_position(fluorescence_fps, **kwargs).values[:, 1] + x.T
 
         df = pd.concat([x_abs, y_abs], keys=['X', 'Y']).swaplevel().T
         return df
