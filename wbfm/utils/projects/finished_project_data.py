@@ -1234,9 +1234,10 @@ class ProjectData:
 
         return True
 
-    def shade_axis_using_behavior(self, ax=None, **kwargs):
+    def shade_axis_using_behavior(self, ax=None, plotly_fig=None, **kwargs):
         """
         Shades the currently active matplotlib axis using externally annotated behavior annotation
+        OR, if plotly_fig is passed, shade a plotly figure
 
         Note: only works if self.beh_annotation is found
 
@@ -1262,7 +1263,8 @@ class ProjectData:
             index_conversion = self._x_physical_time
         else:
             index_conversion = None
-        self.worm_posture_class.shade_using_behavior(ax=ax, index_conversion=index_conversion, **kwargs)
+        self.worm_posture_class.shade_using_behavior(ax=ax, plotly_fig=plotly_fig,
+                                                     index_conversion=index_conversion, **kwargs)
 
     def get_centroids_as_numpy(self, i_frame):
         """Original format of metadata is a dataframe of tuples; this returns a normal np.array"""
