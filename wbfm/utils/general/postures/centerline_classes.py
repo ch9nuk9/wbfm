@@ -1643,11 +1643,18 @@ class WormFullVideoPosture:
     def shade_using_behavior(self, **kwargs):
         """Takes care of fps conversion and new vs. old annotation format"""
         try:
-            bh = self.beh_annotation(fluorescence_fps=True)
-            if 'plotly_fig' in kwargs:
+            if kwargs.get('plotly_fig', None) is not None:
+                # For now only works with fluorescence fps
+                bh = self.beh_annotation(fluorescence_fps=True, reset_index=True)
+                # Rename plotly_fig to fig
                 kwargs['fig'] = kwargs.pop('plotly_fig')
+                # Remove matplotlib specific kwargs
+                kwargs.pop('ax', None)
+                kwargs.pop('index_conversion', None)
+                kwargs.pop('plot_fig', None)
                 shade_using_behavior_plotly(bh, **kwargs)
             else:
+                bh = self.beh_annotation(fluorescence_fps=True)
                 shade_using_behavior(bh, **kwargs)
         except NoBehaviorAnnotationsError:
             pass
