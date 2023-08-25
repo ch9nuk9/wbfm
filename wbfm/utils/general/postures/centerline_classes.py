@@ -20,7 +20,7 @@ from sklearn.neighbors import NearestNeighbors
 from wbfm.utils.external.utils_breakpoints import plot_with_offset_x
 from wbfm.utils.external.utils_self_collision import calculate_self_collision_using_pairwise_distances
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate, \
-    shade_using_behavior
+    shade_using_behavior, get_same_phase_segment_pairs, get_heading_vector_from_phase_pair_segments
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
     remove_short_state_changes, pad_events_in_binary_vector
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
@@ -485,6 +485,39 @@ class WormFullVideoPosture:
         y_abs = self.stage_position(fluorescence_fps, **kwargs).values[:, 1] + x.T
 
         df = pd.concat([x_abs, y_abs], keys=['X', 'Y']).swaplevel().T
+        return df
+
+    @lru_cache(maxsize=8)
+    def heading_vector(self, fluorescence_fps=False, return_radians=False, signed=True, **kwargs) -> pd.DataFrame:
+        """
+        Returns a series of the heading vector, as a vector of XY or radians across time
+
+        Parameters
+        ----------
+        fluorescence_fps
+        kwargs
+
+        Returns
+        -------
+
+        """
+
+        df_pos = self.centerline_absolute_coordinates(fluorescence_fps=fluorescence_fps, **kwargs)
+        df_phase = self.hilbert_phase(fluorescence_fps=fluorescence_fps, **kwargs)
+
+        all_vec_means = np.zeros((len(df_pos), 2))
+        for t in df_pos.index:
+            seg_pairs = get_same_phase_segment_pairs(t, df_phase)
+            vec_mean = get_heading_vector_from_phase_pair_segments(t, seg_pairs, df_pos)
+            all_vec_means[t, :] = vec_mean
+
+        if return_radians:
+            all_vec_means = np.unwrap(np.arctan2(all_vec_means[:, 1], all_vec_means[:, 0]))
+            df = pd.DataFrame(all_vec_means, index=df_pos.index, columns=['Radians'])
+        else:
+            if signed:
+                all_vec_means = self.flip_of_vector_during_state(all_vec_means, fluorescence_fps=fluorescence_fps)
+            df = pd.DataFrame(all_vec_means, index=df_pos.index, columns=['X', 'Y'])
         return df
 
     @cached_property

@@ -817,3 +817,67 @@ def shade_triggered_average(ind_preceding, index_conversion=None,
 
         # Shade
         shade_using_behavior(beh_vec, ax=ax, index_conversion=index_conversion)
+
+
+def get_same_phase_segment_pairs(t, df_phase, min_distance=10, similarity_threshold=0.1, DEBUG=False):
+    """
+    Finds pairs of body segments that have the same hilbert phase
+
+    Parameters
+    ----------
+    t
+    df_phase
+    min_distance
+    similarity_threshold
+    DEBUG
+
+    Returns
+    -------
+
+    """
+    phase_slice = df_phase.loc[t, :]
+
+    start_segment = 10
+    end_segment = 90
+
+    seg_pairs = []
+    for i_seg in range(start_segment, end_segment):
+        phase_subtracted = np.abs(phase_slice - phase_slice[i_seg])
+
+        i_seg_pair = np.argmax(phase_subtracted[i_seg + min_distance:] < similarity_threshold) + i_seg + min_distance
+        if i_seg_pair > end_segment:
+            break
+        seg_pairs.append([i_seg, i_seg_pair])
+
+        if DEBUG:
+            print(i_seg_pair, phase_subtracted[i_seg_pair - 1:i_seg_pair + 2])
+
+    return seg_pairs
+
+
+def get_heading_vector_from_phase_pair_segments(t, seg_pairs, df_pos):
+    """
+    Uses pairs of segments and gets the average vector (heading) of them
+
+    Parameters
+    ----------
+    t
+    seg_pairs
+    df_pos
+
+    Returns
+    -------
+
+    """
+    pos_slice = df_pos.loc[t, :]
+    all_vectors = []
+    for pair in seg_pairs:
+        vec_seg0 = [pos_slice[pair[0]]['X'], pos_slice[pair[0]]['Y']]
+        vec_seg1 = [pos_slice[pair[1]]['X'], pos_slice[pair[1]]['Y']]
+
+        vec_delta = np.array(vec_seg0) - np.array(vec_seg1)
+        all_vectors.append(vec_delta)
+    if len(all_vectors) == 0:
+        return np.array([np.nan, np.nan])
+    else:
+        return np.mean(all_vectors, axis=0)
