@@ -410,7 +410,8 @@ class WormFullVideoPosture:
         # Calculate starting at the first head bend after reversal, and ending at the next head bend
         y_curvature = self.summed_curvature_from_kymograph(fluorescence_fps=False, start_segment=1, end_segment=5,
                                                            do_abs=False, reset_index=True)
-        starts, ends = self.get_starts_and_ends_of_behavior(BehaviorCodes.REV, include_turns=False)
+        starts, ends = self.get_starts_and_ends_of_behavior(BehaviorCodes.REV, include_turns=False,
+                                                            fluorescence_fps=False)
 
         ventral_starts = []
         ventral_ends = []
@@ -426,7 +427,6 @@ class WormFullVideoPosture:
 
             # Get the next approximate zero crossing
             i_next_flip = sign_flips[sign_flips > e][0] + 1
-            # print(e, i_next_flip, y_initial, y_curvature[i_next_flip])
             if i_next_flip > 1:
                 if np.sign(y_initial) > 0:
                     ventral_starts.append(e)
