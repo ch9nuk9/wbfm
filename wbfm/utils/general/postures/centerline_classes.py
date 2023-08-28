@@ -424,7 +424,6 @@ class WormFullVideoPosture:
         # Combine
         _raw_vector = pd.Series(_raw_ventral.astype(int) - _raw_dorsal.astype(int))
 
-        # Harcoded conversion for these files :(
         _raw_vector = _raw_vector.replace(1, BehaviorCodes.VENTRAL_TURN)
         _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
         _raw_vector = _raw_vector.replace(-1, BehaviorCodes.DORSAL_TURN)
@@ -1714,6 +1713,7 @@ class WormFullVideoPosture:
 
         Returns
         -------
+        peaks, peak_times, all_rev_ends
 
         """
 
