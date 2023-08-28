@@ -23,7 +23,7 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_p
     shade_using_behavior, get_same_phase_segment_pairs, get_heading_vector_from_phase_pair_segments, \
     shade_using_behavior_plotly
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
-    remove_short_state_changes, pad_events_in_binary_vector
+    remove_short_state_changes, pad_events_in_binary_vector, make_binary_vector_from_starts_and_ends
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
     MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
@@ -407,21 +407,51 @@ class WormFullVideoPosture:
         # else:
         #     _raw_vector = _raw_vector['turn']
 
+        # Calculate starting at the first head bend after reversal, and ending at the next head bend
+        y_curvature = self.summed_curvature_from_kymograph(fluorescence_fps=False, start_segment=1, end_segment=5,
+                                                           do_abs=False, reset_index=True)
+        starts, ends = self.get_starts_and_ends_of_behavior(BehaviorCodes.REV, include_turns=False)
+
+        ventral_starts = []
+        ventral_ends = []
+        dorsal_starts = []
+        dorsal_ends = []
+        sign_flips = np.where(np.diff(np.sign(y_curvature)))[0]
+
+        for e in ends:
+            if e == len(y_curvature):
+                break
+            # Determines ventral or dorsal turn
+            y_initial = y_curvature[e]  # Should I change this if there is a collision?
+
+            # Get the next approximate zero crossing
+            i_next_flip = sign_flips[sign_flips > e][0] + 1
+            # print(e, i_next_flip, y_initial, y_curvature[i_next_flip])
+            if i_next_flip > 1:
+                if np.sign(y_initial) > 0:
+                    ventral_starts.append(e)
+                    ventral_ends.append(i_next_flip)
+                else:
+                    dorsal_starts.append(e)
+                    dorsal_ends.append(i_next_flip)
+
         # See alias: ventral_only_head_curvature
-        opt = dict(fluorescence_fps=False, start_segment=2, end_segment=10, do_abs=False)
-        thresh = 0.035  # Threshold from looking at histograms of peaks
-        _raw_ventral = (self.summed_curvature_from_kymograph(only_positive=True, **opt) > thresh)
-        _raw_dorsal = (self.summed_curvature_from_kymograph(only_negative=True, **opt) > thresh)
-
-        # Remove any turns that are too short (less than about 0.5 seconds)
-        _raw_ventral = remove_short_state_changes(_raw_ventral, min_length=30)
-        _raw_dorsal = remove_short_state_changes(_raw_dorsal, min_length=30)
-
-        # Pad the edges of the surviving states
-        _raw_ventral = pad_events_in_binary_vector(_raw_ventral, pad_length=30)
-        _raw_dorsal = pad_events_in_binary_vector(_raw_dorsal, pad_length=30)
+        # opt = dict(fluorescence_fps=False, start_segment=2, end_segment=10, do_abs=False)
+        # thresh = 0.035  # Threshold from looking at histograms of peaks
+        # _raw_ventral = (self.summed_curvature_from_kymograph(only_positive=True, **opt) > thresh)
+        # _raw_dorsal = (self.summed_curvature_from_kymograph(only_negative=True, **opt) > thresh)
+        #
+        # # Remove any turns that are too short (less than about 0.5 seconds)
+        # _raw_ventral = remove_short_state_changes(_raw_ventral, min_length=30)
+        # _raw_dorsal = remove_short_state_changes(_raw_dorsal, min_length=30)
+        #
+        # # Pad the edges of the surviving states
+        # _raw_ventral = pad_events_in_binary_vector(_raw_ventral, pad_length=30)
+        # _raw_dorsal = pad_events_in_binary_vector(_raw_dorsal, pad_length=30)
 
         # Combine
+        _raw_ventral = make_binary_vector_from_starts_and_ends(ventral_starts, ventral_ends, y_curvature)
+        _raw_dorsal = make_binary_vector_from_starts_and_ends(dorsal_starts, dorsal_ends, y_curvature)
         _raw_vector = pd.Series(_raw_ventral.astype(int) - _raw_dorsal.astype(int))
 
         _raw_vector = _raw_vector.replace(1, BehaviorCodes.VENTRAL_TURN)
@@ -1716,10 +1746,8 @@ class WormFullVideoPosture:
         peaks, peak_times, all_rev_ends
 
         """
-
-        beh_annotation = self.beh_annotation(fluorescence_fps=True, reset_index=True)
-        y_rev = BehaviorCodes.vector_equality(beh_annotation, BehaviorCodes.REV)
-        rev_starts, rev_ends = get_contiguous_blocks_from_column(y_rev, already_boolean=True)
+        state = BehaviorCodes.REV
+        rev_starts, rev_ends = self.get_starts_and_ends_of_behavior(state)
 
         peaks = []
         peak_times = []
@@ -1743,6 +1771,12 @@ class WormFullVideoPosture:
             peak_times.append(idx)
             all_rev_ends.append(rev_end)
         return peaks, peak_times, all_rev_ends
+
+    def get_starts_and_ends_of_behavior(self, state, fluorescence_fps=True, **kwargs):
+        beh_annotation = self.beh_annotation(fluorescence_fps=fluorescence_fps, reset_index=True, **kwargs)
+        y_rev = BehaviorCodes.vector_equality(beh_annotation, state)
+        rev_starts, rev_ends = get_contiguous_blocks_from_column(y_rev, already_boolean=True)
+        return rev_starts, rev_ends
 
     # Raw videos
     def behavior_video_avi_fname(self):

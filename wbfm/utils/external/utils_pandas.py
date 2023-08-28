@@ -892,7 +892,6 @@ def pad_events_in_binary_vector(vec, pad_length=(1, 1)):
     return vec_padded
 
 
-
 def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None, z_to_xy_ratio=1.0):
     # Just visualize one neuron for now
     # 5 columns:
