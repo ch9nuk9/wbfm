@@ -708,7 +708,7 @@ def approximate_behavioral_annotation_using_pc1(project_cfg, to_save=True):
 def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes.SELF_COLLISION, ),
                          cmap=None, index_conversion=None,
                          additional_shaded_states: Optional[List['BehaviorCodes']]=None, alpha=1.0,
-                         DEBUG=False):
+                         DEBUG=False, **kwargs):
     """
     Shades current plot using a 3-code behavioral annotation:
         Invalid data (no shade)
