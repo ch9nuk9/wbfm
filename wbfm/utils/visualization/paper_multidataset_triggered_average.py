@@ -281,12 +281,12 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         return self.project.calc_default_traces(**trace_opt)
 
     def get_figure_opt(self):
-        return dict(dpi=300, figsize=(10, 5))
+        return dict(dpi=300, figsize=(10/3, 10/2))
 
     def plot_triple_traces(self, neuron_name, output_foldername=None, **kwargs):
         """
         Plot the three traces (raw, global, residual) on the same plot.
-        If output_foldername is not None, save the plot in a subfolder of that folder (named after the neuron)
+        If output_foldername is not None, save the plot in that folder.
 
         Parameters
         ----------
@@ -333,6 +333,6 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         plt.tight_layout()
 
         if output_foldername:
-            fname = os.path.join(output_foldername, neuron_name, 'combined_traces.png')
+            fname = os.path.join(output_foldername, f'{neuron_name}-combined_traces.png')
             plt.savefig(fname)
             fig.savefig(fname.replace(".png", ".svg"))
