@@ -179,15 +179,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         return title_mapping[trigger_type]
 
     def get_fig_opt(self):
-        return dict(dpi=300, figsize=(5, 5))
+        return dict(dpi=300, figsize=(10/3, 10/(2*3)))
 
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
-                                             ax=None,
+                                             ax=None, title=None,
                                              DEBUG=False):
         # clusterer = self.get_clusterer_from_trigger_type(trigger_type)
         color = self.get_color(trigger_type)
         df = self.get_df_triggered_from_trigger_type(trigger_type)
-        title = self.get_title_from_trigger_type(trigger_type)
 
         # Get the full names of all the neurons with this name
         # Names will be like '2022-11-23_worm9_BAGL' and we are checking for 'BAGL'
@@ -228,11 +227,16 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                     behavior_shading_type=behavior_shading_type, ax=ax)
 
         plt.ylabel("dR/R50")
-        plt.title(f"{neuron_name} (n={len(neuron_names)}) {title}")
+        if title is None:
+            title = self.get_title_from_trigger_type(trigger_type)
+            plt.title(f"{neuron_name} (n={len(neuron_names)}) {title}")
+        else:
+            plt.title(title)
         plt.xlabel("Time (s)")
         plt.tight_layout()
 
         if output_folder is not None:
+            title = self.get_title_from_trigger_type(trigger_type)
             fname = title.replace(" ", "_").replace(",", "").lower()
             fname = os.path.join(output_folder, f'{neuron_name}-{fname}.png')
             plt.savefig(fname)
