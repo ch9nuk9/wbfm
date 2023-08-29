@@ -426,7 +426,10 @@ class WormFullVideoPosture:
             y_initial = y_curvature[e]  # Should I change this if there is a collision?
 
             # Get the next approximate zero crossing
-            i_next_flip = sign_flips[sign_flips > e][0] + 1
+            _next_flip_array = sign_flips[sign_flips > e]
+            if len(_next_flip_array) == 0:
+                break
+            i_next_flip = _next_flip_array[0] + 1
             if i_next_flip > 1:
                 if np.sign(y_initial) > 0:
                     ventral_starts.append(e)
