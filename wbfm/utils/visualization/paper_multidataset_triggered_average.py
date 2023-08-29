@@ -43,6 +43,7 @@ class PaperColoredTracePlotter:
         return trace_opt
 
 
+@dataclass
 class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     """Class to plot the triggered average of the paper's datasets."""
 
@@ -240,6 +241,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         return ax
 
 
+@dataclass
 class PaperExampleTracePlotter(PaperColoredTracePlotter):
     """
     For plotting example traces, specifically a stack of 3 traces:
@@ -251,8 +253,11 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
     project: ProjectData
 
     xlim: Optional[tuple] = (0, 150)
+    ylim: Optional[tuple] = None
 
     def __post_init__(self):
+        self.project.use_physical_x_axis = True
+
         # Load the cache
         _ = self.df_traces
         _ = self.df_traces_global
@@ -276,9 +281,9 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         return self.project.calc_default_traces(**trace_opt)
 
     def get_figure_opt(self):
-        return dict(dpi=300, figsize=(10 / 3, 5 / 3))
+        return dict(dpi=300, figsize=(10, 5))
 
-    def plot_triple_traces(self, neuron_name, output_foldername=None):
+    def plot_triple_traces(self, neuron_name, output_foldername=None, **kwargs):
         """
         Plot the three traces (raw, global, residual) on the same plot.
         If output_foldername is not None, save the plot in a subfolder of that folder (named after the neuron)
@@ -298,7 +303,8 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         fig_opt = self.get_figure_opt()
         fig, axes = plt.subplots(**fig_opt, nrows=3, ncols=1)
-        xlim = self.xlim
+        xlim = kwargs.get('xlim', self.xlim)
+        ylim = kwargs.get('ylim', self.ylim)
 
         # Do all on one plot
         trace_dict = {'Original trace': (df_traces[neuron_name], self.get_color('raw')),
@@ -312,6 +318,12 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             ax.set_title(name)
             ax.set_ylabel("dR/R50")
             ax.set_xlim(xlim)
+            if ylim is None:
+                # If no given ylim, use the first trace's ylim
+                ylim = ax.get_ylim()
+            else:
+                ax.set_ylim(ylim)
+
             if i < 2:
                 ax.set_xticks([])
             else:
