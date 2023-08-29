@@ -4,7 +4,6 @@ Designed to plot the triggered average of the paper's datasets.
 import os
 from dataclasses import dataclass
 from typing import Dict, Optional
-
 from matplotlib import pyplot as plt
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
@@ -14,7 +13,37 @@ from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_fr
 
 
 @dataclass
-class PaperMultiDatasetTriggeredAverage:
+class PaperColoredTracePlotter:
+    """
+    Class to plot the colored traces of the paper's datasets.
+
+    Specifically for raw/global/residual decompositions
+    """
+
+    def get_color(self, trigger_type):
+        color_mapping = {'raw_rev': 'tab:blue',
+                         'raw': 'tab:blue',
+                         'raw_fwd': 'tab:blue',
+                         'global_rev': 'tab:orange',
+                         'global': 'tab:orange',
+                         'global_fwd': 'tab:orange',
+                         'residual': 'tab:green',
+                         'residual_rectified_fwd': 'tab:green',
+                         'residual_rectified_rev': 'tab:green',
+                         'kymo': 'black'}
+        if trigger_type not in color_mapping:
+            raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(color_mapping.keys())}')
+        return color_mapping[trigger_type]
+
+    def get_trace_opt(self, **kwargs):
+        trace_opt = dict(interpolate_nan=True, channel_mode='dr_over_r_50', remove_outliers=True,
+                         rename_neurons_using_manual_ids=True, manual_id_confidence_threshold=0,
+                         min_nonnan=0.8)
+        trace_opt.update(kwargs)
+        return trace_opt
+
+
+class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     """Class to plot the triggered average of the paper's datasets."""
 
     all_projects: Dict[str, ProjectData]
@@ -45,9 +74,7 @@ class PaperMultiDatasetTriggeredAverage:
 
     def __post_init__(self):
         # Analyze the project data to get the clusterers and intermediates
-        trace_base_opt = dict(interpolate_nan=True, channel_mode='dr_over_r_50', remove_outliers=True,
-                              rename_neurons_using_manual_ids=True, manual_id_confidence_threshold=0,
-                              min_nonnan=self.min_nonnan)
+        trace_base_opt = self.get_trace_opt(min_nonnan=self.min_nonnan)
 
         try:
             # Note: these won't work for immobilized data
@@ -137,19 +164,6 @@ class PaperMultiDatasetTriggeredAverage:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(df_mapping.keys())}')
         return df_mapping[trigger_type]
 
-    def get_color_from_trigger_type(self, trigger_type):
-        color_mapping = {'raw_rev': 'tab:blue',
-                         'raw_fwd': 'tab:blue',
-                         'global_rev': 'tab:orange',
-                         'global_fwd': 'tab:orange',
-                         'residual': 'tab:green',
-                         'residual_rectified_fwd': 'tab:green',
-                         'residual_rectified_rev': 'tab:green',
-                         'kymo': 'black'}
-        if trigger_type not in color_mapping:
-            raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(color_mapping.keys())}')
-        return color_mapping[trigger_type]
-
     def get_title_from_trigger_type(self, trigger_type):
         title_mapping = {'raw_rev': 'Raw reversal triggered',
                          'raw_fwd': 'Raw forward triggered',
@@ -170,7 +184,7 @@ class PaperMultiDatasetTriggeredAverage:
                                              ax=None,
                                              DEBUG=False):
         # clusterer = self.get_clusterer_from_trigger_type(trigger_type)
-        color = self.get_color_from_trigger_type(trigger_type)
+        color = self.get_color(trigger_type)
         df = self.get_df_triggered_from_trigger_type(trigger_type)
         title = self.get_title_from_trigger_type(trigger_type)
 
@@ -224,3 +238,89 @@ class PaperMultiDatasetTriggeredAverage:
             plt.savefig(fname.replace(".png", ".svg"))
 
         return ax
+
+
+class PaperExampleTracePlotter(PaperColoredTracePlotter):
+    """
+    For plotting example traces, specifically a stack of 3 traces:
+    - Raw
+    - Global
+    - Residual
+    """
+
+    project: ProjectData
+
+    xlim: Optional[tuple] = (0, 150)
+
+    def __post_init__(self):
+        # Load the cache
+        _ = self.df_traces
+        _ = self.df_traces_global
+        _ = self.df_traces_residual
+
+    @property
+    def df_traces(self):
+        trace_opt = self.get_trace_opt()
+        return self.project.calc_default_traces(**trace_opt)
+
+    @property
+    def df_traces_residual(self):
+        trace_opt = self.get_trace_opt()
+        trace_opt['residual_mode'] = 'pca'
+        return self.project.calc_default_traces(**trace_opt)
+
+    @property
+    def df_traces_global(self):
+        trace_opt = self.get_trace_opt()
+        trace_opt['residual_mode'] = 'pca_global'
+        return self.project.calc_default_traces(**trace_opt)
+
+    def get_figure_opt(self):
+        return dict(dpi=300, figsize=(10 / 3, 5 / 3))
+
+    def plot_triple_traces(self, neuron_name, output_foldername=None):
+        """
+        Plot the three traces (raw, global, residual) on the same plot.
+        If output_foldername is not None, save the plot in a subfolder of that folder (named after the neuron)
+
+        Parameters
+        ----------
+        neuron_name
+        output_foldername
+
+        Returns
+        -------
+
+        """
+        df_traces = self.df_traces
+        df_traces_global = self.df_traces_global
+        df_traces_residual = self.df_traces_residual
+
+        fig_opt = self.get_figure_opt()
+        fig, axes = plt.subplots(**fig_opt, nrows=3, ncols=1)
+        xlim = self.xlim
+
+        # Do all on one plot
+        trace_dict = {'Original trace': (df_traces[neuron_name], self.get_color('raw')),
+                      'Global component': (df_traces_global[neuron_name], self.get_color('global')),
+                      'Residual component': (df_traces_residual[neuron_name], self.get_color('residual'))}
+
+        for i, (name, vals) in enumerate(trace_dict.items()):
+            # Original trace
+            ax = axes[i]
+            ax.plot(vals[0], color=vals[1])
+            ax.set_title(name)
+            ax.set_ylabel("dR/R50")
+            ax.set_xlim(xlim)
+            if i < 2:
+                ax.set_xticks([])
+            else:
+                ax.set_xlabel("Time (s)")
+            self.project.shade_axis_using_behavior(ax)
+
+        plt.tight_layout()
+
+        if output_foldername:
+            fname = os.path.join(output_foldername, neuron_name, 'combined_traces.png')
+            plt.savefig(fname)
+            fig.savefig(fname.replace(".png", ".svg"))

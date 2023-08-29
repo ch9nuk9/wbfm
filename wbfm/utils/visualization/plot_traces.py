@@ -1655,3 +1655,19 @@ def make_summary_hilbert_triggered_average_grid_plot(project_cfg, i_body_segment
         project_data.save_fig_in_project(fname, overwrite=True)
 
     return fig
+
+
+def plot_raw_global_residual(neuron_name):
+    """
+    Plots the ratio, global, and residual component for a given neuron
+
+    Parameters
+    ----------
+    neuron_name
+
+    Returns
+    -------
+
+    """
+
+    pass
