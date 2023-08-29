@@ -10,7 +10,7 @@ import plotly.express as px
 from matplotlib import pyplot as plt
 from plotly.subplots import make_subplots
 from scipy.interpolate import interp1d
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, peak_prominences, peak_widths
 from sklearn.decomposition import PCA
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -697,6 +697,138 @@ def approximate_behavioral_annotation_using_pc1(project_cfg, to_save=True):
     if to_save:
         beh_cfg = project_data.project_config.get_behavior_config()
         fname = 'pc1_generated_reversal_annotation'
+        beh_cfg.save_data_in_local_project(beh_vec, fname,
+                                           prepend_subfolder=True, suffix='.xlsx', sheet_name='behavior')
+        beh_cfg.config['manual_behavior_annotation'] = str(Path(fname).with_suffix('.xlsx'))
+        beh_cfg.update_self_on_disk()
+
+    return beh_vec
+
+
+def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_high_fall=False,
+                                                to_save=True, DEBUG=False):
+    """
+    Uses AVAL/R to approximate annotations for forward and reversal
+    Specifically, detects a "rise" "plateau" and "fall" state in the trace, and defines:
+    - Start of rise is start of reversal
+    - Start of fall is end of reversal
+
+    Saves an excel file within the project's behavior folder, and updates the behavioral config
+
+    This file should be found by get_manual_behavior_annotation_fname
+
+    Should be more consistent with prior work than approximate_behavioral_annotation_using_pc1
+
+    Parameters
+    ----------
+    project_cfg
+
+    Returns
+    -------
+
+    """
+    # Load project
+    from wbfm.utils.projects.finished_project_data import ProjectData
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+
+    # Calculate pca_modes of the project
+    opt = dict(interpolate_nan=True,
+               filter_mode='rolling_mean',
+               min_nonnan=0.9,
+               nan_tracking_failure_points=True,
+               rename_neurons_using_manual_ids=True,
+               channel_mode='dr_over_r_50')
+
+    df_traces = project_data.calc_default_traces(**opt)
+    y = 0
+    num_y = 0
+    if 'AVAL' in df_traces.columns:
+        num_y = 1
+        y = df_traces['AVAL']
+    if 'AVAR' in df_traces.columns:
+        # If both AVAL and AVAR are present, average them
+        num_y += 1
+        y = (y + df_traces['AVAR']) / num_y
+    if num_y == 0:
+        raise ValueError("No AVAL or AVAR found in the traces")
+
+    # Take derivative and standardize
+    # Don't z score, because the baseline should be 0, not the mean
+    dy = np.gradient(y)
+    dy = dy / np.std(dy)
+
+    # Define the start of the rise and fall as the width of the peak at the absolute height of 0
+    # Unfortunately scipy only allows relative height calculations, so we have to hack an absolute height
+    # https://stackoverflow.com/questions/53778703/python-scipy-signal-peak-widths-absolute-heigth-fft-3db-damping
+    beh_vec = pd.Series(np.zeros_like(y))
+    for i, x in enumerate([dy, -dy]):
+        peaks, properties = find_peaks(x, height=0.5, width=3)
+        prominences, left_bases, right_bases = peak_prominences(x, peaks)
+        # Instead of prominences, pass the peaks heights to get the intersection at 0
+        # But, because the derivative might not exactly be 0, pass an epslion value
+        # Note that this epsilon is quite high; some "high" periods can have a negative slope almost as high as a "fall"
+        deriv_epsilon = 0.4
+        widths, h_eval, left_ips, right_ips = peak_widths(
+            x, peaks,
+            rel_height=1,
+            prominence_data=(properties['peak_heights'] - deriv_epsilon, left_bases, right_bases)
+        )
+        if DEBUG:
+            # Plot the derivative with the peaks and widths
+            print(h_eval)
+            plt.figure(dpi=200)
+            plt.plot(dy)
+            for i_left, i_right in zip(left_ips, right_ips):
+                plt.plot(np.arange(int(i_left), int(i_right)), dy[int(i_left): int(i_right)], "x")
+
+        # Actually assign the state
+        if i == 0:
+            state = 'rise'
+        else:
+            state = 'fall'
+        for i_left, i_right in zip(left_ips, right_ips):
+            beh_vec[int(i_left): int(i_right)] = state
+            # if DEBUG:
+            #     print(f"state: {state}, left: {int(i_left)}, right: {int(i_right)}")
+
+    if DEBUG:
+        print(f"beh_vec: {beh_vec}")
+
+    # Then define the intermediate regions
+    # If it is after a rise and before a fall it is "high", otherwise "low"
+    # There should be no regions that are surrounded by "rise" or "fall"
+    starts, ends = get_contiguous_blocks_from_column(beh_vec == 0, already_boolean=True)
+    for i, (s, e) in enumerate(zip(starts, ends)):
+        # Special cases for the first and last regions, based on the next start or previous end
+        if s == 0:
+            if beh_vec[e+1] == 'fall':
+                beh_vec[s:e] = 'high'
+            else:
+                beh_vec[s:e] = 'low'
+        elif e == len(beh_vec):
+            if beh_vec[s-1] == 'rise':
+                beh_vec[s:e] = 'high'
+            else:
+                beh_vec[s:e] = 'low'
+        elif beh_vec[s-1] == 'rise' and beh_vec[e+1] == 'fall':
+            beh_vec[s:e] = 'high'
+        else:
+            assert beh_vec[s-1] == 'fall' != beh_vec[e+1] == 'rise', f"Region {i} is surrounded by rise or fall"
+            beh_vec[s:e] = 'low'
+
+    if return_raw_rise_high_fall:
+        return beh_vec
+
+    # Convert this to standard REV/FWD
+    beh_vec[beh_vec == 'rise'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.REV)
+    beh_vec[beh_vec == 'high'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.REV)
+    beh_vec[beh_vec == 'fall'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.FWD)
+    beh_vec[beh_vec == 'low'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.FWD)
+
+    # Save within the behavior folder
+    if to_save:
+        beh_cfg = project_data.project_config.get_behavior_config()
+        fname = 'ava_generated_reversal_annotation'
         beh_cfg.save_data_in_local_project(beh_vec, fname,
                                            prepend_subfolder=True, suffix='.xlsx', sheet_name='behavior')
         beh_cfg.config['manual_behavior_annotation'] = str(Path(fname).with_suffix('.xlsx'))
