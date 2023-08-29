@@ -1,3 +1,4 @@
+import logging
 import os
 from enum import IntEnum, Flag, auto
 from pathlib import Path
@@ -17,7 +18,7 @@ from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends
-from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError
+from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError, NeedsAnnotatedNeuronError
 import plotly.graph_objects as go
 from wbfm.utils.visualization.hardcoded_paths import get_summary_visualization_dir
 
@@ -750,7 +751,7 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
         num_y += 1
         y = (y + df_traces['AVAR']) / num_y
     if num_y == 0:
-        raise ValueError("No AVAL or AVAR found in the traces")
+        raise NeedsAnnotatedNeuronError("AVAL/R")
 
     # Take derivative and standardize
     # Don't z score, because the baseline should be 0, not the mean
@@ -813,7 +814,8 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
         elif beh_vec[s-1] == 'rise' and beh_vec[e+1] == 'fall':
             beh_vec[s:e] = 'high'
         else:
-            assert beh_vec[s-1] == 'fall' != beh_vec[e+1] == 'rise', f"Region {i} is surrounded by rise or fall"
+            if beh_vec[s-1] == beh_vec[e+1]:
+                logging.warning("Region {i} is surrounded by rise or fall; probably a rise or fall was missed")
             beh_vec[s:e] = 'low'
 
     if return_raw_rise_high_fall:

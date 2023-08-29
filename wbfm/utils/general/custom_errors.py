@@ -105,3 +105,9 @@ class InvalidBehaviorAnnotationsError(Exception):
     def __init__(self, message=""):
         self.message = "Invalid behavior annotations found; " + message
         super().__init__(self.message)
+
+
+class NeedsAnnotatedNeuronError(Exception):
+    def __init__(self, message=""):
+        self.message = "Did not find necessary manually annotated neuron(s): " + message
+        super().__init__(self.message)
