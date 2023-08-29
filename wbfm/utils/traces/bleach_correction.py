@@ -42,7 +42,7 @@ def detrend_exponential(y_with_nan):
 
 def detrend_exponential_lmfit(y_with_nan, x=None, ind_subset=None, restore_mean_value=False, use_const=False):
     """
-    Bleach correction via simple exponential fit, subtraction, and re-adding the mean
+    Bleach correction via simple exponential fit, division, and (optionally) re-adding the mean
 
     Uses a direct solver, not a linear regression (does not take the log of the points).
 
@@ -200,10 +200,14 @@ def full_lm_with_windowed_regression_vol(project_data, neuron, window_size=5):
     return res
 
 
-def bleach_correct_gaussian_moving_average(y: pd.Series, std=300) -> pd.Series:
+def bleach_correct_gaussian_moving_average(y: pd.Series, std=300, subtract=True) -> pd.Series:
     """
-    Subtracts traces from a gaussian filtered version of the trace
+    Subtracts or divides traces from a gaussian filtered version of the trace
 
     See filter_gaussian_moving_average
     """
-    return y - y.rolling(center=True, window=800, win_type='gaussian', min_periods=1).mean(std=std)
+    y_filt = y.rolling(center=True, window=800, win_type='gaussian', min_periods=1).mean(std=std)
+    if subtract:
+        return y - y_filt + y_filt.mean()
+    else:
+        return y / y_filt
