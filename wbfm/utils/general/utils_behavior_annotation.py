@@ -17,7 +17,8 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
 
-from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends
+from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends, \
+    remove_short_state_changes
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError, NeedsAnnotatedNeuronError
 import plotly.graph_objects as go
 from wbfm.utils.visualization.hardcoded_paths import get_summary_visualization_dir
@@ -763,7 +764,7 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
     # https://stackoverflow.com/questions/53778703/python-scipy-signal-peak-widths-absolute-heigth-fft-3db-damping
     beh_vec = pd.Series(np.zeros_like(y))
     for i, x in enumerate([dy, -dy]):
-        peaks, properties = find_peaks(x, height=0.5, width=3)
+        peaks, properties = find_peaks(x, height=0.5, width=5)
         prominences, left_bases, right_bases = peak_prominences(x, peaks)
         # Instead of prominences, pass the peaks heights to get the intersection at 0
         # But, because the derivative might not exactly be 0, pass an epslion value
@@ -783,11 +784,14 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
                 plt.plot(np.arange(int(i_left), int(i_right)), dy[int(i_left): int(i_right)], "x")
 
         # Actually assign the state
+        min_length = 5
         if i == 0:
             state = 'rise'
         else:
             state = 'fall'
         for i_left, i_right in zip(left_ips, right_ips):
+            if i_right - i_left < min_length:
+                continue
             beh_vec[int(i_left): int(i_right)] = state
             # if DEBUG:
             #     print(f"state: {state}, left: {int(i_left)}, right: {int(i_right)}")
@@ -815,7 +819,7 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
             beh_vec[s:e] = 'high'
         else:
             if beh_vec[s-1] == beh_vec[e+1]:
-                logging.warning("Region {i} is surrounded by rise or fall; probably a rise or fall was missed")
+                logging.warning(f"Region {i} is surrounded by rise or fall; probably a rise or fall was missed")
             beh_vec[s:e] = 'low'
 
     if return_raw_rise_high_fall:
@@ -826,6 +830,12 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
     beh_vec[beh_vec == 'high'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.REV)
     beh_vec[beh_vec == 'fall'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.FWD)
     beh_vec[beh_vec == 'low'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.FWD)
+
+    # Remove very short states
+    min_length = 8
+    beh_vec = remove_short_state_changes(beh_vec, min_length=min_length)
+
+    beh_vec = pd.DataFrame(beh_vec, columns=['Annotation'])
 
     # Save within the behavior folder
     if to_save:
