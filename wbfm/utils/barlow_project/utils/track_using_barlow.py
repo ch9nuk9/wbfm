@@ -58,7 +58,7 @@ def track_using_barlow_from_config(project_config: ModularProjectConfig,
 
     #
     if tracker is None:
-        # Initialize the model
+        # Initialize a pretrained model
         # See: barlow_twins_evaluate_scratch
         folder_fname = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/nn_ideas/'
         fname = os.path.join(folder_fname, model_fname, 'resnet50.pth')

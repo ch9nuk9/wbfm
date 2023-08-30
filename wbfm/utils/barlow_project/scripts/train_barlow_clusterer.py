@@ -28,6 +28,7 @@ ex.add_config(# For network
               lr=0.0001, learning_rate_weights=0.2, learning_rate_biases=0.0048,
               lambd_obj=2.0, train_both_correlations=True, embedding_dim=2048,
               # For data
+              project_path="/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/original_training_data/bright_worm5/project_config.yaml",
               target_sz=(4, 128, 128), num_frames=200, train_fraction=0.8, val_fraction=0.1,
               DEBUG=False)
 
@@ -44,8 +45,7 @@ def main(_config, _run):
     args = _config['args']
 
     # Load ground truth
-    fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/original_training_data/bright_worm5/project_config.yaml"
-    project_data1 = ProjectData.load_final_project_data_from_config(fname)
+    project_data1 = ProjectData.load_final_project_data_from_config(args.project_path)
 
     # Prep data loader
     target_sz = np.array(args.target_sz)
@@ -120,6 +120,8 @@ def main(_config, _run):
         # save final model
         fname = get_sequential_filename(args.checkpoint_dir + '/resnet50.pth')
         torch.save(model.state_dict(), fname)
+
+    args.model_fname = fname
 
     # Also save the args namespace
     fname = get_sequential_filename(args.checkpoint_dir + '/args.pickle')
