@@ -1663,7 +1663,7 @@ class ProjectData:
         except FileNotFoundError:
             return None
 
-    @lru_cache(maxsize=2)
+    # @lru_cache(maxsize=2)
     def finished_neuron_names(self, finished_not_invalid=True) -> List[str]:
         """
         Uses df_manual_tracking to get a list of the neuron names that have been fully corrected, or are invalid
@@ -1701,6 +1701,7 @@ class ProjectData:
                     self.logger.warning(f"Found and removed improper column name in manual annotation : {col_name}")
             neurons_in_column = tmp
         except KeyError:
+            self.logger.warning(f"Requested manual annotation column not found: {column_name}")
             neurons_in_column = []
 
         return neurons_in_column
@@ -1731,9 +1732,13 @@ class ProjectData:
         if column_name is None:
             column_name = self.finished_neurons_column_name
         neurons_finished_mask = df_manual_tracking[column_name]
+        # If it is boolean, then we are done
+        # Otherwise, check for simple strings
         if neurons_finished_mask.dtype != bool:
-            self.logger.warning("Found non-boolean entries in manual annotation column; this may be a data error: "
-                                f"{np.unique(neurons_finished_mask)}")
+            neurons_finished_mask = neurons_finished_mask.map({'True': True, 'False': False,
+                                                               'TRUE': True, 'FALSE': False,
+                                                               'true': True, 'false': False,
+                                                               '': False, 'nan': False, 'NaN': False, 'NAN': False,})
             neurons_finished_mask = neurons_finished_mask.fillna(False).astype(bool)
         if 'Neuron ID' not in df_manual_tracking[neurons_finished_mask]:
             self.logger.warning("Did not find expected column name ('Neuron ID') for the neuron ids... "
