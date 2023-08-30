@@ -216,9 +216,13 @@ class NeuronImageWithGTDataset(Dataset):
             all_dat_dict, all_seg_dict, which_neurons = get_bbox_data_for_volume_only_labeled(project_data, _t,
                                                                                               target_sz=target_sz)
             keys = list(all_dat_dict.keys())  # Need to enforce ordering?
-            keys.sort()
-            dict_of_ids_of_volumes[_t] = keys  # strings
-            dict_of_neurons_of_volumes[_t] = np.stack([all_dat_dict[k] for k in keys], 0)
+            if len(keys) > 0:
+                keys.sort()
+                dict_of_ids_of_volumes[_t] = keys  # strings
+                dict_of_neurons_of_volumes[_t] = np.stack([all_dat_dict[k] for k in keys], 0)
+            else:
+                dict_of_ids_of_volumes[_t] = []
+                dict_of_neurons_of_volumes[_t] = np.zeros((0, *target_sz))
 
         which_neurons = project_data.get_list_of_finished_neurons()[1]
 

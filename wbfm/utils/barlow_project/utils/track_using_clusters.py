@@ -300,6 +300,7 @@ class WormTsneTracker:
             n_vols = self.n_volumes_per_window
             vol_ind = np.arange(start_volume, start_volume + n_vols)
         linear_ind = np.hstack([time_index_to_linear_feature_indices[i] for i in vol_ind])
+        linear_ind = np.array(linear_ind, dtype=int)
         return linear_ind
 
     def multicluster_single_window(self, start_volume=0, vol_ind=None, to_plot=False, verbose=0):
@@ -397,6 +398,7 @@ class WormTsneTracker:
             if i not in self.global_vol_ind:
                 vol_ind.append(i)
                 linear_ind.extend(self.time_index_to_linear_feature_indices[i])
+        linear_ind = np.array(linear_ind, dtype=int)
 
         # Cluster using pre-trained clusters
         X = self.X_svd[linear_ind, :]
