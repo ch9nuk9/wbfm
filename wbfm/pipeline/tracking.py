@@ -10,7 +10,7 @@ from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 from wbfm.utils.neuron_matching.long_range_matching import _unpack_for_track_tracklet_matching, \
     extend_tracks_using_global_tracking, greedy_matching_using_node_class, \
     combine_tracklets_using_matching, _save_graphs_and_combined_tracks
-from wbfm.utils.neuron_matching.track_using_clusters import WormTsneTracker
+from wbfm.utils.barlow_project.utils.track_using_clusters import WormTsneTracker
 
 from wbfm.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
     combine_dataframes_using_bipartite_matching

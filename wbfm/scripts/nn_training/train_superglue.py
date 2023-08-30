@@ -5,7 +5,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger
 import wandb
 
-from wbfm.utils.nn_utils.data_loading import NeuronImageFeaturesDataModuleFromMultipleProjects, \
+from wbfm.utils.barlow_project.utils.data_loading import NeuronImageFeaturesDataModuleFromMultipleProjects, \
     load_data_with_ground_truth
 from wbfm.utils.nn_utils.superglue import SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject, \
     SuperGlueModel

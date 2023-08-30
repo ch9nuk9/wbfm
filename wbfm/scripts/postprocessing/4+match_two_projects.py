@@ -11,7 +11,6 @@ Saves pickle files, .h5, and .xlsx files in the visualization subfolder of the t
 import sacred
 
 from wbfm.pipeline.tracking import match_two_projects_using_superglue_using_config
-from wbfm.utils.nn_utils.track_using_barlow import track_using_barlow_from_config
 from sacred import Experiment
 from sacred import SETTINGS
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch

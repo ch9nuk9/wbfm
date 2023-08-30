@@ -4,7 +4,7 @@ The top level function for getting final traces from 3d tracks and neuron masks
 
 # Experiment tracking
 import sacred
-from wbfm.utils.nn_utils.track_using_barlow import track_using_barlow_from_config
+from wbfm.utils.barlow_project.utils.track_using_barlow import track_using_barlow_from_config
 from sacred import Experiment
 from sacred import SETTINGS
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
