@@ -305,6 +305,36 @@ def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boole
     return block_starts, block_ends
 
 
+def get_relative_onset_times_from_two_binary_vectors(column: pd.Series, sub_column: pd.Series):
+    """
+    Assumes the two columns are binary, and that sub_column has events which are contained within the events of column
+
+    Parameters
+    ----------
+    column
+    sub_column
+
+    Returns
+    -------
+
+    """
+
+    starts, ends = get_contiguous_blocks_from_column(column, already_boolean=True)
+    sub_starts, sub_ends = get_contiguous_blocks_from_column(sub_column, already_boolean=True)
+
+    relative_onset_times = []
+    for start, end in zip(starts, ends):
+        for sub_start, sub_end in zip(sub_starts, sub_ends):
+            if sub_start >= start and sub_end <= end:
+                relative_onset_times.append(sub_start - start)
+                # Remove this sub event so it can't be used again
+                sub_starts.remove(sub_start)
+                sub_ends.remove(sub_end)
+                break
+
+    return relative_onset_times
+
+
 def calc_eventwise_cooccurrence_matrix(df: pd.DataFrame, column1: str, column2: str, column_state: str,
                                        normalize=True,
                                        DEBUG=False):
