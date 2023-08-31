@@ -1,6 +1,6 @@
 import logging
 import os
-from enum import IntEnum, Flag, auto
+from enum import Flag, auto
 from pathlib import Path
 from typing import List, Union, Optional, Dict
 
@@ -12,9 +12,6 @@ from matplotlib import pyplot as plt
 from plotly.subplots import make_subplots
 from scipy.interpolate import interp1d
 from scipy.signal import find_peaks, peak_prominences, peak_widths
-from sklearn.decomposition import PCA
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends, \
@@ -380,6 +377,37 @@ class BehaviorCodes(Flag):
             split_name = self.__str__().split('.')[-1]
             individual_names = split_name.split('|')
             return individual_names
+
+    @classmethod
+    def convert_to_simple_states(cls, query_state: 'BehaviorCodes'):
+        """
+        Collapses simultaneous states into one-state-at-a-time, using a hardcoded hierarchy
+
+        Returns
+        -------
+
+        """
+
+        state_hierarchy = [cls.REV, cls.VENTRAL_TURN, cls.DORSAL_TURN, cls.HESITATION, cls.FWD]
+        for state in state_hierarchy:
+            if state in query_state:
+                return state
+        return cls.UNKNOWN
+
+    @classmethod
+    def convert_to_simple_states_vector(cls, query_vec: pd.Series):
+        """
+        Uses convert_to_simple_states on a vector
+
+        Parameters
+        ----------
+        query_vec
+
+        Returns
+        -------
+
+        """
+        return query_vec.apply(cls.convert_to_simple_states)
 
 
 def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, include_collision=False,

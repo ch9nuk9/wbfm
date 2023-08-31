@@ -956,3 +956,25 @@ def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None, z_to_xy
     track_of_point = np.hstack([np.ones((all_tracks_array.shape[0], 1)), all_tracks_array])
 
     return all_tracks_array, track_of_point, to_remove
+
+
+def get_dataframe_of_transitions(state_vector: pd.Series, convert_to_probabilities=False):
+    """
+    Gets the transition dictionary of a state vector, i.e. the number of times each state transition occurs
+
+    Parameters
+    ----------
+    state_vector
+
+    Returns
+    -------
+
+    """
+
+    df_transitions = pd.crosstab(pd.Series(state_vector[:-1], name='from_category'), pd.Series(state_vector[1:], name='to_category'))
+
+    if convert_to_probabilities:
+        # Note: must use .div because the columns and rows have the same names, thus pandas is confused
+        df_transitions = df_transitions.div(df_transitions.sum(axis=1), axis=0)
+
+    return df_transitions
