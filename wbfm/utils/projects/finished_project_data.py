@@ -1701,7 +1701,9 @@ class ProjectData:
                     self.logger.warning(f"Found and removed improper column name in manual annotation : {col_name}")
             neurons_in_column = tmp
         except KeyError:
-            self.logger.warning(f"Requested manual annotation column not found: {column_name}")
+            if column_name != "Invalid?":
+                # This one is commonly missing
+                self.logger.warning(f"Requested manual annotation column not found: {column_name}")
             neurons_in_column = []
 
         return neurons_in_column

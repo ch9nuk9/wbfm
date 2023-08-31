@@ -825,7 +825,7 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
     if return_raw_rise_high_fall:
         return beh_vec
 
-    # Convert this to standard REV/FWD
+    # Convert this to ulises REV/FWD (because it will be saved to disk)
     beh_vec[beh_vec == 'rise'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.REV)
     beh_vec[beh_vec == 'high'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.REV)
     beh_vec[beh_vec == 'fall'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.FWD)
