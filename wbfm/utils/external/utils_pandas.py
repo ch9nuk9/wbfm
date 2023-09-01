@@ -958,7 +958,8 @@ def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None, z_to_xy
     return all_tracks_array, track_of_point, to_remove
 
 
-def get_dataframe_of_transitions(state_vector: pd.Series, convert_to_probabilities=False):
+def get_dataframe_of_transitions(state_vector: pd.Series, convert_to_probabilities=False,
+                                 ignore_diagonal=False):
     """
     Gets the transition dictionary of a state vector, i.e. the number of times each state transition occurs
 
@@ -976,5 +977,8 @@ def get_dataframe_of_transitions(state_vector: pd.Series, convert_to_probabiliti
     if convert_to_probabilities:
         # Note: must use .div because the columns and rows have the same names, thus pandas is confused
         df_transitions = df_transitions.div(df_transitions.sum(axis=1), axis=0)
+
+    if ignore_diagonal:
+        np.fill_diagonal(df_transitions.values, 0)
 
     return df_transitions
