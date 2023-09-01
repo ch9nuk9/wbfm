@@ -50,9 +50,9 @@ def main(args):
 
     # Actually train
     start_time = time.time()
-    stats_file = get_sequential_filename(os.path.join(args.checkpoint_dir, 'stats.json'))
-    checkpoint_file = get_sequential_filename(os.path.join(args.checkpoint_dir, 'checkpoint.pth'))
-    print(f"Starting training. Stats in folder: {args.checkpoint_dir}")
+    stats_file = get_sequential_filename(os.path.join(args.project_dir, 'log', 'stats.json'))
+    checkpoint_file = get_sequential_filename(os.path.join(args.project_dir, 'checkpoint', 'checkpoint.pth'))
+    print(f"Starting training. Stats in folder: {args.project_dir}")
     if args.dryrun:
         print("Dryrun, therefore stopping before actual training")
         return
@@ -97,7 +97,7 @@ def main(args):
                         if step % (10*args.print_freq) == 0:
                             with torch.no_grad():
                                 c = model.calculate_correlation_matrix(y1, y2)
-                                save_fname = os.path.join(args.checkpoint_dir, f'correlation_matrix_{step}.png')
+                                save_fname = os.path.join(args.project_dir, 'log', f'correlation_matrix_{step}.png')
                                 fig = visualize_model_performance(c, save_fname=save_fname)
                                 run.log({"chart": fig})
 
@@ -109,13 +109,13 @@ def main(args):
 
     # Final saving
     if args.rank == 0:
-        # save final model
-        fname = get_sequential_filename(args.checkpoint_dir + '/resnet50.pth')
+        # save final model (not in checkpoint dir)
+        fname = get_sequential_filename(args.project_dir + '/resnet50.pth')
         torch.save(model.state_dict(), fname)
         args.model_fname = fname
 
     # Also save the args namespace
-    fname = get_sequential_filename(args.checkpoint_dir + '/args.pickle')
+    fname = get_sequential_filename(args.project_dir + '/args.pickle')
     with open(fname, 'wb') as f:
         pickle.dump(args, f)
 
@@ -135,7 +135,7 @@ if __name__ == "__main__":
 
     # Generate target saving locations from yaml location
     cfg['config_fname'] = config_fname
-    cfg['checkpoint_dir'] = str(Path(config_fname).parent)
+    cfg['project_dir'] = str(Path(config_fname).parent)
     args = SimpleNamespace(**cfg)
     # Run training code
     main(args)
