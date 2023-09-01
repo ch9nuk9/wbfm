@@ -1,14 +1,18 @@
 # Load a project and data, then train a Siamese network
+import argparse
 import json
 import os
 import pickle
 import time
+from pathlib import Path
 from types import SimpleNamespace
 import numpy as np
 import sacred
 import torch
 import wandb
 from matplotlib import pyplot as plt
+from pytorch_lightning.loggers import WandbLogger
+from ruamel.yaml import YAML
 
 from wbfm.barlow_project.utils.barlow import NeuronCropImageDataModule, BarlowTwins3d
 from wbfm.barlow_project.utils.barlow_visualize import visualize_model_performance
@@ -17,29 +21,21 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_filenames import get_sequential_filename
 
 
-wandb.login()
-
-ex.add_config(# For network
-              projector='2048-2048-256', lambd=0.0051, batch_size=1, weight_decay=1e-6,
-              epochs=100, print_freq=100, checkpoint_dir='./checkpoint_barlow_small_projector', rank=0,
-              lr=0.0001, learning_rate_weights=0.2, learning_rate_biases=0.0048,
-              lambd_obj=2.0, train_both_correlations=True, embedding_dim=2048,
-              # For data
-              project_path="/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/original_training_data/bright_worm5/project_config.yaml",
-              target_sz=(4, 128, 128), num_frames=200, train_fraction=0.8, val_fraction=0.1,
-              dryrun=False, DEBUG=False)
 
 
-@ex.config
-def cfg(**kwargs):
-    # Prep model parameters
-    args = SimpleNamespace(**kwargs)
 
 
-@ex.automain
-def main(_config, _run):
-    sacred.commands.print_config(_run)
-    args = _config['args']
+
+def main(args):
+    # Set up logger
+    wandb.login()
+
+    # run = wandb.init(
+    #     # Set the project where this run will be logged
+    #     project="barlow-training-iclr",
+    #     # Track hyperparameters and run metadata
+    #     config=args
+    # )
 
     # Load ground truth
     project_data1 = ProjectData.load_final_project_data_from_config(args.project_path)
@@ -57,73 +53,91 @@ def main(_config, _run):
     torch.manual_seed(43)
 
     gpu = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # gpu = torch.device("cpu")
     backbone_kwargs = dict(in_channels=1, num_levels=2, f_maps=4, crop_sz=target_sz)
     model = BarlowTwins3d(args, backbone=ResidualEncoder3D, **backbone_kwargs).to(gpu)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-    # Actually train    # import wandb
-    # from pytorch_lightning.loggers import WandbLogger
-
+    # Actually train
     start_time = time.time()
     stats_file = get_sequential_filename(os.path.join(args.checkpoint_dir, 'stats.json'))
     checkpoint_file = get_sequential_filename(os.path.join(args.checkpoint_dir, 'checkpoint.pth'))
-
-    # with wandb.init(project="barlow_twins", entity="charlesfieseler") as run:
-    #     wandb_logger = WandbLogger()
-    #     wandb_logger.watch(model, log='all', log_freq=1)
-
-    if _config['dryrun']:
+    if args.dryrun:
         return
 
-    for epoch in range(0, args.epochs):
-        for step, (y1, y2) in enumerate(loader, start=epoch * len(loader)):
-            # Needs to be outside the data loader because the batch dimension isn't added yet
-            y1, y2 = torch.transpose(y1, 0, 1).type('torch.FloatTensor'), torch.transpose(y2, 0, 1).type(
-                'torch.FloatTensor')
-            y1 = y1.to(gpu)
-            y2 = y2.to(gpu)
+    with wandb.init(project=args.wandb_name, entity="charlesfieseler") as run:
+        wandb_logger = WandbLogger()
+        wandb_logger.watch(model, log='all', log_freq=10)
 
-            # adjust_learning_rate(args, optimizer, loader, step)
-            optimizer.zero_grad()
-            loss = model.forward(y1, y2)
+        for epoch in range(0, args.epochs):
+            for step, (y1, y2) in enumerate(loader, start=epoch * len(loader)):
+                # Needs to be outside the data loader because the batch dimension isn't added yet
+                y1, y2 = torch.transpose(y1, 0, 1).type('torch.FloatTensor'), torch.transpose(y2, 0, 1).type(
+                    'torch.FloatTensor')
+                y1 = y1.to(gpu)
+                y2 = y2.to(gpu)
 
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad(set_to_none=True)
+                # adjust_learning_rate(args, optimizer, loader, step)
+                optimizer.zero_grad()
+                loss = model.forward(y1, y2)
 
-            if step % args.print_freq == 0:
-                if args.rank == 0:
-                    stats = dict(epoch=epoch, step=step,
-                                 loss=loss.item(),
-                                 time=int(time.time() - start_time))
-                    print(json.dumps(stats))
-                    with open(stats_file, 'w') as f:
-                        print(json.dumps(stats), file=f)
+                loss.backward()
+                optimizer.step()
+                optimizer.zero_grad(set_to_none=True)
 
-                    # Also plot embedding
-                    with torch.no_grad():
-                        c = model.calculate_correlation_matrix(y1, y2)
-                        visualize_model_performance(c)
-                        fig_fname = os.path.join(args.checkpoint_dir, f'correlation_matrix_{step}.png')
-                        plt.savefig(fig_fname)
+                if step % args.print_freq == 0:
+                    if args.rank == 0:
+                        # Just print
+                        stats = dict(epoch=epoch, step=step,
+                                     loss=loss.item(),
+                                     time=int(time.time() - start_time))
+                        print(json.dumps(stats))
+                        with open(stats_file, 'w') as f:
+                            print(json.dumps(stats), file=f)
 
-        if args.rank == 0:
-            # save checkpoint
-            state = dict(epoch=epoch + 1, model=model.state_dict(),
-                         optimizer=optimizer.state_dict())
-            torch.save(state, checkpoint_file)
+                        # More infrequently, plot embedding
+                        if step % (10*args.print_freq) == 0:
+                            with torch.no_grad():
+                                c = model.calculate_correlation_matrix(y1, y2)
+                                visualize_model_performance(c)
+                                fig_fname = os.path.join(args.checkpoint_dir, f'correlation_matrix_{step}.png')
+                                plt.savefig(fig_fname)
+
+            if args.rank == 0:
+                # save checkpoint
+                state = dict(epoch=epoch + 1, model=model.state_dict(),
+                             optimizer=optimizer.state_dict())
+                torch.save(state, checkpoint_file)
 
     # Final saving
     if args.rank == 0:
         # save final model
         fname = get_sequential_filename(args.checkpoint_dir + '/resnet50.pth')
         torch.save(model.state_dict(), fname)
-
-    args.model_fname = fname
+        args.model_fname = fname
 
     # Also save the args namespace
     fname = get_sequential_filename(args.checkpoint_dir + '/args.pickle')
     with open(fname, 'wb') as f:
         pickle.dump(args, f)
+
+
+if __name__ == "__main__":
+    # Get args, which is just path to yaml file
+    parser = argparse.ArgumentParser(description='Train barlow network')
+    parser.add_argument('--project_path', '-p', default=None,
+                        help='path to yaml file (config)')
+
+    cli_args = parser.parse_args()
+    config_fname = cli_args.project_path
+
+    # Load the yaml file
+    with open(config_fname, 'r') as f:
+        cfg = YAML().load(f)
+
+    # Generate target saving locations from yaml location
+    cfg['config_fname'] = config_fname
+    cfg['checkpoint_dir'] = str(Path(config_fname).parent)
+    args = SimpleNamespace(**cfg)
+    # Run training code
+    main(args)
