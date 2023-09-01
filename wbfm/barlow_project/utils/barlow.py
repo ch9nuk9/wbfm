@@ -63,8 +63,8 @@ class BarlowTwins3d(nn.Module):
             loss_original = self.original_barlow_loss(c_features)
 
             # New object loss; use same lambd and additional lambd_obj
-            loss_transpose = self.original_barlow_loss(c_objects)
-            loss = loss_original + self.args.lambd_obj*loss_transpose
+            loss_transpose = self.args.lambd_obj*self.original_barlow_loss(c_objects)
+            loss = loss_original + loss_transpose
 
         return loss, loss_original, loss_transpose
 
