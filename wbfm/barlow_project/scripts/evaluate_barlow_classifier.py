@@ -1,11 +1,10 @@
 import argparse
 import pickle
-from pathlib import Path
 import numpy as np
 import torch
-from wbfm.utils.barlow_project.utils.barlow import BarlowTwins3d, NeuronCropImageDataModule
-from wbfm.utils.barlow_project.utils.barlow_visualize import visualize_model_performance
-from wbfm.utils.barlow_project.utils.siamese import ResidualEncoder3D
+from wbfm.barlow_project.utils.barlow import BarlowTwins3d, NeuronCropImageDataModule
+from wbfm.barlow_project.utils.barlow_visualize import visualize_model_performance
+from wbfm.barlow_project.utils.siamese import ResidualEncoder3D
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 if __name__ == "__main__":

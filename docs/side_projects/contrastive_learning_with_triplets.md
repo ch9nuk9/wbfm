@@ -7,15 +7,15 @@ Basic steps:
 
 ## Generate training data
 
-See the function save_training_data in this [file](../../wbfm/utils/barlow_project/utils/data_loading.py)
+See the function save_training_data in this [file](../../wbfm/barlow_project/utils/data_loading.py)
 
 This currently uses one of my internal tracklet-specific dataframes, but should be refactored to use ground truth tracks
 
 ## Train a neural network
 
-See [example training script](../../wbfm/utils/barlow_project/scripts/train_triplet_image_space.py)
+See [example training script](../../wbfm/barlow_project/scripts/train_triplet_image_space.py)
 
-This uses classes from [here](../../wbfm/utils/barlow_project/utils/data_loading.py), especially the NeuronTripletDataset
+This uses classes from [here](../../wbfm/barlow_project/utils/data_loading.py), especially the NeuronTripletDataset
 
 Several choices are completely unoptimized, including:
 1. Metric

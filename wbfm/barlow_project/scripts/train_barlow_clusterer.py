@@ -4,24 +4,21 @@ import os
 import pickle
 import time
 from types import SimpleNamespace
-
 import numpy as np
 import sacred
 import torch
+import wandb
 from matplotlib import pyplot as plt
 
-from wbfm.utils.barlow_project.utils.barlow import NeuronCropImageDataModule, BarlowTwins3d
-from wbfm.utils.barlow_project.utils.barlow_visualize import visualize_model_performance
-from wbfm.utils.barlow_project.utils.siamese import ResidualEncoder3D
+from wbfm.barlow_project.utils.barlow import NeuronCropImageDataModule, BarlowTwins3d
+from wbfm.barlow_project.utils.barlow_visualize import visualize_model_performance
+from wbfm.barlow_project.utils.siamese import ResidualEncoder3D
 from wbfm.utils.projects.finished_project_data import ProjectData
-import wandb
-from sacred import Experiment
-
 from wbfm.utils.projects.utils_filenames import get_sequential_filename
 
-# !wandb login
 
-ex = Experiment(save_git_info=False)
+wandb.login()
+
 ex.add_config(# For network
               projector='2048-2048-256', lambd=0.0051, batch_size=1, weight_decay=1e-6,
               epochs=100, print_freq=100, checkpoint_dir='./checkpoint_barlow_small_projector', rank=0,
@@ -30,7 +27,7 @@ ex.add_config(# For network
               # For data
               project_path="/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/original_training_data/bright_worm5/project_config.yaml",
               target_sz=(4, 128, 128), num_frames=200, train_fraction=0.8, val_fraction=0.1,
-              DEBUG=False)
+              dryrun=False, DEBUG=False)
 
 
 @ex.config
@@ -76,6 +73,9 @@ def main(_config, _run):
     # with wandb.init(project="barlow_twins", entity="charlesfieseler") as run:
     #     wandb_logger = WandbLogger()
     #     wandb_logger.watch(model, log='all', log_freq=1)
+
+    if _config['dryrun']:
+        return
 
     for epoch in range(0, args.epochs):
         for step, (y1, y2) in enumerate(loader, start=epoch * len(loader)):
