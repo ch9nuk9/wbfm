@@ -51,7 +51,7 @@ def main(args):
     # Actually train
     start_time = time.time()
     stats_file = get_sequential_filename(os.path.join(args.project_dir, 'log', 'stats.json'))
-    checkpoint_file = get_sequential_filename(os.path.join(args.project_dir, 'checkpoint', 'checkpoint.pth'))
+    checkpoint_file = get_sequential_filename(os.path.join(args.project_dir, 'checkpoints', 'checkpoint.pth'))
     print(f"Starting training. Stats in folder: {args.project_dir}")
     if args.dryrun:
         print("Dryrun, therefore stopping before actual training")
