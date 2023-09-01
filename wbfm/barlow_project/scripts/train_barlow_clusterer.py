@@ -57,7 +57,9 @@ def main(args):
         print("Dryrun, therefore stopping before actual training")
         return
 
-    with wandb.init(project=args.wandbname, entity="charlesfieseler") as run:
+    wandb_opt = dict(mode="disabled") if args.DEBUG else {}
+
+    with wandb.init(project=args.wandb_name, entity="charlesfieseler", **wandb_opt) as run:
         # These lines are only useful for lightning projects
         # wandb_logger = WandbLogger()
         # wandb_logger.watch(model, log='all', log_freq=10)
@@ -72,7 +74,7 @@ def main(args):
 
                 # adjust_learning_rate(args, optimizer, loader, step)
                 optimizer.zero_grad()
-                loss, loss_original, loss_transpose = model.forward(y1, y2)
+                loss = model.forward(y1, y2)
 
                 loss.backward()
                 optimizer.step()
