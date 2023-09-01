@@ -21,26 +21,14 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_filenames import get_sequential_filename
 
 
-
-
-
-
-
 def main(args):
     # Set up logger
     wandb.login()
 
-    # run = wandb.init(
-    #     # Set the project where this run will be logged
-    #     project="barlow-training-iclr",
-    #     # Track hyperparameters and run metadata
-    #     config=args
-    # )
-
     # Load ground truth
     project_data1 = ProjectData.load_final_project_data_from_config(args.project_path)
 
-    # Prep data loader
+    print("Preparing cropped volumes...")
     target_sz = np.array(args.target_sz)
     data_module = NeuronCropImageDataModule(project_data=project_data1, num_frames=args.num_frames, batch_size=1,
                                             train_fraction=args.train_fraction,
@@ -49,10 +37,12 @@ def main(args):
     data_module.setup()
     loader = data_module.train_dataloader()
 
-    # Initialize network
     torch.manual_seed(43)
-
     gpu = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if gpu == "cpu":
+        print("Initializing network using CPU...")
+    else:
+        print("Initializing network using GPU...")
     backbone_kwargs = dict(in_channels=1, num_levels=2, f_maps=4, crop_sz=target_sz)
     model = BarlowTwins3d(args, backbone=ResidualEncoder3D, **backbone_kwargs).to(gpu)
 
@@ -62,7 +52,9 @@ def main(args):
     start_time = time.time()
     stats_file = get_sequential_filename(os.path.join(args.checkpoint_dir, 'stats.json'))
     checkpoint_file = get_sequential_filename(os.path.join(args.checkpoint_dir, 'checkpoint.pth'))
+    print(f"Starting training. Stats in folder: {args.checkpoint_dir}")
     if args.dryrun:
+        print("Dryrun, therefore stopping before actual training")
         return
 
     with wandb.init(project=args.wandb_name, entity="charlesfieseler") as run:
