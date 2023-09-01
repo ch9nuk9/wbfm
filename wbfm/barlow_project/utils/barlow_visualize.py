@@ -20,7 +20,8 @@ def visualize_model_performance(c, save_fname=None):
     vmin = np.clip(np.nanmin(all_vals), -1, 0)
     vmax = np.clip(np.nanmax(all_vals), 0, 1)
     norm = TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
-    fig = plt.imshow(all_vals[:10, :10], norm=norm, cmap='PiYG')
+    fig = plt.figure()
+    plt.imshow(all_vals[:10, :10], norm=norm, cmap='PiYG')
     plt.colorbar()
     # plt.show()
     if save_fname is not None:
