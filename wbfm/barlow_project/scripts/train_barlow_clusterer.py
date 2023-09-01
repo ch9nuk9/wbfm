@@ -57,9 +57,10 @@ def main(args):
         print("Dryrun, therefore stopping before actual training")
         return
 
-    with wandb.init(project=args.wandb_name, entity="charlesfieseler") as run:
-        wandb_logger = WandbLogger()
-        wandb_logger.watch(model, log='all', log_freq=10)
+    with wandb.init(project=args.wandbname, entity="charlesfieseler") as run:
+        # These lines are only useful for lightning projects
+        # wandb_logger = WandbLogger()
+        # wandb_logger.watch(model, log='all', log_freq=10)
 
         for epoch in range(0, args.epochs):
             for step, (y1, y2) in enumerate(loader, start=epoch * len(loader)):
@@ -71,7 +72,7 @@ def main(args):
 
                 # adjust_learning_rate(args, optimizer, loader, step)
                 optimizer.zero_grad()
-                loss = model.forward(y1, y2)
+                loss, loss_original, loss_transpose = model.forward(y1, y2)
 
                 loss.backward()
                 optimizer.step()
@@ -87,13 +88,17 @@ def main(args):
                         with open(stats_file, 'w') as f:
                             print(json.dumps(stats), file=f)
 
+                        # wandb logging
+                        run.log({"loss": loss, "loss_original": loss_original, "loss_transpose": loss_transpose})
+
                         # More infrequently, plot embedding
                         if step % (10*args.print_freq) == 0:
                             with torch.no_grad():
                                 c = model.calculate_correlation_matrix(y1, y2)
-                                visualize_model_performance(c)
+                                fig = visualize_model_performance(c)
                                 fig_fname = os.path.join(args.checkpoint_dir, f'correlation_matrix_{step}.png')
                                 plt.savefig(fig_fname)
+                                run.log({"chart": fig})
 
             if args.rank == 0:
                 # save checkpoint

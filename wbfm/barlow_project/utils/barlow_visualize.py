@@ -18,6 +18,8 @@ def visualize_model_performance(c):
     all_vals = c.cpu().numpy()
 
     norm = TwoSlopeNorm(vmin=np.nanmin(all_vals), vcenter=0, vmax=np.nanmax(all_vals))
-    plt.imshow(all_vals[:10, :10], norm=norm, cmap='PiYG')
+    fig = plt.imshow(all_vals[:10, :10], norm=norm, cmap='PiYG')
     plt.colorbar()
-    plt.show()
+    # plt.show()
+
+    return fig
