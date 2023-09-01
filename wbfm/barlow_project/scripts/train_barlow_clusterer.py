@@ -74,7 +74,7 @@ def main(args):
 
                 # adjust_learning_rate(args, optimizer, loader, step)
                 optimizer.zero_grad()
-                loss = model.forward(y1, y2)
+                loss, loss_original, loss_transpose = model.forward(y1, y2)
 
                 loss.backward()
                 optimizer.step()

@@ -12,7 +12,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train a Barlow Twins model')
     parser.add_argument('--fname', type=str, default=None,
                         help='Path to the project data file')
-    parser.add_argument('--num_frames', type=str, default=None,
+    parser.add_argument('--num_frames', type=str, default=10,
                         help='Path to the project data file')
 
     # Load the args

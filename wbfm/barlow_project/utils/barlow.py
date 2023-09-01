@@ -56,7 +56,7 @@ class BarlowTwins3d(nn.Module):
         if not self.args.train_both_correlations:
             c = self.calculate_correlation_matrix(y1, y2)
             loss = self.original_barlow_loss(c)
-            loss_original, loss_transpose = loss, loss
+            loss_original, loss_transpose = None, None
         else:
             c_features, c_objects = self.calculate_both_correlation_matrices(y1, y2)
             # Original loss
@@ -81,10 +81,24 @@ class BarlowTwins3d(nn.Module):
         z1_norm = (z1 - z1.mean(0)) / z1.std(0)
         z2_norm = (z2 - z2.mean(0)) / z2.std(0)
         this_batch_sz = z1.shape[0]
+
         c = torch.matmul(z1_norm.T, z2_norm) / this_batch_sz  # D x D (feature space)
         return c
 
     def calculate_both_correlation_matrices(self, y1, y2):
+        """
+        Given two images (original and augmented), calculate the correlation matrices for both the feature space and
+        the object space.
+
+        Parameters
+        ----------
+        y1 - torch.Tensor of shape (num_objects (pseudo-batch size), batch_size (1), z, x, y)
+        y2 - same as y1
+
+        Returns
+        -------
+
+        """
         z1 = self.embed(y1)
         z2 = self.embed(y2)
         # empirical cross-correlation matrix
@@ -94,8 +108,8 @@ class BarlowTwins3d(nn.Module):
         c_features = torch.matmul(z1_norm.T, z2_norm) / this_batch_sz  # D x D (feature space)
 
         # empirical cross-correlation matrix
-        z1_norm = (z1 - z1.mean(1)) / z1.std(1)
-        z2_norm = (z2 - z2.mean(1)) / z2.std(1)
+        z1_norm = ((z1.T - z1.mean(1)) / z1.std(1)).T
+        z2_norm = ((z2.T - z2.mean(1)) / z2.std(1)).T
         this_num_features = z1.shape[1]
         c_objects = torch.matmul(z1_norm, z2_norm.T) / this_num_features  # N x N (object space)
 
