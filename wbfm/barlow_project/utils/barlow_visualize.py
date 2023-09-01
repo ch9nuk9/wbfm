@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
 
 
-def visualize_model_performance(c):
+def visualize_model_performance(c, save_fname=None):
     """
     Plots the correlation matrix of the model's output, which should be close to diagonal (if trained)
 
@@ -21,5 +21,7 @@ def visualize_model_performance(c):
     fig = plt.imshow(all_vals[:10, :10], norm=norm, cmap='PiYG')
     plt.colorbar()
     # plt.show()
+    if save_fname is not None:
+        plt.savefig(save_fname)
 
     return fig

@@ -95,9 +95,8 @@ def main(args):
                         if step % (10*args.print_freq) == 0:
                             with torch.no_grad():
                                 c = model.calculate_correlation_matrix(y1, y2)
-                                fig = visualize_model_performance(c)
-                                fig_fname = os.path.join(args.checkpoint_dir, f'correlation_matrix_{step}.png')
-                                plt.savefig(fig_fname)
+                                save_fname = os.path.join(args.checkpoint_dir, f'correlation_matrix_{step}.png')
+                                fig = visualize_model_performance(c, save_fname=save_fname)
                                 run.log({"chart": fig})
 
             if args.rank == 0:
