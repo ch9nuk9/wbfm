@@ -56,7 +56,7 @@ from wbfm.utils.external.utils_pandas import df_to_matches, accuracy_of_matches
 from wbfm.utils.general.distance_functions import dist2conf
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from wbfm.barlow_project.utils import AbstractNeuronImageFeaturesFromProject
+from wbfm.barlow_project.utils.data_loading import AbstractNeuronImageFeaturesFromProject
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 

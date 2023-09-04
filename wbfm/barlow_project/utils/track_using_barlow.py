@@ -1,3 +1,4 @@
+import logging
 import os
 from collections import defaultdict
 from pathlib import Path
@@ -18,15 +19,47 @@ from wbfm.barlow_project.utils.track_using_clusters import WormTsneTracker
 
 
 def track_using_barlow_from_config(project_config: ModularProjectConfig,
-                                   model_fname='checkpoint_barlow_small_projector',
+                                   model_fname=None,
+                                   results_subfolder=None,
                                    to_plot_relative_accuracy=True):
+    """
+    Tracks a project using a pretrained Barlow Twins model
+
+    Can reuse prior steps if they have already been run. Runs in this order:
+    1. Load the pretrained neural network
+    2. Embed the data (volumetric images) using the neural network
+    3. Build a class to organize the embeddings and the clusterer
+    4. Run the clusterer and get the final tracks
+    5. Calculate accuracy and save the results
+
+    Parameters
+    ----------
+    project_config
+    model_fname
+    results_subfolder
+    to_plot_relative_accuracy
+
+    Returns
+    -------
+
+    """
+    if model_fname is None:
+        model_fname = 'checkpoint_barlow_small_projector'
+    if results_subfolder is None:
+        # The default folder is built from the model fname, but removes the "checkpoint_" prefix
+        # Also if it is a full path, just take the last foldername
+        if Path(model_fname).is_absolute():
+            results_subfolder = os.path.split(model_fname)[-1]
+        else:
+            results_subfolder = model_fname
+        results_subfolder = results_subfolder.replace('checkpoint_', '')
+        results_subfolder = f'3-tracking/{results_subfolder}'
 
     if not isinstance(project_config, ModularProjectConfig):
         project_config = ModularProjectConfig(str(project_config))
     project_data = ProjectData.load_final_project_data_from_config(project_config)
 
     # Check to see if the results already exist
-    results_subfolder = '3-tracking/barlow_small_projector'
     results_subfolder_full = project_config.resolve_relative_path(results_subfolder)
 
     tracker_fname = os.path.join(results_subfolder_full, 'worm_tracker_barlow.pickle')
@@ -60,8 +93,13 @@ def track_using_barlow_from_config(project_config: ModularProjectConfig,
     if tracker is None:
         # Initialize a pretrained model
         # See: barlow_twins_evaluate_scratch
-        folder_fname = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/nn_ideas/'
-        fname = os.path.join(folder_fname, model_fname, 'resnet50.pth')
+        if Path(model_fname).is_absolute():
+            fname = model_fname
+        else:
+            # My draft networks are here
+            logging.warning("Using draft networks; if you want to use the final networks, use an absolute path")
+            folder_fname = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/nn_ideas/'
+            fname = os.path.join(folder_fname, model_fname, 'resnet50.pth')
 
         gpu, model, target_sz = load_barlow_model(fname)
         model.eval()
