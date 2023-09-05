@@ -834,21 +834,30 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
     for i, (s, e) in enumerate(zip(starts, ends)):
         # Special cases for the first and last regions, based on the next start or previous end
         if s == 0:
+            # First
             if beh_vec[e+1] == 'fall':
                 beh_vec[s:e] = 'high'
             else:
                 beh_vec[s:e] = 'low'
         elif e == len(beh_vec):
+            # Last
             if beh_vec[s-1] == 'rise':
                 beh_vec[s:e] = 'high'
             else:
                 beh_vec[s:e] = 'low'
         elif beh_vec[s-1] == 'rise' and beh_vec[e+1] == 'fall':
+            # In between
             beh_vec[s:e] = 'high'
+        elif beh_vec[s-1] == 'fall' and beh_vec[e+1] == 'rise':
+            beh_vec[s:e] = 'low'
         else:
             if beh_vec[s-1] == beh_vec[e+1]:
                 logging.warning(f"Region {i} is surrounded by rise or fall; probably a rise or fall was missed")
-            beh_vec[s:e] = 'low'
+            # In this case, just split based on the absolute amplitude
+            if np.mean(y[s:e]) > 0:
+                beh_vec[s:e] = 'high'
+            else:
+                beh_vec[s:e] = 'low'
 
     if return_raw_rise_high_fall:
         return beh_vec
