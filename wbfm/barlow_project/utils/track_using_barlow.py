@@ -49,7 +49,7 @@ def track_using_barlow_from_config(project_config: ModularProjectConfig,
         # The default folder is built from the model fname, but removes the "checkpoint_" prefix
         # Also if it is a full path, just take the last foldername
         if Path(model_fname).is_absolute():
-            results_subfolder = os.path.split(model_fname)[-1]
+            results_subfolder = os.path.split(model_fname)[-2]
         else:
             results_subfolder = model_fname
         results_subfolder = results_subfolder.replace('checkpoint_', '')
@@ -95,9 +95,10 @@ def track_using_barlow_from_config(project_config: ModularProjectConfig,
         # See: barlow_twins_evaluate_scratch
         if Path(model_fname).is_absolute():
             fname = model_fname
+            project_config.logger.info(f"Using pretrained neural network: {fname}")
         else:
             # My draft networks are here
-            logging.warning("Using draft networks; if you want to use the final networks, use an absolute path")
+            project_config.logger.warning("Using draft networks; if you want to use the final networks, use an absolute path")
             folder_fname = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/nn_ideas/'
             fname = os.path.join(folder_fname, model_fname, 'resnet50.pth')
 
