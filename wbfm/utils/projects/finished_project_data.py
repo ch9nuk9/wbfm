@@ -679,6 +679,7 @@ class ProjectData:
                                return_fast_scale_separation: bool = False,
                                return_slow_scale_separation: bool = False,
                                rename_neurons_using_manual_ids: bool = False,
+                               binary_behaviors: bool=False,
                                verbose=0,
                                **kwargs):
         """
@@ -693,10 +694,13 @@ class ProjectData:
         Options are kept for compatibility with calc_default_traces, but most are not used
         """
 
-        behavior_codes = ['signed_middle_body_speed', 'head_signed_curvature', 'summed_curvature']
-                          #'fwd_empirical_distribution', 'rev_phase_counter',
-                          #'quantile_curvature', 'dorsal_quantile_curvature', 'quantile_head_curvature']
-                          #'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature']
+        if binary_behaviors:
+            behavior_codes = ['rev', 'ventral_turn', 'head_cast', 'hesitation']
+        else:
+            behavior_codes = ['signed_middle_body_speed', 'head_signed_curvature', 'summed_curvature']
+                              #'fwd_empirical_distribution', 'rev_phase_counter',
+                              #'quantile_curvature', 'dorsal_quantile_curvature', 'quantile_head_curvature']
+                              #'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature']
 
         behavior_dict = {}
         for code in behavior_codes:

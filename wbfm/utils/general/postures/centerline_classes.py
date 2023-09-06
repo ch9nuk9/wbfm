@@ -657,10 +657,7 @@ class WormFullVideoPosture:
             y = self.beh_annotation(**kwargs)
         elif behavior_alias == 'signed_stage_speed':
             y = self.worm_speed(**kwargs, signed=True)
-        elif behavior_alias == 'rev':
-            y = BehaviorCodes.vector_equality(self.beh_annotation(**kwargs), BehaviorCodes.REV)
-        elif behavior_alias == 'fwd':
-            y = BehaviorCodes.vector_equality(self.beh_annotation(**kwargs), BehaviorCodes.FWD)
+        # More complex speeds
         elif behavior_alias == 'abs_stage_speed':
             y = self.worm_speed(**kwargs)
         elif behavior_alias == 'middle_body_speed':
@@ -669,6 +666,7 @@ class WormFullVideoPosture:
             y = self.worm_speed(**kwargs, use_stage_position=False, signed=True)
         elif behavior_alias == 'signed_middle_body_speed_smoothed':
             y = self.worm_speed(**kwargs, use_stage_position=False, signed=True, strong_smoothing_before_derivative=True)
+        # Curvature measurements
         elif behavior_alias == 'summed_curvature':
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=30, **kwargs)
