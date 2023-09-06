@@ -59,12 +59,10 @@ class CCAPlotter:
             cca = CCA(n_components=n_components)
             X_r, Y_r = cca.fit_transform(X, Y)
         else:
-            scca = scc_mod.SCCA_IPLS(latent_dims=4, tau=[1e-2, 1e-3])
-            X_r, Y_r = scca.fit_transform([X, Y])
+            cca = scc_mod.SCCA_IPLS(latent_dims=4, tau=[1e-2, 1e-3])
+            X_r, Y_r = cca.fit_transform([X, Y])
 
-        Y_r_linear = self.df_traces @ cca.coef_
-
-        return X_r, Y_r, Y_r_linear, cca
+        return X_r, Y_r, cca
 
     def _get_beh_df(self, binary_behaviors):
         if binary_behaviors:
@@ -74,7 +72,7 @@ class CCAPlotter:
         return Y
 
     def visualize_modes(self, i=1, binary_behaviors=False, **kwargs):
-        X_r, Y_r, Y_r_linear, cca = self.calc_cca(n_components=i, binary_behaviors=binary_behaviors, **kwargs)
+        X_r, Y_r, cca = self.calc_cca(n_components=i, binary_behaviors=binary_behaviors, **kwargs)
         df_beh = self._get_beh_df(binary_behaviors)
         df_traces = self.df_traces
 
@@ -87,7 +85,7 @@ class CCAPlotter:
 
     def visualize_modes_and_weights(self, n_components=1, binary_behaviors=False, **kwargs):
 
-        X_r, Y_r, Y_r_linear, cca = self.calc_cca(n_components=n_components, binary_behaviors=binary_behaviors,
+        X_r, Y_r, cca = self.calc_cca(n_components=n_components, binary_behaviors=binary_behaviors,
                                                   **kwargs)
         df_beh = self._get_beh_df(binary_behaviors)
         df_traces = self.df_traces
@@ -119,7 +117,7 @@ class CCAPlotter:
             X_r = self.project_data.calc_pca_modes(n_components=3)
             df_latents = pd.DataFrame(X_r)
         else:
-            X_r, Y_r, Y_r_linear, cca = self.calc_cca(n_components=3, binary_behaviors=binary_behaviors,
+            X_r, Y_r, cca = self.calc_cca(n_components=3, binary_behaviors=binary_behaviors,
                                                       sparse_tau=sparse_tau)
             if use_X_r:
                 df_latents = pd.DataFrame(X_r)
