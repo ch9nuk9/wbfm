@@ -182,7 +182,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         return dict(dpi=300, figsize=(10/3, 10/(2*3)))
 
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
-                                             ax=None, title=None,
+                                             ax=None, title=None, xlim=None,
                                              DEBUG=False):
         # clusterer = self.get_clusterer_from_trigger_type(trigger_type)
         color = self.get_color(trigger_type)
@@ -225,6 +225,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             index_conversion = df_subset.columns
             shade_triggered_average(ind_preceding=20, index_conversion=index_conversion,
                                     behavior_shading_type=behavior_shading_type, ax=ax)
+        if xlim is not None:
+            ax.set_xlim(xlim)
 
         plt.ylabel("dR/R50")
         if title is None:
