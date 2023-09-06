@@ -695,7 +695,7 @@ class ProjectData:
         """
 
         if binary_behaviors:
-            behavior_codes = ['rev', 'ventral_turn', 'head_cast', 'hesitation']
+            behavior_codes = ['rev', 'ventral_turn', 'dorsal_turn', 'head_cast', 'hesitation']
         else:
             behavior_codes = ['signed_middle_body_speed', 'head_signed_curvature', 'summed_curvature']
                               #'fwd_empirical_distribution', 'rev_phase_counter',

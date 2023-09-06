@@ -87,7 +87,8 @@ class CCAPlotter:
 
         interact(f, i=(0, X_r.shape[1] - 1))
 
-    def plot_3d(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, **ethogram_cmap_kwargs):
+    def plot_3d(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, DEBUG=False,
+                **ethogram_cmap_kwargs):
         if modes_to_plot is None:
             modes_to_plot = [0, 1, 2]
         if use_pca:
@@ -108,6 +109,9 @@ class CCAPlotter:
         ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_kwargs)
         df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_latents, modes_to_plot, 'state')
         state_codes = df_latents['state'].unique()
+
+        if DEBUG:
+            print(state_codes, ethogram_cmap, ethogram_cmap_kwargs)
 
         phase_plot_list = []
         for i, state_code in enumerate(state_codes):
