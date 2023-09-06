@@ -85,13 +85,16 @@ class CCAPlotter:
 
     def visualize_modes_and_weights(self, n_components=1, binary_behaviors=False, **kwargs):
 
-        X_r, Y_r, cca = self.calc_cca(n_components=n_components, binary_behaviors=binary_behaviors,
-                                                  **kwargs)
+        X_r, Y_r, cca = self.calc_cca(n_components=n_components, binary_behaviors=binary_behaviors, **kwargs)
         df_beh = self._get_beh_df(binary_behaviors)
         df_traces = self.df_traces
 
-        df_y = pd.DataFrame(cca.y_weights_, index=df_beh.columns).T
-        df_x = pd.DataFrame(cca.x_weights_, index=df_traces.columns).T
+        if 'sparse_tau' in kwargs:
+            df_y = pd.DataFrame(cca.weights[1], index=df_beh.columns).T
+            df_x = pd.DataFrame(cca.weights[0], index=df_traces.columns).T
+        else:
+            df_y = pd.DataFrame(cca.y_weights_, index=df_beh.columns).T
+            df_x = pd.DataFrame(cca.x_weights_, index=df_traces.columns).T
 
         def f(i=0):
             df = pd.DataFrame({'Latent X': X_r[:, i] / X_r[:, i].max(),
