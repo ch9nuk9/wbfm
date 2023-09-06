@@ -963,7 +963,7 @@ class ProjectData:
         return df
 
     def calc_pca_modes(self, n_components=10, flip_pc1_to_have_reversals_high=True, return_pca_weights=False,
-                       **trace_kwargs):
+                       return_pca_object=False, **trace_kwargs):
         """
         Calculates the PCA modes of the traces, and optionally flips the first mode to have reversals high
         This allows comparison of PC1 across datasets
@@ -991,6 +991,9 @@ class ProjectData:
             pca_weights = pca.components_.T
         pca.fit(X.T)
         pca_modes = pca.components_.T
+
+        if return_pca_object:
+            return pca
 
         if flip_pc1_to_have_reversals_high:
             # Calculate the speed, and define the sign of the first PC to be anticorrelated to speed

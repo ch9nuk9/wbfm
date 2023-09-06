@@ -1,9 +1,15 @@
 import os
+from collections import defaultdict
 from dataclasses import dataclass
+
+import numpy as np
 import pandas as pd
 from ipywidgets import interact
 from sklearn.cross_decomposition import CCA
 import plotly.express as px
+from sklearn.decomposition import PCA
+
+from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 import plotly.graph_objects as go
@@ -61,10 +67,31 @@ class CCAPlotter:
             cca = CCA(n_components=n_components)
             X_r, Y_r = cca.fit_transform(X, Y)
         else:
-            cca = scc_mod.SCCA_IPLS(latent_dims=4, tau=[1e-2, 1e-3])
+            cca = scc_mod.SCCA_IPLS(latent_dims=n_components, tau=[1e-2, 1e-3])
             X_r, Y_r = cca.fit_transform([X, Y])
 
         return X_r, Y_r, cca
+
+    def calc_cca_reconstruction(self, **kwargs):
+        X_r, Y_r, cca = self.calc_cca(**kwargs)
+        return cca.inverse_transform(X_r, Y_r)
+
+    def calc_r_squared(self, use_pca=False, n_components=1, **kwargs):
+        # First, calculate the reconstruction
+        X = self.df_traces
+        if use_pca:
+            # See calc_pca_modes
+            X = fill_nan_in_dataframe(X, do_filtering=False)
+            X -= X.mean()
+            pca = PCA(n_components=n_components, whiten=False)
+            X_r_recon = pca.inverse_transform(pca.fit_transform(X))
+        else:
+            X_r_recon, Y_r_recon = self.calc_cca_reconstruction(**kwargs)
+        # Then, calculate the r-squared
+        residual_variance = (X - X_r_recon).var().sum()
+        total_variance = X.var().sum()
+
+        return 1 - residual_variance / total_variance
 
     def _get_beh_df(self, binary_behaviors):
         if binary_behaviors:
@@ -75,8 +102,6 @@ class CCAPlotter:
 
     def visualize_modes(self, i=1, binary_behaviors=False, **kwargs):
         X_r, Y_r, cca = self.calc_cca(n_components=i, binary_behaviors=binary_behaviors, **kwargs)
-        df_beh = self._get_beh_df(binary_behaviors)
-        df_traces = self.df_traces
 
         df = pd.DataFrame({'Latent X': X_r[:, i], 'Latent Y': Y_r[:, i]})
         fig = px.line(df)
@@ -116,7 +141,7 @@ class CCAPlotter:
     def plot_single_mode(self, i_mode=0, binary_behaviors=False, use_pca=False, output_folder=None, **kwargs):
 
         if use_pca:
-            X_r = self.project_data.calc_pca_modes(n_components=i_mode)
+            X_r = self.project_data.calc_pca_modes(n_components=i_mode+1)
             df = pd.DataFrame({f'PCA mode {i_mode+1}': X_r[:, i_mode] / X_r[:, i_mode].max()})
         else:
             X_r, Y_r, cca = self.calc_cca(binary_behaviors=binary_behaviors, **kwargs)
@@ -244,3 +269,20 @@ class CCAPlotter:
             fname += '-2d'
         fname += '.html'
         return fname
+
+
+def calc_r_squared_for_all_projects(all_projects):
+    all_cca_classes = {}
+    all_r_squared = defaultdict(dict)
+
+    opt_dict = {'pca': dict(use_pca=True),
+                'cca': dict(use_pca=False),
+                'cca_binary': dict(use_pca=False, binary_behaviors=True)}
+
+    for name, p in all_projects.items():
+        cca_plotter = CCAPlotter(p)
+        all_cca_classes[name] = cca_plotter
+        for opt_name, opt in opt_dict.items():
+            all_r_squared[name][opt_name] = cca_plotter.calc_r_squared(**opt)
+
+    return all_cca_classes, all_r_squared
