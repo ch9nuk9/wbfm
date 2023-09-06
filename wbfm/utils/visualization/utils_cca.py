@@ -27,7 +27,8 @@ class CCAPlotter:
 
     def __post_init__(self):
         # Default traces and behaviors
-        opt = dict(filter_mode='rolling_mean', interpolate_nan=True, nan_tracking_failure_points=True)
+        opt = dict(filter_mode='rolling_mean', interpolate_nan=True, nan_tracking_failure_points=True,
+                   use_physical_time=True)
 
         self.df_traces = self.project_data.calc_default_traces(**opt)
         self.df_beh = self.project_data.calc_default_behaviors(**opt)
@@ -111,6 +112,26 @@ class CCAPlotter:
             fig.show()
 
         interact(f, i=(0, X_r.shape[1] - 1))
+
+    def plot_single_mode(self, i_mode=0, binary_behaviors=False, use_pca=False, output_folder=None, **kwargs):
+
+        if use_pca:
+            X_r = self.project_data.calc_pca_modes(n_components=i_mode)
+            df = pd.DataFrame({f'PCA mode {i_mode+1}': X_r[:, i_mode] / X_r[:, i_mode].max()})
+        else:
+            X_r, Y_r, cca = self.calc_cca(binary_behaviors=binary_behaviors, **kwargs)
+
+            df = pd.DataFrame({f'Latent trace mode {i_mode+1}': X_r[:, i_mode] / X_r[:, i_mode].max(),
+                               f'Latent behavior mode {i_mode+1}': Y_r[:, i_mode] / Y_r[:, i_mode].max()})
+        fig = px.line(df)
+        self.project_data.shade_axis_using_behavior(plotly_fig=fig)
+        fig.show()
+
+        fname = self._get_fig_filename(binary_behaviors, plot_3d=False, use_pca=use_pca)
+        fname = os.path.join(output_folder, fname)
+        fig.write_html(fname)
+        fname = fname.replace('.html', '.png')
+        fig.write_image(fname)
 
     def plot(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, use_X_r=True, sparse_tau=None,
              plot_3d=True, output_folder=None, DEBUG=False,
@@ -197,21 +218,7 @@ class CCAPlotter:
             )
 
         if output_folder is not None:
-            # Build name based on options used
-            fname = 'cca'
-            if use_pca:
-                fname += '-pca'
-            else:
-                fname += '-cca'
-                if binary_behaviors:
-                    fname = '-binary'
-                else:
-                    fname = '-continuous'
-            if plot_3d:
-                fname += '-3d'
-            else:
-                fname += '-2d'
-            fname += '.html'
+            fname = self._get_fig_filename(binary_behaviors, plot_3d, use_pca)
             fname = os.path.join(output_folder, fname)
             fig.write_html(fname)
             fname = fname.replace('.html', '.png')
@@ -219,3 +226,21 @@ class CCAPlotter:
 
         fig.show()
         return fig
+
+    def _get_fig_filename(self, binary_behaviors, plot_3d, use_pca):
+        # Build name based on options used
+        fname = 'cca'
+        if use_pca:
+            fname += '-pca'
+        else:
+            fname += '-cca'
+            if binary_behaviors:
+                fname = '-binary'
+            else:
+                fname = '-continuous'
+        if plot_3d:
+            fname += '-3d'
+        else:
+            fname += '-2d'
+        fname += '.html'
+        return fname
