@@ -787,6 +787,8 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
     dy = np.gradient(y)
     dy = dy / np.std(dy)
 
+    derivative_state_shift = 1
+
     # Define the start of the rise and fall as the width of the peak at the absolute height of 0
     # Unfortunately scipy only allows relative height calculations, so we have to hack an absolute height
     # https://stackoverflow.com/questions/53778703/python-scipy-signal-peak-widths-absolute-heigth-fft-3db-damping
@@ -808,8 +810,13 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
             print(h_eval)
             plt.figure(dpi=200)
             plt.plot(dy)
+            if i == 0:
+                print("Positive peaks")
+            else:
+                print("Negative peaks")
             for i_left, i_right in zip(left_ips, right_ips):
                 plt.plot(np.arange(int(i_left), int(i_right)), dy[int(i_left): int(i_right)], "x")
+                print(f"left: {int(i_left)}, right: {int(i_right)}")
 
         # Actually assign the state
         min_length = 5
@@ -820,12 +827,7 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
         for i_left, i_right in zip(left_ips, right_ips):
             if i_right - i_left < min_length:
                 continue
-            beh_vec[int(i_left): int(i_right)] = state
-            # if DEBUG:
-            #     print(f"state: {state}, left: {int(i_left)}, right: {int(i_right)}")
-
-    if DEBUG:
-        print(f"beh_vec: {beh_vec}")
+            beh_vec[int(i_left) + derivative_state_shift: int(i_right) + derivative_state_shift] = state
 
     # Then define the intermediate regions
     # If it is after a rise and before a fall it is "high", otherwise "low"
