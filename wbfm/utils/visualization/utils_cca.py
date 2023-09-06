@@ -7,6 +7,7 @@ from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 import plotly.graph_objects as go
 from methodtools import lru_cache
+import cca_zoo.models as scc_mod
 
 from wbfm.utils.projects.finished_project_data import ProjectData
 
@@ -32,14 +33,34 @@ class CCAPlotter:
         # No filtering
         self.df_beh_binary = self.project_data.calc_default_behaviors(binary_behaviors=True)
 
-    @lru_cache(maxsize=4)
-    def calc_cca(self, n_components, binary_behaviors):
+    @lru_cache(maxsize=16)
+    def calc_cca(self, n_components=3, binary_behaviors=False, sparse_tau=None):
+        """
+        Does regular or sparse CCA. Returns the transformed data and the CCA object
+
+        if sparse_tau is None, then regular CCA is performed (default)
+        Note that because this is a cached function, sparse_tau should be a tuple, not a list
+
+        Parameters
+        ----------
+        n_components
+        binary_behaviors
+        sparse_tau
+
+        Returns
+        -------
+
+        """
 
         X = self.df_traces
         Y = self._get_beh_df(binary_behaviors)
 
-        cca = CCA(n_components=n_components)
-        X_r, Y_r = cca.fit_transform(X, Y)
+        if sparse_tau is None:
+            cca = CCA(n_components=n_components)
+            X_r, Y_r = cca.fit_transform(X, Y)
+        else:
+            scca = scc_mod.SCCA_IPLS(latent_dims=4, tau=[1e-2, 1e-3])
+            X_r, Y_r = scca.fit_transform([X, Y])
 
         Y_r_linear = self.df_traces @ cca.coef_
 
@@ -52,8 +73,8 @@ class CCAPlotter:
             Y = self.df_beh
         return Y
 
-    def visualize_modes(self, i=1, binary_behaviors=False):
-        X_r, Y_r, Y_r_linear, cca = self.calc_cca(n_components=i, binary_behaviors=binary_behaviors)
+    def visualize_modes(self, i=1, binary_behaviors=False, **kwargs):
+        X_r, Y_r, Y_r_linear, cca = self.calc_cca(n_components=i, binary_behaviors=binary_behaviors, **kwargs)
         df_beh = self._get_beh_df(binary_behaviors)
         df_traces = self.df_traces
 
@@ -64,9 +85,10 @@ class CCAPlotter:
 
         return fig
 
-    def visualize_modes_and_weights(self, n_components=1, binary_behaviors=False):
+    def visualize_modes_and_weights(self, n_components=1, binary_behaviors=False, **kwargs):
 
-        X_r, Y_r, Y_r_linear, cca = self.calc_cca(n_components=n_components, binary_behaviors=False)
+        X_r, Y_r, Y_r_linear, cca = self.calc_cca(n_components=n_components, binary_behaviors=binary_behaviors,
+                                                  **kwargs)
         df_beh = self._get_beh_df(binary_behaviors)
         df_traces = self.df_traces
 
@@ -74,7 +96,8 @@ class CCAPlotter:
         df_x = pd.DataFrame(cca.x_weights_, index=df_traces.columns).T
 
         def f(i=0):
-            df = pd.DataFrame({'Latent X': X_r[:, i], 'Latent Y': Y_r[:, i]})
+            df = pd.DataFrame({'Latent X': X_r[:, i] / X_r[:, i].max(),
+                               'Latent Y': Y_r[:, i] / Y_r[:, i].max()})
             fig = px.line(df)
             self.project_data.shade_axis_using_behavior(plotly_fig=fig)
             fig.show()
@@ -87,16 +110,22 @@ class CCAPlotter:
 
         interact(f, i=(0, X_r.shape[1] - 1))
 
-    def plot_3d(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, DEBUG=False,
+    def plot_3d(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, use_X_r=True, sparse_tau=None,
+                DEBUG=False,
                 **ethogram_cmap_kwargs):
         if modes_to_plot is None:
             modes_to_plot = [0, 1, 2]
         if use_pca:
             X_r = self.project_data.calc_pca_modes(n_components=3)
+            df_latents = pd.DataFrame(X_r)
         else:
-            X_r, Y_r, Y_r_linear, cca = self.calc_cca(n_components=3, binary_behaviors=binary_behaviors)
+            X_r, Y_r, Y_r_linear, cca = self.calc_cca(n_components=3, binary_behaviors=binary_behaviors,
+                                                      sparse_tau=sparse_tau)
+            if use_X_r:
+                df_latents = pd.DataFrame(X_r)
+            else:
+                df_latents = pd.DataFrame(Y_r)
 
-        df_latents = pd.DataFrame(X_r)
         df_latents['state'] = self.project_data.worm_posture_class.beh_annotation(fluorescence_fps=True,
                                                                                   reset_index=True,
                                                                                   include_collision=False,
