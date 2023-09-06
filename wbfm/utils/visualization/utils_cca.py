@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 import pandas as pd
 from ipywidgets import interact
@@ -26,7 +27,7 @@ class CCAPlotter:
 
     def __post_init__(self):
         # Default traces and behaviors
-        opt = dict(filter_mode='rolling_mean', interpolate_nan=True)
+        opt = dict(filter_mode='rolling_mean', interpolate_nan=True, nan_tracking_failure_points=True)
 
         self.df_traces = self.project_data.calc_default_traces(**opt)
         self.df_beh = self.project_data.calc_default_behaviors(**opt)
@@ -112,30 +113,31 @@ class CCAPlotter:
         interact(f, i=(0, X_r.shape[1] - 1))
 
     def plot_3d(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, use_X_r=True, sparse_tau=None,
-                DEBUG=False,
-                **ethogram_cmap_kwargs):
+                output_folder=None, DEBUG=False,
+                ethogram_cmap_kwargs=None, beh_annotation_kwargs=None):
+        if ethogram_cmap_kwargs is None:
+            ethogram_cmap_kwargs = {}
+        if beh_annotation_kwargs is None:
+            beh_annotation_kwargs = {}
         if modes_to_plot is None:
             modes_to_plot = [0, 1, 2]
         if use_pca:
             X_r = self.project_data.calc_pca_modes(n_components=3)
             df_latents = pd.DataFrame(X_r)
         else:
-            X_r, Y_r, cca = self.calc_cca(n_components=3, binary_behaviors=binary_behaviors,
-                                                      sparse_tau=sparse_tau)
+            X_r, Y_r, cca = self.calc_cca(n_components=3, binary_behaviors=binary_behaviors, sparse_tau=sparse_tau)
             if use_X_r:
                 df_latents = pd.DataFrame(X_r)
             else:
                 df_latents = pd.DataFrame(Y_r)
 
-        df_latents['state'] = self.project_data.worm_posture_class.beh_annotation(fluorescence_fps=True,
-                                                                                  reset_index=True,
-                                                                                  include_collision=False,
-                                                                                  include_turns=True,
-                                                                                  include_head_cast=False,
-                                                                                  include_pause=False,
-                                                                                  include_hesitation=False)
-        ethogram_cmap_kwargs.setdefault('include_turns', True)
-        ethogram_cmap_kwargs.setdefault('include_quiescence', False)
+        beh_annotation = dict(fluorescence_fps=True, reset_index=True, include_collision=False, include_turns=True,
+                              include_head_cast=False, include_pause=False, include_hesitation=False)
+        beh_annotation.update(beh_annotation_kwargs)
+        df_latents['state'] = self.project_data.worm_posture_class.beh_annotation(**beh_annotation)
+        ethogram_cmap_kwargs.setdefault('include_turns', beh_annotation['include_turns'])
+        ethogram_cmap_kwargs.setdefault('include_quiescence', beh_annotation['include_pause'])
+        ethogram_cmap_kwargs.setdefault('include_collision', beh_annotation['include_collision'])
         ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_kwargs)
         df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_latents, modes_to_plot, 'state')
         state_codes = df_latents['state'].unique()
@@ -152,6 +154,50 @@ class CCAPlotter:
 
         fig = go.Figure(layout=dict(height=1000, width=1000))
         fig.add_traces(phase_plot_list)
-        fig.show()
 
+        # Hacky: https://community.plotly.com/t/scatter3d-background-plot-color/38838/4
+        fig.update_layout(
+            scene=dict(
+                xaxis=dict(
+                    backgroundcolor="rgba(0, 0, 0,0)",
+                    tickvals=[-1, 0, 1],
+                    showbackground=True,
+                    gridcolor='black',
+                    zerolinecolor="white",
+                    title='Mode 1'
+                ),
+                yaxis=dict(
+                    backgroundcolor="rgba(0, 0, 0,0)",
+                    tickvals=[-1, 0, 1],
+                    showbackground=True,
+                    gridcolor='black',
+                    zerolinecolor="white",
+                    title='Mode 2'),
+                zaxis=dict(
+                    backgroundcolor="rgba(0, 0, 0,0)",
+                    tickvals=[-1, 0, 1],
+                    showbackground=True,
+                    gridcolor='black',
+                    zerolinecolor="white",
+                    title='Mode 3'),
+            ),
+            # From: https://stackoverflow.com/questions/73187799/truncated-figure-with-plotly?noredirect=1#comment129258910_73187799
+            scene_camera=dict(eye=dict(x=2.0, y=2.0, z=0.75))
+        )
+
+        if output_folder is not None:
+            # Build name based on options used
+            if use_pca:
+                fname = 'pca_3d.html'
+            else:
+                if binary_behaviors:
+                    fname = 'cca_binary_3d.html'
+                else:
+                    fname = 'cca_continuous_3d.html'
+            fname = os.path.join(output_folder, fname)
+            fig.write_html(fname)
+            fname = fname.replace('.html', '.png')
+            fig.write_image(fname)
+
+        fig.show()
         return fig

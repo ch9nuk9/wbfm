@@ -259,6 +259,7 @@ class BehaviorCodes(Flag):
 
     @classmethod
     def ethogram_cmap(cls, include_turns=True, include_reversal_turns=False, include_quiescence=False,
+                      include_collision=False,
                       additional_shaded_states=None) -> Dict['BehaviorCodes', str]:
         """Colormap for shading as a stand-alone ethogram"""
         base_cmap = cls.base_colormap()
@@ -294,6 +295,14 @@ class BehaviorCodes(Flag):
             cmap[cls.REV | cls.DORSAL_TURN] = base_cmap[5]
         if include_quiescence:
             cmap[cls.QUIESCENCE] = base_cmap[6]
+        if include_collision:
+            cmap[cls.SELF_COLLISION] = base_cmap[7]
+            cmap[cls.FWD | cls.SELF_COLLISION] = base_cmap[7]
+            cmap[cls.FWD | cls.SELF_COLLISION | cls.DORSAL_TURN] = base_cmap[7]
+            cmap[cls.FWD | cls.SELF_COLLISION | cls.VENTRAL_TURN] = base_cmap[7]
+            cmap[cls.REV | cls.SELF_COLLISION] = base_cmap[7]
+            cmap[cls.REV | cls.SELF_COLLISION | cls.DORSAL_TURN] = base_cmap[7]
+            cmap[cls.REV | cls.SELF_COLLISION | cls.VENTRAL_TURN] = base_cmap[7]
         if additional_shaded_states is not None:
             # Add states and colors using the matplotlib colormap
             # Start at the first color that isn't in the cmap
