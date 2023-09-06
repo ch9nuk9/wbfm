@@ -112,9 +112,9 @@ class CCAPlotter:
 
         interact(f, i=(0, X_r.shape[1] - 1))
 
-    def plot_3d(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, use_X_r=True, sparse_tau=None,
-                output_folder=None, DEBUG=False,
-                ethogram_cmap_kwargs=None, beh_annotation_kwargs=None):
+    def plot(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, use_X_r=True, sparse_tau=None,
+             plot_3d=True, output_folder=None, DEBUG=False,
+             ethogram_cmap_kwargs=None, beh_annotation_kwargs=None):
         if ethogram_cmap_kwargs is None:
             ethogram_cmap_kwargs = {}
         if beh_annotation_kwargs is None:
@@ -147,10 +147,16 @@ class CCAPlotter:
 
         phase_plot_list = []
         for i, state_code in enumerate(state_codes):
-            phase_plot_list.append(
-                go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]],
-                             mode='lines',
-                             name=state_code.full_name, line=dict(color=ethogram_cmap.get(state_code, None), width=4)))
+            if plot_3d:
+                phase_plot_list.append(
+                    go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]],
+                                 mode='lines', name=state_code.full_name,
+                                 line=dict(color=ethogram_cmap.get(state_code, None), width=4)))
+            else:
+                phase_plot_list.append(
+                    go.Scatter(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]],
+                               mode='lines', name=state_code.full_name,
+                               line=dict(color=ethogram_cmap.get(state_code, None), width=4)))
 
         fig = go.Figure(layout=dict(height=1000, width=1000))
         fig.add_traces(phase_plot_list)
@@ -159,7 +165,7 @@ class CCAPlotter:
         fig.update_layout(
             scene=dict(
                 xaxis=dict(
-                    backgroundcolor="rgba(0, 0, 0,0)",
+                    backgroundcolor="rgba(0, 0, 0, 0)",
                     tickvals=[-1, 0, 1],
                     showbackground=True,
                     gridcolor='black',
@@ -167,33 +173,45 @@ class CCAPlotter:
                     title='Mode 1'
                 ),
                 yaxis=dict(
-                    backgroundcolor="rgba(0, 0, 0,0)",
+                    backgroundcolor="rgba(0, 0, 0, 0)",
                     tickvals=[-1, 0, 1],
                     showbackground=True,
                     gridcolor='black',
                     zerolinecolor="white",
                     title='Mode 2'),
-                zaxis=dict(
-                    backgroundcolor="rgba(0, 0, 0,0)",
-                    tickvals=[-1, 0, 1],
-                    showbackground=True,
-                    gridcolor='black',
-                    zerolinecolor="white",
-                    title='Mode 3'),
-            ),
-            # From: https://stackoverflow.com/questions/73187799/truncated-figure-with-plotly?noredirect=1#comment129258910_73187799
-            scene_camera=dict(eye=dict(x=2.0, y=2.0, z=0.75))
+            )
         )
+        if plot_3d:
+            fig.update_layout(
+                scene=dict(
+                    zaxis=dict(
+                        backgroundcolor="rgba(0, 0, 0,0)",
+                        tickvals=[-1, 0, 1],
+                        showbackground=True,
+                        gridcolor='black',
+                        zerolinecolor="white",
+                        title='Mode 3'),
+                ),
+                # From: https://stackoverflow.com/questions/73187799/truncated-figure-with-plotly?noredirect=1#comment129258910_73187799
+                scene_camera=dict(eye=dict(x=2.0, y=2.0, z=2.0))
+            )
 
         if output_folder is not None:
             # Build name based on options used
+            fname = 'cca'
             if use_pca:
-                fname = 'pca_3d.html'
+                fname += '-pca'
             else:
+                fname += '-cca'
                 if binary_behaviors:
-                    fname = 'cca_binary_3d.html'
+                    fname = '-binary'
                 else:
-                    fname = 'cca_continuous_3d.html'
+                    fname = '-continuous'
+            if plot_3d:
+                fname += '-3d'
+            else:
+                fname += '-2d'
+            fname += '.html'
             fname = os.path.join(output_folder, fname)
             fig.write_html(fname)
             fname = fname.replace('.html', '.png')
