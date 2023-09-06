@@ -152,7 +152,7 @@ class CCAPlotter:
         self.project_data.shade_axis_using_behavior(plotly_fig=fig)
         fig.show()
 
-        fname = self._get_fig_filename(binary_behaviors, plot_3d=False, use_pca=use_pca)
+        fname = self._get_fig_filename(binary_behaviors, plot_3d=False, use_pca=use_pca, single_mode=True)
         fname = os.path.join(output_folder, fname)
         fig.write_html(fname)
         fname = fname.replace('.html', '.png')
@@ -241,10 +241,16 @@ class CCAPlotter:
                 # From: https://stackoverflow.com/questions/73187799/truncated-figure-with-plotly?noredirect=1#comment129258910_73187799
                 scene_camera=dict(eye=dict(x=2.0, y=2.0, z=2.0))
             )
+        # Transparent background
+        fig.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
+        )
 
         if output_folder is not None:
-            fname = self._get_fig_filename(binary_behaviors, plot_3d, use_pca)
+            fname = self._get_fig_filename(binary_behaviors, plot_3d, use_pca, single_mode=False)
             fname = os.path.join(output_folder, fname)
+
             fig.write_html(fname)
             fname = fname.replace('.html', '.png')
             fig.write_image(fname)
@@ -252,21 +258,22 @@ class CCAPlotter:
         fig.show()
         return fig
 
-    def _get_fig_filename(self, binary_behaviors, plot_3d, use_pca):
+    def _get_fig_filename(self, binary_behaviors, plot_3d, use_pca, single_mode):
         # Build name based on options used
-        fname = 'cca'
         if use_pca:
-            fname += '-pca'
+            fname = 'pca'
         else:
-            fname += '-cca'
+            fname = 'cca'
             if binary_behaviors:
-                fname = '-binary'
+                fname += '-binary'
             else:
-                fname = '-continuous'
+                fname += '-continuous'
         if plot_3d:
             fname += '-3d'
         else:
             fname += '-2d'
+        if single_mode:
+            fname += '-mode'
         fname += '.html'
         return fname
 
@@ -285,4 +292,6 @@ def calc_r_squared_for_all_projects(all_projects):
         for opt_name, opt in opt_dict.items():
             all_r_squared[name][opt_name] = cca_plotter.calc_r_squared(**opt)
 
-    return all_cca_classes, all_r_squared
+    df_r_squared = pd.DataFrame(all_r_squared).T
+
+    return all_cca_classes, df_r_squared
