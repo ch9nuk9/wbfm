@@ -362,7 +362,7 @@ class WormFullVideoPosture:
         # _raw_vector = remove_short_state_changes(_raw_vector, min_length=30)
 
         y = self.worm_angular_velocity(fluorescence_fps=False)
-        _raw_vector = calc_slowing_from_speed(y, min_length=30)
+        _raw_vector, _ = calc_slowing_from_speed(y, min_length=30)
 
         # Convert 1's to BehaviorCodes.SLOWING and 0's to BehaviorCodes.NOT_ANNOTATED
         _raw_vector = _raw_vector.replace(True, BehaviorCodes.SLOWING)
@@ -882,8 +882,9 @@ class WormFullVideoPosture:
 
         return velocity
 
-    @lru_cache(maxsize=8)
-    def worm_angular_velocity(self, fluorescence_fps=False, remove_outliers=True, **kwargs):
+    # @lru_cache(maxsize=8)
+    def worm_angular_velocity(self, fluorescence_fps=False, remove_outliers=True, strong_smoothing=False,
+                              **kwargs):
         """
         This is the angular velocity in PCA space (first two modes)
 
@@ -902,6 +903,9 @@ class WormFullVideoPosture:
         # Flip if the correlation is negative
         if np.corrcoef(stage_speed, velocity)[0, 1] < 0:
             velocity *= -1
+        if strong_smoothing:
+            window = 150
+            velocity = pd.Series(velocity).rolling(window=window, center=True).mean()
 
         return velocity
 
