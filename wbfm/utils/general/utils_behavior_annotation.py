@@ -745,7 +745,7 @@ def approximate_behavioral_annotation_using_pc1(project_cfg, to_save=True):
 
 
 def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_high_fall=False,
-                                                to_save=True, DEBUG=False):
+                                                min_length=8, to_save=True, DEBUG=False):
     """
     Uses AVAL/R to approximate annotations for forward and reversal
     Specifically, detects a "rise" "plateau" and "fall" state in the trace, and defines:
@@ -791,13 +791,91 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
     if num_y == 0:
         raise NeedsAnnotatedNeuronError("AVAL/R")
 
+    beh_vec = calculate_rise_high_fall_low(y, DEBUG)
+
+    if return_raw_rise_high_fall:
+        return beh_vec
+
+    # Convert this to ulises REV/FWD (because it will be saved to disk)
+    beh_vec[beh_vec == 'rise'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.REV)
+    beh_vec[beh_vec == 'high'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.REV)
+    beh_vec[beh_vec == 'fall'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.FWD)
+    beh_vec[beh_vec == 'low'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.FWD)
+
+    # Remove very short states
+    beh_vec = remove_short_state_changes(beh_vec, min_length=min_length)
+    beh_vec = pd.DataFrame(beh_vec, columns=['Annotation'])
+
+    # Save within the behavior folder
+    if to_save:
+        beh_cfg = project_data.project_config.get_behavior_config()
+        fname = 'ava_generated_reversal_annotation'
+        beh_cfg.save_data_in_local_project(beh_vec, fname,
+                                           prepend_subfolder=True, suffix='.xlsx', sheet_name='behavior')
+        beh_cfg.config['manual_behavior_annotation'] = str(Path(fname).with_suffix('.xlsx'))
+        beh_cfg.update_self_on_disk()
+
+    return beh_vec
+
+
+def approximate_slowing_using_speed_from_config(project_cfg, min_length=3, return_raw_rise_high_fall=False, DEBUG=False):
+    """
+    Uses worm speed to define slowing periods
+    Specifically, detects a "rise" "plateau" and "fall" state in the trace, and defines:
+    - Rise if the speed is negative or crosses 0
+    - Fall if the speed is positive or crosses 0
+
+    Parameters
+    ----------
+    project_cfg
+
+    Returns
+    -------
+
+    """
+    # Load project
+    from wbfm.utils.projects.finished_project_data import ProjectData
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+
+    y = project_data.worm_posture_class.worm_angular_velocity(fluorescence_fps=True)
+    beh_vec, beh_vec_raw = calc_slowing_from_speed(y, min_length)
+
+    if return_raw_rise_high_fall:
+        return beh_vec_raw
+    else:
+        return beh_vec
+
+
+def calc_slowing_from_speed(y, min_length):
+    beh_vec_raw = calculate_rise_high_fall_low(y, min_length=min_length, verbose=0)
+    # Convert this to slowing periods
+    # For each period check what the mean speed is
+    beh_vec = pd.Series(np.zeros_like(beh_vec_raw), index=beh_vec_raw.index, dtype=bool)
+    rise_starts, rise_ends = get_contiguous_blocks_from_column(beh_vec_raw == 'rise', already_boolean=True)
+    fall_starts, fall_ends = get_contiguous_blocks_from_column(beh_vec_raw == 'fall', already_boolean=True)
+    for s, e in zip(rise_starts, rise_ends):
+        # If the mean speed is negative, then it is a slowing period
+        # Or if there is a zero crossing
+        if np.mean(y[s:e]) < 0:
+            beh_vec[s:e] = True
+        elif any(y[s:e] > 0) and any(y[s:e] < 0):
+            beh_vec[s:e] = True
+    for s, e in zip(fall_starts, fall_ends):
+        if np.mean(y[s:e]) > 0:
+            beh_vec[s:e] = True
+        elif any(y[s:e] > 0) and any(y[s:e] < 0):
+            beh_vec[s:e] = True
+    # Remove very short states (requires the vector to be integers)
+    beh_vec = remove_short_state_changes(beh_vec, min_length=min_length)
+    return beh_vec, beh_vec_raw
+
+
+def calculate_rise_high_fall_low(y, min_length=5, verbose=1, DEBUG=False):
     # Take derivative and standardize
     # Don't z score, because the baseline should be 0, not the mean
     dy = np.gradient(y)
-    dy = dy / np.std(dy)
-
+    dy = dy / np.nanstd(dy)
     derivative_state_shift = 1
-
     # Define the start of the rise and fall as the width of the peak at the absolute height of 0
     # Unfortunately scipy only allows relative height calculations, so we have to hack an absolute height
     # https://stackoverflow.com/questions/53778703/python-scipy-signal-peak-widths-absolute-heigth-fft-3db-damping
@@ -828,7 +906,6 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
                 print(f"left: {int(i_left)}, right: {int(i_right)}")
 
         # Actually assign the state
-        min_length = 5
         if i == 0:
             state = 'rise'
         else:
@@ -837,63 +914,46 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
             if i_right - i_left < min_length:
                 continue
             beh_vec[int(i_left) + derivative_state_shift: int(i_right) + derivative_state_shift] = state
-
     # Then define the intermediate regions
     # If it is after a rise and before a fall it is "high", otherwise "low"
     # There should be no regions that are surrounded by "rise" or "fall"
     starts, ends = get_contiguous_blocks_from_column(beh_vec == 0, already_boolean=True)
+    if len(starts) <= 1:
+        # If there is only one region, then it is either all high or all low... but probably something is wrong
+        logging.warning(f"Only one region detected in the derivative; probably something is wrong")
+        if np.mean(y) > 0:
+            beh_vec[:] = 'high'
+        else:
+            beh_vec[:] = 'low'
+        return beh_vec
+
     for i, (s, e) in enumerate(zip(starts, ends)):
         # Special cases for the first and last regions, based on the next start or previous end
         if s == 0:
             # First
-            if beh_vec[e+1] == 'fall':
+            if beh_vec[e + 1] == 'fall':
                 beh_vec[s:e] = 'high'
             else:
                 beh_vec[s:e] = 'low'
         elif e == len(beh_vec):
             # Last
-            if beh_vec[s-1] == 'rise':
+            if beh_vec[s - 1] == 'rise':
                 beh_vec[s:e] = 'high'
             else:
                 beh_vec[s:e] = 'low'
-        elif beh_vec[s-1] == 'rise' and beh_vec[e+1] == 'fall':
+        elif (beh_vec[s - 1] == 'rise' and beh_vec[e + 1] == 'fall') and np.mean(y[s:e]) > 0:
             # In between
             beh_vec[s:e] = 'high'
-        elif beh_vec[s-1] == 'fall' and beh_vec[e+1] == 'rise':
+        elif (beh_vec[s - 1] == 'fall' and beh_vec[e + 1] == 'rise') and np.mean(y[s:e]) < 0:
             beh_vec[s:e] = 'low'
         else:
-            if beh_vec[s-1] == beh_vec[e+1]:
+            if beh_vec[s - 1] == beh_vec[e + 1] and verbose > 0:
                 logging.warning(f"Region {i} is surrounded by rise or fall; probably a rise or fall was missed")
             # In this case, just split based on the absolute amplitude
             if np.mean(y[s:e]) > 0:
                 beh_vec[s:e] = 'high'
             else:
                 beh_vec[s:e] = 'low'
-
-    if return_raw_rise_high_fall:
-        return beh_vec
-
-    # Convert this to ulises REV/FWD (because it will be saved to disk)
-    beh_vec[beh_vec == 'rise'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.REV)
-    beh_vec[beh_vec == 'high'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.REV)
-    beh_vec[beh_vec == 'fall'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.FWD)
-    beh_vec[beh_vec == 'low'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.FWD)
-
-    # Remove very short states
-    min_length = 8
-    beh_vec = remove_short_state_changes(beh_vec, min_length=min_length)
-
-    beh_vec = pd.DataFrame(beh_vec, columns=['Annotation'])
-
-    # Save within the behavior folder
-    if to_save:
-        beh_cfg = project_data.project_config.get_behavior_config()
-        fname = 'ava_generated_reversal_annotation'
-        beh_cfg.save_data_in_local_project(beh_vec, fname,
-                                           prepend_subfolder=True, suffix='.xlsx', sheet_name='behavior')
-        beh_cfg.config['manual_behavior_annotation'] = str(Path(fname).with_suffix('.xlsx'))
-        beh_cfg.update_self_on_disk()
-
     return beh_vec
 
 

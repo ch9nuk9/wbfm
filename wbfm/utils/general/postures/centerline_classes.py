@@ -21,7 +21,7 @@ from wbfm.utils.external.utils_breakpoints import plot_with_offset_x
 from wbfm.utils.external.utils_self_collision import calculate_self_collision_using_pairwise_distances
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate, \
     shade_using_behavior, get_same_phase_segment_pairs, get_heading_vector_from_phase_pair_segments, \
-    shade_using_behavior_plotly
+    shade_using_behavior_plotly, calc_slowing_from_speed
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
     remove_short_state_changes, pad_events_in_binary_vector, make_binary_vector_from_starts_and_ends
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
@@ -355,11 +355,14 @@ class WormFullVideoPosture:
         if self.curvature() is None:
             return None
 
-        # Threshold on the speed, set at about 50% of the average
-        _raw_vector = self.worm_speed(fluorescence_fps=False, signed=False, strong_smoothing=True) < 0.04
+        # # Threshold on the speed, set at about 50% of the average
+        # _raw_vector = self.worm_speed(fluorescence_fps=False, signed=False, strong_smoothing=True) < 0.04
+        #
+        # # Remove any hesitations that are too short (less than ~0.5 seconds)
+        # _raw_vector = remove_short_state_changes(_raw_vector, min_length=30)
 
-        # Remove any hesitations that are too short (less than ~0.5 seconds)
-        _raw_vector = remove_short_state_changes(_raw_vector, min_length=30)
+        y = self.worm_angular_velocity(fluorescence_fps=False)
+        _raw_vector = calc_slowing_from_speed(y, min_length=30)
 
         # Convert 1's to BehaviorCodes.SLOWING and 0's to BehaviorCodes.NOT_ANNOTATED
         _raw_vector = _raw_vector.replace(True, BehaviorCodes.SLOWING)
