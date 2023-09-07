@@ -23,7 +23,8 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_p
     shade_using_behavior, get_same_phase_segment_pairs, get_heading_vector_from_phase_pair_segments, \
     shade_using_behavior_plotly, calc_slowing_from_speed
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
-    remove_short_state_changes, pad_events_in_binary_vector, make_binary_vector_from_starts_and_ends
+    remove_short_state_changes, pad_events_in_binary_vector, make_binary_vector_from_starts_and_ends, \
+    get_dataframe_of_transitions, plot_dataframe_of_transitions
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
     MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
@@ -1788,6 +1789,29 @@ class WormFullVideoPosture:
         y_rev = BehaviorCodes.vector_equality(beh_annotation, state)
         rev_starts, rev_ends = get_contiguous_blocks_from_column(y_rev, already_boolean=True)
         return rev_starts, rev_ends
+
+    def plot_behavior_transition_diagram(self, **kwargs):
+        """
+        Uses graphviz to plot the transitions between behaviors
+
+
+        Parameters
+        ----------
+        kwargs
+
+        Returns
+        -------
+
+        """
+        kwargs.setdefault('fluorescence_fps', True)
+        beh_vec = self.beh_annotation(include_slowing=True, include_turns=True, **kwargs)
+        beh_vec = BehaviorCodes.convert_to_simple_states_vector(beh_vec)
+        beh_vec = beh_vec.apply(lambda x: x.name)
+
+        crosstab_df = get_dataframe_of_transitions(beh_vec, convert_to_probabilities=True, ignore_diagonal=True)
+        crosstab_df = crosstab_df.drop(columns='UNKNOWN').drop(labels='UNKNOWN')
+        dot = plot_dataframe_of_transitions(crosstab_df, to_view=True)
+        return dot
 
     # Raw videos
     def behavior_video_avi_fname(self):

@@ -857,7 +857,7 @@ def approximate_slowing_using_speed_from_config(project_cfg, min_length=3, retur
 
 def calc_slowing_from_speed(y, min_length):
     # At the default height of 0.5, every body bend will show "slowing"
-    beh_vec_raw = calculate_rise_high_fall_low(y, min_length=min_length, height=1.5, verbose=0)
+    beh_vec_raw = calculate_rise_high_fall_low(y, min_length=min_length, width=100, height=1.0, verbose=0)
     # Convert this to slowing periods
     # For each period check what the mean speed is
     beh_vec = pd.Series(np.zeros_like(beh_vec_raw), index=beh_vec_raw.index, dtype=bool)
@@ -887,7 +887,7 @@ def calc_slowing_from_speed(y, min_length):
     return beh_vec, beh_vec_raw
 
 
-def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, DEBUG=False):
+def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5, DEBUG=False):
     # Take derivative and standardize
     # Don't z score, because the baseline should be 0, not the mean
     dy = np.gradient(y)
@@ -898,7 +898,7 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, DEBUG=F
     # https://stackoverflow.com/questions/53778703/python-scipy-signal-peak-widths-absolute-heigth-fft-3db-damping
     beh_vec = pd.Series(np.zeros_like(y))
     for i, x in enumerate([dy, -dy]):
-        peaks, properties = find_peaks(x, height=height, width=5)
+        peaks, properties = find_peaks(x, height=height, width=width)
         prominences, left_bases, right_bases = peak_prominences(x, peaks)
         # Instead of prominences, pass the peaks heights to get the intersection at 0
         # But, because the derivative might not exactly be 0, pass an epslion value

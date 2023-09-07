@@ -4,6 +4,7 @@ from typing import Tuple, List, Union, Dict
 
 import numpy as np
 import pandas as pd
+from graphviz import Digraph
 
 
 def fix_extra_spaces_in_dataframe_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -971,14 +972,39 @@ def get_dataframe_of_transitions(state_vector: pd.Series, convert_to_probabiliti
     -------
 
     """
+    # Crosstab remembers the original time index if we give it a pd.Series
+    if isinstance(state_vector, pd.Series):
+        state_vector = state_vector.values
+    df_transitions = pd.crosstab(pd.Series(state_vector[:-1], name='from_category'),
+                                 pd.Series(state_vector[1:], name='to_category'))
 
-    df_transitions = pd.crosstab(pd.Series(state_vector[:-1], name='from_category'), pd.Series(state_vector[1:], name='to_category'))
+    if ignore_diagonal:
+        np.fill_diagonal(df_transitions.values, 0)
 
     if convert_to_probabilities:
         # Note: must use .div because the columns and rows have the same names, thus pandas is confused
         df_transitions = df_transitions.div(df_transitions.sum(axis=1), axis=0)
 
-    if ignore_diagonal:
-        np.fill_diagonal(df_transitions.values, 0)
-
     return df_transitions
+
+
+def plot_dataframe_of_transitions(crosstab_df, to_view=True):
+    # Create a Digraph object
+    dot = Digraph(comment='State Transition Diagram')
+
+    # Add nodes to the graph
+    for state in crosstab_df.index:
+        dot.node(state)
+
+    # Add edges to the graph with labels and widths based on transition probabilities
+    eps = 0.01
+    for from_state in crosstab_df.index:
+        for to_state in crosstab_df.columns:
+            probability = crosstab_df.loc[from_state, to_state]
+            if probability > eps:
+                dot.edge(from_state, to_state, label=f'{probability:.2f}', penwidth=str(probability * 5))
+
+    # Render the graph to a file or display it
+    dot.render('state_transition_diagram', view=to_view, format='pdf')
+
+    return dot
