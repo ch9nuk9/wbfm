@@ -361,7 +361,7 @@ class WormFullVideoPosture:
         # # Remove any hesitations that are too short (less than ~0.5 seconds)
         # _raw_vector = remove_short_state_changes(_raw_vector, min_length=30)
 
-        y = self.worm_angular_velocity(fluorescence_fps=False)
+        y = self.worm_angular_velocity(fluorescence_fps=False, make_consisent_with_stage_speed=False)
         _raw_vector, _ = calc_slowing_from_speed(y, min_length=30)
 
         # Convert 1's to BehaviorCodes.SLOWING and 0's to BehaviorCodes.NOT_ANNOTATED
@@ -884,7 +884,7 @@ class WormFullVideoPosture:
 
     # @lru_cache(maxsize=8)
     def worm_angular_velocity(self, fluorescence_fps=False, remove_outliers=True, strong_smoothing=False,
-                              **kwargs):
+                              make_consisent_with_stage_speed=True, **kwargs):
         """
         This is the angular velocity in PCA space (first two modes)
 
@@ -899,10 +899,11 @@ class WormFullVideoPosture:
             velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
             velocity = pd.Series(velocity).interpolate()
         # Sign to be consistent with the regular speed
-        stage_speed = self.worm_speed(fluorescence_fps=fluorescence_fps, signed=True, strong_smoothing=True)
-        # Flip if the correlation is negative
-        if np.corrcoef(stage_speed, velocity)[0, 1] < 0:
-            velocity *= -1
+        if make_consisent_with_stage_speed:
+            stage_speed = self.worm_speed(fluorescence_fps=fluorescence_fps, signed=True, strong_smoothing=True)
+            # Flip if the correlation is negative
+            if np.corrcoef(stage_speed, velocity)[0, 1] < 0:
+                velocity *= -1
         if strong_smoothing:
             window = 150
             velocity = pd.Series(velocity).rolling(window=window, center=True).mean()
