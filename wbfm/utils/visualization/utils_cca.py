@@ -278,7 +278,7 @@ class CCAPlotter:
         return fname
 
 
-def calc_r_squared_for_all_projects(all_projects):
+def calc_r_squared_for_all_projects(all_projects, **r_squared_kwargs):
     all_cca_classes = {}
     all_r_squared = defaultdict(dict)
 
@@ -290,7 +290,7 @@ def calc_r_squared_for_all_projects(all_projects):
         cca_plotter = CCAPlotter(p)
         all_cca_classes[name] = cca_plotter
         for opt_name, opt in opt_dict.items():
-            all_r_squared[name][opt_name] = cca_plotter.calc_r_squared(**opt)
+            all_r_squared[name][opt_name] = cca_plotter.calc_r_squared(**opt, **r_squared_kwargs)
 
     df_r_squared = pd.DataFrame(all_r_squared).T
 
