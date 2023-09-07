@@ -1790,7 +1790,7 @@ class WormFullVideoPosture:
         rev_starts, rev_ends = get_contiguous_blocks_from_column(y_rev, already_boolean=True)
         return rev_starts, rev_ends
 
-    def plot_behavior_transition_diagram(self, **kwargs):
+    def plot_behavior_transition_diagram(self, output_folder=None, **kwargs):
         """
         Uses graphviz to plot the transitions between behaviors
 
@@ -1810,7 +1810,7 @@ class WormFullVideoPosture:
 
         crosstab_df = get_dataframe_of_transitions(beh_vec, convert_to_probabilities=True, ignore_diagonal=True)
         crosstab_df = crosstab_df.drop(columns='UNKNOWN').drop(labels='UNKNOWN')
-        dot = plot_dataframe_of_transitions(crosstab_df, to_view=True)
+        dot = plot_dataframe_of_transitions(crosstab_df, to_view=True, output_folder=output_folder)
         return dot
 
     # Raw videos

@@ -1,4 +1,5 @@
 import logging
+import os
 from collections import defaultdict
 from typing import Tuple, List, Union, Dict
 
@@ -988,7 +989,7 @@ def get_dataframe_of_transitions(state_vector: pd.Series, convert_to_probabiliti
     return df_transitions
 
 
-def plot_dataframe_of_transitions(crosstab_df, to_view=True):
+def plot_dataframe_of_transitions(crosstab_df, output_folder=None, to_view=True):
     # Create a Digraph object
     dot = Digraph(comment='State Transition Diagram')
 
@@ -1005,6 +1006,11 @@ def plot_dataframe_of_transitions(crosstab_df, to_view=True):
                 dot.edge(from_state, to_state, label=f'{probability:.2f}', penwidth=str(probability * 5))
 
     # Render the graph to a file or display it
-    dot.render('state_transition_diagram', view=to_view, format='pdf')
+    if output_folder is not None:
+        fname = os.path.join(output_folder, 'state_transition_diagram')
+        dot.render(fname, view=False, format='png')
+        dot.render(fname, view=to_view, format='pdf')
+    else:
+        dot.render(view=to_view, format='pdf')
 
     return dot
