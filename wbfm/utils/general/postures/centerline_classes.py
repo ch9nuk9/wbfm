@@ -361,7 +361,8 @@ class WormFullVideoPosture:
         # # Remove any hesitations that are too short (less than ~0.5 seconds)
         # _raw_vector = remove_short_state_changes(_raw_vector, min_length=30)
 
-        y = self.worm_angular_velocity(fluorescence_fps=False, make_consisent_with_stage_speed=False)
+        y = self.worm_angular_velocity(fluorescence_fps=False, make_consisent_with_stage_speed=False,
+                                       strong_smoothing=True)
         _raw_vector, _ = calc_slowing_from_speed(y, min_length=30)
 
         # Convert 1's to BehaviorCodes.SLOWING and 0's to BehaviorCodes.NOT_ANNOTATED

@@ -857,7 +857,7 @@ def approximate_slowing_using_speed_from_config(project_cfg, min_length=3, retur
 
 def calc_slowing_from_speed(y, min_length):
     # At the default height of 0.5, every body bend will show "slowing"
-    beh_vec_raw = calculate_rise_high_fall_low(y, min_length=min_length, height=1, verbose=0)
+    beh_vec_raw = calculate_rise_high_fall_low(y, min_length=min_length, height=1.5, verbose=0)
     # Convert this to slowing periods
     # For each period check what the mean speed is
     beh_vec = pd.Series(np.zeros_like(beh_vec_raw), index=beh_vec_raw.index, dtype=bool)
@@ -865,15 +865,22 @@ def calc_slowing_from_speed(y, min_length):
     fall_starts, fall_ends = get_contiguous_blocks_from_column(beh_vec_raw == 'fall', already_boolean=True)
     for s, e in zip(rise_starts, rise_ends):
         # If the mean speed is negative, then it is a slowing period
-        # Or if there is a zero crossing
-        if np.mean(y[s:e]) < 0:
+        # Get a zero crossing, if any
+        zero_crossings = np.where(np.diff(np.sign(y[s:e])))[0]
+        if len(zero_crossings) > 0:
+            # Only annotate the state up until the zero crossing
+            # The zero crossing is the end of the rise in both rises and falls
+            i_zero = s + zero_crossings[0]
+            beh_vec[s:i_zero] = True
+        elif np.mean(y[s:e]) < 0:
             beh_vec[s:e] = True
-        elif any(y[s:e] > 0) and any(y[s:e] < 0):
-            beh_vec[s:e] = True
+
     for s, e in zip(fall_starts, fall_ends):
-        if np.mean(y[s:e]) > 0:
-            beh_vec[s:e] = True
-        elif any(y[s:e] > 0) and any(y[s:e] < 0):
+        zero_crossings = np.where(np.diff(np.sign(y[s:e])))[0]
+        if len(zero_crossings) > 0:
+            i_zero = s + zero_crossings[0]
+            beh_vec[s:i_zero] = True
+        elif np.mean(y[s:e]) > 0:
             beh_vec[s:e] = True
     # Remove very short states (requires the vector to be integers)
     beh_vec = remove_short_state_changes(beh_vec, min_length=min_length)
