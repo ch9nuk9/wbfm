@@ -38,7 +38,7 @@ class BehaviorCodes(Flag):
     QUIESCENCE = auto()  # Manually annotated
     SELF_COLLISION = auto()  # Annotated using Charlie's pipeline
     HEAD_CAST = auto()  # Manually annotated
-    HESITATION = auto()  # Annotated using Charlie's pipeline
+    SLOWING = auto()  # Annotated using Charlie's pipeline
     PAUSE = auto()  # Annotated using Charlie's pipeline
 
     NOT_ANNOTATED = auto()
@@ -397,7 +397,7 @@ class BehaviorCodes(Flag):
 
         """
 
-        state_hierarchy = [cls.REV, cls.VENTRAL_TURN, cls.DORSAL_TURN, cls.HESITATION, cls.FWD]
+        state_hierarchy = [cls.REV, cls.VENTRAL_TURN, cls.DORSAL_TURN, cls.SLOWING, cls.FWD]
         for state in state_hierarchy:
             if state in query_state:
                 return state

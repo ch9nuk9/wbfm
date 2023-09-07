@@ -1219,7 +1219,7 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     num_modes_to_plot = 3
     behavior_alias_list = ['dorsal_only_head_curvature', 'ventral_only_head_curvature', 'ventral_only_curvature']
     kwargs['behavior_kwargs'] = dict(fluorescence_fps=False, reset_index=False)
-    additional_shaded_states = [BehaviorCodes.HESITATION, BehaviorCodes.HEAD_CAST]
+    additional_shaded_states = [BehaviorCodes.SLOWING, BehaviorCodes.HEAD_CAST]
     column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
         project_data, num_modes_to_plot, use_behavior_traces=True, behavior_alias_list=behavior_alias_list,
         additional_shaded_states=additional_shaded_states, **kwargs)
