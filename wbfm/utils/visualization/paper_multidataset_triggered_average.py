@@ -42,10 +42,47 @@ class PaperColoredTracePlotter:
         trace_opt.update(kwargs)
         return trace_opt
 
+    @classmethod
+    def get_behavior_color_from_neuron(cls, neuron_name):
+        """
+        Returns the color of the cluster based on the neuron name.
+
+        Parameters
+        ----------
+        neuron_name
+
+        Returns
+        -------
+
+        """
+        color_mapping = dict(
+            RIS='tab:blue',
+            AVA='tab:orange',
+            RIV='tab:green',
+            RID='tab:red',
+            RME='tab:purple',
+            AVB='tab:purple',
+            RIB='tab:purple',
+        )
+        # Add keys by adding the L/R and V/D suffixes
+        for k in list(color_mapping.keys()):
+            color_mapping[k + 'L'] = color_mapping[k]
+            color_mapping[k + 'R'] = color_mapping[k]
+            color_mapping[k + 'V'] = color_mapping[k]
+            color_mapping[k + 'D'] = color_mapping[k]
+        if neuron_name not in color_mapping:
+            raise ValueError(f"Neuron name {neuron_name} not found in color mapping")
+        return color_mapping[neuron_name]
+
+
 
 @dataclass
 class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
-    """Class to plot the triggered average of the paper's datasets."""
+    """
+    Class to plot the triggered average of the paper's datasets.
+
+    Specifically designed for residual figures, and uses the proper colors for each type of triggered average.
+    """
 
     all_projects: Dict[str, ProjectData]
 
@@ -185,9 +222,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
                                              ax=None, title=None, include_neuron_in_title=True, xlim=None,
-                                             DEBUG=False):
-        # clusterer = self.get_clusterer_from_trigger_type(trigger_type)
-        color = self.get_color(trigger_type)
+                                             color=None, DEBUG=False):
+        if color is None:
+            color = self.get_color(trigger_type)
         df = self.get_df_triggered_from_trigger_type(trigger_type)
 
         # Get the full names of all the neurons with this name
@@ -250,6 +287,38 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             plt.savefig(fname.replace(".png", ".svg"))
 
         return ax
+
+    def plot_triggered_average_multiple_neurons(self, neuron_list, trigger_type, color_list=None,
+                                                title=None, output_folder=None):
+        """
+        Uses plot_triggered_average_single_neuron to plot multiple neurons on the same plot.
+
+        Parameters
+        ----------
+        neuron_list
+        trigger_type
+        color_list
+        title
+        output_folder
+
+        Returns
+        -------
+
+        """
+        if color_list is None:
+            # They will all be the same color
+            color_list = [self.get_behavior_color_from_neuron(trigger_type) for _ in neuron_list]
+
+        ax = None
+        for i, (neuron, color) in enumerate(zip(neuron_list, color_list)):
+            # Only set the output folder for the last neuron
+            if i == len(neuron_list) - 1:
+                this_output_folder = output_folder
+            else:
+                this_output_folder = None
+            ax = self.plot_triggered_average_single_neuron(neuron, trigger_type, output_folder=this_output_folder,
+                                                           title=title, include_neuron_in_title=False, ax=ax,
+                                                           color=color)
 
 
 @dataclass
