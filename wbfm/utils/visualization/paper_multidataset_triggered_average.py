@@ -217,12 +217,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(title_mapping.keys())}')
         return title_mapping[trigger_type]
 
-    def get_fig_opt(self):
-        return dict(dpi=300, figsize=(10/3, 10/(2*3)))
+    def get_fig_opt(self, height_factor=1, width_factor=1):
+        return dict(dpi=300, figsize=(width_factor*10/3, height_factor*10/(2*3)))
 
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
                                              ax=None, title=None, include_neuron_in_title=True, xlim=None,
-                                             color=None, DEBUG=False):
+                                             color=None, z_score=False, fig_kwargs=None, legend=False, DEBUG=False):
+        if fig_kwargs is None:
+            fig_kwargs = {}
         if color is None:
             color = self.get_color(trigger_type)
         df = self.get_df_triggered_from_trigger_type(trigger_type)
@@ -239,19 +241,23 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         # Plot the triggered average for each neuron
         if ax is None:
-            fig_opt_trigger = self.get_fig_opt()
+            fig_opt_trigger = self.get_fig_opt(**fig_kwargs)
             fig, ax = plt.subplots(**fig_opt_trigger)
             is_second_plot = False
         else:
             is_second_plot = True
 
-        df_subset = df.loc[:, neuron_names].T
+        df_subset = df.loc[:, neuron_names]
+        if z_score:
+            df_subset = (df_subset - df_subset.mean()) / df_subset.std()
+        df_subset = df_subset.T
+
         min_lines = min(3, len(neuron_names))
         if DEBUG:
             print(df_subset)
         plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines, False,
                                                      is_second_plot=is_second_plot, ax=ax,
-                                                     color=color)
+                                                     color=color, label=neuron_name)
         if 'residual' in trigger_type or 'rectified' in trigger_type:
             behavior_shading_type = None
         elif 'rev' in trigger_type:
@@ -266,8 +272,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                     behavior_shading_type=behavior_shading_type, ax=ax)
         if xlim is not None:
             ax.set_xlim(xlim)
-
-        plt.ylabel("dR/R50")
+        if z_score:
+            plt.ylabel("Amplitude (z-scored)")
+        else:
+            plt.ylabel("dR/R50")
         if title is None:
             title = self.get_title_from_trigger_type(trigger_type)
             plt.title(f"{neuron_name} (n={len(neuron_names)}) {title}")
@@ -277,6 +285,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             else:
                 plt.title(title)
         plt.xlabel("Time (s)")
+        if legend:
+            plt.legend()
         plt.tight_layout()
 
         if output_folder is not None:
@@ -289,7 +299,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         return ax
 
     def plot_triggered_average_multiple_neurons(self, neuron_list, trigger_type, color_list=None,
-                                                title=None, output_folder=None):
+                                                output_folder=None, **kwargs):
         """
         Uses plot_triggered_average_single_neuron to plot multiple neurons on the same plot.
 
@@ -307,7 +317,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         """
         if color_list is None:
             # They will all be the same color
-            color_list = [self.get_behavior_color_from_neuron(trigger_type) for _ in neuron_list]
+            color_list = [self.get_behavior_color_from_neuron(n) for n in neuron_list]
 
         ax = None
         for i, (neuron, color) in enumerate(zip(neuron_list, color_list)):
@@ -317,8 +327,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             else:
                 this_output_folder = None
             ax = self.plot_triggered_average_single_neuron(neuron, trigger_type, output_folder=this_output_folder,
-                                                           title=title, include_neuron_in_title=False, ax=ax,
-                                                           color=color)
+                                                           include_neuron_in_title=False, ax=ax,
+                                                           fig_kwargs=dict(height_factor=2),
+                                                           color=color, **kwargs)
 
 
 @dataclass
