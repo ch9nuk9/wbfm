@@ -50,6 +50,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     all_projects: Dict[str, ProjectData]
 
     # Options for traces
+    calculate_residual: bool = True
     min_nonnan: Optional[float] = 0.8
 
     # Three different sets of parameters: raw, global, and residual
@@ -77,37 +78,38 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         # Analyze the project data to get the clusterers and intermediates
         trace_base_opt = self.get_trace_opt(min_nonnan=self.min_nonnan)
 
-        try:
-            # Note: these won't work for immobilized data
+        if self.calculate_residual:
+            try:
+                # Note: these won't work for immobilized data
 
-            # Fast (residual)
-            trigger_opt = dict(use_hilbert_phase=True, state=None)
-            trace_opt = dict(residual_mode='pca')
-            trace_opt.update(trace_base_opt)
-            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
-                                                                     trace_opt=trace_opt)
-            self.dataset_clusterer_residual = out[0]
-            self.intermediates_residual = out[1]
+                # Fast (residual)
+                trigger_opt = dict(use_hilbert_phase=True, state=None)
+                trace_opt = dict(residual_mode='pca')
+                trace_opt.update(trace_base_opt)
+                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                         trace_opt=trace_opt)
+                self.dataset_clusterer_residual = out[0]
+                self.intermediates_residual = out[1]
 
-            # Residual rectified forward
-            trigger_opt['only_allow_events_during_state'] = BehaviorCodes.FWD
-            cluster_opt = {}
-            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
-                                                                     trigger_opt=trigger_opt, trace_opt=trace_opt)
-            self.dataset_clusterer_residual_rectified_fwd = out[0]
-            self.intermediates_residual_rectified_fwd = out[1]
+                # Residual rectified forward
+                trigger_opt['only_allow_events_during_state'] = BehaviorCodes.FWD
+                cluster_opt = {}
+                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
+                                                                         trigger_opt=trigger_opt, trace_opt=trace_opt)
+                self.dataset_clusterer_residual_rectified_fwd = out[0]
+                self.intermediates_residual_rectified_fwd = out[1]
 
-            # Residual rectified reverse
-            trigger_opt['only_allow_events_during_state'] = BehaviorCodes.REV
-            cluster_opt = {}
-            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
-                                                                     trigger_opt=trigger_opt, trace_opt=trace_opt)
-            self.dataset_clusterer_residual_rectified_rev = out[0]
-            self.intermediates_residual_rectified_rev = out[1]
+                # Residual rectified reverse
+                trigger_opt['only_allow_events_during_state'] = BehaviorCodes.REV
+                cluster_opt = {}
+                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
+                                                                         trigger_opt=trigger_opt, trace_opt=trace_opt)
+                self.dataset_clusterer_residual_rectified_rev = out[0]
+                self.intermediates_residual_rectified_rev = out[1]
 
-        except TypeError:
-            print("Hilbert triggered averages failed; this may be because the data is immobilized")
-            print("Only 'global' triggered averages will be available")
+            except TypeError:
+                print("Hilbert triggered averages failed; this may be because the data is immobilized")
+                print("Only 'global' triggered averages will be available")
 
         # Slow reversal triggered (global)
         trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.REV)
