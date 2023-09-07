@@ -213,7 +213,8 @@ class BehaviorCodes(Flag):
     @classmethod
     def shading_cmap_func(cls, query_state: 'BehaviorCodes',
                           additional_shaded_states: Optional[List['BehaviorCodes']] = None,
-                          default_reversal_shading: bool = True) -> Optional[str]:
+                          default_reversal_shading: bool = True,
+                          force_string_output=False) -> Optional[str]:
         """
         Colormap for shading on top of traces, but using 'in' logic instead of '==' logic
 
@@ -223,6 +224,8 @@ class BehaviorCodes(Flag):
 
         The first color uses a gray shading
         Additionally passed states will use a matplotlib colormap
+
+        force_string_output is required if this is being used as a plotly colormap
         """
         base_cmap = matplotlib.cm.get_cmap('Pastel1')
         cmap_dict = {}
@@ -240,6 +243,11 @@ class BehaviorCodes(Flag):
                 break
         else:
             output_color = None
+
+        if force_string_output:
+            if isinstance(output_color, tuple):
+                output_color = f"rgba({output_color[0]}, {output_color[1]}, {output_color[2]}, {output_color[3]})"
+
         return output_color
 
         # Otherwise use a hardcoded colormap
@@ -444,6 +452,7 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
     if shading:
         cmap_func = lambda state: BehaviorCodes.shading_cmap_func(state,
                                                                   additional_shaded_states=additional_shaded_states,
+                                                                  force_string_output=True,
                                                                   **kwargs)
     else:
         cmap_func = lambda state: \
