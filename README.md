@@ -87,8 +87,8 @@ You should check two things: the correct files were found, and the correct metad
    1. bigtiff_start_volume
    2. num_frames
    3. num_slices (after flyback removal)
-      1. Note: this should be the same as (raw_number_of_planes-starting_plane) below
-      2. This will be removed in a future release
+      1. This must be the same as 'raw_number_of_planes' minus 'starting_plane' below
+      2. Note: This will be removed in a future release
 2. preprocessing_config.yaml
    1. raw_number_of_planes (before any removal)
    2. starting_plane (set 1 to remove a single plane)
