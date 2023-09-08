@@ -859,7 +859,10 @@ class ProjectData:
             except ValueError as e:
                 self.logger.warning(f"PPCA failed with error: {e}, skipping manifold-based outlier removal")
 
-        # Optional: fill all gaps
+        # Optional: fill all gaps (required for some steps)
+        if residual_mode is not None and residual_mode != 'none':
+            interpolate_nan = True
+            self.logger.warning("Residual mode only works if nan are interpolated, enforcing that setting")
         if interpolate_nan:
             df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
             for i in range(5):
@@ -882,7 +885,6 @@ class ProjectData:
 
         # Optional: substract a dominant mode to get a residual
         if residual_mode is not None and residual_mode != 'none':
-            assert interpolate_nan, "Residual mode only works if nan are interpolated!"
             if residual_mode == 'pca':
                 df, _ = calculate_residual_subtract_pca(df, n_components=2)
             elif residual_mode == 'pca_global':
