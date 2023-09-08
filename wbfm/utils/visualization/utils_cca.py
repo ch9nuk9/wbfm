@@ -86,7 +86,7 @@ class CCAPlotter:
             pca = PCA(n_components=n_components, whiten=False)
             X_r_recon = pca.inverse_transform(pca.fit_transform(X))
         else:
-            X_r_recon, Y_r_recon = self.calc_cca_reconstruction(**kwargs)
+            X_r_recon, Y_r_recon = self.calc_cca_reconstruction(n_components=n_components, **kwargs)
         # Then, calculate the r-squared
         residual_variance = (X - X_r_recon).var().sum()
         total_variance = X.var().sum()
