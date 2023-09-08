@@ -59,6 +59,11 @@ class ConfigFileWithProjectContext:
     def update_self_on_disk(self):
         fname = self.resolve_relative_path(self.self_path)
         self.logger.info(f"Updating config file {fname} on disk")
+        # Make sure none of the values are Path objects, which will crash the yaml dump and leave an empty file!
+        for key in self.config:
+            if isinstance(self.config[key], Path):
+                self.config[key] = str(self.config[key])
+                self.logger.warning(f"Found Path object in config file (probably a bug), converting to string: {key}")
         self.logger.debug(f"Updated values: {self.config}")
         try:
             edit_config(fname, self.config)
