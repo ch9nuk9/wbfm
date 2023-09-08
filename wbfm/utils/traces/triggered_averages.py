@@ -879,7 +879,7 @@ class ClusteredTriggeredAverages:
 
     # For plotting individual clusters
     triggered_averages_class: FullDatasetTriggeredAverages = None
-    linkage_threshold: float = 4.0  # Not a great default; depends strongly on dataset
+    linkage_threshold: float = 100.0  # Not a great default; depends strongly on dataset... designed to get one cluster
     cluster_criterion: str = 'distance'  # Alternate: 'maxclust'
     linkage_method: str = 'average'
     min_correlation: float = 0.0  # Used to filter out weakly correlated neurons
