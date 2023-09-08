@@ -152,11 +152,12 @@ class CCAPlotter:
         self.project_data.shade_axis_using_behavior(plotly_fig=fig)
         fig.show()
 
-        fname = self._get_fig_filename(binary_behaviors, plot_3d=False, use_pca=use_pca, single_mode=True)
-        fname = os.path.join(output_folder, fname)
-        fig.write_html(fname)
-        fname = fname.replace('.html', '.png')
-        fig.write_image(fname)
+        if output_folder is not None:
+            fname = self._get_fig_filename(binary_behaviors, plot_3d=False, use_pca=use_pca, single_mode=True)
+            fname = os.path.join(output_folder, fname)
+            fig.write_html(fname)
+            fname = fname.replace('.html', '.png')
+            fig.write_image(fname)
 
     def plot(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, use_X_r=True, sparse_tau=None,
              plot_3d=True, output_folder=None, DEBUG=False,
