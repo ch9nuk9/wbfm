@@ -5,7 +5,6 @@ from typing import Tuple, List, Union, Dict
 
 import numpy as np
 import pandas as pd
-from graphviz import Digraph
 
 
 def fix_extra_spaces_in_dataframe_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -991,6 +990,7 @@ def get_dataframe_of_transitions(state_vector: pd.Series, convert_to_probabiliti
 
 def plot_dataframe_of_transitions(crosstab_df, output_folder=None, to_view=True):
     # Create a Digraph object
+    from graphviz import Digraph
     dot = Digraph(comment='State Transition Diagram')
 
     # Add nodes to the graph
