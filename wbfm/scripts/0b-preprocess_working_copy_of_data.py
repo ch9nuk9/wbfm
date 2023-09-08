@@ -11,7 +11,8 @@ from sacred import SETTINGS
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 
-from wbfm.pipeline.project_initialization import write_data_subset_using_config, zip_zarr_using_config
+from wbfm.pipeline.project_initialization import write_data_subset_using_config, zip_zarr_using_config, \
+    calculate_number_of_volumes_from_tiff_file
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import generate_output_data_names
 from wbfm.utils.projects.utils_project import safe_cd
@@ -53,13 +54,20 @@ def main(_config, _run):
     cfg.config['project_dir'] = _config['project_dir']
     cfg.config['project_path'] = _config['project_path']
     num_frames = cfg.config['dataset_params']['num_frames']
+    if num_frames is None:
+        # Check the number of total frames in the video, and update the parameter
+        # Note: requires correct value of num_slices
+        num_raw_slices = _config['dataset_params']['num_slices']
+        red_bigtiff_fname = cfg.config['red_bigtiff_fname']
+        num_volumes = calculate_number_of_volumes_from_tiff_file(num_raw_slices, red_bigtiff_fname)
+        num_frames = int(num_volumes)
+        cfg.config['dataset_params']['num_frames'] = num_frames
+        cfg.update_self_on_disk()
+
     logger = cfg.logger
-
     project_dir = _config['project_dir']
-
     red_output_fname = _config['out_fname_red']
     green_output_fname = _config['out_fname_green']
-
     preprocessing_cfg = _config['preprocessing_cfg']
 
     bbox_fname = preprocessing_cfg.config.get('bounding_boxes_fname', None)
@@ -67,7 +75,6 @@ def main(_config, _run):
         generate_legacy_bbox_fname(project_dir)
 
     with safe_cd(project_dir):
-
         preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
 
         # Very first: calculate the alignment between the red and green channels (camera misalignment)

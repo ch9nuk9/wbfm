@@ -58,19 +58,6 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
         _config['red_bigtiff_fname'] = red_bigtiff_fname
         _config['green_bigtiff_fname'] = green_bigtiff_fname
 
-    # Check the number of total frames in the video, and update the parameter
-    # Note: requires correct value of num_slices
-    if _config['dataset_params'].get('num_frames', None) is None:
-        logging.info("Detecting number of total frames in the video, may take ~30 seconds")
-        try:
-            full_video = Image.open(red_bigtiff_fname)
-            num_2d_frames = full_video.n_frames
-        except UnidentifiedImageError:
-            full_video = tifffile.TiffFile(red_bigtiff_fname)
-            num_2d_frames = len(full_video.pages)
-        num_volumes = num_2d_frames / _config['dataset_params']['num_slices']
-        _config['dataset_params']['num_frames'] = int(num_volumes)
-
     # Build the full project name using the date the data was taken
     basename = Path(red_bigtiff_fname).name.split('_')[0]
     parent_folder = _config['project_dir']
@@ -88,6 +75,23 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
 
     # Also update the snakemake file with the project directory
     update_snakemake_config_path(abs_new_project_name)
+
+
+def calculate_number_of_volumes_from_tiff_file(num_raw_slices, red_bigtiff_fname):
+    logging.info("Detecting number of total frames in the video, may take ~30 seconds")
+    try:
+        full_video = Image.open(red_bigtiff_fname)
+        num_2d_frames = full_video.n_frames
+    except UnidentifiedImageError:
+        full_video = tifffile.TiffFile(red_bigtiff_fname)
+        num_2d_frames = len(full_video.pages)
+    num_volumes = num_2d_frames / num_raw_slices
+    # This should be an integer
+    if num_volumes % 1 != 0:
+        logging.warning(f"Number of frames {num_2d_frames} is not an integer multiple of num_slices "
+                        f"{num_raw_slices}... this may be a problem. "
+                        f"Continuing by removing the fractional volume")
+    return num_volumes
 
 
 def write_data_subset_using_config(cfg: ModularProjectConfig,
