@@ -132,7 +132,7 @@ def full_step_4_make_traces_from_config(project_cfg, allow_only_global_tracker=F
         new_mask_fname = reindex_segmentation_using_config(traces_cfg, seg_cfg, project_cfg)
 
         # Zips the reindexed segmentations to shrink requirements
-        out_fname_zip = zip_raw_data_zarr(new_mask_fname)
+        out_fname_zip = str(zip_raw_data_zarr(new_mask_fname))
         relative_fname = traces_cfg.unresolve_absolute_path(out_fname_zip)
         traces_cfg.config['reindexed_masks'] = relative_fname
         traces_cfg.update_self_on_disk()
