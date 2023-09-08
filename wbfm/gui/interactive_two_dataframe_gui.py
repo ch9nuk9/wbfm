@@ -4,6 +4,7 @@ import pickle
 import pandas as pd
 
 from wbfm.gui.utils.utils_dash import dashboard_from_two_dataframes
+from wbfm.utils.projects.utils_filenames import pickle_load_binary
 
 
 def main(folder_name: str, port: int = None, allow_public_access: bool = False, DEBUG: bool = False,
@@ -16,11 +17,11 @@ def main(folder_name: str, port: int = None, allow_public_access: bool = False, 
     for f in os.listdir(folder_name):
         if f.startswith('.') or os.path.isdir(f):
             continue
+        fname = os.path.join(folder_name, f)
         if f.endswith('.h5'):
-            df_summary = pd.read_hdf(os.path.join(folder_name, f))
+            df_summary = pd.read_hdf(fname)
         elif f.endswith('.pickle'):
-            with open(os.path.join(folder_name, f), 'rb') as handle:
-                raw_dfs = pickle.load(handle)
+            raw_dfs = pickle_load_binary(fname)
 
     app = dashboard_from_two_dataframes(df_summary, raw_dfs, **kwargs)
     if allow_public_access:
