@@ -28,14 +28,18 @@ class CCAPlotter:
     project_data: ProjectData
 
     _df_traces: pd.DataFrame = None
-    df_beh: pd.DataFrame = None
+    _df_beh: pd.DataFrame = None
     df_beh_binary: pd.DataFrame = None
 
     # Preprocessing options. Goal: more interpretable CCA weights
-    preprocess_using_pca: bool = True
-    truncate_to_n_components: int = None  # Not used if preprocess_using_pca is False
+    preprocess_traces_using_pca: bool = True
+    truncate_traces_to_n_components: int = None  # Not used if preprocess_traces_using_pca is False
+    preprocess_behavior_using_pca: bool = True
+    truncate_behavior_to_n_components: int = None  # Not used if preprocess_behavior_using_pca is False
     _df_traces_truncated: pd.DataFrame = None
-    _pca: PCA = None
+    _df_beh_truncated: pd.DataFrame = None
+    _pca_traces: PCA = None
+    _pca_beh: PCA = None
 
     def __post_init__(self):
         # Default traces and behaviors
@@ -44,26 +48,40 @@ class CCAPlotter:
 
         df_traces = self.project_data.calc_default_traces(**opt)
         self._df_traces = df_traces
-
-        if self.preprocess_using_pca:
-            # See calc_pca_modes
-            X = fill_nan_in_dataframe(df_traces, do_filtering=False)
-            X -= X.mean()
-            pca = PCA(n_components=self.truncate_to_n_components, whiten=False)
-            X = pca.fit_transform(X)
+        if self.preprocess_traces_using_pca:
+            X, pca = self._truncate_using_pca(df_traces, n_components=self.truncate_traces_to_n_components)
             self._df_traces_truncated = pd.DataFrame(X, index=df_traces.index)
-            self._pca = pca
+            self._pca_traces = pca
 
-        self.df_beh = self.project_data.calc_default_behaviors(**opt)
+        df_beh = self.project_data.calc_default_behaviors(**opt)
+        self._df_beh = df_beh
+        if self.preprocess_behavior_using_pca:
+            X, pca = self._truncate_using_pca(df_beh, n_components=self.truncate_behavior_to_n_components)
+            self._df_beh_truncated = pd.DataFrame(X, index=df_beh.index)
+            self._pca_beh = pca
         # No filtering
         self.df_beh_binary = self.project_data.calc_default_behaviors(binary_behaviors=True)
 
+    def _truncate_using_pca(self, df_traces, n_components=None):
+        X = fill_nan_in_dataframe(df_traces, do_filtering=False)
+        X -= X.mean()
+        pca = PCA(n_components=n_components, whiten=False)
+        X = pca.fit_transform(X)
+        return X, pca
+
     @property
     def df_traces(self):
-        if self.preprocess_using_pca:
+        if self.preprocess_traces_using_pca:
             return self._df_traces_truncated
         else:
             return self._df_traces
+
+    @property
+    def df_beh(self):
+        if self.preprocess_behavior_using_pca:
+            return self._df_beh_truncated
+        else:
+            return self._df_beh
 
     @lru_cache(maxsize=16)
     def calc_cca(self, n_components=3, binary_behaviors=False, sparse_tau=None):
@@ -148,8 +166,10 @@ class CCAPlotter:
             df_x = pd.DataFrame(cca.x_weights_, index=df_traces.columns).T
 
         # Convert the weights to the original neuron space, if using PCA preprocessing
-        if self.preprocess_using_pca:
-            df_x = pd.DataFrame(self._pca.inverse_transform(df_x), columns=self._df_traces.columns)
+        if self.preprocess_traces_using_pca:
+            df_x = pd.DataFrame(self._pca_traces.inverse_transform(df_x), columns=self._df_traces.columns)
+        if self.preprocess_behavior_using_pca:
+            df_y = pd.DataFrame(self._pca_traces.inverse_transform(df_y), columns=self._df_beh.columns)
 
         def f(i=0):
             df = pd.DataFrame({'Latent X': X_r[:, i] / X_r[:, i].max(),
