@@ -28,7 +28,7 @@ def propagate_via_affine_model(which_neuron: int,
     pts0, pts1 = get_ball_of_points_to_use_for_local_affine(which_neuron, all_feature_matches, f0, f1, min_matches, radius)
 
     # Now calculate and apply the affine transformation
-    if no_match_mode is 'negative_position':
+    if no_match_mode == 'negative_position':
         neuron0_trans = np.array([[-10.0, -10.0, -10.0]])
     else:
         neuron0_trans = None
