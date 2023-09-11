@@ -152,7 +152,9 @@ class CCAPlotter:
 
         return fig
 
-    def visualize_modes_and_weights(self, n_components=1, binary_behaviors=False, **kwargs):
+    def visualize_modes_and_weights(self, n_components=1, binary_behaviors=False,
+                                    sort_trace_weights=True, sort_beh_weights=True,
+                                    **kwargs):
 
         X_r, Y_r, cca = self.calc_cca(n_components=n_components, binary_behaviors=binary_behaviors, **kwargs)
         df_beh = self._get_beh_df(binary_behaviors)
@@ -169,7 +171,7 @@ class CCAPlotter:
         if self.preprocess_traces_using_pca:
             df_x = pd.DataFrame(self._pca_traces.inverse_transform(df_x), columns=self._df_traces.columns)
         if self.preprocess_behavior_using_pca:
-            df_y = pd.DataFrame(self._pca_traces.inverse_transform(df_y), columns=self._df_beh.columns)
+            df_y = pd.DataFrame(self._pca_beh.inverse_transform(df_y), columns=self._df_beh.columns)
 
         def f(i=0):
             df = pd.DataFrame({'Latent X': X_r[:, i] / X_r[:, i].max(),
@@ -178,10 +180,16 @@ class CCAPlotter:
             self.project_data.shade_axis_using_behavior(plotly_fig=fig)
             fig.show()
 
-            fig = px.bar(df_y.iloc[i, :])
+            y = df_y.iloc[i, :]
+            if sort_beh_weights:
+                y = y.sort_values(ascending=False)
+            fig = px.bar(y)
             fig.show()
 
-            fig = px.bar(df_x.iloc[i, :])
+            x = df_x.iloc[i, :]
+            if sort_trace_weights:
+                x = x.sort_values(ascending=False)
+            fig = px.bar(x)
             fig.show()
 
         interact(f, i=(0, X_r.shape[1] - 1))
