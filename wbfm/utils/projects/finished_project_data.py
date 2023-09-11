@@ -697,7 +697,9 @@ class ProjectData:
         if binary_behaviors:
             behavior_codes = ['rev', 'ventral_turn', 'head_cast', 'slowing', 'self_collision']
         else:
-            behavior_codes = ['signed_middle_body_speed', 'head_signed_curvature', 'summed_curvature']
+            behavior_codes = ['signed_middle_body_speed', 'ventral_only_body_curvature', 'ventral_only_head_curvature',
+                              'dorsal_only_body_curvature', 'dorsal_only_head_curvature']
+                #'signed_middle_body_speed', 'head_signed_curvature', 'summed_curvature']
                               #'fwd_empirical_distribution', 'rev_phase_counter',
                               #'quantile_curvature', 'dorsal_quantile_curvature', 'quantile_head_curvature']
                               #'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature']

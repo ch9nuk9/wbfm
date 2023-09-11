@@ -629,6 +629,8 @@ class WormFullVideoPosture:
                      'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature',
                      'interpolated_dorsal_midbody_curvature', 'interpolated_dorsal_head_curvature',
                      'speed_plateau_piecewise_constant',
+                     'ventral_only_body_curvature', 'dorsal_only_body_curvature',
+                     'ventral_only_head_curvature', 'dorsal_only_head_curvature',
                      'speed_plateau_piecewise_linear_onset', 'speed_plateau_piecewise_linear_offset',
                      'fwd_empirical_distribution', 'rev_empirical_distribution']
         behaviors.extend(BehaviorCodes.possible_behavior_aliases())
@@ -702,12 +704,12 @@ class WormFullVideoPosture:
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
                                                      do_abs=False, do_quantile=True, which_quantile=0.1, **kwargs)
-        elif behavior_alias == 'ventral_only_curvature':
+        elif behavior_alias == 'ventral_only_body_curvature':
             # Same as Ulises curvature annotation
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
                                                      do_abs=False, only_positive=True, **kwargs)
-        elif behavior_alias == 'dorsal_only_curvature':
+        elif behavior_alias == 'dorsal_only_body_curvature':
             # Same as Ulises curvature annotation
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
