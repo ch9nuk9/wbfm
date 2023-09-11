@@ -179,7 +179,7 @@ class CCAPlotter:
                 df_latents = pd.DataFrame(Y_r)
 
         beh_annotation = dict(fluorescence_fps=True, reset_index=True, include_collision=False, include_turns=True,
-                              include_head_cast=False, include_pause=False, include_hesitation=False)
+                              include_head_cast=False, include_pause=False, include_slowing=False)
         beh_annotation.update(beh_annotation_kwargs)
         df_latents['state'] = self.project_data.worm_posture_class.beh_annotation(**beh_annotation)
         ethogram_cmap_kwargs.setdefault('include_turns', beh_annotation['include_turns'])
