@@ -1237,17 +1237,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.time_line is not None:
             self.time_line.remove()
             del self.time_line
-        self.time_line = self.static_ax.axvline(**self.calculate_time_line_options())
+        time_line_options = self.calculate_time_line_options()
+        self.logger.debug(f"Initializing subplot post clear with time line: {time_line_options}")
+        self.time_line = self.static_ax.axvline(**time_line_options)
 
         # Try to preserve the xlimits
         self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
         self.color_using_behavior()
         if self.current_subplot_xlim is not None:
             self.static_ax.set_xlim(self.current_subplot_xlim)
-            # print("Preserving xlimits")
         else:
             self.static_ax.set_xlim(self.main_subplot_xlim)
-            # print("Resetting xlimits")
         self.subplot_is_initialized = True
         # Add additional annotations
         self.color_using_behavior()
