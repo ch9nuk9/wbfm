@@ -27,19 +27,43 @@ class CCAPlotter:
 
     project_data: ProjectData
 
-    df_traces: pd.DataFrame = None
+    _df_traces: pd.DataFrame = None
     df_beh: pd.DataFrame = None
     df_beh_binary: pd.DataFrame = None
+
+    # Preprocessing options. Goal: more interpretable CCA weights
+    preprocess_using_pca: bool = True
+    truncate_to_n_components: int = None  # Not used if preprocess_using_pca is False
+    _df_traces_truncated: pd.DataFrame = None
+    _pca: PCA = None
 
     def __post_init__(self):
         # Default traces and behaviors
         opt = dict(filter_mode='rolling_mean', interpolate_nan=True, nan_tracking_failure_points=True,
-                   use_physical_time=True)
+                   use_physical_time=True, rename_neurons_using_manual_ids=True)
 
-        self.df_traces = self.project_data.calc_default_traces(**opt)
+        df_traces = self.project_data.calc_default_traces(**opt)
+        self._df_traces = df_traces
+
+        if self.preprocess_using_pca:
+            # See calc_pca_modes
+            X = fill_nan_in_dataframe(df_traces, do_filtering=False)
+            X -= X.mean()
+            pca = PCA(n_components=self.truncate_to_n_components, whiten=False)
+            X = pca.fit_transform(X)
+            self._df_traces_truncated = pd.DataFrame(X, index=df_traces.index)
+            self._pca = pca
+
         self.df_beh = self.project_data.calc_default_behaviors(**opt)
         # No filtering
         self.df_beh_binary = self.project_data.calc_default_behaviors(binary_behaviors=True)
+
+    @property
+    def df_traces(self):
+        if self.preprocess_using_pca:
+            return self._df_traces_truncated
+        else:
+            return self._df_traces
 
     @lru_cache(maxsize=16)
     def calc_cca(self, n_components=3, binary_behaviors=False, sparse_tau=None):
@@ -122,6 +146,10 @@ class CCAPlotter:
         else:
             df_y = pd.DataFrame(cca.y_weights_, index=df_beh.columns).T
             df_x = pd.DataFrame(cca.x_weights_, index=df_traces.columns).T
+
+        # Convert the weights to the original neuron space, if using PCA preprocessing
+        if self.preprocess_using_pca:
+            df_x = pd.DataFrame(self._pca.inverse_transform(df_x), columns=self._df_traces.columns)
 
         def f(i=0):
             df = pd.DataFrame({'Latent X': X_r[:, i] / X_r[:, i].max(),
