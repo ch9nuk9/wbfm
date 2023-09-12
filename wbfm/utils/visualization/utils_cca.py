@@ -109,7 +109,7 @@ class CCAPlotter:
             cca = CCA(n_components=n_components)
             X_r, Y_r = cca.fit_transform(X, Y)
         else:
-            cca = scc_mod.SCCA_IPLS(latent_dims=n_components, tau=[1e-2, 1e-3])
+            cca = scc_mod.SCCA_IPLS(latent_dims=n_components, tau=sparse_tau)
             X_r, Y_r = cca.fit_transform([X, Y])
 
         return X_r, Y_r, cca
@@ -135,11 +135,15 @@ class CCAPlotter:
 
         return 1 - residual_variance / total_variance
 
-    def _get_beh_df(self, binary_behaviors):
+    def _get_beh_df(self, binary_behaviors, raw_not_truncated=False):
         if binary_behaviors:
             Y = self.df_beh_binary
         else:
-            Y = self.df_beh
+            if raw_not_truncated:
+                Y = self._df_beh
+            else:
+                # This will be truncated if the behavior is preprocessed using PCA
+                Y = self.df_beh
         return Y
 
     def visualize_modes(self, i=1, binary_behaviors=False, **kwargs):
@@ -234,6 +238,7 @@ class CCAPlotter:
             else:
                 df_latents = pd.DataFrame(Y_r)
 
+        # Color the lines by behavior annotation (not necessarily the same as the behavior used for CCA)
         beh_annotation = dict(fluorescence_fps=True, reset_index=True, include_collision=False, include_turns=True,
                               include_head_cast=False, include_pause=False, include_slowing=False)
         beh_annotation.update(beh_annotation_kwargs)
@@ -248,6 +253,7 @@ class CCAPlotter:
         if DEBUG:
             print(state_codes, ethogram_cmap, ethogram_cmap_kwargs)
 
+        # Loop over behaviorally-colored short segments and plot
         phase_plot_list = []
         for i, state_code in enumerate(state_codes):
             if plot_3d:
@@ -296,7 +302,9 @@ class CCAPlotter:
                         title='Mode 3'),
                 ),
                 # From: https://stackoverflow.com/questions/73187799/truncated-figure-with-plotly?noredirect=1#comment129258910_73187799
-                scene_camera=dict(eye=dict(x=2.0, y=2.0, z=2.0))
+                # Note that this is hard to do in jupyter and then see the settings, but can be done with dash:
+                # https://community.plotly.com/t/how-to-get-change-current-scene-camera-in-3d-plot-inside-jupyter-notebook-python/1912/4
+                scene_camera=dict(eye=dict(x=1.0, y=1.0, z=2.5))
             )
         # Transparent background
         fig.update_layout(
