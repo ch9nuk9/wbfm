@@ -335,7 +335,9 @@ class CCAPlotter:
         return fname
 
 
-def calc_r_squared_for_all_projects(all_projects, **r_squared_kwargs):
+def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, **kwargs):
+    if r_squared_kwargs is None:
+        r_squared_kwargs = {}
     all_cca_classes = {}
     all_r_squared = defaultdict(dict)
 
@@ -344,7 +346,7 @@ def calc_r_squared_for_all_projects(all_projects, **r_squared_kwargs):
                 'cca_binary': dict(use_pca=False, binary_behaviors=True)}
 
     for name, p in all_projects.items():
-        cca_plotter = CCAPlotter(p)
+        cca_plotter = CCAPlotter(p, **kwargs)
         all_cca_classes[name] = cca_plotter
         for opt_name, opt in opt_dict.items():
             all_r_squared[name][opt_name] = cca_plotter.calc_r_squared(**opt, **r_squared_kwargs)
