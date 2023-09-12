@@ -1443,7 +1443,7 @@ class ProjectData:
         excel_fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.xlsx", prepend_subfolder=True)
         return excel_fname
 
-    def build_neuron_editor_gui(self):
+    def build_neuron_editor_gui(self) -> Optional[NeuronNameEditor]:
         """
         Initialize a QT table interface for editing neurons
 
@@ -1498,8 +1498,13 @@ class ProjectData:
             self.logger.warning("Could not find neurons_to_id; that column will not work")
 
         # Actually build the class
-        manual_neuron_name_editor = NeuronNameEditor(neurons_to_id=neurons_to_id)
-        manual_neuron_name_editor.import_dataframe(df, fname)
+        try:
+            manual_neuron_name_editor = NeuronNameEditor(neurons_to_id=neurons_to_id)
+            manual_neuron_name_editor.import_dataframe(df, fname)
+        except PermissionError:
+            self.logger.warning(f"Could not open manual annotation file at ({fname}); "
+                                f"will not be able to save, thus this GUI will not be opened")
+            manual_neuron_name_editor = None
 
         return manual_neuron_name_editor
 

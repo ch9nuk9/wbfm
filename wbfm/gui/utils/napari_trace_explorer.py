@@ -166,10 +166,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             callbacks=[self.save_everything_to_disk]
         )
 
-        # Open a new window with manual neuron name editing
+        # Open a new window with manual neuron name editing, if you have permissions in the project
         self.manualNeuronNameEditor = self.dat.build_neuron_editor_gui()
-        self.manualNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
-        self.manualNeuronNameEditor.show()
+        if self.manualNeuronNameEditor is not None:
+            self.manualNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
+            self.manualNeuronNameEditor.show()
 
         self.logger.debug("Finished main UI setup")
 
@@ -609,11 +610,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # For some reason the progress bar doesn't show up until after the first segmentation_metadata call,
         # ... even if I add sleep and etc.
         dict_of_saving_callbacks = {
-            'manual_ids': self.manualNeuronNameEditor.save_df_to_disk,
             'segmentation_metadata': self.dat.segmentation_metadata.overwrite_original_detection_file,
             'tracklets': self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch,
             'segmentation': self.dat.modify_segmentation_on_disk_using_buffer
         }
+        if self.manualNeuronNameEditor is not None:
+            dict_of_saving_callbacks['manual_ids'] = self.manualNeuronNameEditor.save_df_to_disk
         progress = QProgressDialog("Saving to disk, you may quit when finished", None,
                                    0, len(dict_of_saving_callbacks), self)
         progress.setWindowModality(Qt.WindowModal)
@@ -732,7 +734,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                         self.changeReferenceTrace.setCurrentText(neuron_name)
                     elif event.button == 3:
                         # Jump to the clicked row in the external name editor gui
-                        self.manualNeuronNameEditor.jump_focus_to_neuron(neuron_name)
+                        if self.manualNeuronNameEditor is not None:
+                            self.manualNeuronNameEditor.jump_focus_to_neuron(neuron_name)
 
     def connect_napari_callbacks(self):
         viewer = self.viewer
