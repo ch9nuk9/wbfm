@@ -54,6 +54,8 @@ class CCAPlotter:
             self._pca_traces = pca
 
         df_beh = self.project_data.calc_default_behaviors(**opt)
+        # Standardize, but do not fully z-score, the behaviors
+        df_beh = df_beh / df_beh.std()
         self._df_beh = df_beh
         if self.preprocess_behavior_using_pca:
             X, pca = self._truncate_using_pca(df_beh, n_components=self.truncate_behavior_to_n_components)

@@ -679,6 +679,7 @@ class ProjectData:
                                return_fast_scale_separation: bool = False,
                                return_slow_scale_separation: bool = False,
                                rename_neurons_using_manual_ids: bool = False,
+                               z_score: bool = False,
                                binary_behaviors: bool=False,
                                verbose=0,
                                **kwargs):
@@ -727,6 +728,10 @@ class ProjectData:
                     if i == 0:
                         self.logger.warning("SVD did not converge, trying again")
                     continue
+
+        # Optional: z-score
+        if z_score:
+            df = (df - df.mean(axis=0)) / df.std(axis=0)
 
         return df
 
