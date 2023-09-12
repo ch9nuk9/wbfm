@@ -342,6 +342,21 @@ class CCAPlotter:
         fname += '.html'
         return fname
 
+    def calc_mode_correlation(self, **kwargs):
+        """
+        Calculates the correlation between the modes of the traces and behaviors, which is what CCA is maximizing
+
+        Returns
+        -------
+
+        """
+
+        X_r, Y_r, cca = self.calc_cca(**kwargs)
+        corr_list = []
+        for i in range(X_r.shape[1]):
+            corr_list.append(pd.Series(X_r[:, i]).corr(pd.Series(Y_r[:, i])))
+        return corr_list
+
 
 def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, **kwargs):
     if r_squared_kwargs is None:
@@ -362,3 +377,21 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, **kwarg
     df_r_squared = pd.DataFrame(all_r_squared).T
 
     return all_cca_classes, df_r_squared
+
+
+def calc_mode_correlation_for_all_projects(all_projects, **kwargs):
+    all_cca_classes = {}
+    all_mode_correlations = defaultdict(dict)
+
+    opt_dict = {'cca': dict(),
+                'cca_binary': dict(binary_behaviors=True)}
+
+    for name, p in all_projects.items():
+        cca_plotter = CCAPlotter(p, **kwargs)
+        all_cca_classes[name] = cca_plotter
+        for opt_name, opt in opt_dict.items():
+            all_mode_correlations[name][opt_name] = cca_plotter.calc_mode_correlation(**opt)
+
+    # df_mode_correlations = pd.DataFrame(all_mode_correlations).T
+
+    return all_cca_classes, all_mode_correlations#, df_mode_correlations
