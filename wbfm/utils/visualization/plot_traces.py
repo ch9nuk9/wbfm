@@ -178,6 +178,8 @@ def make_grid_plot_from_project(project_data: ProjectData,
                 f"{prefix}_background_shading-custom"
             if trace_kwargs.get('rename_neurons_using_manual_ids', False):
                 prefix = f"{prefix}_manual_ids"
+            if trace_kwargs.get('residual_mode', False):
+                prefix = f"{prefix}_residual"
             fname = f"{prefix}-grid{savename_suffix}.png"
         else:
             fname = f"{len(neuron_names_to_plot)}neurons_{channel_mode}_{calculation_mode}_grid_plot.png"
