@@ -120,7 +120,7 @@ class CCAPlotter:
 
     def calc_r_squared(self, use_pca=False, n_components=1, **kwargs):
         # First, calculate the reconstruction
-        X = self.df_traces
+        X = self._df_traces  # Use the non-truncated traces
         if use_pca:
             # See calc_pca_modes
             X = fill_nan_in_dataframe(X, do_filtering=False)
@@ -128,7 +128,11 @@ class CCAPlotter:
             pca = PCA(n_components=n_components, whiten=False)
             X_r_recon = pca.inverse_transform(pca.fit_transform(X))
         else:
-            X_r_recon, Y_r_recon = self.calc_cca_reconstruction(n_components=n_components, **kwargs)
+            X_r_recon, _ = self.calc_cca_reconstruction(n_components=n_components, **kwargs)
+            if self.preprocess_traces_using_pca:
+                # Transform the reconstructed traces back to the original space
+                X_r_recon = self._pca_traces.inverse_transform(X_r_recon)
+
         # Then, calculate the r-squared
         residual_variance = (X - X_r_recon).var().sum()
         total_variance = X.var().sum()
@@ -163,12 +167,6 @@ class CCAPlotter:
         X_r, Y_r, cca = self.calc_cca(n_components=n_components, binary_behaviors=binary_behaviors, **kwargs)
         df_x, df_y = self.get_weights_from_cca(cca, binary_behaviors, **kwargs)
 
-        # Convert the weights to the original neuron space, if using PCA preprocessing
-        if self.preprocess_traces_using_pca:
-            df_x = pd.DataFrame(self._pca_traces.inverse_transform(df_x), columns=self._df_traces.columns)
-        if self.preprocess_behavior_using_pca:
-            df_y = pd.DataFrame(self._pca_beh.inverse_transform(df_y), columns=self._df_beh.columns)
-
         def f(i=0):
             df = pd.DataFrame({'Latent X': X_r[:, i] / X_r[:, i].max(),
                                'Latent Y': Y_r[:, i] / Y_r[:, i].max()})
@@ -200,6 +198,11 @@ class CCAPlotter:
         else:
             df_y = pd.DataFrame(cca.y_weights_, index=df_beh.columns).T
             df_x = pd.DataFrame(cca.x_weights_, index=df_traces.columns).T
+        # Convert the weights to the original neuron space, if using PCA preprocessing
+        if self.preprocess_traces_using_pca:
+            df_x = pd.DataFrame(self._pca_traces.inverse_transform(df_x), columns=self._df_traces.columns)
+        if self.preprocess_behavior_using_pca:
+            df_y = pd.DataFrame(self._pca_beh.inverse_transform(df_y), columns=self._df_beh.columns)
         return df_x, df_y
 
     def plot_single_mode(self, i_mode=0, binary_behaviors=False, use_pca=False, output_folder=None, **kwargs):
@@ -406,5 +409,52 @@ def calc_mode_correlation_for_all_projects(all_projects, correlation_kwargs=None
     return all_cca_classes, df_mode_correlations, df_mode_correlations_binary
 
 
-def calc_neural_weights_for_all_projects(all_projects, **kwargs):
-    pass
+def calc_cca_weights_for_all_projects(all_projects, which_mode=0, weights_kwargs=None,
+                                      neural_not_behavioral=True, correct_sign_using_top_weight=True,
+                                      drop_unlabeled_neurons=True, min_datasets_present=5,
+                                      **kwargs):
+    if weights_kwargs is None:
+        weights_kwargs = {}
+    all_cca_classes = {}
+    all_weights = defaultdict(dict)
+
+    opt_dict = {'cca': dict(binary_behaviors=False),
+                'cca_binary': dict(binary_behaviors=True)}
+
+    for name, p in all_projects.items():
+        cca_plotter = CCAPlotter(p, **kwargs)
+        all_cca_classes[name] = cca_plotter
+        for opt_name, opt in opt_dict.items():
+            opt.update(weights_kwargs)
+            _, _, cca = cca_plotter.calc_cca(**opt)
+            trace_weights, behavior_weights = cca_plotter.get_weights_from_cca(cca, **opt)
+            if neural_not_behavioral:
+                all_weights[opt_name][name] = trace_weights.loc[which_mode, :]
+            else:
+                all_weights[opt_name][name] = behavior_weights.loc[which_mode, :]
+
+    df_weights = pd.DataFrame(all_weights['cca']).T
+    df_weights_binary = pd.DataFrame(all_weights['cca_binary']).T
+
+    if neural_not_behavioral:
+        # Drop all neurons that contain 'neuron' in the name
+        if drop_unlabeled_neurons:
+            df_weights = df_weights.loc[:, ~df_weights.columns.str.contains('neuron')]
+            df_weights_binary = df_weights_binary.loc[:, ~df_weights_binary.columns.str.contains('neuron')]
+        # Remove neurons that are not present in at least min_datasets_present datasets
+        if min_datasets_present > 0:
+            df_weights = df_weights.loc[:, df_weights.notnull().sum() >= min_datasets_present]
+            df_weights_binary = df_weights_binary.loc[:, df_weights_binary.notnull().sum() >= min_datasets_present]
+
+    # The weights have sign ambiguity. Correct this by setting the top weight to be positive
+    if correct_sign_using_top_weight:
+        sign_vec = np.sign(df_weights.iloc[:, df_weights.abs().sum().argmax()])
+        df_weights = df_weights.mul(sign_vec, axis='index')
+        sign_vec = np.sign(df_weights.iloc[:, df_weights_binary.abs().sum().argmax()])
+        df_weights_binary = df_weights_binary.mul(np.sign(df_weights_binary.iloc[:, 0]), axis='index')
+
+    # Sort them by the signed median weight
+    df_weights = df_weights.reindex(df_weights.median().sort_values(ascending=False).index, axis=1)
+    df_weights_binary = df_weights_binary.reindex(df_weights_binary.median().sort_values(ascending=False).index, axis=1)
+
+    return all_cca_classes, df_weights, df_weights_binary
