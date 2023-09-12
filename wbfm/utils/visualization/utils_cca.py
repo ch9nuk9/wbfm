@@ -161,15 +161,7 @@ class CCAPlotter:
                                     **kwargs):
 
         X_r, Y_r, cca = self.calc_cca(n_components=n_components, binary_behaviors=binary_behaviors, **kwargs)
-        df_beh = self._get_beh_df(binary_behaviors)
-        df_traces = self.df_traces
-
-        if 'sparse_tau' in kwargs:
-            df_y = pd.DataFrame(cca.weights[1], index=df_beh.columns).T
-            df_x = pd.DataFrame(cca.weights[0], index=df_traces.columns).T
-        else:
-            df_y = pd.DataFrame(cca.y_weights_, index=df_beh.columns).T
-            df_x = pd.DataFrame(cca.x_weights_, index=df_traces.columns).T
+        df_x, df_y = self.get_weights_from_cca(cca, binary_behaviors, **kwargs)
 
         # Convert the weights to the original neuron space, if using PCA preprocessing
         if self.preprocess_traces_using_pca:
@@ -197,6 +189,18 @@ class CCAPlotter:
             fig.show()
 
         interact(f, i=(0, X_r.shape[1] - 1))
+
+    def get_weights_from_cca(self, cca, binary_behaviors, **kwargs):
+        """Returns trace and behavioral weight dataframes from a CCA object, with the correct column names"""
+        df_beh = self._get_beh_df(binary_behaviors)
+        df_traces = self.df_traces
+        if 'sparse_tau' in kwargs:
+            df_y = pd.DataFrame(cca.weights[1], index=df_beh.columns).T
+            df_x = pd.DataFrame(cca.weights[0], index=df_traces.columns).T
+        else:
+            df_y = pd.DataFrame(cca.y_weights_, index=df_beh.columns).T
+            df_x = pd.DataFrame(cca.x_weights_, index=df_traces.columns).T
+        return df_x, df_y
 
     def plot_single_mode(self, i_mode=0, binary_behaviors=False, use_pca=False, output_folder=None, **kwargs):
 
@@ -372,14 +376,17 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, **kwarg
         cca_plotter = CCAPlotter(p, **kwargs)
         all_cca_classes[name] = cca_plotter
         for opt_name, opt in opt_dict.items():
-            all_r_squared[name][opt_name] = cca_plotter.calc_r_squared(**opt, **r_squared_kwargs)
+            opt.update(r_squared_kwargs)
+            all_r_squared[name][opt_name] = cca_plotter.calc_r_squared(**opt)
 
     df_r_squared = pd.DataFrame(all_r_squared).T
 
     return all_cca_classes, df_r_squared
 
 
-def calc_mode_correlation_for_all_projects(all_projects, **kwargs):
+def calc_mode_correlation_for_all_projects(all_projects, correlation_kwargs=None, **kwargs):
+    if correlation_kwargs is None:
+        correlation_kwargs = {}
     all_cca_classes = {}
     all_mode_correlations = defaultdict(dict)
 
@@ -390,8 +397,14 @@ def calc_mode_correlation_for_all_projects(all_projects, **kwargs):
         cca_plotter = CCAPlotter(p, **kwargs)
         all_cca_classes[name] = cca_plotter
         for opt_name, opt in opt_dict.items():
-            all_mode_correlations[name][opt_name] = cca_plotter.calc_mode_correlation(**opt)
+            opt.update(correlation_kwargs)
+            all_mode_correlations[opt_name][name] = cca_plotter.calc_mode_correlation(**opt)
 
-    # df_mode_correlations = pd.DataFrame(all_mode_correlations).T
+    df_mode_correlations = pd.DataFrame(all_mode_correlations['cca'])
+    df_mode_correlations_binary = pd.DataFrame(all_mode_correlations['cca_binary'])
 
-    return all_cca_classes, all_mode_correlations#, df_mode_correlations
+    return all_cca_classes, df_mode_correlations, df_mode_correlations_binary
+
+
+def calc_neural_weights_for_all_projects(all_projects, **kwargs):
+    pass
