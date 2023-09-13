@@ -462,3 +462,48 @@ def calc_cca_weights_for_all_projects(all_projects, which_mode=0, weights_kwargs
     df_weights_binary = df_weights_binary.reindex(df_weights_binary.median().sort_values(ascending=False).index, axis=1)
 
     return all_cca_classes, df_weights, df_weights_binary
+
+
+def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_using_top_weight=True,
+                                      drop_unlabeled_neurons=True, min_datasets_present=5,
+                                      **kwargs):
+    """
+    Similar to calc_cca_weights_for_all_projects, but for PCA
+
+    Parameters
+    ----------
+    all_projects
+    which_mode
+    correct_sign_using_top_weight
+    drop_unlabeled_neurons
+    min_datasets_present
+    kwargs
+
+    Returns
+    -------
+
+    """
+    all_weights = defaultdict(dict)
+
+    for name, p in all_projects.items():
+        trace_weights = p.calc_pca_modes(return_pca_weights=True)
+        all_weights[name] = trace_weights.T.loc[which_mode, :]
+
+    df_weights = pd.DataFrame(all_weights).T
+
+    # Drop all neurons that contain 'neuron' in the name
+    if drop_unlabeled_neurons:
+        df_weights = df_weights.loc[:, ~df_weights.columns.str.contains('neuron')]
+    # Remove neurons that are not present in at least min_datasets_present datasets
+    if min_datasets_present > 0:
+        df_weights = df_weights.loc[:, df_weights.notnull().sum() >= min_datasets_present]
+
+    # The weights have sign ambiguity. Correct this by setting the top weight to be positive
+    if correct_sign_using_top_weight:
+        sign_vec = np.sign(df_weights.iloc[:, df_weights.abs().sum().argmax()])
+        df_weights = df_weights.mul(sign_vec, axis='index')
+
+    # Sort them by the signed median weight
+    df_weights = df_weights.reindex(df_weights.median().sort_values(ascending=False).index, axis=1)
+
+    return df_weights
