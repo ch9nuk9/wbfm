@@ -695,7 +695,7 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None, height="mean", wi
 def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False, fig=None,
                                                              beh_vector=None, include_zero_crossings=False,
                                                              min_time_between_peaks=2,
-                                                             height="mean", width=5, DEBUG=False):
+                                                             height=None, width=5, DEBUG=False):
     """
     Somewhat similar to detect_peaks_and_interpolate, but instead of using the peaks themselves, uses the
     inter-event intervals to interpolate between the peaks, troughs, and zero crossings
@@ -718,7 +718,7 @@ def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False,
     # Get peaks
     if height == "mean":
         height = np.mean(dat)
-    prominence = 0.5*np.std(dat)
+    prominence = 0.25*np.std(dat)
     if DEBUG:
         print(prominence)
     ind_peaks, properties = find_peaks(dat, height=height, width=width, prominence=prominence)
@@ -806,7 +806,7 @@ def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False,
                                             [inter_event_frequency[-1]]])
 
     # Interpolate
-    interp_obj = interp1d(all_ind_with_removals, inter_event_frequency, kind='cubic', bounds_error=False,
+    interp_obj = interp1d(all_ind_with_removals, inter_event_frequency, kind='linear', bounds_error=False,
                           fill_value="extrapolate")
     x = np.arange(len(dat))
     y_interp = interp_obj(x)

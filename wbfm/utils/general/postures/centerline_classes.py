@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from matplotlib import pyplot as plt
 from methodtools import lru_cache
 from scipy.ndimage import gaussian_filter1d
+from scipy.signal import decimate
 from skimage import transform
 from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
@@ -21,7 +22,7 @@ from wbfm.utils.external.utils_breakpoints import plot_with_offset_x
 from wbfm.utils.external.utils_self_collision import calculate_self_collision_using_pairwise_distances
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate, \
     shade_using_behavior, get_same_phase_segment_pairs, get_heading_vector_from_phase_pair_segments, \
-    shade_using_behavior_plotly, calc_slowing_from_speed
+    shade_using_behavior_plotly, calc_slowing_from_speed, detect_peaks_and_interpolate_using_inter_event_intervals
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
     remove_short_state_changes, pad_events_in_binary_vector, make_binary_vector_from_starts_and_ends, \
     get_dataframe_of_transitions, plot_dataframe_of_transitions
@@ -127,6 +128,13 @@ class WormFullVideoPosture:
                         df = df.iloc[self.subsample_indices, :]
                     elif len(df.shape) == 1:
                         df = df.iloc[self.subsample_indices]
+                        # try:
+                        #     # For numerical time series
+                        #     q = int(np.mean(np.diff(self.subsample_indices)))
+                        #     df = decimate(df, q=q, axis=0, zero_phase=True)
+                        #     df = pd.Series(df, index=self.subsample_indices)
+                        # except TypeError:
+                        #     df = df.iloc[self.subsample_indices]
                     else:
                         raise NotImplementedError
             except IndexError as e:
@@ -914,7 +922,7 @@ class WormFullVideoPosture:
 
         return velocity
 
-    # @lru_cache(maxsize=256)
+    @lru_cache(maxsize=256)
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
                    strong_smoothing=False, use_stage_position=True, remove_outliers=True, body_segment=50,
                    clip_unrealistic_values=True, strong_smoothing_before_derivative=False, reset_index=True) -> pd.Series:
@@ -971,6 +979,42 @@ class WormFullVideoPosture:
             speed_mm_per_s = speed_mm_per_s.clip(lower=-thresh, upper=thresh)
 
         return speed_mm_per_s
+
+    # @lru_cache(maxsize=256)
+    def worm_speed_from_kymograph_peak_detection(self, fluorescence_fps=False, signed=False, body_segment=50,
+                                                 **kwargs):
+        """
+        Calculates a frequency of peaks and troughs of the kymograph, effectively a speed
+
+        Parameters
+        ----------
+        fluorescence_fps
+        signed
+        body_segment
+        kwargs
+
+        Returns
+        -------
+
+        """
+
+        # Get body segment
+        df_kymo = self.curvature(fluorescence_fps=False)
+        y = df_kymo.iloc[:, body_segment]
+
+        # Get behavior (for removing artifacts)
+        beh_vec = self.calc_behavior_from_alias('rev', fluorescence_fps=False, reset_index=False)
+
+        # Get the raw frequency vector
+        x, y_interp, interp_obj = detect_peaks_and_interpolate_using_inter_event_intervals(y, beh_vector=beh_vec)
+
+        # Process to proper fps and sign
+        y_interp = pd.Series(y_interp, index=y.index)
+        speed = self._validate_and_downsample(y_interp, fluorescence_fps=fluorescence_fps, **kwargs)
+        if signed:
+            speed = self.flip_of_vector_during_state(speed, fluorescence_fps=fluorescence_fps)
+
+        return speed
 
     def worm_acceleration(self, fluorescence_fps=False, **kwargs):
         """
