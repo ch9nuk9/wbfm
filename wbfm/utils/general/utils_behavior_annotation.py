@@ -647,8 +647,7 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
     return fig
 
 
-def detect_peaks_and_interpolate(dat, to_plot=False, fig=None,
-                                 height="mean", width=5):
+def detect_peaks_and_interpolate(dat, to_plot=False, fig=None, height="mean", width=5):
     """
     Builds a time series approximating the highest peaks of an oscillating signal
 
@@ -687,6 +686,137 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None,
         plt.plot(x, y_interp, label="Interpolated envelope")#, c='tab:purple')
         plt.title("Envelope signal interpolated between peaks")
         plt.legend()
+
+    return x, y_interp, interp_obj
+
+
+def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False, fig=None,
+                                                             beh_vector=None, include_zero_crossings=False,
+                                                             min_time_between_peaks=2,
+                                                             height="mean", width=5, DEBUG=False):
+    """
+    Somewhat similar to detect_peaks_and_interpolate, but instead of using the peaks themselves, uses the
+    inter-event intervals to interpolate between the peaks, troughs, and zero crossings
+
+    Parameters
+    ----------
+    dat
+    to_plot
+    fig
+    height
+    width
+
+    Returns
+    -------
+
+    """
+
+    # Get peaks
+    if height == "mean":
+        height = np.mean(dat)
+    prominence = 0.5*np.std(dat)
+    print(prominence)
+    ind_peaks, properties = find_peaks(dat, height=height, width=width, prominence=prominence)
+
+    # Get troughs
+    ind_troughs, properties = find_peaks(-dat, height=height, width=width, prominence=prominence)
+
+    # Get zero crossings and combine
+    if include_zero_crossings:
+        ind_zero_crossings = np.where(np.diff(np.sign(dat)))[0]
+        all_ind = np.concatenate([ind_peaks, ind_troughs, ind_zero_crossings])
+    else:
+        all_ind = np.concatenate([ind_peaks, ind_troughs])
+
+    # Sort and get the inter-event intervals
+    all_ind = np.sort(all_ind)
+    all_ind_with_removals = all_ind.copy()
+
+    # Remove any events that cross a behavior boundary
+    if beh_vector is not None:
+        starts, ends = get_contiguous_blocks_from_column(beh_vector, already_boolean=True)
+        for s, e in zip(starts, ends):
+            # Remove any events that cross a behavior START boundary
+            for i in range(len(all_ind_with_removals)-1):
+                this_ind, next_ind = all_ind_with_removals[i], all_ind_with_removals[i+1]
+                if this_ind > s:
+                    break
+                if next_ind != -1 and this_ind != -1:
+                    crosses_behavior_start = this_ind < s <= next_ind
+                    if crosses_behavior_start:
+                        if DEBUG:
+                            print(f"Removing {all_ind_with_removals[i+1]} (previous: {all_ind_with_removals[i]}) at index {i+1} "
+                                  f"because it crosses a behavior start ({s} {e})")
+                        all_ind_with_removals[i] = -1  # Mark for removal
+                        all_ind_with_removals[i+1] = -1
+                        break
+        for s, e in zip(starts, ends):
+            # Remove any events that cross a behavior END boundary
+            for i in range(len(all_ind_with_removals)-1):
+                this_ind, next_ind = all_ind_with_removals[i], all_ind_with_removals[i+1]
+                if this_ind > e:
+                    break
+                if next_ind != -1 and this_ind != -1:
+                    crosses_behavior_end = this_ind < e <= next_ind
+                    if crosses_behavior_end:
+                        if DEBUG:
+                            print(f"Removing {all_ind_with_removals[i+1]} (previous: {all_ind_with_removals[i]}) at index {i+1} "
+                                  f"because it crosses a behavior end ({s} {e})")
+                        all_ind_with_removals[i] = -1  # Mark for removal
+                        all_ind_with_removals[i+1] = -1
+                        break
+        # all_ind_with_removals = all_ind_with_removals[all_ind_with_removals > 0]
+    inter_event_intervals = np.diff(all_ind_with_removals)
+    # If there are any intervals calculated from a -1 index, replace them with the previous value
+    # (this happens if a peak or trough was removed because it crossed a behavior boundary)
+    for i in range(len(inter_event_intervals)):
+        # Note: Can use a simple check because the original vector was sorted
+        if inter_event_intervals[i] < 0:
+            inter_event_intervals[i] = inter_event_intervals[i-1]
+
+    # Remove too-short intervals (regardless of above behavior crossing issues)
+    valid_ind = np.where(inter_event_intervals > min_time_between_peaks)[0]
+    all_ind = all_ind[valid_ind]
+    all_ind_with_removals = all_ind_with_removals[valid_ind]
+    inter_event_intervals = inter_event_intervals[valid_ind]
+
+    # Convert to a frequency
+    inter_event_frequency = 1 / inter_event_intervals
+    # Repeat an event at the beginning and end of the vector to help edge artifacts
+    all_ind = np.concatenate([[0], all_ind, [len(dat)-1]])
+    all_ind_with_removals = np.concatenate([[0], all_ind_with_removals, [len(dat)-1]])
+    inter_event_frequency = np.concatenate([[inter_event_frequency[0]], inter_event_frequency,
+                                            [inter_event_frequency[-1]]])
+
+    # Interpolate
+    interp_obj = interp1d(all_ind, inter_event_frequency, kind='linear', bounds_error=False,
+                          fill_value="extrapolate")
+    x = np.arange(len(dat))
+    y_interp = interp_obj(x)
+
+    if to_plot:
+        # Plot using plotly, with the interpolated series on a different plot
+        # Make two subplots
+        fig = make_subplots(rows=2, cols=1, shared_xaxes=True)
+        # First plot the raw data
+        fig.add_trace(go.Scatter(x=np.arange(len(dat)), y=dat, mode='lines'), row=1, col=1)
+        # Also add the peaks, troughs, and zero crossings
+        fig.add_scatter(x=ind_peaks, y=dat[ind_peaks], mode='markers', name='Peaks', row=1, col=1)
+        fig.add_scatter(x=ind_troughs, y=dat[ind_troughs], mode='markers', name='Troughs', row=1, col=1)
+        if include_zero_crossings:
+            fig.add_scatter(x=ind_zero_crossings, y=dat[ind_zero_crossings], mode='markers', name='Zero crossings',
+                            row=1, col=1)
+        # Another scatter for the events that weren't removed
+        valid_ind = all_ind[all_ind_with_removals > 0]
+        fig.add_scatter(x=valid_ind, y=dat[valid_ind], mode='markers', name='Valid events', row=1, col=1)
+
+        # Second subplot: interpolated time series
+        fig.add_trace(go.Scatter(x=x, y=y_interp, mode='lines'), row=2, col=1)
+        # Also add the raw inter-event intervals
+        fig.add_scatter(x=all_ind, y=inter_event_frequency, mode='markers', name='Inter-event frequency',
+                        row=2, col=1)
+
+        fig.show()
 
     return x, y_interp, interp_obj
 
