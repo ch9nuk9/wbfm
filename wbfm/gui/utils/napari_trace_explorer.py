@@ -2003,17 +2003,18 @@ def napari_trace_explorer(project_data: ProjectData,
     return ui, viewer
 
 
-def napari_behavior_explorer_from_config(project_path, DEBUG=False):
+def napari_behavior_explorer_from_config(project_path, fluorescence_fps=True, DEBUG=False):
     # Load project
     project_data = ProjectData.load_final_project_data_from_config(project_path)
 
     # Load specific data
-    df_kymo = project_data.worm_posture_class.curvature(fluorescence_fps=True)
+    df_kymo = project_data.worm_posture_class.curvature(fluorescence_fps=fluorescence_fps)
     video_fname = project_data.worm_posture_class.behavior_video_btf_fname(raw=True)
     store = tifffile.imread(video_fname, aszarr=True)
     video_zarr = zarr.open(store, mode='r')
     # Subset video to be the same fps as the fluorescence
-    video_zarr = video_zarr[::project_data.worm_posture_class.frames_per_volume, :, :]
+    if fluorescence_fps:
+        video_zarr = video_zarr[::project_data.worm_posture_class.frames_per_volume, :, :]
     video = video_zarr
 
     # dask_chunk = list(video_zarr.chunks).copy()
@@ -2024,9 +2025,13 @@ def napari_behavior_explorer_from_config(project_path, DEBUG=False):
     viewer = napari.view_image(video)
 
     # Kymograph subplot
+    if fluorescence_fps:
+        aspect = 1
+    else:
+        aspect = 24
     mpl_widget = PlotQWidget()
     static_ax = mpl_widget.canvas.fig.subplots()
-    static_ax.imshow(df_kymo.T, aspect=1, vmin=-0.05, vmax=0.05, cmap='RdBu')
+    static_ax.imshow(df_kymo.T, aspect=aspect, vmin=-0.05, vmax=0.05, cmap='RdBu')
     viewer.window.add_dock_widget(mpl_widget, area='bottom')
 
     # Callback: click on the kymograph to change the viewer time
