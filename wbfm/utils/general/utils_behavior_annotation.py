@@ -694,7 +694,7 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None, height="mean", wi
 
 def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False, fig=None,
                                                              beh_vector=None, include_zero_crossings=False,
-                                                             min_time_between_peaks=2,
+                                                             min_time_between_peaks=2, prominence_factor=0.25,
                                                              height=None, width=5, DEBUG=False):
     """
     Somewhat similar to detect_peaks_and_interpolate, but instead of using the peaks themselves, uses the
@@ -718,13 +718,15 @@ def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False,
     # Get peaks
     if height == "mean":
         height = np.mean(dat)
-    prominence = 0.25*np.std(dat)
+    # As of 2023, should be around 0.002 to detect nose wiggles for a 100-segment kymograph
+    # And 0.02 for normal oscillations
+    prominence = prominence_factor*np.std(dat)
     if DEBUG:
         print(prominence)
-    ind_peaks, properties = find_peaks(dat, height=height, width=width, prominence=prominence)
+    ind_peaks, peak_properties = find_peaks(dat, height=height, width=width, prominence=prominence)
 
     # Get troughs
-    ind_troughs, properties = find_peaks(-dat, height=height, width=width, prominence=prominence)
+    ind_troughs, trough_properties = find_peaks(-dat, height=height, width=width, prominence=prominence)
 
     # Get zero crossings and combine
     if include_zero_crossings:
@@ -838,7 +840,14 @@ def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False,
         fig.add_scatter(x=all_ind_with_removals, y=inter_event_frequency, mode='markers',
                         name='Behavior-edge artifact filtered',
                         row=2, col=1)
+        fig.show()
 
+        # Also plot the peak and trough prominences as a histogram (plotly)
+        fig = go.Figure()
+        fig.add_trace(go.Histogram(x=peak_properties['prominences'], nbinsx=200, name="Peak prominences"))
+        fig.add_trace(go.Histogram(x=trough_properties['prominences'], nbinsx=200, name="Trough prominences"))
+        # Add vertical line where the minimum prominence is
+        fig.add_vline(x=prominence, line_width=3, line_dash="dash", line_color="green", name="Minimum prominence")
         fig.show()
 
     return x, y_interp, interp_obj

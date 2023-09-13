@@ -640,7 +640,9 @@ class WormFullVideoPosture:
                      'ventral_only_body_curvature', 'dorsal_only_body_curvature',
                      'ventral_only_head_curvature', 'dorsal_only_head_curvature',
                      'speed_plateau_piecewise_linear_onset', 'speed_plateau_piecewise_linear_offset',
-                     'fwd_empirical_distribution', 'rev_empirical_distribution']
+                     'fwd_empirical_distribution', 'rev_empirical_distribution',
+                     'worm_speed_nose_peak_frequency', 'worm_speed_head_peak_frequency',
+                     'worm_speed_body_peak_frequency']
         behaviors.extend(BehaviorCodes.possible_behavior_aliases())
         return behaviors
 
@@ -746,8 +748,16 @@ class WormFullVideoPosture:
             y = self.worm_angular_velocity(**kwargs)
         elif behavior_alias == 'worm_speed_average_all_segments':
             y = self.worm_speed_average_all_segments(**kwargs)
-        # elif behavior_alias == 'worm_nose_residual_speed':
-        #     y = self.worm_speed_average_all_segments(fluorescence_fps=True)
+        elif behavior_alias == 'worm_speed_nose_peak_frequency':
+            # Needs to be more sensitive peak detection
+            y = self.worm_speed_from_kymograph_peak_detection(body_segment=3, peak_kwargs=dict(prominence_factor=0.1),
+                                                              signed=True, **kwargs)
+        elif behavior_alias == 'worm_speed_head_peak_frequency':
+            # Needs to be more sensitive peak detection
+            y = self.worm_speed_from_kymograph_peak_detection(body_segment=10, peak_kwargs=dict(prominence_factor=0.1),
+                                                              signed=True, **kwargs)
+        elif behavior_alias == 'worm_speed_body_peak_frequency':
+            y = self.worm_speed_from_kymograph_peak_detection(body_segment=50, signed=True, **kwargs)
         elif behavior_alias == 'fwd_counter':
             y = self.calc_counter_state(state=BehaviorCodes.FWD, **kwargs)
         elif behavior_alias == 'fwd_phase_counter':
@@ -982,7 +992,7 @@ class WormFullVideoPosture:
 
     # @lru_cache(maxsize=256)
     def worm_speed_from_kymograph_peak_detection(self, fluorescence_fps=False, signed=False, body_segment=50,
-                                                 **kwargs):
+                                                 peak_kwargs=None, **kwargs):
         """
         Calculates a frequency of peaks and troughs of the kymograph, effectively a speed
 
@@ -999,6 +1009,8 @@ class WormFullVideoPosture:
         """
 
         # Get body segment
+        if peak_kwargs is None:
+            peak_kwargs = {}
         df_kymo = self.curvature(fluorescence_fps=False)
         y = df_kymo.iloc[:, body_segment]
 
@@ -1006,7 +1018,8 @@ class WormFullVideoPosture:
         beh_vec = self.calc_behavior_from_alias('rev', fluorescence_fps=False, reset_index=False)
 
         # Get the raw frequency vector
-        x, y_interp, interp_obj = detect_peaks_and_interpolate_using_inter_event_intervals(y, beh_vector=beh_vec)
+        x, y_interp, interp_obj = detect_peaks_and_interpolate_using_inter_event_intervals(y, beh_vector=beh_vec,
+                                                                                           **peak_kwargs)
 
         # Process to proper fps and sign
         y_interp = pd.Series(y_interp, index=y.index)
