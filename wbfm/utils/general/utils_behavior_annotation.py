@@ -18,6 +18,8 @@ from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, 
     remove_short_state_changes
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError, NeedsAnnotatedNeuronError
 import plotly.graph_objects as go
+
+from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.hardcoded_paths import get_summary_visualization_dir
 
 
@@ -710,12 +712,15 @@ def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False,
     -------
 
     """
+    # Make sure there are no nans
+    dat = fill_nan_in_dataframe(dat)
 
     # Get peaks
     if height == "mean":
         height = np.mean(dat)
     prominence = 0.5*np.std(dat)
-    print(prominence)
+    if DEBUG:
+        print(prominence)
     ind_peaks, properties = find_peaks(dat, height=height, width=width, prominence=prominence)
 
     # Get troughs
@@ -731,75 +736,89 @@ def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False,
     # Sort and get the inter-event intervals
     all_ind = np.sort(all_ind)
     all_ind_with_removals = all_ind.copy()
+    raw_inter_event_intervals = np.diff(all_ind, append=len(dat)-1)
 
     # Remove any events that cross a behavior boundary
     if beh_vector is not None:
         starts, ends = get_contiguous_blocks_from_column(beh_vector, already_boolean=True)
+        ind_to_remove = []
         for s, e in zip(starts, ends):
             # Remove any events that cross a behavior START boundary
-            for i in range(len(all_ind_with_removals)-1):
-                this_ind, next_ind = all_ind_with_removals[i], all_ind_with_removals[i+1]
+            for i in range(len(all_ind)-1):
+                this_ind, next_ind = all_ind[i], all_ind[i+1]
                 if this_ind > s:
                     break
                 if next_ind != -1 and this_ind != -1:
                     crosses_behavior_start = this_ind < s <= next_ind
                     if crosses_behavior_start:
                         if DEBUG:
-                            print(f"Removing {all_ind_with_removals[i+1]} (previous: {all_ind_with_removals[i]}) at index {i+1} "
+                            print(f"Removing {all_ind[i+1]} (previous: {all_ind[i]}) at index {i+1} "
                                   f"because it crosses a behavior start ({s} {e})")
-                        all_ind_with_removals[i] = -1  # Mark for removal
-                        all_ind_with_removals[i+1] = -1
+                        # all_ind_with_removals[i] = -1  # Mark for removal
+                        # all_ind_with_removals[i+1] = -1
+                        # We will take a diff, so we need to remove the previous index as well
+                        ind_to_remove.extend([i-1, i])
                         break
         for s, e in zip(starts, ends):
             # Remove any events that cross a behavior END boundary
-            for i in range(len(all_ind_with_removals)-1):
-                this_ind, next_ind = all_ind_with_removals[i], all_ind_with_removals[i+1]
+            for i in range(len(all_ind)-1):
+                this_ind, next_ind = all_ind[i], all_ind[i+1]
                 if this_ind > e:
                     break
                 if next_ind != -1 and this_ind != -1:
                     crosses_behavior_end = this_ind < e <= next_ind
                     if crosses_behavior_end:
                         if DEBUG:
-                            print(f"Removing {all_ind_with_removals[i+1]} (previous: {all_ind_with_removals[i]}) at index {i+1} "
+                            print(f"Removing {all_ind[i+1]} (previous: {all_ind[i]}) at index {i+1} "
                                   f"because it crosses a behavior end ({s} {e})")
-                        all_ind_with_removals[i] = -1  # Mark for removal
-                        all_ind_with_removals[i+1] = -1
+                        # all_ind_with_removals[i] = -1  # Mark for removal
+                        # all_ind_with_removals[i+1] = -1
+                        # We will take a diff, so we need to remove the previous index as well
+                        ind_to_remove.extend([i-1, i])
                         break
-        # all_ind_with_removals = all_ind_with_removals[all_ind_with_removals > 0]
-    inter_event_intervals = np.diff(all_ind_with_removals)
-    # If there are any intervals calculated from a -1 index, replace them with the previous value
-    # (this happens if a peak or trough was removed because it crossed a behavior boundary)
-    for i in range(len(inter_event_intervals)):
-        # Note: Can use a simple check because the original vector was sorted
-        if inter_event_intervals[i] < 0:
-            inter_event_intervals[i] = inter_event_intervals[i-1]
+        # If there are any intervals marked for removal, remove them from the diff vector directly
+        if len(ind_to_remove) > 0:
+            ind_to_remove = np.unique(ind_to_remove)
+            inter_event_intervals_with_removals = np.delete(raw_inter_event_intervals, ind_to_remove)
+            all_ind_with_removals = np.delete(all_ind_with_removals, ind_to_remove)
+        else:
+            inter_event_intervals_with_removals = raw_inter_event_intervals.copy()
+
+    else:
+        logging.warning("No behavior vector provided, so not removing any events that cross behavior boundaries... "
+                        "This will likely lead to edge artifacts")
+        inter_event_intervals_with_removals = raw_inter_event_intervals.copy()
 
     # Remove too-short intervals (regardless of above behavior crossing issues)
-    valid_ind = np.where(inter_event_intervals > min_time_between_peaks)[0]
-    all_ind = all_ind[valid_ind]
+    valid_ind = np.where(inter_event_intervals_with_removals > min_time_between_peaks)[0]
     all_ind_with_removals = all_ind_with_removals[valid_ind]
-    inter_event_intervals = inter_event_intervals[valid_ind]
+    inter_event_intervals_with_removals = inter_event_intervals_with_removals[valid_ind]
+    # Also process raw intervals for possible debugging
+    valid_ind = np.where(raw_inter_event_intervals > min_time_between_peaks)[0]
+    raw_inter_event_intervals = raw_inter_event_intervals[valid_ind]
+    all_ind = all_ind[valid_ind]
 
     # Convert to a frequency
-    inter_event_frequency = 1 / inter_event_intervals
+    inter_event_frequency = 1 / inter_event_intervals_with_removals
     # Repeat an event at the beginning and end of the vector to help edge artifacts
-    all_ind = np.concatenate([[0], all_ind, [len(dat)-1]])
     all_ind_with_removals = np.concatenate([[0], all_ind_with_removals, [len(dat)-1]])
     inter_event_frequency = np.concatenate([[inter_event_frequency[0]], inter_event_frequency,
                                             [inter_event_frequency[-1]]])
 
     # Interpolate
-    interp_obj = interp1d(all_ind, inter_event_frequency, kind='linear', bounds_error=False,
+    interp_obj = interp1d(all_ind_with_removals, inter_event_frequency, kind='cubic', bounds_error=False,
                           fill_value="extrapolate")
     x = np.arange(len(dat))
     y_interp = interp_obj(x)
+    # Clip the final output to be positive
+    y_interp = np.clip(y_interp, 0, None)
 
     if to_plot:
         # Plot using plotly, with the interpolated series on a different plot
         # Make two subplots
         fig = make_subplots(rows=2, cols=1, shared_xaxes=True)
         # First plot the raw data
-        fig.add_trace(go.Scatter(x=np.arange(len(dat)), y=dat, mode='lines'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=x, y=dat, mode='lines'), row=1, col=1)
         # Also add the peaks, troughs, and zero crossings
         fig.add_scatter(x=ind_peaks, y=dat[ind_peaks], mode='markers', name='Peaks', row=1, col=1)
         fig.add_scatter(x=ind_troughs, y=dat[ind_troughs], mode='markers', name='Troughs', row=1, col=1)
@@ -807,13 +826,17 @@ def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False,
             fig.add_scatter(x=ind_zero_crossings, y=dat[ind_zero_crossings], mode='markers', name='Zero crossings',
                             row=1, col=1)
         # Another scatter for the events that weren't removed
-        valid_ind = all_ind[all_ind_with_removals > 0]
-        fig.add_scatter(x=valid_ind, y=dat[valid_ind], mode='markers', name='Valid events', row=1, col=1)
+        fig.add_scatter(x=all_ind_with_removals, y=dat[all_ind_with_removals], mode='markers', name='Valid events', row=1, col=1)
 
         # Second subplot: interpolated time series
         fig.add_trace(go.Scatter(x=x, y=y_interp, mode='lines'), row=2, col=1)
         # Also add the raw inter-event intervals
-        fig.add_scatter(x=all_ind, y=inter_event_frequency, mode='markers', name='Inter-event frequency',
+        raw_inter_event_frequency = 1 / raw_inter_event_intervals
+        fig.add_scatter(x=all_ind, y=raw_inter_event_frequency, mode='markers', name='Raw Inter-event frequency',
+                        row=2, col=1)
+        # Add the actually used events
+        fig.add_scatter(x=all_ind_with_removals, y=inter_event_frequency, mode='markers',
+                        name='Behavior-edge artifact filtered',
                         row=2, col=1)
 
         fig.show()
