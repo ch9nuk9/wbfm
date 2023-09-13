@@ -700,7 +700,8 @@ class ProjectData:
         else:
             behavior_codes = ['signed_middle_body_speed', 'ventral_only_body_curvature', 'ventral_only_head_curvature',
                               'dorsal_only_body_curvature', 'dorsal_only_head_curvature',
-                              'worm_speed_nose_peak_frequency', 'worm_speed_body_peak_frequency']
+                              'worm_speed_nose_peak_frequency', 'worm_speed_head_peak_frequency',
+                              'worm_speed_body_peak_frequency']
                 #'signed_middle_body_speed', 'head_signed_curvature', 'summed_curvature']
                               #'fwd_empirical_distribution', 'rev_phase_counter',
                               #'quantile_curvature', 'dorsal_quantile_curvature', 'quantile_head_curvature']
