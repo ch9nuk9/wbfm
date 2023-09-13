@@ -4,6 +4,8 @@ Designed to plot the triggered average of the paper's datasets.
 import os
 from dataclasses import dataclass
 from typing import Dict, Optional
+
+import numpy as np
 from matplotlib import pyplot as plt
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
@@ -20,7 +22,7 @@ class PaperColoredTracePlotter:
     Specifically for raw/global/residual decompositions
     """
 
-    def get_color(self, trigger_type):
+    def get_color_from_trigger_type(self, trigger_type):
         color_mapping = {'raw_rev': 'tab:blue',
                          'raw': 'tab:blue',
                          'raw_fwd': 'tab:blue',
@@ -43,7 +45,7 @@ class PaperColoredTracePlotter:
         return trace_opt
 
     @classmethod
-    def get_behavior_color_from_neuron(cls, neuron_name):
+    def get_behavior_color_from_neuron_name(cls, neuron_name):
         """
         Returns the color of the cluster based on the neuron name.
 
@@ -73,7 +75,6 @@ class PaperColoredTracePlotter:
         if neuron_name not in color_mapping:
             raise ValueError(f"Neuron name {neuron_name} not found in color mapping")
         return color_mapping[neuron_name]
-
 
 
 @dataclass
@@ -226,7 +227,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         if fig_kwargs is None:
             fig_kwargs = {}
         if color is None:
-            color = self.get_color(trigger_type)
+            color = self.get_color_from_trigger_type(trigger_type)
         df = self.get_df_triggered_from_trigger_type(trigger_type)
 
         # Get the full names of all the neurons with this name
@@ -317,7 +318,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         """
         if color_list is None:
             # They will all be the same color
-            color_list = [self.get_behavior_color_from_neuron(n) for n in neuron_list]
+            color_list = [self.get_behavior_color_from_neuron_name(n) for n in neuron_list]
 
         ax = None
         for i, (neuron, color) in enumerate(zip(neuron_list, color_list)):
@@ -398,9 +399,9 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         ylim = kwargs.get('ylim', self.ylim)
 
         # Do all on one plot
-        trace_dict = {'Original trace': (df_traces[neuron_name], self.get_color('raw')),
-                      'Global component': (df_traces_global[neuron_name], self.get_color('global')),
-                      'Residual component': (df_traces_residual[neuron_name], self.get_color('residual'))}
+        trace_dict = {'Original trace': (df_traces[neuron_name], self.get_color_from_trigger_type('raw')),
+                      'Global component': (df_traces_global[neuron_name], self.get_color_from_trigger_type('global')),
+                      'Residual component': (df_traces_residual[neuron_name], self.get_color_from_trigger_type('residual'))}
 
         for i, (name, vals) in enumerate(trace_dict.items()):
             # Original trace
@@ -427,3 +428,60 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             fname = os.path.join(output_foldername, f'{neuron_name}-combined_traces.png')
             plt.savefig(fname)
             fig.savefig(fname.replace(".png", ".svg"))
+
+
+def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_folder=None, to_view=True, engine=None):
+    """
+
+    Parameters
+    ----------
+    df_probabilities
+    output_folder
+    to_view
+    engine - See https://graphviz.org/docs/layouts/ for options
+
+    Returns
+    -------
+
+    """
+    # Create a Digraph object
+    from graphviz import Digraph
+    dot = Digraph(comment='State Transition Diagram')
+
+    # Add nodes to the graph
+    for state in df_probabilities.index:
+        # Set the size parameter based on df_raw_number, if present
+        # See https://www.graphviz.org/pdf/dotguide.pdf for parameters
+        opt = dict()
+        if df_raw_number is not None:
+            max_sz = df_raw_number.max().max()
+            size = 10*np.log((df_raw_number.loc[state, state] / max_sz + 1))
+            print(state, size)
+            _opt = dict(width=str(size), height=str(size), shape='circle', fixedsize='true')
+            opt.update(_opt)
+        # Also set the color based on the state
+        state_enum = BehaviorCodes[state]
+        color = state_enum.ethogram_cmap(include_turns=True, use_plotly_style_strings=False)[state_enum]
+        opt['fillcolor'] = color
+        opt['style'] = 'filled'
+        # opt['fontcolor'] = color
+
+        dot.node(state, **opt)
+
+    # Add edges to the graph with labels and widths based on transition probabilities
+    eps = 0.01
+    for from_state in df_probabilities.index:
+        for to_state in df_probabilities.columns:
+            probability = df_probabilities.loc[from_state, to_state]
+            if probability > eps:
+                dot.edge(from_state, to_state, label=f'{probability:.2f}', penwidth=str(probability * 5))
+
+    # Render the graph to a file or display it
+    if output_folder is not None:
+        fname = os.path.join(output_folder, 'state_transition_diagram')
+        dot.render(fname, view=False, format='png', engine=engine)
+        dot.render(fname, view=to_view, format='pdf', engine=engine)
+    else:
+        dot.render(view=to_view, format='pdf', engine=engine)
+
+    return dot

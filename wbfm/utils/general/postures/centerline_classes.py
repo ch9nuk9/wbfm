@@ -25,7 +25,8 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_p
     shade_using_behavior_plotly, calc_slowing_from_speed, detect_peaks_and_interpolate_using_inter_event_intervals
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
     remove_short_state_changes, pad_events_in_binary_vector, make_binary_vector_from_starts_and_ends, \
-    get_dataframe_of_transitions, plot_dataframe_of_transitions
+    get_dataframe_of_transitions
+from wbfm.utils.visualization.paper_multidataset_triggered_average import plot_dataframe_of_transitions
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
     MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
@@ -1849,10 +1850,10 @@ class WormFullVideoPosture:
         rev_starts, rev_ends = get_contiguous_blocks_from_column(y_rev, already_boolean=True)
         return rev_starts, rev_ends
 
-    def plot_behavior_transition_diagram(self, output_folder=None, **kwargs):
+    def plot_behavior_transition_diagram(self, output_folder=None, graph_kwargs=None, change_size_of_nodes=False,
+                                         **kwargs):
         """
         Uses graphviz to plot the transitions between behaviors
-
 
         Parameters
         ----------
@@ -1862,15 +1863,22 @@ class WormFullVideoPosture:
         -------
 
         """
+        if graph_kwargs is None:
+            graph_kwargs = {}
         kwargs.setdefault('fluorescence_fps', True)
         beh_vec = self.beh_annotation(include_slowing=True, include_turns=True, **kwargs)
         beh_vec = BehaviorCodes.convert_to_simple_states_vector(beh_vec)
         beh_vec = beh_vec.apply(lambda x: x.name)
 
-        crosstab_df = get_dataframe_of_transitions(beh_vec, convert_to_probabilities=True, ignore_diagonal=True)
-        crosstab_df = crosstab_df.drop(columns='UNKNOWN').drop(labels='UNKNOWN')
-        dot = plot_dataframe_of_transitions(crosstab_df, to_view=True, output_folder=output_folder)
-        return dot
+        df_probabilities = get_dataframe_of_transitions(beh_vec, convert_to_probabilities=True, ignore_diagonal=True)
+        df_probabilities = df_probabilities.drop(columns='UNKNOWN').drop(labels='UNKNOWN')
+        if change_size_of_nodes:
+            df_raw_number = get_dataframe_of_transitions(beh_vec, convert_to_probabilities=False, ignore_diagonal=False)
+            df_raw_number = df_raw_number.drop(columns='UNKNOWN').drop(labels='UNKNOWN')
+        else:
+            df_raw_number = None
+        dot = plot_dataframe_of_transitions(df_probabilities, df_raw_number=df_raw_number, to_view=True, output_folder=output_folder, **graph_kwargs)
+        return dot, df_probabilities, df_raw_number
 
     # Raw videos
     def behavior_video_avi_fname(self):

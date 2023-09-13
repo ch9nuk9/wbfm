@@ -762,7 +762,7 @@ class TrackedWorm:
                 if with_confidence:
                     annotation_str = f"{annotation_str} conf={conf:.2f}"
                 txt = plt.annotate(annotation_str, (x0, y0), xytext=(x0-1, y_text),
-                                   arrowprops=dict(facecolor=line[0].get_color()))
+                                   arrowprops=dict(facecolor=line[0].get_color_from_trigger_type()))
                 ylim = plt.gca().get_ylim()
                 plt.ylim([0, 2*np.max(y)])
                 all_annotations.append(txt)

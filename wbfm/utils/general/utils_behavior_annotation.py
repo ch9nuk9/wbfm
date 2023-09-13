@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from enum import Flag, auto
 from pathlib import Path
 from typing import List, Union, Optional, Dict
@@ -269,9 +270,19 @@ class BehaviorCodes(Flag):
 
     @classmethod
     def ethogram_cmap(cls, include_turns=True, include_reversal_turns=False, include_quiescence=False,
-                      include_collision=False,
-                      additional_shaded_states=None) -> Dict['BehaviorCodes', str]:
-        """Colormap for shading as a stand-alone ethogram"""
+                      include_collision=False, additional_shaded_states=None,
+                      use_plotly_style_strings=True) -> Dict['BehaviorCodes', str]:
+        """
+        Colormap for shading as a stand-alone ethogram
+
+        Returns a dictionary mapping each state to a color, using a plotly colormap
+        Example:
+            {BehaviorCodes.FWD: 'rgb(228,26,28)'}
+
+        Alternative output is hex format (use_plotly_style_strings=False):
+            {BehaviorCodes.FWD: '#E41A1C'}
+
+        """
         base_cmap = cls.base_colormap()
         cmap = {cls.UNKNOWN: None,
                 cls.FWD: base_cmap[0],
@@ -292,9 +303,13 @@ class BehaviorCodes(Flag):
                 cls.QUIESCENCE: base_cmap[6],
                 cls.QUIESCENCE | cls.VENTRAL_TURN: base_cmap[6],
                 cls.QUIESCENCE | cls.DORSAL_TURN: base_cmap[6],
+                cls.SLOWING: base_cmap[6],
+                cls.SLOWING | cls.FWD: base_cmap[6],
                 }
         if include_turns:
             # Turns during FWD are differentiated, but not during REV
+            cmap[cls.VENTRAL_TURN] = base_cmap[2]
+            cmap[cls.DORSAL_TURN] = base_cmap[3]
             cmap[cls.FWD | cls.VENTRAL_TURN] = base_cmap[2]
             cmap[cls.FWD | cls.DORSAL_TURN] = base_cmap[3]
             cmap[cls.REV | cls.VENTRAL_TURN] = base_cmap[1]
@@ -326,6 +341,17 @@ class BehaviorCodes(Flag):
                                  f"colormap. Base colormap: {base_cmap}, ethogram colormap: {cmap}")
             for i, state in enumerate(additional_shaded_states):
                 cmap[state] = base_cmap[i_color_offset + i]
+
+        if not use_plotly_style_strings:
+            # Convert to rgb strings
+            # The strings are by default a string like 'rgb(228,26,28)'
+            # First we need to convert the strings to a tuple of integers
+            def str_2_tuple(s):
+                integers = re.findall(r'\d+', s)
+                # Convert the found integers to integers (they are initially strings)
+                return [int(num)/255 for num in integers]
+            cmap = {k: matplotlib.colors.to_hex(str_2_tuple(v)) if v else v for k, v in cmap.items()}
+
         return cmap
 
     # @classmethod
@@ -1312,3 +1338,7 @@ def get_heading_vector_from_phase_pair_segments(t, seg_pairs, df_pos):
         return np.array([np.nan, np.nan])
     else:
         return np.mean(all_vectors, axis=0)
+
+
+def rgb_to_hex(rgb: List[int]):
+    return '#%02x%02x%02x' % rgb
