@@ -680,7 +680,8 @@ class ProjectData:
                                return_slow_scale_separation: bool = False,
                                rename_neurons_using_manual_ids: bool = False,
                                z_score: bool = False,
-                               binary_behaviors: bool=False,
+                               binary_behaviors: bool = False,
+                               add_constant: bool = False,
                                verbose=0,
                                **kwargs):
         """
@@ -734,6 +735,10 @@ class ProjectData:
         # Optional: z-score
         if z_score:
             df = (df - df.mean(axis=0)) / df.std(axis=0)
+
+        # Optional: add a constant column
+        if add_constant:
+            df['constant'] = 1
 
         return df
 

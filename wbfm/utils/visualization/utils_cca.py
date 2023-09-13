@@ -53,9 +53,11 @@ class CCAPlotter:
             self._df_traces_truncated = pd.DataFrame(X, index=df_traces.index)
             self._pca_traces = pca
 
-        df_beh = self.project_data.calc_default_behaviors(**opt)
+        df_beh = self.project_data.calc_default_behaviors(**opt, add_constant=False)
         # Standardize, but do not fully z-score, the behaviors
-        df_beh = df_beh / df_beh.std()
+        beh_std = df_beh.std()
+        beh_std[beh_std == 0] = 1  # There may be a constant column, which should not be divided by 0
+        df_beh = df_beh / beh_std
         self._df_beh = df_beh
         if self.preprocess_behavior_using_pca:
             X, pca = self._truncate_using_pca(df_beh, n_components=self.truncate_behavior_to_n_components)
