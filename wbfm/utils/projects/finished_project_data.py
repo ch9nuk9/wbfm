@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from methodtools import lru_cache
 from pathlib import Path
 from matplotlib import pyplot as plt
+from scipy import signal
 from scipy.signal import detrend
 from sklearn.decomposition import PCA
 
@@ -27,6 +28,8 @@ import numpy as np
 import pandas as pd
 import zarr
 from tqdm.auto import tqdm
+
+from wbfm.utils.traces.triggered_averages import plot_triggered_average_from_matrix_low_level
 from wbfm.utils.visualization.hardcoded_paths import names_of_neurons_to_id
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
     get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns, \
@@ -2182,3 +2185,74 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
             ax2.plot(pca_proj[:, i] / np.max(pca_proj[:, i]) - i, label=f'mode {i+1}')
         plt.legend()
         ax2.set_title("PCA modes")
+
+
+def calc_frequency_spectrum(project_data, neuron_name, **kwargs):
+    """
+    Uses Welch's method to calculate a frequency spectrum
+
+    Parameters
+    ----------
+    project_data
+    neuron_name
+
+    Returns
+    -------
+
+    """
+
+    df_traces = project_data.calc_default_traces(**kwargs)
+    y = df_traces[neuron_name]
+
+    fs = project_data.physical_unit_conversion.volumes_per_second
+    frequencies, Pxx_den = signal.welch(y, fs)
+    return frequencies, Pxx_den
+
+
+def plot_frequencies_for_fm_and_immob_projects(all_projects_wbfm, all_projects_immob, neuron_name,
+                                               output_folder=None, **kwargs):
+    """
+    Calculates the frequency spectrum for a neuron in all projects, and plots them
+
+    Parameters
+    ----------
+    all_projects_wbfm
+    all_projects_immob
+    neuron_name
+    kwargs
+
+    Returns
+    -------
+
+    """
+    # Calculate all frequencies
+    all_pxx_wbfm = {}
+    all_pxx_immob = {}
+    for name, proj in all_projects_wbfm.items():
+        try:
+            frequency_wbfm, all_pxx_wbfm[name] = calc_frequency_spectrum(proj, neuron_name, **kwargs)
+        except KeyError:
+            pass
+    for name, proj in all_projects_immob.items():
+        try:
+            frequency_immob, all_pxx_immob[name] = calc_frequency_spectrum(proj, neuron_name, **kwargs)
+        except KeyError:
+            pass
+
+    df_pxx_wbfm = pd.DataFrame(all_pxx_wbfm)
+    df_pxx_immob = pd.DataFrame(all_pxx_immob)
+
+    # Plot like the triggered averages (median plus shading)
+    opt = dict(ind_preceding=0)
+    ax, _ = plot_triggered_average_from_matrix_low_level(df_pxx_wbfm, label='Freely moving', **opt)
+    ax, _ = plot_triggered_average_from_matrix_low_level(df_pxx_immob, ax=ax, is_second_plot=True, label='Immobilized',
+                                                         **opt)
+    plt.legend()
+    ax.set_xlabel("Frequency (Hz)")
+    ax.set_ylabel("Power")
+    ax.set_title(f"Frequency spectrum for {neuron_name}")
+
+    if output_folder is not None:
+        fname = f"frequency_spectrum_{neuron_name}.png"
+        fname = Path(output_folder).joinpath(fname)
+        plt.savefig(fname)

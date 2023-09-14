@@ -31,8 +31,8 @@ from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_ave
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 
-def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines,
-                                                 show_individual_lines, is_second_plot, ax, xlim=None, z_score=False,
+def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines=0,
+                                                 show_individual_lines=False, is_second_plot=False, ax=None, xlim=None, z_score=False,
                                                  show_shading=True,
                                                  **kwargs):
     """
