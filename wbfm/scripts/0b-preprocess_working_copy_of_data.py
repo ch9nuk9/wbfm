@@ -57,7 +57,7 @@ def main(_config, _run):
     if num_frames is None:
         # Check the number of total frames in the video, and update the parameter
         # Note: requires correct value of num_slices
-        num_raw_slices = _config['dataset_params']['num_slices']
+        num_raw_slices = cfg.config['dataset_params']['num_slices']
         red_bigtiff_fname = cfg.config['red_bigtiff_fname']
         num_volumes = calculate_number_of_volumes_from_tiff_file(num_raw_slices, red_bigtiff_fname)
         num_frames = int(num_volumes)
