@@ -761,10 +761,10 @@ class WormFullVideoPosture:
             y = self.worm_speed_from_kymograph_peak_detection(body_segment=50, signed=False, **kwargs)
         elif behavior_alias == 'worm_speed_body_peak_frequency':
             y = self.worm_speed_from_kymograph_peak_detection(body_segment=50, signed=True, **kwargs)
-        # elif behavior_alias == 'worm_speed_nose_cast_frequency':
-        #     # An additional round of peak detection
-        #     y = self.worm_speed_from_kymograph_peak_detection(body_segment=3, peak_kwargs=dict(prominence_factor=0.1),
-        #                                                       signed=False, **kwargs)
+        elif behavior_alias == 'worm_speed_head_cast_frequency':
+            y = self.worm_head_cast_frequency(body_segment=10, **kwargs)
+        elif behavior_alias == 'worm_speed_nose_cast_frequency':
+            y = self.worm_head_cast_frequency(**kwargs)
         elif behavior_alias == 'fwd_counter':
             y = self.calc_counter_state(state=BehaviorCodes.FWD, **kwargs)
         elif behavior_alias == 'fwd_phase_counter':
