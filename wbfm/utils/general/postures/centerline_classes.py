@@ -22,11 +22,11 @@ from wbfm.utils.external.utils_breakpoints import plot_with_offset_x
 from wbfm.utils.external.utils_self_collision import calculate_self_collision_using_pairwise_distances
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate, \
     shade_using_behavior, get_same_phase_segment_pairs, get_heading_vector_from_phase_pair_segments, \
-    shade_using_behavior_plotly, calc_slowing_from_speed, detect_peaks_and_interpolate_using_inter_event_intervals
+    shade_using_behavior_plotly, calc_slowing_from_speed, detect_peaks_and_interpolate_using_inter_event_intervals, \
+    plot_dataframe_of_transitions
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
     remove_short_state_changes, pad_events_in_binary_vector, make_binary_vector_from_starts_and_ends, \
     get_dataframe_of_transitions
-from wbfm.utils.visualization.paper_multidataset_triggered_average import plot_dataframe_of_transitions
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
     MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion

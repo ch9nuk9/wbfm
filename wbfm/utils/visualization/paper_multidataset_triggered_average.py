@@ -5,7 +5,6 @@ import os
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-import numpy as np
 from matplotlib import pyplot as plt
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
@@ -430,58 +429,3 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             fig.savefig(fname.replace(".png", ".svg"))
 
 
-def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_folder=None, to_view=True, engine=None):
-    """
-
-    Parameters
-    ----------
-    df_probabilities
-    output_folder
-    to_view
-    engine - See https://graphviz.org/docs/layouts/ for options
-
-    Returns
-    -------
-
-    """
-    # Create a Digraph object
-    from graphviz import Digraph
-    dot = Digraph(comment='State Transition Diagram')
-
-    # Add nodes to the graph
-    for state in df_probabilities.index:
-        # Set the size parameter based on df_raw_number, if present
-        # See https://www.graphviz.org/pdf/dotguide.pdf for parameters
-        opt = dict()
-        if df_raw_number is not None:
-            max_sz = df_raw_number.max().max()
-            size = 10*np.log((df_raw_number.loc[state, state] / max_sz + 1))
-            print(state, size)
-            _opt = dict(width=str(size), height=str(size), shape='circle', fixedsize='true')
-            opt.update(_opt)
-        # Also set the color based on the state
-        state_enum = BehaviorCodes[state]
-        color = state_enum.ethogram_cmap(include_turns=True, use_plotly_style_strings=False)[state_enum]
-        opt['fillcolor'] = color
-        opt['style'] = 'filled'
-        # opt['fontcolor'] = color
-
-        dot.node(state, **opt)
-
-    # Add edges to the graph with labels and widths based on transition probabilities
-    eps = 0.01
-    for from_state in df_probabilities.index:
-        for to_state in df_probabilities.columns:
-            probability = df_probabilities.loc[from_state, to_state]
-            if probability > eps:
-                dot.edge(from_state, to_state, label=f'{probability:.2f}', penwidth=str(probability * 5))
-
-    # Render the graph to a file or display it
-    if output_folder is not None:
-        fname = os.path.join(output_folder, 'state_transition_diagram')
-        dot.render(fname, view=False, format='png', engine=engine)
-        dot.render(fname, view=to_view, format='pdf', engine=engine)
-    else:
-        dot.render(view=to_view, format='pdf', engine=engine)
-
-    return dot
