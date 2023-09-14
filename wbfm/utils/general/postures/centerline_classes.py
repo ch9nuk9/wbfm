@@ -749,20 +749,22 @@ class WormFullVideoPosture:
             y = self.worm_angular_velocity(**kwargs)
         elif behavior_alias == 'worm_speed_average_all_segments':
             y = self.worm_speed_average_all_segments(**kwargs)
-        elif behavior_alias == 'worm_speed_nose_peak_frequency':
+        elif behavior_alias == 'worm_nose_peak_frequency':
             # Needs to be more sensitive peak detection
             y = self.worm_speed_from_kymograph_peak_detection(body_segment=3, peak_kwargs=dict(prominence_factor=0.1),
-                                                              signed=True, **kwargs)
-        elif behavior_alias == 'worm_speed_head_peak_frequency':
+                                                              signed=False, **kwargs)
+        elif behavior_alias == 'worm_head_peak_frequency':
             # Needs to be more sensitive peak detection
             y = self.worm_speed_from_kymograph_peak_detection(body_segment=10, peak_kwargs=dict(prominence_factor=0.1),
-                                                              signed=True, **kwargs)
+                                                              signed=False, **kwargs)
+        elif behavior_alias == 'worm_body_peak_frequency':
+            y = self.worm_speed_from_kymograph_peak_detection(body_segment=50, signed=False, **kwargs)
         elif behavior_alias == 'worm_speed_body_peak_frequency':
             y = self.worm_speed_from_kymograph_peak_detection(body_segment=50, signed=True, **kwargs)
-        elif behavior_alias == 'worm_speed_nose_cast_frequency':
-            # An additional round of peak detection
-            y = self.worm_speed_from_kymograph_peak_detection(body_segment=3, peak_kwargs=dict(prominence_factor=0.1),
-                                                              signed=True, **kwargs)
+        # elif behavior_alias == 'worm_speed_nose_cast_frequency':
+        #     # An additional round of peak detection
+        #     y = self.worm_speed_from_kymograph_peak_detection(body_segment=3, peak_kwargs=dict(prominence_factor=0.1),
+        #                                                       signed=False, **kwargs)
         elif behavior_alias == 'fwd_counter':
             y = self.calc_counter_state(state=BehaviorCodes.FWD, **kwargs)
         elif behavior_alias == 'fwd_phase_counter':

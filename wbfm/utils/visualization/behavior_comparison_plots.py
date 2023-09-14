@@ -381,7 +381,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
     def unpack_behavioral_time_series_from_name(self, y_train_name, trace_len):
         """
-        See calc_speed_from_alias for valid aliases
+        See calc_behavior_from_alias for valid aliases
 
         Parameters
         ----------
@@ -431,7 +431,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         return fig, model, best_neuron
 
-    def plot_X(self, df_name, y_train=None):
+    def plot_x(self, df_name, y_train=None):
         X = self.all_dfs[df_name]
         X, y, y_binary, y_train_name = self.prepare_training_data(X, y_train)
 
