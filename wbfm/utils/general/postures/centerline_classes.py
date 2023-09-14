@@ -1025,6 +1025,7 @@ class WormFullVideoPosture:
         # Process to proper fps and sign
         y_interp = pd.Series(y_interp, index=y.index)
         speed = self._validate_and_downsample(y_interp, fluorescence_fps=fluorescence_fps, **kwargs)
+        speed = pd.Series(speed)
         if signed:
             speed = self.flip_of_vector_during_state(speed, fluorescence_fps=fluorescence_fps)
 
@@ -1085,6 +1086,19 @@ class WormFullVideoPosture:
         for i, i_seg in enumerate(range(start_segment, end_segment)):
             single_segment_opt['body_segment'] = i_seg
             all_speeds[i, :] = self.worm_speed(**single_segment_opt)
+        all_speeds = pd.DataFrame(all_speeds)
+        return all_speeds
+
+    def calc_inter_peak_frequency_kymograph(self, start_segment=0, end_segment=99, **kwargs):
+        single_segment_opt = kwargs.copy()
+        all_speeds = None
+        for i, i_seg in enumerate(range(start_segment, end_segment)):
+            single_segment_opt['body_segment'] = i_seg
+            this_speed = self.worm_speed_from_kymograph_peak_detection(**single_segment_opt)
+            if all_speeds is None:
+                max_len = len(this_speed)
+                all_speeds = np.zeros((end_segment - start_segment, max_len))
+            all_speeds[i, :] = this_speed
         all_speeds = pd.DataFrame(all_speeds)
         return all_speeds
 
