@@ -675,7 +675,7 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
     return fig
 
 
-def detect_peaks_and_interpolate(dat, to_plot=False, fig=None, height="mean", width=5):
+def detect_peaks_and_interpolate(dat, to_plot=False, fig=None, height="mean", height_factor=1.0, width=5):
     """
     Builds a time series approximating the highest peaks of an oscillating signal
 
@@ -693,13 +693,15 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None, height="mean", wi
 
     # Get peaks
     if height == "mean":
-        height = np.mean(dat)
+        height = height_factor * np.mean(dat)
+    elif height == "std":
+        height = height_factor * np.std(dat)
     peaks, properties = find_peaks(dat, height=height, width=width)
     y_peaks = dat[peaks]
 
-    # Add a dummy peak at height 0 at the beginning and end of the vector to help edge artifacts
+    # Add a dummy peak at the beginning and end of the vector to help edge artifacts
     peaks = np.concatenate([[0], peaks, [len(dat)-1]])
-    y_peaks = np.concatenate([[0], y_peaks, [0]])
+    y_peaks = np.concatenate([[y_peaks.iat[0]], y_peaks, [y_peaks.iat[-1]]])
 
     # Interpolate
     interp_obj = interp1d(peaks, y_peaks, kind='cubic', bounds_error=False, fill_value="extrapolate")

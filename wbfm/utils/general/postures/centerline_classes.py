@@ -1627,15 +1627,7 @@ class WormFullVideoPosture:
         else:
             dat = self.calc_behavior_from_alias('ventral_only_head_curvature')
 
-        # kymo = self.curvature(fluorescence_fps=fluorescence_fps, reset_index=True).T
-        # dat = kymo.iloc[i_segment, :]
-        # if flip:
-        #     # Ventral should be unflipped
-        #     dat = -dat
-
         x, y_interp, interp_obj = detect_peaks_and_interpolate(dat, to_plot=to_plot, width=2)
-        # if flip:
-        #     y_interp = -y_interp
         return self._shorten_to_trace_length(pd.Series(y_interp))
 
     def calc_full_matrix_interpolated_curvature_using_peak_detection(self, fluorescence_fps=True, flip=False):
