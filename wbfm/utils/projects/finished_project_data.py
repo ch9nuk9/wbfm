@@ -2239,20 +2239,28 @@ def plot_frequencies_for_fm_and_immob_projects(all_projects_wbfm, all_projects_i
         except KeyError:
             pass
 
-    df_pxx_wbfm = pd.DataFrame(all_pxx_wbfm)
-    df_pxx_immob = pd.DataFrame(all_pxx_immob)
+    df_pxx_wbfm = pd.DataFrame(all_pxx_wbfm, index=frequency_wbfm).T
+    df_pxx_immob = pd.DataFrame(all_pxx_immob, index=frequency_immob).T
+
+    # Normalize them to have the same initial (after the trivial i=0) value
+    df_pxx_wbfm = df_pxx_wbfm.div(df_pxx_wbfm.iloc[:, 1], axis=0)
+    df_pxx_immob = df_pxx_immob.div(df_pxx_immob.iloc[:, 1], axis=0)
 
     # Plot like the triggered averages (median plus shading)
     opt = dict(ind_preceding=0)
-    ax, _ = plot_triggered_average_from_matrix_low_level(df_pxx_wbfm, label='Freely moving', **opt)
+    ax, _ = plot_triggered_average_from_matrix_low_level(df_pxx_wbfm, label='Freely moving', is_second_plot=True, **opt)
     ax, _ = plot_triggered_average_from_matrix_low_level(df_pxx_immob, ax=ax, is_second_plot=True, label='Immobilized',
                                                          **opt)
     plt.legend()
+    ax.set_xlim(0.01, 0.5)
     ax.set_xlabel("Frequency (Hz)")
-    ax.set_ylabel("Power")
+    ax.set_ylabel("Normalized Power")
     ax.set_title(f"Frequency spectrum for {neuron_name}")
 
     if output_folder is not None:
+        plt.tight_layout()
         fname = f"frequency_spectrum_{neuron_name}.png"
         fname = Path(output_folder).joinpath(fname)
         plt.savefig(fname)
+
+    return df_pxx_wbfm, df_pxx_immob, all_pxx_wbfm, all_pxx_immob
