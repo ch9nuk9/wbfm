@@ -642,8 +642,9 @@ class WormFullVideoPosture:
                      'ventral_only_head_curvature', 'dorsal_only_head_curvature',
                      'speed_plateau_piecewise_linear_onset', 'speed_plateau_piecewise_linear_offset',
                      'fwd_empirical_distribution', 'rev_empirical_distribution',
-                     'worm_speed_nose_peak_frequency', 'worm_speed_head_peak_frequency',
-                     'worm_speed_body_peak_frequency']
+                     'worm_nose_peak_frequency', 'worm_head_peak_frequency',
+                     'worm_speed_body_peak_frequency',
+                     'worm_speed_head_cast_frequency', 'worm_speed_nose_cast_frequency']
         behaviors.extend(BehaviorCodes.possible_behavior_aliases())
         return behaviors
 

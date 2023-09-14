@@ -19,7 +19,7 @@ if __name__ == "__main__":
     elif fluorescence_fps == 'True':
         fluorescence_fps = True
     else:
-        raise ValueError(f"Unknown fluorescence_fps {fluorescence_fps}; must be True or False")
+        fluorescence_fps = True
     DEBUG = args.DEBUG
 
     print("Starting behavior explorer GUI, may take up to a minute to load...")

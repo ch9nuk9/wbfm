@@ -46,7 +46,8 @@ class NeuronEncodingBase:
     dataframes_to_load: List[str] = field(default_factory=lambda: ['ratio'])  # 'red', 'green', 'ratio_filt'])
 
     is_valid: bool = True
-    df_kwargs: dict = field(default_factory=lambda: dict(filter_mode='rolling_mean'))
+    df_kwargs: dict = field(default_factory=lambda: dict(filter_mode='rolling_mean',
+                                                         rename_neurons_using_manual_ids=True,))
 
     # Needed to interpret the coefficients
     z_score: bool = False
@@ -734,6 +735,8 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
 
         all_pfi = np.hstack(all_pfi)
         df_pfi = pd.DataFrame(all_pfi.T, columns=X.columns)
+        # Sort by median value
+        df_pfi = df_pfi.reindex(df_pfi.median().sort_values(ascending=False).index, axis=1)
         fig = px.box(df_pfi, title=f"Feature importance for predicting: {y_train}")
         if to_show:
             fig.show()
