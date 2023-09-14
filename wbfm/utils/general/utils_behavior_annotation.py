@@ -723,7 +723,7 @@ def detect_peaks_and_interpolate(dat, to_plot=False, fig=None, height="mean", he
 def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False, fig=None,
                                                              beh_vector=None, include_zero_crossings=False,
                                                              min_time_between_peaks=2, prominence_factor=0.25,
-                                                             height=None, width=5, DEBUG=False):
+                                                             height=None, width=5, verbose=1, DEBUG=False):
     """
     Somewhat similar to detect_peaks_and_interpolate, but instead of using the peaks themselves, uses the
     inter-event intervals to interpolate between the peaks, troughs, and zero crossings
@@ -815,8 +815,9 @@ def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False,
             inter_event_intervals_with_removals = raw_inter_event_intervals.copy()
 
     else:
-        logging.warning("No behavior vector provided, so not removing any events that cross behavior boundaries... "
-                        "This will likely lead to edge artifacts")
+        if verbose >= 1:
+            logging.warning("No behavior vector provided, so not removing any events that cross behavior boundaries... "
+                            "This will likely lead to edge artifacts")
         inter_event_intervals_with_removals = raw_inter_event_intervals.copy()
 
     # Remove too-short intervals (regardless of above behavior crossing issues)

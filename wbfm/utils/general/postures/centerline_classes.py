@@ -759,6 +759,10 @@ class WormFullVideoPosture:
                                                               signed=True, **kwargs)
         elif behavior_alias == 'worm_speed_body_peak_frequency':
             y = self.worm_speed_from_kymograph_peak_detection(body_segment=50, signed=True, **kwargs)
+        elif behavior_alias == 'worm_speed_nose_cast_frequency':
+            # An additional round of peak detection
+            y = self.worm_speed_from_kymograph_peak_detection(body_segment=3, peak_kwargs=dict(prominence_factor=0.1),
+                                                              signed=True, **kwargs)
         elif behavior_alias == 'fwd_counter':
             y = self.calc_counter_state(state=BehaviorCodes.FWD, **kwargs)
         elif behavior_alias == 'fwd_phase_counter':
@@ -1018,7 +1022,7 @@ class WormFullVideoPosture:
         # Get behavior (for removing artifacts)
         beh_vec = self.calc_behavior_from_alias('rev', fluorescence_fps=False, reset_index=False)
 
-        # Get the raw frequency vector
+        # Get the raw frequency vector (high fps)
         x, y_interp, interp_obj = detect_peaks_and_interpolate_using_inter_event_intervals(y, beh_vector=beh_vec,
                                                                                            **peak_kwargs)
 
@@ -1030,6 +1034,35 @@ class WormFullVideoPosture:
             speed = self.flip_of_vector_during_state(speed, fluorescence_fps=fluorescence_fps)
 
         return speed
+
+    def worm_head_cast_frequency(self, fluorescence_fps=False, body_segment=3, **kwargs):
+        """
+        Starts from the worm_speed_from_kymograph_peak_detection, which detects the inter-peak interval
+        This time series shows peaks, which are head or nose casts depending on the body segment
+        The uses the same peak detection function again, to calculate the frequency of these events
+
+        Parameters
+        ----------
+        fluorescence_fps
+        kwargs
+
+        Returns
+        -------
+
+        """
+        # Get kymograph peak time series
+        y = self.worm_speed_from_kymograph_peak_detection(fluorescence_fps=False, body_segment=body_segment, **kwargs)
+
+        # Calculate peaks again, but don't remove edge artifacts
+        x, y_interp, interp_obj = detect_peaks_and_interpolate_using_inter_event_intervals(y, verbose=0,
+                                                                                           height=0, width=1)
+
+        # Process to proper fps and sign
+        y_interp = pd.Series(y_interp, index=y.index)
+        y = self._validate_and_downsample(y_interp, fluorescence_fps=fluorescence_fps, **kwargs)
+        # Also filter because this is so low-resolution
+        y = filter_gaussian_moving_average(y, std=15)
+        return y
 
     def worm_acceleration(self, fluorescence_fps=False, **kwargs):
         """
