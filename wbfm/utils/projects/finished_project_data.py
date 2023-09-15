@@ -2187,7 +2187,7 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
         ax2.set_title("PCA modes")
 
 
-def calc_frequency_spectrum(project_data, neuron_name, **kwargs):
+def calc_frequency_spectrum(project_data, neuron_name, z_score=False, **kwargs):
     """
     Uses Welch's method to calculate a frequency spectrum
 
@@ -2203,6 +2203,8 @@ def calc_frequency_spectrum(project_data, neuron_name, **kwargs):
 
     df_traces = project_data.calc_default_traces(**kwargs)
     y = df_traces[neuron_name]
+    if z_score:
+        y = (y - y.mean()) / y.std()
 
     fs = project_data.physical_unit_conversion.volumes_per_second
     frequencies, Pxx_den = signal.welch(y, fs)

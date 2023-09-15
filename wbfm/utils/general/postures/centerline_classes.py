@@ -2429,3 +2429,35 @@ def fit_piecewise_regression(dat, all_ends, all_starts, min_length=10,
     return new_starts, new_ends, new_times_series_starts, new_times_series_ends, all_pw_fits
 
 
+def calculate_dataframe_for_export(worm):
+    """
+    For export to collaborators working on behavioral time series analysis
+
+    Format is a multilevel dataframe with the following columns:
+    - Curvature
+      - Subcolumns are body segments
+    - Trajectory
+      - Subcolumns are x and y
+    - Behavior ethogram
+      - Subcolumns are behavior names (reverse, ventral turn, etc)
+
+    Parameters
+    ----------
+    worm
+
+    Returns
+    -------
+
+    """
+    curvature = worm.curvature()
+    trajectory = worm.stage_position(reset_index=True)
+
+    raw_behavior = worm.beh_annotation()
+    rev = BehaviorCodes.vector_equality(raw_behavior, BehaviorCodes.REV)[:-1]
+    vt = BehaviorCodes.vector_equality(raw_behavior, BehaviorCodes.VENTRAL_TURN)[:-1]
+    df_beh = pd.DataFrame(dict(Reversal=rev, Ventral_Turn=vt))
+
+    # Build a multiindex dataframe, with new top-level names for each of the above dataframes
+    df = pd.concat([curvature, trajectory, df_beh], axis=1, keys=['Curvature', 'Trajectory', 'Behavior'])
+
+    return df
