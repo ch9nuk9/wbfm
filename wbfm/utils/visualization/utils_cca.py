@@ -170,12 +170,11 @@ class CCAPlotter:
 
         X_r, Y_r, cca = self.calc_cca(n_components=n_components, binary_behaviors=binary_behaviors, **kwargs)
         df_x, df_y = self.get_weights_from_cca(cca, binary_behaviors, **kwargs)
-        mode_corr = self.calc_mode_correlation(n_components=n_components, binary_behaviors=binary_behaviors, **kwargs)
 
         def f(i=0):
             df = pd.DataFrame({'Latent X': X_r[:, i] / X_r[:, i].max(),
                                'Latent Y': Y_r[:, i] / Y_r[:, i].max()})
-            fig = px.line(df, title=f'Latent mode {i+1}, correlation={mode_corr[i]}')
+            fig = px.line(df, title=f'Latent mode {i+1}, correlation={pd.Series(X_r[:, i]).corr(pd.Series(Y_r[:, i]))}')
             self.project_data.shade_axis_using_behavior(plotly_fig=fig)
             fig.show()
 
