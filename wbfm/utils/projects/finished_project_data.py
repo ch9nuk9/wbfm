@@ -925,6 +925,10 @@ class ProjectData:
             else:
                 df = df_slow
 
+        # Optional: remove neurons with specific manual annotations
+        if remove_tail_neurons:
+            df = df.drop(columns=self.tail_neuron_names())
+
         # Optional: rename columns to use manual ids, if found
         if rename_neurons_using_manual_ids:
             mapping = self.neuron_name_to_manual_id_mapping(confidence_threshold=manual_id_confidence_threshold)
@@ -1641,7 +1645,8 @@ class ProjectData:
 
         """
         if 'Notes' in self.df_manual_tracking:
-            names = [n for n in self.df_manual_tracking['Notes'] if 'tail' in n.lower()]
+            tail_ids = self.df_manual_tracking['Notes'].str.contains('tail', case=False)
+            names = list(self.df_manual_tracking['Neuron ID'][tail_ids].values)
         else:
             names = []
         return names
