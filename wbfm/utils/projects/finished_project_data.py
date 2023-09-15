@@ -318,27 +318,14 @@ class ProjectData:
     def df_all_tracklets(self) -> pd.DataFrame:
         """Sparse Dataframe of all tracklets"""
 
-        if self.verbose >= 1:
-            self.logger.info("First time loading all the tracklets, may take a while...")
-        train_cfg = self.project_config.get_training_config()
-        track_cfg = self.project_config.get_tracking_config()
-
-        # Manual annotations take precedence by default
-        possible_fnames = dict(
-            manual=track_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname'),
-            wiggle=track_cfg.resolve_relative_path_from_config('wiggle_split_tracklets_df_fname'),
-            automatic=train_cfg.resolve_relative_path_from_config('df_3d_tracklets'))
-        fname_precedence = self.precedence_df_tracklets
-        df_all_tracklets, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                    this_reader=pandas_read_any_filetype)
+        df_all_tracklets, fname = self._load_df_tracklets()
         self.df_all_tracklets_fname = fname
         self.all_used_fnames.append(fname)
+        train_cfg = self.project_config.get_training_config()
 
         # Loosely check if there has been any manual annotation
         if train_cfg.config['df_3d_tracklets'] != "2-training_data/all_tracklets.pickle":
             self.force_tracklets_to_be_sparse = True
-        # else:
-        #     self.logger.info("Found initial tracklets; not casting as sparse")
 
         if self.force_tracklets_to_be_sparse:
             # This check itself takes so long that it's not worth it
@@ -355,6 +342,25 @@ class ProjectData:
         self.logger.debug(f"Finished loading tracklets from {fname}")
 
         return df_all_tracklets
+
+    def _load_df_tracklets(self, dryrun=False) -> Tuple[pd.DataFrame, str]:
+        if self.verbose >= 1:
+            self.logger.info("First time loading all the tracklets, may take a while...")
+        train_cfg = self.project_config.get_training_config()
+        track_cfg = self.project_config.get_tracking_config()
+        # Manual annotations take precedence by default
+        possible_fnames = dict(
+            manual=track_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname'),
+            wiggle=track_cfg.resolve_relative_path_from_config('wiggle_split_tracklets_df_fname'),
+            automatic=train_cfg.resolve_relative_path_from_config('df_3d_tracklets'))
+        fname_precedence = self.precedence_df_tracklets
+        df_all_tracklets, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
+                                                                    this_reader=pandas_read_any_filetype,
+                                                                    dryrun=dryrun)
+        return df_all_tracklets, fname
+
+    def has_tracklets(self):
+        return self._load_df_tracklets(dryrun=True)[1] is not None
 
     @cached_property
     def tracklet_annotator(self) -> TrackletAndSegmentationAnnotator:
@@ -1884,16 +1890,18 @@ With raw data in directory:\n\
 {self.project_config.get_behavior_raw_parent_folder_from_red_fname()[0]} \n\
 \n\
 Found the following data files:\n\
-============Raw========================\n\
+============Raw Videos=================\n\
 red_data:                 {self.red_data is not None}\n\
 green_data:               {self.green_data is not None}\n\
-============Annotations================\n\
-manual_tracking:          {self.df_manual_tracking is not None}\n\
 ============Segmentation===============\n\
 raw_segmentation:         {self.raw_segmentation is not None}\n\
 colored_segmentation:     {self.segmentation is not None}\n\
+============Tracking===================\n\
+final_tracks:             {self.final_tracks is not None}\n\
+tracklets:                {self.has_tracklets() is not None}\n\
+manual_tracking:          {self.df_manual_tracking is not None}\n\
 ============Traces=====================\n\
-traces:                   {self.has_traces()}\n"
+traces:                   {self.has_traces()}\n\n"
 
 
 def template_matches_to_dataframe(project_data: ProjectData,

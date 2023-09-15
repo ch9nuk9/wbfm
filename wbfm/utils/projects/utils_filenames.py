@@ -146,7 +146,22 @@ def lexigraphically_sort(strs_with_numbers):
 
 def load_file_according_to_precedence(fname_precedence: list,
                                       possible_fnames: Dict[str, str],
-                                      this_reader: callable = read_if_exists, **kwargs):
+                                      this_reader: callable = read_if_exists, dryrun=False, **kwargs):
+    """
+    Load a file according to a dict of possible filenames, ordered by fname_precedence
+
+    Parameters
+    ----------
+    fname_precedence
+    possible_fnames
+    this_reader
+    dryrun
+    kwargs
+
+    Returns
+    -------
+
+    """
     most_recent_modified_key = get_most_recently_modified(possible_fnames)
 
     for i, key in enumerate(fname_precedence):
@@ -158,9 +173,13 @@ def load_file_according_to_precedence(fname_precedence: list,
             raise UnknownValueError(key)
 
         if fname is not None and Path(fname).exists():
-            data = this_reader(fname, **kwargs)
-            logging.debug(f"File for mode {key} exists at precendence: {i+1}/{len(possible_fnames)}")
-            logging.debug(f"Read data from: {fname}")
+            logging.debug(f"File for mode {key} exists at precendence: {i + 1}/{len(possible_fnames)}")
+            if dryrun:
+                data = None
+                logging.debug(f"Dryrun: would have read data from: {fname}")
+            else:
+                data = this_reader(fname, **kwargs)
+                logging.debug(f"Read data from: {fname}")
             if key != most_recent_modified_key:
                 logging.debug(f"Not using most recently modified file (mode {most_recent_modified_key})")
             else:
