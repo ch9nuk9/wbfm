@@ -1646,7 +1646,7 @@ class ProjectData:
 
         """
         if 'Notes' in self.df_manual_tracking:
-            names = self.df_manual_tracking['Notes'].apply(lambda x: 'tail' in str(x).lower())
+            names = [n for n in self.df_manual_tracking['Notes'] if 'tail' in n.lower()]
         else:
             names = []
         return names
