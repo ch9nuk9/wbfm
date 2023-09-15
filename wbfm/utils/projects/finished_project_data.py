@@ -927,7 +927,9 @@ class ProjectData:
 
         # Optional: remove neurons with specific manual annotations
         if remove_tail_neurons:
-            df = df.drop(columns=self.tail_neuron_names())
+            tail_names = self.tail_neuron_names()
+            tail_names = [n for n in tail_names if n in get_names_from_df(df)]
+            df = df.drop(columns=tail_names)
 
         # Optional: rename columns to use manual ids, if found
         if rename_neurons_using_manual_ids:
@@ -937,10 +939,6 @@ class ProjectData:
         # Optional: set the index to be physical units
         if self.use_physical_x_axis:
             df.index = self.x_for_plots
-
-        # Optional: remove neurons with specific manual annotations
-        if remove_tail_neurons:
-            df = df.drop(columns=self.tail_neuron_names())
 
         return df
 
