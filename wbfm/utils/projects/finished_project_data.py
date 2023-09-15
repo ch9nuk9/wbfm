@@ -3,6 +3,7 @@ import logging
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
+import tables
 from methodtools import lru_cache
 from pathlib import Path
 from matplotlib import pyplot as plt
@@ -1522,7 +1523,7 @@ class ProjectData:
         try:
             manual_neuron_name_editor = NeuronNameEditor(neurons_to_id=neurons_to_id)
             manual_neuron_name_editor.import_dataframe(df, fname)
-        except PermissionError:
+        except (PermissionError, tables.exceptions.HDF5ExtError):
             self.logger.warning(f"Could not open manual annotation file at ({fname}); "
                                 f"will not be able to save, thus this GUI will not be opened")
             manual_neuron_name_editor = None
