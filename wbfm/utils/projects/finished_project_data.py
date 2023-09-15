@@ -772,6 +772,7 @@ class ProjectData:
                             rename_neurons_using_manual_ids: bool = False,
                             manual_id_confidence_threshold: int = 1,
                             use_physical_time: Optional[bool] = None,
+                            remove_tail_neurons: bool = True,
                             verbose=0,
                             **kwargs):
         """
@@ -804,6 +805,7 @@ class ProjectData:
         nan_using_ppca_manifold: Uses a dimensionality heuristic to remove single-neuron mistakes. See OutlierRemover
             Note: iterative algorithm that takes around a minute
         high_pass_bleach_correct: Filters by removing very slow drifts, i.e. a gaussian of sigma = num_frames / 5
+        remove_tail_neurons: Removes neurons that are not annotated with "tail" in the manual annotation
         verbose
         kwargs: Args to pass to calculate_traces; updates the default 'opt' dict above
             See TracePlotter for options
@@ -936,6 +938,10 @@ class ProjectData:
         # Optional: set the index to be physical units
         if self.use_physical_x_axis:
             df.index = self.x_for_plots
+
+        # Optional: remove neurons with specific manual annotations
+        if remove_tail_neurons:
+            df = df.drop(columns=self.tail_neuron_names())
 
         return df
 
@@ -1630,6 +1636,20 @@ class ProjectData:
             # If the neuron name is '', then save the key instead
             name_mapping = {k if v == '' else v: k for k, v in name_mapping.items()}
         return name_mapping
+
+    def tail_neuron_names(self):
+        """
+        Searches the "Notes" column of the manual annotation file for neurons that have been marked as "tail"
+
+        Returns
+        -------
+
+        """
+        if 'Notes' in self.df_manual_tracking:
+            names = self.df_manual_tracking['Notes'].apply(lambda x: 'tail' in str(x).lower())
+        else:
+            names = []
+        return names
 
     def estimate_tracking_failures_from_project(self, pad_nan_points=3, contamination=0.1,#'auto',
                                                 min_decrease_threshold=40,
