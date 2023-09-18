@@ -1907,6 +1907,7 @@ Project data for directory:\n\
 {self.project_dir} \n\
 With raw data in directory:\n\
 {self.project_config.get_behavior_raw_parent_folder_from_red_fname()[0]} \n\
+See self.worm_posture_class for information on behavioral parameters\
 \n\
 Found the following data files:\n\
 ============Raw Videos=================\n\
@@ -1916,8 +1917,8 @@ green_data:               {self.green_data is not None}\n\
 raw_segmentation:         {self.raw_segmentation is not None}\n\
 colored_segmentation:     {self.segmentation is not None}\n\
 ============Tracking===================\n\
-final_tracks:             {self.final_tracks is not None}\n\
 tracklets:                {self.has_tracklets() is not None}\n\
+final_tracks:             {self.final_tracks is not None}\n\
 manual_tracking:          {self.df_manual_tracking is not None}\n\
 ============Traces=====================\n\
 traces:                   {self.has_traces()}\n\n"
