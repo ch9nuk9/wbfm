@@ -1642,7 +1642,7 @@ class ProjectData:
         -------
 
         """
-        if 'Notes' in self.df_manual_tracking:
+        if self.df_manual_tracking is not None and 'Notes' in self.df_manual_tracking:
             tail_ids = self.df_manual_tracking['Notes'].str.contains('tail', case=False)
             names = list(self.df_manual_tracking['Neuron ID'][tail_ids].values)
         else:
