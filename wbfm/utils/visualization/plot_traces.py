@@ -1184,7 +1184,89 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
     return fig
 
 
-def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html'):
+def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, trace_opt=None,
+                                      output_folder=None, **kwargs):
+    """
+    Similar to make_summary_interactive_heatmap_with_pca, but saves each subplot separately for more control
+
+    Parameters
+    ----------
+    project_cfg
+    to_save
+    to_show
+    trace_opt
+    kwargs
+
+    Returns
+    -------
+
+    """
+
+    base_font_size = 18
+    base_width = 1.5 * 1000
+    base_height = 400
+
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    num_pca_modes_to_plot = 3
+    column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
+        project_data, num_pca_modes_to_plot, trace_opt=trace_opt, **kwargs)
+
+    # Build figure 1: heatmap
+    fig1 = make_subplots()
+    fig1.add_trace(heatmap, **heatmap_opt)
+    fig1.update_layout(showlegend=False, autosize=False, width=base_width, height=1.5 * base_height,
+                       coloraxis=dict(colorscale="jet"))
+    fig1.update_layout(font=dict(size=base_font_size),
+                       title=dict(font=dict(size=base_font_size+2)))
+    # Remove ticks
+    fig1.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
+    fig1.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
+
+    # Build figure 2: Ethogram with PCA modes
+    fig2 = make_subplots(rows=5, cols=1, shared_xaxes=True, shared_yaxes=False,
+                         subplot_titles=["", "PCA Modes", "", "", "Speed"],
+                         vertical_spacing=0.0)
+    for opt in ethogram_opt:
+        fig2.add_shape(**opt, row=1, col=1)
+    for i, (trace, trace_opt) in enumerate(zip(trace_list, trace_opt_list)):
+        trace_opt.pop('row')
+        fig2.add_trace(trace, **trace_opt, row=i+2)
+        num_before_adding_shapes = len(fig2.layout.shapes)
+        for shade_opt in trace_shading_opt:
+            shade_opt['y1'] = 1.0
+            fig2.add_shape(**shade_opt)
+        # Force yref in all of these new shapes, which doesn't really work for subplots
+        # But here it is hardcoded as 50% of the overall plot (extending across subplots)
+        for i in range(num_before_adding_shapes, len(fig2.layout.shapes)):
+            fig2.layout.shapes[i]['yref'] = 'paper'
+    fig2.update_layout(showlegend=False, autosize=False, width=base_width, height=base_height)
+    fig2.update_layout(font=dict(size=base_font_size),
+                       title=dict(font=dict(size=base_font_size+2)))
+    # Transparent background and remove lines
+    fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    # Remove ticks
+    fig2.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
+    fig2.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
+
+    fig2.update_xaxes(dict(showticklabels=False), row=1, overwrite=True)
+    fig2.update_yaxes(dict(showticklabels=False), row=1, overwrite=True, matches='y')
+    fig2.update_xaxes(dict(showticklabels=True, title='Time (seconds)'), row=5, col=1, overwrite=True,)
+
+    # Move the titles down
+    fig2.update_annotations(yshift=-19, xshift=-40)
+
+    # For now, don't build the rest of the figures
+    if to_show:
+        fig1.show()
+        fig2.show()
+    if to_save:
+        _save_plotly_all_types(fig1, project_data, fname='summary_only_heatmap_plot.html', output_folder=output_folder)
+        _save_plotly_all_types(fig2, project_data, fname='summary_only_pca_plot.html', output_folder=output_folder)
+
+    return fig1, fig2
+
+
+def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html', output_folder=None):
     trace_cfg = project_data.project_config.get_traces_config()
     fname = trace_cfg.resolve_relative_path(fname, prepend_subfolder=True)
     fig.write_html(str(fname))
@@ -1192,6 +1274,13 @@ def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html'):
     fig.write_image(str(fname))
     fname = Path(fname).with_suffix('.svg')
     fig.write_image(str(fname))
+    if output_folder is not None:
+        fname = Path(fname).with_suffix('.svg')
+        fname = os.path.join(output_folder, fname.name)
+        fig.write_image(str(fname))
+        fname = Path(fname).with_suffix('.png')
+        fname = os.path.join(output_folder, fname.name)
+        fig.write_image(str(fname))
     # eps isn't working:
     # ValueError: Transform failed with error code 256: PDF to EPS conversion failed
     # fname = Path(fname).with_suffix('.eps')
