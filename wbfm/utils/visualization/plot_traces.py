@@ -1077,7 +1077,7 @@ def make_pirouette_split_triggered_average_plots(project_cfg, to_save=True):
 
 
 def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show=False, trace_opt=None,
-                                              **kwargs):
+                                              output_folder=None, **kwargs):
 
     base_font_size = 18
 
@@ -1179,7 +1179,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         fig.show()
 
     if to_save:
-        _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html')
+        _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html', output_folder=output_folder)
 
     return fig
 
@@ -1220,7 +1220,11 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
                        title=dict(font=dict(size=base_font_size+2)))
     # Remove ticks
     fig1.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
-    fig1.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
+    fig1.update_yaxes(dict(showticklabels=False, showgrid=False, title="Neurons sorted by PC1"),
+                      col=1, overwrite=True)
+    fig1.update_coloraxes(cmin=0, cmax=1, colorbar=dict(
+        title=dict(text='dR/R50', font=dict(size=base_font_size))
+    ))
 
     # Build figure 2: Ethogram with PCA modes
     fig2 = make_subplots(rows=5, cols=1, shared_xaxes=True, shared_yaxes=False,
