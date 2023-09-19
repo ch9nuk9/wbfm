@@ -26,7 +26,6 @@ def plotly_boxplot_colored_boxes(df, color_list):
 
     fig.update_layout(showlegend=False)
     # Make one grid line at 0, and make it black
-    fig.update_yaxes(zeroline=True,
-                     zerolinewidth=1, zerolinecolor="black")
+    fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black")
 
     return fig

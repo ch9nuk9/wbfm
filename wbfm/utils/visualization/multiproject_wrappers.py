@@ -490,6 +490,11 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp,
     cmap = px.colors.qualitative.D3.copy()
     cmap.insert(0, px.colors.qualitative.Set1[-1])
 
+    # Final calculation
+    significance_line = df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'Autocovariance']
+    df_summary['Significant'] = df_summary['Autocovariance'] > significance_line
+
+    # Actually plot
     fig = px.scatter(df_summary, y='Autocovariance', x='Correlation of original trace to PC1', facet_row='Type of data',
                      # color='Type of data',
                      symbol='Simple Neuron ID', marginal_x='histogram', marginal_y='box',
@@ -497,7 +502,7 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp,
                      title="After global component subtraction, many neurons that originally had high pc0 weight still have high signal",
                      color='Genotype and datatype', color_discrete_sequence=cmap, log_y=True)
 
-    fig.add_hline(y=df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'Autocovariance'],
+    fig.add_hline(y=significance_line,
                   line_width=2, line_dash="dash",
                   # col=1, #annotation_text="95% line of gfp", annotation_position="bottom left"
                   )
@@ -512,4 +517,4 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp,
 
     fig.show()
 
-    return fig, df_summary
+    return fig, df_summary, significance_line
