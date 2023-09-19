@@ -1,9 +1,10 @@
 import logging
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import reduce
 from typing import Dict, List, Union
-
+import plotly.express as px
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -12,7 +13,7 @@ from scipy.signal import detrend
 from sklearn.decomposition import PCA
 from tqdm.auto import tqdm
 
-from wbfm.utils.external.utils_pandas import split_flattened_index
+from wbfm.utils.external.utils_pandas import split_flattened_index, flatten_multiindex_columns
 from wbfm.utils.general.postprocessing.position_postprocessing import impute_missing_values_in_dataframe
 from wbfm.utils.general.utils_matplotlib import corrfunc, paired_boxplot_from_dataframes
 from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, ProjectData
@@ -394,3 +395,121 @@ def get_all_variance_explained(all_projects_gcamp, all_projects_gfp, all_project
     immob_var_sum = np.array([np.cumsum(p) for p in immob_var.values()]).T
 
     return gcamp_var, gfp_var, immob_var, gcamp_var_sum, gfp_var_sum, immob_var_sum
+
+
+def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp,
+                            lag=1, output_folder=None):
+    """
+    Calculates the autocovariance of all neural traces, and plots a 4-panel figure
+
+    Parameters
+    ----------
+    all_projects_gcamp
+    all_projects_gfp
+
+    Returns
+    -------
+
+    """
+    all_proj = MultiProjectWrapper(all_projects=all_projects_gcamp)
+    all_proj_gfp = MultiProjectWrapper(all_projects=all_projects_gfp)
+
+    # Calculate traces
+    trace_opt = dict(rename_neurons_using_manual_ids=True)
+    dict_all_traces = all_proj.calc_default_traces(**trace_opt)
+    df_all_traces = flatten_multiindex_columns(pd.concat(dict_all_traces, axis=1))
+    pca_mode0 = pd.concat(all_proj.calc_correlation_to_pc1(**trace_opt)).values
+
+    # Also residuals
+    dict_all_traces = all_proj.calc_default_traces(**trace_opt, residual_mode='pca', interpolate_nan=True)
+    df_all_traces_resid = flatten_multiindex_columns(pd.concat(dict_all_traces, axis=1))
+
+    # Also global mode
+    dict_all_traces = all_proj.calc_default_traces(**trace_opt, residual_mode='pca_global', interpolate_nan=True)
+    df_all_traces_global = flatten_multiindex_columns(pd.concat(dict_all_traces, axis=1))
+
+    # Also for gfp
+    dict_all_traces_gfp = all_proj_gfp.calc_default_traces(**trace_opt)
+    df_all_traces_gfp = flatten_multiindex_columns(pd.concat(dict_all_traces_gfp, axis=1))
+
+    pca_mode0_gfp = pd.concat(all_proj_gfp.calc_correlation_to_pc1(**trace_opt)).values
+
+    all_summary_dfs = []
+    all_trace_dfs = {'gcamp': df_all_traces, 'global gcamp': df_all_traces_global,
+                     'residual gcamp': df_all_traces_resid, 'gfp': df_all_traces_gfp}
+
+    # Calculate autocovariance and other metadata
+    for name, df_base in all_trace_dfs.items():
+        gcamp_std = df_base.std()
+        gcamp_mean = df_base.mean()
+        gcamp_corr = df_base.apply(lambda col: col.autocorr(lag=lag))
+        gcamp_cov = df_base.apply(lambda col: col.autocorr(lag=lag) * col.var())
+        df = pd.DataFrame({'std': gcamp_std, 'mean': gcamp_mean, 'acf': gcamp_corr, 'acovf': gcamp_cov})
+        df['genotype'] = name
+        if name == 'gfp':
+            mode = pca_mode0_gfp
+        else:
+            mode = pca_mode0
+        df['pc0'] = mode
+        df['pc0_high'] = mode > 0.2
+        df['pc0_low'] = mode < -0.2
+        all_summary_dfs.append(df)
+    df_summary = pd.concat(all_summary_dfs, axis=0)
+    df_summary.columns = ['std', 'mean', 'Autocorrelation', 'Autocovariance', 'Type of data',
+                          'Correlation of original trace to PC1', 'pc0_high', 'pc0_low']
+
+    flattened_names = pd.DataFrame(split_flattened_index(df_summary.index)).T
+    df_summary['dataset_name'] = flattened_names[0]
+    df_summary['neuron_name'] = flattened_names[1]
+    df_summary['has_manual_id'] = ['neuron' not in name and name != '' for name in df_summary['neuron_name']]
+    df_summary['bag'] = ['BAG' in name for name in df_summary['neuron_name']]
+    df_summary['neuron_name_simple'] = [name[:-1] if name.endswith(('L', 'R')) else name for name in
+                                        df_summary['neuron_name']]
+    df_summary['vb02'] = ['VB02' in name for name in df_summary['neuron_name']]
+    df_summary['Neuron ID'] = [name if 'VB02' in name or 'BAG' in name else 'other' for name in
+                               df_summary['neuron_name']]
+    df_summary['Simple Neuron ID'] = [name if 'VB02' in name or 'BAG' in name else 'other' for name in
+                                      df_summary['neuron_name_simple']]
+    df_summary['multiplex_size'] = [3 if 'VB02' in name or 'BAG' in name else 1 for name in df_summary['neuron_name']]
+
+    col_name = 'Genotype and datatype'
+    color_col = []
+    for i, row in df_summary.iterrows():
+        if row['Neuron ID'] == 'other':
+            color_col.append('other')
+        elif row['Type of data'] == 'gcamp':
+            color_col.append('gcamp')
+        elif row['Type of data'] == 'global gcamp':
+            color_col.append('global gcamp')
+        elif row['Type of data'] == 'residual gcamp':
+            color_col.append('residual gcamp')
+        elif row['Type of data'] == 'gfp':
+            color_col.append('gfp')
+    df_summary[col_name] = color_col
+    # Same as D3, but replace the first with gray
+    cmap = px.colors.qualitative.D3.copy()
+    cmap.insert(0, px.colors.qualitative.Set1[-1])
+
+    fig = px.scatter(df_summary, y='Autocovariance', x='Correlation of original trace to PC1', facet_row='Type of data',
+                     # color='Type of data',
+                     symbol='Simple Neuron ID', marginal_x='histogram', marginal_y='box',
+                     width=1000, height=1000, size='multiplex_size',
+                     title="After global component subtraction, many neurons that originally had high pc0 weight still have high signal",
+                     color='Genotype and datatype', color_discrete_sequence=cmap, log_y=True)
+
+    fig.add_hline(y=df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'Autocovariance'],
+                  line_width=2, line_dash="dash",
+                  # col=1, #annotation_text="95% line of gfp", annotation_position="bottom left"
+                  )
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+
+    if output_folder is not None:
+        fname = os.path.join(output_folder, 'summary_of_neurons_with_signal_covariance.png')
+        fig.write_image(fname)
+
+    fig.show()
+
+    return fig, df_summary
