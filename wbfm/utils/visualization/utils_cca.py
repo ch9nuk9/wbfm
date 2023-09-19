@@ -205,7 +205,7 @@ class CCAPlotter:
         # Convert the weights to the original neuron space, if using PCA preprocessing
         if self.preprocess_traces_using_pca:
             df_x = pd.DataFrame(self._pca_traces.inverse_transform(df_x), columns=self._df_traces.columns)
-        if self.preprocess_behavior_using_pca:
+        if self.preprocess_behavior_using_pca and not binary_behaviors:
             df_y = pd.DataFrame(self._pca_beh.inverse_transform(df_y), columns=self._df_beh.columns)
         return df_x, df_y
 
