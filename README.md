@@ -56,28 +56,8 @@ See this [section](#running-the-rest-of-the-workflow-for-multiple-projects).
 
 #### *IMPORTANT*
 
-The method of creating the project (gui or command line) will determine the style of filepaths that are saved in the project.
-Thus, if you create and run the project on different operating systems, you will probably need to manually update the path to the raw data.
-
-Example: Create the project on Windows, but run it on the cluster (Linux).
-
-Specifically be aware of these variables in the main project file (config.yaml):
-```yaml
-red_bigtiff_fname
-green_bigtiff_fname
-```
-
-AND the subfolder file: snakemake/config.yaml
-```yaml
-project_dir
-```
-
-In addition, if creating from a windows computer, you may need to use the command line script dos2unix to fix any files that you want to execute, specifically those referenced below:
-1. RUNME_*.sh
-2. DRYRUN.sh
-
-Finally, due to changes in the cluster you may get a permission error when importing skimage.
-This should be fixable with one line; check the file RUNME_cluster.sh for more information.
+Creating and running the project on different operating systems will cause problems.
+See [Summary of common problems](#summary-of-common-problems) for more details.
 
 ### Checklist of most important parameters to change or validate
 
