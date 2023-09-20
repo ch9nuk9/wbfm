@@ -1497,12 +1497,15 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=Tr
         # Load the existing annotation
         from wbfm.utils.general.postures.centerline_classes import get_manual_behavior_annotation
         beh_vec_existing = get_manual_behavior_annotation(project_data.project_config)
+        beh_vec_existing = BehaviorCodes.load_using_dict_mapping(beh_vec_existing)
 
-        # Add this new annotation to the existing one
+        # Add this new annotation to the existing one, and convert to ulises integers for disk saving
         beh_vec = beh_vec_existing + turn_vec
+        beh_vec_disk = beh_vec.apply(BehaviorCodes.enum_to_ulises_int)
+        beh_vec_disk = pd.DataFrame(beh_vec_disk, columns=['Annotation'])
 
         # Save, overwriting the previous one
-        beh_cfg.save_data_in_local_project(beh_vec, fname, allow_overwrite=True, make_sequential_filename=False,
+        beh_cfg.save_data_in_local_project(beh_vec_disk, fname, allow_overwrite=True, make_sequential_filename=False,
                                            prepend_subfolder=False, suffix='.xlsx', sheet_name='behavior')
 
     return turn_vec
