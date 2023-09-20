@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from matplotlib import pyplot as plt
 from methodtools import lru_cache
 from scipy.ndimage import gaussian_filter1d
-from scipy.signal import decimate
 from skimage import transform
 from sklearn.decomposition import PCA
 from backports.cached_property import cached_property
@@ -23,10 +22,9 @@ from wbfm.utils.external.utils_self_collision import calculate_self_collision_us
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate, \
     shade_using_behavior, get_same_phase_segment_pairs, get_heading_vector_from_phase_pair_segments, \
     shade_using_behavior_plotly, calc_slowing_from_speed, detect_peaks_and_interpolate_using_inter_event_intervals, \
-    plot_dataframe_of_transitions
+    plot_dataframe_of_transitions, annotate_turns_from_reversal_ends
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
-    remove_short_state_changes, pad_events_in_binary_vector, make_binary_vector_from_starts_and_ends, \
-    get_dataframe_of_transitions
+    remove_short_state_changes, get_dataframe_of_transitions
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
     MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
@@ -414,6 +412,13 @@ class WormFullVideoPosture:
 
     @property
     def _raw_turn_annotation(self) -> Optional[pd.Series]:
+        """
+        Will raise NoBehaviorAnnotationsError if the curvature file is not found
+
+        Returns
+        -------
+
+        """
         # Ulises' file uses the whole body, which gives very long turns... recalculate using the head
         # This one has a header
         # _raw_vector = read_if_exists(self.filename_turn_annotation, reader=pd.read_csv, index_col=0)
@@ -423,60 +428,14 @@ class WormFullVideoPosture:
         #     _raw_vector = _raw_vector['turn']
 
         # Calculate starting at the first head bend after reversal, and ending at the next head bend
+
         y_curvature = self.summed_curvature_from_kymograph(fluorescence_fps=False, start_segment=1, end_segment=5,
                                                            do_abs=False, reset_index=True)
-        starts, ends = self.get_starts_and_ends_of_behavior(BehaviorCodes.REV, include_turns=False,
-                                                            fluorescence_fps=False)
+        _, rev_ends = self.get_starts_and_ends_of_behavior(BehaviorCodes.REV, include_turns=False,
+                                                           fluorescence_fps=False)
 
-        ventral_starts = []
-        ventral_ends = []
-        dorsal_starts = []
-        dorsal_ends = []
-        sign_flips = np.where(np.diff(np.sign(y_curvature)))[0]
+        _raw_vector = annotate_turns_from_reversal_ends(rev_ends, y_curvature)
 
-        for e in ends:
-            if e == len(y_curvature):
-                break
-            # Determines ventral or dorsal turn
-            y_initial = y_curvature[e]  # Should I change this if there is a collision?
-
-            # Get the next approximate zero crossing
-            _next_flip_array = sign_flips[sign_flips > e]
-            if len(_next_flip_array) == 0:
-                break
-            i_next_flip = _next_flip_array[0] + 1
-            if i_next_flip > 1:
-                if np.sign(y_initial) > 0:
-                    ventral_starts.append(e)
-                    ventral_ends.append(i_next_flip)
-                else:
-                    dorsal_starts.append(e)
-                    dorsal_ends.append(i_next_flip)
-
-        # See alias: ventral_only_head_curvature
-        # opt = dict(fluorescence_fps=False, start_segment=2, end_segment=10, do_abs=False)
-        # thresh = 0.035  # Threshold from looking at histograms of peaks
-        # _raw_ventral = (self.summed_curvature_from_kymograph(only_positive=True, **opt) > thresh)
-        # _raw_dorsal = (self.summed_curvature_from_kymograph(only_negative=True, **opt) > thresh)
-        #
-        # # Remove any turns that are too short (less than about 0.5 seconds)
-        # _raw_ventral = remove_short_state_changes(_raw_ventral, min_length=30)
-        # _raw_dorsal = remove_short_state_changes(_raw_dorsal, min_length=30)
-        #
-        # # Pad the edges of the surviving states
-        # _raw_ventral = pad_events_in_binary_vector(_raw_ventral, pad_length=30)
-        # _raw_dorsal = pad_events_in_binary_vector(_raw_dorsal, pad_length=30)
-
-        # Combine
-        _raw_ventral = make_binary_vector_from_starts_and_ends(ventral_starts, ventral_ends, y_curvature)
-        _raw_dorsal = make_binary_vector_from_starts_and_ends(dorsal_starts, dorsal_ends, y_curvature)
-        _raw_vector = pd.Series(_raw_ventral.astype(int) - _raw_dorsal.astype(int))
-
-        _raw_vector = _raw_vector.replace(1, BehaviorCodes.VENTRAL_TURN)
-        _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
-        _raw_vector = _raw_vector.replace(-1, BehaviorCodes.DORSAL_TURN)
-        _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
-        BehaviorCodes.assert_all_are_valid(_raw_vector)
         return _raw_vector
 
     @lru_cache(maxsize=8)

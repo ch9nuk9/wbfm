@@ -20,6 +20,7 @@ from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, 
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError, NeedsAnnotatedNeuronError
 import plotly.graph_objects as go
 
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.hardcoded_paths import get_summary_visualization_dir
 
@@ -979,18 +980,7 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
                channel_mode='dr_over_r_50')
 
     df_traces = project_data.calc_default_traces(**opt)
-    y = 0
-    num_y = 0
-    if 'AVAL' in df_traces.columns:
-        num_y = 1
-        y = df_traces['AVAL']
-    if 'AVAR' in df_traces.columns:
-        # If both AVAL and AVAR are present, average them
-        num_y += 1
-        y = (y + df_traces['AVAR']) / num_y
-    if num_y == 0:
-        raise NeedsAnnotatedNeuronError("AVAL/R")
-
+    y = combine_pair_of_ided_neurons(df_traces, 'AVA')
     beh_vec = calculate_rise_high_fall_low(y, DEBUG)
 
     if return_raw_rise_high_fall:
@@ -1402,3 +1392,180 @@ def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_f
         dot.render(view=to_view, format='pdf', engine=engine)
 
     return dot
+
+
+def approximate_turn_annotations_using_ids(project_cfg, return_raw_rise_high_fall=False,
+                                           min_length=8, to_save=True, DEBUG=False):
+    """
+    Use case is for immobilized recordings where there is no real behavior, but there are ID's
+
+    Defines a turn in this way:
+    - AVA fall, annotated using calculate_rise_high_fall_low
+    - Ventral if SMDVL/R are in a rise state
+    - Dorsal if SMDDL/R are in a rise state
+    - If both, take the one with higher amplitude
+
+    Parameters
+    ----------
+    project_data
+
+    Returns
+    -------
+
+    """
+    # Load project
+    from wbfm.utils.projects.finished_project_data import ProjectData
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+
+    # First get the AVA rise/fall
+    ava_vec = approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_high_fall=True,
+                                                          min_length=min_length, to_save=False, DEBUG=DEBUG)
+
+    # Also need the traces, which should be the same as the traces used for the AVA rise/fall
+    opt = dict(interpolate_nan=True,
+               filter_mode='rolling_mean',
+               min_nonnan=0.9,
+               nan_tracking_failure_points=True,
+               rename_neurons_using_manual_ids=True,
+               channel_mode='dr_over_r_50')
+    df_traces = project_data.calc_default_traces(**opt)
+
+    y_dorsal = combine_pair_of_ided_neurons(df_traces, base_name='SMDD')
+    y_ventral = combine_pair_of_ided_neurons(df_traces, base_name='SMDV')
+
+    dorsal_vec = calculate_rise_high_fall_low(y_dorsal)
+    ventral_vec = calculate_rise_high_fall_low(y_ventral)
+
+    dorsal_rise_starts, dorsal_rise_ends = get_contiguous_blocks_from_column(dorsal_vec == 'rise', already_boolean=True)
+    ventral_rise_starts, ventral_rise_ends = get_contiguous_blocks_from_column(ventral_vec == 'rise',
+                                                                               already_boolean=True)
+
+    # Loop over ava falls, and try to assign them to dorsal or ventral
+    # The one in a greater (longer) rise state is the one that wins
+    # If both dorsal and ventral are equally in a rise state, take the one with higher amplitude
+    # If neither dorsal nor ventral are in a rise state, then skip it
+    post_reversal_padding = 5
+    ava_fall_starts, ava_fall_ends = get_contiguous_blocks_from_column(ava_vec == 'fall', already_boolean=True)
+    turn_vec = pd.Series(np.zeros_like(ava_vec), index=ava_vec.index, dtype=object)
+    for s, e in zip(ava_fall_starts, ava_fall_ends):
+        # Check if dorsal or ventral are in a rise state, including some time after
+        e_padding = e + post_reversal_padding
+        len_dorsal_rise = len(np.where(dorsal_vec[s:e_padding] == 'rise')[0])
+        len_ventral_rise = len(np.where(ventral_vec[s:e_padding] == 'rise')[0])
+        end_of_ventral_turn = ventral_rise_ends[np.where(ventral_rise_ends > e)[0][0]]
+        end_of_dorsal_turn = dorsal_rise_ends[np.where(dorsal_rise_ends > e)[0][0]]
+        if len_ventral_rise > len_dorsal_rise:
+            # Define the extent of the behavior as starting from the end of the AVA rise until the end of the ventral
+            # (or dorsal) rise
+            turn_vec[e+1:end_of_ventral_turn] = 'ventral'
+        elif len_ventral_rise < len_dorsal_rise:
+            turn_vec[e+1:end_of_dorsal_turn] = 'dorsal'
+        elif len_ventral_rise == 0 and len_dorsal_rise == 0:
+            continue
+        else:
+            # This means they were both rising the same amount
+            if np.mean(y_ventral[s:e_padding]) > np.mean(y_dorsal[s:e_padding]):
+                turn_vec[e+1:end_of_ventral_turn] = 'ventral'
+            else:
+                turn_vec[e + 1:end_of_dorsal_turn] = 'ventral'
+
+    # Convert this to Turn annotations, which will be saved to disk
+    turn_vec[turn_vec == 'ventral'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.VENTRAL_TURN)
+    turn_vec[turn_vec == 'dorsal'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.DORSAL_TURN)
+    turn_vec[turn_vec == 0] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.NOT_ANNOTATED)
+
+    # Remove very short states
+    turn_vec = remove_short_state_changes(turn_vec, min_length=min_length)
+    turn_vec = pd.DataFrame(turn_vec, columns=['Annotation'])
+
+    # Save within the behavior folder
+    if to_save and not DEBUG:
+        # Add to the reversal annotation
+        beh_cfg = project_data.project_config.get_behavior_config()
+        fname = beh_cfg.config['manual_behavior_annotation']
+        if fname is None or not Path(fname).exists():
+            # must be produced if it doesn't exist already
+            approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_high_fall=False,
+                                                        min_length=min_length, to_save=True, DEBUG=DEBUG)
+            beh_cfg = project_data.project_config.get_behavior_config()
+            fname = beh_cfg.config['manual_behavior_annotation']
+            if fname is None or not Path(fname).exists():
+                raise FileNotFoundError(f"Could not find {fname} even after generating it")
+
+        # Load the existing annotation
+        from wbfm.utils.general.postures.centerline_classes import get_manual_behavior_annotation
+        beh_vec_existing = get_manual_behavior_annotation(project_data.project_config)
+
+        # Add this new annotation to the existing one
+        beh_vec = beh_vec_existing + turn_vec
+
+        # Save, overwriting the previous one
+        beh_cfg.save_data_in_local_project(beh_vec, fname, allow_overwrite=True, make_sequential_filename=False,
+                                           prepend_subfolder=True, suffix='.xlsx', sheet_name='behavior')
+
+    return turn_vec
+
+
+def combine_pair_of_ided_neurons(df_traces, base_name='AVA'):
+    y = 0
+    num_y = 0
+    suffixes = ['L', 'R']
+    col_names = set(get_names_from_df(df_traces))
+    for suffix in suffixes:
+        this_name = f"{base_name}{suffix}"
+        if this_name in col_names:
+            num_y += 1
+            # If both L/R are present, average them
+            y = (y + df_traces[this_name]) / num_y
+    if num_y == 0:
+        raise NeedsAnnotatedNeuronError(base_name)
+    return y
+
+
+def annotate_turns_from_reversal_ends(rev_ends, y_curvature):
+    ventral_starts = []
+    ventral_ends = []
+    dorsal_starts = []
+    dorsal_ends = []
+    sign_flips = np.where(np.diff(np.sign(y_curvature)))[0]
+    for e in rev_ends:
+        if e == len(y_curvature):
+            break
+        # Determines ventral or dorsal turn
+        y_initial = y_curvature[e]  # Should I change this if there is a collision?
+
+        # Get the next approximate zero crossing
+        _next_flip_array = sign_flips[sign_flips > e]
+        if len(_next_flip_array) == 0:
+            break
+        i_next_flip = _next_flip_array[0] + 1
+        if i_next_flip > 1:
+            if np.sign(y_initial) > 0:
+                ventral_starts.append(e)
+                ventral_ends.append(i_next_flip)
+            else:
+                dorsal_starts.append(e)
+                dorsal_ends.append(i_next_flip)
+    # See alias: ventral_only_head_curvature
+    # opt = dict(fluorescence_fps=False, start_segment=2, end_segment=10, do_abs=False)
+    # thresh = 0.035  # Threshold from looking at histograms of peaks
+    # _raw_ventral = (self.summed_curvature_from_kymograph(only_positive=True, **opt) > thresh)
+    # _raw_dorsal = (self.summed_curvature_from_kymograph(only_negative=True, **opt) > thresh)
+    #
+    # # Remove any turns that are too short (less than about 0.5 seconds)
+    # _raw_ventral = remove_short_state_changes(_raw_ventral, min_length=30)
+    # _raw_dorsal = remove_short_state_changes(_raw_dorsal, min_length=30)
+    #
+    # # Pad the edges of the surviving states
+    # _raw_ventral = pad_events_in_binary_vector(_raw_ventral, pad_length=30)
+    # _raw_dorsal = pad_events_in_binary_vector(_raw_dorsal, pad_length=30)
+    # Combine
+    _raw_ventral = make_binary_vector_from_starts_and_ends(ventral_starts, ventral_ends, y_curvature)
+    _raw_dorsal = make_binary_vector_from_starts_and_ends(dorsal_starts, dorsal_ends, y_curvature)
+    _raw_vector = pd.Series(_raw_ventral.astype(int) - _raw_dorsal.astype(int))
+    _raw_vector = _raw_vector.replace(1, BehaviorCodes.VENTRAL_TURN)
+    _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)
+    _raw_vector = _raw_vector.replace(-1, BehaviorCodes.DORSAL_TURN)
+    _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
+    BehaviorCodes.assert_all_are_valid(_raw_vector)
+    return _raw_vector
