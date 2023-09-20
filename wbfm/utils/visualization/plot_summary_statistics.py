@@ -112,3 +112,36 @@ def calc_durations_dataframe(all_projects):
     df_durations = melt_nested_dict(all_durations, all_same_lengths=False)
 
     return df_durations
+
+
+def calc_onset_frequency_dataframe(all_projects):
+    """
+    Like calc_durations_dataframe, but calculates the number of onsets per minute
+
+    This does not have the same interaction with censoring as calc_durations_dataframe, and is arguably more
+    correct
+
+    Parameters
+    ----------
+    all_projects
+
+    Returns
+    -------
+
+    """
+    states = [BehaviorCodes.FWD, BehaviorCodes.REV]
+
+    all_frequencies = defaultdict(dict)
+    for name, p in tqdm(all_projects.items()):
+        try:
+            for state in states:
+                ind_class = p.worm_posture_class.calc_triggered_average_indices(state=state, min_duration=0)
+                num_events = len(ind_class.idx_onsets)
+                # Most are 8 minutes, but some may be cut shorter
+                duration_in_minutes = p.num_frames / p.physical_unit_conversion.volumes_per_second / 60
+                all_frequencies[str(state)][name] = num_events / duration_in_minutes
+        except ValueError:
+            continue
+    df_durations = melt_nested_dict(all_frequencies, all_same_lengths=False)
+
+    return df_durations
