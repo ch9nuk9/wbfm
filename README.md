@@ -51,6 +51,11 @@ cd /path/to/this/code/wbfm/scripts/cluster
 bash create_multiple_projects_from_data_parent_folder.sh -t /path/to/data/folder -p /path/to/projects/folder
 ```
 
+As of September 2023, this is the proper path to this code on the cluster:
+```commandline
+cd /scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/cluster
+```
+
 For running projects, you will most likely want to run them all simultaneously instead of one-by-one.
 See this [section](#running-the-rest-of-the-workflow-for-multiple-projects).
 
