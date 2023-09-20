@@ -1394,8 +1394,7 @@ def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_f
     return dot
 
 
-def approximate_turn_annotations_using_ids(project_cfg, return_raw_rise_high_fall=False,
-                                           min_length=8, to_save=True, DEBUG=False):
+def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=True, DEBUG=False):
     """
     Use case is for immobilized recordings where there is no real behavior, but there are ID's
 
