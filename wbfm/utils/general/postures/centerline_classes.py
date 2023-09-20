@@ -103,6 +103,11 @@ class WormFullVideoPosture:
             else:
                 self.filename_table_position = fnames[0]
 
+        if self.filename_table_position is None:
+            # Then subsampling won't work
+            logging.warning("No stage position file found; disallowing subsampling")
+            self.beh_annotation_already_converted_to_fluorescence_fps = True
+
     @cached_property
     def pca_projections(self):
         pca = PCA(n_components=3, whiten=True)
