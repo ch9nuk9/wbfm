@@ -1727,7 +1727,8 @@ class WormFullVideoPosture:
         # Get other manual behavior annotations if automatic wasn't found
         if all_files.get('filename_beh_annotation', None) is None:
             try:
-                filename_beh_annotation, is_manual_style = get_manual_behavior_annotation_fname(project_config)
+                filename_beh_annotation, is_manual_style = get_manual_behavior_annotation_fname(project_config,
+                                                                                                make_absolute=True)
                 opt.update(dict(beh_annotation_already_converted_to_fluorescence_fps=is_manual_style))
             except FileNotFoundError:
                 # Many projects won't have either annotation
@@ -1935,7 +1936,6 @@ filename_beh_annotation:    {self.has_beh_annotation}\n\
 \n"
 
 
-
 def get_behavior_fluorescence_fps_conversion(project_config):
     # Enhancement: In new config files, there should be a way to read this directly
     preprocessing_cfg = project_config.get_preprocessing_config()
@@ -1950,18 +1950,22 @@ def get_behavior_fluorescence_fps_conversion(project_config):
     return raw_number_of_planes
 
 
-def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
+def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolute=True, verbose=0):
     """First tries to read from the config file, and if that fails, goes searching"""
 
     # Initial checks are all in project local folders
     is_likely_manually_annotated = False
+    behavior_cfg = cfg.get_behavior_config()
     try:
-        behavior_cfg = cfg.get_behavior_config()
         behavior_fname = behavior_cfg.config.get('manual_behavior_annotation', None)
+        abs_behavior_fname = behavior_cfg.resolve_relative_path(behavior_fname)
         if behavior_fname is not None:
-            if Path(behavior_fname).exists():
+            if Path(abs_behavior_fname).exists():
                 # Unclear if it is manually annotated or not
-                return behavior_fname, is_likely_manually_annotated
+                if make_absolute:
+                    return abs_behavior_fname, is_likely_manually_annotated
+                else:
+                    return behavior_fname, is_likely_manually_annotated
             if not Path(behavior_fname).is_absolute():
                 # Assume it is in this project's behavior folder
                 behavior_fname = behavior_cfg.resolve_relative_path(behavior_fname, prepend_subfolder=True)
@@ -1976,7 +1980,10 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
 
     if behavior_fname is not None:
         logging.warning("Note: all annotation should be in the Ulises format")
-        return behavior_fname, is_likely_manually_annotated
+        if make_absolute:
+            return behavior_cfg.resolve_relative_path(behavior_fname), is_likely_manually_annotated
+        else:
+            return behavior_fname, is_likely_manually_annotated
 
     # Otherwise, check for other local places I used to put it
     is_likely_manually_annotated = True
@@ -1995,7 +2002,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
     is_likely_manually_annotated = False
     raw_behavior_folder, flag = cfg.get_behavior_raw_parent_folder_from_red_fname()
     if not flag:
-        return behavior_fname, is_likely_manually_annotated
+        return None, is_likely_manually_annotated
 
     # Check if there is a manually corrected version
     manually_corrected_suffix = "beh_annotation_manual_corrected_timeseries.csv"
@@ -2016,7 +2023,10 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, verbose=0):
                 logging.warning(f"Found multiple possible behavior annotations {behavior_fname}; taking the first one")
                 behavior_fname = behavior_fname[0]
 
-    return behavior_fname, is_likely_manually_annotated
+    if make_absolute:
+        return behavior_cfg.resolve_relative_path(behavior_fname), is_likely_manually_annotated
+    else:
+        return behavior_fname, is_likely_manually_annotated
 
 
 def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fname: str = None):
@@ -2034,7 +2044,7 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
     """
     if behavior_fname is None:
         if cfg is not None:
-            behavior_fname, is_old_style = get_manual_behavior_annotation_fname(cfg)
+            behavior_fname, is_old_style = get_manual_behavior_annotation_fname(cfg, make_absolute=True)
         else:
             # Only None was passed
             raise NoBehaviorAnnotationsError("Filename not passed")

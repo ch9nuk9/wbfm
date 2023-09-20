@@ -181,6 +181,8 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
     def resolve_relative_path(self, raw_path: str, prepend_subfolder=False) -> Optional[str]:
         if raw_path is None:
             return None
+        if Path(raw_path).is_absolute():
+            return raw_path
 
         final_path = self._prepend_subfolder(raw_path, prepend_subfolder)
         # Replace any windows slashes with unix slashes

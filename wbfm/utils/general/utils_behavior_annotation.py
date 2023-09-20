@@ -999,9 +999,9 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
     # Save within the behavior folder
     if to_save:
         beh_cfg = project_data.project_config.get_behavior_config()
-        fname = 'ava_generated_reversal_annotation'
+        fname = 'behavior/ava_generated_reversal_annotation'
         beh_cfg.save_data_in_local_project(beh_vec, fname,
-                                           prepend_subfolder=True, suffix='.xlsx', sheet_name='behavior')
+                                           prepend_subfolder=False, suffix='.xlsx', sheet_name='behavior')
         beh_cfg.config['manual_behavior_annotation'] = str(Path(fname).with_suffix('.xlsx'))
         beh_cfg.update_self_on_disk()
 
@@ -1490,7 +1490,8 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=Tr
                                                         min_length=min_length, to_save=True, DEBUG=DEBUG)
             beh_cfg = project_data.project_config.get_behavior_config()
             fname = beh_cfg.config['manual_behavior_annotation']
-            if fname is None or not Path(fname).exists():
+            abs_fname = beh_cfg.resolve_relative_path_from_config('manual_behavior_annotation')
+            if fname is None or not Path(abs_fname).exists():
                 raise FileNotFoundError(f"Could not find {fname} even after generating it")
 
         # Load the existing annotation
@@ -1502,7 +1503,7 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=Tr
 
         # Save, overwriting the previous one
         beh_cfg.save_data_in_local_project(beh_vec, fname, allow_overwrite=True, make_sequential_filename=False,
-                                           prepend_subfolder=True, suffix='.xlsx', sheet_name='behavior')
+                                           prepend_subfolder=False, suffix='.xlsx', sheet_name='behavior')
 
     return turn_vec
 
