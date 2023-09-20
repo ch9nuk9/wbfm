@@ -101,7 +101,7 @@ This is especially useful if you created the projects using the create_multiple_
 
 ```commandline
 cd /path/to/this/code/wbfm/scripts/cluster
-bash run_all_projects_in_parent_folder.sh -p /path/to/projects/folder
+bash run_all_projects_in_parent_folder.sh -t /path/to/projects/folder
 ```
 
 For more details on each step, see: [detailed pipeline steps](docs/detailed_pipeline_steps.md).
