@@ -1125,6 +1125,7 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
             beh_vec[:] = 'low'
         return beh_vec
 
+    ambiguous_periods = []
     for i, (s, e) in enumerate(zip(starts, ends)):
         # Special cases for the first and last regions, based on the next start or previous end
         if s == 0:
@@ -1146,12 +1147,20 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
             beh_vec[s:e] = 'low'
         else:
             if beh_vec[s - 1] == beh_vec[e + 1] and verbose > 0:
-                logging.warning(f"Region {i} is surrounded by rise or fall; probably a rise or fall was missed")
-            # In this case, just split based on the absolute amplitude
-            if np.mean(y[s:e]) > 0:
-                beh_vec[s:e] = 'high'
-            else:
-                beh_vec[s:e] = 'low'
+                logging.warning(f"Region from {s} to {e} is surrounded by rise or fall; "
+                                f"probably a rise or fall was missed")
+            # In this case, save to be split later, based on similarity to other high or fall periods
+            ambiguous_periods.append((s, e))
+
+    # First get the means of all the high and low periods
+    high_means = np.mean(y[beh_vec == 'high'])
+    low_means = np.mean(y[beh_vec == 'low'])
+    for s, e in ambiguous_periods:
+        # Assign this period to the high or low state based on which mean it is closer to
+        if np.abs(np.mean(y[s:e]) - high_means) < np.abs(np.mean(y[s:e]) - low_means):
+            beh_vec[s:e] = 'high'
+        else:
+            beh_vec[s:e] = 'low'
     return beh_vec
 
 
@@ -1438,6 +1447,9 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=Tr
     dorsal_rise_starts, dorsal_rise_ends = get_contiguous_blocks_from_column(dorsal_vec == 'rise', already_boolean=True)
     ventral_rise_starts, ventral_rise_ends = get_contiguous_blocks_from_column(ventral_vec == 'rise',
                                                                                already_boolean=True)
+    if DEBUG:
+        print(f"Found {len(dorsal_rise_starts)} dorsal rise periods: {dorsal_rise_starts} to {dorsal_rise_ends}")
+        print(f"Found {len(ventral_rise_starts)} ventral rise periods: {ventral_rise_starts} to {ventral_rise_ends}")
 
     # Loop over ava falls, and try to assign them to dorsal or ventral
     # The one in a greater (longer) rise state is the one that wins
@@ -1447,28 +1459,40 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=Tr
     ava_fall_starts, ava_fall_ends = get_contiguous_blocks_from_column(ava_vec == 'fall', already_boolean=True)
     turn_vec = pd.Series(np.zeros_like(ava_vec), index=ava_vec.index, dtype=object)
     for s, e in zip(ava_fall_starts, ava_fall_ends):
+        if s <= 1:
+            continue
         # Check if dorsal or ventral are in a rise state, including some time after
         e_padding = e + post_reversal_padding
+        if DEBUG:
+            print(f"Checking for dorsal/ventral rise from {s} to {e_padding}")
         len_dorsal_rise = len(np.where(dorsal_vec[s:e_padding] == 'rise')[0])
         len_ventral_rise = len(np.where(ventral_vec[s:e_padding] == 'rise')[0])
         if len_ventral_rise > 0:
-            end_of_ventral_turn = ventral_rise_ends[np.where(ventral_rise_ends > s)[0][0]]
+            end_of_ventral_turn = ventral_rise_ends[np.where(ventral_rise_ends > e)[0][0]]
         if len_dorsal_rise > 0:
-            end_of_dorsal_turn = dorsal_rise_ends[np.where(dorsal_rise_ends > s)[0][0]]
+            end_of_dorsal_turn = dorsal_rise_ends[np.where(dorsal_rise_ends > e)[0][0]]
         if len_ventral_rise > len_dorsal_rise:
             # Define the extent of the behavior as starting from the end of the AVA rise until the end of the ventral
             # (or dorsal) rise
             turn_vec[e+1:end_of_ventral_turn] = 'ventral'
+            if DEBUG:
+                print(f"ventral annotation from {e+1} to {end_of_ventral_turn}")
         elif len_ventral_rise < len_dorsal_rise:
             turn_vec[e+1:end_of_dorsal_turn] = 'dorsal'
+            if DEBUG:
+                print(f"dorsal annotation from {e+1} to {end_of_dorsal_turn}")
         elif len_ventral_rise == 0 and len_dorsal_rise == 0:
             continue
         else:
             # This means they were both rising the same non-zero amount
             if np.mean(y_ventral[s:e_padding]) > np.mean(y_dorsal[s:e_padding]):
                 turn_vec[e+1:end_of_ventral_turn] = 'ventral'
+                if DEBUG:
+                    print(f"tie-breaker ventral annotation from {e+1} to {end_of_ventral_turn}")
             else:
-                turn_vec[e + 1:end_of_dorsal_turn] = 'ventral'
+                turn_vec[e+1:end_of_dorsal_turn] = 'dorsal'
+                if DEBUG:
+                    print(f"tie-breaker dorsal annotation from {e+1} to {end_of_dorsal_turn}")
 
     # Convert this to Turn annotations, which will be saved to disk after combination with the reversal annotations
     turn_vec[turn_vec == 'ventral'] = BehaviorCodes.VENTRAL_TURN
