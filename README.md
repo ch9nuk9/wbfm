@@ -48,8 +48,11 @@ Important: the data folders must be organized in a specific way, see [here](docs
 
 ```commandline
 cd /path/to/this/code/wbfm/scripts/cluster
-bash create_multiple_projects_from_data_parent_folder.sh -t /path/to/data/folder -p /path/to/projects/folder
+bash create_multiple_projects_from_data_parent_folder.sh -t /path/to/parent/data/folder -p /path/to/projects/folder
 ```
+
+Where "/path/to/parent/data/folder" contains subfolders with red, green, and (optionally) behavioral data, and "/path/to/projects/folder" is a folder where the new projects will be generated. 
+In principle "/path/to/projects/folder" should be empty, but this is not necessary.
 
 As of September 2023, this is the proper path to this code on the cluster:
 ```commandline
