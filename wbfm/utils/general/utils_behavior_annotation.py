@@ -1451,8 +1451,10 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=Tr
         e_padding = e + post_reversal_padding
         len_dorsal_rise = len(np.where(dorsal_vec[s:e_padding] == 'rise')[0])
         len_ventral_rise = len(np.where(ventral_vec[s:e_padding] == 'rise')[0])
-        end_of_ventral_turn = ventral_rise_ends[np.where(ventral_rise_ends > e)[0][0]]
-        end_of_dorsal_turn = dorsal_rise_ends[np.where(dorsal_rise_ends > e)[0][0]]
+        if len_ventral_rise > 0:
+            end_of_ventral_turn = ventral_rise_ends[np.where(ventral_rise_ends > s)[0][0]]
+        if len_dorsal_rise > 0:
+            end_of_dorsal_turn = dorsal_rise_ends[np.where(dorsal_rise_ends > s)[0][0]]
         if len_ventral_rise > len_dorsal_rise:
             # Define the extent of the behavior as starting from the end of the AVA rise until the end of the ventral
             # (or dorsal) rise
@@ -1462,20 +1464,20 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=Tr
         elif len_ventral_rise == 0 and len_dorsal_rise == 0:
             continue
         else:
-            # This means they were both rising the same amount
+            # This means they were both rising the same non-zero amount
             if np.mean(y_ventral[s:e_padding]) > np.mean(y_dorsal[s:e_padding]):
                 turn_vec[e+1:end_of_ventral_turn] = 'ventral'
             else:
                 turn_vec[e + 1:end_of_dorsal_turn] = 'ventral'
 
-    # Convert this to Turn annotations, which will be saved to disk
-    turn_vec[turn_vec == 'ventral'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.VENTRAL_TURN)
-    turn_vec[turn_vec == 'dorsal'] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.DORSAL_TURN)
-    turn_vec[turn_vec == 0] = BehaviorCodes.enum_to_ulises_int(BehaviorCodes.NOT_ANNOTATED)
+    # Convert this to Turn annotations, which will be saved to disk after combination with the reversal annotations
+    turn_vec[turn_vec == 'ventral'] = BehaviorCodes.VENTRAL_TURN
+    turn_vec[turn_vec == 'dorsal'] = BehaviorCodes.DORSAL_TURN
+    turn_vec[turn_vec == 0] = BehaviorCodes.NOT_ANNOTATED
 
     # Remove very short states
-    turn_vec = remove_short_state_changes(turn_vec, min_length=min_length)
-    turn_vec = pd.DataFrame(turn_vec, columns=['Annotation'])
+    # turn_vec = remove_short_state_changes(turn_vec, min_length=min_length)
+    # turn_vec = pd.DataFrame(turn_vec, columns=['Annotation'])
 
     # Save within the behavior folder
     if to_save and not DEBUG:
