@@ -95,18 +95,17 @@ def calc_speed_dataframe(all_projects):
     return df_speed#, all_speeds
 
 
-def calc_durations_dataframe(all_projects):
-    states = [BehaviorCodes.FWD, BehaviorCodes.REV]
+def calc_durations_dataframe(all_projects, states=None):
+    if states is None:
+        states = [BehaviorCodes.FWD, BehaviorCodes.REV]
     # Note that the signed_speed_angular does not have a well-defined sign across datasets
 
     all_durations = defaultdict(dict)
     for name, p in tqdm(all_projects.items()):
         try:
             for state in states:
-                ind_class = p.worm_posture_class.calc_triggered_average_indices(state=state,
-                                                                                min_duration=0)
+                ind_class = p.worm_posture_class.calc_triggered_average_indices(state=state, min_duration=0)
                 all_durations[str(state)][name] = ind_class.all_state_durations(include_censored=False)[0]
-                # err
         except ValueError:
             continue
     df_durations = melt_nested_dict(all_durations, all_same_lengths=False)
@@ -114,7 +113,7 @@ def calc_durations_dataframe(all_projects):
     return df_durations
 
 
-def calc_onset_frequency_dataframe(all_projects):
+def calc_onset_frequency_dataframe(all_projects, states=None):
     """
     Like calc_durations_dataframe, but calculates the number of onsets per minute
 
@@ -129,7 +128,8 @@ def calc_onset_frequency_dataframe(all_projects):
     -------
 
     """
-    states = [BehaviorCodes.FWD, BehaviorCodes.REV]
+    if states is None:
+        states = [BehaviorCodes.FWD, BehaviorCodes.REV]
 
     all_frequencies = defaultdict(dict)
     for name, p in tqdm(all_projects.items()):
