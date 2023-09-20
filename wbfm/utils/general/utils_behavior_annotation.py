@@ -981,7 +981,7 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
 
     df_traces = project_data.calc_default_traces(**opt)
     y = combine_pair_of_ided_neurons(df_traces, 'AVA')
-    beh_vec = calculate_rise_high_fall_low(y, DEBUG)
+    beh_vec = calculate_rise_high_fall_low(y, DEBUG=DEBUG)
 
     if return_raw_rise_high_fall:
         return beh_vec
@@ -1153,14 +1153,21 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
             ambiguous_periods.append((s, e))
 
     # First get the means of all the high and low periods
-    high_means = np.mean(y[beh_vec == 'high'])
-    low_means = np.mean(y[beh_vec == 'low'])
+    high_mean = np.mean(y[beh_vec == 'high'])
+    low_mean = np.mean(y[beh_vec == 'low'])
+    if DEBUG:
+        print(f"High mean: {high_mean}, low mean: {low_mean}")
     for s, e in ambiguous_periods:
         # Assign this period to the high or low state based on which mean it is closer to
-        if np.abs(np.mean(y[s:e]) - high_means) < np.abs(np.mean(y[s:e]) - low_means):
+        this_mean = np.mean(y[s:e])
+        if np.abs(this_mean - high_mean) < np.abs(this_mean - low_mean):
             beh_vec[s:e] = 'high'
+            if DEBUG:
+                print(f"Region from {s} to {e} with mean {this_mean} assigned to high")
         else:
             beh_vec[s:e] = 'low'
+            if DEBUG:
+                print(f"Region from {s} to {e} with mean {this_mean} assigned to low")
     return beh_vec
 
 
@@ -1403,7 +1410,8 @@ def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_f
     return dot
 
 
-def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=True, DEBUG=False):
+def approximate_turn_annotations_using_ids(project_cfg, min_length=4, post_reversal_padding=10,
+                                           to_save=True, DEBUG=False):
     """
     Use case is for immobilized recordings where there is no real behavior, but there are ID's
 
@@ -1427,7 +1435,7 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=Tr
 
     # First get the AVA rise/fall
     ava_vec = approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_high_fall=True,
-                                                          min_length=min_length, to_save=False, DEBUG=DEBUG)
+                                                          min_length=2*min_length, to_save=False, DEBUG=DEBUG)
 
     # Also need the traces, which should be the same as the traces used for the AVA rise/fall
     opt = dict(interpolate_nan=True,
@@ -1455,7 +1463,6 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=Tr
     # The one in a greater (longer) rise state is the one that wins
     # If both dorsal and ventral are equally in a rise state, take the one with higher amplitude
     # If neither dorsal nor ventral are in a rise state, then skip it
-    post_reversal_padding = 5
     ava_fall_starts, ava_fall_ends = get_contiguous_blocks_from_column(ava_vec == 'fall', already_boolean=True)
     turn_vec = pd.Series(np.zeros_like(ava_vec), index=ava_vec.index, dtype=object)
     for s, e in zip(ava_fall_starts, ava_fall_ends):
@@ -1467,32 +1474,32 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=Tr
             print(f"Checking for dorsal/ventral rise from {s} to {e_padding}")
         len_dorsal_rise = len(np.where(dorsal_vec[s:e_padding] == 'rise')[0])
         len_ventral_rise = len(np.where(ventral_vec[s:e_padding] == 'rise')[0])
-        if len_ventral_rise > 0:
-            end_of_ventral_turn = ventral_rise_ends[np.where(ventral_rise_ends > e)[0][0]]
-        if len_dorsal_rise > 0:
-            end_of_dorsal_turn = dorsal_rise_ends[np.where(dorsal_rise_ends > e)[0][0]]
+        # if len_ventral_rise > 0:
+        #     end_of_ventral_turn = ventral_rise_ends[np.where(ventral_rise_ends > e)[0][0]]
+        # if len_dorsal_rise > 0:
+        #     end_of_dorsal_turn = dorsal_rise_ends[np.where(dorsal_rise_ends > e)[0][0]]
         if len_ventral_rise > len_dorsal_rise:
             # Define the extent of the behavior as starting from the end of the AVA rise until the end of the ventral
             # (or dorsal) rise
-            turn_vec[e+1:end_of_ventral_turn] = 'ventral'
+            turn_vec[s:e] = 'ventral'
             if DEBUG:
-                print(f"ventral annotation from {e+1} to {end_of_ventral_turn}")
+                print(f"ventral annotation from {s} to {e}")
         elif len_ventral_rise < len_dorsal_rise:
-            turn_vec[e+1:end_of_dorsal_turn] = 'dorsal'
+            turn_vec[s:e] = 'dorsal'
             if DEBUG:
-                print(f"dorsal annotation from {e+1} to {end_of_dorsal_turn}")
+                print(f"dorsal annotation from {s} to {e}")
         elif len_ventral_rise == 0 and len_dorsal_rise == 0:
             continue
         else:
             # This means they were both rising the same non-zero amount
             if np.mean(y_ventral[s:e_padding]) > np.mean(y_dorsal[s:e_padding]):
-                turn_vec[e+1:end_of_ventral_turn] = 'ventral'
+                turn_vec[s:e] = 'ventral'
                 if DEBUG:
-                    print(f"tie-breaker ventral annotation from {e+1} to {end_of_ventral_turn}")
+                    print(f"tie-breaker ventral annotation from {s} to {e}")
             else:
-                turn_vec[e+1:end_of_dorsal_turn] = 'dorsal'
+                turn_vec[s:e] = 'dorsal'
                 if DEBUG:
-                    print(f"tie-breaker dorsal annotation from {e+1} to {end_of_dorsal_turn}")
+                    print(f"tie-breaker dorsal annotation from {s} to {e}")
 
     # Convert this to Turn annotations, which will be saved to disk after combination with the reversal annotations
     turn_vec[turn_vec == 'ventral'] = BehaviorCodes.VENTRAL_TURN
@@ -1511,7 +1518,7 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, to_save=Tr
         if fname is None or not Path(fname).exists():
             # must be produced if it doesn't exist already
             approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_high_fall=False,
-                                                        min_length=min_length, to_save=True, DEBUG=DEBUG)
+                                                        min_length=2*min_length, to_save=True, DEBUG=DEBUG)
             beh_cfg = project_data.project_config.get_behavior_config()
             fname = beh_cfg.config['manual_behavior_annotation']
             abs_fname = beh_cfg.resolve_relative_path_from_config('manual_behavior_annotation')
