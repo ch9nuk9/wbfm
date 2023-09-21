@@ -226,9 +226,14 @@ class CCAPlotter:
         if output_folder is not None:
             fname = self._get_fig_filename(binary_behaviors, plot_3d=False, use_pca=use_pca, single_mode=True)
             fname = os.path.join(output_folder, fname)
-            fig.write_html(fname)
-            fname = fname.replace('.html', '.png')
-            fig.write_image(fname)
+            self._save_plotly_all_formats(fig, fname)
+
+    def _save_plotly_all_formats(self, fig, fname):
+        fig.write_html(fname)
+        fname = fname.replace('.html', '.png')
+        fig.write_image(fname)
+        fname = fname.replace('.png', '.svg')
+        fig.write_image(fname)
 
     def plot(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, use_X_r=True, sparse_tau=None,
              plot_3d=True, output_folder=None, DEBUG=False,
@@ -327,9 +332,7 @@ class CCAPlotter:
             fname = self._get_fig_filename(binary_behaviors, plot_3d, use_pca, single_mode=False)
             fname = os.path.join(output_folder, fname)
 
-            fig.write_html(fname)
-            fname = fname.replace('.html', '.png')
-            fig.write_image(fname)
+            self._save_plotly_all_formats(fig, fname)
 
         fig.show()
         return fig
