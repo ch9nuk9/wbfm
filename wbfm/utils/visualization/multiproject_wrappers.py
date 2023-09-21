@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import reduce
+from pathlib import Path
 from typing import Dict, List, Union
 import plotly.express as px
 import numpy as np
@@ -513,6 +514,8 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp,
 
     if output_folder is not None:
         fname = os.path.join(output_folder, 'summary_of_neurons_with_signal_covariance.png')
+        fig.write_image(fname)
+        fname = Path(fname).with_suffix('.svg')
         fig.write_image(fname)
 
     fig.show()
