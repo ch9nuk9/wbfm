@@ -48,7 +48,15 @@ Important: the data folders must be organized in a specific way, see [here](docs
 
 ```commandline
 cd /path/to/this/code/wbfm/scripts/cluster
-bash create_multiple_projects_from_data_parent_folder.sh -t /path/to/data/folder -p /path/to/projects/folder
+bash create_multiple_projects_from_data_parent_folder.sh -t /path/to/parent/data/folder -p /path/to/projects/folder
+```
+
+Where "/path/to/parent/data/folder" contains subfolders with red, green, and (optionally) behavioral data, and "/path/to/projects/folder" is a folder where the new projects will be generated. 
+In principle "/path/to/projects/folder" should be empty, but this is not necessary.
+
+As of September 2023, this is the proper path to this code on the cluster:
+```commandline
+cd /scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/cluster
 ```
 
 For running projects, you will most likely want to run them all simultaneously instead of one-by-one.
@@ -93,7 +101,7 @@ This is especially useful if you created the projects using the create_multiple_
 
 ```commandline
 cd /path/to/this/code/wbfm/scripts/cluster
-bash run_all_projects_in_parent_folder.sh -p /path/to/projects/folder
+bash run_all_projects_in_parent_folder.sh -t /path/to/projects/folder
 ```
 
 For more details on each step, see: [detailed pipeline steps](docs/detailed_pipeline_steps.md).
