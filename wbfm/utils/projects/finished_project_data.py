@@ -2292,5 +2292,7 @@ def plot_frequencies_for_fm_and_immob_projects(all_projects_wbfm, all_projects_i
         fname = f"frequency_spectrum_{neuron_name}.png"
         fname = Path(output_folder).joinpath(fname)
         plt.savefig(fname)
+        fname = Path(fname).with_suffix('.svg')
+        plt.savefig(fname)
 
     return df_pxx_wbfm, df_pxx_immob, all_pxx_wbfm, all_pxx_immob
