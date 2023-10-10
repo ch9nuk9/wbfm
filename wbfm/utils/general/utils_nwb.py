@@ -76,11 +76,29 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
 
     # Unpack traces... Todo: Right format
     id_names = mat["ID1"]
-    colnames = [f"neuron_{i:03d}" for i in range(len(id_names))]
-    colnames = [dummy if ID is None else ID for dummy, ID in zip(colnames, id_names)]
+    raw_colnames = [f"neuron_{i:03d}" for i in range(len(id_names))]
+    # colnames = [dummy if ID is None else ID for dummy, ID in zip(raw_colnames, id_names)]
+    colnames = raw_colnames
     gce_quant = pd.DataFrame(mat["deltaFOverF"], columns=colnames)
     # Add a new level to the columns to specify the type of data (here, just 'intensity_image')
     gce_quant.columns = pd.MultiIndex.from_product([['intensity_image'], gce_quant.columns])
+    gce_dict = gce_quant.to_dict()
+    # Also needs to have the additional columns that my freely moving projects do:
+    #   ['x', 'y', 'z', 'intensity_image', 'label', 'index']
+    # But actually build a dictionary and then convert to dataframe to avoid fragmentation warnings
+    n = len(gce_quant)
+    t_vec = list(gce_quant.index)
+    for name in raw_colnames:
+        # The label column has to be correct, i.e. each neuron should have a label such as 'neuron_001' -> 1
+        idx = int(name.split('_')[1])
+        gce_dict[('label', name)] = {t: idx for t in t_vec}
+        # Others can be dummy for now
+        gce_dict[('x', name)] = {t: 1 for t in t_vec}
+        gce_dict[('y', name)] = {t: 1 for t in t_vec}
+        gce_dict[('z', name)] = {t: 1 for t in t_vec}
+        gce_dict[('index', name)] = {t: t for t in t_vec}
+    gce_quant = pd.DataFrame(gce_dict)
+
     # Unpack video
     red_video = None
 
