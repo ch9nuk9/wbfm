@@ -1,31 +1,15 @@
 import logging
-from datetime import datetime
-from dateutil import tz
-from pynwb import NWBFile
 import os
-from pynwb import load_namespaces, get_class
-from pynwb.file import MultiContainerInterface, NWBContainer, Device, Subject
-import skimage.io as skio
-from collections.abc import Iterable
 import numpy as np
-from pynwb import register_class, NWBFile, TimeSeries, NWBHDF5IO
-from pynwb.ophys import ImageSeries, OnePhotonSeries, OpticalChannel, ImageSegmentation, PlaneSegmentation, Fluorescence, CorrectedImageStack, MotionCorrection, RoiResponseSeries, ImagingPlane
-from pynwb.core import NWBDataInterface
-from pynwb.epoch import TimeIntervals
-from pynwb.behavior import SpatialSeries, Position
-from pynwb.image import ImageSeries
-from hdmf.common import DynamicTable
-from hdmf.utils import docval, get_docval, popargs, get_data_shape, popargs_to_dict
+from pynwb import NWBFile, NWBHDF5IO
+from pynwb.ophys import OnePhotonSeries, OpticalChannel, ImageSegmentation, PlaneSegmentation, Fluorescence, RoiResponseSeries
 from hdmf.data_utils import DataChunkIterator
 from dateutil import tz
 import pandas as pd
-import scipy.io as sio
-from datetime import datetime, timedelta
-from tifffile import TiffFile
-import matplotlib.pyplot as plt
+from datetime import datetime
 from hdmf.backends.hdf5.h5_utils import H5DataIO
 # ndx_mulitchannel_volume is the novel NWB extension for multichannel optophysiology in C. elegans
-from ndx_multichannel_volume import CElegansSubject, OpticalChannelReferences, OpticalChannelPlus, ImagingVolume, VolumeSegmentation, MultiChannelVolume
+from ndx_multichannel_volume import CElegansSubject, OpticalChannelReferences, OpticalChannelPlus, ImagingVolume
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -49,39 +33,22 @@ def convert_project_data_to_nwb(project_data: ProjectData, include_image_data=Fa
     if output_folder is None:
         logging.warning("No output folder specified, will not save final output (this is a dry run)")
 
+    # Unpack variables from project_data
     # TODO: proper date
-    nwbfile = NWBFile(
-        session_description='Add a description for the experiment/session. Can be just long form text',
-        # Can use any identity marker that is specific to an individual trial. We use date-time to specify trials
-        identifier='20221127-21-41-10',
-        # Specify date and time of trial. Datetime entries are in order Year, Month, Day, Hour, Minute, Second. Not all entries are necessary
-        session_start_time=datetime(2022, 11, 27, 21, 41, 10, tzinfo=tz.gettz("Europe/Vienna")),
-        lab='Zimmer lab',
-        institution='University of Vienna',
-        related_publications=''
-    )
+    session_start_time = datetime(2022, 11, 27, 21, 41, 10, tzinfo=tz.gettz("Europe/Vienna"))
+    # Convert the datetime to a string that can be used as a subject_id
+    subject_id = session_start_time.strftime("%Y%m%d-%H-%M-%S")
 
-    # TODO: Fix dates and strain
-    nwbfile.subject = CElegansSubject(
-        # This is the same as the NWBFile identifier for us, but does not have to be. It should just identify the subject for this trial uniquely.
-        subject_id='20221127-21-41-10',
-        # Age is optional but should be specified in ISO 8601 duration format similarly to what is shown here for growth_stage_time
-        # age = pd.Timedelta(hours=2, minutes=30).isoformat(),
-        # Date of birth is a required field but if you do not know or if it's not relevant, you can just use the current date or the date of the experiment
-        date_of_birth=datetime(2022, 11, 27, 21, 41, 10, tzinfo=tz.gettz("Europe/Vienna")),
-        # Specify growth stage of worm - should be one of two-fold, three-fold, L1-L4, YA, OA, dauer, post-dauer L4, post-dauer YA, post-dauer OA
-        growth_stage='YA',
-        # Optional: specify time in current growth stage
-        growth_stage_time=pd.Timedelta(hours=2, minutes=30).isoformat(),
-        # Specify temperature at which animal was cultivated
-        cultivation_temp=20.,
-        description="free form text description, can include whatever you want here",
-        # Currently using the ontobee species link until NWB adds support for C. elegans
-        species="http://purl.obolibrary.org/obo/NCBITaxon_6239",
-        # Currently just using O for other until support added for other gender specifications
-        sex="O",
-        strain="ZIM"
-    )
+    # Unpack traces
+    gce_quant = project_data.red_traces.swaplevel(i=0, j=1, axis=1).copy()
+    # Unpack video
+    red_video = project_data.red_data
+
+    # TODO: strain
+    strain = "ZIM"
+
+    # Initialize and populate the NWB file
+    nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
 
     # TODO: Fix device
     device = nwbfile.create_device(
@@ -91,10 +58,10 @@ def convert_project_data_to_nwb(project_data: ProjectData, include_image_data=Fa
     )
 
     calcium_image_series, imaging_plane, CalcOptChanRefs = initialize_imaging_channels(
-        project_data, nwbfile, device
+        red_video, nwbfile, device
     )
     ImSeg, fluor = convert_traces_to_nwb_format(
-        project_data, imaging_plane, calcium_image_series
+        gce_quant, imaging_plane, calcium_image_series
     )
 
     ophys = nwbfile.create_processing_module(
@@ -107,26 +74,59 @@ def convert_project_data_to_nwb(project_data: ProjectData, include_image_data=Fa
     ophys.add(fluor)
     ophys.add(CalcOptChanRefs)
 
-    # each NWB file should be named with a unique identifier
-    identifier = '20230322-21-41-10'
-
     # specify the file path you want to save this NWB file to
     if output_folder:
-        fname = os.path.join(output_folder, identifier + '.nwb')
+        fname = os.path.join(output_folder, subject_id + '.nwb')
         logging.info(f"Saving NWB file to {fname}")
         with NWBHDF5IO(fname, mode='w') as io:
             io.write(nwbfile)
         logging.info(f"Saving successful!")
 
 
-def initialize_imaging_channels(project_data, nwbfile, device):
+def initialize_nwb_file(session_start_time, strain, subject_id):
+    nwbfile = NWBFile(
+        session_description='Add a description for the experiment/session. Can be just long form text',
+        # Can use any identity marker that is specific to an individual trial. We use date-time to specify trials
+        identifier='20221127-21-41-10',
+        # Specify date and time of trial. Datetime entries are in order Year, Month, Day, Hour, Minute, Second. Not all entries are necessary
+        session_start_time=session_start_time,
+        lab='Zimmer lab',
+        institution='University of Vienna',
+        related_publications=''
+    )
+    # TODO: Fix dates and strain
+    nwbfile.subject = CElegansSubject(
+        # This is the same as the NWBFile identifier for us, but does not have to be. It should just identify the subject for this trial uniquely.
+        subject_id=subject_id,
+        # Age is optional but should be specified in ISO 8601 duration format similarly to what is shown here for growth_stage_time
+        # age = pd.Timedelta(hours=2, minutes=30).isoformat(),
+        # Date of birth is a required field but if you do not know or if it's not relevant, you can just use the current date or the date of the experiment
+        date_of_birth=session_start_time,
+        # Specify growth stage of worm - should be one of two-fold, three-fold, L1-L4, YA, OA, dauer, post-dauer L4, post-dauer YA, post-dauer OA
+        growth_stage='YA',
+        # Optional: specify time in current growth stage
+        # growth_stage_time=pd.Timedelta(hours=2, minutes=30).isoformat(),
+        # Specify temperature at which animal was cultivated
+        cultivation_temp=20.,
+        description="free form text description, can include whatever you want here",
+        # Currently using the ontobee species link until NWB adds support for C. elegans
+        species="http://purl.obolibrary.org/obo/NCBITaxon_6239",
+        # Currently just using O for other until support added for other gender specifications
+        sex="O",
+        strain=strain
+    )
+    return nwbfile
+
+
+def initialize_imaging_channels(red_video, nwbfile, device):
     # The DataChunkIterator wraps the data generator function and will stitch together the chunks as it iteratively reads over the full file
     data = DataChunkIterator(
-        data=_iter_volumes(project_data),
+        data=_iter_volumes(red_video),
         # this will be the max shape of the final image. Can leave blank or set as the size of your full data if you know that ahead of time
         maxshape=None,
         buffer_size=10,
     )
+
     # TODO: get correct excitation
     CalcOptChan = OpticalChannelPlus(
         name='GFP-GCaMP',
@@ -141,6 +141,7 @@ def initialize_imaging_channels(project_data, nwbfile, device):
         name='OpticalChannelRefs',
         channels=[CalcOptChan]
     )
+
     # TODO: get grid spacing
     CalcImagingVolume = ImagingVolume(
         name='CalciumImVol',
@@ -154,6 +155,7 @@ def initialize_imaging_channels(project_data, nwbfile, device):
         reference_frame='Worm head'
     )
     wrapped_data = H5DataIO(data=data, compression="gzip", compression_opts=4)
+
     # TODO: Are the dimensions correct?
     # Use OnePhotonSeries object to store calcium imaging series data
     # See https://pynwb.readthedocs.io/en/stable/pynwb.ophys.html for other optional fields to include here.
@@ -167,12 +169,14 @@ def initialize_imaging_channels(project_data, nwbfile, device):
         imaging_plane=CalcImagingVolume,
     )
     nwbfile.add_imaging_plane(CalcImagingVolume)
+
     # TODO: get correct excitation
     optical_channel = OpticalChannel(
         name='GFP-GCaMP',
         description='GFP/GCaMP channel, 488 excitation, 525/50m emission',
         emission_lambda=525.
     )
+
     # TODO: get correct excitation and grid
     imaging_plane = nwbfile.create_imaging_plane(
         name='CalciumImPlane',
@@ -186,6 +190,7 @@ def initialize_imaging_channels(project_data, nwbfile, device):
         grid_spacing_unit='um',
         reference_frame='Worm head'
     )
+
     # TODO: get correct dimensions and frame rate
     # Use OnePhotonSeries object to store calcium imaging series data
     calcium_image_series = OnePhotonSeries(
@@ -201,23 +206,19 @@ def initialize_imaging_channels(project_data, nwbfile, device):
 
 
 # define a data generator function that will yield a single data entry, in our case we are iterating over time points and creating a Z stack of images for each time point
-def _iter_volumes(project_data, red_not_green=True):
+def _iter_volumes(video_data):
     # Will return a 4d image: ZXYC
 
     # We iterate through all of the timepoints and yield each timepoint back to the DataChunkIterator
-    for i in range(project_data.num_frames):
+    for i in range(video_data.shape[0]):
         # Make sure array ends up as the correct dtype coming out of this function (the dtype that your data was collected as)
-        if red_not_green:
-            vol = project_data.red_data[i]
-        else:
-            vol = project_data.green_data[i]
+        vol = video_data[i]
         yield np.transpose(vol, [1, 2, 0])
     return
 
 
-def convert_traces_to_nwb_format(project_data: ProjectData, imaging_plane,  calcium_image_series,
+def convert_traces_to_nwb_format(gce_quant, imaging_plane,  calcium_image_series,
                                  DEBUG=False):
-    gce_quant = project_data.red_traces.swaplevel(i=0, j=1, axis=1).copy()
     # Copy the label column to be blob_ix, but need to manually create the multiindex because it is multiple columns
     new_columns = pd.MultiIndex.from_tuples([('blob_ix', c[1]) for c in gce_quant[['label']].columns])
     gce_quant[new_columns] = gce_quant['label'].copy()
