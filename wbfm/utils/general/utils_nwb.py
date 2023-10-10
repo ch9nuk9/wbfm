@@ -1,5 +1,7 @@
 import logging
 import os
+
+import mat73
 import numpy as np
 from pynwb import NWBFile, NWBHDF5IO
 from pynwb.ophys import OnePhotonSeries, OpticalChannel, ImageSegmentation, PlaneSegmentation, Fluorescence, RoiResponseSeries
@@ -15,7 +17,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 
-def convert_project_data_to_nwb(project_data: ProjectData, include_image_data=False, output_folder=None):
+def nwb_using_project_data(project_data: ProjectData, include_image_data=False, output_folder=None):
     """
     Convert a ProjectData class to an NWB h5 file, optionally including all raw image data.
 
@@ -44,9 +46,51 @@ def convert_project_data_to_nwb(project_data: ProjectData, include_image_data=Fa
     # Unpack video
     red_video = project_data.red_data
 
+    nwb_file = nwb_from_components(red_video, gce_quant, session_start_time, subject_id, output_folder)
+    return nwb_file
+
+
+def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
+    """
+    Convert a matlab tracker file to an NWB h5 file.
+
+    Parameters
+    ----------
+    matlab_fname
+
+    Returns
+    -------
+
+    """
+    if output_folder is None:
+        logging.warning("No output folder specified, will not save final output (this is a dry run)")
+
+    mat = mat73.loadmat(matlab_fname)
+
+    # Unpack variables from matlab file
+    session_start_time = mat['added']['dateAdded'][0]
+    # This is a string like '26-Jan-2019 10:35:22'; convert to datetime
+    session_start_time = datetime.strptime(session_start_time, '%d-%b-%Y %H:%M:%S')
+    # Convert the datetime to a string that can be used as a subject_id
+    subject_id = session_start_time.strftime("%Y%m%d-%H-%M-%S")
+
+    # Unpack traces... Todo: Right format
+    id_names = mat["ID1"]
+    colnames = [f"neuron_{i:03d}" for i in range(len(id_names))]
+    colnames = [dummy if ID is None else ID for dummy, ID in zip(colnames, id_names)]
+    gce_quant = pd.DataFrame(mat["deltaFOverF"], columns=colnames)
+    # Add a new level to the columns to specify the type of data (here, just 'intensity_image')
+    gce_quant.columns = pd.MultiIndex.from_product([['intensity_image'], gce_quant.columns])
+    # Unpack video
+    red_video = None
+
+    nwb_file = nwb_from_components(red_video, gce_quant, session_start_time, subject_id, output_folder)
+    return nwb_file
+
+
+def nwb_from_components(red_video, gce_quant, session_start_time, subject_id, output_folder):
     # TODO: strain
     strain = "ZIM"
-
     # Initialize and populate the NWB file
     nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
 
@@ -63,24 +107,23 @@ def convert_project_data_to_nwb(project_data: ProjectData, include_image_data=Fa
     ImSeg, fluor = convert_traces_to_nwb_format(
         gce_quant, imaging_plane, calcium_image_series
     )
-
     ophys = nwbfile.create_processing_module(
         name='CalciumActivity',
         description='Calcium time series metadata, segmentation, and fluorescence data'
     )
-
     # Finish
     ophys.add(ImSeg)
     ophys.add(fluor)
     ophys.add(CalcOptChanRefs)
 
-    # specify the file path you want to save this NWB file to
     if output_folder:
         fname = os.path.join(output_folder, subject_id + '.nwb')
         logging.info(f"Saving NWB file to {fname}")
         with NWBHDF5IO(fname, mode='w') as io:
             io.write(nwbfile)
         logging.info(f"Saving successful!")
+
+    return nwbfile
 
 
 def initialize_nwb_file(session_start_time, strain, subject_id):
@@ -119,6 +162,12 @@ def initialize_nwb_file(session_start_time, strain, subject_id):
 
 
 def initialize_imaging_channels(red_video, nwbfile, device):
+    if red_video is None:
+        return None, None, None
+    fps = 3.5
+    emission_lambda = 525.
+    excitation_lambda = 488.
+
     # The DataChunkIterator wraps the data generator function and will stitch together the chunks as it iteratively reads over the full file
     data = DataChunkIterator(
         data=_iter_volumes(red_video),
@@ -131,10 +180,10 @@ def initialize_imaging_channels(red_video, nwbfile, device):
     CalcOptChan = OpticalChannelPlus(
         name='GFP-GCaMP',
         description='GFP/GCaMP channel, 488 excitation, 525/50m emission',
-        excitation_lambda=488.,
-        excitation_range=[488 - 1.5, 488 + 1.5],
-        emission_range=[525 - 25, 525 + 25],
-        emission_lambda=525.
+        excitation_lambda=excitation_lambda,
+        excitation_range=[excitation_lambda - 1.5, excitation_lambda + 1.5],
+        emission_range=[emission_lambda - 25, emission_lambda + 25],
+        emission_lambda=emission_lambda
     )
     # This object just contains references to the order of channels because OptChannels does not preserve ordering
     CalcOptChanRefs = OpticalChannelReferences(
@@ -154,27 +203,13 @@ def initialize_imaging_channels(red_video, nwbfile, device):
         grid_spacing_unit='um',
         reference_frame='Worm head'
     )
-    wrapped_data = H5DataIO(data=data, compression="gzip", compression_opts=4)
-
-    # TODO: Are the dimensions correct?
-    # Use OnePhotonSeries object to store calcium imaging series data
-    # See https://pynwb.readthedocs.io/en/stable/pynwb.ophys.html for other optional fields to include here.
-    calcium_image_series = OnePhotonSeries(
-        name="CalciumImageSeries",
-        data=wrapped_data,
-        unit="n/a",
-        scan_line_rate=0.5,
-        dimension=(650, 900, 22),
-        rate=4.0,
-        imaging_plane=CalcImagingVolume,
-    )
     nwbfile.add_imaging_plane(CalcImagingVolume)
 
     # TODO: get correct excitation
     optical_channel = OpticalChannel(
         name='GFP-GCaMP',
         description='GFP/GCaMP channel, 488 excitation, 525/50m emission',
-        emission_lambda=525.
+        emission_lambda=emission_lambda
     )
 
     # TODO: get correct excitation and grid
@@ -183,7 +218,7 @@ def initialize_imaging_channels(red_video, nwbfile, device):
         description='Imaging plane used to acquire calcium imaging data',
         optical_channel=optical_channel,
         device=device,
-        excitation_lambda=488.,
+        excitation_lambda=excitation_lambda,
         indicator='GFP-GCaMP',
         location='Worm head',
         grid_spacing=[0.3208, 0.3208, 1.5],
@@ -198,8 +233,8 @@ def initialize_imaging_channels(red_video, nwbfile, device):
         data=data,
         unit="n/a",
         scan_line_rate=0.5,
-        dimension=(1667, 650, 900, 22),
-        rate=3.5,
+        dimension=red_video.shape,
+        rate=fps,
         imaging_plane=imaging_plane,
     )
     return calcium_image_series, imaging_plane, CalcOptChanRefs
