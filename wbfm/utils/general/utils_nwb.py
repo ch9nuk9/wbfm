@@ -148,7 +148,7 @@ def initialize_nwb_file(session_start_time, strain, subject_id):
     nwbfile = NWBFile(
         session_description='Add a description for the experiment/session. Can be just long form text',
         # Can use any identity marker that is specific to an individual trial. We use date-time to specify trials
-        identifier='20221127-21-41-10',
+        identifier=session_start_time.strftime("%Y%m%d-%H-%M-%S"),
         # Specify date and time of trial. Datetime entries are in order Year, Month, Day, Hour, Minute, Second. Not all entries are necessary
         session_start_time=session_start_time,
         lab='Zimmer lab',
@@ -180,19 +180,23 @@ def initialize_nwb_file(session_start_time, strain, subject_id):
 
 
 def initialize_imaging_channels(red_video, nwbfile, device):
-    if red_video is None:
-        return None, None, None
+    # if red_video is None:
+    #     return None, None, None
     fps = 3.5
     emission_lambda = 525.
     excitation_lambda = 488.
+    video_shape = red_video.shape if red_video is not None else None
 
     # The DataChunkIterator wraps the data generator function and will stitch together the chunks as it iteratively reads over the full file
-    data = DataChunkIterator(
-        data=_iter_volumes(red_video),
-        # this will be the max shape of the final image. Can leave blank or set as the size of your full data if you know that ahead of time
-        maxshape=None,
-        buffer_size=10,
-    )
+    if red_video is not None:
+        data = DataChunkIterator(
+            data=_iter_volumes(red_video),
+            # this will be the max shape of the final image. Can leave blank or set as the size of your full data if you know that ahead of time
+            maxshape=None,
+            buffer_size=10,
+        )
+    else:
+        data = H5DataIO(np.zeros((1, 1, 1, 1), dtype=np.uint8), compression='gzip')
 
     # TODO: get correct excitation
     CalcOptChan = OpticalChannelPlus(
@@ -251,7 +255,7 @@ def initialize_imaging_channels(red_video, nwbfile, device):
         data=data,
         unit="n/a",
         scan_line_rate=0.5,
-        dimension=red_video.shape,
+        dimension=video_shape,
         rate=fps,
         imaging_plane=imaging_plane,
     )
@@ -261,6 +265,8 @@ def initialize_imaging_channels(red_video, nwbfile, device):
 # define a data generator function that will yield a single data entry, in our case we are iterating over time points and creating a Z stack of images for each time point
 def _iter_volumes(video_data):
     # Will return a 4d image: ZXYC
+    if video_data is None:
+        return None
 
     # We iterate through all of the timepoints and yield each timepoint back to the DataChunkIterator
     for i in range(video_data.shape[0]):
