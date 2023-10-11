@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 
 import mat73
 import numpy as np
@@ -46,7 +47,7 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     # Unpack video
     red_video = project_data.red_data
 
-    nwb_file = nwb_from_components(red_video, gce_quant, session_start_time, subject_id, output_folder)
+    nwb_file = nwb_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder)
     return nwb_file
 
 
@@ -73,6 +74,20 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
     session_start_time = datetime.strptime(session_start_time, '%d-%b-%Y %H:%M:%S')
     # Convert the datetime to a string that can be used as a subject_id
     subject_id = session_start_time.strftime("%Y%m%d-%H-%M-%S")
+
+    # Search for ZIM and the following the numbers
+    # Define a regular expression pattern to match "ZIM" followed by numbers
+    pattern = r'ZIM(\d+)'
+
+    # Search for the pattern in the input string
+    match = re.search(pattern, matlab_fname)
+
+    if match:
+        # Extract the matched substring
+        strain = match.group(0)
+    else:
+        print("Pattern not found in the input string.")
+        raise NotImplementedError
 
     # Unpack traces... Todo: Right format
     id_names = mat["ID1"]
@@ -102,21 +117,20 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
     # Unpack video
     red_video = None
 
-    nwb_file = nwb_from_components(red_video, gce_quant, session_start_time, subject_id, output_folder)
+    nwb_file = nwb_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder)
     return nwb_file
 
 
-def nwb_from_components(red_video, gce_quant, session_start_time, subject_id, output_folder):
+def nwb_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder):
     # TODO: strain
-    strain = "ZIM"
     # Initialize and populate the NWB file
     nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
 
-    # TODO: Fix device
     device = nwbfile.create_device(
         name="Spinning disk confocal",
-        description="Leica DMi8 Inverted Microscope with Yokogawa CSU-W1 SoRA, 40x WI objective 1.1 NA",
-        manufacturer="Leica, Yokagawa"
+        description="Zeiss Observer.Z1 Inverted Microscope with Yokogawa CSU-X1, "
+                    "Zeiss LD LCI Plan-Apochromat 40x WI objective 1.2 NA",
+        manufacturer="Zeiss"
     )
 
     calcium_image_series, imaging_plane, CalcOptChanRefs = initialize_imaging_channels(
@@ -155,7 +169,7 @@ def initialize_nwb_file(session_start_time, strain, subject_id):
         institution='University of Vienna',
         related_publications=''
     )
-    # TODO: Fix dates and strain
+    # TODO: Fix strain
     nwbfile.subject = CElegansSubject(
         # This is the same as the NWBFile identifier for us, but does not have to be. It should just identify the subject for this trial uniquely.
         subject_id=subject_id,
@@ -179,18 +193,30 @@ def initialize_nwb_file(session_start_time, strain, subject_id):
     return nwbfile
 
 
-def initialize_imaging_channels(red_video, nwbfile, device):
+def initialize_imaging_channels(video_data, nwbfile, device):
     # if red_video is None:
     #     return None, None, None
-    fps = 3.5
+    # TODO: properly switch between red and green
+    # FREE
+    # grid_spacing = [0.325, 0.325, 1.5]
+    # rate = 3.5  # Volumes per second
+    # IMMOBILIZED
+    grid_spacing = [0.4, 0.4, 2]
+    rate = 2.0  # Volumes per second # TODO: get correct rate
+    # GREEN
     emission_lambda = 525.
+    emission_delta = 50.
     excitation_lambda = 488.
-    video_shape = red_video.shape if red_video is not None else None
+    # RED
+    # emission_lambda = 617.
+    # emission_delta = 73.
+    # excitation_lambda = 561.
+    video_shape = video_data.shape if video_data is not None else None
 
     # The DataChunkIterator wraps the data generator function and will stitch together the chunks as it iteratively reads over the full file
-    if red_video is not None:
+    if video_data is not None:
         data = DataChunkIterator(
-            data=_iter_volumes(red_video),
+            data=_iter_volumes(video_data),
             # this will be the max shape of the final image. Can leave blank or set as the size of your full data if you know that ahead of time
             maxshape=None,
             buffer_size=10,
@@ -198,13 +224,12 @@ def initialize_imaging_channels(red_video, nwbfile, device):
     else:
         data = H5DataIO(np.zeros((1, 1, 1, 1), dtype=np.uint8), compression='gzip')
 
-    # TODO: get correct excitation
     CalcOptChan = OpticalChannelPlus(
         name='GFP-GCaMP',
-        description='GFP/GCaMP channel, 488 excitation, 525/50m emission',
+        description=f'GFP/GCaMP channel, f{excitation_lambda} excitation, {emission_lambda}/{emission_delta}m emission',
         excitation_lambda=excitation_lambda,
         excitation_range=[excitation_lambda - 1.5, excitation_lambda + 1.5],
-        emission_range=[emission_lambda - 25, emission_lambda + 25],
+        emission_range=[emission_lambda - emission_delta/2, emission_lambda + emission_delta/2],
         emission_lambda=emission_lambda
     )
     # This object just contains references to the order of channels because OptChannels does not preserve ordering
@@ -213,7 +238,6 @@ def initialize_imaging_channels(red_video, nwbfile, device):
         channels=[CalcOptChan]
     )
 
-    # TODO: get grid spacing
     CalcImagingVolume = ImagingVolume(
         name='CalciumImVol',
         description='Imaging plane used to acquire calcium imaging data',
@@ -221,20 +245,18 @@ def initialize_imaging_channels(red_video, nwbfile, device):
         order_optical_channels=CalcOptChanRefs,
         device=device,
         location='Worm head',
-        grid_spacing=[0.3208, 0.3208, 1.5],
+        grid_spacing=grid_spacing,
         grid_spacing_unit='um',
         reference_frame='Worm head'
     )
     nwbfile.add_imaging_plane(CalcImagingVolume)
 
-    # TODO: get correct excitation
     optical_channel = OpticalChannel(
         name='GFP-GCaMP',
         description='GFP/GCaMP channel, 488 excitation, 525/50m emission',
         emission_lambda=emission_lambda
     )
 
-    # TODO: get correct excitation and grid
     imaging_plane = nwbfile.create_imaging_plane(
         name='CalciumImPlane',
         description='Imaging plane used to acquire calcium imaging data',
@@ -243,12 +265,11 @@ def initialize_imaging_channels(red_video, nwbfile, device):
         excitation_lambda=excitation_lambda,
         indicator='GFP-GCaMP',
         location='Worm head',
-        grid_spacing=[0.3208, 0.3208, 1.5],
+        grid_spacing=grid_spacing,
         grid_spacing_unit='um',
         reference_frame='Worm head'
     )
 
-    # TODO: get correct dimensions and frame rate
     # Use OnePhotonSeries object to store calcium imaging series data
     calcium_image_series = OnePhotonSeries(
         name="CalciumImageSeries",
@@ -256,7 +277,7 @@ def initialize_imaging_channels(red_video, nwbfile, device):
         unit="n/a",
         scan_line_rate=0.5,
         dimension=video_shape,
-        rate=fps,
+        rate=rate,
         imaging_plane=imaging_plane,
     )
     return calcium_image_series, imaging_plane, CalcOptChanRefs
@@ -313,8 +334,8 @@ def convert_traces_to_nwb_format(gce_quant, imaging_plane,  calcium_image_series
         else:
             blobquant = np.vstack((blobquant, blobarr))
 
-    print(
-        blobquant.shape)  # Now dimensions are blob_ix, time, and data columns (X, Y, Z, gce_quant, ID). We are now ready to add this data to NWB objects.
+    # print(
+    #     blobquant.shape)  # Now dimensions are blob_ix, time, and data columns (X, Y, Z, gce_quant, ID). We are now ready to add this data to NWB objects.
 
     planesegs = []
 
