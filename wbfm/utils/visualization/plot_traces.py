@@ -199,8 +199,11 @@ def make_grid_plot_from_project(project_data: ProjectData,
 
 def make_grid_plot_from_dataframe(df: pd.DataFrame, neuron_names_to_plot: list = None, **kwargs):
     """
-    See make_grid_plot_using_project for a more high-level function
+    Plots a grid of subplots, with each showing a single trace. By default plots all, but a sublist can be specified.
 
+    Many options for sorting and shading the background are available.
+
+    See make_grid_plot_using_project for a more high-level function
     Note: this function does NOT accept a project object; use make_grid_plot_using_project for that
 
     Parameters
@@ -403,15 +406,16 @@ def make_grid_plot_from_callables(get_data_func: callable,
     shade_plot_func: function that accepts an axis object and shades the plot
     background_shading_value_func: function to get a value to shade the background, e.g. correlation to behavior
     color_using_behavior: whether to use the shade_plot_func
+    shade_plot_kwargs: kwargs to pass to shade_plot_func
     ax_plot_func: signature: (t, y, ax, name, **kwargs) -> None [should plot something on the given axis]
-    share_y_axis
-    num_columns
-    twinx_when_reusing_figure
-    sort_using_shade_value
-    sort_without_shading
-    fig
-    fig_opt
-    logger
+    share_y_axis: whether to share the y axis between all subplots
+    num_columns: number of columns in the grid
+    twinx_when_reusing_figure: whether to plot the second trace on its own xaxis, or keep the same
+    sort_using_shade_value: whether to sort the neurons based on the background_shading_value_func
+    sort_without_shading: whether to sort the neurons based on the background_shading_value_func, but not shade
+    fig: matplotlib figure object to use
+    fig_opt: kwargs to pass to plt.subplots. Only used if fig is None
+    logger: logger object (optional)
 
     Example:
     get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
