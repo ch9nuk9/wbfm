@@ -75,21 +75,17 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
     # Convert the datetime to a string that can be used as a subject_id
     subject_id = session_start_time.strftime("%Y%m%d-%H-%M-%S")
 
-    # Search for ZIM and the following the numbers
     # Define a regular expression pattern to match "ZIM" followed by numbers
     pattern = r'ZIM(\d+)'
-
-    # Search for the pattern in the input string
     match = re.search(pattern, matlab_fname)
-
     if match:
         # Extract the matched substring
         strain = match.group(0)
     else:
-        print("Pattern not found in the input string.")
+        print(f"Pattern 'ZIM' not found in the input string.")
         raise NotImplementedError
 
-    # Unpack traces... Todo: Right format
+    # Unpack traces
     id_names = mat["ID1"]
     raw_colnames = [f"neuron_{i:03d}" for i in range(len(id_names))]
     # colnames = [dummy if ID is None else ID for dummy, ID in zip(raw_colnames, id_names)]
@@ -107,7 +103,7 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
         # The label column has to be correct, i.e. each neuron should have a label such as 'neuron_001' -> 1
         idx = int(name.split('_')[1])
         gce_dict[('label', name)] = {t: idx for t in t_vec}
-        # Others can be dummy for now
+        # TODO: proper x, y, z, index
         gce_dict[('x', name)] = {t: 1 for t in t_vec}
         gce_dict[('y', name)] = {t: 1 for t in t_vec}
         gce_dict[('z', name)] = {t: 1 for t in t_vec}
@@ -122,7 +118,6 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
 
 
 def nwb_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder):
-    # TODO: strain
     # Initialize and populate the NWB file
     nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
 
@@ -169,7 +164,6 @@ def initialize_nwb_file(session_start_time, strain, subject_id):
         institution='University of Vienna',
         related_publications=''
     )
-    # TODO: Fix strain
     nwbfile.subject = CElegansSubject(
         # This is the same as the NWBFile identifier for us, but does not have to be. It should just identify the subject for this trial uniquely.
         subject_id=subject_id,
