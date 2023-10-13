@@ -256,6 +256,21 @@ def get_absname(project_path, fname):
 
 
 def add_name_suffix(path: str, suffix='-1'):
+    """
+    Add a suffix to a filename, before the filetype
+
+    Example:
+        add_name_suffix('test.h5', suffix='-1') -> 'test-1.h5'
+
+    Parameters
+    ----------
+    path
+    suffix
+
+    Returns
+    -------
+
+    """
     fpath = Path(path)
     base_fname, suffix_fname = fpath.stem, fpath.suffix
     new_base_fname = str(base_fname) + f"{suffix}"
