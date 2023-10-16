@@ -12,6 +12,7 @@ from scipy.signal import detrend
 from sklearn.decomposition import PCA
 
 from wbfm.gui.utils.utils_gui import NeuronNameEditor
+from wbfm.utils.general.point_clouds.utils_paper import paper_trace_settings
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
@@ -957,12 +958,49 @@ class ProjectData:
     def invalid_indices_cache_fname(self):
         return os.path.join(self.cache_dir, 'invalid_indices.npy')
 
+    @cache_to_disk_class('paper_traces_cache_fname',
+                         func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
+                         func_load_from_disk=pd.read_hdf)
+    def calc_paper_traces(self):
+        """
+        Uses calc_default_traces to calculate traces according to settings used for the paper.
+        See paper_trace_settings() for details
+
+        Returns
+        -------
+
+        """
+        opt = paper_trace_settings()
+        df = self.calc_default_traces(**opt)
+        return df
+
+    def paper_traces_cache_fname(self):
+        return os.path.join(self.cache_dir, 'paper_traces.h5')
+
     @property
     def cache_dir(self):
         fname = os.path.join(self.project_dir, '.cache')
         if not os.path.exists(fname):
             os.makedirs(fname)
         return fname
+
+    def clear_disk_cache(self, dry_run=False, verbose=1):
+        """
+        Deletes all cached files generated using the cache_to_disk_class decorator
+
+        Returns
+        -------
+
+        """
+        for fname in os.listdir(self.cache_dir):
+            if fname.endswith('.npy') or fname.endswith('.h5'):
+                if dry_run:
+                    if verbose >= 1:
+                        print(f"Would delete {fname}")
+                else:
+                    os.remove(os.path.join(self.cache_dir, fname))
+                    if verbose >= 1:
+                        print(f"Deleted {fname}")
 
     @lru_cache(maxsize=16)
     def calc_raw_traces(self, neuron_names: tuple, **opt: dict):

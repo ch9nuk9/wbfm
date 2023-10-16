@@ -59,8 +59,10 @@ def cache_to_disk_class(cache_filename_method: str,
     Parameters
     ----------
     cache_filename_method: the name of the class method that returns the cache filename
-    func_save_to_disk
-    func_load_from_disk
+    func_save_to_disk: the function to use to save the data to disk
+        Signature: func_save_to_disk(cache_filename: str, data: Any)
+    func_load_from_disk: the function to use to load the data from disk
+        Signature: func_load_from_disk(cache_filename: str) -> Any
     cache_kwargs
 
     Returns
