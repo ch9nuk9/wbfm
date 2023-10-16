@@ -775,6 +775,7 @@ class ProjectData:
                             manual_id_confidence_threshold: int = 1,
                             use_physical_time: Optional[bool] = None,
                             remove_tail_neurons: bool = True,
+                            use_paper_options: bool = False,
                             verbose=0,
                             **kwargs):
         """
@@ -816,6 +817,10 @@ class ProjectData:
         -------
 
         """
+
+        if use_paper_options:
+            return self.calc_paper_traces()
+
         opt = dict(
             channel_mode='dr_over_r_50',
             calculation_mode='integration',
@@ -977,6 +982,8 @@ class ProjectData:
 
         """
         opt = paper_trace_settings()
+        assert not opt.get('use_paper_traces', False), \
+            "paper_trace_settings should have use_paper_traces=False (recursion error)"
         df = self.calc_default_traces(**opt)
         return df
 

@@ -15,3 +15,13 @@ def paper_trace_settings():
                channel_mode='dr_over_r_50',
                use_physical_time=True)
     return opt
+
+
+def paper_figure_1_settings():
+    base_font_size = 18
+    base_width = 1.5 * 1000
+    base_height = 400
+
+    return dict(base_font_size=base_font_size,
+                base_width=base_width,
+                base_height=base_height)

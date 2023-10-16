@@ -10,6 +10,8 @@ from matplotlib.colors import TwoSlopeNorm
 import numpy as np
 import scipy.io
 from sklearn.decomposition import PCA
+
+from wbfm.utils.general.point_clouds.utils_paper import paper_trace_settings, paper_figure_1_settings
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, options_for_ethogram, shade_using_behavior
 from wbfm.utils.general.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
@@ -1189,6 +1191,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
 
 
 def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, trace_opt=None,
+                                      include_speed_subplot=True,
                                       output_folder=None, **kwargs):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but saves each subplot separately for more control
@@ -1206,9 +1209,14 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
 
     """
 
-    base_font_size = 18
-    base_width = 1.5 * 1000
-    base_height = 400
+    if trace_opt is None:
+        trace_opt = paper_trace_settings()
+
+    # Get figure options
+    figure_opt = paper_figure_1_settings()
+    base_font_size = figure_opt['base_font_size']
+    base_width = figure_opt['base_width']
+    base_height = figure_opt['base_height']
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     num_pca_modes_to_plot = 3
@@ -1231,12 +1239,18 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     ))
 
     # Build figure 2: Ethogram with PCA modes
-    fig2 = make_subplots(rows=5, cols=1, shared_xaxes=True, shared_yaxes=False,
-                         subplot_titles=["", "PCA Modes", "", "", "Speed"],
-                         vertical_spacing=0.0)
+    num_ethogram_rows = 5 if include_speed_subplot else 4
+    if not include_speed_subplot:
+        subplot_titles = ["", "PCA Modes", "", ""]
+    else:
+        subplot_titles = ["", "PCA Modes", "", "", "Speed"]
+    fig2 = make_subplots(rows=num_ethogram_rows, cols=1, shared_xaxes=True, shared_yaxes=False,
+                         subplot_titles=subplot_titles, vertical_spacing=0.0)
     for opt in ethogram_opt:
         fig2.add_shape(**opt, row=1, col=1)
     for i, (trace, trace_opt) in enumerate(zip(trace_list, trace_opt_list)):
+        if not include_speed_subplot and i >= num_pca_modes_to_plot:
+            break
         trace_opt.pop('row')
         fig2.add_trace(trace, **trace_opt, row=i+2)
         num_before_adding_shapes = len(fig2.layout.shapes)
@@ -1245,8 +1259,8 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
             fig2.add_shape(**shade_opt)
         # Force yref in all of these new shapes, which doesn't really work for subplots
         # But here it is hardcoded as 50% of the overall plot (extending across subplots)
-        for i in range(num_before_adding_shapes, len(fig2.layout.shapes)):
-            fig2.layout.shapes[i]['yref'] = 'paper'
+        for _i in range(num_before_adding_shapes, len(fig2.layout.shapes)):
+            fig2.layout.shapes[_i]['yref'] = 'paper'
     fig2.update_layout(showlegend=False, autosize=False, width=base_width, height=base_height)
     fig2.update_layout(font=dict(size=base_font_size),
                        title=dict(font=dict(size=base_font_size+2)))
@@ -1258,7 +1272,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
 
     fig2.update_xaxes(dict(showticklabels=False), row=1, overwrite=True)
     fig2.update_yaxes(dict(showticklabels=False), row=1, overwrite=True, matches='y')
-    fig2.update_xaxes(dict(showticklabels=True, title='Time (seconds)'), row=5, col=1, overwrite=True,)
+    fig2.update_xaxes(dict(showticklabels=True, title='Time (seconds)'), row=num_ethogram_rows, col=1, overwrite=True,)
 
     # Move the titles down
     fig2.update_annotations(yshift=-19, xshift=-40)
