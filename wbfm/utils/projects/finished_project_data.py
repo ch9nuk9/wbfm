@@ -1043,7 +1043,7 @@ class ProjectData:
         return df
 
     def calc_pca_modes(self, n_components=10, flip_pc1_to_have_reversals_high=True, return_pca_weights=False,
-                       return_pca_object=False, **trace_kwargs) -> pd.DataFrame:
+                       return_pca_object=False, multiply_by_variance=False, **trace_kwargs) -> pd.DataFrame:
         """
         Calculates the PCA modes of the traces, and optionally flips the first mode to have reversals high
         This allows comparison of PC1 across datasets
@@ -1071,6 +1071,8 @@ class ProjectData:
             pca_weights = pca.components_.T
         pca.fit(X.T)
         pca_modes = pca.components_.T
+        if multiply_by_variance:
+            pca_modes *= pca.explained_variance_
 
         if return_pca_object:
             return pca

@@ -377,7 +377,7 @@ def build_dataframe_of_clusters(all_triggered_average_classes, multi_dataset_clu
 
 def get_variance_explained(project_data, trace_kwargs=None):
     if trace_kwargs is None:
-        trace_kwargs = dict(channel_mode='dr_over_r_20', min_nonnan=0.9, filter_mode='rolling_mean')
+        trace_kwargs = dict(use_paper_options=True)
     X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
     X = detrend(X, axis=0)
     pca = PCA(n_components=20, whiten=False)
