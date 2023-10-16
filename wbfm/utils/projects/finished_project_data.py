@@ -346,7 +346,7 @@ class ProjectData:
         return df_all_tracklets
 
     def _load_df_tracklets(self, dryrun=False) -> Tuple[pd.DataFrame, str]:
-        if self.verbose >= 1:
+        if self.verbose >= 1 and not dryrun:
             self.logger.info("First time loading all the tracklets, may take a while...")
         train_cfg = self.project_config.get_training_config()
         track_cfg = self.project_config.get_tracking_config()
@@ -523,7 +523,7 @@ class ProjectData:
         # df_training_tracklets_fname = train_cfg.resolve_relative_path_from_config('df_training_3d_tracks')
         # reindexed_masks_training_fname = train_cfg.resolve_relative_path_from_config('reindexed_masks')
 
-        final_tracks_fname = tracking_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
+        # final_tracks_fname = tracking_cfg.resolve_relative_path_from_config('final_3d_tracks_df')
         seg_fname_raw = segment_cfg.resolve_relative_path_from_config('output_masks')
         seg_fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
 
@@ -586,6 +586,12 @@ class ProjectData:
         """
         Main constructor that accepts multiple input formats
         This includes an already initialized ProjectData class, in which case this function returns
+
+        valid input formats are:
+            - path to project directory
+            - path to project directory + project_config.yaml
+            - ModularProjectConfig class (initialized with path to project directory)
+            - ProjectData class (already initialized; this is returned as-is)
 
         valid kwargs are:
             to_load_tracklets=False,
