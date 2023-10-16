@@ -15,6 +15,7 @@ from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 import plotly.graph_objects as go
 
+
 def build_trace_factory(base_trace_fname, trace_mode, smoothing_func=lambda x: x, background_per_pixel=0):
     if trace_mode in ['red', 'green']:
         fname = base_trace_fname.with_name(f"{trace_mode}_traces.h5")

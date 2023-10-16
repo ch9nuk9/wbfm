@@ -997,7 +997,8 @@ class ProjectData:
             os.makedirs(fname)
         return fname
 
-    def clear_disk_cache(self, dry_run=False, verbose=1):
+    def clear_disk_cache(self, delete_traces=True, delete_invalid_indices=True,
+                         dry_run=False, verbose=1):
         """
         Deletes all cached files generated using the cache_to_disk_class decorator
 
@@ -1005,15 +1006,17 @@ class ProjectData:
         -------
 
         """
-        for fname in os.listdir(self.cache_dir):
-            if fname.endswith('.npy') or fname.endswith('.h5'):
-                if dry_run:
-                    if verbose >= 1:
-                        print(f"Would delete {fname}")
-                else:
-                    os.remove(os.path.join(self.cache_dir, fname))
-                    if verbose >= 1:
-                        print(f"Deleted {fname}")
+        possible_fnames = []
+        if delete_traces:
+            possible_fnames.append(self.paper_traces_cache_fname())
+        if delete_invalid_indices:
+            possible_fnames.append(self.invalid_indices_cache_fname())
+        for fname in possible_fnames:
+            if os.path.exists(fname):
+                if verbose >= 1:
+                    print(f"Deleting {fname}")
+                if not dry_run:
+                    os.remove(fname)
 
     @lru_cache(maxsize=16)
     def calc_raw_traces(self, neuron_names: tuple, **opt: dict):
