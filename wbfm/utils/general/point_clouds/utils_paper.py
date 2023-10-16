@@ -13,7 +13,8 @@ def paper_trace_settings():
                nan_tracking_failure_points=True,
                nan_using_ppca_manifold=True,
                channel_mode='dr_over_r_50',
-               use_physical_time=True)
+               use_physical_time=True,
+               rename_neurons_using_manual_ids=True)
     return opt
 
 
