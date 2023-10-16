@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from typing import Union, Optional
 
 import numpy as np
@@ -8,6 +10,7 @@ from scipy.stats import stats
 from sklearn.linear_model import LinearRegression
 
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan, get_contiguous_blocks_from_column
+from wbfm.utils.general.point_clouds.utils_paper import paper_trace_settings
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 import plotly.graph_objects as go
@@ -518,3 +521,88 @@ def add_p_value_annotation(fig, array_columns, subplot=None,
                                 yref="y" + subplot_str + " domain"
                                 ))
     return fig
+
+
+# Do a set of ID-able neurons triggered to reverse, then forward
+
+# First, do wbfm
+
+def plot_triggered_averages(project_data_list, output_foldername=None):
+    """
+    For figure 1 of the paper: averaged triggered averages between two example datasets
+
+    Parameters
+    ----------
+    project_data_list
+    to_save
+
+    Returns
+    -------
+
+    """
+
+    from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
+    xlim = [-5, 15]
+    trace_opt = paper_trace_settings()
+
+    # Example neurons
+    for neuron_base in ['AVA', 'PC1']:
+        # for neuron_base in ['AVA', 'RME', 'VB02', 'BAG', 'PC1']:
+        for state in [BehaviorCodes.REV, BehaviorCodes.FWD]:
+
+            fig, ax = plt.subplots(dpi=200, figsize=(4, 2.5))
+            for i_trace, project_data in enumerate(project_data_list):
+
+                df_traces = project_data.calc_paper_traces()
+                mapping = project_data.neuron_name_to_manual_id_mapping(remove_unnamed_neurons=True,
+                                                                        confidence_threshold=0)
+                mapping = {v: k for k, v in mapping.items()}
+                ind_class = project_data.worm_posture_class.calc_triggered_average_indices(state=state)
+
+                # Actually plot
+                if neuron_base == "PC1":
+                    y = project_data.calc_pca_modes(2, **trace_opt)
+                    y = pd.Series(y.loc[:, 0])
+                    neuron = neuron_base
+                else:
+                    if neuron_base not in mapping:
+
+                        if 'immob' in project_data.shortened_name:
+                            # This dataset has the brighter side on the right side
+                            neuron = f"{neuron_base}R"
+                        else:
+                            # This dataset has the brighter side on the left side
+                            neuron = f"{neuron_base}L"
+                    else:
+                        neuron = neuron_base
+                    neuron_ind = mapping[neuron]
+                    y = df_traces[neuron_ind]
+
+                mat = ind_class.calc_triggered_average_matrix(y)
+
+                ind_class.plot_triggered_average_from_matrix(mat, ax=ax, is_second_plot=(i_trace > 0), lw=2)
+                ax.set_title(f"{neuron}")
+                ax.set_xlim(xlim)
+                ax.set_xlabel("Time (seconds)")
+                ax.set_ylabel("Activity")
+                plt.tight_layout()
+
+                # Make a fake behavioral vector to shade this
+                if state == BehaviorCodes.REV:
+                    behavior_shading_type = 'rev'
+                else:
+                    behavior_shading_type = 'fwd'
+                from wbfm.utils.general.utils_behavior_annotation import shade_triggered_average
+                shade_triggered_average(ind_class.ind_preceding, mat.columns, behavior_shading_type, ax,
+                                        DEBUG=False)
+            # Save
+            if output_foldername is not None:
+                fname = f"multiproject-{neuron}-{state}.png"
+                # if 'immob' in fname:
+                #     fname = os.path.join(output_foldername, 'immob', fname)
+                # else:
+                #     fname = os.path.join(output_foldername, 'gcamp', fname)
+                fname = os.path.join(output_foldername, fname)
+                plt.savefig(fname)
+                fname = Path(fname).with_suffix('.svg')
+                plt.savefig(fname)
