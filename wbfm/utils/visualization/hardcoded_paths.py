@@ -26,7 +26,7 @@ def get_project_parent_folder():
     return "/scratch/neurobiology/zimmer/fieseler/wbfm_projects"
 
 
-def load_paper_datasets(genotype='gcamp', require_behavior=True) -> dict:
+def load_paper_datasets(genotype='gcamp', require_behavior=False) -> dict:
     """
 
     As of Dec 2022, these are the datasets we will use, with this condition:
@@ -81,6 +81,7 @@ def load_paper_datasets(genotype='gcamp', require_behavior=True) -> dict:
         raise NotImplementedError
 
     if require_behavior:
+        print("Filtering out projects without behavior")
         good_projects_filtered = {k: p for k, p in good_projects.items() if p.worm_posture_class.has_beh_annotation}
         if len(good_projects_filtered) < len(good_projects):
             print("Removed some designated 'good' projects because they didn't have behavior")
