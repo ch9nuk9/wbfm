@@ -65,5 +65,8 @@ def apply_figure_settings(fig, i_figure):
     # Update font size
     fig.update_layout(font=dict(size=base_font_size),
                       title=dict(font=dict(size=base_font_size+2)))
-    # Transparent background and remove lines
+    # Transparent background
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    # Remove background grid lines
+    fig.update_xaxes(showgrid=False, zeroline=False)
+    fig.update_yaxes(showgrid=False, zeroline=False)

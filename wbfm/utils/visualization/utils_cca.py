@@ -9,6 +9,7 @@ from sklearn.cross_decomposition import CCA
 import plotly.express as px
 from sklearn.decomposition import PCA
 
+from wbfm.utils.general.point_clouds.utils_paper import apply_figure_settings
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
@@ -216,7 +217,7 @@ class CCAPlotter:
     def plot_single_mode(self, i_mode=0, binary_behaviors=False, use_pca=False, output_folder=None, **kwargs):
 
         if use_pca:
-            X_r = self.project_data.calc_pca_modes(n_components=i_mode+1)
+            X_r = self.project_data.calc_pca_modes(n_components=i_mode+1, multiply_by_variance=True)
             df = pd.DataFrame({f'PCA mode {i_mode+1}': X_r[:, i_mode] / X_r[:, i_mode].max()})
         else:
             X_r, Y_r, cca = self.calc_cca(binary_behaviors=binary_behaviors, **kwargs)
@@ -225,6 +226,7 @@ class CCAPlotter:
                                f'Latent behavior mode {i_mode+1}': Y_r[:, i_mode] / Y_r[:, i_mode].max()})
         fig = px.line(df)
         self.project_data.shade_axis_using_behavior(plotly_fig=fig)
+        apply_figure_settings(fig, 2)
         fig.show()
 
         if output_folder is not None:
@@ -240,7 +242,7 @@ class CCAPlotter:
         fig.write_image(fname)
 
     def plot(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, use_X_r=True, sparse_tau=None,
-             plot_3d=True, output_folder=None, DEBUG=False,
+             plot_3d=True, show_legend=True, output_folder=None, DEBUG=False,
              ethogram_cmap_kwargs=None, beh_annotation_kwargs=None):
         if ethogram_cmap_kwargs is None:
             ethogram_cmap_kwargs = {}
@@ -249,7 +251,7 @@ class CCAPlotter:
         if modes_to_plot is None:
             modes_to_plot = [0, 1, 2]
         if use_pca:
-            X_r = self.project_data.calc_pca_modes(n_components=3)
+            X_r = self.project_data.calc_pca_modes(n_components=3, multiply_by_variance=True)
             df_latents = pd.DataFrame(X_r)
         else:
             X_r, Y_r, cca = self.calc_cca(n_components=3, binary_behaviors=binary_behaviors, sparse_tau=sparse_tau)
@@ -341,6 +343,9 @@ class CCAPlotter:
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)'
         )
+        # Remove legend
+        if not show_legend:
+            fig.update_layout(showlegend=False)
 
         if output_folder is not None:
             fname = self._get_fig_filename(binary_behaviors, plot_3d, use_pca, single_mode=False)
