@@ -1758,7 +1758,6 @@ class WormFullVideoPosture:
                 kwargs['fig'] = kwargs.pop('plotly_fig')
                 # Remove matplotlib specific kwargs
                 kwargs.pop('ax', None)
-                kwargs.pop('index_conversion', None)
                 kwargs.pop('plot_fig', None)
                 shade_using_behavior_plotly(bh, **kwargs)
             else:

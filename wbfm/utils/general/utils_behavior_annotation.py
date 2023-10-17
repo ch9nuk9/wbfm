@@ -523,7 +523,7 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
     return all_shape_opt
 
 
-def shade_using_behavior_plotly(beh_vector, fig, shape_opt=None, **kwargs):
+def shade_using_behavior_plotly(beh_vector, fig, shape_opt=None, index_conversion=None, **kwargs):
     """
     Plotly version of shade_using_behavior
 
@@ -543,6 +543,8 @@ def shade_using_behavior_plotly(beh_vector, fig, shape_opt=None, **kwargs):
     """
     if shape_opt is None:
         shape_opt = {}
+    if index_conversion is not None:
+        beh_vector.index = index_conversion
     ethogram_opt = options_for_ethogram(beh_vector, shading=True, **kwargs)
     for opt in ethogram_opt:
         fig.add_shape(**opt, **shape_opt)
