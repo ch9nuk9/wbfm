@@ -38,7 +38,7 @@ def paper_figure_2_settings():
                 base_height=base_height)
 
 
-def apply_figure_settings(fig, i_figure):
+def apply_figure_settings(fig, i_figure, plotly_not_matplotlib=True):
     """
     Apply settings for the paper, per figure. Note that this does not change the size settings, only font sizes and
     background colors (transparent).
@@ -59,14 +59,36 @@ def apply_figure_settings(fig, i_figure):
     else:
         raise ValueError('Unknown figure number: {}'.format(i_figure))
     base_font_size = figure_opt['base_font_size']
+    title_font_size = base_font_size + 2
     base_width = figure_opt['base_width']
     base_height = figure_opt['base_height']
 
-    # Update font size
-    fig.update_layout(font=dict(size=base_font_size),
-                      title=dict(font=dict(size=base_font_size+2)))
-    # Transparent background
-    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-    # Remove background grid lines
-    fig.update_xaxes(showgrid=False, zeroline=False)
-    fig.update_yaxes(showgrid=False, zeroline=False)
+    if plotly_not_matplotlib:
+        # Update font size
+        fig.update_layout(font=dict(size=base_font_size),
+                          title=dict(font=dict(size=title_font_size)))
+        # Transparent background
+        fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+        # Remove background grid lines
+        fig.update_xaxes(showgrid=False, zeroline=False)
+        fig.update_yaxes(showgrid=False, zeroline=False)
+    else:
+        # Get ax from figure
+        ax = fig.axes[0]
+
+        # Title font size
+        title = ax.title
+        title.set_fontsize(title_font_size)
+
+        # X-axis and Y-axis label font sizes
+        xlabel = ax.xaxis.label
+        ylabel = ax.yaxis.label
+        xlabel.set_fontsize(base_font_size)
+        ylabel.set_fontsize(base_font_size)
+
+        # Tick label font sizes
+        for tick in ax.get_xticklabels():
+            tick.set_fontsize(base_font_size)
+        for tick in ax.get_yticklabels():
+            tick.set_fontsize(base_font_size)
+

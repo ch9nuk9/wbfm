@@ -402,9 +402,9 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, **kwarg
     all_cca_classes = {}
     all_r_squared = defaultdict(dict)
 
-    opt_dict = {'pca': dict(use_pca=True),
-                'cca': dict(use_pca=False),
-                'cca_binary': dict(use_pca=False, binary_behaviors=True)}
+    opt_dict = {'PCA': dict(use_pca=True),
+                'CCA': dict(use_pca=False),
+                'CCA Binary': dict(use_pca=False, binary_behaviors=True)}
 
     for name, p in tqdm(all_projects.items()):
         cca_plotter = CCAPlotter(p, **kwargs)
@@ -427,7 +427,7 @@ def calc_mode_correlation_for_all_projects(all_projects, correlation_kwargs=None
     opt_dict = {'cca': dict(),
                 'cca_binary': dict(binary_behaviors=True)}
 
-    for name, p in all_projects.items():
+    for name, p in tqdm(all_projects.items()):
         cca_plotter = CCAPlotter(p, **kwargs)
         all_cca_classes[name] = cca_plotter
         for opt_name, opt in opt_dict.items():
