@@ -217,15 +217,18 @@ class CCAPlotter:
     def plot_single_mode(self, i_mode=0, binary_behaviors=False, use_pca=False, output_folder=None, **kwargs):
 
         if use_pca:
-            X_r = self.project_data.calc_pca_modes(n_components=i_mode+1, multiply_by_variance=True)
+            X_r = np.array(self.project_data.calc_pca_modes(n_components=i_mode+1, multiply_by_variance=True))
             df = pd.DataFrame({f'PCA mode {i_mode+1}': X_r[:, i_mode] / X_r[:, i_mode].max()})
         else:
             X_r, Y_r, cca = self.calc_cca(binary_behaviors=binary_behaviors, **kwargs)
 
             df = pd.DataFrame({f'Latent trace mode {i_mode+1}': X_r[:, i_mode] / X_r[:, i_mode].max(),
                                f'Latent behavior mode {i_mode+1}': Y_r[:, i_mode] / Y_r[:, i_mode].max()})
+        df.index = self.df_traces.index
         fig = px.line(df)
         self.project_data.shade_axis_using_behavior(plotly_fig=fig)
+        fig.update_yaxes(title='Amplitude')
+        fig.update_xaxes(title='Time (s)')
         apply_figure_settings(fig, 2)
         fig.show()
 
@@ -264,7 +267,8 @@ class CCAPlotter:
         beh_annotation = dict(fluorescence_fps=True, reset_index=True, include_collision=False, include_turns=True,
                               include_head_cast=False, include_pause=False, include_slowing=False)
         beh_annotation.update(beh_annotation_kwargs)
-        df_latents['state'] = self.project_data.worm_posture_class.beh_annotation(**beh_annotation)
+        state_vec = self.project_data.worm_posture_class.beh_annotation(**beh_annotation)
+        df_latents['state'] = state_vec.values  # Ignore the index here, since it may not be physical time
         ethogram_cmap_kwargs.setdefault('include_turns', beh_annotation['include_turns'])
         ethogram_cmap_kwargs.setdefault('include_quiescence', beh_annotation['include_pause'])
         ethogram_cmap_kwargs.setdefault('include_collision', beh_annotation['include_collision'])
