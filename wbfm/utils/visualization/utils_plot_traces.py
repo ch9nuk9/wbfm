@@ -547,7 +547,7 @@ def plot_triggered_averages(project_data_list, output_foldername=None):
     trace_opt = paper_trace_settings()
 
     # Example neurons
-    for neuron_base in ['AVA', 'PC1']:
+    for neuron_base in ['AVAL', 'PC1']:
         # for neuron_base in ['AVA', 'RME', 'VB02', 'BAG', 'PC1']:
         for state in [BehaviorCodes.REV, BehaviorCodes.FWD]:
 
@@ -555,9 +555,6 @@ def plot_triggered_averages(project_data_list, output_foldername=None):
             for i_trace, project_data in enumerate(project_data_list):
 
                 df_traces = project_data.calc_paper_traces()
-                mapping = project_data.neuron_name_to_manual_id_mapping(remove_unnamed_neurons=True,
-                                                                        confidence_threshold=0)
-                mapping = {v: k for k, v in mapping.items()}
                 ind_class = project_data.worm_posture_class.calc_triggered_average_indices(state=state)
 
                 # Actually plot
@@ -566,18 +563,10 @@ def plot_triggered_averages(project_data_list, output_foldername=None):
                     y = pd.Series(y.loc[:, 0])
                     neuron = neuron_base
                 else:
-                    if neuron_base not in mapping:
-
-                        if 'immob' in project_data.shortened_name:
-                            # This dataset has the brighter side on the right side
-                            neuron = f"{neuron_base}R"
-                        else:
-                            # This dataset has the brighter side on the left side
-                            neuron = f"{neuron_base}L"
-                    else:
-                        neuron = neuron_base
-                    neuron_ind = mapping[neuron]
-                    y = df_traces[neuron_ind]
+                    neuron = neuron_base
+                    if neuron not in df_traces.columns:
+                        continue
+                    y = df_traces[neuron]
 
                 mat = ind_class.calc_triggered_average_matrix(y)
 
