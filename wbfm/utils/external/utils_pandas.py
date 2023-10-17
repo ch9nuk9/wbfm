@@ -985,3 +985,28 @@ def get_dataframe_of_transitions(state_vector: pd.Series, convert_to_probabiliti
         df_transitions = df_transitions.div(df_transitions.sum(axis=1), axis=0)
 
     return df_transitions
+
+
+def apply_to_dict_of_dfs_and_concat(dict_of_dfs, func):
+    """
+    Applies a summary function to a dictionary of dataframes, setting the dict key to a new column
+
+    Intended to create a very tall dataframe to be plotted using plotly
+
+    Parameters
+    ----------
+    dict_of_dfs
+
+    Returns
+    -------
+
+    """
+
+    new_dfs = []
+    for name, df in dict_of_dfs.items():
+        df = func(df)
+        df['name'] = name
+        new_dfs.append(df)
+
+    df_concat = pd.concat(new_dfs)
+    return df_concat

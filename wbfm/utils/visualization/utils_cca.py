@@ -8,6 +8,7 @@ from ipywidgets import interact
 from sklearn.cross_decomposition import CCA
 import plotly.express as px
 from sklearn.decomposition import PCA
+from tqdm.auto import tqdm
 
 from wbfm.utils.general.point_clouds.utils_paper import apply_figure_settings
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
@@ -214,7 +215,8 @@ class CCAPlotter:
             df_y = pd.DataFrame(self._pca_beh.inverse_transform(df_y), columns=self._df_beh.columns)
         return df_x, df_y
 
-    def plot_single_mode(self, i_mode=0, binary_behaviors=False, use_pca=False, output_folder=None, **kwargs):
+    def plot_single_mode(self, i_mode=0, binary_behaviors=False, use_pca=False, show_legend=True,
+                         output_folder=None, **kwargs):
 
         if use_pca:
             X_r = np.array(self.project_data.calc_pca_modes(n_components=i_mode+1, multiply_by_variance=True))
@@ -222,13 +224,15 @@ class CCAPlotter:
         else:
             X_r, Y_r, cca = self.calc_cca(binary_behaviors=binary_behaviors, **kwargs)
 
-            df = pd.DataFrame({f'Latent trace mode {i_mode+1}': X_r[:, i_mode] / X_r[:, i_mode].max(),
+            df = pd.DataFrame({f'Latent neural mode {i_mode+1}': X_r[:, i_mode] / X_r[:, i_mode].max(),
                                f'Latent behavior mode {i_mode+1}': Y_r[:, i_mode] / Y_r[:, i_mode].max()})
         df.index = self.df_traces.index
         fig = px.line(df)
         self.project_data.shade_axis_using_behavior(plotly_fig=fig)
         fig.update_yaxes(title='Amplitude')
         fig.update_xaxes(title='Time (s)')
+        if not show_legend:
+            fig.update_layout(showlegend=False)
         apply_figure_settings(fig, 2)
         fig.show()
 
@@ -299,10 +303,10 @@ class CCAPlotter:
         # Change the tick values to be evenly spaced
         xtick_min = np.floor(df_out[col_names[0][0]].min()) - 1
         xtick_max = np.ceil(df_out[col_names[0][0]].max()) + 1
-        xtick_range = np.arange(xtick_min, xtick_max, 1)
+        xtick_range = np.arange(xtick_min, xtick_max, 2)
         ytick_min = np.floor(df_out[col_names[1][0]].min()) - 1
         ytick_max = np.ceil(df_out[col_names[1][0]].max()) + 1
-        ytick_range = np.arange(ytick_min, ytick_max, 1)
+        ytick_range = np.arange(ytick_min, ytick_max, 2)
         # Hacky: https://community.plotly.com/t/scatter3d-background-plot-color/38838/4
         fig.update_layout(
             scene=dict(
@@ -326,7 +330,7 @@ class CCAPlotter:
         if plot_3d:
             ztick_min = np.floor(df_out[col_names[2][0]].min()) - 1
             ztick_max = np.ceil(df_out[col_names[2][0]].max()) + 1
-            ztick_range = np.arange(ztick_min, ztick_max, 1)
+            ztick_range = np.arange(ztick_min, ztick_max, 2)
             fig.update_layout(
                 scene=dict(
                     zaxis=dict(
@@ -343,10 +347,7 @@ class CCAPlotter:
                 scene_camera=dict(eye=dict(x=1.0, y=1.0, z=2.5))
             )
         # Transparent background
-        fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
-        )
+        apply_figure_settings(fig, 2)
         # Remove legend
         if not show_legend:
             fig.update_layout(showlegend=False)
@@ -405,7 +406,7 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, **kwarg
                 'cca': dict(use_pca=False),
                 'cca_binary': dict(use_pca=False, binary_behaviors=True)}
 
-    for name, p in all_projects.items():
+    for name, p in tqdm(all_projects.items()):
         cca_plotter = CCAPlotter(p, **kwargs)
         all_cca_classes[name] = cca_plotter
         for opt_name, opt in opt_dict.items():
