@@ -58,7 +58,7 @@ def paired_boxplot_from_dataframes(df_before_and_after: pd.DataFrame, labels: li
     for i in range(num_rows - 1):
         y0_vec = y_vec_list[i]
         y1_vec = y_vec_list[i + 1]
-        this_x = x[i:i+2]
+        this_x = [i, i+1]
         diff = y1_vec - y0_vec
         if use_coloring:
             colors = ['green' if d > 0 else 'red' for d in diff]
