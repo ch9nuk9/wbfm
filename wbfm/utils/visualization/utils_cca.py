@@ -41,10 +41,14 @@ class CCAPlotter:
     _pca_traces: PCA = None
     _pca_beh: PCA = None
 
+    trace_kwargs: dict = None
+
     def __post_init__(self):
         # Default traces and behaviors
         opt = dict(filter_mode='rolling_mean', interpolate_nan=True, nan_tracking_failure_points=True,
                    use_physical_time=True, rename_neurons_using_manual_ids=True)
+        if self.trace_kwargs is not None:
+            opt.update(self.trace_kwargs)
 
         df_traces = self.project_data.calc_default_traces(**opt)
         self._df_traces = df_traces
@@ -286,12 +290,19 @@ class CCAPlotter:
         fig = go.Figure(layout=dict(height=1000, width=1000))
         fig.add_traces(phase_plot_list)
 
+        # Change the tick values to be evenly spaced
+        xtick_min = np.floor(df_out[col_names[0][0]].min()) - 1
+        xtick_max = np.ceil(df_out[col_names[0][0]].max()) + 1
+        xtick_range = np.arange(xtick_min, xtick_max, 1)
+        ytick_min = np.floor(df_out[col_names[1][0]].min()) - 1
+        ytick_max = np.ceil(df_out[col_names[1][0]].max()) + 1
+        ytick_range = np.arange(ytick_min, ytick_max, 1)
         # Hacky: https://community.plotly.com/t/scatter3d-background-plot-color/38838/4
         fig.update_layout(
             scene=dict(
                 xaxis=dict(
                     backgroundcolor="rgba(0, 0, 0, 0)",
-                    tickvals=[-1, 0, 1],
+                    tickvals=xtick_range,
                     showbackground=True,
                     gridcolor='black',
                     zerolinecolor="white",
@@ -299,7 +310,7 @@ class CCAPlotter:
                 ),
                 yaxis=dict(
                     backgroundcolor="rgba(0, 0, 0, 0)",
-                    tickvals=[-1, 0, 1],
+                    tickvals=ytick_range,
                     showbackground=True,
                     gridcolor='black',
                     zerolinecolor="white",
@@ -307,11 +318,14 @@ class CCAPlotter:
             )
         )
         if plot_3d:
+            ztick_min = np.floor(df_out[col_names[2][0]].min()) - 1
+            ztick_max = np.ceil(df_out[col_names[2][0]].max()) + 1
+            ztick_range = np.arange(ztick_min, ztick_max, 1)
             fig.update_layout(
                 scene=dict(
                     zaxis=dict(
                         backgroundcolor="rgba(0, 0, 0,0)",
-                        tickvals=[-1, 0, 1],
+                        tickvals=ztick_range,
                         showbackground=True,
                         gridcolor='black',
                         zerolinecolor="white",
