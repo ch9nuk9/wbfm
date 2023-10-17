@@ -11,7 +11,8 @@ import numpy as np
 import scipy.io
 from sklearn.decomposition import PCA
 
-from wbfm.utils.general.point_clouds.utils_paper import paper_trace_settings, paper_figure_1_settings
+from wbfm.utils.general.point_clouds.utils_paper import paper_trace_settings, paper_figure_1_settings, \
+    apply_figure_settings
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, options_for_ethogram, shade_using_behavior
 from wbfm.utils.general.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
@@ -1228,8 +1229,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     fig1.add_trace(heatmap, **heatmap_opt)
     fig1.update_layout(showlegend=False, autosize=False, width=base_width, height=1.5 * base_height,
                        coloraxis=dict(colorscale="jet"))
-    fig1.update_layout(font=dict(size=base_font_size),
-                       title=dict(font=dict(size=base_font_size+2)))
+    apply_figure_settings(fig1, 1)
     # Remove ticks
     fig1.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig1.update_yaxes(dict(showticklabels=False, showgrid=False, title="Neurons sorted by PC1"),
@@ -1262,10 +1262,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
         for _i in range(num_before_adding_shapes, len(fig2.layout.shapes)):
             fig2.layout.shapes[_i]['yref'] = 'paper'
     fig2.update_layout(showlegend=False, autosize=False, width=base_width, height=base_height)
-    fig2.update_layout(font=dict(size=base_font_size),
-                       title=dict(font=dict(size=base_font_size+2)))
-    # Transparent background and remove lines
-    fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    apply_figure_settings(fig2, 1)
     # Remove ticks
     fig2.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig2.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
