@@ -717,9 +717,9 @@ class ProjectData:
             behavior_codes = ['rev', 'ventral_turn', 'head_cast', 'slowing', 'self_collision']
         else:
             behavior_codes = ['signed_middle_body_speed', 'ventral_only_body_curvature', 'ventral_only_head_curvature',
-                              'dorsal_only_body_curvature', 'dorsal_only_head_curvature',
-                              'worm_nose_peak_frequency', 'worm_head_peak_frequency',
-                              'worm_speed_body_peak_frequency']
+                              'dorsal_only_body_curvature', 'dorsal_only_head_curvature']
+                              #'worm_nose_peak_frequency', 'worm_head_peak_frequency',
+                              #'worm_speed_body_peak_frequency']
         behavior_dict = {}
         for code in behavior_codes:
             behavior_dict[code] = self.calculate_behavior_trace(code, **kwargs)[1]
