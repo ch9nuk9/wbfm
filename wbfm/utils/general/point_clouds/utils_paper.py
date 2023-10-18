@@ -29,7 +29,7 @@ column_width_pixels = column_width_inches * dpi
 column_height_inches = 11  # Full a4 page
 column_height_pixels = column_height_inches * dpi
 pixels_per_point = dpi / 72.0
-font_size_points = 12  # I think the default is 10, but since I am doing a no-margin image I need to be a bit larger
+font_size_points = 10  # I think the default is 10, but since I am doing a no-margin image I need to be a bit larger
 font_size_pixels = font_size_points * pixels_per_point
 
 
@@ -79,6 +79,11 @@ def apply_figure_settings(fig, width_factor=1, height_factor=1, plotly_not_matpl
         fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
     else:
         font_dict = figure_opt['matplotlib_font_opt']
+        size_dict = figure_opt['matplotlib_opt']
+        # Change size
+        fig.set_size_inches(size_dict['figsize'])
+        fig.set_dpi(size_dict['dpi'])
+
         # Get ax from figure
         ax = fig.axes[0]
 
@@ -99,4 +104,3 @@ def apply_figure_settings(fig, width_factor=1, height_factor=1, plotly_not_matpl
             tick.set_fontsize(font_dict['fontsize'])
 
         plt.tight_layout()
-

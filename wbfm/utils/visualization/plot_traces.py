@@ -1228,7 +1228,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     fig1.add_trace(heatmap, **heatmap_opt)
     fig1.update_layout(showlegend=False, autosize=False, #**plotly_opt,
                        coloraxis=dict(colorscale="jet"))
-    apply_figure_settings(fig1, width_factor=1, height_factor=0.2, plotly_not_matplotlib=True)
+    apply_figure_settings(fig1, width_factor=1, height_factor=0.15, plotly_not_matplotlib=True)
     # Remove ticks
     fig1.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig1.update_yaxes(dict(showticklabels=False, showgrid=False),#, title="Neurons"),
@@ -1261,7 +1261,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
         for _i in range(num_before_adding_shapes, len(fig2.layout.shapes)):
             fig2.layout.shapes[_i]['yref'] = 'paper'
     fig2.update_layout(showlegend=False, autosize=False)#, **plotly_opt)
-    apply_figure_settings(fig2, width_factor=1, height_factor=0.15, plotly_not_matplotlib=True)
+    apply_figure_settings(fig2, width_factor=0.8, height_factor=0.15, plotly_not_matplotlib=True)
     # Remove ticks
     fig2.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig2.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
@@ -1297,7 +1297,7 @@ def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html', o
     if output_folder is not None:
         fname = Path(fname).with_suffix('.svg')
         fname = os.path.join(output_folder, fname.name)
-        fig.write_image(str(fname), scale=4)
+        fig.write_image(str(fname), scale=1)
         fname = Path(fname).with_suffix('.png')
         fname = os.path.join(output_folder, fname.name)
         fig.write_image(str(fname), scale=4)

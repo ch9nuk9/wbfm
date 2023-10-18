@@ -10,7 +10,7 @@ from scipy.stats import stats
 from sklearn.linear_model import LinearRegression
 
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan, get_contiguous_blocks_from_column
-from wbfm.utils.general.point_clouds.utils_paper import paper_trace_settings
+from wbfm.utils.general.point_clouds.utils_paper import paper_trace_settings, apply_figure_settings
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 import plotly.graph_objects as go
@@ -585,6 +585,9 @@ def plot_triggered_averages(project_data_list, output_foldername=None):
                 from wbfm.utils.general.utils_behavior_annotation import shade_triggered_average
                 shade_triggered_average(ind_class.ind_preceding, mat.columns, behavior_shading_type, ax,
                                         DEBUG=False)
+
+            apply_figure_settings(fig, width_factor=0.3, height_factor=0.15, plotly_not_matplotlib=False)
+
             # Save
             if output_foldername is not None:
                 fname = f"multiproject-{neuron}-{state}.png"
