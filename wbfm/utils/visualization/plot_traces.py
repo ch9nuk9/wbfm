@@ -1216,7 +1216,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     # Get figure options
     figure_opt = paper_figure_page_settings()
     font_dict = figure_opt['plotly_font_opt']
-    plotly_opt = figure_opt['plotly_opt']
+    # plotly_opt = figure_opt['plotly_opt']
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     num_pca_modes_to_plot = 3
@@ -1231,7 +1231,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     apply_figure_settings(fig1, width_factor=1, height_factor=0.2, plotly_not_matplotlib=True)
     # Remove ticks
     fig1.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
-    fig1.update_yaxes(dict(showticklabels=False, showgrid=False, title="Neurons sorted by PC1"),
+    fig1.update_yaxes(dict(showticklabels=False, showgrid=False),#, title="Neurons"),
                       col=1, overwrite=True)
     fig1.update_coloraxes(cmin=0, cmax=1, colorbar=dict(
         title=dict(text='dR/R50', **font_dict)
@@ -1244,7 +1244,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     else:
         subplot_titles = ["", "PCA Modes", "", "", "Speed"]
     fig2 = make_subplots(rows=num_ethogram_rows, cols=1, shared_xaxes=True, shared_yaxes=False,
-                         subplot_titles=subplot_titles, vertical_spacing=0.0)
+                         subplot_titles=subplot_titles, vertical_spacing=0.05)
     for opt in ethogram_opt:
         fig2.add_shape(**opt, row=1, col=1)
     for i, (trace, trace_opt) in enumerate(zip(trace_list, trace_opt_list)):
@@ -1261,7 +1261,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
         for _i in range(num_before_adding_shapes, len(fig2.layout.shapes)):
             fig2.layout.shapes[_i]['yref'] = 'paper'
     fig2.update_layout(showlegend=False, autosize=False)#, **plotly_opt)
-    apply_figure_settings(fig2, width_factor=1, height_factor=0.1, plotly_not_matplotlib=True)
+    apply_figure_settings(fig2, width_factor=1, height_factor=0.15, plotly_not_matplotlib=True)
     # Remove ticks
     fig2.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig2.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
@@ -1286,19 +1286,21 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
 
 def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html', output_folder=None):
     trace_cfg = project_data.project_config.get_traces_config()
+    # Save in the actual project
     fname = trace_cfg.resolve_relative_path(fname, prepend_subfolder=True)
     fig.write_html(str(fname))
     fname = Path(fname).with_suffix('.png')
     fig.write_image(str(fname))
     fname = Path(fname).with_suffix('.svg')
     fig.write_image(str(fname))
+    # Save in a local folder
     if output_folder is not None:
         fname = Path(fname).with_suffix('.svg')
         fname = os.path.join(output_folder, fname.name)
-        fig.write_image(str(fname))
+        fig.write_image(str(fname), scale=4)
         fname = Path(fname).with_suffix('.png')
         fname = os.path.join(output_folder, fname.name)
-        fig.write_image(str(fname))
+        fig.write_image(str(fname), scale=4)
     # eps isn't working:
     # ValueError: Transform failed with error code 256: PDF to EPS conversion failed
     # fname = Path(fname).with_suffix('.eps')
