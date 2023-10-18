@@ -233,7 +233,7 @@ class CCAPlotter:
         fig.update_xaxes(title='Time (s)')
         if not show_legend:
             fig.update_layout(showlegend=False)
-        apply_figure_settings(fig, 2)
+        apply_figure_settings(fig, width_factor=1/3, height_factor=0.1, plotly_not_matplotlib=True)
         fig.show()
 
         if output_folder is not None:
@@ -347,7 +347,7 @@ class CCAPlotter:
                 scene_camera=dict(eye=dict(x=1.0, y=1.0, z=2.5))
             )
         # Transparent background
-        apply_figure_settings(fig, 2)
+        apply_figure_settings(fig, width_factor=1/3, height_factor=0.25, plotly_not_matplotlib=True)
         # Remove legend
         if not show_legend:
             fig.update_layout(showlegend=False)

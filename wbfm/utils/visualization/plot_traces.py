@@ -11,7 +11,7 @@ import numpy as np
 import scipy.io
 from sklearn.decomposition import PCA
 
-from wbfm.utils.general.point_clouds.utils_paper import paper_trace_settings, paper_figure_1_settings, \
+from wbfm.utils.general.point_clouds.utils_paper import paper_trace_settings, paper_figure_page_settings, \
     apply_figure_settings
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, options_for_ethogram, shade_using_behavior
 from wbfm.utils.general.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
@@ -1214,10 +1214,9 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
         trace_opt = paper_trace_settings()
 
     # Get figure options
-    figure_opt = paper_figure_1_settings()
-    base_font_size = figure_opt['base_font_size']
-    base_width = figure_opt['base_width']
-    base_height = figure_opt['base_height']
+    figure_opt = paper_figure_page_settings()
+    font_dict = figure_opt['plotly_font_opt']
+    plotly_opt = figure_opt['plotly_opt']
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     num_pca_modes_to_plot = 3
@@ -1227,15 +1226,15 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     # Build figure 1: heatmap
     fig1 = make_subplots()
     fig1.add_trace(heatmap, **heatmap_opt)
-    fig1.update_layout(showlegend=False, autosize=False, width=base_width, height=1.5 * base_height,
+    fig1.update_layout(showlegend=False, autosize=False, #**plotly_opt,
                        coloraxis=dict(colorscale="jet"))
-    apply_figure_settings(fig1, 1)
+    apply_figure_settings(fig1, width_factor=1, height_factor=0.2, plotly_not_matplotlib=True)
     # Remove ticks
     fig1.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig1.update_yaxes(dict(showticklabels=False, showgrid=False, title="Neurons sorted by PC1"),
                       col=1, overwrite=True)
     fig1.update_coloraxes(cmin=0, cmax=1, colorbar=dict(
-        title=dict(text='dR/R50', font=dict(size=base_font_size))
+        title=dict(text='dR/R50', **font_dict)
     ))
 
     # Build figure 2: Ethogram with PCA modes
@@ -1261,8 +1260,8 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
         # But here it is hardcoded as 50% of the overall plot (extending across subplots)
         for _i in range(num_before_adding_shapes, len(fig2.layout.shapes)):
             fig2.layout.shapes[_i]['yref'] = 'paper'
-    fig2.update_layout(showlegend=False, autosize=False, width=base_width, height=base_height)
-    apply_figure_settings(fig2, 1)
+    fig2.update_layout(showlegend=False, autosize=False)#, **plotly_opt)
+    apply_figure_settings(fig2, width_factor=1, height_factor=0.1, plotly_not_matplotlib=True)
     # Remove ticks
     fig2.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig2.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
