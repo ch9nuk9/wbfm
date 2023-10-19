@@ -24,9 +24,10 @@ from tqdm.auto import tqdm
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior, shade_triggered_average
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
-    calc_surpyval_durations_and_censoring
+    calc_surpyval_durations_and_censoring, combine_columns_with_suffix
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
+from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
@@ -2049,7 +2050,7 @@ class ClusteredTriggeredAverages:
         return ClusteredTriggeredAverages(df_triggered, triggered_averages_class=triggered_averages_class,
                                           **kwargs)
 
-    def calc_dataframe_of_manual_ids_per_cluster(self, all_projects):
+    def calc_dataframe_of_manual_ids_per_cluster(self, all_projects=None):
         """
         Calculate a dataframe of manual ids per cluster
 
@@ -2067,10 +2068,14 @@ class ClusteredTriggeredAverages:
             for name in clust_names:
                 dataset_name, neuron_name = split_flattened_index([name])[name]
 
-                # Get project, and check if this neuron has a manually annotated name
-                p = all_projects[dataset_name]
-                mapping = p.neuron_name_to_manual_id_mapping(confidence_threshold=1, remove_unnamed_neurons=True)
-                manual_name = mapping.get(neuron_name, None)
+                if all_projects is None:
+                    # Assume that the neurons are already renamed to have the manual id, if any
+                    manual_name = None if 'neuron' in neuron_name else neuron_name
+                else:
+                    # Get project, and check if this neuron has a manually annotated name
+                    p = all_projects[dataset_name]
+                    mapping = p.neuron_name_to_manual_id_mapping(confidence_threshold=1, remove_unnamed_neurons=True)
+                    manual_name = mapping.get(neuron_name, None)
                 if manual_name is not None:
                     # clust_names_manual.append(manual_name)
                     per_id_counts_per_cluster[manual_name][f"cluster_{key_clust:02d}"] += 1
@@ -2079,6 +2084,7 @@ class ClusteredTriggeredAverages:
 
     def plot_manual_ids_per_cluster(self, all_projects, use_bar_plot=True, neuron_threshold=0,
                                     normalize_by_number_of_ids=False, legend=False,
+                                    combine_left_right=False,
                                     output_folder=None, **kwargs):
         """
         Plots a bar chart of the number of neurons per manual ID per cluster
@@ -2096,7 +2102,8 @@ class ClusteredTriggeredAverages:
         -------
 
         """
-        df_id_counts = self.calc_dataframe_of_manual_ids_per_cluster(all_projects)
+        # Does not need the projects, because names are already renamed to have the manual id
+        df_id_counts = self.calc_dataframe_of_manual_ids_per_cluster(all_projects=None)
         if not use_bar_plot:
             fig = px.imshow(df_id_counts, title=f"Number of neurons per manual ID per cluster", **kwargs)
             fig.show()
@@ -2132,6 +2139,10 @@ class ClusteredTriggeredAverages:
                 df_id_counts = df_id_counts / df_id_counts.sum(axis=0)
             df_id_counts = df_id_counts.dropna(axis='columns', how='all')
 
+            # TODO: combine L/R
+            if combine_left_right:
+                df_id_counts = combine_columns_with_suffix(df_id_counts, suffixes=['L', 'R'])
+
             # Final plot
             fig, ax = plt.subplots(dpi=200, figsize=(5, 2))
             df_id_counts.T.plot(kind='bar', stacked=True, colormap=custom_cmap, ax=ax)
@@ -2144,6 +2155,9 @@ class ClusteredTriggeredAverages:
                 plt.ylabel("Fraction")
             else:
                 plt.ylabel("Count")
+
+            # Apply paper settings
+            apply_figure_settings(fig, width_factor=0.5, height_factor=0.3, plotly_not_matplotlib=False)
 
             self._save_plot(f"manual_ids_per_cluster.png", output_folder=output_folder)
         return df_id_counts

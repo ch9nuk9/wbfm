@@ -8,6 +8,7 @@ from typing import Dict, Optional
 from matplotlib import pyplot as plt
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
+from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_list_of_projects, \
     ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level
@@ -291,10 +292,13 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         plt.tight_layout()
 
         if output_folder is not None:
+
+            apply_figure_settings(fig, width_factor=0.5, height_factor=0.3, plotly_not_matplotlib=False)
+
             title = self.get_title_from_trigger_type(trigger_type)
             fname = title.replace(" ", "_").replace(",", "").lower()
             fname = os.path.join(output_folder, f'{neuron_name}-{fname}.png')
-            plt.savefig(fname)
+            plt.savefig(fname, transparent=True)
             plt.savefig(fname.replace(".png", ".svg"))
 
         return fig, ax
@@ -328,7 +332,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             else:
                 this_output_folder = None
             fig, ax = self.plot_triggered_average_single_neuron(neuron, trigger_type, output_folder=this_output_folder,
-                                                                include_neuron_in_title=False, ax=ax,
+                                                                include_neuron_in_title=False, ax=ax, fig=fig,
                                                                 fig_kwargs=dict(height_factor=2),
                                                                 color=color, **kwargs)
         return fig, ax
