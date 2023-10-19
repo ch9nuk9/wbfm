@@ -168,6 +168,8 @@ class PaperDataCache:
         assert not opt.get('use_paper_traces', False), \
             "paper_trace_settings should have use_paper_traces=False (recursion error)"
         df = self.project_data.calc_default_traces(**opt)
+        if df is None:
+            raise ValueError(f"Paper traces for project {self.project_data.project_dir} is None")
         return df
 
     def paper_traces_cache_fname(self):
@@ -185,6 +187,8 @@ class PaperDataCache:
         assert not opt.get('use_paper_traces', False), \
             "paper_trace_settings should have use_paper_traces=False (recursion error)"
         df = self.project_data.calc_default_traces(**opt)
+        if df is None:
+            raise ValueError(f"Paper traces (residual) for project {self.project_data.project_dir} is None")
         return df
 
     def paper_traces_residual_cache_fname(self):
@@ -202,6 +206,8 @@ class PaperDataCache:
         assert not opt.get('use_paper_traces', False), \
             "paper_trace_settings should have use_paper_traces=False (recursion error)"
         df = self.project_data.calc_default_traces(**opt)
+        if df is None:
+            raise ValueError(f"Paper traces (global) for project {self.project_data.project_dir} is None")
         return df
 
     def paper_traces_global_cache_fname(self):
