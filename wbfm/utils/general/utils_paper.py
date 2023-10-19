@@ -232,6 +232,8 @@ class PaperDataCache:
         possible_fnames = []
         if delete_traces:
             possible_fnames.append(self.paper_traces_cache_fname())
+            possible_fnames.append(self.paper_traces_residual_cache_fname())
+            possible_fnames.append(self.paper_traces_global_cache_fname())
         if delete_invalid_indices:
             possible_fnames.append(self.invalid_indices_cache_fname())
         for fname in possible_fnames:

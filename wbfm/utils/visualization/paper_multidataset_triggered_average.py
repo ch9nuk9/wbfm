@@ -23,15 +23,16 @@ class PaperColoredTracePlotter:
     """
 
     def get_color_from_trigger_type(self, trigger_type):
-        color_mapping = {'raw_rev': 'tab:blue',
-                         'raw': 'tab:blue',
-                         'raw_fwd': 'tab:blue',
-                         'global_rev': 'tab:orange',
-                         'global': 'tab:orange',
-                         'global_fwd': 'tab:orange',
-                         'residual': 'tab:green',
-                         'residual_rectified_fwd': 'tab:green',
-                         'residual_rectified_rev': 'tab:green',
+        cmap = plt.get_cmap('tab10')
+        color_mapping = {'raw_rev': cmap(0),
+                         'raw': cmap(0),
+                         'raw_fwd': cmap(0),
+                         'global_rev': cmap(3),
+                         'global': cmap(3),
+                         'global_fwd': cmap(3),
+                         'residual': cmap(4),
+                         'residual_rectified_fwd': cmap(4),
+                         'residual_rectified_rev': cmap(4),
                          'kymo': 'black'}
         if trigger_type not in color_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(color_mapping.keys())}')
@@ -224,7 +225,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
                                              fig=None, ax=None, title=None, include_neuron_in_title=True, xlim=None,
-                                             color=None, z_score=False, fig_kwargs=None, legend=False, DEBUG=False):
+                                             color=None, z_score=False, fig_kwargs=None, legend=False, i_figure=3,
+                                             DEBUG=False):
         if fig_kwargs is None:
             fig_kwargs = {}
         if color is None:
@@ -292,8 +294,13 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         plt.tight_layout()
 
         if output_folder is not None:
-
-            apply_figure_settings(fig, width_factor=0.5, height_factor=0.25, plotly_not_matplotlib=False)
+            if i_figure == 3:
+                fig_opt = dict(width_factor=0.5, height_factor=0.25)
+            elif i_figure > 3:
+                fig_opt = dict(width_factor=0.25, height_factor=0.1)
+            else:
+                raise NotImplementedError(f"i_figure={i_figure} not implemented")
+            apply_figure_settings(fig, plotly_not_matplotlib=False, **fig_opt)
 
             title = self.get_title_from_trigger_type(trigger_type)
             fname = title.replace(" ", "_").replace(",", "").lower()
@@ -337,6 +344,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                                                 color=color, **kwargs)
         return fig, ax
 
+
 @dataclass
 class PaperExampleTracePlotter(PaperColoredTracePlotter):
     """
@@ -361,20 +369,15 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
     @property
     def df_traces(self):
-        trace_opt = self.get_trace_opt()
-        return self.project.calc_default_traces(**trace_opt)
+        return self.project.calc_paper_traces()
 
     @property
     def df_traces_residual(self):
-        trace_opt = self.get_trace_opt()
-        trace_opt['residual_mode'] = 'pca'
-        return self.project.calc_default_traces(**trace_opt)
+        return self.project.calc_paper_traces_residual()
 
     @property
     def df_traces_global(self):
-        trace_opt = self.get_trace_opt()
-        trace_opt['residual_mode'] = 'pca_global'
-        return self.project.calc_default_traces(**trace_opt)
+        return self.project.calc_paper_traces_global()
 
     def get_figure_opt(self):
         return dict(dpi=300, figsize=(10/3, 10/2))
@@ -404,8 +407,8 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         # Do all on one plot
         trace_dict = {'Original trace': (df_traces[neuron_name], self.get_color_from_trigger_type('raw')),
-                      'Global component': (df_traces_global[neuron_name], self.get_color_from_trigger_type('global')),
-                      'Residual component': (df_traces_residual[neuron_name], self.get_color_from_trigger_type('residual'))}
+                      'Global': (df_traces_global[neuron_name], self.get_color_from_trigger_type('global')),
+                      'Residual': (df_traces_residual[neuron_name], self.get_color_from_trigger_type('residual'))}
 
         for i, (name, vals) in enumerate(trace_dict.items()):
             # Original trace
@@ -426,9 +429,9 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
                 ax.set_xlabel("Time (s)")
             self.project.shade_axis_using_behavior(ax)
 
-        plt.tight_layout()
+        apply_figure_settings(fig, width_factor=0.25, height_factor=0.3, plotly_not_matplotlib=False)
 
         if output_foldername:
             fname = os.path.join(output_foldername, f'{neuron_name}-combined_traces.png')
-            plt.savefig(fname)
+            plt.savefig(fname, transparent=True)
             fig.savefig(fname.replace(".png", ".svg"))
