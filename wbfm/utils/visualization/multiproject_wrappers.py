@@ -17,6 +17,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.external.utils_pandas import split_flattened_index, flatten_multiindex_columns
 from wbfm.utils.general.postprocessing.position_postprocessing import impute_missing_values_in_dataframe
 from wbfm.utils.general.utils_matplotlib import corrfunc, paired_boxplot_from_dataframes
+from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, ProjectData
 from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages, \
     clustered_triggered_averages_from_list_of_projects
@@ -496,25 +497,23 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp,
     df_summary['Significant'] = df_summary['Autocovariance'] > significance_line
 
     # Actually plot
-    fig = px.scatter(df_summary, y='Autocovariance', x='Correlation of original trace to PC1', facet_row='Type of data',
+    fig = px.scatter(df_summary, y='Autocovariance', x='Correlation to PC1', facet_row='Type of data',
                      # color='Type of data',
                      symbol='Simple Neuron ID', marginal_x='histogram', marginal_y='box',
                      width=1000, height=1000, size='multiplex_size',
-                     title="After global component subtraction, many neurons that originally had high pc0 weight still have high signal",
+                     #title="After global component subtraction, many neurons that originally had high pc0 weight still have high signal",
                      color='Genotype and datatype', color_discrete_sequence=cmap, log_y=True)
 
     fig.add_hline(y=significance_line,
                   line_width=2, line_dash="dash",
                   # col=1, #annotation_text="95% line of gfp", annotation_position="bottom left"
                   )
-    fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
-    )
+
+    apply_figure_settings(fig, width_factor=0.5, height_factor=0.4, plotly_not_matplotlib=True)
 
     if output_folder is not None:
         fname = os.path.join(output_folder, 'summary_of_neurons_with_signal_covariance.png')
-        fig.write_image(fname)
+        fig.write_image(fname, scale=3)
         fname = Path(fname).with_suffix('.svg')
         fig.write_image(fname)
 

@@ -56,7 +56,7 @@ def paper_figure_page_settings(height_factor=1, width_factor=1):
     return opt
 
 
-def apply_figure_settings(fig, width_factor=1, height_factor=1, plotly_not_matplotlib=True):
+def apply_figure_settings(fig=None, width_factor=1, height_factor=1, plotly_not_matplotlib=True):
     """
     Apply settings for the paper, per figure. Note that this does not change the size settings, only font sizes and
     background colors (transparent).
@@ -70,6 +70,8 @@ def apply_figure_settings(fig, width_factor=1, height_factor=1, plotly_not_matpl
     -------
 
     """
+    if fig is None:
+        fig = plt.gcf()
     figure_opt = paper_figure_page_settings(width_factor=width_factor, height_factor=height_factor)
 
     if plotly_not_matplotlib:

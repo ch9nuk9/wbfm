@@ -12,7 +12,7 @@ from scipy.signal import detrend
 from sklearn.decomposition import PCA
 
 from wbfm.gui.utils.utils_gui import NeuronNameEditor
-from wbfm.utils.general.utils_paper import PaperDataCache
+from wbfm.utils.general.utils_paper import PaperDataCache, apply_figure_settings
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
@@ -2275,12 +2275,14 @@ def plot_frequencies_for_fm_and_immob_projects(all_projects_wbfm, all_projects_i
     all_pxx_immob = {}
     for name, proj in all_projects_wbfm.items():
         try:
-            frequency_wbfm, all_pxx_wbfm[name] = calc_frequency_spectrum(proj, neuron_name, **kwargs)
+            frequency_wbfm, all_pxx_wbfm[name] = calc_frequency_spectrum(proj, neuron_name, use_paper_options=True,
+                                                                         **kwargs)
         except KeyError:
             pass
     for name, proj in all_projects_immob.items():
         try:
-            frequency_immob, all_pxx_immob[name] = calc_frequency_spectrum(proj, neuron_name, **kwargs)
+            frequency_immob, all_pxx_immob[name] = calc_frequency_spectrum(proj, neuron_name, use_paper_options=True,
+                                                                           **kwargs)
         except KeyError:
             pass
 
@@ -2301,6 +2303,8 @@ def plot_frequencies_for_fm_and_immob_projects(all_projects_wbfm, all_projects_i
     ax.set_xlabel("Frequency (Hz)")
     ax.set_ylabel("Normalized Power")
     ax.set_title(f"Frequency spectrum for {neuron_name}")
+
+    apply_figure_settings(width_factor=0.4, height_factor=0.4, plotly_not_matplotlib=False)
 
     if output_folder is not None:
         plt.tight_layout()
