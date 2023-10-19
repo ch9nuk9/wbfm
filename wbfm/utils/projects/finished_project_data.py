@@ -12,7 +12,7 @@ from scipy.signal import detrend
 from sklearn.decomposition import PCA
 
 from wbfm.gui.utils.utils_gui import NeuronNameEditor
-from wbfm.utils.general.point_clouds.utils_paper import paper_trace_settings
+from wbfm.utils.general.utils_paper import PaperDataCache
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
@@ -41,7 +41,6 @@ from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_project_status import get_project_status
 from wbfm.utils.traces.residuals import calculate_residual_subtract_pca, calculate_residual_subtract_nmf
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.tracklets.postprocess_tracking import OutlierRemoval
 from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, check_for_unmatched_tracklets
 from sklearn.neighbors import NearestNeighbors, LocalOutlierFactor
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
@@ -54,10 +53,8 @@ from wbfm.utils.projects.utils_project import safe_cd
 # from functools import cached_property # Only from python>=3.8
 from backports.cached_property import cached_property
 
-from wbfm.utils.utils_cache import cache_to_disk_class
 from wbfm.utils.visualization.filtering_traces import fast_slow_decomposition, filter_trace_using_mode, \
     fill_nan_in_dataframe
-from wbfm.utils.visualization.paper_multidataset_triggered_average import PaperDataCache
 
 
 @dataclass

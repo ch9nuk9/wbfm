@@ -20,7 +20,7 @@ from wbfm.utils.general.utils_matplotlib import corrfunc, paired_boxplot_from_da
 from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, ProjectData
 from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages, \
     clustered_triggered_averages_from_list_of_projects
-from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivariateEncoding, NeuronEncodingBase
+from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivariateEncoding
 from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std
 
 

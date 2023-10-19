@@ -4,13 +4,12 @@ from typing import Union, Optional
 
 import numpy as np
 import pandas as pd
-import sklearn
 from matplotlib import pyplot as plt
 from scipy.stats import stats
 from sklearn.linear_model import LinearRegression
 
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan, get_contiguous_blocks_from_column
-from wbfm.utils.general.point_clouds.utils_paper import paper_trace_settings, apply_figure_settings
+from wbfm.utils.general.utils_paper import paper_trace_settings, apply_figure_settings
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 import plotly.graph_objects as go
