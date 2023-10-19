@@ -966,16 +966,16 @@ class ProjectData:
         return df
 
     def calc_indices_to_remove_using_ppca(self):
-        self.data_cacher.calc_indices_to_remove_using_ppca()
+        return self.data_cacher.calc_indices_to_remove_using_ppca()
 
     def calc_paper_traces(self):
-        self.data_cacher.calc_paper_traces()
+        return self.data_cacher.calc_paper_traces()
 
     def calc_paper_traces_residual(self):
-        self.data_cacher.calc_paper_traces_residual()
+        return self.data_cacher.calc_paper_traces_residual()
 
     def calc_paper_traces_global(self):
-        self.data_cacher.calc_paper_traces_global()
+        return self.data_cacher.calc_paper_traces_global()
 
     @lru_cache(maxsize=16)
     def calc_raw_traces(self, neuron_names: tuple, **opt: dict):
