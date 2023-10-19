@@ -222,7 +222,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         return dict(dpi=300, figsize=(width_factor*10/3, height_factor*10/(2*3)))
 
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
-                                             ax=None, title=None, include_neuron_in_title=True, xlim=None,
+                                             fig=None, ax=None, title=None, include_neuron_in_title=True, xlim=None,
                                              color=None, z_score=False, fig_kwargs=None, legend=False, DEBUG=False):
         if fig_kwargs is None:
             fig_kwargs = {}
@@ -297,7 +297,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             plt.savefig(fname)
             plt.savefig(fname.replace(".png", ".svg"))
 
-        return ax
+        return fig, ax
 
     def plot_triggered_average_multiple_neurons(self, neuron_list, trigger_type, color_list=None,
                                                 output_folder=None, **kwargs):
@@ -320,18 +320,18 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             # They will all be the same color
             color_list = [self.get_behavior_color_from_neuron_name(n) for n in neuron_list]
 
-        ax = None
+        fig, ax = None, None
         for i, (neuron, color) in enumerate(zip(neuron_list, color_list)):
             # Only set the output folder for the last neuron
             if i == len(neuron_list) - 1:
                 this_output_folder = output_folder
             else:
                 this_output_folder = None
-            ax = self.plot_triggered_average_single_neuron(neuron, trigger_type, output_folder=this_output_folder,
-                                                           include_neuron_in_title=False, ax=ax,
-                                                           fig_kwargs=dict(height_factor=2),
-                                                           color=color, **kwargs)
-
+            fig, ax = self.plot_triggered_average_single_neuron(neuron, trigger_type, output_folder=this_output_folder,
+                                                                include_neuron_in_title=False, ax=ax,
+                                                                fig_kwargs=dict(height_factor=2),
+                                                                color=color, **kwargs)
+        return fig, ax
 
 @dataclass
 class PaperExampleTracePlotter(PaperColoredTracePlotter):
