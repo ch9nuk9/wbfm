@@ -104,3 +104,14 @@ def apply_figure_settings(fig, width_factor=1, height_factor=1, plotly_not_matpl
             tick.set_fontsize(font_dict['fontsize'])
 
         plt.tight_layout()
+
+
+def behavior_name_mapping():
+    name_mapping = dict(
+        signed_middle_body_speed='Speed',
+        dorsal_only_head_curvature='Dorsal head curvature',
+        ventral_only_head_curvature='Ventral head curvature',
+        dorsal_only_body_curvature='Dorsal curvature',
+        ventral_only_body_curvature='Ventral curvature'
+    )
+    return name_mapping
