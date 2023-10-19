@@ -820,9 +820,15 @@ class ProjectData:
         -------
 
         """
-
+        # Loads data from cache
+        # There are currently 3 cached versions of the data, depending on the residual option
         if use_paper_options:
-            return self.calc_paper_traces()
+            if residual_mode is None:
+                return self.calc_paper_traces()
+            elif residual_mode == 'pca':
+                return self.calc_paper_traces_residual()
+            elif residual_mode == 'pca_global':
+                return self.calc_paper_traces_global()
 
         opt = dict(
             channel_mode='dr_over_r_50',
