@@ -1010,3 +1010,55 @@ def apply_to_dict_of_dfs_and_concat(dict_of_dfs, func):
 
     df_concat = pd.concat(new_dfs)
     return df_concat
+
+
+def combine_columns_with_suffix(df, suffixes=None):
+    """
+    Combines columns with the same prefix and different suffixes
+
+    Parameters
+    ----------
+    df
+    suffixes
+
+    Returns
+    -------
+
+    """
+    if suffixes is None:
+        suffixes = ['L', 'R']
+
+    df_combined = pd.DataFrame()
+    # Loop through columns and check if they have a suffix; if so, search for the other suffix and combine
+    base_names_found = set()
+    for col in df.columns:
+        num_suffixes_found = 0
+        col_base = None
+        for suffix in suffixes:
+            if col.endswith(suffix):
+                col_base = col[:-len(suffix)]
+                if col_base not in base_names_found:
+                    # There could be a column with any other suffixes, so loop again
+                    for other_suffix in suffixes:
+                        if other_suffix == suffix:
+                            continue
+                        col_other = col_base + other_suffix
+                        if col_other in df.columns:
+                            df_combined[col_base] = df[col] + df[col_other]
+                            num_suffixes_found += 1
+                else:
+                    base_names_found.add(col_base)
+        if num_suffixes_found == 0:
+            if col_base is not None:
+                # Then one was found, but no partners... still keep only the base
+                df_combined[col_base] = df[col]
+            else:
+                df_combined[col] = df[col]
+        elif col_base is not None:
+            # Take the average
+            df_combined[col_base] /= num_suffixes_found
+        else:
+            # Should not happen
+            raise NotImplementedError
+
+    return df_combined
