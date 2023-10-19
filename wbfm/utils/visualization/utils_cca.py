@@ -10,6 +10,7 @@ import plotly.express as px
 from sklearn.decomposition import PCA
 from tqdm.auto import tqdm
 
+from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
 from wbfm.utils.general.point_clouds.utils_paper import apply_figure_settings
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
@@ -233,7 +234,7 @@ class CCAPlotter:
         fig.update_xaxes(title='Time (s)')
         if not show_legend:
             fig.update_layout(showlegend=False)
-        apply_figure_settings(fig, width_factor=1/3, height_factor=0.1, plotly_not_matplotlib=True)
+        apply_figure_settings(fig, width_factor=1/3, height_factor=0.15, plotly_not_matplotlib=True)
         fig.show()
 
         if output_folder is not None:
@@ -244,12 +245,12 @@ class CCAPlotter:
     def _save_plotly_all_formats(self, fig, fname):
         fig.write_html(fname)
         fname = fname.replace('.html', '.png')
-        fig.write_image(fname)
+        fig.write_image(fname, scale=4)
         fname = fname.replace('.png', '.svg')
         fig.write_image(fname)
 
     def plot(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, use_X_r=True, sparse_tau=None,
-             plot_3d=True, show_legend=True, output_folder=None, DEBUG=False,
+             plot_3d=True, show_legend=True, output_folder=None, show_grid=False, DEBUG=False,
              ethogram_cmap_kwargs=None, beh_annotation_kwargs=None):
         if ethogram_cmap_kwargs is None:
             ethogram_cmap_kwargs = {}
@@ -258,7 +259,8 @@ class CCAPlotter:
         if modes_to_plot is None:
             modes_to_plot = [0, 1, 2]
         if use_pca:
-            X_r = self.project_data.calc_pca_modes(n_components=3, multiply_by_variance=True)
+            # Multiply just to help the plotting
+            X_r = 3*self.project_data.calc_pca_modes(n_components=3, multiply_by_variance=False)
             df_latents = pd.DataFrame(X_r)
         else:
             X_r, Y_r, cca = self.calc_cca(n_components=3, binary_behaviors=binary_behaviors, sparse_tau=sparse_tau)
@@ -300,57 +302,106 @@ class CCAPlotter:
         fig = go.Figure(layout=dict(height=1000, width=1000))
         fig.add_traces(phase_plot_list)
 
-        # Change the tick values to be evenly spaced
-        xtick_min = np.floor(df_out[col_names[0][0]].min()) - 1
-        xtick_max = np.ceil(df_out[col_names[0][0]].max()) + 1
-        xtick_range = np.arange(xtick_min, xtick_max, 2)
-        ytick_min = np.floor(df_out[col_names[1][0]].min()) - 1
-        ytick_max = np.ceil(df_out[col_names[1][0]].max()) + 1
-        ytick_range = np.arange(ytick_min, ytick_max, 2)
-        # Hacky: https://community.plotly.com/t/scatter3d-background-plot-color/38838/4
+        # Transparent background
         fig.update_layout(
             scene=dict(
                 xaxis=dict(
                     backgroundcolor="rgba(0, 0, 0, 0)",
-                    tickvals=xtick_range,
-                    showbackground=True,
-                    gridcolor='black',
-                    zerolinecolor="white",
-                    title='Mode 1'
+                    zerolinecolor="black",
+                    title='Mode 1',
                 ),
                 yaxis=dict(
                     backgroundcolor="rgba(0, 0, 0, 0)",
-                    tickvals=ytick_range,
-                    showbackground=True,
-                    gridcolor='black',
-                    zerolinecolor="white",
-                    title='Mode 2'),
+                    zerolinecolor="black",
+                    title='Mode 2',
+                ),
             )
         )
         if plot_3d:
-            ztick_min = np.floor(df_out[col_names[2][0]].min()) - 1
-            ztick_max = np.ceil(df_out[col_names[2][0]].max()) + 1
-            ztick_range = np.arange(ztick_min, ztick_max, 2)
             fig.update_layout(
                 scene=dict(
                     zaxis=dict(
-                        backgroundcolor="rgba(0, 0, 0,0)",
-                        tickvals=ztick_range,
+                        backgroundcolor="rgba(0, 0, 0, 0)",
+                        zerolinecolor="black",
+                        title='Mode 3',
+                    ),
+                )
+            )
+
+        if show_grid:
+            # Change the tick values to be evenly spaced
+            xtick_min = np.floor(df_out[col_names[0][0]].min())
+            xtick_max = np.ceil(df_out[col_names[0][0]].max())
+            xtick_range = np.arange(xtick_min, xtick_max, 1)
+            ytick_min = np.floor(df_out[col_names[1][0]].min())
+            ytick_max = np.ceil(df_out[col_names[1][0]].max())
+            ytick_range = np.arange(ytick_min, ytick_max, 1)
+            # Hacky: https://community.plotly.com/t/scatter3d-background-plot-color/38838/4
+            fig.update_layout(
+                scene=dict(
+                    xaxis=dict(
+                        tickvals=xtick_range,
                         showbackground=True,
                         gridcolor='black',
-                        zerolinecolor="white",
-                        title='Mode 3'),
-                ),
-                # From: https://stackoverflow.com/questions/73187799/truncated-figure-with-plotly?noredirect=1#comment129258910_73187799
-                # Note that this is hard to do in jupyter and then see the settings, but can be done with dash:
-                # https://community.plotly.com/t/how-to-get-change-current-scene-camera-in-3d-plot-inside-jupyter-notebook-python/1912/4
-                scene_camera=dict(eye=dict(x=1.0, y=1.0, z=2.5))
+                    ),
+                    yaxis=dict(
+                        tickvals=ytick_range,
+                        showbackground=True,
+                        gridcolor='black'),
+                )
             )
-        # Transparent background
-        apply_figure_settings(fig, width_factor=1/3, height_factor=0.25, plotly_not_matplotlib=True)
+            if plot_3d:
+                ztick_min = np.floor(df_out[col_names[2][0]].min())
+                ztick_max = np.ceil(df_out[col_names[2][0]].max())
+                ztick_range = np.arange(ztick_min, ztick_max, 1)
+                fig.update_layout(
+                    scene=dict(
+                        zaxis=dict(
+                            tickvals=ztick_range,
+                            showbackground=True,
+                            gridcolor='black'),
+                    ),
+                    # From: https://stackoverflow.com/questions/73187799/truncated-figure-with-plotly?noredirect=1#comment129258910_73187799
+                    # Note that this is hard to do in jupyter and then see the settings, but can be done with dash:
+                    # https://community.plotly.com/t/how-to-get-change-current-scene-camera-in-3d-plot-inside-jupyter-notebook-python/1912/4
+                )
+        else:
+            fig.update_layout(
+                scene=dict(
+                    xaxis=dict(
+                        showticklabels=False,
+                    ),
+                    yaxis=dict(
+                        showticklabels=False,
+                    )
+                )
+            )
+            if plot_3d:
+                fig.update_layout(
+                    scene=dict(
+                        zaxis=dict(
+                            showticklabels=False,
+                        )
+                    )
+                )
+
         # Remove legend
         if not show_legend:
             fig.update_layout(showlegend=False)
+
+        # Add margins (the axis labels are often cut off)
+        if plot_3d:
+            camera = dict(eye=dict(x=1.8, y=1.8, z=1.8))
+            fig.update_layout(scene_camera=camera)
+        # if plot_3d:
+            # fig.update_xaxes(automargin=True)
+            # fig.update_layout(
+            #     margin=dict(l=0, r=0, b=0, t=0),
+            # )
+            # fig.update_traces(cliponaxis=False)
+
+        # Transparent background
+        apply_figure_settings(fig, width_factor=1/3, height_factor=1/3, plotly_not_matplotlib=True)
 
         if output_folder is not None:
             fname = self._get_fig_filename(binary_behaviors, plot_3d, use_pca, single_mode=False)
@@ -443,6 +494,7 @@ def calc_mode_correlation_for_all_projects(all_projects, correlation_kwargs=None
 def calc_cca_weights_for_all_projects(all_projects, which_mode=0, weights_kwargs=None,
                                       neural_not_behavioral=True, correct_sign_using_top_weight=True,
                                       drop_unlabeled_neurons=True, min_datasets_present=5,
+                                      combine_left_and_right=False,
                                       **kwargs):
     if weights_kwargs is None:
         weights_kwargs = {}
@@ -483,6 +535,11 @@ def calc_cca_weights_for_all_projects(all_projects, which_mode=0, weights_kwargs
         df_weights = df_weights.mul(sign_vec, axis='index')
         sign_vec = np.sign(df_weights.iloc[:, df_weights_binary.abs().sum().argmax()])
         df_weights_binary = df_weights_binary.mul(np.sign(df_weights_binary.iloc[:, 0]), axis='index')
+
+    # Combine the left and right neurons (optional)
+    if combine_left_and_right:
+        df_weights = combine_columns_with_suffix(df_weights)
+        df_weights_binary = combine_columns_with_suffix(df_weights_binary)
 
     # Sort them by the signed median weight
     df_weights = df_weights.reindex(df_weights.median().sort_values(ascending=False).index, axis=1)
