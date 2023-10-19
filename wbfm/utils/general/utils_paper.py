@@ -18,7 +18,7 @@ def paper_trace_settings():
     """
     opt = dict(interpolate_nan=True,
                filter_mode='rolling_mean',
-               min_nonnan=0.9,
+               min_nonnan=0.75,
                nan_tracking_failure_points=True,
                nan_using_ppca_manifold=True,
                channel_mode='dr_over_r_50',
