@@ -1012,7 +1012,7 @@ def apply_to_dict_of_dfs_and_concat(dict_of_dfs, func):
     return df_concat
 
 
-def combine_columns_with_suffix(df, suffixes=None):
+def combine_columns_with_suffix(df, suffixes=None, how='mean'):
     """
     Combines columns with the same prefix and different suffixes
 
@@ -1055,8 +1055,12 @@ def combine_columns_with_suffix(df, suffixes=None):
             else:
                 df_combined[col] = df[col]
         elif col_base is not None:
-            # Take the average
-            df_combined[col_base] /= num_suffixes_found
+            if how == 'mean':
+                df_combined[col_base] /= num_suffixes_found
+            elif how == 'sum':
+                pass
+            else:
+                raise NotImplementedError(f"how={how} not implemented (valid='mean' and 'sum')")
         else:
             # Should not happen
             raise NotImplementedError

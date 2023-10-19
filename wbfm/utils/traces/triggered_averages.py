@@ -2135,13 +2135,13 @@ class ClusteredTriggeredAverages:
             # Postprocess: filter out too few, and normalize
             if neuron_threshold > 0:
                 df_id_counts = df_id_counts.loc[:, df_id_counts.sum(axis=0) >= neuron_threshold]
-            if normalize_by_number_of_ids:
-                df_id_counts = df_id_counts / df_id_counts.sum(axis=0)
             df_id_counts = df_id_counts.dropna(axis='columns', how='all')
 
-            # TODO: combine L/R
             if combine_left_right:
-                df_id_counts = combine_columns_with_suffix(df_id_counts, suffixes=['L', 'R'])
+                df_id_counts = combine_columns_with_suffix(df_id_counts, suffixes=['L', 'R'], how='sum')
+
+            if normalize_by_number_of_ids:
+                df_id_counts = df_id_counts / df_id_counts.sum(axis=0)
 
             # Final plot
             fig, ax = plt.subplots(dpi=200, figsize=(5, 2))
@@ -2157,7 +2157,7 @@ class ClusteredTriggeredAverages:
                 plt.ylabel("Count")
 
             # Apply paper settings
-            apply_figure_settings(fig, width_factor=0.5, height_factor=0.3, plotly_not_matplotlib=False)
+            apply_figure_settings(fig, width_factor=0.5, height_factor=0.15, plotly_not_matplotlib=False)
 
             self._save_plot(f"manual_ids_per_cluster.png", output_folder=output_folder)
         return df_id_counts
