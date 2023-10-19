@@ -293,7 +293,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         if output_folder is not None:
 
-            apply_figure_settings(fig, width_factor=0.5, height_factor=0.3, plotly_not_matplotlib=False)
+            apply_figure_settings(fig, width_factor=0.5, height_factor=0.25, plotly_not_matplotlib=False)
 
             title = self.get_title_from_trigger_type(trigger_type)
             fname = title.replace(" ", "_").replace(",", "").lower()

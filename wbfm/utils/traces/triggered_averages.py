@@ -2148,6 +2148,9 @@ class ClusteredTriggeredAverages:
             if normalize_by_number_of_ids:
                 df_id_counts = df_id_counts / df_id_counts.sum(axis=0)
 
+            # Sort the columns alphabetically
+            df_id_counts = df_id_counts.reindex(sorted(df_id_counts.columns), axis=1)
+
             # Final plot
             fig, ax = plt.subplots(dpi=200, figsize=(5, 2))
             df_id_counts.T.plot(kind='bar', stacked=True, colormap=custom_cmap, ax=ax)
@@ -2162,7 +2165,7 @@ class ClusteredTriggeredAverages:
                 plt.ylabel("Count")
 
             # Apply paper settings
-            apply_figure_settings(fig, width_factor=0.5, height_factor=0.15, plotly_not_matplotlib=False)
+            apply_figure_settings(fig, width_factor=0.5, height_factor=0.2, plotly_not_matplotlib=False)
 
             self._save_plot(f"manual_ids_per_cluster.png", output_folder=output_folder)
         return df_id_counts
