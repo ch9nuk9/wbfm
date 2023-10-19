@@ -57,6 +57,7 @@ from backports.cached_property import cached_property
 from wbfm.utils.utils_cache import cache_to_disk_class
 from wbfm.utils.visualization.filtering_traces import fast_slow_decomposition, filter_trace_using_mode, \
     fill_nan_in_dataframe
+from wbfm.utils.visualization.paper_multidataset_triggered_average import PaperDataCache
 
 
 @dataclass
@@ -140,6 +141,9 @@ class ProjectData:
     use_custom_padded_dataframe: bool = False
     use_physical_x_axis: bool = False  # Relies on hardcoded volumes per second
 
+    # Caching
+    data_cacher: PaperDataCache = None
+
     def __post_init__(self):
         """
         Load values from disk config files if the user did not set them
@@ -151,6 +155,8 @@ class ProjectData:
             self.precedence_df_tracklets = track_cfg.config['precedence_df_tracklets']
         if self.precedence_tracks is None:
             self.precedence_tracks = track_cfg.config['precedence_tracks']
+
+        self.data_cacher = PaperDataCache(self)
 
     @cached_property
     def intermediate_global_tracks(self) -> pd.DataFrame:
@@ -954,69 +960,17 @@ class ProjectData:
 
         return df
 
-    @cache_to_disk_class('invalid_indices_cache_fname', func_save_to_disk=np.save, func_load_from_disk=np.load)
     def calc_indices_to_remove_using_ppca(self):
-        names = self.neuron_names
-        coords = ['z', 'x', 'y']
-        all_zxy = self.red_traces.loc[:, (slice(None), coords)].copy()
-        z_to_xy_ratio = self.physical_unit_conversion.z_to_xy_ratio
-        all_zxy.loc[:, (slice(None), 'z')] = z_to_xy_ratio * all_zxy.loc[:, (slice(None), 'z')]
-        outlier_remover = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces=None, names=names, verbose=0)
-        outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=8)
-        to_remove = outlier_remover.total_matrix_to_remove
-        return to_remove
+        self.data_cacher.calc_indices_to_remove_using_ppca()
 
-    def invalid_indices_cache_fname(self):
-        return os.path.join(self.cache_dir, 'invalid_indices.npy')
-
-    @cache_to_disk_class('paper_traces_cache_fname',
-                         func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
-                         func_load_from_disk=pd.read_hdf)
     def calc_paper_traces(self):
-        """
-        Uses calc_default_traces to calculate traces according to settings used for the paper.
-        See paper_trace_settings() for details
+        self.data_cacher.calc_paper_traces()
 
-        Returns
-        -------
+    def calc_paper_traces_residual(self):
+        self.data_cacher.calc_paper_traces_residual()
 
-        """
-        opt = paper_trace_settings()
-        assert not opt.get('use_paper_traces', False), \
-            "paper_trace_settings should have use_paper_traces=False (recursion error)"
-        df = self.calc_default_traces(**opt)
-        return df
-
-    def paper_traces_cache_fname(self):
-        return os.path.join(self.cache_dir, 'paper_traces.h5')
-
-    @property
-    def cache_dir(self):
-        fname = os.path.join(self.project_dir, '.cache')
-        if not os.path.exists(fname):
-            os.makedirs(fname)
-        return fname
-
-    def clear_disk_cache(self, delete_traces=True, delete_invalid_indices=True,
-                         dry_run=False, verbose=1):
-        """
-        Deletes all cached files generated using the cache_to_disk_class decorator
-
-        Returns
-        -------
-
-        """
-        possible_fnames = []
-        if delete_traces:
-            possible_fnames.append(self.paper_traces_cache_fname())
-        if delete_invalid_indices:
-            possible_fnames.append(self.invalid_indices_cache_fname())
-        for fname in possible_fnames:
-            if os.path.exists(fname):
-                if verbose >= 1:
-                    print(f"Deleting {fname}")
-                if not dry_run:
-                    os.remove(fname)
+    def calc_paper_traces_global(self):
+        self.data_cacher.calc_paper_traces_global()
 
     @lru_cache(maxsize=16)
     def calc_raw_traces(self, neuron_names: tuple, **opt: dict):
