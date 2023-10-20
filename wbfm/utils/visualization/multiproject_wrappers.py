@@ -399,8 +399,8 @@ def get_all_variance_explained(all_projects_gcamp, all_projects_gfp, all_project
     return gcamp_var, gfp_var, immob_var, gcamp_var_sum, gfp_var_sum, immob_var_sum
 
 
-def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp,
-                            lag=1, output_folder=None):
+def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=True, include_legend=True,
+                            lag=1, output_folder=None, **kwargs):
     """
     Calculates the autocovariance of all neural traces, and plots a 4-panel figure
 
@@ -418,6 +418,7 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp,
 
     # Calculate traces
     trace_opt = dict(rename_neurons_using_manual_ids=True)
+    trace_opt.update(kwargs)
     dict_all_traces = all_proj.calc_default_traces(**trace_opt)
     df_all_traces = flatten_multiindex_columns(pd.concat(dict_all_traces, axis=1))
     pca_mode0 = pd.concat(all_proj.calc_correlation_to_pc1(**trace_opt)).values
@@ -433,12 +434,12 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp,
     # Also for gfp
     dict_all_traces_gfp = all_proj_gfp.calc_default_traces(**trace_opt)
     df_all_traces_gfp = flatten_multiindex_columns(pd.concat(dict_all_traces_gfp, axis=1))
-
     pca_mode0_gfp = pd.concat(all_proj_gfp.calc_correlation_to_pc1(**trace_opt)).values
 
     all_summary_dfs = []
     all_trace_dfs = {'gcamp': df_all_traces, 'global gcamp': df_all_traces_global,
-                     'residual gcamp': df_all_traces_resid, 'gfp': df_all_traces_gfp}
+                     'residual gcamp': df_all_traces_resid}
+    all_trace_dfs['gfp'] = df_all_traces_gfp
 
     # Calculate autocovariance and other metadata
     for name, df_base in all_trace_dfs.items():
@@ -458,7 +459,7 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp,
         all_summary_dfs.append(df)
     df_summary = pd.concat(all_summary_dfs, axis=0)
     df_summary.columns = ['std', 'mean', 'Autocorrelation', 'Autocovariance', 'Type of data',
-                          'Correlation of original trace to PC1', 'pc0_high', 'pc0_low']
+                          'Correlation to PC1', 'pc0_high', 'pc0_low']
 
     flattened_names = pd.DataFrame(split_flattened_index(df_summary.index)).T
     df_summary['dataset_name'] = flattened_names[0]
@@ -488,15 +489,20 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp,
         elif row['Type of data'] == 'gfp':
             color_col.append('gfp')
     df_summary[col_name] = color_col
-    # Same as D3, but replace the first with gray
+    # Use D3 with the first gray, but skip orange and green (used for immobilized and gfp)
     cmap = px.colors.qualitative.D3.copy()
+    cmap.pop(2)  # Green
+    cmap.pop(1)  # Orange
     cmap.insert(0, px.colors.qualitative.Set1[-1])
 
     # Final calculation
-    significance_line = df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'Autocovariance']
+    # significance_line = df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'Autocovariance']
+    significance_line = df_summary.groupby('Type of data').quantile(0.5, numeric_only=True).at['gfp', 'Autocovariance']
     df_summary['Significant'] = df_summary['Autocovariance'] > significance_line
 
     # Actually plot
+    if not include_gfp:
+        df_summary = df_summary[df_summary['Type of data'] != 'gfp']
     fig = px.scatter(df_summary, y='Autocovariance', x='Correlation to PC1', facet_row='Type of data',
                      # color='Type of data',
                      symbol='Simple Neuron ID', marginal_x='histogram', marginal_y='box',
@@ -508,6 +514,15 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp,
                   line_width=2, line_dash="dash",
                   # col=1, #annotation_text="95% line of gfp", annotation_position="bottom left"
                   )
+    # Turn off yaxis label on all but the first row
+    fig.update_yaxes(row=1, title="", overwrite=True)
+    fig.update_yaxes(row=3, title="", overwrite=True)
+    # Turn off legend (do that separately)
+    if not include_legend:
+        fig.update_traces(showlegend=False)
+
+    # Turn off side-titles: https://plotly.com/python/facet-plots/#customizing-subplot-figure-titles
+    fig.for_each_annotation(lambda a: a.update(text=""))
 
     apply_figure_settings(fig, width_factor=0.5, height_factor=0.4, plotly_not_matplotlib=True)
 

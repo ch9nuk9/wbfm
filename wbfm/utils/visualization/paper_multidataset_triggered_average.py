@@ -147,6 +147,15 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 self.dataset_clusterer_residual_rectified_rev = out[0]
                 self.intermediates_residual_rectified_rev = out[1]
 
+                # Only used for BAG: self-collision triggered
+                trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.SELF_COLLISION)
+                trace_opt = dict(residual_mode='pca')
+                trace_opt.update(trace_base_opt)
+                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                         trace_opt=trace_opt)
+                self.dataset_clusterer_residual_collision = out[0]
+                self.intermediates_collision = out[1]
+
             except TypeError:
                 print("Hilbert triggered averages failed; this may be because the data is immobilized")
                 print("Only 'global' triggered averages will be available")
@@ -188,6 +197,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                            'global_rev': self.dataset_clusterer_global_rev,
                            'global_fwd': self.dataset_clusterer_global_fwd,
                            'residual': self.dataset_clusterer_residual,
+                           'residual_collision': self.dataset_clusterer_residual_collision,
                            'residual_rectified_fwd': self.dataset_clusterer_residual_rectified_fwd,
                            'residual_rectified_rev': self.dataset_clusterer_residual_rectified_rev}
         if trigger_type not in trigger_mapping:
@@ -200,6 +210,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                       'global_rev': self.intermediates_global_rev,
                       'global_fwd': self.intermediates_global_fwd,
                       'residual': self.intermediates_residual,
+                      'residual_collision': self.intermediates_collision,
                       'residual_rectified_fwd': self.intermediates_residual_rectified_fwd,
                       'residual_rectified_rev': self.intermediates_residual_rectified_rev}
         df_mapping = {k: v[1] if v else None for k, v in df_mapping.items()}
@@ -213,6 +224,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                          'global_rev': 'Global reversal triggered',
                          'global_fwd': 'Global forward triggered',
                          'residual': 'Residual undulation triggered',
+                         'residual_collision': 'Residual collision triggered',
                          'residual_rectified_fwd': 'Residual (rectified fwd, undulation triggered)',
                          'residual_rectified_rev': 'Residual (rectified rev, undulation triggered)',
                          'kymo': 'Kymograph'}

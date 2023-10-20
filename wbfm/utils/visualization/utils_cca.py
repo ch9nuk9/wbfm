@@ -549,7 +549,7 @@ def calc_cca_weights_for_all_projects(all_projects, which_mode=0, weights_kwargs
 
 
 def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_using_top_weight=True,
-                                      drop_unlabeled_neurons=True, min_datasets_present=5,
+                                      drop_unlabeled_neurons=True, min_datasets_present=5, combine_left_right=False,
                                       **kwargs):
     """
     Similar to calc_cca_weights_for_all_projects, but for PCA
@@ -587,6 +587,10 @@ def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_u
     if correct_sign_using_top_weight:
         sign_vec = np.sign(df_weights.iloc[:, df_weights.abs().sum().argmax()])
         df_weights = df_weights.mul(sign_vec, axis='index')
+
+    # Combine pairs
+    if combine_left_right:
+        df_weights = combine_columns_with_suffix(df_weights, suffixes=['L', 'R'], how='mean')
 
     # Sort them by the signed median weight
     df_weights = df_weights.reindex(df_weights.median().sort_values(ascending=False).index, axis=1)
