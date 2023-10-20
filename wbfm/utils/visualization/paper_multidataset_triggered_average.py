@@ -297,7 +297,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             if i_figure == 3:
                 fig_opt = dict(width_factor=0.5, height_factor=0.25)
             elif i_figure > 3:
-                fig_opt = dict(width_factor=0.25, height_factor=0.1)
+                fig_opt = dict(width_factor=0.25, height_factor=0.15)
             else:
                 raise NotImplementedError(f"i_figure={i_figure} not implemented")
             apply_figure_settings(fig, plotly_not_matplotlib=False, **fig_opt)
