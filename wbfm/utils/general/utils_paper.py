@@ -23,7 +23,8 @@ def paper_trace_settings():
                nan_using_ppca_manifold=True,
                channel_mode='dr_over_r_50',
                use_physical_time=True,
-               rename_neurons_using_manual_ids=True)
+               rename_neurons_using_manual_ids=True,
+               manual_id_confidence_threshold=0)
     return opt
 
 
@@ -186,6 +187,7 @@ class PaperDataCache:
         """
         opt = paper_trace_settings()
         opt['residual_mode'] = 'pca'
+        opt['interpolate_nan'] = True
         assert not opt.get('use_paper_traces', False), \
             "paper_trace_settings should have use_paper_traces=False (recursion error)"
         df = self.project_data.calc_default_traces(**opt)
@@ -205,6 +207,7 @@ class PaperDataCache:
         """
         opt = paper_trace_settings()
         opt['residual_mode'] = 'pca_global'
+        opt['interpolate_nan'] = True
         assert not opt.get('use_paper_traces', False), \
             "paper_trace_settings should have use_paper_traces=False (recursion error)"
         df = self.project_data.calc_default_traces(**opt)
