@@ -1812,6 +1812,7 @@ class ProjectData:
             neurons_finished_mask = neurons_finished_mask.map({'True': True, 'False': False,
                                                                'TRUE': True, 'FALSE': False,
                                                                'true': True, 'false': False,
+                                                               True: True, False: False,
                                                                '': False, 'nan': False, 'NaN': False, 'NAN': False,})
             neurons_finished_mask = neurons_finished_mask.fillna(False).astype(bool)
         if 'Neuron ID' not in df_manual_tracking[neurons_finished_mask]:
