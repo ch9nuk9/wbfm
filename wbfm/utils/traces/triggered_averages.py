@@ -908,20 +908,15 @@ class ClusteredTriggeredAverages:
         # Make sure all lists of names are aligned
         self.df_triggered = self.df_triggered.sort_values(by=0, axis='columns')
 
-        # Calculate distance matrix (correlation, which is robust to nan)
+        if not self.cluster_cmap_is_set:
+            self.set_global_scipy_cmap()
+
+    @cached_property
+    def df_corr(self):
         if self.verbose >= 1:
             print("Calculating correlation")
         df_corr = self.df_triggered.corr()
-        df_corr.replace(np.nan, 0, inplace=True)
-        self.df_corr = df_corr
-
-        # Calculate clustering using a cache for further analysis
-        self._do_clustering(*self.clust_args)
-        if self.verbose >= 1:
-            print(f"Finished initializing with {len(self.per_cluster_names)} clusters")
-
-        if not self.cluster_cmap_is_set:
-            self.set_global_scipy_cmap()
+        return df_corr.replace(np.nan, 0, inplace=False)
 
     @lru_cache(maxsize=16)
     def _do_clustering(self, linkage_threshold, cluster_criterion, linkage_method):
