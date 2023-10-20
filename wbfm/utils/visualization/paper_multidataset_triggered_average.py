@@ -31,6 +31,7 @@ class PaperColoredTracePlotter:
                          'global': cmap(3),
                          'global_fwd': cmap(3),
                          'residual': cmap(4),
+                         'residual_collision': cmap(4),
                          'residual_rectified_fwd': cmap(4),
                          'residual_rectified_rev': cmap(4),
                          'kymo': 'black'}

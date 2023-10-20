@@ -185,7 +185,6 @@ class ProjectData:
         """
         tracking_cfg = self.project_config.get_tracking_config()
 
-        # Manual annotations take precedence by default
         fname = tracking_cfg.config['final_3d_postprocessing']['output_df_fname']
         fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=False)
         self.logger.debug(f"Loading initial pipeline tracks from {fname}")
@@ -202,7 +201,6 @@ class ProjectData:
         """
         tracking_cfg = self.project_config.get_tracking_config()
 
-        # Manual annotations take precedence by default
         fname = os.path.join('postprocessing', f"df_tracks_superglue_template-{i_frame}.h5")
         fname = tracking_cfg.resolve_relative_path(fname, prepend_subfolder=True)
         self.logger.debug(f"Loading single reference frame tracks from: {fname}")
