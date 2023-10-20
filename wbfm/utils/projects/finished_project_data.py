@@ -765,7 +765,9 @@ class ProjectData:
         return self.x_for_plots, y
 
     @lru_cache(maxsize=128)
-    def calc_default_traces(self, min_nonnan: Optional[float] = 0.75, interpolate_nan: bool = False,
+    def calc_default_traces(self,
+                            min_nonnan: Optional[float] = 0.75,
+                            interpolate_nan: bool = False,
                             raise_error_on_empty: bool = True,
                             neuron_names: tuple = None,
                             residual_mode: Optional[str] = None,
@@ -1096,6 +1098,7 @@ class ProjectData:
         pca.fit(X.T)
         pca_modes = pca.components_.T
         pc1 = pd.Series(pca_modes[:, 0])
+        pc1.index = X.index
         correlation = X.corrwith(pc1)
         return correlation
 
@@ -2304,13 +2307,13 @@ def plot_frequencies_for_fm_and_immob_projects(all_projects_wbfm, all_projects_i
     ax.set_ylabel("Normalized Power")
     ax.set_title(f"Frequency spectrum for {neuron_name}")
 
-    apply_figure_settings(width_factor=0.4, height_factor=0.4, plotly_not_matplotlib=False)
+    apply_figure_settings(width_factor=0.4, height_factor=0.25, plotly_not_matplotlib=False)
 
     if output_folder is not None:
         plt.tight_layout()
         fname = f"frequency_spectrum_{neuron_name}.png"
         fname = Path(output_folder).joinpath(fname)
-        plt.savefig(fname)
+        plt.savefig(fname, transparent=True)
         fname = Path(fname).with_suffix('.svg')
         plt.savefig(fname)
 
