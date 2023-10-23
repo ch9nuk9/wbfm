@@ -160,7 +160,7 @@ class MatchesWithConfidence:
         -------
 
         """
-        if len(matches_with_conf) == 0:
+        if matches_with_conf is None or len(matches_with_conf) == 0:
             raise NoMatchesError
         # if minimum_confidence > 0.0:
         #     ... this doesn't work for lists!
