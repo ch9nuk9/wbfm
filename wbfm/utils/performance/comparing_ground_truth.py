@@ -12,6 +12,8 @@ import seaborn as sns
 
 from wbfm.utils.external.utils_pandas import df_to_matches, accuracy_of_matches
 from wbfm.utils.general.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
+from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
+from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.neuron_matching.utils_matching import calc_bipartite_from_positions, calc_nearest_neighbor_matches
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
@@ -195,6 +197,12 @@ def plot_histogram_at_likelihood_thresh(df1, df2, likelihood_thresh):
 def calculate_accuracy_from_dataframes(df_gt: pd.DataFrame, df2_filter: pd.DataFrame, column_names=None) -> pd.DataFrame:
     """
     Calculates accuracy of two dataframes assuming they have the same column names
+
+    Return dataframe has columns:
+        matches: fraction of matches to ground truth
+        matches_to_gt_nonnan: fraction of matches to ground truth, excluding ground truth time points that are nan
+        mismatches: fraction of mismatches to ground truth
+        nan_in_fdnc: fraction of ground truth time points that are nan
 
     Parameters
     ----------
@@ -458,7 +466,7 @@ def calc_tracklet_track_mismatch(project_data, to_plot=False):
     return df_nan_in_final, df_mismatched
 
 
-def calc_accuracy_of_pipeline_steps(project_data_gcamp, output_folder=None):
+def calc_accuracy_of_pipeline_steps(project_data_gcamp, remove_gt_nan=True, output_folder=None):
     neuron_names = project_data_gcamp.finished_neuron_names()
     if len(neuron_names) == 0:
         print("No finished neurons; quitting")
@@ -476,13 +484,14 @@ def calc_accuracy_of_pipeline_steps(project_data_gcamp, output_folder=None):
     df_acc_pipeline = calculate_accuracy_from_dataframes(df_gt, df_pipeline, **opt)
     df_acc_single_reference = calculate_accuracy_from_dataframes(df_gt, df_single_reference, **opt)
 
-    df_acc = pd.DataFrame({'Single reference frame': df_acc_single_reference['matches_to_gt_nonnan'],
-                           'Multiple reference frames': df_acc_global['matches_to_gt_nonnan'],
-                           'Full pipeline': df_acc_pipeline['matches_to_gt_nonnan']})
-    df_acc_with_index = df_acc.reset_index()
+    if remove_gt_nan:
+        col_name = 'matches_to_gt_nonnan'
+    else:
+        col_name = 'matches'
 
-    from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
-    from wbfm.utils.general.utils_paper import apply_figure_settings
+    df_acc = pd.DataFrame({'Single reference frame': df_acc_single_reference[col_name],
+                           'Multiple reference frames': df_acc_global[col_name],
+                           'Full pipeline': df_acc_pipeline[col_name]})
 
     fig = plt.figure(dpi=200)
     paired_boxplot_from_dataframes(df_acc.T, num_rows=3, fig=fig, add_median_line=False)
