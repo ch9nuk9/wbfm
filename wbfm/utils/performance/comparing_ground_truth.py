@@ -505,3 +505,5 @@ def calc_accuracy_of_pipeline_steps(project_data_gcamp, remove_gt_nan=True, outp
         plt.savefig(fname, transparent=True)
         fname = str(Path(fname).with_suffix('.svg'))
         plt.savefig(fname)
+
+    return df_acc

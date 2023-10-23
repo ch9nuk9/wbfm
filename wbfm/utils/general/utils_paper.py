@@ -43,14 +43,16 @@ font_size_pixels = font_size_points * pixels_per_point
 
 def paper_figure_page_settings(height_factor=1, width_factor=1):
     """Settings for a full column width, full height. Will be multiplied later"""
+    # Note: changes this globally
+    # plt.rcParams["font.family"] = "arial"
+
     matplotlib_opt = dict(figsize=(column_width_inches*width_factor,
                                    column_height_inches*height_factor), dpi=dpi)
     matplotlib_font_opt = dict(fontsize=font_size_points)
     plotly_opt = dict(width=round(column_width_pixels*width_factor),
                       height=round(column_height_pixels*height_factor))
-    # plotly_opt = dict(width=3840,
-    #                   height=1600)
-    plotly_font_opt = dict(font=dict(size=font_size_pixels))
+    # See: https://stackoverflow.com/questions/67844335/what-is-the-default-font-in-python-plotly
+    plotly_font_opt = dict(font=dict(size=font_size_pixels, color='black'), font_family="arial")
 
     opt = dict(matplotlib_opt=matplotlib_opt, plotly_opt=plotly_opt,
                matplotlib_font_opt=matplotlib_font_opt, plotly_font_opt=plotly_font_opt)
