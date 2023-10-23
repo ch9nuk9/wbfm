@@ -17,7 +17,7 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError, NoBehaviorAnnotationsError
-from wbfm.utils.general.postprocessing.position_postprocessing import impute_missing_values_in_dataframe
+from wbfm.utils.general.postprocessing.utils_imputation import impute_missing_values_in_dataframe
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame

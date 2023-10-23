@@ -1,4 +1,6 @@
+import os
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -454,3 +456,43 @@ def calc_tracklet_track_mismatch(project_data, to_plot=False):
         plt.legend()
 
     return df_nan_in_final, df_mismatched
+
+
+def calc_accuracy_of_pipeline_steps(project_data_gcamp, output_folder=None):
+    neuron_names = project_data_gcamp.finished_neuron_names()
+    if len(neuron_names) == 0:
+        print("No finished neurons; quitting")
+        return
+
+    # Get the outputs of each pipeline step
+    df_global = project_data_gcamp.intermediate_global_tracks[neuron_names]
+    df_single_reference = project_data_gcamp.single_reference_frame_tracks(0)[neuron_names]
+    df_pipeline = project_data_gcamp.initial_pipeline_tracks[neuron_names]
+    df_gt = project_data_gcamp.final_tracks[neuron_names]
+
+    # Get each accuracy
+    opt = dict(column_names=['raw_neuron_ind_in_list'])
+    df_acc_global = calculate_accuracy_from_dataframes(df_gt, df_global, **opt)
+    df_acc_pipeline = calculate_accuracy_from_dataframes(df_gt, df_pipeline, **opt)
+    df_acc_single_reference = calculate_accuracy_from_dataframes(df_gt, df_single_reference, **opt)
+
+    df_acc = pd.DataFrame({'Single reference frame': df_acc_single_reference['matches_to_gt_nonnan'],
+                           'Multiple reference frames': df_acc_global['matches_to_gt_nonnan'],
+                           'Full pipeline': df_acc_pipeline['matches_to_gt_nonnan']})
+    df_acc_with_index = df_acc.reset_index()
+
+    from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
+    from wbfm.utils.general.utils_paper import apply_figure_settings
+
+    fig = plt.figure(dpi=200)
+    paired_boxplot_from_dataframes(df_acc.T, num_rows=3, fig=fig, add_median_line=False)
+
+    plt.title("Tracklets significantly improve tracking quality")
+    plt.ylabel("Fraction of correctly tracked points")
+    apply_figure_settings(fig, width_factor=1, height_factor=0.5, plotly_not_matplotlib=False)
+
+    if output_folder is not None:
+        fname = os.path.join(output_folder, "paired_boxplot_trackers.png")
+        plt.savefig(fname, transparent=True)
+        fname = str(Path(fname).with_suffix('.svg'))
+        plt.savefig(fname)
