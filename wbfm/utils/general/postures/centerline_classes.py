@@ -1844,7 +1844,7 @@ class WormFullVideoPosture:
                 idx = y.iloc[rev_end:end_of_check_period].abs().idxmax()
             if np.isnan(idx):
                 continue
-            this_peak = y.iloc[idx]
+            this_peak = y.loc[idx]
             peaks.append(this_peak)
             peak_times.append(idx)
             all_rev_ends.append(rev_end)
