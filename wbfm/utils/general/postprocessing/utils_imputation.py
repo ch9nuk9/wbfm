@@ -7,8 +7,6 @@ from sklearn.linear_model import BayesianRidge
 from tqdm.auto import tqdm
 
 from wbfm.utils.general.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
-from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.projects.utils_filenames import read_if_exists, get_sequential_filename
 # Note: following must be present, even if pycharm cleans it
 # from sklearn.experimental import enable_iterative_imputer
@@ -111,7 +109,7 @@ def update_dataframe_using_flat_names(df_old, df_new, old2new_names):
     return pd.DataFrame(df_interp)  # Reduce fragmentation
 
 
-def impute_tracks_from_config(tracks_config: SubfolderConfigFile):
+def impute_tracks_from_config(tracks_config):
 
     df_raw, fname, likelihood_thresh, n_nearest_features = _unpack_for_imputing(tracks_config)
 
@@ -166,7 +164,7 @@ def takens_embedding(data, dimension, delay=1, append_dim=0):
     return embedded_data
 
 
-def get_distance_to_closest_neurons_over_time(project_data: ProjectData, which_neuron, df_track):
+def get_distance_to_closest_neurons_over_time(project_data, which_neuron, df_track):
     all_dist = []
 
     for i_frame in tqdm(range(project_data.num_frames)):
