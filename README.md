@@ -47,8 +47,7 @@ Each recording will generate one project, and you can use the create_projects_fr
 Important: the data folders must be organized in a specific way, see [here](docs/data_folder_organization.md).
 
 ```commandline
-cd /path/to/this/code/wbfm/scripts/cluster
-bash create_multiple_projects_from_data_parent_folder.sh -t /path/to/parent/data/folder -p /path/to/projects/folder
+bash /path/to/this/code/wbfm/scripts/cluster/create_multiple_projects_from_data_parent_folder.sh -t /path/to/parent/data/folder -p /path/to/projects/folder
 ```
 
 Where "/path/to/parent/data/folder" contains subfolders with red, green, and (optionally) behavioral data, and "/path/to/projects/folder" is a folder where the new projects will be generated. 
@@ -56,7 +55,7 @@ In principle "/path/to/projects/folder" should be empty, but this is not necessa
 
 As of September 2023, this is the proper path to this code on the cluster:
 ```commandline
-cd /scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/cluster
+ls /scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/cluster
 ```
 
 For running projects, you will most likely want to run them all simultaneously instead of one-by-one.
@@ -100,9 +99,11 @@ If you have many projects to run, you can use the run_all_projects_in_parent_fol
 This is especially useful if you created the projects using the create_multiple_projects_from_data_parent_folder.sh script.
 
 ```commandline
-cd /path/to/this/code/wbfm/scripts/cluster
-bash run_all_projects_in_parent_folder.sh -t /path/to/projects/folder
+bash /path/to/this/code/wbfm/scripts/cluster/run_all_projects_in_parent_folder.sh -t /path/to/projects/folder
 ```
+
+Note that you should run this script from a directory where you have permission to create files.
+Otherwise the log files will be created in the directory where you ran the script, which will crash silently due to permission errors.
 
 For more details on each step, see: [detailed pipeline steps](docs/detailed_pipeline_steps.md).
 
