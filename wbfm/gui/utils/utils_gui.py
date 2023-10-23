@@ -650,6 +650,9 @@ class NeuronNameEditor(QWidget):
 
         not_yet_done_ids = list(ids_to_do.difference(unique_ids))
 
+        # Make sure all entries are strings
+        not_yet_done_ids = [str(x) for x in not_yet_done_ids]
+
         # Update widget
         self.notIdedList.addItems(not_yet_done_ids)
 
@@ -665,6 +668,8 @@ class NeuronNameEditor(QWidget):
             return
 
         custom_ids = list(unique_ids.difference(ids_to_do))
+        # Make sure all entries are strings
+        custom_ids = [str(x) for x in custom_ids]
 
         # Update widget
         self.customIdedList.addItems(custom_ids)
