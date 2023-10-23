@@ -1,6 +1,7 @@
 import logging
 import os
 import warnings
+from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import reduce
 from typing import List, Dict, Tuple, Union, Optional
@@ -1481,3 +1482,75 @@ class MarkovRegressionModel:
             self.project_data.save_fig_in_project(fname)
 
         plt.show()
+
+
+def calculate_post_reversal_peaks_from_project(all_projects_gcamp, neuron_names=None, behavior_names=None):
+    if neuron_names is None:
+        neuron_names = ['SMDVL', 'SMDVR', 'RIVL', 'RIVR', 'RID']
+
+    all_peaks_named_neurons = defaultdict(dict)
+    all_collision_flags = {}
+
+    if behavior_names is None:
+        behavior_names = ['ventral_only_head_curvature', 'summed_signed_curvature', 'ventral_quantile_curvature',
+                          'head_signed_curvature', 'ventral_only_body_curvature']
+    all_curvature_peaks_dict = {a: {} for a in behavior_names}
+    for name, p in tqdm(all_projects_gcamp.items()):
+        try:
+            df_traces = p.calc_paper_traces()
+            y_neurons = {n: df_traces[n] for n in neuron_names if n in df_traces}
+
+            worm = p.worm_posture_class
+
+            beh_annotation = worm.beh_annotation(fluorescence_fps=True, reset_index=True)
+            y_collision = BehaviorCodes.vector_equality(beh_annotation, BehaviorCodes.SELF_COLLISION).astype(int)
+
+            all_collision_flags[name] = worm.get_peaks_post_reversal(y_collision, allow_reversal_before_peak=True)[0]
+
+
+            for alias in all_curvature_peaks_dict.keys():
+                y_curvature = worm.calc_behavior_from_alias(alias)
+                curv_peaks = worm.get_peaks_post_reversal(y_curvature, allow_reversal_before_peak=True,
+                                                          use_idx_of_absolute_max=True)[0]
+                all_curvature_peaks_dict[alias][name] = curv_peaks
+
+            # Even if the neurons aren't found, the lists must be populated to be the same length as all others
+            for _name in neuron_names:
+                y = y_neurons.get(_name, None)
+                if y is None:
+                    all_peaks_named_neurons[_name][name] = [np.nan] * len(curv_peaks)
+                else:
+                    all_peaks_named_neurons[_name][name] = \
+                        worm.get_peaks_post_reversal(y, allow_reversal_before_peak=True)[0]
+
+        except (ValueError, KeyError) as e:
+            print(f"Error on dataset: {name}")
+            print(e)
+
+    # Reshape to final output
+    my_reshape = lambda d: pd.DataFrame.from_dict(d, orient='index').T.stack(dropna=True).reset_index(drop=False)
+    all_columns_neurons = [my_reshape(d).rename(columns={0: k, 'level_0': 'dataset_idx', 'level_1': 'dataset_name'}) for
+                           k, d in all_peaks_named_neurons.items()]
+
+    df_neurons = reduce(lambda left, right: pd.merge(left, right, on=['dataset_idx', 'dataset_name'], how='outer'),
+                        all_columns_neurons)
+    # Make sure the neurons are actually aligned with the other events
+    df_collision = pd.DataFrame.from_dict(all_collision_flags, orient='index').T.stack().reset_index(drop=False).rename(
+        columns={'level_0': 'dataset_idx', 'level_1': 'dataset_name'})
+    all_columns_curvature = [my_reshape(d).rename(columns={0: k, 'level_0': 'dataset_idx', 'level_1': 'dataset_name'})
+                             for k, d in all_curvature_peaks_dict.items()]
+    df_curvature = reduce(lambda left, right: pd.merge(left, right, on=['dataset_idx', 'dataset_name'], how='outer'),
+                          all_columns_curvature)
+
+    all_dfs = [df_neurons, df_collision, df_curvature]
+    df_multi_neurons = reduce(
+        lambda left, right: pd.merge(left, right, on=['dataset_idx', 'dataset_name'], how='outer'), all_dfs)
+
+    # df_multi_neurons = pd.concat([df_neurons, df_collision.astype(bool), df_curvature], join='inner', axis=1)
+    df_multi_neurons.columns = ('dataset_idx', 'dataset_name') + tuple(neuron_names) + \
+                               ('collision_flag',) + tuple(behavior_names)
+    df_multi_neurons['collision_flag'] = df_multi_neurons['collision_flag'].astype(bool)
+
+    df_multi_neurons['ventral_body_curvature'] = df_multi_neurons['summed_signed_curvature'] > 0
+
+    return df_multi_neurons
