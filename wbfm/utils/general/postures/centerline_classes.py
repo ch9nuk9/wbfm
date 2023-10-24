@@ -1815,6 +1815,8 @@ class WormFullVideoPosture:
         """
         Calculates the peaks of a trace after each reversal period
 
+        Note that the times returned will be actual index values, not integer index values (i.e. use .loc not .iloc)
+
         Parameters
         ----------
         y
@@ -1847,7 +1849,7 @@ class WormFullVideoPosture:
             this_peak = y.loc[idx]
             peaks.append(this_peak)
             peak_times.append(idx)
-            all_rev_ends.append(rev_end)
+            all_rev_ends.append(y.index[rev_end])
         return peaks, peak_times, all_rev_ends
 
     def get_starts_and_ends_of_behavior(self, state, fluorescence_fps=True, **kwargs):
