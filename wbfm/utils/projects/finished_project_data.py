@@ -1935,6 +1935,7 @@ raw_segmentation:         {self.raw_segmentation is not None}\n\
 colored_segmentation:     {self.segmentation is not None}\n\
 ============Tracking===================\n\
 tracklets:                {self.has_tracklets() is not None}\n\
+global2tracklet:          {self.global2tracklet is not None}\n\
 final_tracks:             {self.final_tracks is not None}\n\
 manual_tracking:          {self.df_manual_tracking is not None}\n\
 ============Traces=====================\n\
