@@ -24,14 +24,20 @@ def zip_raw_data_zarr(raw_fname, delete_original=True, verbose=1):
     return out_fname_zip
 
 
-def zarr_reader_folder_or_zipstore(fname: str):
+def zarr_reader_folder_or_zipstore(fname: str, depth: int = 0):
     """Enforces readonly access"""
-    if Path(fname).is_dir():
-        dat = zarr.open(fname, mode='r')
-    elif fname.endswith('.zarr.zip'):
-        store = zarr.ZipStore(fname, mode='r')
-        dat = zarr.open(store)
-    else:
-        raise NotImplementedError(f"Not a zarr directory or zip store: {fname}")
+    try:
+        if Path(fname).is_dir():
+            dat = zarr.open(fname, mode='r')
+        elif fname.endswith('.zarr.zip'):
+            store = zarr.ZipStore(fname, mode='r')
+            dat = zarr.open(store)
+        else:
+            raise NotImplementedError(f"Not a zarr directory or zip store: {fname}")
+    except OSError as e:
+        if depth > 0:
+            raise e
+        # On Windows, if the path contains a special character, zarr.open() will fail. Retry with raw string
+        dat = zarr_reader_folder_or_zipstore(rf"{fname}", depth=depth + 1)
 
     return dat
