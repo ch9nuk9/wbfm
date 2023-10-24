@@ -86,15 +86,24 @@ class ConfigFileWithProjectContext:
         relative_path = str(relative_path.resolve()).replace('\\', '/')
         return relative_path
 
-    def unresolve_absolute_path(self, val: str) -> Optional[str]:
+    def unresolve_absolute_path(self, val: str, raise_if_not_relative=False) -> Optional[str]:
         if val is None:
             return val
         # NOTE: is_relative_to() only works for python >= 3.9
         # if Path(val).is_relative_to(self.project_dir):
+        project_dir = self.project_dir
         try:
-            return str(Path(val).relative_to(self.project_dir))
+            return str(Path(val).relative_to(project_dir))
         except ValueError:
-            return val
+            try:
+                # As of October 2023, the cluster has /lisc/scratch and /scratch mapping to the same point
+                # Both should be removed if possible from the path; this will always check the /lisc/scratch version
+                project_dir = Path(project_dir).resolve()
+                return str(Path(val).relative_to(project_dir))
+            except ValueError:
+                if raise_if_not_relative:
+                    raise ValueError(f"Could not make path {val} relative to {project_dir}")
+                return val
 
     @property
     def absolute_self_path(self):
