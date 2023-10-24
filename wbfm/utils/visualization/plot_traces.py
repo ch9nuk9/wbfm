@@ -1324,15 +1324,15 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     -------
 
     """
-    base_font_size = 18
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     project_data.use_physical_x_axis = True
-    num_modes_to_plot = 3
-    behavior_alias_list = ['dorsal_only_head_curvature', 'ventral_only_head_curvature', 'ventral_only_curvature']
+    behavior_alias_dict = {'Head curvature': ['dorsal_only_head_curvature', 'ventral_only_head_curvature'],
+                           'Body curvature': ['ventral_only_body_curvature', 'dorsal_only_body_curvature']}
+    num_modes_to_plot = len(behavior_alias_dict)
     kwargs['behavior_kwargs'] = dict(fluorescence_fps=False, reset_index=False)
-    additional_shaded_states = [BehaviorCodes.SLOWING, BehaviorCodes.HEAD_CAST]
+    additional_shaded_states = []#[BehaviorCodes.SLOWING, BehaviorCodes.HEAD_CAST]
     column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
-        project_data, num_modes_to_plot, use_behavior_traces=True, behavior_alias_list=behavior_alias_list,
+        project_data, num_modes_to_plot, use_behavior_traces=True, behavior_alias_dict=behavior_alias_dict,
         additional_shaded_states=additional_shaded_states, **kwargs)
 
     # One column with a heatmap, (short) ethogram, and kymograph
@@ -1341,13 +1341,12 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     row_heights = row_heights[:rows]
 
     # Build figure
-
-    ### Column: x axis is time
-    subplot_titles = ['Kymograph', 'Ethogram']
-    subplot_titles.extend(behavior_alias_list)
-    subplot_titles.append('speed')
+    ## Kymograph and ethogram (large image subplots
+    subplot_titles = ['', '']
+    subplot_titles.extend(list(behavior_alias_dict.keys()))
+    subplot_titles.append('Speed')
     fig = make_subplots(rows=rows, cols=cols, shared_xaxes=False, shared_yaxes=False,
-                        row_heights=row_heights, vertical_spacing=0.05,
+                        row_heights=row_heights, vertical_spacing=0.02,
                         subplot_titles=subplot_titles)
 
     for opt in ethogram_opt:
@@ -1355,37 +1354,82 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     kymograph_opt['row'] = 1
     fig.add_trace(kymograph, **kymograph_opt)
 
-    for trace, trace_opt in zip(trace_list, trace_opt_list):
-        fig.add_trace(trace, **trace_opt)
-        num_before_adding_shapes = len(fig.layout.shapes)
-        for shade_opt in trace_shading_opt:
-            shade_opt['y1'] = 0.5  # Will be half the overall plot
-            fig.add_shape(**shade_opt, row=trace_opt['row'], col=trace_opt['col'])
-        # Force yref in all of these new shapes, which doesn't really work for subplots
-        # But here it is hardcoded as 50% of the overall plot (extending across subplots)
-        for i in range(num_before_adding_shapes, len(fig.layout.shapes)):
-            fig.layout.shapes[i]['yref'] = 'paper'
+    ## Add behavior traces
+    # I am adding multiple traces to a single plot, which the original function wasn't designed for
+    # So I have to manually check the size of behavior_alias_dict and add the traces correctly
+    i_num_traces_used = 0
+    # Add dummy variable at the end for speed, which is always calculated and should be last
+    behavior_alias_dict['speed'] = ['speed']
+    for k, v in behavior_alias_dict.items():
+        if not isinstance(v, list):
+            v = [v]
+        # Loop over each trace
+        for _ in range(len(v)):
+            # Use the global variable to index in the simple lists
+            trace, trace_opt = trace_list[i_num_traces_used], trace_opt_list[i_num_traces_used]
+            i_num_traces_used += 1
+
+            fig.add_trace(trace, **trace_opt)
+            num_before_adding_shapes = len(fig.layout.shapes)
+            for shade_opt in trace_shading_opt:
+                shade_opt['y1'] = 0.5  # Will be half the overall plot
+                fig.add_shape(**shade_opt, row=trace_opt['row'], col=trace_opt['col'])
+            # Force yref in all of these new shapes, which doesn't really work for subplots
+            # But here it is hardcoded as 50% of the overall plot (extending across subplots)
+            for i in range(num_before_adding_shapes, len(fig.layout.shapes)):
+                fig.layout.shapes[i]['yref'] = 'paper'
+
+
+    # for trace, trace_opt in zip(trace_list, trace_opt_list):
+    #     fig.add_trace(trace, **trace_opt)
+    #     num_before_adding_shapes = len(fig.layout.shapes)
+    #     for shade_opt in trace_shading_opt:
+    #         shade_opt['y1'] = 0.5  # Will be half the overall plot
+    #         fig.add_shape(**shade_opt, row=trace_opt['row'], col=trace_opt['col'])
+    #     # Force yref in all of these new shapes, which doesn't really work for subplots
+    #     # But here it is hardcoded as 50% of the overall plot (extending across subplots)
+    #     for i in range(num_before_adding_shapes, len(fig.layout.shapes)):
+    #         fig.layout.shapes[i]['yref'] = 'paper'
 
 
     ### Final updates
-    fig.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
+    fig.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x',
+                     range=[25000, 29000])
     fig.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
+
     # Flip the kymograph
     fig.update_yaxes(dict(autorange='reversed'), col=1, row=1, overwrite=True)
+    # Note: specific to the paper figure
+    fig.update_yaxes(dict(showticklabels=True, showgrid=False, title='Body Segment'), col=1, row=1)
+    fig.update_yaxes(dict(showticklabels=True, showgrid=True, title='Curvature'), col=1, row=3)
+    fig.update_yaxes(dict(showticklabels=True, showgrid=True, title='Curvature'), col=1, row=4)
+    fig.update_yaxes(dict(showticklabels=True, showgrid=True, title='Speed<br>(mm/s)', range=[-0.25, 0.15]), col=1, row=5)
+    # Move the subplot titles down
+    fig.update_annotations(yshift=-7)
 
-    fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
+    fig.update_layout(showlegend=False)
+    apply_figure_settings(fig, width_factor=0.75, height_factor=0.75, plotly_not_matplotlib=True)
 
-    # Fonts
-    fig.update_layout(font=dict(size=18))
-    # Get the colormaps in the right places
+    # Get the colormaps and legends in the right places, and not overlapping
     fig.update_layout(
-        coloraxis2=dict(colorscale='RdBu', colorbar=dict(
-            len=0.5,
-            yanchor='middle',
-            y=0.75,
-            xanchor='right',
-            x=1.1
-        ),),
+        coloraxis2=dict(colorscale='RdBu',
+                        colorbar=dict(
+                            len=0.5,
+                            yanchor='middle',
+                            y=0.75,
+                            xanchor='left',
+                            x=1.01,
+                            title=dict(text='Curvature')
+                        )),
+    )
+    fig.update_layout(
+        showlegend=True,
+        legend=dict(
+          yanchor="middle",
+          y=0.25,
+          xanchor="left",
+          x=1.01
+        )
     )
 
     # Add a single legend for behavior colors
@@ -1500,14 +1544,14 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
     return fig
 
 
-def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plot=3,
-                                              keep_reversal_turns=False, use_manual_annotations=False,
-                                              use_behavior_traces=False, behavior_alias_list=None, behavior_kwargs=None,
+def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plot=3, keep_reversal_turns=False,
+                                              use_manual_annotations=False, use_behavior_traces=False,
+                                              behavior_alias_dict=None, behavior_kwargs=None,
                                               additional_shaded_states=None, trace_opt: dict = None):
     if behavior_kwargs is None:
         behavior_kwargs = dict(fluorescence_fps=True, reset_index=True)
-    if behavior_alias_list is None:
-        behavior_alias_list = []
+    if behavior_alias_dict is None:
+        behavior_alias_dict = {}
     default_trace_opt = dict(interpolate_nan=True,
                              filter_mode='rolling_mean',
                              min_nonnan=0.9,
@@ -1560,7 +1604,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     df_pca_weights = df_pca_weights.iloc[ind_sort, :].reset_index(drop=True)
     var_explained = pca_modes.explained_variance_ratio_[:7]
     # Initialize options for all subplots
-    subplot_titles = ['Traces sorted by PC1', '', 'PCA weights', '', 'Ethogram', 'Phase plot',
+    subplot_titles = ['Traces sorted by PC1', '', 'PCA weights', '', '', 'Phase plot',
                       'PCA modes', '', '', 'Middle Body Speed', 'Variance Explained']
     # Relies on num_pca_modes_to_plot being 3
     row_heights = [0.55, 0.05, 0.1, 0.1, 0.1, 0.1]
@@ -1599,11 +1643,16 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                                          line=dict(color=mode_colormap[i], width=2), showlegend=False))
         else:
             # Traces are specific behaviors
-            name = behavior_alias_list[i]
-            y = project_data.worm_posture_class.calc_behavior_from_alias(name, **behavior_kwargs)
-            trace_list.append(go.Scatter(y=y, x=y.index,
-                                         line=dict(color=mode_colormap[i], width=2), showlegend=False))
-        trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
+            name_key = list(behavior_alias_dict.keys())[i]
+            name_list = behavior_alias_dict[name_key]
+            # They may be a list of behaviors
+            if not isinstance(name_list, list):
+                name_list = [name_list]
+            for single_name in name_list:
+                y = project_data.worm_posture_class.calc_behavior_from_alias(single_name, **behavior_kwargs)
+                # Do not control the line colors here, because we want different ones on one plot
+                trace_list.append(go.Scatter(y=y, x=y.index, name=single_name, showlegend=True))
+                trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
 
     #### Shading on top of the PCA modes
     try:
