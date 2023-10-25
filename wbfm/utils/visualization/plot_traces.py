@@ -1652,7 +1652,9 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                 y = project_data.worm_posture_class.calc_behavior_from_alias(single_name, **behavior_kwargs)
                 # Do not control the line colors here, because we want different ones on one plot
                 trace_list.append(go.Scatter(y=y, x=y.index, name=single_name, showlegend=True))
-                trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
+
+        # Same options regardless of behavior or not
+        trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
 
     #### Shading on top of the PCA modes
     try:
