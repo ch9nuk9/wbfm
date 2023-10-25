@@ -267,7 +267,11 @@ class BehaviorCodes(Flag):
     @classmethod
     def base_colormap(cls) -> List[str]:
         # See: https://plotly.com/python/discrete-color/
-        return px.colors.qualitative.Set1_r
+        # return px.colors.qualitative.Set1_r
+        # Move gray to the front
+        cmap = px.colors.qualitative.Set2.copy()
+        cmap.insert(0, cmap.pop(7))
+        return cmap
 
     @classmethod
     def ethogram_cmap(cls, include_turns=True, include_reversal_turns=False, include_quiescence=False,
