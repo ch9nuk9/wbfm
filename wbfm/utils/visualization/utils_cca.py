@@ -549,7 +549,8 @@ def calc_cca_weights_for_all_projects(all_projects, which_mode=0, weights_kwargs
 
 
 def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_using_top_weight=True,
-                                      drop_unlabeled_neurons=True, min_datasets_present=5, combine_left_right=False,
+                                      neuron_names=None, drop_unlabeled_neurons=True,
+                                      min_datasets_present=5, combine_left_right=False,
                                       **kwargs):
     """
     Similar to calc_cca_weights_for_all_projects, but for PCA
@@ -576,6 +577,9 @@ def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_u
 
     df_weights = pd.DataFrame(all_weights).T
 
+    # Keep a subset of neurons if neuron_names is specified
+    if neuron_names is not None:
+        df_weights = df_weights.loc[:, neuron_names]
     # Drop all neurons that contain 'neuron' in the name
     if drop_unlabeled_neurons:
         df_weights = df_weights.loc[:, ~df_weights.columns.str.contains('neuron')]
