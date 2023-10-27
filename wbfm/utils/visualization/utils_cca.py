@@ -299,34 +299,13 @@ class CCAPlotter:
                                mode='lines', name=state_code.full_name,
                                line=dict(color=ethogram_cmap.get(state_code, None), width=4)))
 
-        fig = go.Figure(layout=dict(height=1000, width=1000))
+        fig = go.Figure(layout=dict(height=800, width=1000))
         fig.add_traces(phase_plot_list)
 
-        # Transparent background
-        fig.update_layout(
-            scene=dict(
-                xaxis=dict(
-                    backgroundcolor="rgba(0, 0, 0, 0)",
-                    zerolinecolor="black",
-                    title='Mode 1',
-                ),
-                yaxis=dict(
-                    backgroundcolor="rgba(0, 0, 0, 0)",
-                    zerolinecolor="black",
-                    title='Mode 2',
-                ),
-            )
-        )
+        # Transparent background; needed for 3d plots
         if plot_3d:
-            fig.update_layout(
-                scene=dict(
-                    zaxis=dict(
-                        backgroundcolor="rgba(0, 0, 0, 0)",
-                        zerolinecolor="black",
-                        title='Mode 3',
-                    ),
-                )
-            )
+            for axis in ['xaxis', 'yaxis', 'zaxis']:
+                fig.update_layout(scene={axis: dict(backgroundcolor="rgba(0, 0, 0, 0)", zerolinecolor="black")})
 
         if show_grid:
             # Change the tick values to be evenly spaced
@@ -337,53 +316,34 @@ class CCAPlotter:
             ytick_max = np.ceil(df_out[col_names[1][0]].max())
             ytick_range = np.arange(ytick_min, ytick_max, 1)
             # Hacky: https://community.plotly.com/t/scatter3d-background-plot-color/38838/4
-            fig.update_layout(
-                scene=dict(
-                    xaxis=dict(
-                        tickvals=xtick_range,
-                        showbackground=True,
-                        gridcolor='black',
-                    ),
-                    yaxis=dict(
-                        tickvals=ytick_range,
-                        showbackground=True,
-                        gridcolor='black'),
-                )
-            )
+            list_of_axes = ['xaxis', 'yaxis']
+            list_of_ranges = [xtick_range, ytick_range]
+            # for axis, tick_range in zip(list_of_axes, list_of_ranges):
+            #     fig.update_layout({axis: dict(tickvals=tick_range, gridcolor='black')})
+
             if plot_3d:
                 ztick_min = np.floor(df_out[col_names[2][0]].min())
                 ztick_max = np.ceil(df_out[col_names[2][0]].max())
                 ztick_range = np.arange(ztick_min, ztick_max, 1)
-                fig.update_layout(
-                    scene=dict(
-                        zaxis=dict(
-                            tickvals=ztick_range,
-                            showbackground=True,
-                            gridcolor='black'),
-                    ),
-                    # From: https://stackoverflow.com/questions/73187799/truncated-figure-with-plotly?noredirect=1#comment129258910_73187799
-                    # Note that this is hard to do in jupyter and then see the settings, but can be done with dash:
-                    # https://community.plotly.com/t/how-to-get-change-current-scene-camera-in-3d-plot-inside-jupyter-notebook-python/1912/4
-                )
+
+                list_of_axes = ['xaxis', 'yaxis', 'zaxis']
+                list_of_ranges = [xtick_range, ytick_range, ztick_range]
+                for axis, tick_range in zip(list_of_axes, list_of_ranges):
+                    fig.update_layout(scene={axis: dict(tickvals=xtick_range, gridcolor='black', showbackground=True)})
+
+                # From: https://stackoverflow.com/questions/73187799/truncated-figure-with-plotly?noredirect=1#comment129258910_73187799
+                # Note that this is hard to do in jupyter and then see the settings, but can be done with dash:
+                # https://community.plotly.com/t/how-to-get-change-current-scene-camera-in-3d-plot-inside-jupyter-notebook-python/1912/4
         else:
-            fig.update_layout(
-                scene=dict(
-                    xaxis=dict(
-                        showticklabels=False,
-                    ),
-                    yaxis=dict(
-                        showticklabels=False,
-                    )
-                )
-            )
             if plot_3d:
-                fig.update_layout(
-                    scene=dict(
-                        zaxis=dict(
-                            showticklabels=False,
-                        )
-                    )
-                )
+                list_of_axes = ['xaxis', 'yaxis', 'zaxis']
+                for axis in list_of_axes:
+                    fig.update_layout(scene={axis: dict(showticklabels=False)})
+            else:
+                list_of_axes = ['xaxis', 'yaxis']
+                # Do not update the 'scene'
+                for axis in list_of_axes:
+                    fig.update_layout({axis: dict(showticklabels=False)})
 
         # Remove legend
         if not show_legend:
@@ -402,6 +362,22 @@ class CCAPlotter:
 
         # Transparent background
         apply_figure_settings(fig, width_factor=1/3, height_factor=1/3, plotly_not_matplotlib=True)
+
+        # For paper
+        if plot_3d:
+            for axis in ['xaxis', 'yaxis', 'zaxis']:
+                fig.update_layout(scene={axis: dict(showgrid=True)})
+
+        else:
+            # There is a bug with plotly moving the x axis title to the top when labels are turned off
+            # https://github.com/plotly/plotly.js/issues/6552
+            # Instead, make the labels transparent
+            fig.update_xaxes(showticklabels=True, tickfont=dict(color="rgba(0,0,0,0)"))
+
+            fig.update_layout(
+                xaxis=dict(showline=True, linecolor='black', title='Mode 1'),
+                yaxis=dict(showline=True, linecolor='black', title='Mode 2', side='left')
+            )
 
         if output_folder is not None:
             fname = self._get_fig_filename(binary_behaviors, plot_3d, use_pca, single_mode=False)
