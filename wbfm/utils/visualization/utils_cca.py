@@ -509,7 +509,7 @@ def calc_cca_weights_for_all_projects(all_projects, which_mode=0, weights_kwargs
     if correct_sign_using_top_weight:
         sign_vec = np.sign(df_weights.iloc[:, df_weights.abs().sum().argmax()])
         df_weights = df_weights.mul(sign_vec, axis='index')
-        sign_vec = np.sign(df_weights.iloc[:, df_weights_binary.abs().sum().argmax()])
+        # sign_vec = np.sign(df_weights_binary.iloc[:, df_weights_binary.abs().sum().argmax()])
         df_weights_binary = df_weights_binary.mul(np.sign(df_weights_binary.iloc[:, 0]), axis='index')
 
     # Combine the left and right neurons (optional)

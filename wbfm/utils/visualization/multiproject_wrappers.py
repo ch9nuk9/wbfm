@@ -400,6 +400,7 @@ def get_all_variance_explained(all_projects_gcamp, all_projects_gfp, all_project
 
 
 def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=True, include_legend=True,
+                            match_yaxes=True, loop_not_facet_row=False,
                             lag=1, output_folder=None, **kwargs):
     """
     Calculates the autocovariance of all neural traces, and plots a 4-panel figure
@@ -413,6 +414,9 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
     -------
 
     """
+    base_marker_size = 0.1
+    big_marker_size = 0.5
+
     all_proj = MultiProjectWrapper(all_projects=all_projects_gcamp)
     all_proj_gfp = MultiProjectWrapper(all_projects=all_projects_gfp)
 
@@ -438,8 +442,7 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
 
     all_summary_dfs = []
     all_trace_dfs = {'gcamp': df_all_traces, 'global gcamp': df_all_traces_global,
-                     'residual gcamp': df_all_traces_resid}
-    all_trace_dfs['gfp'] = df_all_traces_gfp
+                     'residual gcamp': df_all_traces_resid, 'gfp': df_all_traces_gfp}
 
     # Calculate autocovariance and other metadata
     for name, df_base in all_trace_dfs.items():
@@ -458,7 +461,7 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
         df['pc0_low'] = mode < -0.2
         all_summary_dfs.append(df)
     df_summary = pd.concat(all_summary_dfs, axis=0)
-    df_summary.columns = ['std', 'mean', 'Autocorrelation', 'Autocovariance', 'Type of data',
+    df_summary.columns = ['std', 'mean', 'Autocorrelation', 'acv', 'Type of data',
                           'Correlation to PC1', 'pc0_high', 'pc0_low']
 
     flattened_names = pd.DataFrame(split_flattened_index(df_summary.index)).T
@@ -473,7 +476,7 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
                                df_summary['neuron_name']]
     df_summary['Simple Neuron ID'] = [name if 'VB02' in name or 'BAG' in name else 'other' for name in
                                       df_summary['neuron_name_simple']]
-    df_summary['multiplex_size'] = [3 if 'VB02' in name or 'BAG' in name else 1 for name in df_summary['neuron_name']]
+    df_summary['multiplex_size'] = [big_marker_size if 'VB02' in name or 'BAG' in name else base_marker_size for name in df_summary['neuron_name']]
 
     col_name = 'Genotype and datatype'
     color_col = []
@@ -489,49 +492,80 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
         elif row['Type of data'] == 'gfp':
             color_col.append('gfp')
     df_summary[col_name] = color_col
+    # Final calculation
+    # significance_line = df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'acv']
+    significance_line = df_summary.groupby('Type of data').quantile(0.5, numeric_only=True).at['gfp', 'acv']
+    df_summary['Significant'] = df_summary['acv'] > significance_line
+
     # Use D3 with the first gray, but skip orange and green (used for immobilized and gfp)
     cmap = px.colors.qualitative.D3.copy()
-    cmap.pop(2)  # Green
+    green = cmap.pop(2)  # Green
     cmap.pop(1)  # Orange
     cmap.insert(0, px.colors.qualitative.Set1[-1])
+    cmap.insert(4, green)  # If gfp is included, then it should be green and will be the 4th color
 
-    # Final calculation
-    # significance_line = df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'Autocovariance']
-    significance_line = df_summary.groupby('Type of data').quantile(0.5, numeric_only=True).at['gfp', 'Autocovariance']
-    df_summary['Significant'] = df_summary['Autocovariance'] > significance_line
 
     # Actually plot
     if not include_gfp:
+        print("Excluding gfp")
         df_summary = df_summary[df_summary['Type of data'] != 'gfp']
-    fig = px.scatter(df_summary, y='Autocovariance', x='Correlation to PC1', facet_row='Type of data',
-                     # color='Type of data',
-                     symbol='Simple Neuron ID', marginal_x='histogram', marginal_y='box',
-                     width=1000, height=1000, size='multiplex_size',
-                     #title="After global component subtraction, many neurons that originally had high pc0 weight still have high signal",
-                     color='Genotype and datatype', color_discrete_sequence=cmap, log_y=True)
+    scatter_opt = dict(y='acv', x='Correlation to PC1',
+                       symbol='Simple Neuron ID', marginal_y='box', size='multiplex_size', log_y=True)
+    if loop_not_facet_row:
+        categories = df_summary['Type of data'].unique()
+        cmap_copy = cmap.copy()
+        all_figs = []
+        for c in categories:
+            fig = px.scatter(df_summary[df_summary['Type of data'] == c],
+                             color='Genotype and datatype', color_discrete_sequence=cmap_copy, **scatter_opt)
+            cmap_copy.pop(1)
+            all_figs.append(fig)
+    else:
+        fig = px.scatter(df_summary, facet_row='Type of data',
+                         color_discrete_sequence=cmap,  range_y=[0.00005, 0.2], **scatter_opt)
+        all_figs = [fig]
 
-    fig.add_hline(y=significance_line,
-                  line_width=2, line_dash="dash",
-                  # col=1, #annotation_text="95% line of gfp", annotation_position="bottom left"
-                  )
-    # Turn off yaxis label on all but the first row
-    fig.update_yaxes(row=1, title="", overwrite=True)
-    fig.update_yaxes(row=3, title="", overwrite=True)
-    # Turn off legend (do that separately)
-    if not include_legend:
-        fig.update_traces(showlegend=False)
+    # Postprocessing
+    for i, fig in enumerate(all_figs):
+        fig.add_hline(y=significance_line,
+                      line_width=2, line_dash="dash",
+                      # col=1, #annotation_text="95% line of gfp", annotation_position="bottom left"
+                      )
+        if loop_not_facet_row:
+            # Turn on x and y axis lines
+            fig.update_layout(
+                xaxis=dict(showline=True, linecolor='black'),
+                yaxis=dict(showline=True, linecolor='black')
+            )
+            # Turn off xaxis label and ticks on all but last figure
+            if i != len(all_figs) - 1:
+                fig.update_xaxes(title="", showticklabels=False, overwrite=True)
+            else:
+                fig.update_xaxes(overwrite=True)
+        else:
+            # Turn off yaxis label on all but the first row
+            fig.update_yaxes(row=1, title="", overwrite=True)
+            fig.update_yaxes(row=3, title="", overwrite=True)
 
-    # Turn off side-titles: https://plotly.com/python/facet-plots/#customizing-subplot-figure-titles
-    fig.for_each_annotation(lambda a: a.update(text=""))
+        if not include_legend:
+            fig.update_traces(showlegend=False)
 
-    apply_figure_settings(fig, width_factor=0.5, height_factor=0.4, plotly_not_matplotlib=True)
+        # Turn off side-titles: https://plotly.com/python/facet-plots/#customizing-subplot-figure-titles
+        fig.for_each_annotation(lambda a: a.update(text=""))
 
-    if output_folder is not None:
-        fname = os.path.join(output_folder, 'summary_of_neurons_with_signal_covariance.png')
-        fig.write_image(fname, scale=3)
-        fname = Path(fname).with_suffix('.svg')
-        fig.write_image(fname)
+        # Decouple y axes to fully use space
+        if not match_yaxes:
+            fig.update_yaxes(matches=None)
 
-    fig.show()
+        height_factor = 0.5 / len(all_figs)
+        apply_figure_settings(fig, width_factor=1.0, height_factor=height_factor, plotly_not_matplotlib=True)
 
-    return fig, df_summary, significance_line
+        if output_folder is not None:
+            fname = os.path.join(output_folder, f'summary_of_neurons_with_signal_covariance-{i}.png')
+            fig.write_image(fname, scale=7)
+            fname = Path(fname).with_suffix('.svg')
+            fig.write_image(fname)
+
+        fig.show()
+
+    return all_figs, df_summary, significance_line, cmap
