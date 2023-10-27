@@ -1228,10 +1228,10 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     fig1.add_trace(heatmap, **heatmap_opt)
     fig1.update_layout(showlegend=False, autosize=False, #**plotly_opt,
                        coloraxis=dict(colorscale="jet"))
-    apply_figure_settings(fig1, width_factor=1, height_factor=0.15, plotly_not_matplotlib=True)
+    apply_figure_settings(fig1, width_factor=1, height_factor=0.1, plotly_not_matplotlib=True)
     # Remove ticks
     fig1.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
-    fig1.update_yaxes(dict(showticklabels=False, showgrid=False),#, title="Neurons"),
+    fig1.update_yaxes(dict(showticklabels=False, showgrid=True), title="Neurons",
                       col=1, overwrite=True)
     fig1.update_coloraxes(cmin=0, cmax=1, colorbar=dict(
         title=dict(text='dR/R50', **font_dict)
@@ -1240,11 +1240,11 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     # Build figure 2: Ethogram with PCA modes
     num_ethogram_rows = 5 if include_speed_subplot else 4
     if not include_speed_subplot:
-        subplot_titles = ["", "PCA Modes", "", ""]
+        subplot_titles = ["", "", "", ""]
     else:
-        subplot_titles = ["", "PCA Modes", "", "", "Speed"]
+        subplot_titles = ["", "", "", "", ""]
     fig2 = make_subplots(rows=num_ethogram_rows, cols=1, shared_xaxes=True, shared_yaxes=False,
-                         subplot_titles=subplot_titles, vertical_spacing=0.05)
+                         subplot_titles=subplot_titles, vertical_spacing=0.0)
     for opt in ethogram_opt:
         fig2.add_shape(**opt, row=1, col=1)
     for i, (trace, trace_opt) in enumerate(zip(trace_list, trace_opt_list)):
@@ -1267,11 +1267,21 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     fig2.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
 
     fig2.update_xaxes(dict(showticklabels=False), row=1, overwrite=True)
-    fig2.update_yaxes(dict(showticklabels=False), row=1, overwrite=True, matches='y')
-    fig2.update_xaxes(dict(showticklabels=True, title='Time (seconds)'), row=num_ethogram_rows, col=1, overwrite=True,)
+
+    # Turn ticks on for speed, but decrease number of ticks because the size is too small
+    fig2.update_yaxes(dict(showticklabels=True, showgrid=True, nticks=3, zeroline=True, zerolinecolor='black'),
+                      row=5, overwrite=True)
+    fig2.update_xaxes(dict(showticklabels=True, title='Time (seconds)'), row=num_ethogram_rows, col=1, overwrite=True, )
 
     # Move the titles down
-    fig2.update_annotations(yshift=-19, xshift=-40)
+    # fig2.update_annotations(yshift=-19, xshift=-40)
+
+    # Use the y axis as titles... but make them smaller
+    fig2.update_yaxes(dict(title=dict(text='PCA <br> modes', font=dict(size=12))), row=3, overwrite=True)
+    # fig2.update_yaxes(dict(title='PC1'), row=2, overwrite=True)
+    # fig2.update_yaxes(dict(title='PC2'), row=3, overwrite=True)
+    # fig2.update_yaxes(dict(title='PC3'), row=4, overwrite=True)
+    fig2.update_yaxes(dict(title=dict(text='Speed <br> (mm/s)', font=dict(size=12))), row=5, overwrite=True)
 
     # For now, don't build the rest of the figures
     if to_show:
