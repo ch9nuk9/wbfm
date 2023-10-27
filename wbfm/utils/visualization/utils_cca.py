@@ -361,7 +361,7 @@ class CCAPlotter:
             # fig.update_traces(cliponaxis=False)
 
         # Transparent background
-        apply_figure_settings(fig, width_factor=1/3, height_factor=1/3, plotly_not_matplotlib=True)
+        apply_figure_settings(fig, width_factor=1/3, height_factor=1/4, plotly_not_matplotlib=True)
 
         # For paper
         if plot_3d:

@@ -238,6 +238,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
                                              fig=None, ax=None, title=None, include_neuron_in_title=True, xlim=None,
+                                             show_title=False,
                                              color=None, z_score=False, fig_kwargs=None, legend=False, i_figure=3,
                                              DEBUG=False):
         if fig_kwargs is None:
@@ -275,7 +276,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines, False,
                                                      is_second_plot=is_second_plot, ax=ax,
                                                      color=color, label=neuron_name)
-        if 'residual' in trigger_type or 'rectified' in trigger_type:
+        if 'rectified_rev' in trigger_type:
+            behavior_shading_type = 'both'
+        elif 'rectified_fwd' in trigger_type:
             behavior_shading_type = None
         elif 'rev' in trigger_type:
             behavior_shading_type = 'rev'
@@ -293,14 +296,17 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             plt.ylabel("Amplitude (z-scored)")
         else:
             plt.ylabel("dR/R50")
-        if title is None:
-            title = self.get_title_from_trigger_type(trigger_type)
-            plt.title(f"{neuron_name} (n={len(neuron_names)}) {title}")
-        else:
-            if include_neuron_in_title:
-                plt.title(f"{neuron_name} {title}")
+        if show_title:
+            if title is None:
+                title = self.get_title_from_trigger_type(trigger_type)
+                plt.title(f"{neuron_name} (n={len(neuron_names)}) {title}")
             else:
-                plt.title(title)
+                if include_neuron_in_title:
+                    plt.title(f"{neuron_name} {title}")
+                else:
+                    plt.title(title)
+        else:
+            plt.title("")
         plt.xlabel("Time (s)")
         if legend:
             plt.legend()
@@ -310,7 +316,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             if i_figure == 3:
                 fig_opt = dict(width_factor=0.5, height_factor=0.25)
             elif i_figure > 3:
-                fig_opt = dict(width_factor=0.25, height_factor=0.15)
+                if 'rectified' in trigger_type:
+                    fig_opt = dict(width_factor=0.35, height_factor=0.15)
+                else:
+                    fig_opt = dict(width_factor=0.25, height_factor=0.15)
             else:
                 raise NotImplementedError(f"i_figure={i_figure} not implemented")
             apply_figure_settings(fig, plotly_not_matplotlib=False, **fig_opt)
@@ -393,9 +402,10 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         return self.project.calc_paper_traces_global()
 
     def get_figure_opt(self):
-        return dict(dpi=300, figsize=(10/3, 10/2))
+        return dict(dpi=300, figsize=(10/3, 10/2), gridspec_kw={'wspace': 0.0, 'hspace': 0.0})
 
-    def plot_triple_traces(self, neuron_name, output_foldername=None, **kwargs):
+    def plot_triple_traces(self, neuron_name, title=False,
+                           output_foldername=None, **kwargs):
         """
         Plot the three traces (raw, global, residual) on the same plot.
         If output_foldername is not None, save the plot in that folder.
@@ -427,9 +437,11 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             # Original trace
             ax = axes[i]
             ax.plot(vals[0], color=vals[1])
-            ax.set_title(name)
+            if title:
+                ax.set_title(name)
             ax.set_ylabel("dR/R50")
             ax.set_xlim(xlim)
+            ax.autoscale(enable=True, axis='y')  # Scale to the actually visible data (leaving x as set)
             if ylim is None:
                 # If no given ylim, use the first trace's ylim
                 ylim = ax.get_ylim()
@@ -441,6 +453,9 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             else:
                 ax.set_xlabel("Time (s)")
             self.project.shade_axis_using_behavior(ax)
+
+        # Remove space between subplots
+        plt.subplots_adjust(hspace=0)
 
         apply_figure_settings(fig, width_factor=0.25, height_factor=0.3, plotly_not_matplotlib=False)
 

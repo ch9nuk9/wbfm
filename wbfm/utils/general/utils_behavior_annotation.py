@@ -1284,6 +1284,9 @@ def shade_triggered_average(ind_preceding, index_conversion=None,
         elif behavior_shading_type == 'rev':
             # If 'rev' triggered, the shading should go AFTER the line
             beh_vec[ind_preceding:] = BehaviorCodes.REV
+        elif behavior_shading_type == 'both':
+            # If 'both' triggered, the shading should go BEFORE and AFTER the line
+            beh_vec[:] = BehaviorCodes.REV
         else:
             raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
 
