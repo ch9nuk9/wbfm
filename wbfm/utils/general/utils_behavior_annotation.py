@@ -267,9 +267,14 @@ class BehaviorCodes(Flag):
     @classmethod
     def base_colormap(cls) -> List[str]:
         # See: https://plotly.com/python/discrete-color/
-        # return px.colors.qualitative.Set1_r
+        cmap = px.colors.qualitative.Set1_r.copy()
+        # Manually reorder some things to match better with prior work
+        cmap[0], cmap[1] = cmap[1], cmap[0]  # Blue REV and red FWD
+        cmap.pop(2)  # Remove purple because it's hard to distinguish from blue
+
+        # return px.colors.qualitative.Set1_r.copy()
         # cmap = px.colors.qualitative.Set2.copy()
-        cmap = px.colors.qualitative.Vivid_r.copy()
+        # cmap = px.colors.qualitative.Vivid_r.copy()
         # Move gray to the front
         # cmap.insert(0, cmap.pop(7))
         return cmap
