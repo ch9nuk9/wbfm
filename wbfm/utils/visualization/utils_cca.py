@@ -230,11 +230,11 @@ class CCAPlotter:
         df.index = self.df_traces.index
         fig = px.line(df)
         self.project_data.shade_axis_using_behavior(plotly_fig=fig)
-        fig.update_yaxes(title='Amplitude')
+        fig.update_yaxes(title='Amplitude', range=[-0.7, 1.2])
         fig.update_xaxes(title='Time (s)')
         if not show_legend:
             fig.update_layout(showlegend=False)
-        apply_figure_settings(fig, width_factor=1/3, height_factor=0.15, plotly_not_matplotlib=True)
+        apply_figure_settings(fig, width_factor=0.35, height_factor=0.15, plotly_not_matplotlib=True)
         fig.show()
 
         if output_folder is not None:
@@ -363,6 +363,14 @@ class CCAPlotter:
         # Transparent background
         apply_figure_settings(fig, width_factor=1/3, height_factor=1/4, plotly_not_matplotlib=True)
 
+        # Get base string to use for modes
+        if use_pca:
+            base_axis_title = 'PCA mode {}'
+        elif binary_behaviors:
+            base_axis_title = 'CCA mode {} (discrete)'
+        else:
+            base_axis_title = 'CCA mode {} (continuous)'
+
         # For paper
         if plot_3d:
             for axis in ['xaxis', 'yaxis', 'zaxis']:
@@ -375,8 +383,8 @@ class CCAPlotter:
             fig.update_xaxes(showticklabels=True, tickfont=dict(color="rgba(0,0,0,0)"))
 
             fig.update_layout(
-                xaxis=dict(showline=True, linecolor='black', title='Mode 1'),
-                yaxis=dict(showline=True, linecolor='black', title='Mode 2', side='left')
+                xaxis=dict(showline=True, linecolor='black', title=base_axis_title.format(1), side='bottom'),
+                yaxis=dict(showline=True, linecolor='black', title=base_axis_title.format(2), side='left')
             )
 
         if output_folder is not None:
@@ -431,7 +439,7 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, **kwarg
 
     opt_dict = {'PCA': dict(use_pca=True),
                 'CCA': dict(use_pca=False),
-                'CCA Binary': dict(use_pca=False, binary_behaviors=True)}
+                'CCA Discrete': dict(use_pca=False, binary_behaviors=True)}
 
     for name, p in tqdm(all_projects.items()):
         cca_plotter = CCAPlotter(p, **kwargs)
