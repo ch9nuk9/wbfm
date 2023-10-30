@@ -1234,8 +1234,11 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     fig1.update_yaxes(dict(showticklabels=False, showgrid=True), title="Neurons",
                       col=1, overwrite=True)
     fig1.update_coloraxes(cmin=0, cmax=1, colorbar=dict(
-        title=dict(text='dR/R50', **font_dict)
+        # thickness=10,
+        title=dict(text=r'ΔR / R₅₀', **font_dict)
+        # title=dict(text=r'$\frac{\Delta R}{R_{50}}$', **font_dict)
     ))
+    # fig1.update_traces(colorbar=dict(thickness=5))
 
     # Build figure 2: Ethogram with PCA modes
     num_ethogram_rows = 5 if include_speed_subplot else 4
@@ -1261,7 +1264,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
         for _i in range(num_before_adding_shapes, len(fig2.layout.shapes)):
             fig2.layout.shapes[_i]['yref'] = 'paper'
     fig2.update_layout(showlegend=False, autosize=False)#, **plotly_opt)
-    apply_figure_settings(fig2, width_factor=0.8, height_factor=0.15, plotly_not_matplotlib=True)
+    apply_figure_settings(fig2, width_factor=0.8, height_factor=0.2, plotly_not_matplotlib=True)
     # Remove ticks
     fig2.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig2.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
@@ -1269,7 +1272,8 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     fig2.update_xaxes(dict(showticklabels=False), row=1, overwrite=True)
 
     # Turn ticks on for speed, but decrease number of ticks because the size is too small
-    fig2.update_yaxes(dict(showticklabels=True, showgrid=True, nticks=3, zeroline=True, zerolinecolor='black'),
+    fig2.update_yaxes(dict(showticklabels=True, showgrid=True, griddash='dash', gridcolor='black'),
+                      range=[-0.22, 0.22], tickmode='array', tickvals=[-0.2, 0, 0.2],
                       row=5, overwrite=True)
     fig2.update_xaxes(dict(showticklabels=True, title='Time (seconds)'), row=num_ethogram_rows, col=1, overwrite=True, )
 
@@ -1277,10 +1281,10 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     # fig2.update_annotations(yshift=-19, xshift=-40)
 
     # Use the y axis as titles... but make them smaller
-    fig2.update_yaxes(dict(title=dict(text='PCA <br> modes', font=dict(size=12))), row=3, overwrite=True)
-    # fig2.update_yaxes(dict(title='PC1'), row=2, overwrite=True)
-    # fig2.update_yaxes(dict(title='PC2'), row=3, overwrite=True)
-    # fig2.update_yaxes(dict(title='PC3'), row=4, overwrite=True)
+    # fig2.update_yaxes(dict(title=dict(text='PCA <br> modes', font=dict(size=12))), row=3, overwrite=True)
+    fig2.update_yaxes(dict(title=dict(text='PC1', font=dict(size=12))), row=2, overwrite=True, tickangle=-90)
+    fig2.update_yaxes(dict(title=dict(text='PC2', font=dict(size=12))), row=3, overwrite=True, tickangle=-90)
+    fig2.update_yaxes(dict(title=dict(text='PC3', font=dict(size=12))), row=4, overwrite=True, tickangle=-90)
     fig2.update_yaxes(dict(title=dict(text='Speed <br> (mm/s)', font=dict(size=12))), row=5, overwrite=True)
 
     # For now, don't build the rest of the figures

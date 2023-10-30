@@ -207,7 +207,7 @@ class BehaviorCodes(Flag):
         if include_complex_states:
             states.extend([cls.FWD | cls.VENTRAL_TURN, cls.FWD | cls.DORSAL_TURN,
                            cls.REV | cls.VENTRAL_TURN, cls.REV | cls.DORSAL_TURN,
-                           cls.QUIESCENCE, cls.PAUSE, cls.SLOWING,])
+                           cls.QUIESCENCE])
         return states
 
     @classmethod
@@ -268,14 +268,18 @@ class BehaviorCodes(Flag):
     @classmethod
     def base_colormap(cls) -> List[str]:
         # See: https://plotly.com/python/discrete-color/
-        cmap = px.colors.qualitative.Set1.copy()
-        # Manually reorder some things to match better with prior work
-        cmap[0], cmap[1] = cmap[1], cmap[0]  # Blue REV and red FWD
-        cmap.pop(3)  # Remove purple because it's hard to distinguish from blue
+        # cmap = px.colors.qualitative.Set1.copy()
+        # # Manually reorder some things to match better with prior work
+        # cmap[0], cmap[1] = cmap[1], cmap[0]  # Blue REV and red FWD
+        # cmap[3], cmap[6] = cmap[6], cmap[3]  # Switch brown and purple
+        # cmap.pop(3)  # Remove purple because it's hard to distinguish from blue
 
         # return px.colors.qualitative.Set1_r.copy()
         # cmap = px.colors.qualitative.Set2.copy()
         # cmap = px.colors.qualitative.Vivid_r.copy()
+        # cmap = px.colors.qualitative.Dark2.copy()
+        cmap = px.colors.qualitative.Dark2.copy()
+        cmap[3], cmap[5] = cmap[5], cmap[3]  # Switch brown and purple
         # Move gray to the front
         # cmap.insert(0, cmap.pop(7))
         return cmap
