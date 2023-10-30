@@ -206,7 +206,8 @@ class BehaviorCodes(Flag):
         states = [cls.FWD, cls.REV, cls.SELF_COLLISION]
         if include_complex_states:
             states.extend([cls.FWD | cls.VENTRAL_TURN, cls.FWD | cls.DORSAL_TURN,
-                           cls.REV | cls.VENTRAL_TURN, cls.REV | cls.DORSAL_TURN])
+                           cls.REV | cls.VENTRAL_TURN, cls.REV | cls.DORSAL_TURN,
+                           cls.QUIESCENCE, cls.PAUSE, cls.SLOWING,])
         return states
 
     @classmethod
@@ -267,10 +268,10 @@ class BehaviorCodes(Flag):
     @classmethod
     def base_colormap(cls) -> List[str]:
         # See: https://plotly.com/python/discrete-color/
-        cmap = px.colors.qualitative.Set1_r.copy()
+        cmap = px.colors.qualitative.Set1.copy()
         # Manually reorder some things to match better with prior work
         cmap[0], cmap[1] = cmap[1], cmap[0]  # Blue REV and red FWD
-        cmap.pop(2)  # Remove purple because it's hard to distinguish from blue
+        cmap.pop(3)  # Remove purple because it's hard to distinguish from blue
 
         # return px.colors.qualitative.Set1_r.copy()
         # cmap = px.colors.qualitative.Set2.copy()
@@ -307,15 +308,17 @@ class BehaviorCodes(Flag):
                 # Same as REV by default
                 cls.REV | cls.VENTRAL_TURN: base_cmap[1],
                 cls.REV | cls.DORSAL_TURN: base_cmap[1],
+                cls.REV | cls.PAUSE: base_cmap[1],
                 cls.REV | cls.SELF_COLLISION: base_cmap[1],
                 cls.REV | cls.SELF_COLLISION | cls.DORSAL_TURN: base_cmap[1],
                 cls.REV | cls.SELF_COLLISION | cls.VENTRAL_TURN: base_cmap[1],
-                # Unclear
-                cls.QUIESCENCE: base_cmap[6],
-                cls.QUIESCENCE | cls.VENTRAL_TURN: base_cmap[6],
-                cls.QUIESCENCE | cls.DORSAL_TURN: base_cmap[6],
-                cls.SLOWING: base_cmap[6],
-                cls.SLOWING | cls.FWD: base_cmap[6],
+                # Unclear, but same as FWD by default
+                cls.QUIESCENCE: base_cmap[0],
+                cls.QUIESCENCE | cls.VENTRAL_TURN: base_cmap[0],
+                cls.QUIESCENCE | cls.DORSAL_TURN: base_cmap[0],
+                cls.PAUSE | cls.QUIESCENCE: base_cmap[0],
+                cls.SLOWING: base_cmap[0],
+                cls.SLOWING | cls.FWD: base_cmap[0],
                 }
         if include_turns:
             # Turns during FWD are differentiated, but not during REV
@@ -331,6 +334,9 @@ class BehaviorCodes(Flag):
             cmap[cls.REV | cls.DORSAL_TURN] = base_cmap[5]
         if include_quiescence:
             cmap[cls.QUIESCENCE] = base_cmap[6]
+            cmap[cls.QUIESCENCE | cls.VENTRAL_TURN] = base_cmap[6]
+            cmap[cls.QUIESCENCE | cls.DORSAL_TURN] = base_cmap[6]
+            cmap[cls.PAUSE | cls.QUIESCENCE] = base_cmap[6]
         if include_collision:
             cmap[cls.SELF_COLLISION] = base_cmap[7]
             cmap[cls.FWD | cls.SELF_COLLISION] = base_cmap[7]
