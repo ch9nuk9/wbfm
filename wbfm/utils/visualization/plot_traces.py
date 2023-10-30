@@ -1276,6 +1276,10 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
                       range=[-0.22, 0.22], tickmode='array', tickvals=[-0.2, 0, 0.2],
                       row=5, overwrite=True)
     fig2.update_xaxes(dict(showticklabels=True, title='Time (seconds)'), row=num_ethogram_rows, col=1, overwrite=True, )
+    # Remove black lines for all but bottom subplot
+    for i in range(1, num_ethogram_rows):
+        # fig2.update_yaxes(showline=False, row=i, overwrite=True)
+        fig2.update_xaxes(showline=False, row=i, overwrite=True)
 
     # Move the titles down
     # fig2.update_annotations(yshift=-19, xshift=-40)

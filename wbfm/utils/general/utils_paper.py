@@ -89,6 +89,13 @@ def apply_figure_settings(fig=None, width_factor=1, height_factor=1, plotly_not_
         fig.update_yaxes(showgrid=False, zeroline=False)
         # Remove margin
         fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+        # Add black lines on edges of plot (only left and bottom
+        fig.update_xaxes(showline=True,
+                         linewidth=1,
+                         linecolor='black')
+        fig.update_yaxes(showline=True,
+                         linewidth=1,
+                         linecolor='black')
     else:
         font_dict = figure_opt['matplotlib_font_opt']
         size_dict = figure_opt['matplotlib_opt']
