@@ -504,7 +504,6 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
     cmap.insert(0, px.colors.qualitative.Set1[-1])
     cmap.insert(4, green)  # If gfp is included, then it should be green and will be the 4th color
 
-
     # Actually plot
     if not include_gfp:
         print("Excluding gfp")
@@ -542,8 +541,13 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
                 fig.update_xaxes(title="", showticklabels=False, overwrite=True)
             else:
                 fig.update_xaxes(overwrite=True)
+            # Turn off most yaxis labels
+            if i != 1:
+                fig.update_yaxes(title="", overwrite=True)
+            else:
+                fig.update_yaxes(title="Autocovariance", overwrite=True)
         else:
-            # Turn off yaxis label on all but the first row
+            # Turn off most yaxis labels
             fig.update_yaxes(row=1, title="", overwrite=True)
             fig.update_yaxes(row=3, title="", overwrite=True)
 
@@ -552,6 +556,9 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
 
         # Turn off side-titles: https://plotly.com/python/facet-plots/#customizing-subplot-figure-titles
         fig.for_each_annotation(lambda a: a.update(text=""))
+
+        # Turn off legend title
+        fig.update_layout(legend_title_text='')
 
         # Decouple y axes to fully use space
         if not match_yaxes:
