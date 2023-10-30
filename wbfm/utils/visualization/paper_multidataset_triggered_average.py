@@ -295,7 +295,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         if z_score:
             plt.ylabel("Amplitude (z-scored)")
         else:
-            plt.ylabel("dR/R50")
+            plt.ylabel("r$\Delta R / R_{50}$")
         if show_title:
             if title is None:
                 title = self.get_title_from_trigger_type(trigger_type)
@@ -404,7 +404,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
     def get_figure_opt(self):
         return dict(dpi=300, figsize=(10/3, 10/2), gridspec_kw={'wspace': 0.0, 'hspace': 0.0})
 
-    def plot_triple_traces(self, neuron_name, title=False,
+    def plot_triple_traces(self, neuron_name, title=False, legend=False,
                            output_foldername=None, **kwargs):
         """
         Plot the three traces (raw, global, residual) on the same plot.
@@ -429,17 +429,19 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         ylim = kwargs.get('ylim', self.ylim)
 
         # Do all on one plot
-        trace_dict = {'Original trace': (df_traces[neuron_name], self.get_color_from_trigger_type('raw')),
+        trace_dict = {'Raw': (df_traces[neuron_name], self.get_color_from_trigger_type('raw')),
                       'Global': (df_traces_global[neuron_name], self.get_color_from_trigger_type('global')),
                       'Residual': (df_traces_residual[neuron_name], self.get_color_from_trigger_type('residual'))}
 
         for i, (name, vals) in enumerate(trace_dict.items()):
             # Original trace
             ax = axes[i]
-            ax.plot(vals[0], color=vals[1])
-            if title:
-                ax.set_title(name)
-            ax.set_ylabel("dR/R50")
+            ax.plot(vals[0], color=vals[1], label=name)
+            if title and i == 0:
+                ax.set_title(neuron_name)
+            if legend:
+                ax.legend(frameon=False)
+            ax.set_ylabel(r"$\Delta R / R_{50}$")
             ax.set_xlim(xlim)
             ax.autoscale(enable=True, axis='y')  # Scale to the actually visible data (leaving x as set)
             if ylim is None:
