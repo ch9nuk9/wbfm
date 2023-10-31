@@ -1,11 +1,16 @@
 """
 Designed to plot the triggered average of the paper's datasets.
 """
+import itertools
 import os
 from dataclasses import dataclass
+import random
 from typing import Dict, Optional
 
+import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
+from tqdm.auto import tqdm
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
 from wbfm.utils.general.utils_paper import apply_figure_settings
@@ -99,12 +104,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     dataset_clusterer_global_rev: ClusteredTriggeredAverages = None
     dataset_clusterer_global_fwd: ClusteredTriggeredAverages = None
     dataset_clusterer_residual: ClusteredTriggeredAverages = None
+    dataset_clusterer_residual_collision: ClusteredTriggeredAverages = None
 
     intermediates_raw_rev = None
     intermediates_raw_fwd = None
     intermediates_global_rev = None
     intermediates_global_fwd = None
     intermediates_residual = None
+    intermediates_collision = None
 
     # Use these to build rectified (single-state only) triggered averages
     # For now, only need the residual ones
@@ -206,6 +213,19 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         return trigger_mapping[trigger_type]
 
     def get_df_triggered_from_trigger_type(self, trigger_type):
+        """
+        Returns a precalculated dataframe of the form:
+        - Columns: Neuron names combined with the dataset name (e.g. 2022-11-23_worm9_BAGL)
+        - Rows: Time points
+
+        Parameters
+        ----------
+        trigger_type
+
+        Returns
+        -------
+
+        """
         df_mapping = {'raw_rev': self.intermediates_raw_rev,
                       'raw_fwd': self.intermediates_raw_fwd,
                       'global_rev': self.intermediates_global_rev,
@@ -232,6 +252,49 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         if trigger_type not in title_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(title_mapping.keys())}')
         return title_mapping[trigger_type]
+
+    def get_trace_difference(self, trigger_type, neuron0, neuron1, num_iters=100):
+        df = self.get_df_triggered_from_trigger_type(trigger_type)
+        names0 = [n for n in list(df.columns) if neuron0 in n]
+        names1 = [n for n in list(df.columns) if neuron1 in n]
+        if len(names0) == 0 or len(names1) == 0:
+            raise ValueError(f'Neuron name {neuron0} or {neuron1} not found')
+
+        # Define the summary statistic (the mean squared difference, ignoring nan values)
+        def norm(x, y):
+            return (x - y).pow(2).mean()
+
+        # There are two lists of neurons, and we want to choose random pairs
+        samples = [(random.choice(names0), random.choice(names1)) for _ in range(num_iters)]
+        all_norms = []
+        for name0, name1 in samples:
+            trace0 = df[name0]
+            trace1 = df[name1]
+            all_norms.append(norm(trace0, trace1))
+        return all_norms
+
+    def get_trace_difference_multiple_neurons(self, trigger_type, list_of_neurons):
+        """
+        Use get_trace_difference for pairs of neurons, generated as all combinations of the neurons in list_of_neurons.
+
+        Parameters
+        ----------
+        trigger_type
+        list_of_neurons
+
+        Returns
+        -------
+
+        """
+        neuron_combinations = list(itertools.combinations(list_of_neurons, 2))
+        dict_norms = {}
+        for neuron0, neuron1 in tqdm(neuron_combinations, leave=False):
+            key = f"{neuron0}-{neuron1}"
+            dict_norms[key] = self.get_trace_difference(trigger_type, neuron0, neuron1)
+
+        df_norms = pd.DataFrame(dict_norms)
+        return df_norms
+
 
     def get_fig_opt(self, height_factor=1, width_factor=1):
         return dict(dpi=300, figsize=(width_factor*10/3, height_factor*10/(2*3)))
