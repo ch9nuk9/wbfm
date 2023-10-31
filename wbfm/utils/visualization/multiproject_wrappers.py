@@ -414,8 +414,9 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
     -------
 
     """
-    base_marker_size = 0.1
+    base_marker_size = 0.05
     big_marker_size = 0.5
+    str_other_neurons = 'Other neurons'
 
     all_proj = MultiProjectWrapper(all_projects=all_projects_gcamp)
     all_proj_gfp = MultiProjectWrapper(all_projects=all_projects_gfp)
@@ -472,25 +473,28 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
     df_summary['neuron_name_simple'] = [name[:-1] if name.endswith(('L', 'R')) else name for name in
                                         df_summary['neuron_name']]
     df_summary['vb02'] = ['VB02' in name for name in df_summary['neuron_name']]
-    df_summary['Neuron ID'] = [name if 'VB02' in name or 'BAG' in name else 'other' for name in
+    df_summary['Neuron ID'] = [name if 'VB02' in name or 'BAG' in name else str_other_neurons for name in
                                df_summary['neuron_name']]
-    df_summary['Simple Neuron ID'] = [name if 'VB02' in name or 'BAG' in name else 'other' for name in
+    df_summary['Simple Neuron ID'] = [name if 'VB02' in name or 'BAG' in name else str_other_neurons for name in
                                       df_summary['neuron_name_simple']]
     df_summary['multiplex_size'] = [big_marker_size if 'VB02' in name or 'BAG' in name else base_marker_size for name in df_summary['neuron_name']]
 
+    # Build the rows that will be in the final plot
     col_name = 'Genotype and datatype'
     color_col = []
     for i, row in df_summary.iterrows():
-        if row['Neuron ID'] == 'other':
-            color_col.append('other')
+        # Put all of the other neurons in the background, regardless of data type
+        if row['Neuron ID'] == str_other_neurons:
+            color_col.append('Other neurons')
+        # These neurons will actually have color
         elif row['Type of data'] == 'gcamp':
-            color_col.append('gcamp')
+            color_col.append('Raw')
         elif row['Type of data'] == 'global gcamp':
-            color_col.append('global gcamp')
+            color_col.append('Global')
         elif row['Type of data'] == 'residual gcamp':
-            color_col.append('residual gcamp')
+            color_col.append('Residual')
         elif row['Type of data'] == 'gfp':
-            color_col.append('gfp')
+            color_col.append('GFP')
     df_summary[col_name] = color_col
     # Final calculation
     # significance_line = df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'acv']

@@ -237,7 +237,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         return dict(dpi=300, figsize=(width_factor*10/3, height_factor*10/(2*3)))
 
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
-                                             fig=None, ax=None, title=None, include_neuron_in_title=False, xlim=None,
+                                             fig=None, ax=None, title=None, include_neuron_in_title=False,
+                                             xlim=None, ylim=None,
                                              show_title=False,
                                              color=None, z_score=False, fig_kwargs=None, legend=False, i_figure=3,
                                              DEBUG=False):
@@ -292,6 +293,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                     behavior_shading_type=behavior_shading_type, ax=ax)
         if xlim is not None:
             ax.set_xlim(xlim)
+        if ylim is not None:
+            ax.set_ylim(ylim)
         if z_score:
             plt.ylabel("Amplitude (z-scored)")
         else:
