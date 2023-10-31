@@ -274,9 +274,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         min_lines = min(3, len(neuron_names))
         if DEBUG:
             print(df_subset)
-        plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines, False,
+        plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines, show_individual_lines=False,
                                                      is_second_plot=is_second_plot, ax=ax,
-                                                     color=color, label=neuron_name)
+                                                     color=color, label=neuron_name, show_horizontal_line=False)
         if 'rectified_rev' in trigger_type:
             behavior_shading_type = 'both'
         elif 'rectified_fwd' in trigger_type:

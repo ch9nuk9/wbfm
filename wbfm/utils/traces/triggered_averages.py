@@ -33,9 +33,9 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 
 def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines=0,
-                                                 show_individual_lines=False, is_second_plot=False, ax=None, xlim=None, z_score=False,
-                                                 show_shading=True,
-                                                 **kwargs):
+                                                 show_individual_lines=False, is_second_plot=False, ax=None, xlim=None,
+                                                 show_horizontal_line=True,
+                                                 z_score=False, show_shading=True, **kwargs):
     """
     Plot a triggered average from a matrix of traces
 
@@ -84,7 +84,8 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         else:
             ax.set_ylim(np.nanmin(triggered_avg), np.nanmax(triggered_avg))
         # Reference points
-        ax.axhline(raw_trace_mean, c='black', ls='--')
+        if show_horizontal_line:
+            ax.axhline(raw_trace_mean, c='black', ls='--')
         if isinstance(triggered_avg, pd.Series):
             x_for_vertical_line = 0  # Assume the series has been properly indexed
         else:
