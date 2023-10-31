@@ -482,19 +482,14 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
     # Build the rows that will be in the final plot
     col_name = 'Genotype and datatype'
     color_col = []
+    color_name_mapping = {'gcamp': 'Raw', 'global gcamp': 'Global', 'residual gcamp': 'Residual', 'gfp': 'GFP'}
     for i, row in df_summary.iterrows():
         # Put all of the other neurons in the background, regardless of data type
         if row['Neuron ID'] == str_other_neurons:
             color_col.append('Other neurons')
         # These neurons will actually have color
-        elif row['Type of data'] == 'gcamp':
-            color_col.append('Raw')
-        elif row['Type of data'] == 'global gcamp':
-            color_col.append('Global')
-        elif row['Type of data'] == 'residual gcamp':
-            color_col.append('Residual')
-        elif row['Type of data'] == 'gfp':
-            color_col.append('GFP')
+        else:
+            color_col.append(color_name_mapping[row['Type of data']])
     df_summary[col_name] = color_col
     # Final calculation
     # significance_line = df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'acv']
@@ -523,6 +518,13 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
                              color='Genotype and datatype', color_discrete_sequence=cmap_copy, **scatter_opt)
             cmap_copy.pop(1)
             all_figs.append(fig)
+            # Manually change the legend of the "other" category to make sense
+            # Also add spaces to the end so the lengths of each subplot are the same
+            legend_suffix = ', Other neurons'
+            target_length = max(map(len, color_name_mapping.values())) + len(legend_suffix)
+            new_legend = f'{color_name_mapping[c]}{legend_suffix}'
+            new_legend = new_legend.ljust(target_length + 2)
+            fig.data[0].name = new_legend
     else:
         fig = px.scatter(df_summary, facet_row='Type of data',
                          color_discrete_sequence=cmap,  range_y=[0.00005, 0.2], **scatter_opt)
