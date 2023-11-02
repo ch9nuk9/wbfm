@@ -250,8 +250,32 @@ class CCAPlotter:
         fig.write_image(fname)
 
     def plot(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, use_X_r=True, sparse_tau=None,
-             plot_3d=True, show_legend=True, output_folder=None, show_grid=False, DEBUG=False,
-             ethogram_cmap_kwargs=None, beh_annotation_kwargs=None):
+             plot_3d=True, show_legend=True, output_folder=None, show_grid=False, use_paper_options=True,
+             color_by_discrete_behavior=True, color_by_continuous_behavior=None,
+             DEBUG=False, ethogram_cmap_kwargs=None, beh_annotation_kwargs=None):
+        """
+        Plot modes with lots of options, colored by discrete behaviors
+
+        Parameters
+        ----------
+        binary_behaviors
+        modes_to_plot
+        use_pca
+        use_X_r
+        sparse_tau
+        plot_3d
+        show_legend
+        output_folder
+        show_grid
+        use_paper_options
+        DEBUG
+        ethogram_cmap_kwargs
+        beh_annotation_kwargs
+
+        Returns
+        -------
+
+        """
         if ethogram_cmap_kwargs is None:
             ethogram_cmap_kwargs = {}
         if beh_annotation_kwargs is None:
@@ -269,38 +293,49 @@ class CCAPlotter:
             else:
                 df_latents = pd.DataFrame(Y_r)
 
-        # Color the lines by behavior annotation (not necessarily the same as the behavior used for CCA)
-        beh_annotation = dict(fluorescence_fps=True, reset_index=True, include_collision=False, include_turns=True,
-                              include_head_cast=False, include_pause=False, include_slowing=False)
-        beh_annotation.update(beh_annotation_kwargs)
-        state_vec = self.project_data.worm_posture_class.beh_annotation(**beh_annotation)
-        df_latents['state'] = state_vec.values  # Ignore the index here, since it may not be physical time
-        ethogram_cmap_kwargs.setdefault('include_turns', beh_annotation['include_turns'])
-        ethogram_cmap_kwargs.setdefault('include_quiescence', beh_annotation['include_pause'])
-        ethogram_cmap_kwargs.setdefault('include_collision', beh_annotation['include_collision'])
-        ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_kwargs)
-        df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_latents, modes_to_plot, 'state')
-        state_codes = df_latents['state'].unique()
+        # Need these variables even if continuous coloring is used
+        col_names, df_out, ethogram_cmap, state_codes = self._build_discrete_behavior_dataframe(
+            df_latents,
+            modes_to_plot,
+            beh_annotation_kwargs,
+            ethogram_cmap_kwargs
+        )
 
-        if DEBUG:
-            print(state_codes, ethogram_cmap, ethogram_cmap_kwargs)
 
-        # Loop over behaviorally-colored short segments and plot
-        phase_plot_list = []
-        for i, state_code in enumerate(state_codes):
+        if color_by_discrete_behavior:
+            phase_plot_list = []
+            # Loop over behaviorally-colored short segments and plot
+            for i, state_code in enumerate(state_codes):
+                scatter_opt = dict(mode='lines', name=state_code.full_name,
+                                   line=dict(color=ethogram_cmap.get(state_code, None), width=4))
+                if plot_3d:
+                    phase_plot_list.append(
+                        go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]],
+                                     **scatter_opt))
+                else:
+                    phase_plot_list.append(
+                        go.Scatter(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]],
+                                   **scatter_opt))
+
+            # Need to manually add the list of traces instead of plotly express
+            fig = go.Figure(layout=dict(height=800, width=1000))
+            fig.add_traces(phase_plot_list)
+        elif color_by_continuous_behavior is not None:
+            # Get the behavior to use as coloring, and plot it using go.Scatter
+            beh_color = self.project_data.worm_posture_class.calc_behavior_from_alias(color_by_continuous_behavior)
+            df_latents['color'] = beh_color.values
+            # If I do a plotly line, it can only do discrete colormaps
             if plot_3d:
-                phase_plot_list.append(
-                    go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]],
-                                 mode='lines', name=state_code.full_name,
-                                 line=dict(color=ethogram_cmap.get(state_code, None), width=4)))
+                # phase_plot_list = [go.Line(x=df_latents[0], y=df_latents[1], z=df_latents[2],
+                #                                 mode='lines', marker=dict(color=df_latents['color']))]
+                fig = px.scatter(df_latents, x=0, y=1, color='color')
             else:
-                phase_plot_list.append(
-                    go.Scatter(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]],
-                               mode='lines', name=state_code.full_name,
-                               line=dict(color=ethogram_cmap.get(state_code, None), width=4)))
+                # phase_plot_list = [go.Line(x=df_latents[0], y=df_latents[1],
+                #                               mode='lines', marker=dict(color=df_latents['color']))]
+                fig = px.scatter_3d(df_latents, x=0, y=1, z=2, color='color')
 
-        fig = go.Figure(layout=dict(height=800, width=1000))
-        fig.add_traces(phase_plot_list)
+        else:
+            raise NotImplementedError('Must pass color_by_continuous_behavior or set color_by_discrete_behavior=True')
 
         # Transparent background; needed for 3d plots
         if plot_3d:
@@ -361,7 +396,8 @@ class CCAPlotter:
             # fig.update_traces(cliponaxis=False)
 
         # Transparent background
-        apply_figure_settings(fig, width_factor=1/3, height_factor=1/4, plotly_not_matplotlib=True)
+        if use_paper_options:
+            apply_figure_settings(fig, width_factor=1/3, height_factor=1/4, plotly_not_matplotlib=True)
 
         # Get base string to use for modes
         if use_pca:
@@ -395,6 +431,21 @@ class CCAPlotter:
 
         fig.show()
         return fig
+
+    def _build_discrete_behavior_dataframe(self, df_latents, modes_to_plot, beh_annotation_kwargs, ethogram_cmap_kwargs):
+        # Color the lines by behavior annotation (not necessarily the same as the behavior used for CCA)
+        beh_annotation = dict(fluorescence_fps=True, reset_index=True, include_collision=False, include_turns=True,
+                              include_head_cast=False, include_pause=False, include_slowing=False)
+        beh_annotation.update(beh_annotation_kwargs)
+        state_vec = self.project_data.worm_posture_class.beh_annotation(**beh_annotation)
+        df_latents['state'] = state_vec.values  # Ignore the index here, since it may not be physical time
+        ethogram_cmap_kwargs.setdefault('include_turns', beh_annotation['include_turns'])
+        ethogram_cmap_kwargs.setdefault('include_quiescence', beh_annotation['include_pause'])
+        ethogram_cmap_kwargs.setdefault('include_collision', beh_annotation['include_collision'])
+        ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_kwargs)
+        df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_latents, modes_to_plot, 'state')
+        state_codes = df_latents['state'].unique()
+        return col_names, df_out, ethogram_cmap, state_codes
 
     def _get_fig_filename(self, binary_behaviors, plot_3d, use_pca, single_mode):
         # Build name based on options used

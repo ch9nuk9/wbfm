@@ -639,7 +639,7 @@ class WormFullVideoPosture:
 
         if behavior_alias == 'raw_annotations':
             y = self.beh_annotation(**kwargs)
-        elif behavior_alias == 'signed_stage_speed':
+        elif behavior_alias == 'signed_stage_speed' or behavior_alias == 'speed':
             y = self.worm_speed(**kwargs, signed=True)
         # More complex speeds
         elif behavior_alias == 'abs_stage_speed':
