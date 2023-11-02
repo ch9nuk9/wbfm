@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
 from wbfm.utils.general.utils_paper import apply_figure_settings
+from wbfm.utils.projects.utils_filenames import get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
@@ -251,7 +252,7 @@ class CCAPlotter:
 
     def plot(self, binary_behaviors=False, modes_to_plot=None, use_pca=False, use_X_r=True, sparse_tau=None,
              plot_3d=True, show_legend=True, output_folder=None, show_grid=False, use_paper_options=True,
-             color_by_discrete_behavior=True, color_by_continuous_behavior=None,
+             color_by_discrete_behavior=True, color_by_continuous_behavior=None, overwrite_file=True,
              DEBUG=False, ethogram_cmap_kwargs=None, beh_annotation_kwargs=None):
         """
         Plot modes with lots of options, colored by discrete behaviors
@@ -325,14 +326,12 @@ class CCAPlotter:
             beh_color = self.project_data.worm_posture_class.calc_behavior_from_alias(color_by_continuous_behavior)
             df_latents['color'] = beh_color.values
             # If I do a plotly line, it can only do discrete colormaps
+            scatter_opt = dict(title=f'Coloring by {color_by_continuous_behavior}', color='color')
+
             if plot_3d:
-                # phase_plot_list = [go.Line(x=df_latents[0], y=df_latents[1], z=df_latents[2],
-                #                                 mode='lines', marker=dict(color=df_latents['color']))]
-                fig = px.scatter(df_latents, x=0, y=1, color='color')
+                fig = px.scatter(df_latents, x=0, y=1, **scatter_opt)
             else:
-                # phase_plot_list = [go.Line(x=df_latents[0], y=df_latents[1],
-                #                               mode='lines', marker=dict(color=df_latents['color']))]
-                fig = px.scatter_3d(df_latents, x=0, y=1, z=2, color='color')
+                fig = px.scatter_3d(df_latents, x=0, y=1, z=2, **scatter_opt)
 
         else:
             raise NotImplementedError('Must pass color_by_continuous_behavior or set color_by_discrete_behavior=True')
@@ -426,6 +425,9 @@ class CCAPlotter:
         if output_folder is not None:
             fname = self._get_fig_filename(binary_behaviors, plot_3d, use_pca, single_mode=False)
             fname = os.path.join(output_folder, fname)
+
+            if not overwrite_file:
+                fname = get_sequential_filename(fname, verbose=0)
 
             self._save_plotly_all_formats(fig, fname)
 
