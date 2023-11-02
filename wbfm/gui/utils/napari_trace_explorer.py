@@ -1242,7 +1242,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             del self.time_line
         time_line_options = self.calculate_time_line_options()
         self.logger.debug(f"Initializing subplot post clear with time line: {time_line_options}")
-        self.time_line = self.static_ax.axvline(**time_line_options)
+        try:
+            self.time_line = self.static_ax.axvline(**time_line_options)
+        except ValueError as e:
+            self.logger.warning(f"Error creating time line: {e}; creating it anyway")
+            # Use dummy y values; somehow this crash is related to being unable to set the y values
+            # Something about an un-invertable matrix
+            time_line_options['ymin'] = 0
+            time_line_options['ymin'] = 1
+            self.time_line = self.static_ax.axvline(**time_line_options)
 
         # Try to preserve the xlimits
         self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
