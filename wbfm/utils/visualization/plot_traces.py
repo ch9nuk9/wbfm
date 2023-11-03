@@ -401,6 +401,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   ax_plot_func: Optional[Union[callable, List[callable]]] = None,
                                   fig_opt=None):
     """
+    Makes a grid plot from callables. Designed to plot either raw time series, or a function that processes time series
+    and returns another time series (get_data_func or ax_plot_func)
 
     Parameters
     ----------
