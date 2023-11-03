@@ -399,7 +399,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
                                   sort_using_shade_value=False,
                                   sort_without_shading=False,
                                   ax_plot_func: Optional[Union[callable, List[callable]]] = None,
-                                  fig_opt=None):
+                                  fig_opt=None,
+                                  **plot_kwargs):
     """
 
     Parameters
@@ -412,13 +413,15 @@ def make_grid_plot_from_callables(get_data_func: callable,
     shade_plot_kwargs: kwargs to pass to shade_plot_func
     ax_plot_func: signature: (t, y, ax, name, **kwargs) -> None [should plot something on the given axis]
     share_y_axis: whether to share the y axis between all subplots
+    logger: logger object (optional)
     num_columns: number of columns in the grid
     twinx_when_reusing_figure: whether to plot the second trace on its own xaxis, or keep the same
     sort_using_shade_value: whether to sort the neurons based on the background_shading_value_func
     sort_without_shading: whether to sort the neurons based on the background_shading_value_func, but not shade
     fig: matplotlib figure object to use
     fig_opt: kwargs to pass to plt.subplots. Only used if fig is None
-    logger: logger object (optional)
+    plot_kwargs: kwargs to pass as part of ax_opt to _ax_plot_func(), e.g. alpha 
+    
 
     Example:
     get_data_func = lambda neuron_name: project_data.calculate_traces(neuron_name=neuron_name, **options)
@@ -428,6 +431,8 @@ def make_grid_plot_from_callables(get_data_func: callable,
     -------
 
     """
+    
+    
     if fig_opt is None:
         fig_opt = {}
     if shade_plot_kwargs is None:
@@ -493,7 +498,7 @@ def make_grid_plot_from_callables(get_data_func: callable,
         ax = fig.axes[i]
         if twinx_when_reusing_figure and not new_fig:
             ax = ax.twinx().twiny()
-            ax_opt = dict(color='tab:orange')
+            ax_opt = dict(color='tab:orange', **plot_kwargs)
         else:
             ax_opt = dict()
         t, y = yt
