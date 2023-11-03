@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly.express as px
 
 from wbfm.utils.tracklets.postprocess_tracking import OutlierRemoval
 from wbfm.utils.utils_cache import cache_to_disk_class
@@ -26,6 +27,24 @@ def paper_trace_settings():
                rename_neurons_using_manual_ids=True,
                manual_id_confidence_threshold=0)
     return opt
+
+
+def plotly_paper_color_discrete_map():
+    """
+    To be used with the color_discrete_map argument of plotly.express functions
+
+    Parameters
+    ----------
+    plotly_not_matplotlib
+
+    Returns
+    -------
+
+    """
+    base_cmap = px.colors.qualitative.D3
+    cmap_dict = {'gcamp': base_cmap[0], 'immob': base_cmap[1], 'gfp': base_cmap[2],
+                 'global': base_cmap[3], 'residual': base_cmap[4]}
+    return cmap_dict
 
 
 # Basic settings based on the physical dimensions of the paper
@@ -75,10 +94,11 @@ def apply_figure_settings(fig=None, width_factor=1, height_factor=1, plotly_not_
     -------
 
     """
-    if fig is None and not plotly_not_matplotlib:
-        fig = plt.gcf()
-    else:
-        raise NotImplementedError("Only matplotlib is supported if the figure is not directly passed for now")
+    if fig is None:
+        if not plotly_not_matplotlib:
+            fig = plt.gcf()
+        else:
+            raise NotImplementedError("Only matplotlib is supported if the figure is not directly passed for now")
     figure_opt = paper_figure_page_settings(width_factor=width_factor, height_factor=height_factor)
 
     if plotly_not_matplotlib:
