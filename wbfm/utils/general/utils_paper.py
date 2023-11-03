@@ -66,15 +66,19 @@ def apply_figure_settings(fig=None, width_factor=1, height_factor=1, plotly_not_
 
     Parameters
     ----------
-    fig
-    i_figure
+    fig - Figure to modify. If None, will use plt.gcf(), which assumes that the figure is the current matplotlib figure
+    width_factor - Fraction of an A4 page to use (width)
+    height_factor - Fraction of an A4 page to use (height)
+    plotly_not_matplotlib - If True, will modify the figure using plotly syntax. Otherwise, will use matplotlib syntax
 
     Returns
     -------
 
     """
-    if fig is None:
+    if fig is None and not plotly_not_matplotlib:
         fig = plt.gcf()
+    else:
+        raise NotImplementedError("Only matplotlib is supported if the figure is not directly passed for now")
     figure_opt = paper_figure_page_settings(width_factor=width_factor, height_factor=height_factor)
 
     if plotly_not_matplotlib:
