@@ -211,16 +211,25 @@ class DetectedNeurons:
 
     def overwrite_original_detection_file(self):
         backup_fname = Path(self.detection_fname).with_name("backup_metadata.pickle")
-        if not backup_fname.exists():
-            shutil.copy(self.detection_fname, backup_fname)
-        else:
-            # Assume the backup was already copied
-            pass
-        logging.warning(f"Overwriting original file; backup saved at {backup_fname}")
-        with open(self.detection_fname, 'wb') as f:
-            # Note: dict of dataframes
-            pickle.dump(self._segmentation_metadata, f)
+        try:
+            if not backup_fname.exists():
+                shutil.copy(self.detection_fname, backup_fname)
+            else:
+                # Assume the backup was already copied
+                pass
+        except (PermissionError, OSError):
+            logging.warning("Could not create backup copy, will still attempt to overwrite original file")
 
+        try:
+            with open(self.detection_fname, 'wb') as f:
+                # Note: dict of dataframes
+                pickle.dump(self._segmentation_metadata, f)
+            logging.warning(f"Overwriting original file; backup saved at {backup_fname}")
+        except (PermissionError, OSError) as e:
+            logging.warning("Could not overwrite original file; if you want to save changes to segmentation, "
+                            "you must have permissions. Original error: "
+                            "\n" + str(e))
+            return False
         return True
 
     def detect_neurons_from_file(self, i_volume: int, numpy_not_list=True) -> np.ndarray:
