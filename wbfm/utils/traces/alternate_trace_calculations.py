@@ -84,7 +84,7 @@ def top_percentage(project_data, pixel_values_dict_red, pixel_values_dict_green,
 
 def save_alternate_trace_dataframes(project_data, percentage_list=None):
     """
-    Uses histograms of pixels to extract an alternate method of calculating traces
+    Uses histograms of pixels to extract an pipeline_alternate method of calculating traces
 
     Uses a constant number of pixels across time (different per neuron)
 

@@ -130,7 +130,7 @@ class NeuronToUnivariateEncoding(NeuronEncodingBase):
     cv_factory: callable = KFold
     estimator: callable = Ridge
 
-    # Optional alternate method for the target variable, instead of calculating it from a project
+    # Optional pipeline_alternate method for the target variable, instead of calculating it from a project
     df_of_behaviors: pd.DataFrame = None
 
     # Results of the fits

@@ -383,7 +383,7 @@ class RegisteredReferenceFrames:
     pairwise_matches: dict = None
     pairwise_conf: dict = None
 
-    # More detailed intermediates and alternate matchings
+    # More detailed intermediates and pipeline_alternate matchings
     feature_matches: dict = None
     bipartite_matches: list = None
 
