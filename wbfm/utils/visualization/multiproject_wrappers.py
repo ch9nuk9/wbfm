@@ -400,7 +400,7 @@ def get_all_variance_explained(all_projects_gcamp, all_projects_gfp, all_project
 
 
 def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=True, include_legend=True,
-                            match_yaxes=True, loop_not_facet_row=False,
+                            match_yaxes=True, loop_not_facet_row=False, significance_line_at_95=True,
                             lag=1, output_folder=None, **kwargs):
     """
     Calculates the autocovariance of all neural traces, and plots a 4-panel figure
@@ -492,8 +492,10 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
             color_col.append(color_name_mapping[row['Type of data']])
     df_summary[col_name] = color_col
     # Final calculation
-    # significance_line = df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'acv']
-    significance_line = df_summary.groupby('Type of data').quantile(0.5, numeric_only=True).at['gfp', 'acv']
+    if significance_line_at_95:
+        significance_line = df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'acv']
+    else:
+        significance_line = df_summary.groupby('Type of data').quantile(0.5, numeric_only=True).at['gfp', 'acv']
     df_summary['Significant'] = df_summary['acv'] > significance_line
 
     # Use D3 with the first gray, but skip orange and green (used for immobilized and gfp)
@@ -516,6 +518,7 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
         for c in categories:
             fig = px.scatter(df_summary[df_summary['Type of data'] == c],
                              color='Genotype and datatype', color_discrete_sequence=cmap_copy, **scatter_opt)
+            fig.update_yaxes({'tickformat': '.0e'})
             cmap_copy.pop(1)
             all_figs.append(fig)
             # Manually change the legend of the "other" category to make sense
@@ -570,7 +573,7 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
         if not match_yaxes:
             fig.update_yaxes(matches=None)
 
-        height_factor = 0.5 / len(all_figs)
+        height_factor = 0.6 / len(all_figs)
         apply_figure_settings(fig, width_factor=1.0, height_factor=height_factor, plotly_not_matplotlib=True)
 
         if output_folder is not None:
