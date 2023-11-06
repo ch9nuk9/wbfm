@@ -516,9 +516,18 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
         cmap_copy = cmap.copy()
         all_figs = []
         for c in categories:
-            fig = px.scatter(df_summary[df_summary['Type of data'] == c],
+            df_subset = df_summary[df_summary['Type of data'] == c]
+            fig = px.scatter(df_subset,
                              color='Genotype and datatype', color_discrete_sequence=cmap_copy, **scatter_opt)
-            fig.update_yaxes({'tickformat': '.0e'})
+            # Create custom ticks for the y axis: logarithmic, but only on even powers of 10
+            min_val_power_10 = np.floor(np.log10(df_subset['acv'].min()))
+            max_val_power_10 = np.ceil(np.log10(df_subset['acv'].max()))
+            # Get ticks, but not more than 3
+            power_delta = max_val_power_10 - min_val_power_10
+            num_to_skip = power_delta // 3
+            yticks = [10 ** i for i in range(int(min_val_power_10), int(max_val_power_10) + 1) if i % num_to_skip == 0]
+            fig.update_yaxes(tickvals=yticks, tickformat='.0e', tickmode='array')
+            # fig.update_yaxes(minor=dict(nticks=0))  # Doesn't work
             cmap_copy.pop(1)
             all_figs.append(fig)
             # Manually change the legend of the "other" category to make sense
@@ -554,7 +563,7 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
             if i != 1:
                 fig.update_yaxes(title="", overwrite=True)
             else:
-                fig.update_yaxes(title="Autocovariance", overwrite=True)
+                fig.update_yaxes(title="log(autocovariance)", overwrite=True)
         else:
             # Turn off most yaxis labels
             fig.update_yaxes(row=1, title="", overwrite=True)
