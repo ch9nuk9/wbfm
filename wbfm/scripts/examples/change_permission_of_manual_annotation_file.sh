@@ -17,7 +17,7 @@ subfolders=("$parent_dir"/*/)
 echo "Found ${#subfolders[@]} subfolders"
 
 # Iterate through top-level subfolders and apply permissions
-for subfolder in subfolders[@]; do
+for subfolder in "${subfolders[@]}"; do
     target_dir="$subfolder$folder_path"
     if [ -d "$target_dir" ]; then
         chmod -R g+w,o+rw "$target_dir"
