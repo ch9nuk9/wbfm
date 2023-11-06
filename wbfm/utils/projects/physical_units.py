@@ -14,7 +14,7 @@ class PhysicalUnitConversion:
     leifer_um_per_unit: float = 84
 
     volumes_per_second: float = None
-    exposure_time: int = 12
+    exposure_time: int = 12  # Only used if volumes_per_second is not specified
 
     num_z_slices: int = None
 
@@ -97,18 +97,27 @@ class PhysicalUnitConversion:
         return xyz_in_zimmer
 
     @staticmethod
-    def load_from_config(project_cfg):
+    def load_from_config(project_cfg, DEBUG=False):
 
         from wbfm.utils.general.postures.centerline_classes import get_behavior_fluorescence_fps_conversion
         if 'physical_units' in project_cfg.config:
+            if DEBUG:
+                print("Using physical unit conversions from project config")
             # Main units
-            opt = project_cfg.config['physical_units']
+            opt = project_cfg.config['physical_units'].copy()
             if 'volumes_per_second' not in opt:
                 project_cfg.logger.debug("Using hard coded camera fps; this depends on the exposure time")
-                camera_fps = opt.get('1000', 1000)
+                camera_fps = opt.get('camera_fps', 1000)
                 exposure_time = opt.get('exposure_time', 12)
                 frames_per_volume = get_behavior_fluorescence_fps_conversion(project_cfg)
                 opt['volumes_per_second'] = camera_fps / exposure_time / frames_per_volume
+                if DEBUG:
+                    print(f"Calculated volumes_per_second: {opt['volumes_per_second']} "
+                          f"from camera_fps: {camera_fps}, exposure_time: {exposure_time}, "
+                          f"frames_per_volume: {frames_per_volume}")
+            else:
+                if DEBUG:
+                    print(f"Using volumes_per_second: {opt['volumes_per_second']} from project config")
             # Additional dataset unit
             opt_dataset = project_cfg.config['dataset_params']
             if 'num_slices' in opt_dataset:

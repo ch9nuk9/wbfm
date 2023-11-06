@@ -1951,7 +1951,7 @@ def get_behavior_fluorescence_fps_conversion(project_config):
     was_flyback_saved = final_number_of_planes != raw_number_of_planes
     if not was_flyback_saved:
         # Example: 22 saved fluorescence planes correspond to 24 behavior frames
-        # UPDATE: as of August 2022, we remove 2 flyback planes
+        # UPDATE: as of September 2023, we remove 2 flyback planes
         raw_number_of_planes += 2
     return raw_number_of_planes
 
