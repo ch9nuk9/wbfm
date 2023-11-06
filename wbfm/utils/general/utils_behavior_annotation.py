@@ -1091,6 +1091,33 @@ def calc_slowing_from_speed(y, min_length):
 
 
 def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5, DEBUG=False):
+    """
+    From a time series, calculates the "rise", "high", "fall", and "low" states
+
+    Algorithm:
+    1. Find the peaks in the derivative
+    2. Find the peaks in the negative derivative
+    3. Assign the positive peak regions as "rise" and the negative peak regions as "fall"
+    4. Assign intermediate regions based on two passes:
+        - If it is after a rise and before a fall and the amplitude is > 0, it is "high"
+        - If it is after a fall and before a rise and the amplitude is < 0, it is "low"
+        - Otherwise it is "ambiguous" and assigned based on the mean amplitude (closer to previously assigned high or
+        low)
+
+    Parameters
+    ----------
+    y - pandas series (float)
+    min_length - int (default 5). Minimum length of a state to be considered valid
+    verbose
+    height - See scipy.signal.find_peaks
+    width - See scipy.signal.find_peaks
+    DEBUG - bool. If True, plots the derivative and the peaks
+
+    Returns
+    -------
+    A pandas series with the same index as y, with the states as strings:
+
+    """
     # Take derivative and standardize
     # Don't z score, because the baseline should be 0, not the mean
     dy = np.gradient(y)
