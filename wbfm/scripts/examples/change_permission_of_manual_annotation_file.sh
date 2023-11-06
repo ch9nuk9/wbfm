@@ -13,4 +13,4 @@ done
 folder_path="3-tracking/manual_annotation"
 
 # Use find to discover subfolders and apply chmod
-find "$parent_dir" -maxdepth 1 -mindepth 1 -type d -name "$folder_path" -exec chmod -R g+w,o+rw "{}" \;
+find "$parent_dir" -maxdepth 1 -mindepth 1 -type d -name -wholename "*/$folder_path" -exec chmod -R g+w,o+rw "{}" \;
