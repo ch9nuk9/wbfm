@@ -124,10 +124,66 @@ def reverse_distribution_statistics():
     return duration_dict
 
 
-def names_of_neurons_to_id():
+def names_of_neurons_to_id() -> pd.Series:
     fname = "/scratch/neurobiology/zimmer/wbfm/id_resources/neurons_to_id.csv"
     if Path(fname).exists():
         df = pd.read_csv(fname, header=None)
     else:
-        df = None
+        df = list_of_neurons_to_id()
     return df
+
+
+def list_of_neurons_to_id() -> pd.Series:
+    """See names_of_neurons_to_id for higher priority list"""
+    items = [
+        "AIBL",
+        "AIBR",
+        "ALA",
+        "AVAL",
+        "AVAR",
+        "AVBL",
+        "AVBR",
+        "AVEL",
+        "AVER",
+        "BAGL",
+        "BAGR",
+        "DA01",
+        "DB01",
+        "OLQDL",
+        "OLQDR",
+        "OLQVL",
+        "OLQVR",
+        "RIBL",
+        "RIBR",
+        "RID",
+        "RIML",
+        "RIMR",
+        "RIS",
+        "RIVL",
+        "RIVR",
+        "RMED",
+        "RMEL",
+        "RMER",
+        "RMEV",
+        "SIADL",
+        "SIADR",
+        "SIAVL",
+        "SIAVR",
+        "SMDDL",
+        "SMDDR",
+        "SMDVL",
+        "SMDVR",
+        "URADL",
+        "URADR",
+        "URAVR",
+        "URAVL",
+        "URYDL",
+        "URYDR",
+        "URYVL",
+        "URYVR",
+        "VA01",
+        "VA02",
+        "VB02",
+        "VB03"
+    ]
+    return pd.Series(items)
