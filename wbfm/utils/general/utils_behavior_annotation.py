@@ -30,7 +30,15 @@ class BehaviorCodes(Flag):
     Top-level behaviors that are discretely annotated.
     Designed to work with Ulises' automatic annotations via a hardcoded mapping. See also: from_ulises_int
 
-    Note that this should always be loaded using this mapping, not directly from integers!
+    NOTE: behaviors should always be loaded using this mapping, not directly from integers!
+
+    Example (See also FullDatasetTriggeredAverages):
+        trigger_opt = dict(state=BehaviorCodes.REV)
+        triggered_class = FullDatasetTriggeredAverages.load_from_project(project_data_gcamp, trigger_opt=trigger_opt)
+
+    The following is the auto-generated description of all behaviors
+    ----------------------------------------------------------------------------------------------
+
     """
     # Basic automatically annotated behaviors
     FWD = auto()

@@ -1236,10 +1236,13 @@ class WormFullVideoPosture:
 
         Parameters
         ----------
-        state
-        min_duration
-        trace_len
-        kwargs
+        state - BehaviorCodes state to use
+        min_duration - Minimum duration of the state to keep (in frames)
+        ind_preceding - Number of frames to keep before the event
+        behavior_name - Name of behavior to calculate and use; overrides 'state'
+        use_manual_annotation - Whether to load manually annotated behaviors or use automatic annotations
+        use_hilbert_phase - Whether to use the hilbert phase of the worm as the behavioral annotation
+        kwargs - passed to TriggeredAverageIndices
 
         Returns
         -------

@@ -136,7 +136,7 @@ class TriggeredAverageIndices:
     """
     # Initial calculation of indices
     behavioral_annotation: pd.Series
-    behavioral_state: int = BehaviorCodes.REV  # Note: not used if behavioral_annotation_is_continuous is True
+    behavioral_state: BehaviorCodes = BehaviorCodes.REV  # Note: not used if behavioral_annotation_is_continuous is True
     min_duration: int = 0
     ind_preceding: int = 10
 
@@ -687,6 +687,9 @@ class TriggeredAverageIndices:
             duration_vec = list(duration_vec)
         return duration_vec, censored_vec
 
+    def __repr__(self):
+        return f"TriggeredAverageIndices: {self.behavioral_state.name} ({self.num_events} events found)"
+
 
 @dataclass
 class FullDatasetTriggeredAverages:
@@ -695,6 +698,10 @@ class FullDatasetTriggeredAverages:
     triggered averages
 
     Also has functions for plotting
+
+    The following is the auto-generated description of all methods
+    ----------------------------------------------------------------------------------------------
+
     """
     df_traces: pd.DataFrame
 
@@ -833,14 +840,14 @@ class FullDatasetTriggeredAverages:
 
         Parameters
         ----------
-        project_data
-        trigger_opt
-        trace_opt
+        project_data - ProjectData class
+        trigger_opt - Passed to WormFullVideoPosture.calc_triggered_average_indices
+        trace_opt - Passed to ProjectData.calc_default_traces
         triggered_time_series_mode - how to calculate the time series to be triggered on. Options:
             "traces" - fluorescence traces
             "behavior" - behavioral annotations
             "curvature" - curvature from the kymograph
-        kwargs
+        kwargs - Passed to FullDatasetTriggeredAverages
 
         Returns
         -------
@@ -871,6 +878,14 @@ class FullDatasetTriggeredAverages:
         triggered_averages_class = FullDatasetTriggeredAverages(df_traces, ind_class, **kwargs)
 
         return triggered_averages_class
+
+    def __repr__(self):
+        message = f"FullDatasetTriggeredAverages with {len(self.neuron_names)} neurons"
+        if self.ind_class is None:
+            message = message + f"; no ind_class is saved, and triggered averages"
+        else:
+            message = message + f"\n With triggered average class: {self.ind_class}"
+        return message
 
 
 @dataclass
