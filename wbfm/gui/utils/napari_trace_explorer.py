@@ -624,7 +624,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         all_flags = {}
         for i, (name, callback) in enumerate(dict_of_saving_callbacks.items()):
             progress.setValue(i)
-            flag = callback()
+            try:
+                flag = callback()
+            except (PermissionError, OSError) as e:
+                self.logger.error(f"Failed to save {name} to disk with error: {e}")
+                flag = False
             all_flags[name] = flag
             # Sleep to make sure that the progress bar is updated
             time.sleep(0.1)
@@ -633,6 +637,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             if not all(all_flags.values()):
                 self.logger.error("Failed to save at least one step to disk!")
                 self.logger.error(f"Failed steps: {all_flags}")
+                self.logger.error("Please try again, or ctrl-c to fully quit (if this was expected)")
             else:
                 self.logger.info("")
                 self.logger.info("================================================================")
