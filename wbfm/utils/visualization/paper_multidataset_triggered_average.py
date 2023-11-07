@@ -348,15 +348,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             fig_kwargs = {}
         if color is None:
             color = self.get_color_from_trigger_type(trigger_type)
-        df = self.get_df_triggered_from_trigger_type(trigger_type)
+        df_subset = self.get_traces_single_neuron(trigger_type, neuron_name, DEBUG)
 
-        # Get the full names of all the neurons with this name
-        # Names will be like '2022-11-23_worm9_BAGL' and we are checking for 'BAGL'
-        neuron_names = [n for n in list(df.columns) if neuron_name in n]
-        if DEBUG:
-            print(f"Found {len(neuron_names)} neurons with name {neuron_name}")
-            print(f"Neuron names: {neuron_names}")
-        if len(neuron_names) == 0:
+        if df_subset.shape[1] == 0:
             print(f"Neuron name {neuron_name} not found, skipping")
             return
 
@@ -367,13 +361,11 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             is_second_plot = False
         else:
             is_second_plot = True
-
-        df_subset = df.loc[:, neuron_names]
         if z_score:
             df_subset = (df_subset - df_subset.mean()) / df_subset.std()
         df_subset = df_subset.T
 
-        min_lines = min(3, len(neuron_names))
+        min_lines = min(3, df_subset.shape[1])
         if DEBUG:
             print(df_subset)
         plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines, show_individual_lines=False,
@@ -404,7 +396,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         if show_title:
             if title is None:
                 title = self.get_title_from_trigger_type(trigger_type)
-                plt.title(f"{neuron_name} (n={len(neuron_names)}) {title}")
+                plt.title(f"{neuron_name} (n={df_subset.shape[1]}) {title}")
             else:
                 if include_neuron_in_title:
                     plt.title(f"{neuron_name} {title}")
@@ -436,6 +428,17 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             plt.savefig(fname.replace(".png", ".svg"))
 
         return fig, ax
+
+    def get_traces_single_neuron(self, trigger_type, neuron_name, DEBUG=False):
+        df = self.get_df_triggered_from_trigger_type(trigger_type)
+        # Get the full names of all the neurons with this name
+        # Names will be like '2022-11-23_worm9_BAGL' and we are checking for 'BAGL'
+        neuron_names = [n for n in list(df.columns) if neuron_name in n]
+        if DEBUG:
+            print(f"Found {len(neuron_names)} neurons with name {neuron_name}")
+            print(f"Neuron names: {neuron_names}")
+        df_subset = df.loc[:, neuron_names]
+        return df_subset
 
     def plot_triggered_average_multiple_neurons(self, neuron_list, trigger_type, color_list=None,
                                                 output_folder=None, **kwargs):
