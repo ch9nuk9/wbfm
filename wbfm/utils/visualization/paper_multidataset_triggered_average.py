@@ -253,8 +253,24 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(title_mapping.keys())}')
         return title_mapping[trigger_type]
 
-    def get_trace_difference(self, trigger_type, neuron0, neuron1, num_iters=100):
+    def get_trace_difference(self, trigger_type, neuron0, neuron1, num_iters=1000, z_score=False):
+        """
+
+        Parameters
+        ----------
+        trigger_type
+        neuron0
+        neuron1
+        num_iters
+        z_score
+
+        Returns
+        -------
+
+        """
         df = self.get_df_triggered_from_trigger_type(trigger_type)
+        if z_score:
+            df = (df - df.mean()) / df.std()
         names0 = [n for n in list(df.columns) if neuron0 in n]
         names1 = [n for n in list(df.columns) if neuron1 in n]
         if len(names0) == 0 or len(names1) == 0:
@@ -273,7 +289,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             all_norms.append(norm(trace0, trace1))
         return all_norms
 
-    def get_trace_difference_multiple_neurons(self, trigger_type, list_of_neurons):
+    def get_trace_difference_multiple_neurons(self, trigger_type, list_of_neurons, **kwargs):
         """
         Use get_trace_difference for pairs of neurons, generated as all combinations of the neurons in list_of_neurons.
 
@@ -290,11 +306,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         dict_norms = {}
         for neuron0, neuron1 in tqdm(neuron_combinations, leave=False):
             key = f"{neuron0}-{neuron1}"
-            dict_norms[key] = self.get_trace_difference(trigger_type, neuron0, neuron1)
+            dict_norms[key] = self.get_trace_difference(trigger_type, neuron0, neuron1, **kwargs)
 
         df_norms = pd.DataFrame(dict_norms)
         return df_norms
-
 
     def get_fig_opt(self, height_factor=1, width_factor=1):
         return dict(dpi=300, figsize=(width_factor*10/3, height_factor*10/(2*3)))
