@@ -964,25 +964,29 @@ class TrackletAndSegmentationAnnotator:
 
     def save_manual_matches_to_disk(self):
         with self.saving_lock:
-            self.tracking_cfg.pickle_data_in_local_project(self.combined_global2tracklet_dict, self.output_match_fname)
-            match_fname = self.tracking_cfg.unresolve_absolute_path(self.output_match_fname)
-            self.tracking_cfg.config.update({'manual_correction_global2tracklet_fname': match_fname})
+            try:
+                self.tracking_cfg.pickle_data_in_local_project(self.combined_global2tracklet_dict, self.output_match_fname)
+                match_fname = self.tracking_cfg.unresolve_absolute_path(self.output_match_fname)
+                self.tracking_cfg.config.update({'manual_correction_global2tracklet_fname': match_fname})
 
-            # Note: sparse matrices can only be pickled
-            # self.tracking_cfg.h5_in_local_project(self.df_tracklet_obj.df_tracklets_zxy, self.output_df_fname)
-            if self.df_tracklet_obj.use_custom_padded_dataframe:
-                df = self.df_tracklet_obj.df_tracklets_zxy.return_sparse_dataframe()
-            else:
-                df = self.df_tracklet_obj.df_tracklets_zxy
-            self.tracking_cfg.pickle_data_in_local_project(df, self.output_df_fname,
-                                                           custom_writer=pd.to_pickle)
-            df_fname = self.tracking_cfg.unresolve_absolute_path(self.output_df_fname)
-            self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
+                # Note: sparse matrices can only be pickled
+                # self.tracking_cfg.h5_in_local_project(self.df_tracklet_obj.df_tracklets_zxy, self.output_df_fname)
+                if self.df_tracklet_obj.use_custom_padded_dataframe:
+                    df = self.df_tracklet_obj.df_tracklets_zxy.return_sparse_dataframe()
+                else:
+                    df = self.df_tracklet_obj.df_tracklets_zxy
+                self.tracking_cfg.pickle_data_in_local_project(df, self.output_df_fname,
+                                                               custom_writer=pd.to_pickle)
+                df_fname = self.tracking_cfg.unresolve_absolute_path(self.output_df_fname)
+                self.tracking_cfg.config.update({'manual_correction_tracklets_df_fname': df_fname})
 
-            self.tracking_cfg.pickle_data_in_local_project(self.tracklet_split_names, self.tracklet_split_names_fname)
-            self.tracking_cfg.pickle_data_in_local_project(self.tracklet_split_times, self.tracklet_split_times_fname)
+                self.tracking_cfg.pickle_data_in_local_project(self.tracklet_split_names, self.tracklet_split_names_fname)
+                self.tracking_cfg.pickle_data_in_local_project(self.tracklet_split_times, self.tracklet_split_times_fname)
 
-            self.tracking_cfg.update_self_on_disk()
+                self.tracking_cfg.update_self_on_disk()
+
+            except (PermissionError, OSError) as e:
+                self.logger.error(f"Failed to save tracklets or related pickles to disk with error: {e}")
 
     def split_current_tracklet(self, i_split, set_right_half_to_current=True, verbose=1):
         """
