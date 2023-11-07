@@ -12,11 +12,13 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 
+from wbfm.utils.external.utils_pandas import split_flattened_index
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
 from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_list_of_projects, \
     ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 @dataclass
@@ -253,7 +255,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(title_mapping.keys())}')
         return title_mapping[trigger_type]
 
-    def get_trace_difference(self, trigger_type, neuron0, neuron1, num_iters=1000, z_score=False):
+    def get_trace_difference(self, trigger_type, neuron0, neuron1, num_iters=100, z_score=False,
+                             shuffle_dataset_pairs=True):
         """
 
         Parameters
@@ -263,6 +266,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         neuron1
         num_iters
         z_score
+        shuffle_dataset_pairs -
 
         Returns
         -------
@@ -280,13 +284,33 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         def norm(x, y):
             return (x - y).pow(2).mean()
 
-        # There are two lists of neurons, and we want to choose random pairs
-        samples = [(random.choice(names0), random.choice(names1)) for _ in range(num_iters)]
-        all_norms = []
-        for name0, name1 in samples:
-            trace0 = df[name0]
-            trace1 = df[name1]
-            all_norms.append(norm(trace0, trace1))
+        if shuffle_dataset_pairs:
+            # There are two lists of neurons, and we want to choose random pairs
+            samples = [(random.choice(names0), random.choice(names1)) for _ in range(num_iters)]
+            all_norms = []
+            for name0, name1 in samples:
+                trace0 = df[name0]
+                trace1 = df[name1]
+                all_norms.append(norm(trace0, trace1))
+        else:
+            # Get the names of the datasets
+            column_names = get_names_from_df(df)
+            split_column_names = split_flattened_index(column_names)
+            all_dataset_names = {dataset_name for col_name, (dataset_name, neuron_name) in split_column_names.items()}
+            # Loop through datasets, and check if both neurons are present
+            all_norms = []
+            for dataset_name in all_dataset_names:
+                name0 = f"{dataset_name}_{neuron0}"
+                name1 = f"{dataset_name}_{neuron1}"
+                if name0 in column_names and name1 in column_names:
+                    trace0 = df[name0]
+                    trace1 = df[name1]
+                    all_norms.append(norm(trace0, trace1))
+                else:
+                    all_norms.append(np.nan)
+            if len(all_norms) == 0:
+                raise ValueError(f"Neurons {neuron0} and {neuron1} not found simultaneously in any datasets")
+
         return all_norms
 
     def get_trace_difference_multiple_neurons(self, trigger_type, list_of_neurons, **kwargs):
