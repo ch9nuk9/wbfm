@@ -950,6 +950,9 @@ class ClusteredTriggeredAverages:
         #     df_corr = df_corr.loc[neurons_to_keep, neurons_to_keep]
             # TODO: fix name offsets later
 
+        # Set random number seeds
+        np.random.seed(4242)
+
         # Calculate clustering
         Z = hierarchy.linkage(df_corr.to_numpy(), method=linkage_method, optimal_ordering=True)
         clust_ind = cluster_func(Z, t=linkage_threshold, criterion=cluster_criterion)
