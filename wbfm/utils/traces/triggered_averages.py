@@ -892,7 +892,6 @@ class FullDatasetTriggeredAverages:
 class ClusteredTriggeredAverages:
 
     df_triggered: pd.DataFrame
-    df_corr: pd.DataFrame = None
 
     # For plotting individual clusters
     triggered_averages_class: FullDatasetTriggeredAverages = None
@@ -928,7 +927,7 @@ class ClusteredTriggeredAverages:
             self.set_global_scipy_cmap()
 
     @cached_property
-    def df_corr(self):
+    def df_corr(self) -> pd.DataFrame:
         if self.verbose >= 1:
             print("Calculating correlation")
         df_corr = self.df_triggered.corr()
@@ -1258,7 +1257,7 @@ class ClusteredTriggeredAverages:
             "RIS": 0,  # RIS, blue
             "neuron_060": 1,  # AVAL, orange
             "AVAL": 1,  # AVAL, orange
-            "neuron_033": 2,  # Ventral turning neuron, green
+            # "neuron_033": 2,  # Ventral turning neuron, green
             "RIVL": 2,  # Ventral turning neuron, green
             "neuron_076": 3,  # RID (after turn), red
             "RID": 3,  # RID (after turn), red
