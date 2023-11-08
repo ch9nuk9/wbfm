@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
+from numpy.linalg import LinAlgError
 from scipy.signal import detrend
 from sklearn.decomposition import PCA
 from tqdm.auto import tqdm
@@ -369,7 +370,7 @@ def build_dataframe_of_clusters(all_triggered_average_classes, multi_dataset_clu
         df_imputed.drop(columns=['dataset_name', 'local_time_index'], inplace=True)
         df_imputed = remove_outliers_using_std(df_imputed, std_factor=4)
         df_imputed = impute_missing_values_in_dataframe(df_imputed)
-    except ValueError as e:
+    except (ValueError, LinAlgError) as e:
         df_imputed = None
         logging.warning("Could not impute missing values in dataframe, returning None")
         print(e)
