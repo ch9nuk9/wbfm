@@ -214,15 +214,18 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(trigger_mapping.keys())}')
         return trigger_mapping[trigger_type]
 
-    def get_df_triggered_from_trigger_type(self, trigger_type):
+    def get_df_triggered_from_trigger_type(self, trigger_type, return_individual_traces=False):
         """
-        Returns a precalculated dataframe of the form:
+        Returns by default a precalculated dataframe of the form:
         - Columns: Neuron names combined with the dataset name (e.g. 2022-11-23_worm9_BAGL)
         - Rows: Time points
 
         Parameters
         ----------
         trigger_type
+        return_individual_traces - if False, then return the average across events per dataset per neuron (default)
+            if True, then return a dictionary of dataframes, where each dataframe is each event within the dataset.
+            Note: each dataset has a different number of events (rows), but the same number of time points (columns)
 
         Returns
         -------
@@ -236,7 +239,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                       'residual_collision': self.intermediates_collision,
                       'residual_rectified_fwd': self.intermediates_residual_rectified_fwd,
                       'residual_rectified_rev': self.intermediates_residual_rectified_rev}
-        df_mapping = {k: v[1] if v else None for k, v in df_mapping.items()}
+        if not return_individual_traces:
+            df_mapping = {k: v[1] if v else None for k, v in df_mapping.items()}
+        else:
+            df_mapping = {k: v[2] if v else None for k, v in df_mapping.items()}
         if trigger_type not in df_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(df_mapping.keys())}')
         return df_mapping[trigger_type]
@@ -255,46 +261,69 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(title_mapping.keys())}')
         return title_mapping[trigger_type]
 
-    def get_trace_difference(self, trigger_type, neuron0, neuron1, num_iters=100, z_score=False,
-                             shuffle_dataset_pairs=True):
+    def get_trace_difference_auc(self, trigger_type, neuron0, neuron1, num_iters=100, z_score=False,
+                                 shuffle_dataset_pairs=True, return_individual_traces=False):
         """
+        Calculates the area under the curve of the difference between two neurons.
 
         Parameters
         ----------
         trigger_type
         neuron0
         neuron1
-        num_iters
-        z_score
-        shuffle_dataset_pairs -
+        num_iters - number of iterations to perform (only used if shuffle_dataset_pairs is True)
+        z_score - if True, then we will z-score the traces before calculating the difference
+        shuffle_dataset_pairs - if True, then we will shuffle the dataset pairs and subtract them. If False, then we
+            will only subtract the same dataset, meaning that both neurons must be present.
+        return_individual_traces - if True, then return a list of the difference for each event in each dataset.
+            If False, then return a list of the difference for each dataset. (default)
+            Mutually exclusive with shuffle_dataset_pairs=True
 
         Returns
         -------
 
         """
-        df = self.get_df_triggered_from_trigger_type(trigger_type)
+        df_or_dict = self.get_df_triggered_from_trigger_type(trigger_type,
+                                                             return_individual_traces=return_individual_traces)
         if z_score:
-            df = (df - df.mean()) / df.std()
-        names0 = [n for n in list(df.columns) if neuron0 in n]
-        names1 = [n for n in list(df.columns) if neuron1 in n]
+            if not return_individual_traces:
+                df_or_dict = (df_or_dict - df_or_dict.mean()) / df_or_dict.std()
+            else:
+                # Then each dataset should be z-scored separately, but across all events simultaneously
+                # Numpy will do this automatically (pandas tries to keep the axis)
+                for _name, df in df_or_dict.items():
+                    df_or_dict[_name] = (df - np.nanmean(df)) / np.nanstd(df)
+
+        if not return_individual_traces:
+            names0 = [n for n in list(df_or_dict.columns) if neuron0 in n]
+            names1 = [n for n in list(df_or_dict.columns) if neuron1 in n]
+        else:
+            names0 = [n for n in list(df_or_dict.keys()) if neuron0 in n]
+            names1 = [n for n in list(df_or_dict.keys()) if neuron1 in n]
         if len(names0) == 0 or len(names1) == 0:
             raise ValueError(f'Neuron name {neuron0} or {neuron1} not found')
 
         # Define the summary statistic (the mean squared difference, ignoring nan values)
         def norm(x, y):
-            return (x - y).pow(2).mean()
+            return np.nanmean((x - y).pow(2))
 
         if shuffle_dataset_pairs:
+            if return_individual_traces:
+                raise NotImplementedError("Shuffling dataset pairs not implemented for return_individual_traces=True,"
+                                          " because there is no clean way to pair up the traces")
             # There are two lists of neurons, and we want to choose random pairs
             samples = [(random.choice(names0), random.choice(names1)) for _ in range(num_iters)]
             all_norms = []
             for name0, name1 in samples:
-                trace0 = df[name0]
-                trace1 = df[name1]
+                trace0 = df_or_dict[name0]
+                trace1 = df_or_dict[name1]
                 all_norms.append(norm(trace0, trace1))
         else:
             # Get the names of the datasets
-            column_names = get_names_from_df(df)
+            if not return_individual_traces:
+                column_names = get_names_from_df(df_or_dict)
+            else:
+                column_names = list(df_or_dict.keys())
             split_column_names = split_flattened_index(column_names)
             all_dataset_names = {dataset_name for col_name, (dataset_name, neuron_name) in split_column_names.items()}
             # Loop through datasets, and check if both neurons are present
@@ -303,8 +332,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 name0 = f"{dataset_name}_{neuron0}"
                 name1 = f"{dataset_name}_{neuron1}"
                 if name0 in column_names and name1 in column_names:
-                    trace0 = df[name0]
-                    trace1 = df[name1]
+                    trace0 = df_or_dict[name0]
+                    trace1 = df_or_dict[name1]
+                    # Regardless of the traces being one trace or a dataframe of events, we compress to a single norm
                     all_norms.append(norm(trace0, trace1))
                 else:
                     all_norms.append(np.nan)
@@ -313,7 +343,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         return all_norms
 
-    def get_trace_difference_multiple_neurons(self, trigger_type, list_of_neurons, **kwargs):
+    def get_trace_difference_auc_multiple_neurons(self, trigger_type, list_of_neurons, **kwargs):
         """
         Use get_trace_difference for pairs of neurons, generated as all combinations of the neurons in list_of_neurons.
 
@@ -330,7 +360,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         dict_norms = {}
         for neuron0, neuron1 in tqdm(neuron_combinations, leave=False):
             key = f"{neuron0}-{neuron1}"
-            dict_norms[key] = self.get_trace_difference(trigger_type, neuron0, neuron1, **kwargs)
+            dict_norms[key] = self.get_trace_difference_auc(trigger_type, neuron0, neuron1, **kwargs)
 
         df_norms = pd.DataFrame(dict_norms)
         return df_norms
