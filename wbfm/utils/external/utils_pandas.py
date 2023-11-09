@@ -1012,9 +1012,11 @@ def apply_to_dict_of_dfs_and_concat(dict_of_dfs, func):
     return df_concat
 
 
-def combine_columns_with_suffix(df, suffixes=None, how='mean'):
+def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep=None):
     """
     Combines columns with the same prefix and different suffixes
+
+    Note: for now there is one hardcoded exception: AQR, which has no AQL partner
 
     Parameters
     ----------
@@ -1027,6 +1029,9 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean'):
     """
     if suffixes is None:
         suffixes = ['L', 'R']
+    if raw_names_to_keep is None:
+        # AQR has no AQL partner
+        raw_names_to_keep = {'AQR'}
 
     df_combined = pd.DataFrame()
     # Loop through columns and check if they have a suffix; if so, search for the other suffix and combine
@@ -1049,7 +1054,7 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean'):
                 else:
                     base_names_found.add(col_base)
         if num_suffixes_found == 0:
-            if col_base is not None:
+            if col_base is not None and col not in raw_names_to_keep:
                 # Then one was found, but no partners... still keep only the base
                 df_combined[col_base] = df[col]
             else:

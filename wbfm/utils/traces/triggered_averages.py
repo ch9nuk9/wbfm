@@ -2102,7 +2102,7 @@ class ClusteredTriggeredAverages:
 
     def plot_manual_ids_per_cluster(self, all_projects, use_bar_plot=True, neuron_threshold=0,
                                     normalize_by_number_of_ids=False, legend=False,
-                                    combine_left_right=False,
+                                    combine_left_right=False, allow_temporary_names=False,
                                     output_folder=None, **kwargs):
         """
         Plots a bar chart of the number of neurons per manual ID per cluster
@@ -2122,6 +2122,10 @@ class ClusteredTriggeredAverages:
         """
         # Does not need the projects, because names are already renamed to have the manual id
         df_id_counts = self.calc_dataframe_of_manual_ids_per_cluster(all_projects=None)
+        if not allow_temporary_names:
+            # Remove names with an underscore, which are temporary names
+            df_id_counts = df_id_counts.loc[:, [i for i in df_id_counts.columns if '_' not in i]]
+
         if not use_bar_plot:
             fig = px.imshow(df_id_counts, title=f"Number of neurons per manual ID per cluster", **kwargs)
             fig.show()
