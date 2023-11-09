@@ -25,6 +25,7 @@ def paper_trace_settings():
                channel_mode='dr_over_r_50',
                use_physical_time=True,
                rename_neurons_using_manual_ids=True,
+               always_keep_manual_ids=True,
                manual_id_confidence_threshold=0)
     return opt
 

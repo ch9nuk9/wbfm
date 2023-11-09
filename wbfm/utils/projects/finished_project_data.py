@@ -669,7 +669,7 @@ class ProjectData:
         return get_names_from_df(self.red_traces)
 
     def well_tracked_neuron_names(self, min_nonnan=0.5, remove_invalid_neurons=False,
-                                  rename_neurons_using_manual_ids=False):
+                                  rename_neurons_using_manual_ids=False, always_keep_manual_ids=False):
         """
         Subset of neurons that pass a given tracking threshold
         """
@@ -682,9 +682,14 @@ class ProjectData:
             neuron_names = [n for n in neuron_names if n not in invalid_names]
 
         # Optional: rename columns to use manual ids, if found
+        mapping = self.neuron_name_to_manual_id_mapping(confidence_threshold=1)
         if rename_neurons_using_manual_ids:
-            mapping = self.neuron_name_to_manual_id_mapping(confidence_threshold=1)
             neuron_names = [mapping[n] if n in mapping else n for n in neuron_names]
+
+        # Optional: keep manual ids even if the neurons are not well tracked
+        if always_keep_manual_ids:
+            neuron_names = neuron_names + [n for n in mapping.values() if n not in neuron_names]
+
         return neuron_names
 
     def calc_default_behaviors(self, min_nonnan: Optional[float] = None, interpolate_nan: bool = False,
@@ -778,6 +783,7 @@ class ProjectData:
                             manual_id_confidence_threshold: int = 1,
                             use_physical_time: Optional[bool] = None,
                             remove_tail_neurons: bool = True,
+                            always_keep_manual_ids: bool = True,
                             use_paper_options: bool = False,
                             verbose=0,
                             **kwargs):
@@ -856,7 +862,8 @@ class ProjectData:
         # Optional: check neurons to remove
         if min_nonnan is not None:
             if not user_passed_neuron_names:
-                names = self.well_tracked_neuron_names(min_nonnan, remove_invalid_neurons)
+                names = self.well_tracked_neuron_names(min_nonnan, remove_invalid_neurons,
+                                                       always_keep_manual_ids=always_keep_manual_ids)
                 df_drop = df.loc[:, names].copy()
                 # df_drop = df[names].copy()
             else:
