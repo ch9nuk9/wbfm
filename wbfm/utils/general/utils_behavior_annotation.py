@@ -604,18 +604,38 @@ def shade_stacked_figure_using_behavior_plotly(beh_df, fig, **kwargs):
         shade_using_behavior_plotly(df['raw_annotations'].reset_index(drop=True), fig, yref=yref, **kwargs)
 
 
-def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_names: Union[str, List[str]],
-                                                           to_shade=True, to_save=True, fname_suffix='',
+def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
+                                                           names_to_plot: Union[str, List[str]],
+                                                           to_shade=True, to_save=False, fname_suffix='',
                                                            trace_kwargs=None,
                                                            DEBUG=False, **kwargs):
     """
     Loads the traces and behaviors from each project, producing a stack of plotly figures that
 
+    Example:
+        from wbfm.utils.visualization.hardcoded_paths import load_paper_datasets
+        from wbfm.utils.general.utils_behavior_annotation import plot_stacked_figure_with_behavior_shading_using_plotly
+
+        all_projects = load_paper_datasets('gcamp_good')
+        neurons_to_plot = ['AVBL', 'AVBR', 'RIS']
+        trace_kwargs=dict(use_paper_options=True)
+
+        fig = plot_stacked_figure_with_behavior_shading_using_plotly(all_projects_good, neurons_to_plot,
+            trace_kwargs=trace_kwargs)
+        fig.show()
+
+
     Parameters
     ----------
-    df_traces
-    df_behavior
-    kwargs
+    all_projects - Dict[str, ProjectData]; dictionary of project names and ProjectData objects
+    names_to_plot - str or List[str]; names of the traces (neurons or behaviors) to plot
+        See calc_behavior_from_alias for valid behaviors
+    to_shade - bool; if True, then shades the behaviors on top of the traces
+    to_save - bool; if True, then saves the figure within the project (you must have permissions)
+    fname_suffix - str; suffix to add to the filename
+    trace_kwargs - dict; kwargs to pass to build_trace_time_series_from_multiple_projects
+        See ProjectData.calc_default_traces for more details
+    kwargs - dict; kwargs to pass to shade_using_behavior_plotly
 
     Returns
     -------
@@ -635,7 +655,7 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
     from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
     beh_columns = ['raw_annotations']
     # Get any behaviors required in column names
-    for name in column_names:
+    for name in names_to_plot:
         if name not in beh_columns and name in WormFullVideoPosture.beh_aliases_stable():
             beh_columns.append(name)
     df_all_beh = build_behavior_time_series_from_multiple_projects(all_projects, beh_columns)
@@ -653,8 +673,8 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
     all_dataset_names = df_traces_and_behavior['dataset_name'].unique()
     n_datasets = len(all_dataset_names)
 
-    if isinstance(column_names, str):
-        column_names = [column_names]
+    if isinstance(names_to_plot, str):
+        names_to_plot = [names_to_plot]
     cmap = px.colors.qualitative.D3
 
     # Initialize the plotly figure with subplots
@@ -666,7 +686,7 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
 
         opt = dict(row=i_dataset + 1, col=1)
         # Add traces
-        for i_trace, name in enumerate(column_names):
+        for i_trace, name in enumerate(names_to_plot):
             if name not in df.columns:
                 continue
             if DEBUG:
@@ -699,7 +719,7 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
 
     if to_save:
         folder = get_summary_visualization_dir()
-        fname = os.path.join(folder, "multi_dataset_IDed_neurons_and_behavior", f"{column_names}-{fname_suffix}.html")
+        fname = os.path.join(folder, "multi_dataset_IDed_neurons_and_behavior", f"{names_to_plot}-{fname_suffix}.html")
         print(f"Saving to {fname}")
         fig.write_html(str(fname))
         fname = Path(fname).with_suffix('.png')
