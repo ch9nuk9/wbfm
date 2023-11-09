@@ -19,6 +19,7 @@ from PyQt5.QtCore import Qt
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
 from napari._qt.qthreading import thread_worker
+from numpy.linalg import LinAlgError
 from tqdm.auto import tqdm
 from PyQt5.QtWidgets import QApplication, QProgressDialog, QListWidget
 from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
@@ -1245,7 +1246,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.logger.debug(f"Initializing subplot post clear with time line: {time_line_options}")
         try:
             self.time_line = self.static_ax.axvline(**time_line_options)
-        except ValueError as e:
+        except (ValueError, LinAlgError) as e:
             self.logger.warning(f"Error creating time line: {e}; creating it anyway")
             # Use dummy y values; somehow this crash is related to being unable to set the y values
             # Something about an un-invertable matrix
