@@ -631,7 +631,8 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
     names_to_plot - str or List[str]; names of the traces (neurons or behaviors) to plot
         See calc_behavior_from_alias for valid behaviors
     to_shade - bool; if True, then shades the behaviors on top of the traces
-    to_save - bool; if True, then saves the figure within the project (you must have permissions)
+    to_save - bool; if True, then saves the figure to a hardcoded directory (you must have permissions)
+        See get_summary_visualization_dir
     fname_suffix - str; suffix to add to the filename
     trace_kwargs - dict; kwargs to pass to build_trace_time_series_from_multiple_projects
         See ProjectData.calc_default_traces for more details
