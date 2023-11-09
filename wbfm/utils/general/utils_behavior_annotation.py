@@ -609,8 +609,7 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
                                                            trace_kwargs=None,
                                                            DEBUG=False, **kwargs):
     """
-    Expects a dataframe with a column 'dataset_name' that will be used to annotate a complex figure with multiple
-    subplots
+    Loads the traces and behaviors from each project, producing a stack of plotly figures that
 
     Parameters
     ----------
@@ -641,12 +640,14 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
             beh_columns.append(name)
     df_all_beh = build_behavior_time_series_from_multiple_projects(all_projects, beh_columns)
     df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, **trace_kwargs)
+    if pd.api.types.is_float_dtype(df_all_traces['local_time']):
+        # Needed if physical time is used
+        df_all_beh['local_time'] = df_all_traces['local_time']
     df_traces_and_behavior = pd.merge(df_all_traces, df_all_beh, how='inner', on=['dataset_name', 'local_time'])
     if DEBUG:
         print(f"df_all_traces: {df_all_traces}")
         print(f"df_all_beh: {df_all_beh}")
         print(f"df_traces_and_behavior: {df_traces_and_behavior}")
-
 
     # Prepare for plotting
     all_dataset_names = df_traces_and_behavior['dataset_name'].unique()
