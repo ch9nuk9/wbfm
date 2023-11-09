@@ -669,6 +669,7 @@ class ProjectData:
         return get_names_from_df(self.red_traces)
 
     def well_tracked_neuron_names(self, min_nonnan=0.5, remove_invalid_neurons=False,
+                                  confidence_threshold=1,
                                   rename_neurons_using_manual_ids=False, always_keep_manual_ids=False):
         """
         Subset of neurons that pass a given tracking threshold
@@ -682,13 +683,14 @@ class ProjectData:
             neuron_names = [n for n in neuron_names if n not in invalid_names]
 
         # Optional: rename columns to use manual ids, if found
-        mapping = self.neuron_name_to_manual_id_mapping(confidence_threshold=1)
+        mapping = self.neuron_name_to_manual_id_mapping(confidence_threshold=confidence_threshold,
+                                                        remove_unnamed_neurons=True)
         if rename_neurons_using_manual_ids:
             neuron_names = [mapping[n] if n in mapping else n for n in neuron_names]
 
         # Optional: keep manual ids even if the neurons are not well tracked
         if always_keep_manual_ids:
-            neuron_names = neuron_names + [n for n in mapping.values() if n not in neuron_names]
+            neuron_names = neuron_names + [n for n in mapping.keys() if n not in neuron_names]
 
         return neuron_names
 
@@ -1605,6 +1607,10 @@ class ProjectData:
         """
         Note: if confidence_threshold is 0, then non-id'ed neuron names will be removed because
         dict_numbers_to_neuron_names has a blank string at confidence 0
+
+        Note also that neurons that do not exist in the trace dictionary can be present in the df_manual_tracking and
+        therefore in the neuron_name_to_manual_id_mapping. This is because we are reading from an excel file, which
+        may have been manually edited
 
         Parameters
         ----------
