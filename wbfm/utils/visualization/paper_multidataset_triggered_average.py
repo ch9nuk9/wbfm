@@ -305,7 +305,19 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         # Define the summary statistic (the mean squared difference, ignoring nan values)
         def norm(x, y):
-            return np.nanmean((x - y).pow(2))
+            # Actually just calculate the correlation
+            if isinstance(x, pd.Series):
+                return np.nanmean(x.corr(y))
+            else:
+                # Then need to apply the correlation to each row (paired)
+                ind = x.index
+                all_corrs = [x.loc[i, :].corr(y.loc[i, :]) for i in ind]
+                return np.nanmean(all_corrs)
+            # This is the same as the mean squared difference
+            # delta = np.nanmean((x - y).pow(2))
+            # x_norm = np.nanmean(x.pow(2))
+            # y_norm = np.nanmean(y.pow(2))
+            # return delta / (x_norm + y_norm)
 
         if shuffle_dataset_pairs:
             if return_individual_traces:
