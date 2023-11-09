@@ -684,6 +684,7 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects, column_
         # Add shapes
         if to_shade:
             beh_vector = df['raw_annotations'].reset_index(drop=True)
+            beh_vector.index = df['local_time']
             shade_using_behavior_plotly(beh_vector, fig, shape_opt=opt, yref='y domain', **kwargs)
             if DEBUG:
                 binary_beh_vector = BehaviorCodes.vector_equality(beh_vector, BehaviorCodes.REV)
