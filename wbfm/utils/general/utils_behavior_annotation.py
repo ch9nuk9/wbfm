@@ -934,7 +934,7 @@ def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False,
     return x, y_interp, interp_obj
 
 
-def approximate_behavioral_annotation_using_pc1(project_cfg, to_save=True):
+def approximate_behavioral_annotation_using_pc1(project_cfg, trace_kwargs=None, to_save=True):
     """
     Uses the first principal component of the traces to approximate annotations for forward and reversal
     IMPORTANT: Although pc0 should correspond to rev/fwd, the sign of the PC is arbitrary, so we need to check
@@ -964,9 +964,11 @@ def approximate_behavioral_annotation_using_pc1(project_cfg, to_save=True):
                nan_tracking_failure_points=True,
                #nan_using_ppca_manifold=True,
                channel_mode='dr_over_r_50')
+    if trace_kwargs is not None:
+        opt.update(trace_kwargs)
     pca_modes = project_data.calc_pca_modes(n_components=2, flip_pc1_to_have_reversals_high=True,
                                             **opt)
-    pc0 = pca_modes[:, 0]
+    pc0 = pca_modes.loc[:, 0]
 
     # df_traces = project_data.calc_default_traces(**opt)
     # from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
