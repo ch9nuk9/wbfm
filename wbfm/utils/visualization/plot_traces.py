@@ -881,7 +881,7 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
 
     # Plot
     fig = sns.clustermap(df, **plot_kwargs)
-    if project_data.use_physical_x_axis:
+    if project_data.use_physical_time:
         ax = fig.ax_heatmap
         ax.xaxis.set_major_locator(MultipleLocator(project_data.physical_unit_conversion.volumes_per_second*60))
         x = ax.get_xticks()
@@ -1350,7 +1350,7 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
 
     """
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
-    project_data.use_physical_x_axis = True
+    project_data.use_physical_time = True
     behavior_alias_dict = {'Head curvature': ['dorsal_only_head_curvature', 'ventral_only_head_curvature'],
                            'Body curvature': ['ventral_only_body_curvature', 'dorsal_only_body_curvature']}
     num_modes_to_plot = len(behavior_alias_dict)

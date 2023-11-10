@@ -532,7 +532,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
     ylim: Optional[tuple] = None
 
     def __post_init__(self):
-        self.project.use_physical_x_axis = True
+        self.project.use_physical_time = True
 
         # Load the cache
         _ = self.df_traces

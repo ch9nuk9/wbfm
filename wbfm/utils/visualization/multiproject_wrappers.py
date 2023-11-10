@@ -236,7 +236,7 @@ def build_behavior_time_series_from_multiple_projects(all_projects: Dict[str, Pr
             trace = worm.calc_behavior_from_alias(b)
             output_dict[b].extend(trace)
             output_dict['dataset_name'].extend([dataset_name] * len(trace))
-            output_dict['local_time'].extend(np.arange(len(trace)))
+            output_dict['local_time'].extend(p.x_for_plots[:len(trace)])
         # Make sure the final dataframe is sorted correctly
         this_df_beh = pd.DataFrame(output_dict)
         this_df_beh = this_df_beh.sort_values(['dataset_name', 'local_time']).reset_index(drop=True)

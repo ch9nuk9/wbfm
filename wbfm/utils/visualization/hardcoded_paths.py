@@ -26,7 +26,7 @@ def get_project_parent_folder():
     return "/scratch/neurobiology/zimmer/fieseler/wbfm_projects"
 
 
-def load_paper_datasets(genotype='gcamp', require_behavior=False) -> dict:
+def load_paper_datasets(genotype='gcamp', require_behavior=False, **kwargs) -> dict:
     """
 
     As of Dec 2022, these are the datasets we will use, with this condition:
@@ -56,7 +56,7 @@ def load_paper_datasets(genotype='gcamp', require_behavior=False) -> dict:
         }
         list_of_all_projects = _resolve_project_from_worm_id(folder_and_id_dict)
 
-        good_projects = load_all_projects_from_list(list_of_all_projects)
+        good_projects = load_all_projects_from_list(list_of_all_projects, **kwargs)
     elif genotype == 'gcamp_good':
         # Determined by looking at the data and deciding which ones are good
         folder_and_id_dict = {
@@ -66,17 +66,17 @@ def load_paper_datasets(genotype='gcamp', require_behavior=False) -> dict:
             "2022-12-10_spacer_7b_2per_agar": [2, 5, 7, 8]
         }
         list_of_all_projects = _resolve_project_from_worm_id(folder_and_id_dict)
-        good_projects = load_all_projects_from_list(list_of_all_projects)
+        good_projects = load_all_projects_from_list(list_of_all_projects, **kwargs)
     elif genotype == 'gfp':
         folder_path = '/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-12-10_spacer_7b_2per_agar_GFP'
-        good_projects = load_all_projects_in_folder(folder_path)
+        good_projects = load_all_projects_in_folder(folder_path, **kwargs)
     elif genotype == 'immob':
         folder_path = '/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-11-03_immob_adj_settings_2'
         require_behavior = False  # No annotation of behavior here
-        good_projects = load_all_projects_in_folder(folder_path)
+        good_projects = load_all_projects_in_folder(folder_path, **kwargs)
         # Second folder, which extends above dictionary
         folder_path = '/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-12-12_immob'
-        good_projects.update(load_all_projects_in_folder(folder_path))
+        good_projects.update(load_all_projects_in_folder(folder_path, **kwargs))
         # Remove one messed up project... could remove without loading, but this is easier
         problem_project = '2022-12-13_10-14_ZIM2165_immob_worm6-2022-12-13'
         good_projects.pop(problem_project)

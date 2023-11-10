@@ -136,7 +136,7 @@ class ProjectData:
 
     # EXPERIMENTAL (but tested)
     use_custom_padded_dataframe: bool = False
-    use_physical_x_axis: bool = False  # Relies on hardcoded volumes per second
+    use_physical_time: bool = False  # Relies on hardcoded volumes per second
 
     # Caching
     data_cacher: PaperDataCache = None
@@ -969,7 +969,7 @@ class ProjectData:
             df = df.rename(columns=mapping)
 
         # Optional: set the index to be physical units
-        if self.use_physical_x_axis:
+        if self.use_physical_time:
             df.index = self.x_for_plots
 
         return df
@@ -1320,7 +1320,7 @@ class ProjectData:
         -------
 
         """
-        if self.use_physical_x_axis:
+        if self.use_physical_time:
             index_conversion = self._x_physical_time
         else:
             index_conversion = None
@@ -1904,7 +1904,7 @@ class ProjectData:
 
         Uses self._x_physical_time and self.use_physical_x_axis to return the desired time
         """
-        if self.use_physical_x_axis:
+        if self.use_physical_time:
             x = self._x_physical_time
         else:
             x = np.arange(self.num_frames)
@@ -1917,7 +1917,7 @@ class ProjectData:
 
         Uses self._x_physical_time and self.use_physical_x_axis to return the desired string
         """
-        if self.use_physical_x_axis:
+        if self.use_physical_time:
             label = "Time (s)"
         else:
             label = "Time (volumes)"
