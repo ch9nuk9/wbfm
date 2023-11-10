@@ -999,7 +999,7 @@ def approximate_behavioral_annotation_using_pc1(project_cfg, to_save=True):
 
 
 def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_high_fall=False,
-                                                min_length=8, to_save=True, DEBUG=False):
+                                                trace_kwargs=None, min_length=8, to_save=True, DEBUG=False):
     """
     Uses AVAL/R to approximate annotations for forward and reversal
     Specifically, detects a "rise" "plateau" and "fall" state in the trace, and defines:
@@ -1014,7 +1014,12 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
 
     Parameters
     ----------
-    project_cfg
+    project_cfg - str or ProjectData; path to the project config file (or loaded project)
+    return_raw_rise_high_fall - bool; if True, then returns the raw rise/high/fall/low vector, not the converted
+        fwd/rev vector
+    min_length - int; minimum length of a state (in volumes) to be considered a state
+    to_save - bool; if True, then saves the behavior vector to disk inside the project
+    DEBUG - bool; if True, then plots debugging information
 
     Returns
     -------
@@ -1031,6 +1036,8 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
                nan_tracking_failure_points=True,
                rename_neurons_using_manual_ids=True,
                channel_mode='dr_over_r_50')
+    if trace_kwargs is not None:
+        opt.update(trace_kwargs)
 
     df_traces = project_data.calc_default_traces(**opt)
     y = combine_pair_of_ided_neurons(df_traces, 'AVA')
@@ -1149,6 +1156,8 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
     A pandas series with the same index as y, with the states as strings:
 
     """
+    # Reset the index, because everything in this function uses raw indices
+    y = y.copy().reset_index(drop=True)
     # Take derivative and standardize
     # Don't z score, because the baseline should be 0, not the mean
     dy = np.gradient(y)
