@@ -661,6 +661,9 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
             beh_columns.append(name)
     df_all_beh = build_behavior_time_series_from_multiple_projects(all_projects, beh_columns)
     df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, **trace_kwargs)
+    # Make sure the projects are in the same order
+    df_all_beh = df_all_beh.sort_values(by=['dataset_name', 'local_time'])
+    df_all_traces = df_all_traces.sort_values(by=['dataset_name', 'local_time'])
     if pd.api.types.is_float_dtype(df_all_traces['local_time']):
         # Needed if physical time is used
         df_all_beh['local_time'] = df_all_traces['local_time']
