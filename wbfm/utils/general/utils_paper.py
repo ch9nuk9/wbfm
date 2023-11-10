@@ -152,7 +152,11 @@ def behavior_name_mapping():
         dorsal_only_head_curvature='Dorsal head curvature',
         ventral_only_head_curvature='Ventral head curvature',
         dorsal_only_body_curvature='Dorsal curvature',
-        ventral_only_body_curvature='Ventral curvature'
+        ventral_only_body_curvature='Ventral curvature',
+        FWD='Forward crawling',
+        REV='Backward crawling',
+        VENTRAL_TURN='Ventral turning',
+        DORSAL_TURN='Dorsal turning',
     )
     return name_mapping
 

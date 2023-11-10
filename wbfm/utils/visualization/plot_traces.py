@@ -12,7 +12,7 @@ import scipy.io
 from sklearn.decomposition import PCA
 
 from wbfm.utils.general.utils_paper import paper_trace_settings, paper_figure_page_settings, \
-    apply_figure_settings
+    apply_figure_settings, behavior_name_mapping
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, options_for_ethogram, shade_using_behavior
 from wbfm.utils.general.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
@@ -1167,7 +1167,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         legend=dict(
             itemsizing='constant',  # Display legend items as colored boxes and text
             x=0.63,  # Adjust the x position of the legend
-            y=0.54,  # Adjust the y position of the legend
+            y=0.5, #0.54,  # Adjust the y position of the legend
             bgcolor='rgba(0, 0, 0, 0.00)',  # Set the background color of the legend
             bordercolor='Black',  # Set the border color of the legend
             borderwidth=1,  # Set the border width of the legend
@@ -1752,11 +1752,14 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         for i, state_code in enumerate(state_codes):
             try:
                 # Only show the legend if the behavior is FWD or REV
-                showlegend = state_code.full_name in {'FWD', 'REV', 'VENTRAL_TURN and FWD', 'FWD and VENTRAL_TURN'}
+                showlegend = state_code.full_name in {'FWD', 'REV',
+                                                      'VENTRAL_TURN and FWD', 'FWD and VENTRAL_TURN',
+                                                      'DORSAL_TURN and FWD', 'FWD and DORSAL_TURN'}
                 name = state_code.name
                 if name is None:
                     # If there is a complex state
                     name = state_code.full_name.split(' and ')[0]
+                name = behavior_name_mapping().get(name, name)
                 phase_plot_list.append(
                     go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]],
                                  mode='lines',
@@ -1777,6 +1780,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     return column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, \
         phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, \
         var_explained_line, var_explained_line_opt, weights_list, weights_opt_list
+
 
 def make_summary_hilbert_triggered_average_grid_plot(project_cfg, i_body_segment=41,
                                                      return_fast_scale_separation=False, residual_mode=None,
