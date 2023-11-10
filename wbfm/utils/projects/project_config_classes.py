@@ -448,7 +448,6 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return behavior_fname, behavior_subfolder
 
     def get_behavior_raw_parent_folder_from_red_fname(self) -> Tuple[Optional[Path], bool]:
-        # red_fname = self.config['red_bigtiff_fname']
         red_fname = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
         if red_fname is None:
             return None, False
