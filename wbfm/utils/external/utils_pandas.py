@@ -959,13 +959,18 @@ def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None, z_to_xy
 
 
 def get_dataframe_of_transitions(state_vector: pd.Series, convert_to_probabilities=False,
-                                 ignore_diagonal=False):
+                                 ignore_diagonal=False,
+                                 transition_observation_threshold=1, state_observation_threshold=None, DEBUG=False):
     """
     Gets the transition dictionary of a state vector, i.e. the number of times each state transition occurs
 
     Parameters
     ----------
     state_vector
+    convert_to_probabilities - if True, converts the counts to probabilities
+    ignore_diagonal - if True, sets the diagonal to 0
+    state_occupancy_threshold - if not None, removes states that have less than this number of observations
+        (note: this is in observation units, not percentage units)
 
     Returns
     -------
@@ -976,6 +981,21 @@ def get_dataframe_of_transitions(state_vector: pd.Series, convert_to_probabiliti
         state_vector = state_vector.values
     df_transitions = pd.crosstab(pd.Series(state_vector[:-1], name='from_category'),
                                  pd.Series(state_vector[1:], name='to_category'))
+
+    if state_observation_threshold is not None:
+        # Remove individual entries that have less than the threshold number of observations
+        bad_entries = df_transitions < state_observation_threshold
+        df_transitions[bad_entries] = 0
+        if DEBUG:
+            print(bad_entries)
+
+    if transition_observation_threshold is not None:
+        # Remove rows and columns that have less than the threshold number of observations
+        # Should keep the matrix square, so just use the row sums
+        good_rows = df_transitions.sum(axis=1) > transition_observation_threshold
+        df_transitions = df_transitions.loc[good_rows, good_rows]
+        if DEBUG:
+            print(good_rows)
 
     if ignore_diagonal:
         np.fill_diagonal(df_transitions.values, 0)

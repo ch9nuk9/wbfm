@@ -1261,6 +1261,10 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
             beh_vec[s:e] = 'low'
             if DEBUG:
                 print(f"Region from {s} to {e} with mean {this_mean} assigned to low")
+
+    if DEBUG:
+        df = pd.DataFrame({'y': y, 'dy': dy, 'state': beh_vec})
+        px.scatter(df, y='y', color='state').show()
     return beh_vec
 
 
@@ -1454,7 +1458,8 @@ def rgb_to_hex(rgb: List[int]):
     return '#%02x%02x%02x' % rgb
 
 
-def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_folder=None, to_view=True, engine=None):
+def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_folder=None, to_view=True, engine=None,
+                                  use_behavior_codes_colors=True, verbose=1, DEBUG=False):
     """
 
     Parameters
@@ -1473,6 +1478,7 @@ def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_f
     dot = Digraph(comment='State Transition Diagram')
 
     # Add nodes to the graph
+    num_nodes = 0
     for state in df_probabilities.index:
         # Set the size parameter based on df_raw_number, if present
         # See https://www.graphviz.org/pdf/dotguide.pdf for parameters
@@ -1483,30 +1489,46 @@ def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_f
             print(state, size)
             _opt = dict(width=str(size), height=str(size), shape='circle', fixedsize='true')
             opt.update(_opt)
-        # Also set the color based on the state
-        state_enum = BehaviorCodes[state]
-        color = state_enum.ethogram_cmap(include_turns=True, use_plotly_style_strings=False)[state_enum]
+        if use_behavior_codes_colors:
+            # Also set the color based on the state
+            state_enum = BehaviorCodes[state]
+            color = state_enum.ethogram_cmap(include_turns=True, use_plotly_style_strings=False)[state_enum]
+        else:
+            color = 'white'
         opt['fillcolor'] = color
         opt['style'] = 'filled'
         # opt['fontcolor'] = color
 
         dot.node(state, **opt)
+        num_nodes += 1
+        if DEBUG:
+            print(state, opt)
+    if verbose >= 1:
+        print(f"Added {num_nodes} nodes")
 
     # Add edges to the graph with labels and widths based on transition probabilities
     eps = 0.01
+    num_edges = 0
     for from_state in df_probabilities.index:
         for to_state in df_probabilities.columns:
             probability = df_probabilities.loc[from_state, to_state]
             if probability > eps:
-                dot.edge(from_state, to_state, label=f'{probability:.2f}', penwidth=str(probability * 5))
+                edge_opt = dict(tail_name=from_state, head_name=to_state,
+                                label=f'{probability:.2f}', width=str(probability * 5))
+                dot.edge(**edge_opt)
+                num_edges += 1
+                if DEBUG:
+                    print(edge_opt)
+    if verbose >= 1:
+        print(f"Added {num_edges} edges")
 
     # Render the graph to a file or display it
     if output_folder is not None:
         fname = os.path.join(output_folder, 'state_transition_diagram')
         dot.render(fname, view=False, format='png', engine=engine)
         dot.render(fname, view=to_view, format='pdf', engine=engine)
-    else:
-        dot.render(view=to_view, format='pdf', engine=engine)
+    # else:
+    #     dot.render(view=to_view, format='pdf', engine=engine)
 
     return dot
 
