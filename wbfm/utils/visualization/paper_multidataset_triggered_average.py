@@ -220,6 +220,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     def get_title_from_trigger_type(self, trigger_type):
         title_mapping = {'raw_rev': 'Raw reversal triggered',
                          'raw_fwd': 'Raw forward triggered',
+                         'raw_vt': 'Raw ventral turn triggered',
+                         'raw_dt': 'Raw dorsal turn triggered',
                          'global_rev': 'Global reversal triggered',
                          'global_fwd': 'Global forward triggered',
                          'residual': 'Residual undulation triggered',
@@ -261,8 +263,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             else:
                 # Then each dataset should be z-scored separately, but across all events simultaneously
                 # Numpy will do this automatically (pandas tries to keep the axis)
+                keys_to_remove = []
                 for _name, df in df_or_dict.items():
+                    if df is None:
+                        keys_to_remove.append(_name)
+                        continue
                     df_or_dict[_name] = (df - np.nanmean(df)) / np.nanstd(df)
+                for k in keys_to_remove:
+                    del df_or_dict[k]
 
         if not return_individual_traces:
             names0 = [n for n in list(df_or_dict.columns) if neuron0 in n]
