@@ -262,7 +262,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         return title_mapping[trigger_type]
 
     def get_trace_difference_auc(self, trigger_type, neuron0, neuron1, num_iters=100, z_score=False,
-                                 shuffle_dataset_pairs=True, return_individual_traces=False):
+                                 norm_type='corr', shuffle_dataset_pairs=True, return_individual_traces=False):
         """
         Calculates the area under the curve of the difference between two neurons.
 
@@ -306,18 +306,22 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         # Define the summary statistic (the mean squared difference, ignoring nan values)
         def norm(x, y):
             # Actually just calculate the correlation
-            if isinstance(x, pd.Series):
-                return np.nanmean(x.corr(y))
+            if norm_type == 'corr':
+                if isinstance(x, pd.Series):
+                    return np.nanmean(x.corr(y))
+                else:
+                    # Then need to apply the correlation to each row (paired)
+                    ind = x.index
+                    all_corrs = [x.loc[i, :].corr(y.loc[i, :]) for i in ind]
+                    return np.nanmean(all_corrs)
+            elif norm_type == 'auc':
+                # This is the same as the mean squared difference
+                delta = np.nanmean((x - y).pow(2))
+                x_norm = np.nanmean(x.pow(2))
+                y_norm = np.nanmean(y.pow(2))
+                return delta / (x_norm + y_norm)
             else:
-                # Then need to apply the correlation to each row (paired)
-                ind = x.index
-                all_corrs = [x.loc[i, :].corr(y.loc[i, :]) for i in ind]
-                return np.nanmean(all_corrs)
-            # This is the same as the mean squared difference
-            # delta = np.nanmean((x - y).pow(2))
-            # x_norm = np.nanmean(x.pow(2))
-            # y_norm = np.nanmean(y.pow(2))
-            # return delta / (x_norm + y_norm)
+                raise ValueError(f"Invalid norm type {norm_type}; must be one of 'corr' or 'auc'")
 
         if shuffle_dataset_pairs:
             if return_individual_traces:
@@ -355,7 +359,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         return all_norms
 
-    def get_trace_difference_auc_multiple_neurons(self, trigger_type, list_of_neurons, **kwargs):
+    def get_trace_difference_auc_multiple_neurons(self, trigger_type, list_of_neurons, norm_type='corr',
+                                                  **kwargs):
         """
         Use get_trace_difference for pairs of neurons, generated as all combinations of the neurons in list_of_neurons.
 
@@ -372,7 +377,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         dict_norms = {}
         for neuron0, neuron1 in tqdm(neuron_combinations, leave=False):
             key = f"{neuron0}-{neuron1}"
-            dict_norms[key] = self.get_trace_difference_auc(trigger_type, neuron0, neuron1, **kwargs)
+            dict_norms[key] = self.get_trace_difference_auc(trigger_type, neuron0, neuron1, norm_type=norm_type,
+                                                            **kwargs)
 
         df_norms = pd.DataFrame(dict_norms)
         return df_norms
