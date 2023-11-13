@@ -663,6 +663,10 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
     df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, **trace_kwargs)
     # Note: if there is one extra frame in the traces, it will be dropped here
     df_traces_and_behavior = pd.merge(df_all_traces, df_all_beh, how='inner', on=['dataset_name', 'local_time'])
+    # Check if the physical time is set in the projects
+    if not all([project.use_physical_time for project in all_projects.values()]):
+        logging.warning(f"Physical time is not set in all projects, so the x axis will be in frames instead of time. "
+                        f"This will cause problems if the traces are indexed using physical time")
     if DEBUG:
         print(f"df_all_traces: {df_all_traces}")
         print(f"df_all_beh: {df_all_beh}")
