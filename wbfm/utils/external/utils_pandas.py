@@ -1091,3 +1091,84 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
             raise NotImplementedError
 
     return df_combined
+
+
+def fill_gaps_categorical(x, window):
+    """Fill gaps in a categorical series using a rolling window median on the factorized values"""
+    # From: https://stackoverflow.com/questions/70551614/python-pandas-most-common-value-over-rolling-window
+    # Factorize
+    y, label = pd.factorize(x)
+    y = pd.Series(y)
+    # Replace the nan factorization with nan
+    y.replace(-1, np.nan, inplace=True)
+    label = pd.Series(label)
+    # Correct values
+    y = y.rolling(window=window, min_periods=1, center=True).median().round()
+    # Unfactorize
+    y = y.map(label)
+    return y
+
+
+def combine_indices_categorical(x):
+    """Combine indices of a categorical series using a rolling window median on the factorized values"""
+    # Factorize
+    y, label = pd.factorize(x)
+    y = pd.Series(y, index=x.index)
+    label = pd.Series(label)
+    # Correct values (combine indices)
+    y = y.groupby(y.index).median().round()
+    # Unfactorize
+    y = y.map(label)
+    return y
+
+
+def resample_categorical(x, target_len=100):
+    """
+    Resample a categorical series to a target length using either:
+    1. combine_indices_categorical if downsampling
+    2. fill_gaps_categorical if upsampling
+    """
+    # Create the output series
+    x_new = pd.Series(index=np.arange(target_len))
+    # Set the index of the input to be fractions of the target, but round
+    x_old = pd.Series(x)
+    new_index = np.round(np.linspace(0, target_len - 1, len(x))).astype(int)
+    x_old.index = new_index
+
+    # If we are downsampling, then there will be duplicate indices
+    if len(x) > target_len:
+        x_new = combine_indices_categorical(x_old)
+    else:
+        # Update the new x with the rounded values
+        x_new.update(x_old)
+
+        # Interpolate using regular rolling mean
+        x_new = fill_gaps_categorical(x_new, window=target_len)
+
+    return list(x_new)
+
+
+def get_contiguous_blocks_from_two_columns(df, col_group, col_value):
+    """
+    Somewhat similar to get_contiguous_blocks_from_column, but directly groups and returns the values of another column
+
+    Parameters
+    ----------
+    df
+    col_group
+    col_value
+
+    Returns
+    -------
+
+    """
+    df = df.copy()
+
+    # Create a grouping variable for each contiguous block of 'A'
+    grouping_variable = (df[col_group] != df[col_value].shift()).cumsum()
+
+    # Group by the new grouping variable and apply the function
+    result = df.groupby([col_group, grouping_variable])[col_value].apply(list)
+    result.index.set_names((col_group, col_value), inplace=True)
+
+    return result

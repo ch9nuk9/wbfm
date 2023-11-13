@@ -10,18 +10,19 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from matplotlib import pyplot as plt
+from plotly import express as px
 from plotly.subplots import make_subplots
 from scipy.interpolate import interp1d
 from scipy.signal import find_peaks, peak_prominences, peak_widths
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends, \
-    remove_short_state_changes
+    remove_short_state_changes, get_contiguous_blocks_from_two_columns, resample_categorical
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError, NeedsAnnotatedNeuronError
 import plotly.graph_objects as go
 
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
+from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe, filter_gaussian_moving_average
 from wbfm.utils.visualization.hardcoded_paths import get_summary_visualization_dir
 
 
@@ -1728,3 +1729,52 @@ def annotate_turns_from_reversal_ends(rev_ends, y_curvature):
     _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
     BehaviorCodes.assert_all_are_valid(_raw_vector)
     return _raw_vector
+
+
+def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_plot):
+    """
+    Calculates discrete states using neuron_group, then plots the discretized states of neuron_plot
+
+    Parameters
+    ----------
+    df_traces
+    neuron_group
+    neuron_plot
+
+    Returns
+    -------
+
+    """
+
+    # Calculate discrete states ('low', 'rise', 'high', 'fall')
+    y = combine_pair_of_ided_neurons(df_traces, neuron_group)
+    y = filter_gaussian_moving_average(y, 2)
+    beh_ava = calculate_rise_high_fall_low(y, verbose=0, DEBUG=False)
+
+    y = combine_pair_of_ided_neurons(df_traces, neuron_plot)
+    y = filter_gaussian_moving_average(y, 8)
+    beh_riv = calculate_rise_high_fall_low(y, verbose=0, DEBUG=False)
+
+    df_combined = pd.DataFrame({'beh_ava': beh_ava, 'beh_riv': beh_riv})
+
+    # Get the variable length series from each bout
+    df_each_bout = get_contiguous_blocks_from_two_columns(df_combined, 'beh_ava', 'beh_riv')
+
+    # Resample each bout to be the same length
+    target_len = 100
+    func = lambda x: resample_categorical(x, target_len=target_len)
+    result_synced = df_each_bout.map(func)
+
+    # Combine into single dataframe
+    all_dfs = []
+    for idx in ['low', 'rise', 'high', 'fall']:
+        s = result_synced[idx]
+        df = pd.DataFrame.from_dict(dict(zip(s.index, s.values))).T
+        all_dfs.append(df.reset_index(drop=True))
+    df = pd.concat(all_dfs, axis=1)
+    df.columns = np.arange(len(df.columns))
+
+    # Plot
+    fig = px.imshow(df)
+
+    return df, fig
