@@ -3,9 +3,10 @@ Designed to plot the triggered average of the paper's datasets.
 """
 import itertools
 import os
+from collections import defaultdict
 from dataclasses import dataclass
 import random
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -34,6 +35,8 @@ class PaperColoredTracePlotter:
         color_mapping = {'raw_rev': cmap(0),
                          'raw': cmap(0),
                          'raw_fwd': cmap(0),
+                         'raw_vt': cmap(0),
+                         'raw_dt': cmap(0),
                          'global_rev': cmap(3),
                          'global': cmap(3),
                          'global_fwd': cmap(3),
@@ -101,32 +104,16 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     min_nonnan: Optional[float] = 0.8
 
     # Three different sets of parameters: raw, global, and residual
-    dataset_clusterer_raw_rev: ClusteredTriggeredAverages = None
-    dataset_clusterer_raw_fwd: ClusteredTriggeredAverages = None
-    dataset_clusterer_global_rev: ClusteredTriggeredAverages = None
-    dataset_clusterer_global_fwd: ClusteredTriggeredAverages = None
-    dataset_clusterer_residual: ClusteredTriggeredAverages = None
-    dataset_clusterer_residual_collision: ClusteredTriggeredAverages = None
-
-    intermediates_raw_rev = None
-    intermediates_raw_fwd = None
-    intermediates_global_rev = None
-    intermediates_global_fwd = None
-    intermediates_residual = None
-    intermediates_collision = None
-
-    # Use these to build rectified (single-state only) triggered averages
-    # For now, only need the residual ones
-    dataset_clusterer_residual_rectified_fwd: ClusteredTriggeredAverages = None
-    dataset_clusterer_residual_rectified_rev: ClusteredTriggeredAverages = None
-
-    intermediates_residual_rectified_fwd = None
-    intermediates_residual_rectified_rev = None
+    dataset_clusterer_dict: Dict[str, ClusteredTriggeredAverages] = None
+    intermediates_dict: Dict[str, tuple] = None
 
     def __post_init__(self):
         # Analyze the project data to get the clusterers and intermediates
         trace_base_opt = self.get_trace_opt(min_nonnan=self.min_nonnan)
         trace_base_opt['use_paper_options'] = True
+
+        self.dataset_clusterer_dict = defaultdict(None)
+        self.intermediates_dict = defaultdict(lambda: (None, None, None))
 
         if self.calculate_residual:
             try:
@@ -138,24 +125,24 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 trace_opt.update(trace_base_opt)
                 out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                          trace_opt=trace_opt)
-                self.dataset_clusterer_residual = out[0]
-                self.intermediates_residual = out[1]
+                self.dataset_clusterer_dict['residual'] = out[0]
+                self.intermediates_dict['residual'] = out[1]
 
                 # Residual rectified forward
                 trigger_opt['only_allow_events_during_state'] = BehaviorCodes.FWD
                 cluster_opt = {}
                 out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
                                                                          trigger_opt=trigger_opt, trace_opt=trace_opt)
-                self.dataset_clusterer_residual_rectified_fwd = out[0]
-                self.intermediates_residual_rectified_fwd = out[1]
+                self.dataset_clusterer_dict['residual_rectified_fwd'] = out[0]
+                self.intermediates_dict['residual_rectified_fwd'] = out[1]
 
                 # Residual rectified reverse
                 trigger_opt['only_allow_events_during_state'] = BehaviorCodes.REV
                 cluster_opt = {}
                 out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
                                                                          trigger_opt=trigger_opt, trace_opt=trace_opt)
-                self.dataset_clusterer_residual_rectified_rev = out[0]
-                self.intermediates_residual_rectified_rev = out[1]
+                self.dataset_clusterer_dict['residual_rectified_rev'] = out[0]
+                self.intermediates_dict['residual_rectified_rev'] = out[1]
 
                 # Only used for BAG: self-collision triggered
                 trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.SELF_COLLISION)
@@ -163,8 +150,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 trace_opt.update(trace_base_opt)
                 out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                          trace_opt=trace_opt)
-                self.dataset_clusterer_residual_collision = out[0]
-                self.intermediates_collision = out[1]
+                self.dataset_clusterer_dict['residual_collision'] = out[0]
+                self.intermediates_dict['residual_collision'] = out[1]
 
             except TypeError:
                 print("Hilbert triggered averages failed; this may be because the data is immobilized")
@@ -176,40 +163,30 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         trace_opt.update(trace_base_opt)
         out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                  trace_opt=trace_opt)
-        self.dataset_clusterer_global_rev = out[0]
-        self.intermediates_global_rev = out[1]
+        self.dataset_clusterer_dict['global_rev'] = out[0]
+        self.intermediates_dict['global_rev'] = out[1]
 
         # Slow forward triggered (global)
         trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.FWD)
         out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                  trace_opt=trace_opt)
-        self.dataset_clusterer_global_fwd = out[0]
-        self.intermediates_global_fwd = out[1]
+        self.dataset_clusterer_dict['global_fwd'] = out[0]
+        self.intermediates_dict['global_fwd'] = out[1]
 
-        # Raw reversal triggered and forward triggered
-        trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.REV)
+        trigger_dict = {'raw_rev': BehaviorCodes.REV, 'raw_fwd': BehaviorCodes.FWD,
+                        'raw_vt': BehaviorCodes.VENTRAL_TURN, 'raw_dt': BehaviorCodes.DORSAL_TURN}
         trace_opt = dict(residual_mode=None)
         trace_opt.update(trace_base_opt)
-        out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
-                                                                 trace_opt=trace_opt)
-        self.dataset_clusterer_raw_rev = out[0]
-        self.intermediates_raw_rev = out[1]
-
-        trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.FWD)
-        out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
-                                                                 trace_opt=trace_opt)
-        self.dataset_clusterer_raw_fwd = out[0]
-        self.intermediates_raw_fwd = out[1]
+        # Raw reversal triggered and forward triggered
+        for trigger_type, state in trigger_dict.items():
+            trigger_opt = dict(use_hilbert_phase=False, state=state)
+            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                     trace_opt=trace_opt)
+            self.dataset_clusterer_dict[trigger_type] = out[0]
+            self.intermediates_dict[trigger_type] = out[1]
 
     def get_clusterer_from_trigger_type(self, trigger_type):
-        trigger_mapping = {'raw_rev': self.dataset_clusterer_raw_rev,
-                           'raw_fwd': self.dataset_clusterer_raw_fwd,
-                           'global_rev': self.dataset_clusterer_global_rev,
-                           'global_fwd': self.dataset_clusterer_global_fwd,
-                           'residual': self.dataset_clusterer_residual,
-                           'residual_collision': self.dataset_clusterer_residual_collision,
-                           'residual_rectified_fwd': self.dataset_clusterer_residual_rectified_fwd,
-                           'residual_rectified_rev': self.dataset_clusterer_residual_rectified_rev}
+        trigger_mapping = self.dataset_clusterer_dict
         if trigger_type not in trigger_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(trigger_mapping.keys())}')
         return trigger_mapping[trigger_type]
@@ -231,14 +208,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         -------
 
         """
-        df_mapping = {'raw_rev': self.intermediates_raw_rev,
-                      'raw_fwd': self.intermediates_raw_fwd,
-                      'global_rev': self.intermediates_global_rev,
-                      'global_fwd': self.intermediates_global_fwd,
-                      'residual': self.intermediates_residual,
-                      'residual_collision': self.intermediates_collision,
-                      'residual_rectified_fwd': self.intermediates_residual_rectified_fwd,
-                      'residual_rectified_rev': self.intermediates_residual_rectified_rev}
+        df_mapping = self.intermediates_dict
         if not return_individual_traces:
             df_mapping = {k: v[1] if v else None for k, v in df_mapping.items()}
         else:
@@ -303,10 +273,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         if len(names0) == 0 or len(names1) == 0:
             raise ValueError(f'Neuron name {neuron0} or {neuron1} not found')
 
-        # Define the summary statistic (the mean squared difference, ignoring nan values)
+        # Define the summary statistic
         def norm(x, y):
-            # Actually just calculate the correlation
             if norm_type == 'corr':
+                # Calculate the correlation, which is what is shown in the clustered matrix
                 if isinstance(x, pd.Series):
                     return np.nanmean(x.corr(y))
                 else:
