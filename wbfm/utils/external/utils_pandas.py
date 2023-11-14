@@ -1165,7 +1165,7 @@ def get_contiguous_blocks_from_two_columns(df, col_group, col_value):
     df = df.copy()
 
     # Create a grouping variable for each contiguous block of 'A'
-    grouping_variable = (df[col_group] != df[col_value].shift()).cumsum()
+    grouping_variable = (df[col_group] != df[col_group].shift()).cumsum()
 
     # Group by the new grouping variable and apply the function
     result = df.groupby([col_group, grouping_variable])[col_value].apply(list)

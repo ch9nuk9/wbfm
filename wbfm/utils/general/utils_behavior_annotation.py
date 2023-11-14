@@ -1731,7 +1731,8 @@ def annotate_turns_from_reversal_ends(rev_ends, y_curvature):
     return _raw_vector
 
 
-def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_plot):
+def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_plot,
+                                              normalize=True, DEBUG=False):
     """
     Calculates discrete states using neuron_group, then plots the discretized states of neuron_plot
 
@@ -1749,11 +1750,11 @@ def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_pl
     # Calculate discrete states ('low', 'rise', 'high', 'fall')
     y = combine_pair_of_ided_neurons(df_traces, neuron_group)
     y = filter_gaussian_moving_average(y, 2)
-    beh_ava = calculate_rise_high_fall_low(y, verbose=0, DEBUG=False)
+    beh_ava = calculate_rise_high_fall_low(y, verbose=0, DEBUG=DEBUG)
 
     y = combine_pair_of_ided_neurons(df_traces, neuron_plot)
     y = filter_gaussian_moving_average(y, 8)
-    beh_riv = calculate_rise_high_fall_low(y, verbose=0, DEBUG=False)
+    beh_riv = calculate_rise_high_fall_low(y, verbose=0, DEBUG=DEBUG)
 
     df_combined = pd.DataFrame({'beh_ava': beh_ava, 'beh_riv': beh_riv})
 
@@ -1767,14 +1768,38 @@ def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_pl
 
     # Combine into single dataframe
     all_dfs = []
-    for idx in ['low', 'rise', 'high', 'fall']:
+    idx_list = ['low', 'rise', 'high', 'fall']
+    for idx in idx_list:
         s = result_synced[idx]
         df = pd.DataFrame.from_dict(dict(zip(s.index, s.values))).T
         all_dfs.append(df.reset_index(drop=True))
     df = pd.concat(all_dfs, axis=1)
     df.columns = np.arange(len(df.columns))
 
-    # Plot
-    fig = px.imshow(df)
+    df_counts = df.apply(lambda x: x.value_counts()).fillna(0)
+    if normalize:
+        df_counts = df_counts / df_counts.sum()
 
-    return df, fig
+    # Add a row for the state of the grouping variable, which is a constant for target_len frames at a time
+    idx_row = []
+    for idx in idx_list:
+        idx_row.extend([idx for _ in range(target_len)])
+    df_counts.loc['state', :] = idx_row
+
+    # Plot each state separately
+    # First, make a plotly figure with subplots
+    fig = make_subplots(cols=len(idx_list), rows=1, shared_yaxes=True, vertical_spacing=0.02,
+                        subplot_titles=idx_list)
+    grouped = df_counts.T.groupby('state')
+
+    for i, key in enumerate(grouped.groups.keys()):
+        g = grouped.get_group(key)
+        # Add this dataframe as a heatmap
+        fig.add_trace(go.Heatmap(z=g.drop(columns='state').T, showscale=False,),
+                      row=1, col=i + 1)
+    fig.update_yaxes(tickvals=np.arange(len(df_counts.index)), ticktext=df_counts.index,
+                     overwrite=True, row=1, col=1, title=neuron_plot)
+    fig.update_layout(title=f"Activity of {neuron_plot} seperated by {neuron_group}")
+    fig.show()
+
+    return fig, (df, df_counts)
