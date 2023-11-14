@@ -1731,7 +1731,7 @@ def annotate_turns_from_reversal_ends(rev_ends, y_curvature):
     return _raw_vector
 
 
-def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_plot,
+def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_plot, plot_style='bar',
                                               normalize=True, DEBUG=False):
     """
     Calculates discrete states using neuron_group, then plots the discretized states of neuron_plot
@@ -1786,20 +1786,32 @@ def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_pl
         idx_row.extend([idx for _ in range(target_len)])
     df_counts.loc['state', :] = idx_row
 
-    # Plot each state separately
-    # First, make a plotly figure with subplots
-    fig = make_subplots(cols=len(idx_list), rows=1, shared_yaxes=True, vertical_spacing=0.02,
-                        subplot_titles=idx_list)
-    grouped = df_counts.T.groupby('state')
+    if plot_style is not None:
+        if plot_style == 'imshow':
+            # Plot each state separately
+            # First, make a plotly figure with subplots
+            fig = make_subplots(cols=len(idx_list), rows=1, shared_yaxes=True, vertical_spacing=0.02,
+                                subplot_titles=idx_list)
+            grouped = df_counts.T.groupby('state')
 
-    for i, key in enumerate(grouped.groups.keys()):
-        g = grouped.get_group(key)
-        # Add this dataframe as a heatmap
-        fig.add_trace(go.Heatmap(z=g.drop(columns='state').T, showscale=False,),
-                      row=1, col=i + 1)
-    fig.update_yaxes(tickvals=np.arange(len(df_counts.index)), ticktext=df_counts.index,
-                     overwrite=True, row=1, col=1, title=neuron_plot)
-    fig.update_layout(title=f"Activity of {neuron_plot} seperated by {neuron_group}")
-    fig.show()
+            for i, key in enumerate(grouped.groups.keys()):
+                g = grouped.get_group(key)
+                # Add this dataframe as a heatmap
+                fig.add_trace(go.Heatmap(z=g.drop(columns='state').T, showscale=False,),
+                              row=1, col=i + 1)
+            fig.update_yaxes(tickvals=np.arange(len(df_counts.index)), ticktext=df_counts.index,
+                             overwrite=True, row=1, col=1, title=neuron_plot)
+            fig.update_layout(title=f"Activity of {neuron_plot} seperated by {neuron_group}")
+        elif plot_style == 'bar':
+            df_counts_melted = df_counts.T.reset_index().drop(columns='state')
+            var_name = f'{neuron_plot}_state'
+            df_counts_melted = pd.melt(df_counts_melted, id_vars='index', var_name=var_name,
+                                       value_name='percent')
+            fig = px.bar(df_counts_melted, x='index', y='percent', color=var_name, orientation='v')
+        else:
+            raise NotImplementedError(f"plot_style {plot_style} not implemented")
+        fig.show()
+    else:
+        fig = None
 
     return fig, (df, df_counts)
