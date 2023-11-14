@@ -1807,11 +1807,7 @@ def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_pl
                              overwrite=True, row=1, col=1, title=neuron_plot)
             fig.update_layout(title=f"Activity of {neuron_plot} seperated by {neuron_group}")
         elif plot_style == 'bar':
-            df_counts_melted = df_counts.T.reset_index().drop(columns='state')
-            var_name = f'{neuron_plot}_state'
-            df_counts_melted = pd.melt(df_counts_melted, id_vars='index', var_name=var_name,
-                                       value_name='percent')
-            fig = px.bar(df_counts_melted, x='index', y='percent', color=var_name, orientation='v')
+            fig = plot_fractional_state_annotations(df_counts, neuron_group, neuron_plot)
         else:
             raise NotImplementedError(f"plot_style {plot_style} not implemented")
         fig.show()
@@ -1819,3 +1815,22 @@ def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_pl
         fig = None
 
     return fig, (df, df_counts)
+
+
+def plot_fractional_state_annotations(df_counts, neuron_group, neuron_plot):
+    df_counts_melted = df_counts.T.reset_index().drop(columns='state')
+    var_name = f'{neuron_plot}_state'
+    df_counts_melted = pd.melt(df_counts_melted, id_vars='index', var_name=var_name,
+                               value_name='fraction')
+    fig = px.bar(df_counts_melted, x='index', y='fraction', color=var_name, orientation='v')
+    # Vertical black lines at the transition points
+    x_list = [100, 200, 300]
+    for x in x_list:
+        fig.add_shape(type='line', x0=x, x1=x, y0=0, y1=1, line=dict(color='black', width=1))
+    fig.update_layout(barmode='stack', bargap=0)
+    # Update the xticks to use the 'state' column
+    x_ticks = np.arange(50, len(df_counts.columns), step=100)
+    x_tick_text = df_counts.loc['state', x_ticks]
+    fig.update_xaxes(tickvals=x_ticks, ticktext=x_tick_text,
+                     overwrite=True, title=f"{neuron_group} state")
+    return fig
