@@ -27,7 +27,7 @@ from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, 
     calc_surpyval_durations_and_censoring, combine_columns_with_suffix
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
-from wbfm.utils.general.utils_paper import apply_figure_settings
+from wbfm.utils.general.utils_paper import apply_figure_settings, neurons_with_confident_ids
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
@@ -2101,7 +2101,7 @@ class ClusteredTriggeredAverages:
         return df_id_counts
 
     def plot_manual_ids_per_cluster(self, all_projects, use_bar_plot=True, neuron_threshold=0,
-                                    normalize_by_number_of_ids=False, legend=False,
+                                    neuron_subset='paper', normalize_by_number_of_ids=False, legend=False,
                                     combine_left_right=False, allow_temporary_names=False,
                                     output_folder=None, **kwargs):
         """
@@ -2125,6 +2125,11 @@ class ClusteredTriggeredAverages:
         if not allow_temporary_names:
             # Remove names with an underscore, which are temporary names
             df_id_counts = df_id_counts.loc[:, [i for i in df_id_counts.columns if '_' not in i]]
+
+        if neuron_subset is not None:
+            if isinstance(neuron_subset, str) and neuron_subset == 'paper':
+                neuron_subset = neurons_with_confident_ids()
+            df_id_counts = df_id_counts.loc[:, neuron_subset]
 
         if not use_bar_plot:
             fig = px.imshow(df_id_counts, title=f"Number of neurons per manual ID per cluster", **kwargs)

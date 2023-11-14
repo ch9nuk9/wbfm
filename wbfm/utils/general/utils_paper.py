@@ -281,3 +281,10 @@ class PaperDataCache:
                     print(f"Deleting {fname}")
                 if not dry_run:
                     os.remove(fname)
+
+
+def neurons_with_confident_ids():
+    neuron_names = ['AVAL', 'AVAR', 'BAGL', 'BAGR', 'RIMR', 'RIML', 'AVEL', 'AVER', 'RIVR', 'RIVL', 'SMDVL', 'SMDVR',
+                    'ALA', 'RIS',
+                    'VB02', 'RIBL', 'RIBR', 'RMEL', 'RMER', 'RMED', 'RMEV', 'RID', 'AVBL', 'AVBR']
+    return neuron_names
