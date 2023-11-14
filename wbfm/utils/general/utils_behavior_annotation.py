@@ -1677,6 +1677,10 @@ def combine_pair_of_ided_neurons(df_traces, base_name='AVA'):
             num_y += 1
             # If both L/R are present, average them
             y = (y + df_traces[this_name]) / num_y
+    if num_y == 0 and base_name in col_names:
+        # Check for just that name, without the suffix
+        num_y = 1
+        y = df_traces[base_name]
     if num_y == 0:
         raise NeedsAnnotatedNeuronError(base_name)
     return y
