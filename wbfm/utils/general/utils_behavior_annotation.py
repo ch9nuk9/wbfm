@@ -1133,7 +1133,7 @@ def calc_slowing_from_speed(y, min_length):
     return beh_vec, beh_vec_raw
 
 
-def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominence=1.0,
+def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominence=0.0,
                                  signal_delta_threshold=0.15, high_assignment_threshold=0.4,
                                  verbose=1, DEBUG=False):
     """
@@ -1187,7 +1187,7 @@ def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominenc
     opt_find_peaks = dict(height=height, width=width, prominence=prominence)
     for i, this_dy in enumerate([dy, -dy]):
         # First find peaks in the smoothed signal
-        df_smooth = filter_gaussian_moving_average(pd.Series(this_dy), 3)
+        df_smooth = filter_gaussian_moving_average(pd.Series(this_dy), 2)
         peaks_smooth, properties_smooth = find_peaks(df_smooth, **opt_find_peaks)
         # Second find the peaks in the original signal
         peaks_raw, properties_raw = find_peaks(this_dy, **opt_find_peaks)
@@ -1858,10 +1858,10 @@ def calculate_behavior_syncronized_discrete_states(df_traces, neuron_group, neur
     # Calculate discrete states ('low', 'rise', 'high', 'fall')
     y_ava = combine_pair_of_ided_neurons(df_traces, neuron_group)
     y_ava = filter_gaussian_moving_average(y_ava, 1)
-    beh_ava = calculate_rise_high_fall_low(y_ava, verbose=0, DEBUG=DEBUG)
+    beh_ava = calculate_rise_high_fall_low(y_ava, verbose=0, DEBUG=False)
     y_riv = combine_pair_of_ided_neurons(df_traces, neuron_plot)
     y_riv = filter_gaussian_moving_average(y_riv, 1)
-    beh_riv = calculate_rise_high_fall_low(y_riv, verbose=0, DEBUG=DEBUG)
+    beh_riv = calculate_rise_high_fall_low(y_riv, verbose=0, DEBUG=False)
     if DEBUG:
         # Plot both traces with their discrete states as colors
 
