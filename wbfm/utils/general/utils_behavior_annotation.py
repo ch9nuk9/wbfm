@@ -1735,8 +1735,8 @@ def annotate_turns_from_reversal_ends(rev_ends, y_curvature):
     return _raw_vector
 
 
-def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_plot, plot_style='bar',
-                                              normalize=True, DEBUG=False):
+def plot_behavior_syncronized_discrete_states_from_traces(df_traces, neuron_group, neuron_plot, plot_style='bar',
+                                                          normalize=True, target_len = 100, DEBUG=False):
     """
     Calculates discrete states using neuron_group, then plots the discretized states of neuron_plot
 
@@ -1750,45 +1750,11 @@ def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_pl
     -------
 
     """
-
-    # Calculate discrete states ('low', 'rise', 'high', 'fall')
-    y = combine_pair_of_ided_neurons(df_traces, neuron_group)
-    y = filter_gaussian_moving_average(y, 2)
-    beh_ava = calculate_rise_high_fall_low(y, verbose=0, DEBUG=DEBUG)
-
-    y = combine_pair_of_ided_neurons(df_traces, neuron_plot)
-    y = filter_gaussian_moving_average(y, 8)
-    beh_riv = calculate_rise_high_fall_low(y, verbose=0, DEBUG=DEBUG)
-
-    df_combined = pd.DataFrame({'beh_ava': beh_ava, 'beh_riv': beh_riv})
-
-    # Get the variable length series from each bout
-    df_each_bout = get_contiguous_blocks_from_two_columns(df_combined, 'beh_ava', 'beh_riv')
-
-    # Resample each bout to be the same length
-    target_len = 100
-    func = lambda x: resample_categorical(x, target_len=target_len)
-    result_synced = df_each_bout.map(func)
-
-    # Combine into single dataframe
-    all_dfs = []
     idx_list = ['low', 'rise', 'high', 'fall']
-    for idx in idx_list:
-        s = result_synced[idx]
-        df = pd.DataFrame.from_dict(dict(zip(s.index, s.values))).T
-        all_dfs.append(df.reset_index(drop=True))
-    df = pd.concat(all_dfs, axis=1)
-    df.columns = np.arange(len(df.columns))
 
-    df_counts = df.apply(lambda x: x.value_counts()).fillna(0)
-    if normalize:
-        df_counts = df_counts / df_counts.sum()
-
-    # Add a row for the state of the grouping variable, which is a constant for target_len frames at a time
-    idx_row = []
-    for idx in idx_list:
-        idx_row.extend([idx for _ in range(target_len)])
-    df_counts.loc['state', :] = idx_row
+    df = calculate_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_plot, idx_list, target_len,
+                                                        DEBUG)
+    df_counts = convert_discrete_state_df_to_counts(df, idx_list, normalize, target_len)
 
     if plot_style is not None:
         if plot_style == 'imshow':
@@ -1815,6 +1781,48 @@ def plot_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_pl
         fig = None
 
     return fig, (df, df_counts)
+
+
+def convert_discrete_state_df_to_counts(df, idx_list=None, normalize=True, target_len=100):
+    if idx_list is None:
+        idx_list = ['low', 'rise', 'high', 'fall']
+    df_counts = df.apply(lambda x: x.value_counts()).fillna(0)
+    if normalize:
+        df_counts = df_counts / df_counts.sum()
+    # Add a row for the state of the grouping variable, which is a constant for target_len frames at a time
+    idx_row = []
+    for idx in idx_list:
+        idx_row.extend([idx for _ in range(target_len)])
+    df_counts.loc['state', :] = idx_row
+    return df_counts
+
+
+def calculate_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_plot, idx_list=None, target_len=100,
+                                                   DEBUG=False):
+    if idx_list is None:
+        idx_list = ['low', 'rise', 'high', 'fall']
+    # Calculate discrete states ('low', 'rise', 'high', 'fall')
+    y = combine_pair_of_ided_neurons(df_traces, neuron_group)
+    y = filter_gaussian_moving_average(y, 2)
+    beh_ava = calculate_rise_high_fall_low(y, verbose=0, DEBUG=DEBUG)
+    y = combine_pair_of_ided_neurons(df_traces, neuron_plot)
+    y = filter_gaussian_moving_average(y, 8)
+    beh_riv = calculate_rise_high_fall_low(y, verbose=0, DEBUG=DEBUG)
+    df_combined = pd.DataFrame({f'beh_{neuron_group}': beh_ava, f'beh_{neuron_plot}': beh_riv})
+    # Get the variable length series from each bout
+    df_each_bout = get_contiguous_blocks_from_two_columns(df_combined, f'beh_{neuron_group}', f'beh_{neuron_plot}')
+    # Resample each bout to be the same length
+    func = lambda x: resample_categorical(x, target_len=target_len)
+    result_synced = df_each_bout.map(func)
+    # Combine into single dataframe
+    all_dfs = []
+    for idx in idx_list:
+        s = result_synced[idx]
+        df = pd.DataFrame.from_dict(dict(zip(s.index, s.values))).T
+        all_dfs.append(df.reset_index(drop=True))
+    df = pd.concat(all_dfs, axis=1)
+    df.columns = np.arange(len(df.columns))
+    return df
 
 
 def plot_fractional_state_annotations(df_counts, neuron_group, neuron_plot):
