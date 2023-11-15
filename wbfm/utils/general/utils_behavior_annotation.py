@@ -1103,7 +1103,7 @@ def approximate_slowing_using_speed_from_config(project_cfg, min_length=3, retur
 
 def calc_slowing_from_speed(y, min_length):
     # At the default height of 0.5, every body bend will show "slowing"
-    beh_vec_raw = calculate_rise_high_fall_low(y, min_length=min_length, width=100, height=1.0, verbose=0)
+    beh_vec_raw = calculate_rise_high_fall_low(y - y.mean(), min_length=min_length, height=1.0, width=100, verbose=0)
     # Convert this to slowing periods
     # For each period check what the mean speed is
     beh_vec = pd.Series(np.zeros_like(beh_vec_raw), index=beh_vec_raw.index, dtype=bool)
@@ -1133,15 +1133,20 @@ def calc_slowing_from_speed(y, min_length):
     return beh_vec, beh_vec_raw
 
 
-def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5, DEBUG=False):
+def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominence=1.0, signal_delta_threshold=0.1,
+                                 verbose=1, DEBUG=False):
     """
     From a time series, calculates the "rise", "high", "fall", and "low" states
 
     Algorithm:
-    1. Find the peaks in the derivative
-    2. Find the peaks in the negative derivative
-    3. Assign the positive peak regions as "rise" and the negative peak regions as "fall"
-    4. Assign intermediate regions based on two passes:
+    - Find the peaks in the derivative in two steps:
+        - Find peaks in a strongly smoothed signal
+        - Find peaks in the original signal
+        - Keep peaks that are in both (or close)
+        - Remove peaks that do not have a large enough delta in the original signal
+    - Same for negative derivative
+    - Assign the positive peak regions as "rise" and the negative peak regions as "fall"
+    - Assign intermediate regions based on two passes:
         - If it is after a rise and before a fall and the amplitude is > 0, it is "high"
         - If it is after a fall and before a rise and the amplitude is < 0, it is "low"
         - Otherwise it is "ambiguous" and assigned based on the mean amplitude (closer to previously assigned high or
@@ -1154,6 +1159,7 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
     verbose
     height - See scipy.signal.find_peaks
     width - See scipy.signal.find_peaks
+    prominence - See scipy.signal.find_peaks
     DEBUG - bool. If True, plots the derivative and the peaks
 
     Returns
@@ -1161,6 +1167,10 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
     A pandas series with the same index as y, with the states as strings:
 
     """
+    # Check if it was mean subtracted
+    eps = 1e-3
+    if np.abs(np.nanmean(y)) > eps:
+        logging.warning("The input vector was not mean subtracted; this may lead to incorrect results")
     # Reset the index, because everything in this function uses raw indices
     y = y.copy().reset_index(drop=True)
     # Take derivative and standardize
@@ -1172,18 +1182,54 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
     # Unfortunately scipy only allows relative height calculations, so we have to hack an absolute height
     # https://stackoverflow.com/questions/53778703/python-scipy-signal-peak-widths-absolute-heigth-fft-3db-damping
     beh_vec = pd.Series(np.zeros_like(y))
-    for i, x in enumerate([dy, -dy]):
-        peaks, properties = find_peaks(x, height=height, width=width)
-        prominences, left_bases, right_bases = peak_prominences(x, peaks)
+    peak_eps = width
+    opt_find_peaks = dict(height=height, width=width, prominence=prominence)
+    for i, this_dy in enumerate([dy, -dy]):
+        # First find peaks in the smoothed signal
+        x_smooth = filter_gaussian_moving_average(pd.Series(this_dy), 3)
+        peaks_smooth, properties_smooth = find_peaks(x_smooth, **opt_find_peaks)
+        # Second find the peaks in the original signal
+        peaks_raw, properties_raw = find_peaks(this_dy, **opt_find_peaks)
+        # Build a consensus list of peaks found in both signals
+        peaks, heights = [], []
+        for peak, prop in zip(peaks_raw, properties_raw['peak_heights']):
+            if np.any(np.abs(peaks_smooth - peak) < peak_eps):
+                peaks.append(peak)
+                heights.append(prop)
+        heights = np.array(heights)
+
+        prominences, left_bases, right_bases = peak_prominences(this_dy, peaks)
         # Instead of prominences, pass the peaks heights to get the intersection at 0
         # But, because the derivative might not exactly be 0, pass an epslion value
         # Note that this epsilon is quite high; some "high" periods can have a negative slope almost as high as a "fall"
         deriv_epsilon = 0.4
         widths, h_eval, left_ips, right_ips = peak_widths(
-            x, peaks,
+            this_dy, peaks,
             rel_height=1,
-            prominence_data=(properties['peak_heights'] - deriv_epsilon, left_bases, right_bases)
+            prominence_data=(heights - deriv_epsilon, left_bases, right_bases)
         )
+
+        # Filter: remove peaks that do not have a large enough delta in the original signal
+        peaks_filtered, heights_filtered = [], []
+        for i_left, i_right, peak, height in zip(left_ips, right_ips, peaks, heights):
+            delta = np.abs(y[int(i_left)] - y[int(i_right)])
+            if delta > signal_delta_threshold:
+                peaks_filtered.append(peak)
+                heights_filtered.append(height)
+            else:
+                if DEBUG:
+                    print(f"Removing peak at {int(i_left)} because delta ({delta}) is too small")
+        heights = np.array(heights_filtered)
+        peaks = np.array(peaks_filtered)
+
+        # Recalculate metadata using the final filtered peaks
+        prominences, left_bases, right_bases = peak_prominences(this_dy, peaks)
+        widths, h_eval, left_ips, right_ips = peak_widths(
+            this_dy, peaks,
+            rel_height=1,
+            prominence_data=(heights - deriv_epsilon, left_bases, right_bases)
+        )
+
         if DEBUG:
             # Plot the derivative with the peaks and widths
             print(h_eval)
@@ -1193,9 +1239,10 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
                 print("Positive peaks")
             else:
                 print("Negative peaks")
-            for i_left, i_right in zip(left_ips, right_ips):
+            for i_left, i_right, i_prom in zip(left_ips, right_ips, prominences):
                 plt.plot(np.arange(int(i_left), int(i_right)), dy[int(i_left): int(i_right)], "x")
-                print(f"left: {int(i_left)}, right: {int(i_right)}")
+                print(f"left: {int(i_left)}, right: {int(i_right)}, "
+                      f"height_delta: {this_dy[int(i_left)] - this_dy[int(i_right)]}, prominence: {i_prom}")
 
         # Actually assign the state
         if i == 0:
@@ -1573,8 +1620,8 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, post_rever
     y_dorsal = combine_pair_of_ided_neurons(df_traces, base_name='SMDD')
     y_ventral = combine_pair_of_ided_neurons(df_traces, base_name='SMDV')
 
-    dorsal_vec = calculate_rise_high_fall_low(y_dorsal)
-    ventral_vec = calculate_rise_high_fall_low(y_ventral)
+    dorsal_vec = calculate_rise_high_fall_low(y_dorsal - y_dorsal.mean())
+    ventral_vec = calculate_rise_high_fall_low(y_ventral - y_ventral.mean())
 
     dorsal_rise_starts, dorsal_rise_ends = get_contiguous_blocks_from_column(dorsal_vec == 'rise', already_boolean=True)
     ventral_rise_starts, ventral_rise_ends = get_contiguous_blocks_from_column(ventral_vec == 'rise',
@@ -1801,13 +1848,31 @@ def calculate_behavior_syncronized_discrete_states(df_traces, neuron_group, neur
                                                    DEBUG=False):
     if idx_list is None:
         idx_list = ['low', 'rise', 'high', 'fall']
+    # if neuron_group not in df_traces or neuron_plot not in df_traces:
+    #     raise NeedsAnnotatedNeuronError(f"neuron_group ({neuron_group}) or neuron_plot ({neuron_plot}) not found")
     # Calculate discrete states ('low', 'rise', 'high', 'fall')
-    y = combine_pair_of_ided_neurons(df_traces, neuron_group)
-    y = filter_gaussian_moving_average(y, 2)
-    beh_ava = calculate_rise_high_fall_low(y, verbose=0, DEBUG=DEBUG)
-    y = combine_pair_of_ided_neurons(df_traces, neuron_plot)
-    y = filter_gaussian_moving_average(y, 8)
-    beh_riv = calculate_rise_high_fall_low(y, verbose=0, DEBUG=DEBUG)
+    y_ava = combine_pair_of_ided_neurons(df_traces, neuron_group)
+    y_ava = filter_gaussian_moving_average(y_ava, 1)
+    beh_ava = calculate_rise_high_fall_low(y_ava, verbose=0, DEBUG=DEBUG)
+    y_riv = combine_pair_of_ided_neurons(df_traces, neuron_plot)
+    y_riv = filter_gaussian_moving_average(y_riv, 1)
+    beh_riv = calculate_rise_high_fall_low(y_riv, verbose=0, DEBUG=DEBUG)
+    if DEBUG:
+        # Plot both traces with their discrete states as colors
+
+        df_ava = pd.DataFrame({'y': y_ava.values, 'state': beh_ava.values}).reset_index()
+        df_ava['id'] = neuron_group
+        df_riv = pd.DataFrame({'y': y_riv.values, 'state': beh_riv.values}).reset_index()
+        df_riv['id'] = neuron_plot
+        # New column for both states simultaneously
+        df_ava['state_combined'] = neuron_group + df_ava['state'] + '_' + neuron_plot + df_riv['state']
+        df_riv['state_combined'] = neuron_group + df_ava['state'] + '_' + neuron_plot + df_riv['state']
+        # Stack the two dataframes, keeping the local indices
+        df = pd.concat([df_ava, df_riv], axis=0, ignore_index=True)
+        fig = px.scatter(df, x='index', y='y', color='state', facet_row='id')
+        fig.show()
+        fig = px.scatter(df, x='index', y='y', color='state_combined', facet_row='id')
+        fig.show()
     df_combined = pd.DataFrame({f'beh_{neuron_group}': beh_ava, f'beh_{neuron_plot}': beh_riv})
     # Get the variable length series from each bout
     df_each_bout = get_contiguous_blocks_from_two_columns(df_combined, f'beh_{neuron_group}', f'beh_{neuron_plot}')
