@@ -1740,9 +1740,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_time_line(self):
         # Doesn't work if the time line needs to be initialized
         time_options = self.calculate_time_line_options()
-        self.time_line.set_xdata(time_options['x'])
-        # self.time_line.set_data(time_options[:2])
-        self.time_line.set_color(time_options['color'])
+        try:
+            self.time_line.set_xdata(time_options['x'])
+            # self.time_line.set_data(time_options[:2])
+            self.time_line.set_color(time_options['color'])
+        except AttributeError as e:
+            # Sometimes a graphics error causes the time line to fail to be initialized; if so just ignore it
+            self.logger.warning("Failed to update time line; probably a graphics error; ignoring it")
+            self.logger.debug(f"Error when updating time line: {e}")
         self.mpl_widget.draw()
 
     @property
