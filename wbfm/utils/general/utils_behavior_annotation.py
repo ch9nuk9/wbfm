@@ -1133,7 +1133,8 @@ def calc_slowing_from_speed(y, min_length):
     return beh_vec, beh_vec_raw
 
 
-def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominence=1.0, signal_delta_threshold=0.1,
+def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominence=1.0,
+                                 signal_delta_threshold=0.15, high_assignment_threshold=0.4,
                                  verbose=1, DEBUG=False):
     """
     From a time series, calculates the "rise", "high", "fall", and "low" states
@@ -1147,8 +1148,8 @@ def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominenc
     - Same for negative derivative
     - Assign the positive peak regions as "rise" and the negative peak regions as "fall"
     - Assign intermediate regions based on two passes:
-        - If it is after a rise and before a fall and the amplitude is > 0, it is "high"
-        - If it is after a fall and before a rise and the amplitude is < 0, it is "low"
+        - If it is after a rise and before a fall and the amplitude is > high_assignment_threshold, it is "high"
+        - If it is after a fall and before a rise and the amplitude is < high_assignment_threshold, it is "low"
         - Otherwise it is "ambiguous" and assigned based on the mean amplitude (closer to previously assigned high or
         low)
 
@@ -1186,8 +1187,8 @@ def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominenc
     opt_find_peaks = dict(height=height, width=width, prominence=prominence)
     for i, this_dy in enumerate([dy, -dy]):
         # First find peaks in the smoothed signal
-        x_smooth = filter_gaussian_moving_average(pd.Series(this_dy), 3)
-        peaks_smooth, properties_smooth = find_peaks(x_smooth, **opt_find_peaks)
+        df_smooth = filter_gaussian_moving_average(pd.Series(this_dy), 3)
+        peaks_smooth, properties_smooth = find_peaks(df_smooth, **opt_find_peaks)
         # Second find the peaks in the original signal
         peaks_raw, properties_raw = find_peaks(this_dy, **opt_find_peaks)
         # Build a consensus list of peaks found in both signals
@@ -1216,9 +1217,12 @@ def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominenc
             if delta > signal_delta_threshold:
                 peaks_filtered.append(peak)
                 heights_filtered.append(height)
+                if DEBUG:
+                    print(f"Keeping peak at {int(i_left)} because delta ({delta}) is large enough")
             else:
                 if DEBUG:
-                    print(f"Removing peak at {int(i_left)} because delta ({delta}) is too small")
+                    print(f"Removing peak at {int(i_left)} because delta ({delta}) is too small "
+                          f"({signal_delta_threshold})")
         heights = np.array(heights_filtered)
         peaks = np.array(peaks_filtered)
 
@@ -1269,22 +1273,23 @@ def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominenc
     ambiguous_periods = []
     for i, (s, e) in enumerate(zip(starts, ends)):
         # Special cases for the first and last regions, based on the next start or previous end
+        is_above_high_threshold = np.mean(y[s:e]) > high_assignment_threshold
         if s == 0:
             # First
-            if beh_vec[e + 1] == 'fall':
+            if beh_vec[e + 1] == 'fall' and is_above_high_threshold:
                 beh_vec[s:e] = 'high'
             else:
                 beh_vec[s:e] = 'low'
         elif e == len(beh_vec):
             # Last
-            if beh_vec[s - 1] == 'rise':
+            if beh_vec[s - 1] == 'rise' and is_above_high_threshold:
                 beh_vec[s:e] = 'high'
             else:
                 beh_vec[s:e] = 'low'
-        elif (beh_vec[s - 1] == 'rise' and beh_vec[e + 1] == 'fall') and np.mean(y[s:e]) > 0:
+        elif (beh_vec[s - 1] == 'rise' and beh_vec[e + 1] == 'fall') and is_above_high_threshold:
             # In between
             beh_vec[s:e] = 'high'
-        elif (beh_vec[s - 1] == 'fall' and beh_vec[e + 1] == 'rise') and np.mean(y[s:e]) < 0:
+        elif (beh_vec[s - 1] == 'fall' and beh_vec[e + 1] == 'rise') and not is_above_high_threshold:
             beh_vec[s:e] = 'low'
         else:
             if beh_vec[s - 1] == beh_vec[e + 1] and verbose > 0:
@@ -1882,6 +1887,8 @@ def calculate_behavior_syncronized_discrete_states(df_traces, neuron_group, neur
     # Combine into single dataframe
     all_dfs = []
     for idx in idx_list:
+        if idx not in result_synced:
+            continue
         s = result_synced[idx]
         df = pd.DataFrame.from_dict(dict(zip(s.index, s.values))).T
         all_dfs.append(df.reset_index(drop=True))
