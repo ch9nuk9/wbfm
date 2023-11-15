@@ -73,17 +73,21 @@ class PaperColoredTracePlotter:
             RIS='tab:blue',
             AVA='tab:orange',
             RIV='tab:green',
+            RMEL='tab:green',
+            RMER='tab:green',
             RID='tab:red',
             RME='tab:purple',
+            VB02='tab:purple',
+            DB01='tab:purple',
             AVB='tab:red',
             RIB='tab:red',
         )
         # Add keys by adding the L/R and V/D suffixes
         for k in list(color_mapping.keys()):
-            color_mapping[k + 'L'] = color_mapping[k]
-            color_mapping[k + 'R'] = color_mapping[k]
-            color_mapping[k + 'V'] = color_mapping[k]
-            color_mapping[k + 'D'] = color_mapping[k]
+            for suffix in ['L', 'R', 'V', 'D']:
+                # Only add if not already in the dictionary
+                if k + suffix not in color_mapping:
+                    color_mapping[k + suffix] = color_mapping[k]
         if neuron_name not in color_mapping:
             raise ValueError(f"Neuron name {neuron_name} not found in color mapping")
         return color_mapping[neuron_name]
@@ -338,7 +342,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         return all_norms
 
     def get_trace_difference_auc_multiple_neurons(self, trigger_type, list_of_neurons, norm_type='corr',
-                                                  **kwargs):
+                                                  df_norms=None, **kwargs):
         """
         Use get_trace_difference for pairs of neurons, generated as all combinations of the neurons in list_of_neurons.
 
