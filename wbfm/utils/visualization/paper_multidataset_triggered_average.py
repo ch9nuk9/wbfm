@@ -78,8 +78,11 @@ class PaperColoredTracePlotter:
             SMDV='tab:green',
             RID='tab:red',
             RME='tab:purple',
+            VB01='tab:purple',
             VB02='tab:purple',
+            VB03='tab:purple',
             DB01='tab:purple',
+            DB02='tab:purple',
             AVB='tab:red',
             RIB='tab:red',
             IL1L='black',
@@ -345,7 +348,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         return all_norms
 
     def get_trace_difference_auc_multiple_neurons(self, trigger_type, list_of_neurons, norm_type='corr',
-                                                  df_norms=None, **kwargs):
+                                                  baseline_neuron=None, df_norms=None, **kwargs):
         """
         Use get_trace_difference for pairs of neurons, generated as all combinations of the neurons in list_of_neurons.
 
@@ -358,7 +361,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         -------
 
         """
-        neuron_combinations = list(itertools.combinations(list_of_neurons, 2))
+        if baseline_neuron is None:
+            neuron_combinations = list(itertools.combinations(list_of_neurons, 2))
+        else:
+            neuron_combinations = [(baseline_neuron, n) for n in list_of_neurons if n != baseline_neuron]
         dict_norms = {}
         for neuron0, neuron1 in tqdm(neuron_combinations, leave=False):
             key = f"{neuron0}-{neuron1}"

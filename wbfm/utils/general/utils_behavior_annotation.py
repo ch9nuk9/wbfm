@@ -17,7 +17,8 @@ from scipy.signal import find_peaks, peak_prominences, peak_widths
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends, \
-    remove_short_state_changes, get_contiguous_blocks_from_two_columns, resample_categorical
+    remove_short_state_changes, get_contiguous_blocks_from_two_columns, resample_categorical, \
+    combine_columns_with_suffix
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError, NeedsAnnotatedNeuronError
 import plotly.graph_objects as go
 
@@ -608,7 +609,7 @@ def shade_stacked_figure_using_behavior_plotly(beh_df, fig, **kwargs):
 def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
                                                            names_to_plot: Union[str, List[str]],
                                                            to_shade=True, to_save=False, fname_suffix='',
-                                                           trace_kwargs=None,
+                                                           trace_kwargs=None, combine_neuron_pairs=True,
                                                            DEBUG=False, **kwargs):
     """
     Loads the traces and behaviors from each project, producing a stack of plotly figures that
@@ -662,6 +663,8 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
             beh_columns.append(name)
     df_all_beh = build_behavior_time_series_from_multiple_projects(all_projects, beh_columns)
     df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, **trace_kwargs)
+    if combine_neuron_pairs:
+        df_all_traces = combine_columns_with_suffix(df_all_traces)
     # Note: if there is one extra frame in the traces, it will be dropped here
     df_traces_and_behavior = pd.merge(df_all_traces, df_all_beh, how='inner', on=['dataset_name', 'local_time'])
     # Check if the physical time is set in the projects
