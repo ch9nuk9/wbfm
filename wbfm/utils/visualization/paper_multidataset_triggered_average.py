@@ -75,12 +75,15 @@ class PaperColoredTracePlotter:
             RIV='tab:green',
             RMEL='tab:green',
             RMER='tab:green',
+            SMDV='tab:green',
             RID='tab:red',
             RME='tab:purple',
             VB02='tab:purple',
             DB01='tab:purple',
             AVB='tab:red',
             RIB='tab:red',
+            IL1L='black',
+            IL2L='black',
         )
         # Add keys by adding the L/R and V/D suffixes
         for k in list(color_mapping.keys()):
