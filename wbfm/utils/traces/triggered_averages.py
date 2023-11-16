@@ -837,6 +837,17 @@ class FullDatasetTriggeredAverages:
     def load_from_project(project_data, trigger_opt=None, trace_opt=None, triggered_time_series_mode="traces",
                           **kwargs):
         """
+        Loads a FullDatasetTriggeredAverages class from a ProjectData class
+
+        Uses the default traces from the ProjectData class, and the default triggered average indices from the
+        WormFullVideoPosture class (which uses automatic behavioral annotations)
+
+        If you want to use custom traces or triggers, use trace_opt or trigger_opt
+        A specific example is to use pass a custom behavioral annotation using:
+            behavioral_annotation = np.array([0, 0, ..., 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, ...])
+            trigger_opt = dict(behavioral_annotation=behavioral_annotation, state=1)
+            triggered_class = FullDatasetTriggeredAverages.load_from_project(project_data_gcamp,
+                                                                             trigger_opt=trigger_opt)
 
         Parameters
         ----------
