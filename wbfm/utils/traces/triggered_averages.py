@@ -165,13 +165,17 @@ class TriggeredAverageIndices:
         # Check the types of the behavioral annotation and state
         if not isinstance(self.behavioral_annotation.iat[0], BehaviorCodes):
             # Attempt to cast using the 'custom' BehaviorCodes, but only if there is only one nontrivial behavior
+            self.behavioral_annotation = pd.Series(self.behavioral_annotation)
             behavior_values = self.behavioral_annotation.unique()
             self.behavioral_state = BehaviorCodes.CUSTOM
-            behavior_mapping = {'-1': BehaviorCodes.UNKNOWN, '0': BehaviorCodes.UNKNOWN}
+            behavior_mapping = {k: BehaviorCodes.UNKNOWN for k in [-1, 0, '-1', '0', np.nan]}
             # Check if there is an additional behavior to be mapped
             unmapped_behavior = set(behavior_values) - set(behavior_mapping.keys())
             if len(unmapped_behavior) == 1:
                 behavior_mapping[unmapped_behavior.pop()] = self.behavioral_state
+            else:
+                raise ValueError(f"Could not map behavioral annotation to Custom BehaviorCodes. "
+                                 f"Unique values: {behavior_values}")
             # Build the Series of BehaviorCodes
             self.behavioral_annotation = self.behavioral_annotation.map(behavior_mapping)
 
