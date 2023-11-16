@@ -59,6 +59,8 @@ class BehaviorCodes(Flag):
     UNKNOWN = auto()
     TRACKING_FAILURE = auto()
 
+    CUSTOM = auto()  # Used when annotations are manually passed as a numpy array; can only deal with one custom state
+
     @classmethod
     def _ulises_int_2_flag(cls, flip: bool = False):
         original_mapping = {

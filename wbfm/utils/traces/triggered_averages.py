@@ -162,6 +162,19 @@ class TriggeredAverageIndices:
     DEBUG: bool = False
 
     def __post_init__(self):
+        # Check the types of the behavioral annotation and state
+        if not isinstance(self.behavioral_annotation.iat[0], BehaviorCodes):
+            # Attempt to cast using the 'custom' BehaviorCodes, but only if there is only one nontrivial behavior
+            behavior_values = self.behavioral_annotation.unique()
+            self.behavioral_state = BehaviorCodes.CUSTOM
+            behavior_mapping = {'-1': BehaviorCodes.UNKNOWN, '0': BehaviorCodes.UNKNOWN}
+            # Check if there is an additional behavior to be mapped
+            unmapped_behavior = set(behavior_values) - set(behavior_mapping.keys())
+            if len(unmapped_behavior) == 1:
+                behavior_mapping[unmapped_behavior.pop()] = self.behavioral_state
+            # Build the Series of BehaviorCodes
+            self.behavioral_annotation = self.behavioral_annotation.map(behavior_mapping)
+
         # Build a dict_of_events_to_keep if only_allow_events_during_state is not None
         state = self.only_allow_events_during_state
         if state is not None:
