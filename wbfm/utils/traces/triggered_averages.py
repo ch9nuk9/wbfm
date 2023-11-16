@@ -168,7 +168,7 @@ class TriggeredAverageIndices:
             self.behavioral_annotation = pd.Series(self.behavioral_annotation)
             behavior_values = self.behavioral_annotation.unique()
             self.behavioral_state = BehaviorCodes.CUSTOM
-            behavior_mapping = {k: BehaviorCodes.UNKNOWN for k in [-1, 0, '-1', '0', np.nan]}
+            behavior_mapping = {k: BehaviorCodes.NOT_ANNOTATED for k in [-1, 0, '-1', '0', np.nan]}
             # Check if there is an additional behavior to be mapped
             unmapped_behavior = set(behavior_values) - set(behavior_mapping.keys())
             if len(unmapped_behavior) == 1:
