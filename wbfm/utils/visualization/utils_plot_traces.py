@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from typing import Union, Optional
@@ -412,13 +413,14 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
     return fig, lower_shading, upper_shading
 
 
-def add_p_value_annotation(fig, array_columns, subplot=None,
-                           _format=None):
+def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None,
+                           _format=None, DEBUG=False):
     """
     From: https://stackoverflow.com/questions/67505252/plotly-box-p-value-significant-annotation
 
     Adds notations giving the p-value between two box plot data (t-test two-sided comparison)
-    Note: figure must be created by individually adding using fig.add_trace, not plotly express
+    Note: designed for individually adding traces using fig.add_trace, not plotly express
+        However, does work with px.box with color separation using x_label
 
     Parameters:
     ----------
@@ -429,6 +431,9 @@ def add_p_value_annotation(fig, array_columns, subplot=None,
         e.g.: [[0,1], [1,2]] compares column 0 with 1 and 1 with 2
     subplot: None or int
         specifies if the figures has subplots and what subplot to add the notation to
+    x_label: None or str or 'all'
+        if the boxplot has been separated by color, this specifies which color (x-axis label) to add the notation to
+        In this case, array_columns should be the column numbers within a single label
     _format: dict
         format characteristics for the lines
 
@@ -437,6 +442,19 @@ def add_p_value_annotation(fig, array_columns, subplot=None,
     fig: figure
         figure with the added notation
     """
+    if x_label == 'all':
+        # Get all x_labels and call recursively
+        all_x_labels = pd.Series(fig.data[0].x).unique()
+        for x_label in all_x_labels:
+            if x_label == 'all':
+                logging.warning("x_label is 'all', which is a reserved keyword. Skipping")
+                continue
+            fig = add_p_value_annotation(fig, array_columns, subplot=subplot, x_label=x_label, _format=_format)
+        return fig
+
+    if array_columns is None:
+        array_columns = [[0, 1]]
+
     # Specify in what y_range to plot for each pair of columns
     if _format is None:
         _format = dict(interline=0.07, text_height=1.07, color='black')
@@ -473,13 +491,34 @@ def add_p_value_annotation(fig, array_columns, subplot=None,
         # Mare sure it is selecting the data and subplot you want
         # print('0:', fig_dict['data'][data_pair[0]]['name'], fig_dict['data'][data_pair[0]]['xaxis'])
         # print('1:', fig_dict['data'][data_pair[1]]['name'], fig_dict['data'][data_pair[1]]['xaxis'])
+        y0 = fig_dict['data'][data_pair[0]]['y']
+        y1 = fig_dict['data'][data_pair[1]]['y']
+
+        if x_label is not None:
+            # Then the x data also contains categories, and we should take a subset of y0 and y1 to match
+            x0 = fig_dict['data'][data_pair[0]]['x']
+            x1 = fig_dict['data'][data_pair[1]]['x']
+
+            y0 = y0[np.where(x0 == x_label)[0]]
+            y1 = y1[np.where(x1 == x_label)[0]]
+            if DEBUG:
+                print(y0)
+                print(y1)
+
+            # In addition, the x values of the annotation should be the same as the x_label, not the raw column number
+            # First we need to get which x value the label corresponds to
+            all_x_labels = pd.Series(x0).unique()  # This keeps the order, unlike np.unique()
+            x_label_ind = np.where(all_x_labels == x_label)[0][0]
+            column_pair = [x_label_ind - 0.2, x_label_ind + 0.2]
+
+        # Drop any nan values
+        y0 = y0[~np.isnan(y0)]
+        y1 = y1[~np.isnan(y1)]
 
         # Get the p-value
-        pvalue = stats.ttest_ind(
-            fig_dict['data'][data_pair[0]]['y'],
-            fig_dict['data'][data_pair[1]]['y'],
-            equal_var=False,
-        )[1]
+        pvalue = stats.ttest_ind(y0, y1, equal_var=False)[1]
+        if DEBUG:
+            print(pvalue)
         if pvalue >= 0.05:
             symbol = 'ns'
         elif pvalue >= 0.01:
