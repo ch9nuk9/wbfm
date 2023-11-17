@@ -413,7 +413,7 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
     return fig, lower_shading, upper_shading
 
 
-def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None,
+def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, bonferroni_factor=None,
                            _format=None, DEBUG=False):
     """
     From: https://stackoverflow.com/questions/67505252/plotly-box-p-value-significant-annotation
@@ -449,11 +449,16 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None,
             if x_label == 'all':
                 logging.warning("x_label is 'all', which is a reserved keyword. Skipping")
                 continue
-            fig = add_p_value_annotation(fig, array_columns, subplot=subplot, x_label=x_label, _format=_format)
+            if bonferroni_factor is None:
+                bonferroni_factor = len(all_x_labels)
+            fig = add_p_value_annotation(fig, array_columns, subplot=subplot, x_label=x_label, _format=_format,
+                                         bonferroni_factor=bonferroni_factor)
         return fig
 
     if array_columns is None:
         array_columns = [[0, 1]]
+
+    annotation_y_shift = -0.08  # Shift annotation down by this amount
 
     # Specify in what y_range to plot for each pair of columns
     if _format is None:
@@ -516,7 +521,7 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None,
         y1 = y1[~np.isnan(y1)]
 
         # Get the p-value
-        pvalue = stats.ttest_ind(y0, y1, equal_var=False)[1]
+        pvalue = stats.ttest_ind(y0, y1, equal_var=False)[1] * bonferroni_factor
         if DEBUG:
             print(pvalue)
         if pvalue >= 0.05:
@@ -530,29 +535,29 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None,
         # Vertical line
         fig.add_shape(type="line",
                       xref="x" + subplot_str, yref="y" + subplot_str + " domain",
-                      x0=column_pair[0], y0=y_range[index][0],
-                      x1=column_pair[0], y1=y_range[index][1],
+                      x0=column_pair[0], y0=y_range[index][0] + 1.5*annotation_y_shift,
+                      x1=column_pair[0], y1=y_range[index][1] + 1.5*annotation_y_shift,
                       line=dict(color=_format['color'], width=2, )
                       )
         # Horizontal line
         fig.add_shape(type="line",
                       xref="x" + subplot_str, yref="y" + subplot_str + " domain",
-                      x0=column_pair[0], y0=y_range[index][1],
-                      x1=column_pair[1], y1=y_range[index][1],
+                      x0=column_pair[0], y0=y_range[index][1] + 1.5*annotation_y_shift,
+                      x1=column_pair[1], y1=y_range[index][1] + 1.5*annotation_y_shift,
                       line=dict(color=_format['color'], width=2, )
                       )
         # Vertical line
         fig.add_shape(type="line",
                       xref="x" + subplot_str, yref="y" + subplot_str + " domain",
-                      x0=column_pair[1], y0=y_range[index][0],
-                      x1=column_pair[1], y1=y_range[index][1],
+                      x0=column_pair[1], y0=y_range[index][0] + 1.5*annotation_y_shift,
+                      x1=column_pair[1], y1=y_range[index][1] + 1.5*annotation_y_shift,
                       line=dict(color=_format['color'], width=2, )
                       )
         ## add text at the correct x, y coordinates
         ## for bars, there is a direct mapping from the bar number to 0, 1, 2...
         fig.add_annotation(dict(font=dict(color=_format['color'], size=14),
                                 x=(column_pair[0] + column_pair[1]) / 2,
-                                y=y_range[index][1] * _format['text_height'],
+                                y=y_range[index][1] * _format['text_height'] + annotation_y_shift,
                                 showarrow=False,
                                 text=symbol,
                                 textangle=0,
