@@ -1069,16 +1069,16 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
                             continue
                         col_other = col_base + other_suffix
                         if col_other in df.columns:
-                            df_combined[col_base] = df[col] + df[col_other]
+                            df_combined.loc[:, col_base] = df[col] + df[col_other]
                             num_suffixes_found += 1
                 else:
                     base_names_found.add(col_base)
         if num_suffixes_found == 0:
             if col_base is not None and col not in raw_names_to_keep:
                 # Then one was found, but no partners... still keep only the base
-                df_combined[col_base] = df[col]
+                df_combined.loc[:, col_base] = df[col]
             else:
-                df_combined[col] = df[col]
+                df_combined.loc[:, col] = df[col]
         elif col_base is not None:
             if how == 'mean':
                 df_combined[col_base] /= num_suffixes_found
@@ -1089,6 +1089,9 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
         else:
             # Should not happen
             raise NotImplementedError
+
+    # Reinitialize the dataframe to fix fragmentation
+    df_combined = df_combined.copy()
 
     return df_combined
 

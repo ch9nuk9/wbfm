@@ -743,6 +743,17 @@ class FullDatasetTriggeredAverages:
         return names
 
     def triggered_average_matrix_from_name(self, name):
+        """
+        Calculates the triggered average matrix (events are rows, time is columns) for a single neuron
+
+        Parameters
+        ----------
+        name
+
+        Returns
+        -------
+
+        """
         return self.ind_class.calc_triggered_average_matrix(self.df_traces[name])
 
     def dict_of_all_triggered_averages(self):
@@ -762,9 +773,7 @@ class FullDatasetTriggeredAverages:
 
     def df_of_all_triggered_averages(self):
         """
-        Just saves the mean of the triggered average
-
-        Fills nan by default
+        Like triggered_average_matrix_from_name, but just saves the mean of the triggered average
         """
         df_triggered = {}
         for name in self.neuron_names:
@@ -780,7 +789,6 @@ class FullDatasetTriggeredAverages:
 
         df_triggered = pd.DataFrame(df_triggered)
         df_triggered = df_triggered.loc[:df_triggered.last_valid_index()]
-        # df_triggered = fill_nan_in_dataframe(df_triggered)
         return df_triggered
 
     def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100,
