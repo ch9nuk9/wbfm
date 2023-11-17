@@ -1053,7 +1053,7 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
         # AQR has no AQL partner
         raw_names_to_keep = {'AQR'}
 
-    df_combined = pd.DataFrame()
+    dict_df_combined = dict()
     # Loop through columns and check if they have a suffix; if so, search for the other suffix and combine
     base_names_found = set()
     for col in df.columns:
@@ -1069,19 +1069,19 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
                             continue
                         col_other = col_base + other_suffix
                         if col_other in df.columns:
-                            df_combined.loc[:, col_base] = df[col] + df[col_other]
+                            dict_df_combined[col_base] = df[col] + df[col_other]
                             num_suffixes_found += 1
                 else:
                     base_names_found.add(col_base)
         if num_suffixes_found == 0:
             if col_base is not None and col not in raw_names_to_keep:
                 # Then one was found, but no partners... still keep only the base
-                df_combined.loc[:, col_base] = df[col]
+                dict_df_combined[col_base] = df[col]
             else:
-                df_combined.loc[:, col] = df[col]
+                dict_df_combined[col] = df[col]
         elif col_base is not None:
             if how == 'mean':
-                df_combined[col_base] /= num_suffixes_found
+                dict_df_combined[col_base] /= num_suffixes_found
             elif how == 'sum':
                 pass
             else:
@@ -1090,8 +1090,8 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
             # Should not happen
             raise NotImplementedError
 
-    # Reinitialize the dataframe to fix fragmentation
-    df_combined = df_combined.copy()
+    # Reinitialize the dataframe to fix fragmentation... but doesn't actually work :/
+    df_combined = pd.DataFrame(dict_df_combined)
 
     return df_combined
 
