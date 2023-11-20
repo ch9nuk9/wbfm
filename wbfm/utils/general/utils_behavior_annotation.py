@@ -1744,6 +1744,21 @@ def combine_pair_of_ided_neurons(df_traces, base_name='AVA'):
 
 
 def annotate_turns_from_reversal_ends(rev_ends, y_curvature):
+    """
+    Uses the reversal ends and curvature to annotate turns in the following way:
+    1. A turn starts at the end of the reversal
+    2. A turn ends at the next zero crossing of the curvature
+    3. If the curvature is positive at the end of the reversal, it is a ventral turn, otherwise dorsal
+
+    Parameters
+    ----------
+    rev_ends
+    y_curvature
+
+    Returns
+    -------
+
+    """
     ventral_starts = []
     ventral_ends = []
     dorsal_starts = []
