@@ -9,6 +9,8 @@ COMMAND=$CODE_DIR/"scripts/postprocessing/delete_analysis_files.py"
 PROJECT_PATH=$PROJECT_DIR/"project_config.yaml"
 python $COMMAND with project_path=$PROJECT_PATH dryrun=False
 
-# Run using the snakemake pipeline
-cd $PROJECT_DIR/snakemake || exit
-bash RUNME_cluster.sh
+# Run using the snakemake pipeline from an sbatch controller job
+COMMAND=$PROJECT_DIR/"snakemake/RUNME_cluster.sh"
+SBATCH_OPT="-t 0-01:00:00 --cpus-per-task 1 --mem 1G --output $PROJECT_DIR/logs/%j.out"
+
+sbatch $COMMAND "$SBATCH_OPT"
