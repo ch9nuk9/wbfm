@@ -1119,7 +1119,7 @@ class ProjectData:
                                                                                           DEBUG=DEBUG)
         return plateaus, working_pw_fits
 
-    def plot_neuron_with_kymograph(self, neuron_name: str):
+    def plot_neuron_with_kymograph(self, neuron_name: str, **kwargs):
         """
         Plots a subplot with a neuron trace and the kymograph, if found
 
@@ -1131,9 +1131,11 @@ class ProjectData:
         -------
 
         """
-        t, y = self.calculate_traces(channel_mode='ratio', calculation_mode='integration',
-                                     neuron_name=neuron_name)
-        df_kymo = self.worm_posture_class.curvature(fluorescence_fps=True) 
+        df = self.calc_default_traces(channel_mode='ratio', calculation_mode='integration',
+                                      neuron_name=neuron_name, **kwargs)
+        t, y = df.index, df[neuron_name]
+        df_kymo = self.worm_posture_class.curvature(fluorescence_fps=True)
+        df_kymo.index = df.index
 
         fig, axes = plt.subplots(nrows=2, figsize=(30, 10), sharex=True)
         axes[0].imshow(df_kymo.T, origin="upper", cmap='seismic', extent=[0, df_kymo.shape[0], df_kymo.shape[1], 0],
