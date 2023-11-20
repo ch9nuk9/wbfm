@@ -10,7 +10,9 @@ PROJECT_PATH=$PROJECT_DIR/"project_config.yaml"
 python $COMMAND with project_path=$PROJECT_PATH dryrun=False
 
 # Run using the snakemake pipeline from an sbatch controller job
-COMMAND=$PROJECT_DIR/"snakemake/RUNME_cluster.sh"
+cd $PROJECT_DIR/snakemake || exit
+#COMMAND=$PROJECT_DIR/"snakemake/RUNME_cluster.sh"
+COMMAND="RUNME_cluster.sh"
 SBATCH_OPT="-t 0-01:00:00 --cpus-per-task 1 --mem 1G"
 
 sbatch $COMMAND "$SBATCH_OPT"
