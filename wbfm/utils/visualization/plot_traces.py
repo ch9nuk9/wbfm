@@ -1366,7 +1366,7 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     row_heights = row_heights[:rows]
 
     # Build figure
-    ## Kymograph and ethogram (large image subplots
+    ## Kymograph and ethogram (large image subplots)
     subplot_titles = ['', '']
     subplot_titles.extend(list(behavior_alias_dict.keys()))
     subplot_titles.append('Speed')

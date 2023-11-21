@@ -9,10 +9,11 @@ import sacred
 from sacred import Experiment
 from sacred.observers import TinyDbObserver
 
+from wbfm.utils.projects.finished_project_data import ProjectData
 # main function
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.visualization.plot_traces import make_summary_interactive_heatmap_with_pca, \
-    make_summary_interactive_heatmap_with_kymograph
+    make_summary_interactive_kymograph_with_behavior
 
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
@@ -29,6 +30,11 @@ def cfg(project_path):
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
+    trace_opt = dict(use_paper_options=True)
+
     project_cfg = ModularProjectConfig(_config['project_path'])
-    make_summary_interactive_heatmap_with_pca(project_cfg, to_show=False, to_save=True)
-    make_summary_interactive_heatmap_with_kymograph(project_cfg, to_show=False, to_save=True)
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    project_data.use_physical_time = True
+
+    make_summary_interactive_heatmap_with_pca(project_data, to_show=False, to_save=True, trace_opt=trace_opt)
+    make_summary_interactive_kymograph_with_behavior(project_data, to_show=False, to_save=True, trace_opt=trace_opt)
