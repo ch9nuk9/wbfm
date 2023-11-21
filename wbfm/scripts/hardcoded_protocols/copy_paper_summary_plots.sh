@@ -4,6 +4,8 @@
 COPY_VIS_COMMAND=$CODE_FOLDER/"scripts/visualization/copy_visualizations_for_paper_folders.sh"
 OUTPUT_FOLDER="/scratch/neurobiology/zimmer/wbfm/SummaryPlots/gcamp"
 
+echo "Running copy_visualizations_for_paper_folders.sh for all datasets..."
+
 # Copy files with multiple extensions
 EXTENSIONS=("png" "html")
 FILENAMES=("summary_trace_plot" "summary_behavior_plot_kymograph")
