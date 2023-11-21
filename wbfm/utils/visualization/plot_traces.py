@@ -1666,6 +1666,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
             # Traces are pca modes
             trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index,
                                          line=dict(color=mode_colormap[i], width=2), showlegend=False))
+            trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
         else:
             # Traces are specific behaviors
             name_key = list(behavior_alias_dict.keys())[i]
@@ -1678,8 +1679,8 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                 # Do not control the line colors here, because we want different ones on one plot
                 trace_list.append(go.Scatter(y=y, x=y.index, name=single_name, showlegend=True))
 
-        # Same options regardless of behavior or not
-        trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
+                # Same options, but additional entries to match length of trace_list
+                trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
 
     #### Shading on top of the PCA modes
     try:
