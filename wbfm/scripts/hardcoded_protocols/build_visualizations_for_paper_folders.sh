@@ -25,6 +25,7 @@ python $COMMAND with project_path=$PARENT_DIR/"$DATASET"
 
 echo "Job $DATASET completed"
 EOF
+  sleep 1  # pause to be kind to the scheduler
   done
 done
 
