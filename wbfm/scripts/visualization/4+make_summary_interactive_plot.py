@@ -22,7 +22,7 @@ ex.add_config(project_path=None)
 
 
 @ex.config
-def cfg(project_path, crop_x_axis):
+def cfg(project_path):
     project_dir = str(Path(project_path).parent)
 
 

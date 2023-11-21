@@ -16,4 +16,4 @@ for DATASET_PARENT in "${DATASET_PARENT_DIRS[@]}"; do
   done
 done
 
-echo "Finished!"
+echo "Finished dispatching all jobs; use 'ps' to check on them."
