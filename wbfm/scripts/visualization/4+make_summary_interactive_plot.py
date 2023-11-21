@@ -38,4 +38,4 @@ def main(_config, _run):
 
     make_summary_interactive_heatmap_with_pca(project_data, to_show=False, to_save=True, trace_opt=trace_opt)
     make_summary_interactive_kymograph_with_behavior(project_data, to_show=False, to_save=True, trace_opt=trace_opt,
-                                                     crop_x_axis=False)
+                                                     crop_x_axis=False, apply_figure_size_settings=False)

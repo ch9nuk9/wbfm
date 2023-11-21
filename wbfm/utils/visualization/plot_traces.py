@@ -1333,7 +1333,7 @@ def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html', o
 
 
 def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, to_show=False, keep_reversal_turns=False,
-                                                     crop_x_axis=True, **kwargs):
+                                                     crop_x_axis=True, apply_figure_size_settings=True, **kwargs):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of the neural traces
 
@@ -1432,7 +1432,8 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     fig.update_annotations(yshift=-7)
 
     fig.update_layout(showlegend=False)
-    apply_figure_settings(fig, width_factor=0.75, height_factor=0.75, plotly_not_matplotlib=True)
+    if apply_figure_size_settings:
+        apply_figure_settings(fig, width_factor=0.75, height_factor=0.75, plotly_not_matplotlib=True)
 
     # Get the colormaps and legends in the right places, and not overlapping
     fig.update_layout(
