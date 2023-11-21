@@ -29,7 +29,7 @@ EOF
 done
 
 # Wait for sbatch jobs to finish
-while squeue -h -u "$USER" -n 'my_job' | grep -q 'my_job'; do
+while [[ $(squeue -h -u "$USER" --format="%j" | grep -c 'my_job') -gt 0 ]]; do
   sleep 60  # sleep for 60 seconds (adjust as needed)
 done
 
