@@ -12,7 +12,7 @@ COMMAND=$CODE_DIR/"scripts/visualization/4+make_summary_interactive_plot.py"
 for DATASET_PARENT in "${DATASET_PARENT_DIRS[@]}"; do
   # Find all subfolders and loop over them
   for DATASET in "$PARENT_DIR"/"$DATASET_PARENT"/*; do
-    python $COMMAND with project_path="$DATASET"/project_config.yaml crop_x_axis=False &
+    python $COMMAND with project_path="$DATASET"/project_config.yaml &
   done
 done
 
