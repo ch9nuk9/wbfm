@@ -3,7 +3,7 @@
 # Commands
 CODE_FOLDER="/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
 COPY_VIS_COMMAND=$CODE_FOLDER/"scripts/visualization/copy_visualizations_for_paper_folders.sh"
-OUTPUT_FOLDER="/scratch/neurobiology/zimmer/wbfm/SummaryPlots/gcamp"
+OUTPUT_PARENT_FOLDER="/scratch/neurobiology/zimmer/wbfm/SummaryPlots"
 
 echo "Running copy_visualizations_for_paper_folders.sh for all datasets..."
 
@@ -13,7 +13,7 @@ FILENAMES=("summary_trace_plot" "summary_behavior_plot_kymograph")
 
 for EXT in "${EXTENSIONS[@]}"; do
     for FILENAME in "${FILENAMES[@]}"; do
-        bash "$COPY_VIS_COMMAND" -t 4-traces/"$FILENAME"."$EXT" -d "$OUTPUT_FOLDER"
+        bash "$COPY_VIS_COMMAND" -t 4-traces/"$FILENAME"."$EXT" -d "$OUTPUT_PARENT_FOLDER"/"$FILENAME"
     done
 done
 
