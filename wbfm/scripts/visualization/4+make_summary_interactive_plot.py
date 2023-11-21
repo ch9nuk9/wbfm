@@ -18,11 +18,11 @@ from wbfm.utils.visualization.plot_traces import make_summary_interactive_heatma
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
 # Add single variable so that the cfg() function works
-ex.add_config(project_path=None)
+ex.add_config(project_path=None, crop_x_axis=True)
 
 
 @ex.config
-def cfg(project_path):
+def cfg(project_path, crop_x_axis):
     project_dir = str(Path(project_path).parent)
 
 
@@ -31,10 +31,12 @@ def main(_config, _run):
     sacred.commands.print_config(_run)
 
     trace_opt = dict(use_paper_options=True)
+    crop_x_axis = _config['crop_x_axis']
 
     project_cfg = ModularProjectConfig(_config['project_path'])
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     project_data.use_physical_time = True
 
     make_summary_interactive_heatmap_with_pca(project_data, to_show=False, to_save=True, trace_opt=trace_opt)
-    make_summary_interactive_kymograph_with_behavior(project_data, to_show=False, to_save=True, trace_opt=trace_opt)
+    make_summary_interactive_kymograph_with_behavior(project_data, to_show=False, to_save=True, trace_opt=trace_opt,
+                                                     crop_x_axis=crop_x_axis)

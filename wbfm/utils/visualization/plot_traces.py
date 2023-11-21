@@ -1333,7 +1333,7 @@ def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html', o
 
 
 def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, to_show=False, keep_reversal_turns=False,
-                                                     **kwargs):
+                                                     crop_x_axis=True, **kwargs):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of the neural traces
 
@@ -1404,7 +1404,6 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
             for i in range(num_before_adding_shapes, len(fig.layout.shapes)):
                 fig.layout.shapes[i]['yref'] = 'paper'
 
-
     # for trace, trace_opt in zip(trace_list, trace_opt_list):
     #     fig.add_trace(trace, **trace_opt)
     #     num_before_adding_shapes = len(fig.layout.shapes)
@@ -1416,10 +1415,10 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     #     for i in range(num_before_adding_shapes, len(fig.layout.shapes)):
     #         fig.layout.shapes[i]['yref'] = 'paper'
 
-
     ### Final updates
-    fig.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x',
-                     range=[25000, 29000])
+    fig.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
+    if crop_x_axis:
+        fig.update_xaxes(dict(range=[25000, 29000]), row=1, col=1, overwrite=True)
     fig.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
 
     # Flip the kymograph
