@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Commands
+CODE_FOLDER="/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
 COPY_VIS_COMMAND=$CODE_FOLDER/"scripts/visualization/copy_visualizations_for_paper_folders.sh"
 OUTPUT_FOLDER="/scratch/neurobiology/zimmer/wbfm/SummaryPlots/gcamp"
 
@@ -15,3 +16,5 @@ for EXT in "${EXTENSIONS[@]}"; do
         bash "$COPY_VIS_COMMAND" -t 4-traces/"$FILENAME"."$EXT" -d "$OUTPUT_FOLDER"
     done
 done
+
+echo "Finished copying visualizations for all datasets."
