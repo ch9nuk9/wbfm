@@ -3,7 +3,7 @@
 # Commands
 CODE_FOLDER="/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
 COPY_VIS_COMMAND=$CODE_FOLDER/"scripts/visualization/copy_visualizations_for_paper_folders.sh"
-OUTPUT_PARENT_FOLDER="/scratch/neurobiology/zimmer/wbfm/SummaryPlots"
+OUTPUT_PARENT_FOLDER="/scratch/neurobiology/zimmer/wbfm/SummaryPlots/gcamp"
 
 echo "Running copy_visualizations_for_paper_folders.sh for all datasets..."
 
