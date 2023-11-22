@@ -1808,7 +1808,7 @@ def annotate_turns_from_reversal_ends(rev_ends, y_curvature):
 
 
 def plot_behavior_syncronized_discrete_states_from_traces(df_traces, neuron_group, neuron_plot, plot_style='bar',
-                                                          normalize=True, target_len = 100, DEBUG=False):
+                                                          normalize=True, target_len=100, DEBUG=False):
     """
     Calculates discrete states using neuron_group, then plots the discretized states of neuron_plot
 
