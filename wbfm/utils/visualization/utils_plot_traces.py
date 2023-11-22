@@ -414,7 +414,7 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
 
 
 def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, bonferroni_factor=None,
-                           _format=None, DEBUG=False):
+                           _format=None, permutations=None, DEBUG=False):
     """
     From: https://stackoverflow.com/questions/67505252/plotly-box-p-value-significant-annotation
 
@@ -436,6 +436,8 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
         In this case, array_columns should be the column numbers within a single label
     _format: dict
         format characteristics for the lines
+    permutations: Optional[int]
+        If not None, then do a non-parametric t-test using this many permutations
 
     Returns:
     -------
@@ -521,7 +523,7 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
         y1 = y1[~np.isnan(y1)]
 
         # Get the p-value
-        pvalue = stats.ttest_ind(y0, y1, equal_var=False)[1] * bonferroni_factor
+        pvalue = stats.ttest_ind(y0, y1, equal_var=False, random_state=4242, permutations=permutations)[1] * bonferroni_factor
         if DEBUG:
             print(pvalue)
         if pvalue >= 0.05:
