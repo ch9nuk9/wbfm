@@ -1,9 +1,11 @@
 import logging
 import os
 import re
+from pathlib import Path
 
 import mat73
 import numpy as np
+from MultiChannelVol import MultiChannelVolume
 from pynwb import NWBFile, NWBHDF5IO
 from pynwb.ophys import OnePhotonSeries, OpticalChannel, ImageSegmentation, PlaneSegmentation, Fluorescence, RoiResponseSeries
 from hdmf.data_utils import DataChunkIterator
@@ -13,6 +15,7 @@ from datetime import datetime
 from hdmf.backends.hdf5.h5_utils import H5DataIO
 # ndx_mulitchannel_volume is the novel NWB extension for multichannel optophysiology in C. elegans
 from ndx_multichannel_volume import CElegansSubject, OpticalChannelReferences, OpticalChannelPlus, ImagingVolume
+from tifffile import tifffile
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -47,7 +50,7 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     # Unpack video
     red_video = project_data.red_data
 
-    nwb_file = nwb_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder)
+    nwb_file = nwb_with_traces_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder)
     return nwb_file
 
 
@@ -113,11 +116,11 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
     # Unpack video
     red_video = None
 
-    nwb_file = nwb_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder)
+    nwb_file = nwb_with_traces_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder)
     return nwb_file
 
 
-def nwb_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder):
+def nwb_with_traces_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder):
     # Initialize and populate the NWB file
     nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
 
@@ -380,3 +383,206 @@ def convert_traces_to_nwb_format(gce_quant, imaging_plane,  calcium_image_series
     )
 
     return ImSeg, fluor
+
+
+def nwb_from_pedro_format(folder_name: str):
+    """
+    Pedro's manually organized format, which contains:
+    1. ome.tif for the neuropal stacks
+    2. .xlsx for the neuropal ID, with two sheets separated for head and tail
+    3. .txt for fiji-exported positions of the ID'ed neurons. This is XY; Z is in the .xlsx file
+    4. Optional: ome.tif for the head (if traces are calculated)
+    5. Optional: ome.tif for the tail (if traces are calculated)
+    6. Optional: .mat for the traces (if traces are calculated)
+
+    Parameters
+    ----------
+    folder_name
+
+    Returns
+    -------
+
+    """
+    # Unpack the folder name into parts, which will form the basis of the input and output file names
+    folder_dirname = Path(folder_name).name
+    folder_parts = folder_dirname.split('_')
+    all_files = os.listdir(folder_name)
+    all_files = [f for f in all_files if not f.startswith('.')]
+
+    # Unpack these parts into metadata for the NWB file
+    date_str = folder_parts[0]
+    day = int(date_str[:2])
+    month = int(date_str[2:4])
+    year = int("20" + date_str[4:])
+    session_start_time = datetime(year, month, day)
+
+    strain_id = folder_parts[1]
+
+    subject_id = session_start_time.strftime("%Y%m%d-%H-%M-%S")
+
+    # First load the ID and position data
+    # File should be .xlsx and contain "NeuroPAL" in the name
+    fname = [f for f in all_files if ('NeuroPAL' in f) and f.endswith('.xlsx')][0]
+    fname = os.path.join(folder_name, fname)
+
+    sheet_name_base = f"{folder_parts[0]}_{folder_parts[2]}"
+    all_dfs_excel = []
+    for suffix in ['head', 'tail']:
+        sheet_name = f"{sheet_name_base}_{suffix}"
+        df = pd.read_excel(fname, sheet_name=sheet_name)
+        df.loc[~(df['neuron ID'].isnull()), 'body_part'] = suffix
+        all_dfs_excel.append(df)
+    df = all_dfs_excel[0].copy()
+    df.update(all_dfs_excel[1])
+
+    # Now load the XY position data
+    fname = [f for f in all_files if ('NeuroPAL' in f) and f.endswith('.txt')][0]
+    fname = os.path.join(folder_name, fname)
+    df_xy = pd.read_csv(fname, sep='\t', header=None)
+    df_xy.columns = ['X', 'Y']
+    df = pd.concat([df_xy, df], axis=1)
+
+    # Add column for the z position, which is contained in the comments
+    def _convert_comment_to_z(entry):
+        if isinstance(entry, str):
+            return int(entry.split(' ')[1])
+        else:
+            return np.nan
+
+    df['Z'] = df['comments'].apply(_convert_comment_to_z)
+
+    # Load the neuropal stack (image)
+    fname = [f for f in all_files if ('NeuroPAL' in f) and f.endswith('.ome.tif')][0]
+    fname = os.path.join(folder_name, fname)
+    with tifffile.TiffFile(fname) as f:
+        neuropal_stacks = f.asarray()
+
+    # Pack everything as a NWB file
+    nwbfile = initialize_nwb_file(session_start_time, strain_id, subject_id)
+
+    # TODO: is the microscope the same as the one used for the freely moving experiments?
+    device = nwbfile.create_device(
+        name="Spinning disk confocal",
+        description="Zeiss Observer.Z1 Inverted Microscope with Yokogawa CSU-X1, "
+                    "Zeiss LD LCI Plan-Apochromat 40x WI objective 1.2 NA",
+        manufacturer="Zeiss"
+    )
+
+    # Neuropal and segmentation
+    nwbfile = add_neuropal_stacks_to_nwb(nwbfile, device, neuropal_stacks)
+
+
+
+    if output_folder:
+        fname = os.path.join(output_folder, subject_id + '.nwb')
+        logging.info(f"Saving NWB file to {fname}")
+        with NWBHDF5IO(fname, mode='w') as io:
+            io.write(nwbfile)
+        logging.info(f"Saving successful!")
+
+    return nwbfile
+
+
+def add_neuropal_stacks_to_nwb(nwbfile, device, neuropal_stacks):
+    """
+    Add a neuropal stack to an existing NWB file.
+
+    Parameters
+    ----------
+    nwbfile
+    device
+    neuropal_stacks
+
+    Returns
+    -------
+
+    """
+
+    # First, the metadata
+
+    # Channels is a list of tuples where each tuple contains the fluorophore used, the specific emission filter used, and a short description
+    # structured as "excitation wavelength - emission filter center point- width of emission filter in nm"
+    # TODO: Make sure this list is in the same order as the channels in your data
+    channels = [("mTagBFP2", " BrightLine HC 447/60", "405-447-60m"),  # UV excited, observe in blue
+                ("CyOFP1", "BrightLine HC 617/73", "488-617-73m"),  # excited with blue, observe in red
+                #("CyOFP1-high filter", "Chroma ET 700/75", "488-700-75m"),
+                ("GFP-GCaMP", " BrightLine HC 525/50", "488-525-50m"),
+                ("mNeptune 2.5", "Chroma ET 647/57", "561-647-57m"),
+                ("Tag RFP-T", "Chroma ET 586/20", "561-586-20m"),
+                #("mNeptune 2.5-far red", "Chroma ET 700/75", "639-700-75m")
+                ]
+    # We also have mScarlet, which is not normally in neuropal
+
+    OptChannels = []
+    OptChanRefData = []
+    # The loop below takes the list of channels and converts it into a list of OpticalChannelPlus objects which hold the metadata
+    # for the optical channels used in the experiment
+    for fluor, des, wave in channels:
+        excite = float(wave.split('-')[0])
+        emiss_mid = float(wave.split('-')[1])
+        emiss_range = float(wave.split('-')[2][:-1])
+        OptChan = OpticalChannelPlus(
+            name=fluor,
+            description=des,
+            excitation_lambda=excite,
+            excitation_range=[excite - 1.5, excite + 1.5],
+            emission_range=[emiss_mid - emiss_range / 2, emiss_mid + emiss_range / 2],
+            emission_lambda=emiss_mid
+        )
+
+        OptChannels.append(OptChan)
+        OptChanRefData.append(wave)
+
+    # This object just contains references to the order of channels because OptChannels does not preserve ordering by itself
+    OpticalChannelRefs = OpticalChannelReferences(
+        name='OpticalChannelRefs',
+        channels=OptChanRefData
+    )
+
+    ImagingVol = ImagingVolume(
+        name='NeuroPALImVol',
+        # Add connections to the OptChannels and OpticalChannelRefs objects
+        optical_channel_plus=OptChannels,
+        order_optical_channels=OpticalChannelRefs,
+        # Free form description of what is being imaged in this volume
+        description='NeuroPAL image of C. elegans brain',
+        # Reference the device created earlier that was used to acquire this data
+        device=device,
+        # Specifies where in the C. elegans body the image is being taken of
+        location="Head and Tail",
+        # Specifies the voxel spacing in x, y, z respectively. The values specified should be how many micrometers of physical
+        # distance are covered by a single pixel in each dimension
+        # TODO: grid spacing
+        grid_spacing=[0.3208, 0.3208, 0.75],
+        grid_spacing_unit='micrometers',
+        # Origin coords, origin coords unit, and reference frames are carry over fields from other model organisms where you
+        # are likely only looking at a small portion of the brain. These fields are unfortunately required but feel free to put
+        # whatever feels right here
+        origin_coords=[0, 0, 0],
+        origin_coords_unit="micrometers",
+        reference_frame="Worm head"
+    )
+
+    nwbfile.add_imaging_plane(ImagingVol)  # add this ImagingVol to the nwbfile
+
+    # Then, the data
+    # TODO: Data is in order C, Z, Y, X when reading in??
+    data = neuropal_stacks
+    RGBW_channels = [0, 1, 4, 6]
+
+    Image = MultiChannelVolume(
+        name='NeuroPALImageRaw',
+        # This is the same OpticalChannelRefs used in the associated Imaging Volume
+        order_optical_channels=OpticalChannelRefs,
+        description='free form description of image',
+        # Specifies which channels in the image are associated with the RGBW channels - should be a list of channel indices as shown above
+        RGBW_channels=RGBW_channels,
+        # This is the raw data numpy array that we loaded above
+        data=H5DataIO(data=data, compression=True),
+        # This is a reference to the Imaging Volume object we defined previously
+        imaging_volume=ImagingVol
+    )
+
+    nwbfile.add_acquisition(Image)
+
+    return nwbfile
