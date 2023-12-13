@@ -5,7 +5,6 @@ from pathlib import Path
 
 import mat73
 import numpy as np
-from MultiChannelVol import MultiChannelVolume
 from pynwb import NWBFile, NWBHDF5IO
 from pynwb.ophys import OnePhotonSeries, OpticalChannel, ImageSegmentation, PlaneSegmentation, Fluorescence, RoiResponseSeries
 from hdmf.data_utils import DataChunkIterator
@@ -14,7 +13,7 @@ import pandas as pd
 from datetime import datetime
 from hdmf.backends.hdf5.h5_utils import H5DataIO
 # ndx_mulitchannel_volume is the novel NWB extension for multichannel optophysiology in C. elegans
-from ndx_multichannel_volume import CElegansSubject, OpticalChannelReferences, OpticalChannelPlus, ImagingVolume
+from ndx_multichannel_volume import CElegansSubject, OpticalChannelReferences, OpticalChannelPlus, ImagingVolume, MultiChannelVolume
 from tifffile import tifffile
 from tqdm.auto import tqdm
 
