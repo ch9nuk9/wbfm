@@ -7,6 +7,7 @@
 #SBATCH --output=log_test-%j.out    # Standard output and error log
 #SBATCH --time=0:10:00
 #SBATCH --partition=gpu
+#SBATCH --gres=shard:1
 
 CMD_DIR="/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/scripts"
 CMD="${CMD_DIR}/examples/check_gpu.py"
