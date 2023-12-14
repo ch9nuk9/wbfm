@@ -10,6 +10,6 @@
 #SBATCH --gres=shard:1
 
 CMD_DIR="/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/scripts"
-CMD="${CMD_DIR}/examples/check_gpu.py"
+CMD="${CMD_DIR}/hardcoded_protocols/check_gpu.py"
 
 python $CMD
