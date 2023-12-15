@@ -407,6 +407,8 @@ def nwb_from_pedro_format(folder_name: str, output_folder=None):
     fname = os.path.join(folder_name, fname)
     with tifffile.TiffFile(fname) as f:
         neuropal_stacks = f.asarray()
+    # Want to have the dimensions be XYZC
+    neuropal_stacks = neuropal_stacks.transpose((3, 2, 0, 1))
 
     # Pack everything as a NWB file
     nwbfile = initialize_nwb_file(session_start_time, strain_id, subject_id)
@@ -435,7 +437,6 @@ def nwb_from_pedro_format(folder_name: str, output_folder=None):
 
 def finalize_nwb_processing_modules(NeuroPALImSeg, nwbfile):
     # First, unpack the objects
-    Image = nwbfile.acquisition['NeuroPALImageRaw']
     calcium_image_series = None
     OpticalChannelRefs = nwbfile.imaging_planes['NeuroPALImVol'].order_optical_channels
     ImSeg = None
@@ -493,7 +494,15 @@ def unpack_pedro_project(folder_name):
     year = int("20" + date_str[4:])
     session_start_time = datetime(year, month, day)
     strain_id = folder_parts[1]
-    subject_id = session_start_time.strftime("%Y%m%d-%H-%M-%S")
+    # Subject is date and then an integer for which worm on that day
+    # Get this from the folder name, e.g. <date>_<strain>_worm<id>
+    match = re.search(r'worm(\d+)', folder_dirname)
+    if match:
+        worm_number = int(match.group(1))
+    else:
+        print(f"Pattern 'worm' not found in the input string.")
+        raise NotImplementedError
+    subject_id = f"{session_start_time.strftime('%Y%m%d')}-{worm_number:02d}"
     # First load the ID and position data
     # File should be .xlsx and contain "NeuroPAL" in the name
     fname = [f for f in raw_project_files if ('NeuroPAL' in f) and f.endswith('.xlsx')][0]
@@ -556,7 +565,7 @@ def add_neuropal_stacks_to_nwb(nwbfile, device, neuropal_stacks):
 
     # Channels is a list of tuples where each tuple contains the fluorophore used, the specific emission filter used, and a short description
     # structured as "excitation wavelength - emission filter center point- width of emission filter in nm"
-    # TODO: Make sure this list is in the same order as the channels in your data
+    # Make sure this list is in the same order as the channels in your data
     channels = [("mNeptune 2.5", "Chroma ET 647/57", "561-647-57m"),
                 ("Tag RFP-T", "Chroma ET 586/20", "561-586-20m"),
                 ("CyOFP1", "BrightLine HC 617/73", "488-617-73m"),  # excited with blue, observe in red
@@ -607,7 +616,7 @@ def add_neuropal_stacks_to_nwb(nwbfile, device, neuropal_stacks):
         # Specifies the voxel spacing in x, y, z respectively. The values specified should be how many micrometers of physical
         # distance are covered by a single pixel in each dimension
         # TODO: grid spacing
-        grid_spacing=[0.2, 0.2, 0.2],
+        grid_spacing=[0.4, 0.4, 0.2],
         grid_spacing_unit='micrometers',
         # Origin coords, origin coords unit, and reference frames are carry over fields from other model organisms where you
         # are likely only looking at a small portion of the brain. These fields are unfortunately required but feel free to put
