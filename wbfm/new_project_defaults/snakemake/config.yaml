@@ -1,12 +1,13 @@
 
 # Global requirement
 project_dir: "/scratch/neurobiology/zimmer/path/to/this/project"
-code_path: "/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts"
 
 # Step 0: preprocessing
 # Also uses raw data and produces a .zarr.zip, but that will NOT be within this project, so is not included
 output_0:
   - dat/bounding_boxes.pickle
+script_0:
+  - "0b-preprocess_working_copy_of_data"
 
 # Step 1: segmentation
 # NOTE: raw data is outside the project, and thus is not in this format
@@ -16,6 +17,8 @@ output_1_dir:
   - 1-segmentation/masks.zarr
 output_1:
   - 1-segmentation/metadata.pickle
+script_1:
+  - "wbfm.scripts.1-segment_video"
 
 # Step 2: tracklets
 input_2a_dir:
@@ -24,6 +27,8 @@ input_2a:
   - 1-segmentation/metadata.pickle
 output_2a:
   - 2-training_data/raw/frame_dat.pickle
+script_2a:
+  - "wbfm.scripts.2a-build_frame_objects"
 
 input_2b_dir:
   - 1-segmentation/masks.zarr
@@ -32,6 +37,8 @@ input_2b:
   - 2-training_data/raw/frame_dat.pickle
 output_2b:
   - 2-training_data/raw/match_dat.pickle
+script_2b:
+  - "wbfm.scripts.2b-match_adjacent_volumes"
 
 input_2c:
   - 2-training_data/raw/frame_dat.pickle
@@ -39,6 +46,8 @@ input_2c:
 output_2c:
   - 2-training_data/all_tracklets.pickle
   - 2-training_data/raw/clust_df_dat.pickle
+script_2c:
+  - "wbfm.scripts.2c-postprocess_matches_to_tracklets"
 
 # Step 3: Tracking
 input_3a:
@@ -46,6 +55,8 @@ input_3a:
   - 2-training_data/raw/frame_dat.pickle
 output_3a:
   - 3-tracking/postprocessing/df_tracks_superglue.h5
+script_3a:
+  - "wbfm.scripts.3a-track_using_superglue"
 
 input_3b:
   - 3-tracking/postprocessing/df_tracks_superglue.h5
@@ -53,6 +64,8 @@ input_3b:
 output_3b:
   - 3-tracking/postprocessing/combined_3d_tracks.h5
   - 3-tracking/global2tracklet.pickle
+script_3b:
+  - "wbfm.scripts.3b-match_tracklets_and_tracks_using_neuron_initialization"
 
 # Step 4: final traces
 input_4:
@@ -64,3 +77,5 @@ output_4:
   - 4-traces/green_traces.h5
 output_4_dir:
   - 4-traces/reindexed_masks.zarr.zip
+script_4:
+  - "wbfm.scripts.4-make_final_traces"
