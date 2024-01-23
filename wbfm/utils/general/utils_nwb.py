@@ -569,8 +569,8 @@ def add_neuropal_stacks_to_nwb(nwbfile, device, neuropal_stacks):
     channels = [("mNeptune 2.5", "Chroma ET 647/57", "561-647-57m"),
                 ("Tag RFP-T", "Chroma ET 586/20", "561-586-20m"),
                 ("CyOFP1", "BrightLine HC 617/73", "488-617-73m"),  # excited with blue, observe in red
-                ("mTagBFP2", " BrightLine HC 447/60", "405-447-60m"),  # UV excited, observe in blue
-                ("GFP-GCaMP", " BrightLine HC 525/50", "488-525-50m"),
+                ("mTagBFP2", "BrightLine HC 447/60", "405-447-60m"),  # UV excited, observe in blue
+                ("GFP-GCaMP", "BrightLine HC 525/50", "488-525-50m"),
                 # ("CyOFP1-high filter", "Chroma ET 700/75", "488-700-75m"),
                 #("mNeptune 2.5-far red", "Chroma ET 700/75", "639-700-75m")
                 ]
