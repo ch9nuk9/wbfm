@@ -7,7 +7,7 @@ from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 configfile: "snakemake_config.yaml"
 
 # Load the folders needed for the behavioral part of the pipeline
-cfg = ModularProjectConfig(snakemake_config['project_dir'])
+cfg = ModularProjectConfig(config['project_dir'])
 raw_data_dir, output_behavior_dir = cfg.get_folders_for_behavior_pipeline()
 
 
@@ -24,12 +24,12 @@ def _run_helper(script_name, project_path):
 
 rule traces:
     input:
-        traces=expand("{dir}/{test}", test=snakemake_config['output_4'], dir=snakemake_config['project_dir'])
+        traces=expand("{dir}/{test}", test=config['output_4'], dir=config['project_dir'])
 
 
 rule traces_and_behavior:
     input:
-        traces=expand("{dir}/{test}", test=snakemake_config['output_4'], dir=snakemake_config['project_dir']),
+        traces=expand("{dir}/{test}", test=config['output_4'], dir=config['project_dir']),
         beh_figure= f"{output_behavior_dir}/behavioral_summary_figure.pdf"
 
 #
@@ -38,25 +38,25 @@ rule traces_and_behavior:
 
 rule preprocessing:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=snakemake_config['project_dir']),
+        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
     output:
-        expand("{dir}/{output}", output=snakemake_config['output_0'], dir=snakemake_config['project_dir']),
+        expand("{dir}/{output}", output=config['output_0'], dir=config['project_dir']),
     run:
-        _run_helper(snakemake_config['script_0'], str(input.cfg))
+        _run_helper(config['script_0'], str(input.cfg))
 
 #
 # Segmentation
 #
 rule segmentation:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=snakemake_config['project_dir']),
-        files=expand("{dir}/{input}", input=snakemake_config['input_1'], dir=snakemake_config['project_dir'])
+        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
+        files=expand("{dir}/{input}", input=config['input_1'], dir=config['project_dir'])
     output:
-        metadata=expand("{dir}/{output}", output=snakemake_config['output_1'], dir=snakemake_config['project_dir']),
-        masks=directory(expand("{dir}/{output}", output=snakemake_config['output_1_dir'], dir=snakemake_config['project_dir']))
+        metadata=expand("{dir}/{output}", output=config['output_1'], dir=config['project_dir']),
+        masks=directory(expand("{dir}/{output}", output=config['output_1_dir'], dir=config['project_dir']))
     threads: 56
     run:
-        _run_helper(snakemake_config['script_1'], str(input.cfg))
+        _run_helper(config['script_1'], str(input.cfg))
 
 
 #
@@ -64,73 +64,73 @@ rule segmentation:
 #
 rule build_frame_objects:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=snakemake_config['project_dir']),
-        masks=ancient(expand("{dir}/{input}", input=snakemake_config['output_1_dir'], dir=snakemake_config['project_dir'])),
-        files=expand("{dir}/{input}", input=snakemake_config['input_2a'], dir=snakemake_config['project_dir'])
+        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
+        masks=ancient(expand("{dir}/{input}", input=config['output_1_dir'], dir=config['project_dir'])),
+        files=expand("{dir}/{input}", input=config['input_2a'], dir=config['project_dir'])
     output:
-        expand("{dir}/{output}", output=snakemake_config['output_2a'], dir=snakemake_config['project_dir'])
+        expand("{dir}/{output}", output=config['output_2a'], dir=config['project_dir'])
     threads: 56
     run:
-        _run_helper(snakemake_config['script_2a'], str(input.cfg))
+        _run_helper(config['script_2a'], str(input.cfg))
 
 
 rule match_frame_pairs:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=snakemake_config['project_dir']),
-        masks=ancient(expand("{dir}/{input}", input=snakemake_config['output_1_dir'], dir=snakemake_config['project_dir'])),
-        files=expand("{dir}/{input}", input=snakemake_config['input_2b'], dir=snakemake_config['project_dir'])
+        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
+        masks=ancient(expand("{dir}/{input}", input=config['output_1_dir'], dir=config['project_dir'])),
+        files=expand("{dir}/{input}", input=config['input_2b'], dir=config['project_dir'])
     output:
-        expand("{dir}/{output}", output=snakemake_config['output_2b'], dir=snakemake_config['project_dir'])
+        expand("{dir}/{output}", output=config['output_2b'], dir=config['project_dir'])
     threads: 56
     run:
-        _run_helper(snakemake_config['script_2b'], str(input.cfg))
+        _run_helper(config['script_2b'], str(input.cfg))
 
 
 rule postprocess_matches_to_tracklets:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=snakemake_config['project_dir']),
-        files=expand("{dir}/{input}", input=snakemake_config['input_2c'], dir=snakemake_config['project_dir']),
+        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
+        files=expand("{dir}/{input}", input=config['input_2c'], dir=config['project_dir']),
     output:
-        expand("{dir}/{output}", output=snakemake_config['output_2c'], dir=snakemake_config['project_dir'])
+        expand("{dir}/{output}", output=config['output_2c'], dir=config['project_dir'])
     threads: 8
     run:
-        _run_helper(snakemake_config['script_2c'], str(input.cfg))
+        _run_helper(config['script_2c'], str(input.cfg))
 
 #
 # Tracking
 #
 rule tracking:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=snakemake_config['project_dir']),
-        files=expand("{dir}/{input}", input=snakemake_config['input_3a'], dir=snakemake_config['project_dir'])
+        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
+        files=expand("{dir}/{input}", input=config['input_3a'], dir=config['project_dir'])
     output:
-        expand("{dir}/{output}", output=snakemake_config['output_3a'], dir=snakemake_config['project_dir'])
+        expand("{dir}/{output}", output=config['output_3a'], dir=config['project_dir'])
     threads: 48
     run:
-        _run_helper(snakemake_config['script_3a'], str(input.cfg))
+        _run_helper(config['script_3a'], str(input.cfg))
 
 rule combine_tracking_and_tracklets:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=snakemake_config['project_dir']),
-        files=expand("{dir}/{input}", input=snakemake_config['input_3b'], dir=snakemake_config['project_dir'])
+        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
+        files=expand("{dir}/{input}", input=config['input_3b'], dir=config['project_dir'])
     output:
-        expand("{dir}/{output}", output=snakemake_config['output_3b'], dir=snakemake_config['project_dir'])
+        expand("{dir}/{output}", output=config['output_3b'], dir=config['project_dir'])
     threads: 8
     run:
-        _run_helper(snakemake_config['script_3b'], str(input.cfg))
+        _run_helper(config['script_3b'], str(input.cfg))
 
 #
 # Traces
 #
 rule extract_full_traces:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=snakemake_config['project_dir']),
-        files=expand("{dir}/{input}", input=snakemake_config['input_4'], dir=snakemake_config['project_dir'])
+        cfg=expand("{dir}/project_config.yaml", dir=config['project_dir']),
+        files=expand("{dir}/{input}", input=config['input_4'], dir=config['project_dir'])
     output:
-        expand("{dir}/{output}", output=snakemake_config['output_4'], dir=snakemake_config['project_dir'])
+        expand("{dir}/{output}", output=config['output_4'], dir=config['project_dir'])
     threads: 56
     run:
-        _run_helper(snakemake_config['script_4'], str(input.cfg))
+        _run_helper(config['script_4'], str(input.cfg))
 
 
 #
@@ -164,7 +164,7 @@ rule subtract_background:
         background_img = background_img
     params:
         function = "stack_subtract_background",
-        do_inverse = snakemake_config["do_inverse"]
+        do_inverse = config["do_inverse"]
     output:
         background_subtracted_img ="{output_behavior_dir}/raw_stack_AVG_background_subtracted.btf"
     run:
@@ -183,8 +183,8 @@ rule normalize_img:
         input_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted.btf"
     params:
         function = "stack_normalise",
-        alpha = snakemake_config["alpha"],
-        beta = snakemake_config["beta"]
+        alpha = config["alpha"],
+        beta = config["beta"]
     output:
         normalised_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
     run:
@@ -203,8 +203,8 @@ rule worm_unet:
         input_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
     params:
         function  = "unet_segmentation_stack",
-        weights_path = snakemake_config["worm_unet_weights"],
-        #network_name = snakemake_config["worm_unet_network_name"]# '5358068_1'
+        weights_path = config["worm_unet_weights"],
+        #network_name = config["worm_unet_network_name"]# '5358068_1'
     output:
         worm_unet_prediction = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented.btf"
     run:
@@ -222,8 +222,8 @@ rule binarize:
         input_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented.btf"
     params:
         function = "stack_make_binary",
-        threshold = snakemake_config["threshold"],
-        max_value = snakemake_config["max_value"]
+        threshold = config["threshold"],
+        max_value = config["max_value"]
     output:
         binary_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask.btf"
     run:
@@ -243,7 +243,7 @@ rule coil_unet:
         raw_input_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
     params:
         function = "unet_segmentation_contours_with_children",
-        weights_path= snakemake_config["coil_unet_weights"]
+        weights_path= config["coil_unet_weights"]
         #network_name="5910044_0"
     output:
         coil_unet_prediction = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented.btf"
@@ -263,8 +263,8 @@ rule binarize_coil:
         input_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented.btf"
     params:
         function = "stack_make_binary",
-        threshold = snakemake_config["coil_threshold"], # 240
-        max_value = snakemake_config["coil_new_value"] # 255
+        threshold = config["coil_threshold"], # 240
+        max_value = config["coil_new_value"] # 255
     output:
         binary_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented_mask.btf"
     run:
@@ -283,8 +283,8 @@ rule tiff2avi:
         input_img = "{sample}raw_stack_AVG_background_subtracted_normalised.btf"
     params:
         function = "tiff2avi",
-        fourcc = snakemake_config["fourcc"], #"0",
-        fps = snakemake_config["fps"] # "167"
+        fourcc = config["fourcc"], #"0",
+        fps = config["fps"] # "167"
     output:
         avi = "{sample}raw_stack_AVG_background_subtracted_normalised.avi"
     run:
@@ -302,11 +302,11 @@ rule dlc_analyze_videos:
     input:
         input_avi = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.avi"
     params:
-        dlc_model_configfile_path = snakemake_config["dlc_model_configfile_path"],
-        dlc_network_string = snakemake_config["dlc_network_string"], # Is this used?
-        dlc_conda_env = snakemake_config["dlc_conda_env"]
+        dlc_model_configfile_path = config["dlc_model_configfile_path"],
+        dlc_network_string = config["dlc_network_string"], # Is this used?
+        dlc_conda_env = config["dlc_conda_env"]
     output:
-        hdf5_file = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+snakemake_config["dlc_network_string"]+".h5"
+        hdf5_file = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["dlc_network_string"]+".h5"
     shell:
         """
         source /apps/conda/miniconda3/bin/activate {params.dlc_conda_env}
@@ -316,14 +316,14 @@ rule dlc_analyze_videos:
 rule create_centerline:
     input:
         input_binary_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented_mask.btf",
-        hdf5_file = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+snakemake_config["dlc_network_string"]+".h5"
+        hdf5_file = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["dlc_network_string"]+".h5"
 
     params:
         output_path = "{output_behavior_dir}/", # Ulises' functions expect the final slash
         number_of_neighbours = "1",
-        nose = snakemake_config['nose'],
-        tail = snakemake_config['tail'],
-        num_splines = snakemake_config['num_splines'],
+        nose = config['nose'],
+        tail = config['tail'],
+        num_splines = config['num_splines'],
         fill_with_DLC = "1"
     output :
         output_skel_X = "{output_behavior_dir}/skeleton_skeleton_X_coords.csv",
@@ -350,8 +350,8 @@ rule create_centerline:
 rule invert_curvature_sign:
     input:
         spline_K = "{output_behavior_dir}/skeleton_spline_K.csv",
-        # would be good to ad the snakemake_config yaml file to input because if it is updated the code should re-run
-        #config_yaml_file = os.path.join(os.path.dirname(os.path.dirname("{sample}_skeleton_spline_K.csv")), "snakemake_config.yaml") #hard to get its path
+        # would be good to ad the config yaml file to input because if it is updated the code should re-run
+        #config_yaml_file = os.path.join(os.path.dirname(os.path.dirname("{sample}_skeleton_spline_K.csv")), "config.yaml") #hard to get its path
     # params:
     #     output_path = "{output_behavior_dir}/"
     output:
@@ -371,7 +371,7 @@ rule average_kymogram:
         spline_K = "{output_behavior_dir}/skeleton_spline_K_signed.csv"
     params:
         #rolling_mean_type =,
-        window = snakemake_config['averaging_window']
+        window = config['averaging_window']
     output:
         spline_K_avg = "{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
     run:
@@ -387,7 +387,7 @@ rule average_xy_coords:
         spline_Y= "{output_behavior_dir}/skeleton_spline_Y_coords.csv",
     params:
         #rolling_mean_type =,
-        window = snakemake_config['averaging_window']
+        window = config['averaging_window']
     output:
         spline_X_avg= "{output_behavior_dir}/skeleton_spline_X_coords_avg.csv",
         spline_Y_avg= "{output_behavior_dir}/skeleton_spline_Y_coords_avg.csv",
@@ -408,8 +408,8 @@ rule hilbert_transform_on_kymogram:
         output_path = "{output_behavior_dir}/", # Ulises' functions expect the final slash
     params:
         output_path = "{output_behavior_dir}/", # Ulises' functions expect the final slash
-        fs = snakemake_config["sampling_frequency"],
-        window = snakemake_config["hilbert_averaging_window"]
+        fs = config["sampling_frequency"],
+        window = config["hilbert_averaging_window"]
     output:
         # wont be created because they the outputs do not have the {sample} root
         hilbert_regenerated_carrier = "{output_behavior_dir}/hilbert_regenerated_carrier.csv",
@@ -433,8 +433,8 @@ rule fast_fourier_transform:
         spline_K="{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
     params:
         # project_folder
-        sampling_frequency=snakemake_config["sampling_frequency"],
-        window = snakemake_config["fft_averaging_window"],
+        sampling_frequency=config["sampling_frequency"],
+        window = config["fft_averaging_window"],
         output_path = "{output_behavior_dir}/",  # Ulises' functions expect the final slash
 
     output:
@@ -476,10 +476,10 @@ rule annotate_behaviour:
         curvature_file = "{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
 
     params:
-        pca_model_path = snakemake_config["pca_model"],
-        initial_segment = snakemake_config["initial_segment"],
-        final_segment = snakemake_config["final_segment"],
-        window = snakemake_config["window"]
+        pca_model_path = config["pca_model"],
+        initial_segment = config["initial_segment"],
+        final_segment = config["final_segment"],
+        window = config["window"]
     output:
         principal_components = "{output_behavior_dir}/principal_components.csv",
         behaviour_annotation = "{output_behavior_dir}/beh_annotation.csv"
@@ -502,10 +502,10 @@ rule annotate_turns:
         spline_K  = "{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
     params:
         output_path = "{output_behavior_dir}/",  # Ulises' functions expect the final slash
-        threshold = snakemake_config["turn_threshold"],
-        initial_segment = snakemake_config["turn_initial_segment"],
-        final_segment = snakemake_config["turn_final_segment"],
-        avg_window = snakemake_config["turn_avg_window"]
+        threshold = config["turn_threshold"],
+        initial_segment = config["turn_initial_segment"],
+        final_segment = config["turn_final_segment"],
+        avg_window = config["turn_avg_window"]
     output:
         turns_annotation = "{output_behavior_dir}/turns_annotation.csv"
 
