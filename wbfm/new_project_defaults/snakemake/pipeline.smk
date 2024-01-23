@@ -23,12 +23,12 @@ def _run_helper(script_name, project_path):
 
 rule traces:
     input:
-        expand("{dir}/{test}", test=config['output_4'], dir=config['project_dir'])
+        traces=expand("{dir}/{test}", test=config['output_4'], dir=config['project_dir'])
 
 
 rule traces_and_behavior:
     input:
-        expand("{dir}/{test}", test=config['output_4'], dir=config['project_dir']),
+        traces=expand("{dir}/{test}", test=config['output_4'], dir=config['project_dir']),
         beh_figure= f"{output_behavior_dir}/behavioral_summary_figure.pdf"
 
 #
