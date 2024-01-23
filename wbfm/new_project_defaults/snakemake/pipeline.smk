@@ -28,7 +28,7 @@ rule traces:
 
 rule traces_and_behavior:
     input:
-        expand("{dir}/{test}", test=config['output_4'], dir=config['project_dir'])
+        expand("{dir}/{test}", test=config['output_4'], dir=config['project_dir']),
         beh_figure= f"{output_behavior_dir}/behavioral_summary_figure.pdf"
 
 #
