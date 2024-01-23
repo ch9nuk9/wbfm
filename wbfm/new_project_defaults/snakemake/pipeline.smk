@@ -13,6 +13,7 @@ raw_data_dir, output_behavior_dir = cfg.get_folders_for_behavior_pipeline()
 
 def _run_helper(script_name, project_path):
     import importlib
+    print("Running script: ", script_name)
     _module = importlib.import_module(f"wbfm.scripts.{script_name}")
     _module.ex.run(config_updates=dict(project_path=project_path))
 
