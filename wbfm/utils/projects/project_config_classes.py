@@ -11,6 +11,7 @@ import pandas as pd
 import pprint
 
 from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
+from wbfm.utils.general.custom_errors import NoBehaviorDataError
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
 from wbfm.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
     get_sequential_filename, get_location_of_new_project_defaults
@@ -37,8 +38,13 @@ class ConfigFileWithProjectContext:
     log_to_file: bool = True
 
     def __post_init__(self):
+        if Path(self.self_path).is_dir():
+            # Then it was a folder, and we should find the config file inside
+            self.project_dir = self.self_path
+            self.self_path = str(Path(self.self_path).joinpath('project_config.yaml'))
+        else:
+            self.project_dir = str(Path(self.self_path).parent)
         self.config = load_config(self.self_path)
-        self.project_dir = str(Path(self.self_path).parent)
 
     @property
     def logger(self):
@@ -468,6 +474,26 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             behavior_subfolder = None
         return behavior_subfolder, flag
 
+    def get_folders_for_behavior_pipeline(self):
+        """
+        Requires the raw behavior folder and the behavior folder in the project
+
+        Returns
+        -------
+
+        """
+        behavior_raw_folder, flag = self.get_behavior_raw_parent_folder_from_red_fname()
+        if not flag:
+            raise NoBehaviorDataError()
+
+        beh_cfg = self.get_behavior_config()
+        behavior_folder = beh_cfg.subfolder
+
+        if not Path(behavior_folder).exists():
+            update_path_to_behavior_in_config(self)
+
+        return behavior_raw_folder, behavior_folder
+
 
 def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> SubfolderConfigFile:
     # For now, does NOT overwrite anything on disk
@@ -485,7 +511,18 @@ def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> Subfolde
 
 
 def update_path_to_behavior_in_config(cfg: ModularProjectConfig):
-    # Used to update old projects that were not initialized with a behavior folder
+    """
+    Used to update old projects that were not initialized with a behavior folder
+
+    Parameters
+    ----------
+    cfg
+
+    Returns
+    -------
+
+    """
+
     try:
         _ = cfg.get_behavior_config()
         print("Project already has a behavior config; update cannot be clearly automated")

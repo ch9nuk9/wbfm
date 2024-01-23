@@ -71,3 +71,69 @@ output_4:
 output_4_dir:
   - 4-traces/reindexed_masks.zarr.zip
 script_4: 4-make_final_traces
+
+
+#
+# FOR BEHAVIORAL ANALYSIS
+#
+# Read using the config
+#raw_data_dir: "/scratch/neurobiology/zimmer/wbfm/example_data/ZIM2165_Gcamp7b_worm1"
+
+# rule subtract background
+do_inverse: True
+
+#rule normalise
+alpha: 0
+beta: 255
+
+#worm unet weights
+worm_unet_weights : "/scratch/neurobiology/zimmer/centerline_pipeline/neural_networks/unet_worm.hdf5"
+
+#rule stack_make_binary
+threshold : 30
+max_value : 255
+
+#rule coil unet
+coil_unet_weights : "/scratch/neurobiology/zimmer/centerline_pipeline/neural_networks/unet_worm_coil.hdf5"
+
+# rule binarize_coil
+coil_threshold : 240
+coil_new_value : 255
+
+#rule tiff2avi
+fourcc : 0 #codec
+fps : 83
+
+# rule dlc_analyze_videos
+dlc_model_configfile_path : "/scratch/neurobiology/zimmer/centerline_pipeline/neural_networks/deeplabcut_projects/wbfm_nose_tail-ulises-2023-01-04/config.yaml"
+dlc_network_string : "DLC_resnet50_wbfm_nose_tailJan4shuffle1_1030000"
+dlc_conda_env: "/scratch/neurobiology/zimmer/.conda/envs/HR_tracker"
+
+# rule create centerline
+nose : "nose" # how was the nose annotated as in DLC model? e.g. head, nose, Head, Nose, etc..
+tail : "tail" # how was the tail annotated as in DLC model?
+num_splines : 100
+
+# averaging spline (X,Y,K) rule
+averaging_window : 83
+
+# rule annotate behaviour
+pca_model : "/scratch/neurobiology/zimmer/centerline_pipeline/code/curvature/curvature/models/1738_20230403_eigenworm_PCA_bodypart_30_to_80.pkl"
+initial_segment : 30
+final_segment : 80
+window : 100
+
+# for turns annotation
+turn_threshold : 0.5
+turn_initial_segment : 10
+turn_final_segment : 90
+turn_avg_window : 500
+
+# Hilbert
+hilbert_averaging_window : 83
+# Hilbert also uses the sampling frequency, which is the same as for the fft
+
+# rule fft
+sampling_frequency: 83
+fft_averaging_window: 83
+
