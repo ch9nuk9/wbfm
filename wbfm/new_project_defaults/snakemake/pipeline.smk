@@ -138,9 +138,9 @@ rule extract_full_traces:
 
 # Find the specific folders to use
 raw_data_subfolder = glob.glob(f"{raw_data_dir}/*Ch0-BH/")
+print("Found raw data subfolder(s): ", raw_data_subfolder)
 if len(raw_data_subfolder) == 1:
     raw_data_subfolder = raw_data_subfolder[0]
-    print("These are the datasets: ", raw_data_subfolder)
 elif len(raw_data_subfolder) > 1:
     raise ValueError("There is more than one raw dataset")
 else:

@@ -485,7 +485,9 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         behavior_raw_folder, flag = self.get_behavior_raw_parent_folder_from_red_fname()
         if not flag:
             raise NoBehaviorDataError()
+        behavior_raw_folder = str(behavior_raw_folder[0].parent)
 
+        # Second
         beh_cfg = self.get_behavior_config()
         behavior_folder = beh_cfg.subfolder
 
