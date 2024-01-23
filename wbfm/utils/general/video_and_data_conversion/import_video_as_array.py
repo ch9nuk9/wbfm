@@ -72,7 +72,7 @@ def get_adjacent_volumes(fname, first_vol, num_slices):
     return dat0, dat1
 
 
-def crop_tiff_video(fname, out_fname, i_start=0, i_end=200):
+def crop_tiff_video(fname, out_fname=None, i_start=0, i_end=200):
     """
     Crops a tiff video to a smaller video; only tested on 2d
 
@@ -94,4 +94,7 @@ def crop_tiff_video(fname, out_fname, i_start=0, i_end=200):
             dat.append(f.pages[i].asarray())
 
     dat = np.array(dat)
-    tifffile.imwrite(out_fname, dat)
+    if out_fname is not None:
+        tifffile.imwrite(out_fname, dat)
+
+    return dat
