@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-snakemake --debug-dag -n -s pipeline.smk --cores
+snakemake traces_and_behavior --debug-dag -n -s pipeline.smk --cores
