@@ -72,7 +72,7 @@ def get_adjacent_volumes(fname, first_vol, num_slices):
     return dat0, dat1
 
 
-def crop_tiff_video(fname, out_fname=None, i_start=0, i_end=200, num_slices=None):
+def crop_tiff_video(fname, out_fname=None, i_start=0, i_end=300, num_slices=None):
     """
     Crops a tiff video to a smaller video; tested on 2d and 3d videos
 
