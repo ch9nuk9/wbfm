@@ -193,7 +193,7 @@ def initialize_imaging_channels(video_data, nwbfile, device):
     # grid_spacing = [0.325, 0.325, 1.5]
     # rate = 3.5  # Volumes per second
     # IMMOBILIZED
-    grid_spacing = [0.4, 0.4, 2]
+    grid_spacing = [0.4, 0.4, 0.2]
     rate = 2.0  # Volumes per second # TODO: get correct rate
     # GREEN
     emission_lambda = 525.
