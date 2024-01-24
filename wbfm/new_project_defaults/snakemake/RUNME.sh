@@ -25,7 +25,7 @@ do
     case "${flag}" in
         s) RULE=${OPTARG};;
         n) DRYRUN="True";;
-        c) USE_CLUSTER="FALSE";;
+        c) USE_CLUSTER="";;
         h) usage;;
         *) raise error "Unknown flag"
     esac
@@ -39,7 +39,7 @@ NUM_JOBS_TO_SUBMIT=4
 if [ "$DRYRUN" ]; then
     echo "DRYRUN of snakemake rule: $RULE. Common options: traces_and_behavior (default), traces, behavior"
     snakemake "$RULE" --debug-dag -n -s pipeline.smk --cores
-elif [ "$USE_CLUSTER" ]; then
+elif [ -z "$USE_CLUSTER" ]; then
     echo "Running snakemake rule locally: $RULE. Common options: traces_and_behavior (default), traces, behavior"
     snakemake "$RULE" -s pipeline.smk --latency-wait 60 --cores 56
 else
