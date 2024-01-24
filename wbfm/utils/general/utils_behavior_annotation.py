@@ -8,7 +8,7 @@ from typing import List, Union, Optional, Dict
 import matplotlib
 import numpy as np
 import pandas as pd
-import plotly.express as px
+import tifffile
 from matplotlib import pyplot as plt
 from plotly import express as px
 from plotly.subplots import make_subplots
@@ -1934,3 +1934,56 @@ def plot_fractional_state_annotations(df_counts, neuron_group, neuron_plot):
     fig.update_xaxes(tickvals=x_ticks, ticktext=x_tick_text,
                      overwrite=True, title=f"{neuron_group} state")
     return fig
+
+
+def approximate_background_using_video(behavior_video, num_frames=1000):
+    """
+    Approximates the background of a behavior video using the mean of the first 1000 frames
+
+    Should only be used for old projects where a proper background was not measured
+
+    Parameters
+    ----------
+    behavior_video
+
+    Returns
+    -------
+
+    """
+
+    with tifffile.TiffFile(behavior_video, 'r') as behavior_dat:
+        # Get the first 1000 frames
+        frames = behavior_dat.asarray(key=np.arange(num_frames))
+        # Take the mean
+        background = np.mean(frames, axis=0)
+
+    return background
+
+
+def save_background_in_project(cfg, **kwargs):
+    """
+
+    Parameters
+    ----------
+    project_cfg
+
+    Returns
+    -------
+
+    """
+
+    from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+    cfg = ModularProjectConfig(cfg)
+
+    # Get the .btf of the behavioral video
+    behavior_video = cfg.get_behavior_raw_file_from_red_fname()
+    background = approximate_background_using_video(behavior_video, **kwargs)
+
+    # Save in the raw data background folder
+    behavior_raw_folder, _ = cfg.get_folders_for_behavior_pipeline()
+    fname = os.path.join(behavior_raw_folder, 'raw_stack.btf')
+
+    # Save (btf)
+    print("Saving background to ", fname)
+    with tifffile.TiffWriter(fname) as writer:
+        writer.save(background)

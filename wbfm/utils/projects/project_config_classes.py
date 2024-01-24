@@ -489,12 +489,12 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         # Second
         beh_cfg = self.get_behavior_config()
-        behavior_folder = beh_cfg.subfolder
+        behavior_output_folder = beh_cfg.subfolder
 
-        if not Path(behavior_folder).exists():
+        if not Path(behavior_output_folder).exists():
             update_path_to_behavior_in_config(self)
 
-        return behavior_raw_folder, behavior_folder
+        return behavior_raw_folder, behavior_output_folder
 
 
 def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> SubfolderConfigFile:
