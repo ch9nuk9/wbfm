@@ -163,6 +163,24 @@ else:
 
 # Start snakemake
 
+# TODO: this modifies the raw data folder... a decision should be made about this
+rule ometiff2bigtiff:
+    params:
+        function = "ometiff2bigtiff"
+    output:
+        btf_file = "{raw_data_subfolder}/raw_stack.btf"
+    run:
+        from imutils.src import imutils_parser_main
+
+        imutils_parser_main.main([
+            params.function,
+            '-path', str(raw_data_subfolder),
+            '-output_filename', str(output.btf_file),
+        ])
+    # shell:
+    #     "python {input.script} {params.function} -path {wildcards.datasets} -output_filename {output.btf_file}"
+
+
 rule subtract_background:
     input:
         raw_img  = f"{raw_data_subfolder}/raw_stack.btf",
