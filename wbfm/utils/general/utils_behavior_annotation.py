@@ -1976,7 +1976,7 @@ def save_background_in_project(cfg, **kwargs):
     cfg = ModularProjectConfig(cfg)
 
     # Get the .btf of the behavioral video
-    behavior_video = cfg.get_behavior_raw_file_from_red_fname()
+    behavior_video, _ = cfg.get_behavior_raw_file_from_red_fname()
     background = approximate_background_using_video(behavior_video, **kwargs)
 
     # Save in the raw data background folder
