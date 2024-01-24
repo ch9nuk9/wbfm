@@ -1957,7 +1957,7 @@ def approximate_background_using_video(behavior_video, num_frames=1000):
         # Take the mean
         background = np.mean(frames, axis=0)
 
-    return background
+    return np.array(background, dtype=frames.dtype)
 
 
 def save_background_in_project(cfg, **kwargs):
@@ -1986,5 +1986,7 @@ def save_background_in_project(cfg, **kwargs):
     fname = os.path.join(background_raw_data_folder, subfolder, 'AVG_approximate_background_Ch0-BHbigtiff.btf')
 
     # Save (btf)
-    print("Saving background to ", fname)
+    print(f"Saving background to {fname} with dtype {background.dtype}")
     tifffile.imwrite(fname, background)
+
+    return background
