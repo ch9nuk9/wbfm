@@ -930,7 +930,7 @@ def make_default_summary_plots_using_config(project_cfg):
         pass
     # Also save a PC1-correlated grid plot
     grid_opt['channel_mode'] = 'ratio'
-    grid_opt['filter_mode'] = 'bilateral'
+    grid_opt['filter_mode'] = 'rolling_mean'
     grid_opt['behavioral_correlation_shading'] = 'pc1'
     grid_opt['sort_using_shade_value'] = True
     try:
