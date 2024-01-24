@@ -1,5 +1,6 @@
 import glob
 import os
+from pathlib import Path
 
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
@@ -158,6 +159,7 @@ btf_file = [f for f in os.listdir(raw_data_subfolder) if f.endswith(".btf")]
 if len(btf_file) == 1:
     btf_file = btf_file[0]
     print(".btf file already produced: ", btf_file)
+    btf_file = os.path.join(raw_data_subfolder, btf_file)
 elif len(btf_file) > 1:
     raise ValueError("There is more than one .btf file")
 else:
@@ -169,6 +171,7 @@ else:
 background_img = glob.glob(f"{raw_data_dir}/../background/*background*BH*/*AVG*background*")
 if len(background_img) == 1:
     background_img = background_img[0]
+    background_img = str(Path(background_img).resolve()) # This is needed because the path is relative
     print("This is the background image: ", background_img)
 elif len(background_img) > 1:
     raise ValueError("There is more than one background images")
