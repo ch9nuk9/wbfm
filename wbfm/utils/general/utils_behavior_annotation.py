@@ -1981,6 +1981,8 @@ def save_background_in_project(cfg, **kwargs):
 
     # Save in the raw data background folder
     background_raw_data_folder = cfg.get_folder_with_background()
+    # Get subfolder for behavior
+    background_raw_data_folder = [f for f in os.listdir(background_raw_data_folder) if f.endswith('-BH')][0]
     fname = os.path.join(background_raw_data_folder, 'raw_stack.btf')
 
     # Save (btf)
