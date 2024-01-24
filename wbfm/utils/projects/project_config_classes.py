@@ -444,7 +444,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         for content in behavior_subfolder.iterdir():
             if content.is_file():
                 # UK spelling, and there may be preprocessed bigtiffs in the folder
-                if str(content).endswith('-behaviour-bigtiff.btf'):
+                if str(content).endswith('-BH_bigtiff.btf'):
                     behavior_fname = behavior_subfolder.joinpath(content)
                     break
         else:

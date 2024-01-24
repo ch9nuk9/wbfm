@@ -1985,5 +1985,4 @@ def save_background_in_project(cfg, **kwargs):
 
     # Save (btf)
     print("Saving background to ", fname)
-    with tifffile.TiffWriter(fname) as writer:
-        writer.save(background)
+    tifffile.imwrite(fname, background)
