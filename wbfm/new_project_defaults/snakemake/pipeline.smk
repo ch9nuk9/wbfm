@@ -174,9 +174,9 @@ if len(background_img) == 1:
     background_img = str(Path(background_img).resolve()) # This is needed because the path is relative
     print("This is the background image: ", background_img)
 elif len(background_img) > 1:
-    raise ValueError("There is more than one background images")
+    raise ValueError(f"There is more than one background images in {raw_data_dir}/../background/")
 else:
-    raise ValueError("No background images found")
+    raise ValueError(f"No background images found in {raw_data_dir}/../background/")
 
 # Start snakemake
 

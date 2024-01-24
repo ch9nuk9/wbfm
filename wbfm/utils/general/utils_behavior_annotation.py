@@ -1983,7 +1983,7 @@ def save_background_in_project(cfg, **kwargs):
     background_raw_data_folder = cfg.get_folder_with_background()
     # Get subfolder for behavior
     subfolder = [f for f in os.listdir(background_raw_data_folder) if f.endswith('-BH')][0]
-    fname = os.path.join(background_raw_data_folder, subfolder, 'raw_stack.btf')
+    fname = os.path.join(background_raw_data_folder, subfolder, 'AVG_approximate_background_Ch0-BHbigtiff.btf')
 
     # Save (btf)
     print("Saving background to ", fname)
