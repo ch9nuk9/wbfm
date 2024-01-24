@@ -152,6 +152,20 @@ elif len(raw_data_subfolder) > 1:
 else:
     raise ValueError("No raw data found")
 
+# See if the .btf file has already been produced... unfortunately this is a modification of the raw data folder
+# Assume that any .btf file is the correct one
+btf_file = [f for f in os.listdir(raw_data_subfolder) if f.endswith(".btf")]
+if len(btf_file) == 1:
+    btf_file = btf_file[0]
+    print(".btf file already produced: ", btf_file)
+elif len(btf_file) > 1:
+    raise ValueError("There is more than one .btf file")
+else:
+    # Then it will need to be produced
+    btf_file = os.path.join(raw_data_subfolder, 'raw_stack.btf')
+    print("WARNING: No .btf file found, will produce it in the raw data folder ", btf_file)
+
+# Look for background image
 background_img = glob.glob(f"{raw_data_dir}/../background/*background*BH*/*AVG*background*")
 if len(background_img) == 1:
     background_img = background_img[0]
@@ -168,7 +182,7 @@ rule ometiff2bigtiff:
     params:
         function = "ometiff2bigtiff"
     output:
-        btf_file = "{raw_data_subfolder}/raw_stack.btf"
+        btf_file = {btf_file}
     run:
         from imutils.src import imutils_parser_main
 
@@ -183,7 +197,7 @@ rule ometiff2bigtiff:
 
 rule subtract_background:
     input:
-        raw_img  = f"{raw_data_subfolder}/raw_stack.btf",
+        raw_img  = {btf_file},
         background_img = background_img
     params:
         function = "stack_subtract_background",
