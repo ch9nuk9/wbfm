@@ -60,3 +60,4 @@ dependencies:
     - ppca
     - methodtools
     - kaleido
+    - skan==0.9 # For behavior pipeline
