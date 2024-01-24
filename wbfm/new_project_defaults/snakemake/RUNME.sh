@@ -2,35 +2,30 @@
 
 # Add help function
 function usage {
-    echo "Usage: $0 [-n] [-c] [-h] [rule]"
-    echo "  -n: dry run"
-    echo "  -c: use cluster"
-    echo "  -h: help (this message)"
-    echo "  rule: snakemake rule to run (default: traces_and_behavior)"
+    echo "Usage: $0 [-s rule] [-n] [-c] [-h]"
+    echo "  -s: snakemake rule to run (default: traces_and_behavior)"
+    echo "  -n: dry run (default: false)"
+    echo "  -c: do NOT use cluster (default: true)"
+    echo "  -h: display help (this message)"
     exit 1
 }
 
 # Example from: https://hackmd.io/@bluegenes/BJPrrj7WB
 
 # Get the snakemake rule to run as a command line arg
-if [ $# -eq 0 ]
-then
-    RULE="traces_and_behavior"
-else
-    RULE=$1
-fi
-echo "Running snakemake rule: $RULE. Common options: traces_and_behavior (default), traces, behavior"
 
 # Get other command line args
 # Set defaults: not a dry run and on the cluster
 DRYRUN=""
 USE_CLUSTER="True"
+RULE="traces_and_behavior"
 
-while getopts n:c:h: flag
+while getopts :s:nch flag
 do
     case "${flag}" in
-        n) DRYRUN=${OPTARG};;
-        c) USE_CLUSTER=${OPTARG};;
+        s) RULE=${OPTARG};;
+        n) DRYRUN="True";;
+        c) USE_CLUSTER="FALSE";;
         h) usage;;
         *) raise error "Unknown flag"
     esac
@@ -42,9 +37,12 @@ NUM_JOBS_TO_SUBMIT=4
 
 # Actual command
 if [ "$DRYRUN" ]; then
+    echo "DRYRUN of snakemake rule: $RULE. Common options: traces_and_behavior (default), traces, behavior"
     snakemake "$RULE" --debug-dag -n -s pipeline.smk --cores
 elif [ "$USE_CLUSTER" ]; then
+    echo "Running snakemake rule locally: $RULE. Common options: traces_and_behavior (default), traces, behavior"
     snakemake "$RULE" -s pipeline.smk --latency-wait 60 --cores 56
 else
+    echo "Running snakemake rule on the cluster: $RULE. Common options: traces_and_behavior (default), traces, behavior"
     snakemake "$RULE" -s pipeline.smk --latency-wait 60 --cluster "$OPT" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT
 fi
