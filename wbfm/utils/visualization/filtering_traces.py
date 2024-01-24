@@ -7,6 +7,23 @@ from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linea
 
 
 def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshold=None, verbose=0):
+    """
+    Remove outliers using the rolling mean
+
+    Specifically, remove all values that are more than outlier_threshold away from the rolling mean
+    The default outlier_threshold is 2*std + mean
+
+    Parameters
+    ----------
+    y
+    window
+    outlier_threshold
+    verbose
+
+    Returns
+    -------
+
+    """
     # In practice very sensitive to exact threshold value, which only really works for the ratio
     y = y.copy()
     y_filt = y.rolling(window, min_periods=1, center=True).mean()
@@ -24,6 +41,22 @@ def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshol
 
 
 def remove_outliers_using_std(y: pd.Series, std_factor: float, verbose=0, fill_value='nan'):
+    """
+    Remove outliers using the standard deviation of the trace
+
+    Specifically, remove all values that are more than std_factor*std away from the mean (constant value)
+
+    Parameters
+    ----------
+    y
+    std_factor
+    verbose
+    fill_value
+
+    Returns
+    -------
+
+    """
     if isinstance(fill_value, str):
         if fill_value == 'nan':
             fill_value = np.nan
