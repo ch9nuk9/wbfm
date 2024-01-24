@@ -1980,8 +1980,8 @@ def save_background_in_project(cfg, **kwargs):
     background = approximate_background_using_video(behavior_video, **kwargs)
 
     # Save in the raw data background folder
-    behavior_raw_folder, _ = cfg.get_folders_for_behavior_pipeline()
-    fname = os.path.join(behavior_raw_folder, 'raw_stack.btf')
+    background_raw_data_folder = cfg.get_folder_with_background()
+    fname = os.path.join(background_raw_data_folder, 'raw_stack.btf')
 
     # Save (btf)
     print("Saving background to ", fname)
