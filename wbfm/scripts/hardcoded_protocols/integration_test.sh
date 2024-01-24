@@ -11,8 +11,7 @@ python $COMMAND with project_path=$PROJECT_PATH dryrun=False
 
 # Run using the snakemake pipeline from an sbatch controller job
 cd $PROJECT_DIR/snakemake || exit
-#COMMAND=$PROJECT_DIR/"snakemake/RUNME_cluster.sh"
-COMMAND="RUNME_cluster.sh"
+COMMAND="RUNME.sh"
 SBATCH_OPT="-t 0-01:00:00 --cpus-per-task 1 --mem 1G"
 
 sbatch $COMMAND "$SBATCH_OPT"

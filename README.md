@@ -204,8 +204,7 @@ in the main project file: config.yaml
 ### Creating project from Windows
 
 In addition, if creating from a windows computer, you may need to use dos2unix to fix any files that you want to execute, specifically those referenced below:
-1. RUNME_*.sh
-2. DRYRUN.sh
+1. RUNME.sh
 
 ### Errors when running GUI
 

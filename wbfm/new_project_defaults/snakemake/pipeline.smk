@@ -22,14 +22,19 @@ def _run_helper(script_name, project_path):
 # Snakemake for overall targets (either with or without behavior)
 #
 
+# By default, wbfm projects will run everything
+rule traces_and_behavior:
+    input:
+        traces=expand("{dir}/{test}", test=config['output_4'], dir=config['project_dir']),
+        beh_figure= f"{output_behavior_dir}/behavioral_summary_figure.pdf"
+
+# This is important for immobilized worms, which don't have behavior
 rule traces:
     input:
         traces=expand("{dir}/{test}", test=config['output_4'], dir=config['project_dir'])
 
-
-rule traces_and_behavior:
+rule behavior:
     input:
-        traces=expand("{dir}/{test}", test=config['output_4'], dir=config['project_dir']),
         beh_figure= f"{output_behavior_dir}/behavioral_summary_figure.pdf"
 
 #

@@ -4,9 +4,8 @@ Please run "DRYRUN" before "RUNME"!
 
 # Explanation of files
 
-These are helper scripts:
-- RUNME_*.sh 
-- DRYRUN.sh
+There is one helper script; run with -h for help if needed:
+- RUNME.sh
 
 The core scripts are these:
 - pipeline.smk - this defines the 'rules' that tell snakemake how to produce outputs from scripts, and what inputs those scripts need

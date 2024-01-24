@@ -37,7 +37,7 @@ for f in "$folder_of_projects"/*; do
                        snakemake_cmd="$snakemake_folder/DRYRUN.sh"
                        echo "Running snakemake dry run"
                     else
-                       snakemake_cmd="$snakemake_folder/RUNME_cluster.sh"
+                       snakemake_cmd="$snakemake_folder/RUNME.sh"
                     fi
                     # Check if the session exists... don't see how to do a while loop here, because I'm using $?
                     tmux has-session -t=$tmux_name 2>/dev/null

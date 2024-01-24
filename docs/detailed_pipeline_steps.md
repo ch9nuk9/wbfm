@@ -29,7 +29,7 @@ cd /path/to/your/project/snakemake
 ```
 3. Do a dry run to catch any errors in initialization:
 ```bash
-bash DRYRUN.sh
+bash RUNME.sh -n
 ```
 4. If there are errors, there are three easy possibilities:
    1. If this is not a new project, you might have to run steps one by one (see the next subsection).
@@ -38,7 +38,7 @@ bash DRYRUN.sh
    4. If you still have a problem, then it is probably a bug and you should file a GitHub issue and possibly talk to Charlie
 5. Run the relevant RUNME script, either cluster or local. Probably, you want the cluster version:
 ```bash
-bash RUNME_cluster.sh
+bash RUNME.sh
 ```
 6. This will run ALL steps in sequence.
    1. Note: you can't close the terminal! You may need to use a long-term terminal program like tmux or screen.
