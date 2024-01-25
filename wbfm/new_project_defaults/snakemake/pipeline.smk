@@ -154,8 +154,8 @@ else:
     raise ValueError("No raw data found")
 
 # See if the .btf file has already been produced... unfortunately this is a modification of the raw data folder
-# Assume that any .btf file is the correct one
-btf_file = [f for f in os.listdir(raw_data_subfolder) if f.endswith(".btf")]
+# Assume that any .btf file is the correct one, IF it doesn't have 'AVG' in the name (refers to background subtraction)
+btf_file = [f for f in os.listdir(raw_data_subfolder) if f.endswith(".btf") and 'AVG' not in f]
 if len(btf_file) == 1:
     btf_file = btf_file[0]
     print(".btf file already produced: ", btf_file)
