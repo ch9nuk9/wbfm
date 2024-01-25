@@ -611,6 +611,7 @@ rule make_behaviour_figure:
         pc_file = "{output_behavior_dir}/principal_components.csv",
         beh_annotation_file = "{output_behavior_dir}/beh_annotation.csv",
         speed_file = "{output_behavior_dir}/signed_worm_speed.csv",
+        turns_annotation = "{output_behavior_dir}/turns_annotation.csv"
     output:
         figure = "{output_behavior_dir}/behavioral_summary_figure.pdf" #This is  never produced, so it whill always run
     params:
