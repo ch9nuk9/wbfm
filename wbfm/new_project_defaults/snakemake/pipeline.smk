@@ -161,7 +161,7 @@ if len(btf_file) == 1:
     print(".btf file already produced: ", btf_file)
     btf_file = os.path.join(raw_data_subfolder, btf_file)
 elif len(btf_file) > 1:
-    raise ValueError("There is more than one .btf file")
+    raise ValueError(f"There is more than one .btf file in {raw_data_subfolder}")
 else:
     # Then it will need to be produced
     btf_file = os.path.join(raw_data_subfolder, 'raw_stack.btf')
