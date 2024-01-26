@@ -76,8 +76,8 @@ script_4: 4-make_final_traces
 #
 # FOR BEHAVIORAL ANALYSIS
 #
-# Read using the config
-#raw_data_dir: "/scratch/neurobiology/zimmer/wbfm/example_data/ZIM2165_Gcamp7b_worm1"
+# Deletes intermediate files in the behavior pipeline
+delete_intermediate_files: True
 
 # rule subtract background
 do_inverse: True

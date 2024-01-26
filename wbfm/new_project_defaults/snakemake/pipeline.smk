@@ -19,6 +19,14 @@ def _run_helper(script_name, project_path):
     _module.ex.run(config_updates=dict(project_path=project_path))
 
 
+def _cleanup_helper(output_path):
+    """Uses the snakemake defined temporary function to clean up intermediate files, based on a flag"""
+    if config['delete_intermediate_files']:
+        return temporary(output_path)
+    else:
+        return output_path
+
+
 #
 # Snakemake for overall targets (either with or without behavior)
 #
@@ -206,7 +214,7 @@ rule subtract_background:
         function = "stack_subtract_background",
         do_inverse = config["do_inverse"]
     output:
-        background_subtracted_img ="{output_behavior_dir}/raw_stack_AVG_background_subtracted.btf"
+        background_subtracted_img = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted.btf")
     run:
         from imutils.src import imutils_parser_main
 
@@ -220,13 +228,13 @@ rule subtract_background:
 
 rule normalize_img:
     input:
-        input_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted.btf"
+        input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted.btf"
     params:
         function = "stack_normalise",
         alpha = config["alpha"],
         beta = config["beta"]
     output:
-        normalised_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
+        normalised_img = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf")
     run:
         from imutils.src import imutils_parser_main
 
@@ -240,13 +248,13 @@ rule normalize_img:
 
 rule worm_unet:
     input:
-        input_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
+        input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
     params:
         function  = "unet_segmentation_stack",
         weights_path = config["worm_unet_weights"],
         #network_name = config["worm_unet_network_name"]# '5358068_1'
     output:
-        worm_unet_prediction = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented.btf"
+        worm_unet_prediction = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented.btf")
     run:
         from imutils.src import imutils_parser_main
 
@@ -259,13 +267,13 @@ rule worm_unet:
 
 rule binarize:
     input:
-        input_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented.btf"
+        input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented.btf"
     params:
         function = "stack_make_binary",
         threshold = config["threshold"],
         max_value = config["max_value"]
     output:
-        binary_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask.btf"
+        binary_img = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask.btf")
     run:
         from imutils.src import imutils_parser_main
 
@@ -279,14 +287,14 @@ rule binarize:
 
 rule coil_unet:
     input:
-        binary_input_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask.btf",
-        raw_input_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
+        binary_input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask.btf",
+        raw_input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
     params:
         function = "unet_segmentation_contours_with_children",
         weights_path= config["coil_unet_weights"]
         #network_name="5910044_0"
     output:
-        coil_unet_prediction = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented.btf"
+        coil_unet_prediction = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented.btf")
     run:
         from imutils.src import imutils_parser_main
 
@@ -300,13 +308,13 @@ rule coil_unet:
 
 rule binarize_coil:
     input:
-        input_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented.btf"
+        input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented.btf"
     params:
         function = "stack_make_binary",
         threshold = config["coil_threshold"], # 240
         max_value = config["coil_new_value"] # 255
     output:
-        binary_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented_mask.btf"
+        binary_img = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented_mask.btf")
     run:
         from imutils.src import imutils_parser_main
 
@@ -320,13 +328,13 @@ rule binarize_coil:
 
 rule tiff2avi:
     input:
-        input_img = "{sample}raw_stack_AVG_background_subtracted_normalised.btf"
+        input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
     params:
         function = "tiff2avi",
         fourcc = config["fourcc"], #"0",
         fps = config["fps"] # "167"
     output:
-        avi = "{sample}raw_stack_AVG_background_subtracted_normalised.avi"
+        avi = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.avi")
     run:
         from imutils.src import imutils_parser_main
 
@@ -340,13 +348,13 @@ rule tiff2avi:
 
 rule dlc_analyze_videos:
     input:
-        input_avi = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.avi"
+        input_avi = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.avi"
     params:
         dlc_model_configfile_path = config["dlc_model_configfile_path"],
         dlc_network_string = config["dlc_network_string"], # Is this used?
         dlc_conda_env = config["dlc_conda_env"]
     output:
-        hdf5_file = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["dlc_network_string"]+".h5"
+        hdf5_file = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["dlc_network_string"]+".h5"
     shell:
         """
         source /apps/conda/miniconda3/bin/activate {params.dlc_conda_env}
@@ -355,24 +363,24 @@ rule dlc_analyze_videos:
 
 rule create_centerline:
     input:
-        input_binary_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented_mask.btf",
-        hdf5_file = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["dlc_network_string"]+".h5"
+        input_binary_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented_mask.btf",
+        hdf5_file = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["dlc_network_string"]+".h5"
 
     params:
-        output_path = "{output_behavior_dir}/", # Ulises' functions expect the final slash
+        output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
         number_of_neighbours = "1",
         nose = config['nose'],
         tail = config['tail'],
         num_splines = config['num_splines'],
         fill_with_DLC = "1"
     output :
-        output_skel_X = "{output_behavior_dir}/skeleton_skeleton_X_coords.csv",
-        output_skel_Y = "{output_behavior_dir}/skeleton_skeleton_Y_coords.csv",
-        output_spline_K = "{output_behavior_dir}/skeleton_spline_K.csv",
-        output_spline_X = "{output_behavior_dir}/skeleton_spline_X_coords.csv",
-        output_spline_Y = "{output_behavior_dir}/skeleton_spline_Y_coords.csv",
-        corrected_head = "{output_behavior_dir}/skeleton_corrected_head_coords.csv",
-        corrected_tail = "{output_behavior_dir}/skeleton_corrected_tail_coords.csv"
+        output_skel_X = f"{output_behavior_dir}/skeleton_skeleton_X_coords.csv",
+        output_skel_Y = f"{output_behavior_dir}/skeleton_skeleton_Y_coords.csv",
+        output_spline_K = f"{output_behavior_dir}/skeleton_spline_K.csv",
+        output_spline_X = f"{output_behavior_dir}/skeleton_spline_X_coords.csv",
+        output_spline_Y = f"{output_behavior_dir}/skeleton_spline_Y_coords.csv",
+        corrected_head = f"{output_behavior_dir}/skeleton_corrected_head_coords.csv",
+        corrected_tail = f"{output_behavior_dir}/skeleton_corrected_tail_coords.csv"
     run:
         from centerline_behavior_annotation.centerline.dev import head_and_tail
 
@@ -389,15 +397,15 @@ rule create_centerline:
 
 rule invert_curvature_sign:
     input:
-        spline_K = "{output_behavior_dir}/skeleton_spline_K.csv",
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K.csv",
         # would be good to ad the config yaml file to input because if it is updated the code should re-run
         #config_yaml_file = os.path.join(os.path.dirname(os.path.dirname("{sample}_skeleton_spline_K.csv")), "config.yaml") #hard to get its path
     # params:
-    #     output_path = "{output_behavior_dir}/"
+    #     output_path = f"{output_behavior_dir}/"
     output:
-        spline_K = "{output_behavior_dir}/skeleton_spline_K_signed.csv"
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K_signed.csv"
     params:
-        output_path = "{output_behavior_dir}/", # Ulises' functions expect the final slash
+        output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
     run:
         from centerline_behavior_annotation.curvature.src import invert_curvature_sign
 
@@ -408,12 +416,12 @@ rule invert_curvature_sign:
 
 rule average_kymogram:
     input:
-        spline_K = "{output_behavior_dir}/skeleton_spline_K_signed.csv"
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K_signed.csv"
     params:
         #rolling_mean_type =,
         window = config['averaging_window']
     output:
-        spline_K_avg = "{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
+        spline_K_avg = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
     run:
         import pandas as pd
         df=pd.read_csv(input.spline_K, index_col=None, header=None)
@@ -423,14 +431,14 @@ rule average_kymogram:
 
 rule average_xy_coords:
     input:
-        spline_X= "{output_behavior_dir}/skeleton_spline_X_coords.csv",
-        spline_Y= "{output_behavior_dir}/skeleton_spline_Y_coords.csv",
+        spline_X= f"{output_behavior_dir}/skeleton_spline_X_coords.csv",
+        spline_Y= f"{output_behavior_dir}/skeleton_spline_Y_coords.csv",
     params:
         #rolling_mean_type =,
         window = config['averaging_window']
     output:
-        spline_X_avg= "{output_behavior_dir}/skeleton_spline_X_coords_avg.csv",
-        spline_Y_avg= "{output_behavior_dir}/skeleton_spline_Y_coords_avg.csv",
+        spline_X_avg= f"{output_behavior_dir}/skeleton_spline_X_coords_avg.csv",
+        spline_Y_avg= f"{output_behavior_dir}/skeleton_spline_Y_coords_avg.csv",
     run:
         import pandas as pd
 
@@ -444,18 +452,18 @@ rule average_xy_coords:
 
 rule hilbert_transform_on_kymogram:
     input:
-        spline_K = "{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
-        output_path = "{output_behavior_dir}/", # Ulises' functions expect the final slash
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
+        output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
     params:
-        output_path = "{output_behavior_dir}/", # Ulises' functions expect the final slash
+        output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
         fs = config["sampling_frequency"],
         window = config["hilbert_averaging_window"]
     output:
         # wont be created because they the outputs do not have the {sample} root
-        hilbert_regenerated_carrier = "{output_behavior_dir}/hilbert_regenerated_carrier.csv",
-        hilbert_inst_freq = "{output_behavior_dir}/hilbert_inst_freq.csv",
-        hilbert_inst_phase = "{output_behavior_dir}/hilbert_inst_phase.csv",
-        hilbert_inst_amplitude = "{output_behavior_dir}/hilbert_inst_amplitude.csv"
+        hilbert_regenerated_carrier = f"{output_behavior_dir}/hilbert_regenerated_carrier.csv",
+        hilbert_inst_freq = f"{output_behavior_dir}/hilbert_inst_freq.csv",
+        hilbert_inst_phase = f"{output_behavior_dir}/hilbert_inst_phase.csv",
+        hilbert_inst_amplitude = f"{output_behavior_dir}/hilbert_inst_amplitude.csv"
 
     #This $DIR only goes one time up
     run:
@@ -470,16 +478,16 @@ rule hilbert_transform_on_kymogram:
 
 rule fast_fourier_transform:
     input:
-        spline_K="{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
     params:
         # project_folder
         sampling_frequency=config["sampling_frequency"],
         window = config["fft_averaging_window"],
-        output_path = "{output_behavior_dir}/",  # Ulises' functions expect the final slash
+        output_path = f"{output_behavior_dir}/",  # Ulises' functions expect the final slash
 
     output:
-        y_axis_file = "{output_behavior_dir}/fft_y_axis.csv", #not correct ?
-        xf_file = "{output_behavior_dir}/fft_xf.csv"
+        y_axis_file = f"{output_behavior_dir}/fft_y_axis.csv", #not correct ?
+        xf_file = f"{output_behavior_dir}/fft_xf.csv"
     #This $DIR only goes one time up
     run:
         from centerline_behavior_annotation.centerline.dev import fourier_functions
@@ -493,13 +501,13 @@ rule fast_fourier_transform:
 
 rule reformat_skeleton_files:
     input:
-        spline_K= "{output_behavior_dir}/skeleton_spline_K_signed_avg.csv", #should have signed spline_K
-        spline_X= "{output_behavior_dir}/skeleton_spline_X_coords_avg.csv",
-        spline_Y= "{output_behavior_dir}/skeleton_spline_Y_coords_avg.csv",
+        spline_K= f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv", #should have signed spline_K
+        spline_X= f"{output_behavior_dir}/skeleton_spline_X_coords_avg.csv",
+        spline_Y= f"{output_behavior_dir}/skeleton_spline_Y_coords_avg.csv",
         #spline_list = ["{sample}_spline_K.csv", "{sample}_spline_X_coords.csv", "{sample}_spline_Y_coords.csv",]
 
     output:
-        merged_spline_file = "{output_behavior_dir}/skeleton_merged_spline_data_avg.csv",
+        merged_spline_file = f"{output_behavior_dir}/skeleton_merged_spline_data_avg.csv",
 
     run:
         from centerline_behavior_annotation.centerline.dev import reformat_skeleton_files
@@ -513,7 +521,7 @@ rule reformat_skeleton_files:
 
 rule annotate_behaviour:
     input:
-        curvature_file = "{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
+        curvature_file = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
 
     params:
         pca_model_path = config["pca_model"],
@@ -521,8 +529,8 @@ rule annotate_behaviour:
         final_segment = config["final_segment"],
         window = config["window"]
     output:
-        principal_components = "{output_behavior_dir}/principal_components.csv",
-        behaviour_annotation = "{output_behavior_dir}/beh_annotation.csv"
+        principal_components = f"{output_behavior_dir}/principal_components.csv",
+        behaviour_annotation = f"{output_behavior_dir}/beh_annotation.csv"
     run:
         from centerline_behavior_annotation.curvature.src import annotate_reversals_snakemake
 
@@ -538,16 +546,16 @@ rule annotate_behaviour:
 
 rule annotate_turns:
     input:
-        #principal_components = "{output_behavior_dir}/principal_components.csv"
-        spline_K  = "{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
+        #principal_components = f"{output_behavior_dir}/principal_components.csv"
+        spline_K  = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
     params:
-        output_path = "{output_behavior_dir}/",  # Ulises' functions expect the final slash
+        output_path = f"{output_behavior_dir}/",  # Ulises' functions expect the final slash
         threshold = config["turn_threshold"],
         initial_segment = config["turn_initial_segment"],
         final_segment = config["turn_final_segment"],
         avg_window = config["turn_avg_window"]
     output:
-        turns_annotation = "{output_behavior_dir}/turns_annotation.csv"
+        turns_annotation = f"{output_behavior_dir}/turns_annotation.csv"
 
     run:
         from centerline_behavior_annotation.curvature.src import annotate_turns_snakemake
@@ -563,12 +571,12 @@ rule annotate_turns:
 
 rule self_touch:
     input:
-        binary_img = "{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask.btf"
+        binary_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask.btf"
     params:
         external_area = [7000, 20000],
         internal_area = [100, 2000],
     output:
-        self_touch = "{output_behavior_dir}/self_touch.csv"
+        self_touch = f"{output_behavior_dir}/self_touch.csv"
     run:
         from imutils.src.imfunctions import stack_self_touch
         df = stack_self_touch(input.binary_img, params.external_area, params.internal_area)
@@ -577,11 +585,11 @@ rule self_touch:
 rule calculate_parameters:
     #So far it only calculates speed
     input:
-        curvature_file = "{output_behavior_dir}/skeleton_spline_K_signed_avg.csv" #This is used as a parameter because it is only used to find the main dir
+        curvature_file = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv" #This is used as a parameter because it is only used to find the main dir
     output:
-        speed_file = "{output_behavior_dir}/raw_worm_speed.csv" # This is never produced, so this will always run
+        speed_file = f"{output_behavior_dir}/raw_worm_speed.csv" # This is never produced, so this will always run
     params:
-        output_path = "{output_behavior_dir}/", # Ulises' functions expect the final slash
+        output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
     run:
         from centerline_behavior_annotation.behavior_analysis.src import calculate_parameters
 
@@ -592,10 +600,10 @@ rule calculate_parameters:
 
 rule save_signed_speed:
     input:
-        raw_speed_file = "{output_behavior_dir}/raw_worm_speed.csv",
-        behaviour_annotation= "{output_behavior_dir}/beh_annotation.csv"
+        raw_speed_file = f"{output_behavior_dir}/raw_worm_speed.csv",
+        behaviour_annotation= f"{output_behavior_dir}/beh_annotation.csv"
     output:
-        signed_speed_file = "{output_behavior_dir}/signed_worm_speed.csv" # This is never produced, so this will always run
+        signed_speed_file = f"{output_behavior_dir}/signed_worm_speed.csv" # This is never produced, so this will always run
     run:
         import pandas as pd
         raw_speed_df=pd.read_csv(input.raw_speed_file)
@@ -607,15 +615,15 @@ rule save_signed_speed:
 
 rule make_behaviour_figure:
     input:
-        curvature_file = "{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
-        pc_file = "{output_behavior_dir}/principal_components.csv",
-        beh_annotation_file = "{output_behavior_dir}/beh_annotation.csv",
-        speed_file = "{output_behavior_dir}/signed_worm_speed.csv",
-        turns_annotation = "{output_behavior_dir}/turns_annotation.csv"
+        curvature_file = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
+        pc_file = f"{output_behavior_dir}/principal_components.csv",
+        beh_annotation_file = f"{output_behavior_dir}/beh_annotation.csv",
+        speed_file = f"{output_behavior_dir}/signed_worm_speed.csv",
+        turns_annotation = f"{output_behavior_dir}/turns_annotation.csv"
     output:
-        figure = "{output_behavior_dir}/behavioral_summary_figure.pdf" #This is  never produced, so it whill always run
+        figure = f"{output_behavior_dir}/behavioral_summary_figure.pdf" #This is  never produced, so it whill always run
     params:
-        output_path="{output_behavior_dir}/",# Ulises' functions expect the final slash
+        output_path = f"{output_behavior_dir}/",# Ulises' functions expect the final slash
     run:
         from centerline_behavior_annotation.behavior_analysis.src import make_figure
 
