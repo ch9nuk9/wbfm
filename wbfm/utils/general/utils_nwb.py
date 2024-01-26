@@ -511,11 +511,15 @@ def unpack_pedro_project(folder_name):
     all_dfs_excel = []
     for suffix in ['head', 'tail']:
         sheet_name = f"{sheet_name_base}_{suffix}"
-        df = pd.read_excel(fname, sheet_name=sheet_name)
-        df.loc[~(df['neuron ID'].isnull()), 'body_part'] = suffix
-        all_dfs_excel.append(df)
+        try:
+            df = pd.read_excel(fname, sheet_name=sheet_name)
+            df.loc[~(df['neuron ID'].isnull()), 'body_part'] = suffix
+            all_dfs_excel.append(df)
+        except ValueError as e:
+            print("Did not find sheet", sheet_name, "in file", fname, " this is probably not a problem")
     df = all_dfs_excel[0].copy()
-    df.update(all_dfs_excel[1])
+    if len(all_dfs_excel) > 1:
+        df.update(all_dfs_excel[1])
     # Now load the XY position data
     fname = [f for f in raw_project_files if ('NeuroPAL' in f) and f.endswith('.txt')][0]
     fname = os.path.join(folder_name, fname)
@@ -533,15 +537,23 @@ def unpack_pedro_project(folder_name):
     df['Z'] = df['comments'].apply(_convert_comment_to_z)
 
     # Also load the .mat file to get the frames per second
-    fname = [f for f in raw_project_files if ('MainStruct' in f) and f.endswith('.mat')][0]
-    fname = os.path.join(folder_name, fname)
-    mat = scipy.io.loadmat(fname, simplify_cells=True)
+    # NOT NEEDED IF NO TRACES
 
-    # Get the core mat dict, which is the only key in this object without __
-    mat = mat[[k for k in mat.keys() if '__' not in k][0]]
-    fps = mat['fps']
+    fname = [f for f in raw_project_files if ('MainStruct' in f) and f.endswith('.mat')]
+    if len(fname) > 0:
+        fname = fname[0]
+        fname = os.path.join(folder_name, fname)
+        mat = scipy.io.loadmat(fname, simplify_cells=True)
 
-    traces = mat['traces']
+        # Get the core mat dict, which is the only key in this object without __
+        mat = mat[[k for k in mat.keys() if '__' not in k][0]]
+        fps = mat['fps']
+
+        traces = mat['traces']
+    else:
+        print(f"No traces found in {folder_name}, setting fps and traces to dummy values")
+        fps = 0
+        traces = []
 
     return raw_project_files, df, session_start_time, strain_id, subject_id, fps, traces
 
