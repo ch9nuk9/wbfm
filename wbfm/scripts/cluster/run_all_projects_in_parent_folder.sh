@@ -5,15 +5,27 @@
 # For real usage, remove '-n True' and update the path after -t
 #
 
+# Add help function
+function usage {
+  echo "Usage: $0 [-t folder_of_projects] [-n] [-d] [-s rule] [-h]"
+  echo "  -t: folder of projects (required)"
+  echo "  -n: dry run of this script (default: false)"
+  echo "  -d: dry run of snakemake (default: false)"
+  echo "  -s: snakemake rule to run (default: traces_and_behavior; other options: traces, behavior)"
+  echo "  -h: display help (this message)"
+}
+
 RULE="traces_and_behavior"
+is_dry_run=""
 # Get all user flags
-while getopts t:n:s:d: flag
+while getopts t:n:s:d:h flag
 do
     case "${flag}" in
         t) folder_of_projects=${OPTARG};;
-        n) is_dry_run=${OPTARG};;
+        n) is_dry_run="True";;
         d) is_snakemake_dry_run=${OPTARG};;
         s) RULE=${OPTARG};;
+        h) usage;;
         *) raise error "Unknown flag"
     esac
 done
