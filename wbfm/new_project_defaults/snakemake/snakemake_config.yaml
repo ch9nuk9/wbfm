@@ -1,7 +1,4 @@
 
-# Global requirement
-project_dir: "/scratch/neurobiology/zimmer/path/to/this/project"
-
 # Step 0: preprocessing
 # Also uses raw data and produces a .zarr.zip, but that will NOT be within this project, so is not included
 output_0:
