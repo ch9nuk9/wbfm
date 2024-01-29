@@ -3,9 +3,9 @@
 # Add help function
 function usage {
     echo "Usage: $0 [-s rule] [-n] [-c] [-h]"
-    echo "  -s: snakemake rule to run (default: traces_and_behavior)"
+    echo "  -s: snakemake rule to run (default: traces_and_behavior; other options: traces, behavior)"
     echo "  -n: dry run (default: false)"
-    echo "  -c: do NOT use cluster (default: true)"
+    echo "  -c: do NOT use cluster (default: false, i.e. run on cluster)"
     echo "  -h: display help (this message)"
     exit 1
 }
