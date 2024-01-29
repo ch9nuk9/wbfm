@@ -8,7 +8,7 @@ from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 configfile: "snakemake_config.yaml"
 
 # Determine the project folder (the parent of the folder containing the Snakefile)
-project_dir = os.path.dirname(snakemake.scriptdir)
+project_dir = os.path.dirname(snakemake.snakefile)
 print("Detected project folder: ", project_dir)
 
 # Load the folders needed for the behavioral part of the pipeline
