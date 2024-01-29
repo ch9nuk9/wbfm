@@ -5,6 +5,7 @@
 # For real usage, remove '-n True' and update the path after -t
 #
 
+RULE="traces_and_behavior"
 # Get all user flags
 while getopts t:n:s:d: flag
 do
@@ -12,6 +13,7 @@ do
         t) folder_of_projects=${OPTARG};;
         n) is_dry_run=${OPTARG};;
         d) is_snakemake_dry_run=${OPTARG};;
+        s) RULE=${OPTARG};;
         *) raise error "Unknown flag"
     esac
 done
@@ -34,10 +36,10 @@ for f in "$folder_of_projects"/*; do
                     setup_cmd="conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/"
                     snakemake_folder="$f/snakemake"
                     if [ "$is_snakemake_dry_run" ]; then
-                       snakemake_cmd="$snakemake_folder/DRYRUN.sh"
+                       snakemake_cmd="$snakemake_folder/RUNME.sh -n -s $RULE"
                        echo "Running snakemake dry run"
                     else
-                       snakemake_cmd="$snakemake_folder/RUNME.sh"
+                       snakemake_cmd="$snakemake_folder/RUNME.sh -s $RULE"
                     fi
                     # Check if the session exists... don't see how to do a while loop here, because I'm using $?
                     tmux has-session -t=$tmux_name 2>/dev/null
