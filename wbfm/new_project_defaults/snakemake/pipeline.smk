@@ -9,6 +9,9 @@ configfile: "snakemake_config.yaml"
 
 # Determine the project folder (the parent of the folder containing the Snakefile)
 print(snakemake.__dir__())
+print(snakemake.__file__)
+print(snakemake.__path__)
+print(snakemake.snakemake)
 project_dir = os.path.dirname(snakemake.snakefile)
 print("Detected project folder: ", project_dir)
 
