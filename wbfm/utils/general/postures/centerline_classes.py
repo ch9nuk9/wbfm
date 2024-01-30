@@ -2463,12 +2463,14 @@ def calculate_bundle_net_export(project_data, output_dir=None):
     worm: WormFullVideoPosture = project_data.worm_posture_class
     df_beh_raw = worm.beh_annotation(fluorescence_fps=True, reset_index=True)
     df_beh = BehaviorCodes.convert_to_simple_states_vector(df_beh_raw)
+    df_beh = df_beh.apply(lambda x: x.name)  # Save simple strings
 
     if output_dir is not None:
-        traces_fname = os.path.join(output_dir, 'traces.h5')
-        df_traces.to_hdf(traces_fname, key='df_with_missing', mode='w')
+        traces_fname = os.path.join(output_dir, 'traces.csv')
+        df_traces.to_csv(traces_fname)
+        # df_traces.to_hdf(traces_fname, key='df_with_missing', mode='w')
 
-        beh_fname = os.path.join(output_dir, 'behavior.h5')
-        df_beh.to_hdf(beh_fname, key='df_with_missing', mode='w')
+        beh_fname = os.path.join(output_dir, 'behavior.csv')
+        df_beh.to_csv(beh_fname)
 
     return df_traces, df_beh
