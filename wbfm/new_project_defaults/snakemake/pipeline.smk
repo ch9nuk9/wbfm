@@ -181,45 +181,52 @@ else:
     print("WARNING: No .btf file found, will produce it in the raw data folder ", btf_file)
 
 # Look for background image
-background_img = glob.glob(f"{raw_data_dir}/../background/*background*BH*/*AVG*background*")
-if len(background_img) == 1:
-    background_img = background_img[0]
-    background_img = str(Path(background_img).resolve()) # This is needed because the path is relative
-    print("This is the background image: ", background_img)
-elif len(background_img) > 1:
-    raise ValueError(f"There is more than one background images in {raw_data_dir}/../background/")
+background_video = glob.glob(f"{raw_data_dir}/../background/*background*BH*/*background*")
+# Remove any with AVG in the name
+background_video = [f for f in background_video if 'AVG' not in f]
+if len(background_video) == 1:
+    background_video = background_video[0]
+    background_video = str(Path(background_video).resolve()) # This is needed because the path is relative
+    print("This is the background video: ", background_video)
+
+    # Name of the background image is the same, but with 'AVG' prepended
+    background_img = os.path.join(os.path.dirname(background_video), 'AVG'+os.path.basename(background_video))
+
+elif len(background_video) > 1:
+    raise ValueError(f"There is more than one background video in {raw_data_dir}/../background/")
 else:
-    raise ValueError(f"No background images found in {raw_data_dir}/../background/")
+    raise ValueError(f"No background videos found in {raw_data_dir}/../background/")
 
 # Start snakemake
 
-# TODO: this modifies the raw data folder... a decision should be made about this
+# TODO: this modifies the raw data folder... which is consistent with the fluorescence unfortunately
 rule ometiff2bigtiff:
-    params:
-        function = "ometiff2bigtiff"
     output:
         btf_file = {btf_file}
     run:
         from imutils.src import imutils_parser_main
 
         imutils_parser_main.main([
-            params.function,
+            "ometiff2bigtiff",
             '-path', str(raw_data_subfolder),
             '-output_filename', str(output.btf_file),
         ])
-    # shell:
-    #     "python {input.script} {params.function} -path {wildcards.datasets} -output_filename {output.btf_file}"
 
-# TODO: this also modifies the raw data folder... a decision should be made about this
 rule z_project_background:
     input:
-        raw_img={btf_file},
-        background_img=background_img
-    params:
-        function = "stack_subtract_background",
+        background_video = {background_video}
     output:
-        background_subtracted_img = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted.btf")
+        background_img = {background_img}
+    run:
+        from imutils.src import imutils_parser_main
 
+        imutils_parser_main.main([
+            "z_projection_parser",
+            '-i', str(background_video),
+            '-o', str(output.background_img),
+            '-type', 'mean',
+            '-axis', 0,
+        ])
 
 rule subtract_background:
     input:
