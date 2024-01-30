@@ -210,13 +210,22 @@ rule ometiff2bigtiff:
     # shell:
     #     "python {input.script} {params.function} -path {wildcards.datasets} -output_filename {output.btf_file}"
 
+# TODO: this also modifies the raw data folder... a decision should be made about this
+rule z_project_background:
+    input:
+        raw_img={btf_file},
+        background_img=background_img
+    params:
+        function = "stack_subtract_background",
+    output:
+        background_subtracted_img = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted.btf")
+
 
 rule subtract_background:
     input:
         raw_img  = {btf_file},
         background_img = background_img
     params:
-        function = "stack_subtract_background",
         do_inverse = config["do_inverse"]
     output:
         background_subtracted_img = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted.btf")
@@ -224,7 +233,7 @@ rule subtract_background:
         from imutils.src import imutils_parser_main
 
         imutils_parser_main.main([
-            params.function,
+            "stack_subtract_background",
             '-i', str(input.raw_img),
             '-o', str(output.background_subtracted_img),
             '-bg', str(input.background_img),
@@ -235,7 +244,6 @@ rule normalize_img:
     input:
         input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted.btf"
     params:
-        function = "stack_normalise",
         alpha = config["alpha"],
         beta = config["beta"]
     output:
@@ -244,7 +252,7 @@ rule normalize_img:
         from imutils.src import imutils_parser_main
 
         imutils_parser_main.main([
-            params.function,
+            "stack_normalise",
             '-i', str(input.input_img),
             '-o', str(output.normalised_img),
             '-a', str(params.alpha),
@@ -255,7 +263,6 @@ rule worm_unet:
     input:
         input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
     params:
-        function  = "unet_segmentation_stack",
         weights_path = config["worm_unet_weights"],
         #network_name = config["worm_unet_network_name"]# '5358068_1'
     output:
@@ -264,7 +271,7 @@ rule worm_unet:
         from imutils.src import imutils_parser_main
 
         imutils_parser_main.main([
-            str(params.function),
+            "unet_segmentation_stack",
             '-i', str(input.input_img),
             '-o', str(output.worm_unet_prediction),
             '-w', str(params.weights_path),
@@ -274,7 +281,6 @@ rule binarize:
     input:
         input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented.btf"
     params:
-        function = "stack_make_binary",
         threshold = config["threshold"],
         max_value = config["max_value"]
     output:
@@ -283,7 +289,7 @@ rule binarize:
         from imutils.src import imutils_parser_main
 
         imutils_parser_main.main([
-            str(params.function),
+            "stack_make_binary",
             '-i', str(input.input_img),
             '-o', str(output.binary_img),
             '-th', str(params.threshold),
@@ -295,7 +301,6 @@ rule coil_unet:
         binary_input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask.btf",
         raw_input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
     params:
-        function = "unet_segmentation_contours_with_children",
         weights_path= config["coil_unet_weights"]
         #network_name="5910044_0"
     output:
@@ -304,7 +309,7 @@ rule coil_unet:
         from imutils.src import imutils_parser_main
 
         imutils_parser_main.main([
-            str(params.function),
+            "unet_segmentation_contours_with_children",
             '-bi', str(input.binary_input_img),
             '-ri', str(input.raw_input_img),
             '-o', str(output.coil_unet_prediction),
@@ -315,7 +320,6 @@ rule binarize_coil:
     input:
         input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented.btf"
     params:
-        function = "stack_make_binary",
         threshold = config["coil_threshold"], # 240
         max_value = config["coil_new_value"] # 255
     output:
@@ -324,7 +328,7 @@ rule binarize_coil:
         from imutils.src import imutils_parser_main
 
         imutils_parser_main.main([
-            str(params.function),
+            "stack_make_binary",
             '-i', str(input.input_img),
             '-o', str(output.binary_img),
             '-th', str(params.threshold),
@@ -335,7 +339,6 @@ rule tiff2avi:
     input:
         input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
     params:
-        function = "tiff2avi",
         fourcc = config["fourcc"], #"0",
         fps = config["fps"] # "167"
     output:
@@ -344,7 +347,7 @@ rule tiff2avi:
         from imutils.src import imutils_parser_main
 
         imutils_parser_main.main([
-            params.function,
+            "tiff2avi",
             '-i', str(input.input_img),
             '-o',str(output.avi),
             '-fourcc', str(params.fourcc),
