@@ -2441,3 +2441,34 @@ def calculate_dataframe_for_export(worm):
     df = pd.concat([curvature, trajectory, df_beh], axis=1, keys=['Curvature', 'Trajectory', 'Behavior'])
 
     return df
+
+
+def calculate_bundle_net_export(project_data, output_dir=None):
+    """
+    Calculates a trace and behavior dataframe, designed for use with the bundle net paper
+
+    Parameters
+    ----------
+    project_data
+
+    Returns
+    -------
+
+    """
+
+    # Get filtered traces with manual IDs
+    df_traces = project_data.calc_default_traces(use_paper_options=True)
+
+    # Get behavior annotations, but only the main ones and simplify
+    worm: WormFullVideoPosture = project_data.worm_posture_class
+    df_beh_raw = worm.beh_annotation(fluorescence_fps=True, reset_index=True)
+    df_beh = BehaviorCodes.convert_to_simple_states_vector(df_beh_raw)
+
+    if output_dir is not None:
+        traces_fname = os.path.join(output_dir, 'traces.h5')
+        df_traces.to_hdf(traces_fname, key='df_with_missing', mode='w')
+
+        beh_fname = os.path.join(output_dir, 'behavior.h5')
+        df_beh.to_hdf(beh_fname, key='df_with_missing', mode='w')
+
+    return df_traces, df_beh
