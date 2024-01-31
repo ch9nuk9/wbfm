@@ -196,6 +196,7 @@ else:
 background_video = glob.glob(f"{raw_data_dir}/../background/*background*BH*/*background*")
 # Remove any with AVG in the name
 background_video = [f for f in background_video if 'AVG' not in f]
+background_video = [f for f in background_video if 'metadata' not in f]
 if len(background_video) == 1:
     background_video = background_video[0]
     background_video = str(Path(background_video).resolve()) # This is needed because the path is relative
@@ -206,7 +207,7 @@ if len(background_video) == 1:
     background_img = str(Path(background_img).with_suffix('.tif'))
 
 elif len(background_video) > 1:
-    raise ValueError(f"There is more than one background video in {raw_data_dir}/../background/")
+    raise ValueError(f"There is more than one background video: {background_video}")
 else:
     raise ValueError(f"No background videos found in {raw_data_dir}/../background/")
 
