@@ -41,13 +41,13 @@ def _cleanup_helper(output_path):
 # By default, wbfm projects will run everything
 rule traces_and_behavior:
     input:
-        traces=expand("{dir}/{test}", test=config['output_4'], dir=project_dir),
+        traces=os.path.join(project_dir, "4-traces/green_traces.h5"),
         beh_figure= f"{output_behavior_dir}/behavioral_summary_figure.pdf"
 
 # This is important for immobilized worms, which don't have behavior
 rule traces:
     input:
-        traces=expand("{dir}/{test}", test=config['output_4'], dir=project_dir)
+        traces=os.path.join(project_dir, "4-traces/green_traces.h5")
 
 rule behavior:
     input:
