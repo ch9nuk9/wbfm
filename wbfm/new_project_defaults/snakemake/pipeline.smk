@@ -239,7 +239,7 @@ rule z_project_background:
             str(input.background_video),
             str(output.background_img),
             'mean',
-            'uint16',
+            'uint8',
             0,
         )
 
