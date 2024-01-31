@@ -1687,8 +1687,8 @@ class WormFullVideoPosture:
             all_files = dict()
 
         # In newer projects, the behavior output files will be local, not mixed with the raw data
-        # If it didn't find any files, even it found in subfolder, then check the local behavior subfolder
-        if len(all_files) == 0:
+        # If it didn't find any files, even if it found in subfolder, then check the local behavior subfolder
+        if all_files['filename_curvature'] is None:
             behavior_subfolder = Path(project_config.get_behavior_config().absolute_subfolder)
             all_files = WormFullVideoPosture._check_files_in_subfolder(behavior_subfolder)
         else:
@@ -1757,6 +1757,8 @@ class WormFullVideoPosture:
                 all_files['filename_turn_annotation'] = str(file)
             elif file.name.endswith('head_cast_ground_truth_timeseries.csv'):
                 all_files['filename_head_cast'] = str(file)
+            elif file.name.endswith('beh_annotation.csv'):
+                all_files['filename_beh_annotation'] = str(file)
         # Third, get manually annotated behavior (if it exists)
         # Note that these may have additional behaviors annotated that are not in the automatic annotation
         filename_manual_beh_annotation = None
