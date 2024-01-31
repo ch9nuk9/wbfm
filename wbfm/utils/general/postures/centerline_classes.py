@@ -130,17 +130,12 @@ class WormFullVideoPosture:
             try:
                 df = self.remove_idx_of_tracking_failures(df, fluorescence_fps=fluorescence_fps)
                 if needs_subsampling:
+                    df = self._pad_if_not_long_enough(df)
                     if len(df.shape) == 2:
+                        # Pad the dataframe with nan if it isn't long enough
                         df = df.iloc[self.subsample_indices, :]
                     elif len(df.shape) == 1:
                         df = df.iloc[self.subsample_indices]
-                        # try:
-                        #     # For numerical time series
-                        #     q = int(np.mean(np.diff(self.subsample_indices)))
-                        #     df = decimate(df, q=q, axis=0, zero_phase=True)
-                        #     df = pd.Series(df, index=self.subsample_indices)
-                        # except TypeError:
-                        #     df = df.iloc[self.subsample_indices]
                     else:
                         raise NotImplementedError
             except IndexError as e:
@@ -162,6 +157,28 @@ class WormFullVideoPosture:
                 df.index = self._x_physical_time_volumes
             else:
                 df.index = self._x_physical_time_frames
+
+        return df
+
+    def _pad_if_not_long_enough(self, df):
+        # Need to properly continue the index
+        if pd.api.types.is_numeric_dtype(df.index):
+            step_size = df.index[1] - df.index[0]
+        elif pd.api.types.is_datetime64_any_dtype(df.index):
+            step_size = df.index[1] - df.index[0]
+        else:
+            raise ValueError("Requested padding, but index is not numeric or datetime64")
+
+        if len(df.shape) == 2:
+            n = len(self._raw_stage_position) - df.shape[0]
+        else:
+            n = len(self._raw_stage_position) - len(df)
+
+        # Pad the dataframe with nan if it isn't long enough
+        if n > 0:
+            new_index_range = df.index.union(
+                range(int(df.index.max()) + step_size, int(df.index.max()) + step_size * (n + 1), step_size))
+            df = df.reindex(new_index_range)
 
         return df
 
