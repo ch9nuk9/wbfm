@@ -11,6 +11,7 @@ configfile: "snakemake_config.yaml"
 # NOTE: this is an undocumented feature, and may not work for other versions (this is 7.32)
 project_dir = os.path.dirname(snakemake.workflow.workflow.basedir)
 print("Detected project folder: ", project_dir)
+project_cfg = os.path.join(project_dir, "project_config.yaml")
 
 # Load the folders needed for the behavioral part of the pipeline
 cfg = ModularProjectConfig(project_dir)
@@ -18,6 +19,7 @@ raw_data_dir, output_behavior_dir = cfg.get_folders_for_behavior_pipeline()
 
 
 def _run_helper(script_name, project_path):
+    """Runs a script with a given name that can't be imported directly (e.g. because it starts with a number)"""
     import importlib
     print("Running script: ", script_name)
     _module = importlib.import_module(f"wbfm.scripts.{script_name}")
@@ -57,25 +59,25 @@ rule behavior:
 
 rule preprocessing:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=project_dir),
+        cfg=project_cfg
     output:
-        expand("{dir}/{output}", output=config['output_0'], dir=project_dir),
+        os.path.join(project_dir, "dat/bounding_boxes.pickle")
     run:
-        _run_helper(config['script_0'], str(input.cfg))
+        _run_helper("0b-preprocess_working_copy_of_data", str(input.cfg))
 
 #
 # Segmentation
 #
 rule segmentation:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=project_dir),
-        files=expand("{dir}/{input}", input=config['input_1'], dir=project_dir)
+        cfg=project_cfg,
+        files=os.path.join(project_dir, "dat/bounding_boxes.pickle")
     output:
-        metadata=expand("{dir}/{output}", output=config['output_1'], dir=project_dir),
-        masks=directory(expand("{dir}/{output}", output=config['output_1_dir'], dir=project_dir))
+        metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle"),
+        masks=directory(os.path.join(project_dir, "1-segmentation/masks.zarr"))
     threads: 56
     run:
-        _run_helper(config['script_1'], str(input.cfg))
+        _run_helper("1-segment_video", str(input.cfg))
 
 
 #
@@ -83,73 +85,83 @@ rule segmentation:
 #
 rule build_frame_objects:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=project_dir),
-        masks=ancient(expand("{dir}/{input}", input=config['output_1_dir'], dir=project_dir)),
-        files=expand("{dir}/{input}", input=config['input_2a'], dir=project_dir)
+        cfg=project_cfg,
+        masks=directory(os.path.join(project_dir, "1-segmentation/masks.zarr")),
+        metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle")
     output:
-        expand("{dir}/{output}", output=config['output_2a'], dir=project_dir)
+        os.path.join(project_dir, "2-training_data/raw/frame_dat.pickle")
     threads: 56
     run:
-        _run_helper(config['script_2a'], str(input.cfg))
+        _run_helper("2a-build_frame_objects", str(input.cfg))
 
 
 rule match_frame_pairs:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=project_dir),
-        masks=ancient(expand("{dir}/{input}", input=config['output_1_dir'], dir=project_dir)),
-        files=expand("{dir}/{input}", input=config['input_2b'], dir=project_dir)
+        cfg=project_cfg,
+        masks=ancient(directory(os.path.join(project_dir, "1-segmentation/masks.zarr"))),
+        metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle"),
+        frames=os.path.join(project_dir, "2-training_data/raw/frame_dat.pickle")
     output:
-        expand("{dir}/{output}", output=config['output_2b'], dir=project_dir)
+        matches=os.path.join(project_dir, "2-training_data/raw/match_dat.pickle")
     threads: 56
     run:
-        _run_helper(config['script_2b'], str(input.cfg))
+        _run_helper("2b-match_adjacent_volumes", str(input.cfg))
 
 
 rule postprocess_matches_to_tracklets:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=project_dir),
-        files=expand("{dir}/{input}", input=config['input_2c'], dir=project_dir),
+        cfg=project_cfg,
+        frames=os.path.join(project_dir, "2-training_data/raw/frame_dat.pickle"),
+        matches=os.path.join(project_dir, "2-training_data/raw/match_dat.pickle")
     output:
-        expand("{dir}/{output}", output=config['output_2c'], dir=project_dir)
+        tracklets=os.path.join(project_dir, "2-training_data/all_tracklets.pickle"),
+        clust_df_dat=os.path.join(project_dir, "2-training_data/raw/clust_df_dat.pickle"),
     threads: 8
     run:
-        _run_helper(config['script_2c'], str(input.cfg))
+        _run_helper("2c-postprocess_matches_to_tracklets", str(input.cfg))
 
 #
 # Tracking
 #
 rule tracking:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=project_dir),
-        files=expand("{dir}/{input}", input=config['input_3a'], dir=project_dir)
+        cfg=project_cfg,
+        metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle"),
+        frames=os.path.join(project_dir, "2-training_data/raw/frame_dat.pickle"),
     output:
-        expand("{dir}/{output}", output=config['output_3a'], dir=project_dir)
+        tracks_global=os.path.join(project_dir, "3-tracking/postprocessing/df_tracks_superglue.h5"),
     threads: 48
     run:
-        _run_helper(config['script_3a'], str(input.cfg))
+        _run_helper("3a-track_using_superglue", str(input.cfg))
 
 rule combine_tracking_and_tracklets:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=project_dir),
-        files=expand("{dir}/{input}", input=config['input_3b'], dir=project_dir)
+        cfg=project_cfg,
+        tracks_global=os.path.join(project_dir, "3-tracking/postprocessing/df_tracks_superglue.h5"),
+        tracklets=os.path.join(project_dir, "2-training_data/all_tracklets.pickle"),
     output:
-        expand("{dir}/{output}", output=config['output_3b'], dir=project_dir)
+        tracks_combined=os.path.join(project_dir, "3-tracking/postprocessing/combined_3d_tracks.h5"),
+        tracks_metadata=os.path.join(project_dir, "3-tracking/global2tracklet.pickle"),
     threads: 8
     run:
-        _run_helper(config['script_3b'], str(input.cfg))
+        _run_helper("3b-match_tracklets_and_tracks_using_neuron_initialization", str(input.cfg))
 
 #
 # Traces
 #
 rule extract_full_traces:
     input:
-        cfg=expand("{dir}/project_config.yaml", dir=project_dir),
-        files=expand("{dir}/{input}", input=config['input_4'], dir=project_dir)
+        cfg=project_cfg,
+        tracks_combined=os.path.join(project_dir, "3-tracking/postprocessing/combined_3d_tracks.h5"),
+        metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle"),
     output:
-        expand("{dir}/{output}", output=config['output_4'], dir=project_dir)
+        os.path.join(project_dir, "4-traces/all_matches.pickle"),
+        os.path.join(project_dir, "4-traces/red_traces.h5"),
+        os.path.join(project_dir, "4-traces/green_traces.h5"),
+        masks=directory(os.path.join(project_dir, "4-traces/reindexed_masks.zarr.zip"))
     threads: 56
     run:
-        _run_helper(config['script_4'], str(input.cfg))
+        _run_helper("4-make_final_traces", str(input.cfg))
 
 
 #
