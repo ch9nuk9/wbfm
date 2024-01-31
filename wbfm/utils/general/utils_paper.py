@@ -187,6 +187,8 @@ class PaperDataCache:
         return to_remove
 
     def invalid_indices_cache_fname(self):
+        if self.cache_dir is None:
+            return None
         return os.path.join(self.cache_dir, 'invalid_indices.npy')
 
     @cache_to_disk_class('paper_traces_cache_fname',
@@ -210,6 +212,8 @@ class PaperDataCache:
         return df
 
     def paper_traces_cache_fname(self):
+        if self.cache_dir is None:
+            return None
         return os.path.join(self.cache_dir, 'paper_traces.h5')
 
     @cache_to_disk_class('paper_traces_residual_cache_fname',
@@ -230,6 +234,8 @@ class PaperDataCache:
         return df
 
     def paper_traces_residual_cache_fname(self):
+        if self.cache_dir is None:
+            return None
         return os.path.join(self.cache_dir, 'paper_traces_residual.h5')
 
     @cache_to_disk_class('paper_traces_global_cache_fname',
@@ -250,13 +256,19 @@ class PaperDataCache:
         return df
 
     def paper_traces_global_cache_fname(self):
+        if self.cache_dir is None:
+            return None
         return os.path.join(self.cache_dir, 'paper_traces_global.h5')
 
     @property
     def cache_dir(self):
         fname = os.path.join(self.project_data.project_dir, '.cache')
         if not os.path.exists(fname):
-            os.makedirs(fname)
+            try:
+                os.makedirs(fname)
+            except PermissionError:
+                print(f"Could not create cache directory {fname}")
+                fname = None
         return fname
 
     def clear_disk_cache(self, delete_traces=True, delete_invalid_indices=True,

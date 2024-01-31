@@ -78,7 +78,11 @@ def cache_to_disk_class(cache_filename_method: str,
             else:
                 logging.info(f'Cache file {cache_filename} does not exist. Running function and saving output to disk.')
                 output = func(self)
-                func_save_to_disk(cache_filename, output)
+                try:
+                    func_save_to_disk(cache_filename, output)
+                except PermissionError:
+                    logging.warning(f'Could not save cache file {cache_filename} to disk. '
+                                    f'Permission denied. Continuing without saving.')
                 return output
         return wrapper
     return decorator
