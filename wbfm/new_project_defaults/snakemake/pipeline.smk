@@ -190,7 +190,8 @@ if len(background_video) == 1:
     print("This is the background video: ", background_video)
 
     # Name of the background image is the same, but with 'AVG' prepended
-    background_img = os.path.join(os.path.dirname(background_video), 'AVG'+os.path.basename(background_video))
+    background_img = os.path.join(output_behavior_dir, 'AVG'+os.path.basename(background_video))
+    background_img = str(Path(background_img).with_suffix('.tif'))
 
 elif len(background_video) > 1:
     raise ValueError(f"There is more than one background video in {raw_data_dir}/../background/")
@@ -216,7 +217,8 @@ rule z_project_background:
     input:
         background_video = {background_video}
     output:
-        background_img = {background_img}
+        # New: put the background image in the output folder, and make it temporary
+        background_img = _cleanup_helper(background_img)
     run:
         from imutils.src import imutils_parser_main
 
