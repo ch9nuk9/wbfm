@@ -72,7 +72,7 @@ def cache_to_disk_class(cache_filename_method: str,
     def decorator(func):
         def wrapper(self):
             cache_filename = getattr(self, cache_filename_method)(**cache_kwargs)
-            if os.path.exists(cache_filename):
+            if cache_filename is not None and os.path.exists(cache_filename):
                 logging.info(f'Loading cached data from {cache_filename}')
                 return func_load_from_disk(cache_filename)
             else:
@@ -80,7 +80,7 @@ def cache_to_disk_class(cache_filename_method: str,
                 output = func(self)
                 try:
                     func_save_to_disk(cache_filename, output)
-                except PermissionError:
+                except (PermissionError, AttributeError):
                     logging.warning(f'Could not save cache file {cache_filename} to disk. '
                                     f'Permission denied. Continuing without saving.')
                 return output
