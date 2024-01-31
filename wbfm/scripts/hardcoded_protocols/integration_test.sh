@@ -14,7 +14,7 @@ cd $PROJECT_DIR/snakemake || exit
 COMMAND="RUNME.sh"
 
 # The bash script also accepts command line arguments, so we want to avoid them being passed to sbatch
-sbatch --time 0-01:00:00 \
+sbatch --time 0-08:00:00 \
         --cpus-per-task 1 \
         --mem 1G \
         $COMMAND
