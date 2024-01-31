@@ -233,15 +233,14 @@ rule z_project_background:
         # New: put the background image in the output folder, and make it temporary
         background_img = _cleanup_helper(background_img)
     run:
-        from imutils.src import imutils_parser_main
+        from imutils.src.imfunctions import stack_z_projection
 
-        imutils_parser_main.main([
-            "z_projection_parser",
-            '-i', str(background_video),
-            '-o', str(output.background_img),
-            '-type', 'mean',
-            '-axis', 0,
-        ])
+        stack_z_projection(
+            str(input.background_video),
+            str(output.background_img),
+            'mean',
+            0,
+        )
 
 rule subtract_background:
     input:
