@@ -33,7 +33,7 @@ done
 
 # Package slurm options
 OPT="sbatch -t {cluster.time} -p {cluster.partition} --cpus-per-task {cluster.cpus_per_task} --mem {cluster.mem} --output {cluster.output} --gres {cluster.gres}"
-NUM_JOBS_TO_SUBMIT=4
+NUM_JOBS_TO_SUBMIT=8
 
 # Actual command
 if [ "$DRYRUN" ]; then
