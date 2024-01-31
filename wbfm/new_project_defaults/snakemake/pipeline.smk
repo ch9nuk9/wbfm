@@ -42,7 +42,8 @@ def _cleanup_helper(output_path):
 rule traces_and_behavior:
     input:
         traces=os.path.join(project_dir, "4-traces/green_traces.h5"),
-        beh_figure= f"{output_behavior_dir}/behavioral_summary_figure.pdf"
+        beh_figure=f"{output_behavior_dir}/behavioral_summary_figure.pdf",
+        beh_hilbert=f"{output_behavior_dir}/hilbert_inst_amplitude.csv"
 
 # This is important for immobilized worms, which don't have behavior
 rule traces:
@@ -51,7 +52,8 @@ rule traces:
 
 rule behavior:
     input:
-        beh_figure= f"{output_behavior_dir}/behavioral_summary_figure.pdf"
+        beh_figure= f"{output_behavior_dir}/behavioral_summary_figure.pdf",
+        beh_hilbert=f"{output_behavior_dir}/hilbert_inst_amplitude.csv"
 
 #
 # Snakemake for traces
