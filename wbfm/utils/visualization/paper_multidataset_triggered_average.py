@@ -426,8 +426,12 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             behavior_shading_type = None
         if behavior_shading_type is not None:
             index_conversion = df_subset.columns
-            shade_triggered_average(ind_preceding=20, index_conversion=index_conversion,
-                                    behavior_shading_type=behavior_shading_type, ax=ax)
+            try:
+                shade_triggered_average(ind_preceding=20, index_conversion=index_conversion,
+                                        behavior_shading_type=behavior_shading_type, ax=ax)
+            except IndexError:
+                print(f"Index error for {neuron_name} and {trigger_type}; skipping shading")
+
         if xlim is not None:
             ax.set_xlim(xlim)
         if ylim is not None:
