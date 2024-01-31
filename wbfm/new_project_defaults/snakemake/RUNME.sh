@@ -27,7 +27,7 @@ do
         n) DRYRUN="True";;
         c) USE_CLUSTER="";;
         h) usage;;
-        *) raise error "Unknown flag"
+        *) echo "Unknown flag"; usage; exit 1;;
     esac
 done
 
