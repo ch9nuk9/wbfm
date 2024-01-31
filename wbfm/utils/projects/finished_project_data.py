@@ -1132,7 +1132,7 @@ class ProjectData:
 
         """
         df = self.calc_default_traces(channel_mode='ratio', calculation_mode='integration',
-                                      neuron_name=neuron_name, **kwargs)
+                                      neuron_names=(neuron_name, ), **kwargs)
         t, y = df.index, df[neuron_name]
         df_kymo = self.worm_posture_class.curvature(fluorescence_fps=True)
         df_kymo.index = df.index
