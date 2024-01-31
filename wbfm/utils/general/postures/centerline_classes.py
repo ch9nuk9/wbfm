@@ -117,7 +117,8 @@ class WormFullVideoPosture:
         return pca_proj
 
     def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool,
-                                 reset_index=False, use_physical_time=False) -> Optional[Union[pd.DataFrame, pd.Series]]:
+                                 reset_index=False, use_physical_time=False) -> Optional[
+        Union[pd.DataFrame, pd.Series]]:
         if df is None:
             return df
         elif self.beh_annotation_already_converted_to_fluorescence_fps and not fluorescence_fps:
@@ -213,7 +214,7 @@ class WormFullVideoPosture:
         df = self._raw_curvature
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         if rename_columns:
-            df.columns = [f"segment_{i+1:03d}" for i in df.columns]
+            df.columns = [f"segment_{i + 1:03d}" for i in df.columns]
         return df
 
     @lru_cache(maxsize=8)
@@ -226,7 +227,7 @@ class WormFullVideoPosture:
         # Then take the average of segments 4 and 5, then 4-6, then 4-7, etc.
         df_new = df.copy()
 
-        for i in range(start_segment+1, final_segment):
+        for i in range(start_segment + 1, final_segment):
             df_new.iloc[:, i] = df.iloc[:, i - start_segment:i + 1].mean(axis=1)
         # Remove the first and last few segments, which are not smoothed
         # df_new = df_new.iloc[:, start_segment:final_segment+1]
@@ -350,7 +351,7 @@ class WormFullVideoPosture:
         _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
         BehaviorCodes.assert_all_are_valid(_raw_vector)
         return _raw_vector
-    
+
     # @lru_cache(maxsize=8)
     def _slowing(self, fluorescence_fps=False, **kwargs) -> Optional[pd.DataFrame]:
         """This is intended to be summed with the main behavioral vector"""
@@ -649,7 +650,8 @@ class WormFullVideoPosture:
         elif behavior_alias == 'signed_middle_body_speed':
             y = self.worm_speed(**kwargs, use_stage_position=False, signed=True)
         elif behavior_alias == 'signed_middle_body_speed_smoothed':
-            y = self.worm_speed(**kwargs, use_stage_position=False, signed=True, strong_smoothing_before_derivative=True)
+            y = self.worm_speed(**kwargs, use_stage_position=False, signed=True,
+                                strong_smoothing_before_derivative=True)
         # Curvature measurements
         elif behavior_alias == 'summed_curvature':
             self.check_has_full_kymograph()
@@ -659,10 +661,10 @@ class WormFullVideoPosture:
             y = self.summed_curvature_from_kymograph(do_abs=False, **kwargs)
         elif behavior_alias == 'head_curvature':
             self.check_has_full_kymograph()
-            y = self.summed_curvature_from_kymograph( start_segment=5, end_segment=30, **kwargs)
+            y = self.summed_curvature_from_kymograph(start_segment=5, end_segment=30, **kwargs)
         elif behavior_alias == 'head_signed_curvature':
             self.check_has_full_kymograph()
-            y = self.summed_curvature_from_kymograph(do_abs=False, 
+            y = self.summed_curvature_from_kymograph(do_abs=False,
                                                      start_segment=5, end_segment=30, **kwargs)
         elif behavior_alias == 'quantile_curvature':
             self.check_has_full_kymograph()
@@ -907,7 +909,8 @@ class WormFullVideoPosture:
     @lru_cache(maxsize=256)
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
                    strong_smoothing=False, use_stage_position=True, remove_outliers=True, body_segment=50,
-                   clip_unrealistic_values=True, strong_smoothing_before_derivative=False, reset_index=True) -> pd.Series:
+                   clip_unrealistic_values=True, strong_smoothing_before_derivative=False,
+                   reset_index=True) -> pd.Series:
         """
         Calculates derivative of position
 
@@ -1138,10 +1141,10 @@ class WormFullVideoPosture:
         half_hour = pd.to_timedelta(30 * 60 * 1e9)
         invalid_ind = np.where(np.abs(all_diffs) > half_hour)[0]
         if len(invalid_ind) > 0:
-            all_diffs[invalid_ind[0]-1:invalid_ind[-1]+1] = pd.to_timedelta(0)
+            all_diffs[invalid_ind[0] - 1:invalid_ind[-1] + 1] = pd.to_timedelta(0)
         tdelta = all_diffs.mean()
         # To replicate the behavior of tdelta.delta
-        tdelta_s = (1000*tdelta.microseconds + tdelta.nanoseconds) / 1e9
+        tdelta_s = (1000 * tdelta.microseconds + tdelta.nanoseconds) / 1e9
         assert tdelta_s > 0, f"Calculated negative delta time ({tdelta_s}); was there a power outage or something?"
         return tdelta_s
 
@@ -1448,7 +1451,7 @@ class WormFullVideoPosture:
             # The breakpoint algorithm needs at least 3 points
             if end - start - 2 * frames_to_remove < 3:
                 continue
-            dat = speed.loc[start+frames_to_remove:end-frames_to_remove].to_numpy()
+            dat = speed.loc[start + frames_to_remove:end - frames_to_remove].to_numpy()
             algo = rpt.Dynp(model="l2").fit(dat)
             try:
                 result = algo.predict(n_bkps=1)
@@ -1617,7 +1620,7 @@ class WormFullVideoPosture:
             duration = end - start
             if duration >= len(y_dat):
                 raise NotImplementedError(f"Duration {duration} is too long for the empirical distribution"
-                                 f"It could be padded with 1s, but this probably means it needs to be recalculated")
+                                          f"It could be padded with 1s, but this probably means it needs to be recalculated")
             state_trace[start:end] = y_dat[:duration].copy()
 
         return self._shorten_to_trace_length(pd.Series(state_trace))
@@ -1668,69 +1671,38 @@ class WormFullVideoPosture:
         if behavior_fname is None:
             # Try 2: look in the parent folder of the red raw data
             project_config.logger.debug("behavior_fname not found; searching")
-            behavior_subfolder, flag = project_config.get_behavior_raw_parent_folder_from_red_fname()
+            raw_behavior_subfolder, flag = project_config.get_behavior_raw_parent_folder_from_red_fname()
             if not flag:
                 project_config.logger.warning("behavior_fname search failed; "
                                               "All calculations with curvature (kymograph) will fail")
-                behavior_subfolder = None
+                raw_behavior_subfolder = None
         else:
-            behavior_subfolder = Path(behavior_fname).parent
+            raw_behavior_subfolder = Path(behavior_fname).parent
 
-        if behavior_subfolder is not None:
-            # Second get the centerline-specific files
-            all_files = dict(filename_curvature=None, filename_x=None, filename_y=None, filename_beh_annotation=None,
-                             filename_hilbert_amplitude=None, filename_hilbert_phase=None,
-                             filename_hilbert_frequency=None, filename_hilbert_carrier=None)
-            for file in Path(behavior_subfolder).iterdir():
-                if not file.is_file() or file.name.startswith('.'):
-                    # Skip hidden files and directories
-                    continue
-                if file.name.endswith('skeleton_spline_K_signed_avg.csv'):
-                    all_files['filename_curvature'] = str(file)
-                elif file.name.endswith('skeleton_spline_X_coords_avg.csv'):
-                    all_files['filename_x'] = str(file)
-                elif file.name.endswith('skeleton_spline_Y_coords_avg.csv'):
-                    all_files['filename_y'] = str(file)
-                elif file.name.endswith('hilbert_inst_amplitude.csv'):
-                    all_files['filename_hilbert_amplitude'] = str(file)
-                elif file.name.endswith('hilbert_inst_freq.csv'):
-                    all_files['filename_hilbert_frequency'] = str(file)
-                elif file.name.endswith('hilbert_inst_phase.csv'):
-                    all_files['filename_hilbert_phase'] = str(file)
-                elif file.name.endswith('hilbert_regenerated_carrier.csv'):
-                    all_files['filename_hilbert_carrier'] = str(file)
-                elif file.name.endswith('self_touch.csv'):
-                    all_files['filename_self_collision'] = str(file)
-                elif file.name.endswith('turns_annotation.csv'):
-                    all_files['filename_turn_annotation'] = str(file)
-                elif file.name.endswith('head_cast_ground_truth_timeseries.csv'):
-                    all_files['filename_head_cast'] = str(file)
-
-            # Third, get the table stage position
-            # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)
-            filename_table_position = None
-            fnames = [fn for fn in glob.glob(os.path.join(behavior_subfolder.parent, '*TablePosRecord.txt'))]
-            if len(fnames) != 1:
-                logging.warning(f"Did not find stage position file in {behavior_subfolder}")
-            else:
-                filename_table_position = fnames[0]
-            all_files['filename_table_position'] = filename_table_position
-
-            # Fourth, get manually annotated behavior (if it exists)
-            # Note that these may have additional behaviors annotated that are not in the automatic annotation
-            filename_manual_beh_annotation = None
-            manual_annotation_subfolder = Path(behavior_subfolder).joinpath('ground_truth_beh_annotation')
-            if manual_annotation_subfolder.exists():
-                fnames = [fn for fn in glob.glob(os.path.join(manual_annotation_subfolder,
-                                                              '*beh_annotation_timeseries.csv'))]
-                if len(fnames) != 1:
-                    logging.warning(f"Did not find manual behavior annotation file in {manual_annotation_subfolder}")
-                else:
-                    filename_manual_beh_annotation = fnames[0]
-            all_files['filename_manual_beh_annotation'] = filename_manual_beh_annotation
-
+        # Try to read files from the behavior subfolder
+        if raw_behavior_subfolder is not None:
+            all_files = WormFullVideoPosture._check_files_in_subfolder(raw_behavior_subfolder)
         else:
             all_files = dict()
+
+        # In newer projects, the behavior output files will be local, not mixed with the raw data
+        # If it didn't find any files, even it found in subfolder, then check the local behavior subfolder
+        if len(all_files) == 0:
+            behavior_subfolder = Path(project_config.get_behavior_config().absolute_subfolder)
+            all_files = WormFullVideoPosture._check_files_in_subfolder(behavior_subfolder)
+        else:
+            # Then the files and the raw are the same (old style)
+            behavior_subfolder = raw_behavior_subfolder
+
+        # File that is always with the raw data: stage_position
+        # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)
+        filename_table_position = None
+        fnames = [fn for fn in glob.glob(os.path.join(raw_behavior_subfolder.parent, '*TablePosRecord.txt'))]
+        if len(fnames) != 1:
+            logging.warning(f"Did not find stage position file in {raw_behavior_subfolder}")
+        else:
+            filename_table_position = fnames[0]
+        all_files['filename_table_position'] = filename_table_position
 
         # Get other manual behavior annotations if automatic wasn't found
         if all_files.get('filename_beh_annotation', None) is None:
@@ -1744,12 +1716,59 @@ class WormFullVideoPosture:
                 filename_beh_annotation = None
             all_files['filename_beh_annotation'] = filename_beh_annotation
         all_files['behavior_subfolder'] = behavior_subfolder
+        all_files['raw_behavior_subfolder'] = raw_behavior_subfolder
 
         # Add class for converting physical units
         opt['physical_unit_conversion'] = project_data.physical_unit_conversion
 
         # Even if no files found, at least save the fps
         return WormFullVideoPosture(**all_files, **opt)
+
+    @staticmethod
+    def _check_files_in_subfolder(behavior_subfolder):
+        # Get the centerline-specific files
+        all_files = dict(filename_curvature=None, filename_x=None, filename_y=None, filename_beh_annotation=None,
+                         filename_hilbert_amplitude=None, filename_hilbert_phase=None,
+                         filename_hilbert_frequency=None, filename_hilbert_carrier=None)
+        for file in Path(behavior_subfolder).iterdir():
+            if not file.is_file() or file.name.startswith('.'):
+                # Skip hidden files and directories
+                continue
+            if file.name.endswith('skeleton_spline_K_signed_avg.csv'):
+                all_files['filename_curvature'] = str(file)
+            elif file.name.endswith('skeleton_spline_X_coords_avg.csv') or \
+                    (file.name.endswith('skeleton_spline_X_coords.csv') and all_files['filename_x'] is None):
+                all_files['filename_x'] = str(file)
+            elif file.name.endswith('skeleton_spline_Y_coords_avg.csv') or \
+                    (file.name.endswith('skeleton_spline_Y_coords.csv') and all_files['filename_y'] is None):
+                all_files['filename_y'] = str(file)
+            elif file.name.endswith('hilbert_inst_amplitude.csv'):
+                all_files['filename_hilbert_amplitude'] = str(file)
+            elif file.name.endswith('hilbert_inst_freq.csv'):
+                all_files['filename_hilbert_frequency'] = str(file)
+            elif file.name.endswith('hilbert_inst_phase.csv'):
+                all_files['filename_hilbert_phase'] = str(file)
+            elif file.name.endswith('hilbert_regenerated_carrier.csv'):
+                all_files['filename_hilbert_carrier'] = str(file)
+            elif file.name.endswith('self_touch.csv'):
+                all_files['filename_self_collision'] = str(file)
+            elif file.name.endswith('turns_annotation.csv'):
+                all_files['filename_turn_annotation'] = str(file)
+            elif file.name.endswith('head_cast_ground_truth_timeseries.csv'):
+                all_files['filename_head_cast'] = str(file)
+        # Third, get manually annotated behavior (if it exists)
+        # Note that these may have additional behaviors annotated that are not in the automatic annotation
+        filename_manual_beh_annotation = None
+        manual_annotation_subfolder = Path(behavior_subfolder).joinpath('ground_truth_beh_annotation')
+        if manual_annotation_subfolder.exists():
+            fnames = [fn for fn in glob.glob(os.path.join(manual_annotation_subfolder,
+                                                          '*beh_annotation_timeseries.csv'))]
+            if len(fnames) != 1:
+                logging.warning(f"Did not find manual behavior annotation file in {manual_annotation_subfolder}")
+            else:
+                filename_manual_beh_annotation = fnames[0]
+        all_files['filename_manual_beh_annotation'] = filename_manual_beh_annotation
+        return all_files
 
     def shade_using_behavior(self, **kwargs):
         """Takes care of fps conversion and new vs. old annotation format"""
@@ -1773,7 +1792,7 @@ class WormFullVideoPosture:
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
         offset = self.frames_per_volume // 2  # Take the middle frame
-        return range(self.bigtiff_start_volume*self.frames_per_volume + offset,
+        return range(self.bigtiff_start_volume * self.frames_per_volume + offset,
                      len(self._raw_stage_position),
                      self.frames_per_volume)
 
@@ -1840,9 +1859,10 @@ class WormFullVideoPosture:
                 break
             # Check to see if there was an intervening reversal
             end_of_check_period = rev_end + num_points_after_reversal
-            if not allow_reversal_before_peak and i+1 < len(rev_starts):
+            if not allow_reversal_before_peak and i + 1 < len(rev_starts):
                 # Set next reversal start to be end if it is within the check period
-                end_of_check_period = rev_starts[i+1] if rev_starts[i+1] < end_of_check_period else end_of_check_period
+                end_of_check_period = rev_starts[i + 1] if rev_starts[
+                                                               i + 1] < end_of_check_period else end_of_check_period
             if not use_idx_of_absolute_max:
                 idx = y.iloc[rev_end:end_of_check_period].idxmax()
             else:
@@ -1888,7 +1908,8 @@ class WormFullVideoPosture:
             df_raw_number = df_raw_number.drop(columns='UNKNOWN').drop(labels='UNKNOWN')
         else:
             df_raw_number = None
-        dot = plot_dataframe_of_transitions(df_probabilities, df_raw_number=df_raw_number, to_view=True, output_folder=output_folder, **graph_kwargs)
+        dot = plot_dataframe_of_transitions(df_probabilities, df_raw_number=df_raw_number, to_view=True,
+                                            output_folder=output_folder, **graph_kwargs)
         return dot, df_probabilities, df_raw_number
 
     # Raw videos
@@ -1929,7 +1950,7 @@ class WormFullVideoPosture:
 
     def __repr__(self):
         return \
-f"=========================================\n\
+            f"=========================================\n\
 Posture class with the following files:\n\
 =========Raw Behavior Videos==============\n\
 behavior_video_avi:         {self.behavior_video_avi_fname() is not None}\n\
@@ -2091,7 +2112,6 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
 
 @dataclass
 class WormReferencePosture:
-
     reference_posture_ind: int
     all_postures: WormFullVideoPosture
 
