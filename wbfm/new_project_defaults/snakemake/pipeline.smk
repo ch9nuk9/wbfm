@@ -86,7 +86,7 @@ rule segmentation:
 rule build_frame_objects:
     input:
         cfg=project_cfg,
-        masks=directory(os.path.join(project_dir, "1-segmentation/masks.zarr")),
+        masks=os.path.join(project_dir, "1-segmentation/masks.zarr"),
         metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle")
     output:
         os.path.join(project_dir, "2-training_data/raw/frame_dat.pickle")
@@ -98,7 +98,7 @@ rule build_frame_objects:
 rule match_frame_pairs:
     input:
         cfg=project_cfg,
-        masks=ancient(directory(os.path.join(project_dir, "1-segmentation/masks.zarr"))),
+        masks=ancient(os.path.join(project_dir, "1-segmentation/masks.zarr")),
         metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle"),
         frames=os.path.join(project_dir, "2-training_data/raw/frame_dat.pickle")
     output:
@@ -158,7 +158,7 @@ rule extract_full_traces:
         os.path.join(project_dir, "4-traces/all_matches.pickle"),
         os.path.join(project_dir, "4-traces/red_traces.h5"),
         os.path.join(project_dir, "4-traces/green_traces.h5"),
-        masks=directory(os.path.join(project_dir, "4-traces/reindexed_masks.zarr.zip"))
+        masks=os.path.join(project_dir, "4-traces/reindexed_masks.zarr.zip")
     threads: 56
     run:
         _run_helper("4-make_final_traces", str(input.cfg))
