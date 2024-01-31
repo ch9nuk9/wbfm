@@ -117,10 +117,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     dataset_clusterer_dict: Dict[str, ClusteredTriggeredAverages] = None
     intermediates_dict: Dict[str, tuple] = None
 
+    trace_opt: Optional[dict] = None
+
     def __post_init__(self):
         # Analyze the project data to get the clusterers and intermediates
         trace_base_opt = self.get_trace_opt(min_nonnan=self.min_nonnan)
         trace_base_opt['use_paper_options'] = True
+        if self.trace_opt is not None:
+            trace_base_opt.update(self.trace_opt)
 
         self.dataset_clusterer_dict = defaultdict(None)
         self.intermediates_dict = defaultdict(lambda: (None, None, None))
