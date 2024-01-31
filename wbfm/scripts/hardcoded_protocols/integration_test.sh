@@ -12,7 +12,9 @@ python $COMMAND with project_path=$PROJECT_PATH dryrun=False
 # Run using the snakemake pipeline from an sbatch controller job
 cd $PROJECT_DIR/snakemake || exit
 COMMAND="RUNME.sh"
-SBATCH_OPT="--time 0-01:00:00 --cpus-per-task 1 --mem 1G"
 
 # The bash script also accepts command line arguments, so we want to avoid them being passed to sbatch
-sbatch "$SBATCH_OPT" $COMMAND
+sbatch --time 0-01:00:00 \
+        --cpus-per-task 1 \
+        --mem 1G \
+        $COMMAND
