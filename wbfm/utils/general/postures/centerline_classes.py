@@ -794,17 +794,20 @@ class WormFullVideoPosture:
         # Add additional annotations from other files
         # Note that these other annotations are one frame shorter than the behavior annotation
         beh = beh.iloc[:-1]
-        if include_collision and self._self_collision() is not None:
-            beh = beh + self._self_collision(fluorescence_fps=False, reset_index=False)
-        if include_pause and self._pause() is not None:
-            beh = beh + self._pause(fluorescence_fps=False, reset_index=False)
-        if include_slowing and self._slowing() is not None:
-            beh = beh + self._slowing(fluorescence_fps=False, reset_index=False)
-        if include_turns and self._turn_annotation() is not None:
-            # Note that the turn annotation is one frame shorter than the behavior annotation
-            beh = beh + self._turn_annotation(fluorescence_fps=False, reset_index=False)
-        if include_head_cast and self._head_cast_annotation() is not None:
-            beh = beh + self._head_cast_annotation(fluorescence_fps=False, reset_index=False)
+        try:
+            if include_collision and self._self_collision() is not None:
+                beh = beh + self._self_collision(fluorescence_fps=False, reset_index=False)
+            if include_pause and self._pause() is not None:
+                beh = beh + self._pause(fluorescence_fps=False, reset_index=False)
+            if include_slowing and self._slowing() is not None:
+                beh = beh + self._slowing(fluorescence_fps=False, reset_index=False)
+            if include_turns and self._turn_annotation() is not None:
+                # Note that the turn annotation is one frame shorter than the behavior annotation
+                beh = beh + self._turn_annotation(fluorescence_fps=False, reset_index=False)
+            if include_head_cast and self._head_cast_annotation() is not None:
+                beh = beh + self._head_cast_annotation(fluorescence_fps=False, reset_index=False)
+        except MissingAnalysisError:
+            print("Warning: could not find one of the additional behavior annotations, skipping")
 
         # Make sure there are no nan values.
         # Necessary because sometimes removing tracking failures adds nan, even when they should be recognized
