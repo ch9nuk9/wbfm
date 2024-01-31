@@ -87,6 +87,7 @@ class WormFullVideoPosture:
 
     # If additional files are needed
     behavior_subfolder: str = None
+    raw_behavior_subfolder: str = None
 
     def __post_init__(self):
         if self.filename_curvature is not None:
