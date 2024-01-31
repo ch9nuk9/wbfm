@@ -170,11 +170,12 @@ class CCAPlotter:
         _, _, cca = self.calc_cca(n_components=mode+1, binary_behaviors=binary_behaviors, **kwargs)
         df_x, _ = self.get_weights_from_cca(cca, binary_behaviors, **kwargs)
         # PCA mode
-        df_x_pca = self.calc_pca_mode(mode)
+        df_x_pca = self.calc_pca_mode(mode, return_pca_weights=True)
         # Normalize the modes
         df_x = df_x / np.linalg.norm(df_x)
-        df_x_pca = df_x_pca / np.linalg.norm(df_x_pca)
-        return df_x.dot(df_x_pca.T).iloc[mode, mode]
+        df_x = df_x.iloc[mode, :]
+        df_x_pca = df_x_pca / np.linalg.norm(df_x_pca)  # PCA is already 1 dimensional
+        return df_x.values.dot(df_x_pca.values)[0]
 
     def _get_beh_df(self, binary_behaviors, raw_not_truncated=False):
         if binary_behaviors:
@@ -267,8 +268,9 @@ class CCAPlotter:
             fname = os.path.join(output_folder, fname)
             self._save_plotly_all_formats(fig, fname)
 
-    def calc_pca_mode(self, i_mode) -> pd.DataFrame:
-        X_r = np.array(self.project_data.calc_pca_modes(n_components=i_mode + 1, multiply_by_variance=True))
+    def calc_pca_mode(self, i_mode, return_pca_weights=False) -> pd.DataFrame:
+        X_r = np.array(self.project_data.calc_pca_modes(n_components=i_mode + 1, multiply_by_variance=True,
+                                                        return_pca_weights=return_pca_weights))
         df = pd.DataFrame({f'PCA mode {i_mode + 1}': X_r[:, i_mode] / X_r[:, i_mode].max()})
         return df
 
