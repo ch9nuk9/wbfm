@@ -453,12 +453,16 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return behavior_fname, behavior_subfolder
 
-    def get_behavior_raw_parent_folder_from_red_fname(self) -> Tuple[Optional[Path], bool]:
+    def get_behavior_raw_parent_folder_from_red_fname(self, verbose=0) -> Tuple[Optional[Path], bool]:
         red_fname = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
         if red_fname is None:
+            if verbose >= 1:
+                print("Could not find red_bigtiff_fname, aborting")
             return None, False
         main_data_folder = Path(red_fname).parents[1]
         if not main_data_folder.exists():
+            if verbose >= 1:
+                print(f"Could not find main data folder {main_data_folder}, aborting")
             return None, False
         # First, get the subfolder
         for content in main_data_folder.iterdir():
@@ -469,9 +473,12 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                     flag = True
                     break
         else:
-            print(f"Found no behavior subfolder in {main_data_folder}, aborting")
+            if verbose >= 1:
+                print(f"Found no behavior subfolder in {main_data_folder}, aborting")
             flag = False
             behavior_subfolder = None
+        if verbose >= 1:
+            print(f"Found behavior subfolder: {behavior_subfolder}")
         return behavior_subfolder, flag
 
     def get_folders_for_behavior_pipeline(self):
