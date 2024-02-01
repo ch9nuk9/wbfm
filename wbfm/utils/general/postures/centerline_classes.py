@@ -1720,7 +1720,7 @@ class WormFullVideoPosture:
 
         # In newer projects, the behavior output files will be local, not mixed with the raw data
         # If it didn't find any files, even if it found in subfolder, then check the local behavior subfolder
-        if all_files['filename_curvature'] is None:
+        if all_files.get('filename_curvature', None) is None:
             behavior_subfolder = Path(project_config.get_behavior_config().absolute_subfolder)
             all_files = WormFullVideoPosture._check_files_in_subfolder(behavior_subfolder)
         else:
@@ -1729,12 +1729,14 @@ class WormFullVideoPosture:
 
         # File that is always with the raw data: stage_position
         # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)
+        # UNLESS this is an immobilized dataset
         filename_table_position = None
-        fnames = [fn for fn in glob.glob(os.path.join(raw_behavior_subfolder.parent, '*TablePosRecord.txt'))]
-        if len(fnames) != 1:
-            logging.warning(f"Did not find stage position file in {raw_behavior_subfolder}")
-        else:
-            filename_table_position = fnames[0]
+        if raw_behavior_subfolder is not None:
+            fnames = [fn for fn in glob.glob(os.path.join(raw_behavior_subfolder.parent, '*TablePosRecord.txt'))]
+            if len(fnames) != 1:
+                logging.warning(f"Did not find stage position file in {raw_behavior_subfolder}")
+            else:
+                filename_table_position = fnames[0]
         all_files['filename_table_position'] = filename_table_position
 
         # Get other manual behavior annotations if automatic wasn't found
