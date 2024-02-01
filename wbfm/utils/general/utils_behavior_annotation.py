@@ -54,6 +54,7 @@ class BehaviorCodes(Flag):
     HEAD_CAST = auto()  # Manually annotated
     SLOWING = auto()  # Annotated using Charlie's pipeline
     PAUSE = auto()  # Annotated using Charlie's pipeline
+    STIMULUS = auto()  # Annotated using a manual excel file
 
     NOT_ANNOTATED = auto()
     UNKNOWN = auto()

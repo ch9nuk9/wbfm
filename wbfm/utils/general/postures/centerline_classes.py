@@ -55,6 +55,7 @@ class WormFullVideoPosture:
     filename_beh_annotation: str = None
     # Does not always exist
     filename_manual_beh_annotation: str = None
+    filename_stimulus: str = None
 
     filename_hilbert_amplitude: str = None
     filename_hilbert_frequency: str = None
@@ -332,6 +333,17 @@ class WormFullVideoPosture:
         _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
         BehaviorCodes.assert_all_are_valid(_raw_vector)
         return _raw_vector
+
+    # @lru_cache(maxsize=8)
+    def _stimulus(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+        """This is intended to be summed with the main behavioral vector"""
+        df = self._raw_stimulus
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
+
+    @cached_property
+    def _raw_stimulus(self) -> Optional[pd.Series]:
+        return read_if_exists(self.filename_stimulus, reader=pd.read_csv)
 
     # @lru_cache(maxsize=8)
     def _pause(self, fluorescence_fps=False, **kwargs) -> Optional[pd.DataFrame]:
@@ -791,7 +803,7 @@ class WormFullVideoPosture:
     # @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
                        include_collision=True, include_turns=True, include_head_cast=True, include_pause=True,
-                       include_slowing=True) -> \
+                       include_slowing=True, include_stiumulus=True) -> \
             Optional[pd.Series]:
         """
         Name is shortened to avoid US-UK spelling confusion
@@ -1738,6 +1750,17 @@ class WormFullVideoPosture:
             all_files['filename_beh_annotation'] = filename_beh_annotation
         all_files['behavior_subfolder'] = behavior_subfolder
         all_files['raw_behavior_subfolder'] = raw_behavior_subfolder
+
+        # Get stimulus information, if any. It should be in tracking/manual_annotation
+        tracking_cfg = project_config.get_tracking_config()
+        subfolder = tracking_cfg.resolve_relative_path('manual_annotation', prepend_subfolder=True)
+        if Path(subfolder).exists():
+            fnames = [fn for fn in glob.glob(os.path.join(subfolder, '*stimulus_timeseries.csv'))]
+            if len(fnames) != 1:
+                # logging.warning(f"Did not find stimulus file in {subfolder}")
+                opt['filename_stimulus'] = None
+            else:
+                opt['filename_stimulus'] = fnames[0]
 
         # Add class for converting physical units
         opt['physical_unit_conversion'] = project_data.physical_unit_conversion
