@@ -107,7 +107,11 @@ class PhysicalUnitConversion:
             opt = project_cfg.config['physical_units'].copy()
             if 'volumes_per_second' not in opt:
                 project_cfg.logger.debug("Using hard coded camera fps; this depends on the exposure time")
+                if 'camera_fps' not in opt:
+                    logging.warning("camera_fps not found in physical_units or project config; using default")
                 camera_fps = opt.get('camera_fps', 1000)
+                if 'exposure_time' not in opt:
+                    logging.warning("exposure_time not found in physical_units or project config; using default")
                 exposure_time = opt.get('exposure_time', 12)
                 frames_per_volume = get_behavior_fluorescence_fps_conversion(project_cfg)
                 opt['volumes_per_second'] = camera_fps / exposure_time / frames_per_volume
