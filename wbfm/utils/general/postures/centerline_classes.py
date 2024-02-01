@@ -1216,6 +1216,10 @@ class WormFullVideoPosture:
         return self.filename_beh_annotation is not None and os.path.exists(self.filename_beh_annotation)
 
     @property
+    def has_stimulus_annotation(self):
+        return self.filename_stimulus is not None and os.path.exists(self.filename_stimulus)
+
+    @property
     def has_manual_beh_annotation(self):
         return self.filename_manual_beh_annotation is not None and os.path.exists(self.filename_manual_beh_annotation)
 
@@ -2004,13 +2008,14 @@ Posture class with the following files:\n\
 behavior_video_avi:         {self.behavior_video_avi_fname() is not None}\n\
 behavior_video_btf:         {self.behavior_video_btf_fname() is not None}\n\
 ============Stage Position================\n\
-filename_table_position:    {self.filename_table_position is not None}\n\
+table_position:             {self.filename_table_position is not None}\n\
 ============Centerline=====================\n\
-filename_x:                 {self.filename_x is not None}\n\
-filename_y:                 {self.filename_y is not None}\n\
-filename_curvature:         {self.filename_curvature is not None}\n\
+x:                          {self.filename_x is not None}\n\
+y:                          {self.filename_y is not None}\n\
+curvature:                  {self.filename_curvature is not None}\n\
 ============Behavior Annotations===========\n\
-filename_beh_annotation:    {self.has_beh_annotation}\n\
+beh_annotation:             {self.has_beh_annotation}\n\
+stimulus_annotation:        {self.has_stimulus_annotation}\n\
 \n"
 
 
