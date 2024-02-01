@@ -832,6 +832,7 @@ class ProjectData:
         # There are currently 3 cached versions of the data, depending on the residual option
         if use_paper_options:
             if residual_mode is None:
+                channel_mode = kwargs.get('channel_mode', 'dr_over_r_50')
                 if channel_mode == 'green':
                     return self.calc_paper_traces_green()
                 elif channel_mode == 'red':
