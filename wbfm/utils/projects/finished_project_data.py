@@ -320,6 +320,7 @@ class ProjectData:
     @cached_property
     def df_all_tracklets(self) -> pd.DataFrame:
         """Sparse Dataframe of all tracklets"""
+        # TODO: Should this just use _load_df_tracklets?
 
         df_all_tracklets, fname = self._load_df_tracklets()
         self.df_all_tracklets_fname = fname
@@ -363,6 +364,9 @@ class ProjectData:
         return df_all_tracklets, fname
 
     def has_tracklets(self):
+        return self._load_df_tracklets(dryrun=True)[1] is not None
+
+    def has_global2tracklet(self):
         return self._load_df_tracklets(dryrun=True)[1] is not None
 
     @cached_property
@@ -1962,7 +1966,6 @@ raw_segmentation:         {self.raw_segmentation is not None}\n\
 colored_segmentation:     {self.segmentation is not None}\n\
 ============Tracking===================\n\
 tracklets:                {self.has_tracklets()}\n\
-global2tracklet:          {self.global2tracklet is not None}\n\
 final_tracks:             {self.final_tracks is not None}\n\
 manual_tracking:          {self.df_manual_tracking is not None}\n\
 ============Traces=====================\n\
