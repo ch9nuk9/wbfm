@@ -832,7 +832,12 @@ class ProjectData:
         # There are currently 3 cached versions of the data, depending on the residual option
         if use_paper_options:
             if residual_mode is None:
-                return self.calc_paper_traces()
+                if channel_mode == 'green':
+                    return self.calc_paper_traces_green()
+                elif channel_mode == 'red':
+                    return self.calc_paper_traces_red()
+                else:
+                    return self.calc_paper_traces()
             elif residual_mode == 'pca':
                 return self.calc_paper_traces_residual()
             elif residual_mode == 'pca_global':
@@ -979,6 +984,12 @@ class ProjectData:
 
     def calc_paper_traces(self):
         return self.data_cacher.calc_paper_traces()
+
+    def calc_paper_traces_red(self):
+        return self.data_cacher.calc_paper_traces_red()
+
+    def calc_paper_traces_green(self):
+        return self.data_cacher.calc_paper_traces_green()
 
     def calc_paper_traces_residual(self):
         return self.data_cacher.calc_paper_traces_residual()
