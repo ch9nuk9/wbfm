@@ -2315,8 +2315,24 @@ def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets
 
 
 def build_ind_matrix_from_starts_and_ends(all_ends: List[int], all_starts: List[int], ind_preceding: int,
-                                          validity_checks=None,
-                                          DEBUG=False):
+                                          validity_checks=None, DEBUG=False):
+    """
+    Builds a matrix of indices, where each row is a block of indices corresponding to a start and end
+
+
+
+    Parameters
+    ----------
+    all_ends
+    all_starts
+    ind_preceding
+    validity_checks
+    DEBUG
+
+    Returns
+    -------
+
+    """
     if validity_checks is None:
         validity_checks = []
     all_ind = []
@@ -2337,6 +2353,31 @@ def build_ind_matrix_from_starts_and_ends(all_ends: List[int], all_starts: List[
 
 
 def calc_time_series_from_starts_and_ends(all_starts, all_ends, num_pts, min_duration=0, only_onset=False):
+    """
+    Calculates a time series from a list of starts and ends
+
+    Example:
+    all_starts = [0, 10, 20]
+    all_ends = [5, 15, 25]
+    num_pts = 30
+    min_duration = 0
+    only_onset = False
+
+    Then the output will be:
+    [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, ...]
+
+    Parameters
+    ----------
+    all_starts
+    all_ends
+    num_pts
+    min_duration
+    only_onset
+
+    Returns
+    -------
+
+    """
     state_trace = np.zeros(num_pts)
     for start, end in zip(all_starts, all_ends):
         if end - start < min_duration:
