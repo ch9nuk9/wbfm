@@ -31,7 +31,7 @@ from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
-    assign_id_based_on_closest_onset_in_split_lists
+    assign_id_based_on_closest_onset_in_split_lists, calc_time_series_from_starts_and_ends
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, \
     filter_gaussian_moving_average, fill_nan_in_dataframe
@@ -343,7 +343,20 @@ class WormFullVideoPosture:
 
     @cached_property
     def _raw_stimulus(self) -> Optional[pd.Series]:
-        return read_if_exists(self.filename_stimulus, reader=pd.read_csv)
+        df_stim = read_if_exists(self.filename_stimulus, reader=pd.read_csv)
+        # This is a dataframe of starts and ends, and should be converted to a full vector
+        # Note: the units are SECONDS, not frames
+        all_starts_seconds, all_ends_seconds = df_stim['start'], df_stim['end']
+        all_starts_frames = (all_starts_seconds * self.physical_unit_conversion.volumes_per_second).astype(int)
+        all_ends_frames = (all_ends_seconds * self.physical_unit_conversion.volumes_per_second).astype(int)
+        # TODO: make it the full number of frames, not volumes
+        num_pts = self.num_trace_frames
+        vec_stim = calc_time_series_from_starts_and_ends(all_starts_frames, all_ends_frames, num_pts)
+        vec_stim = pd.Series(vec_stim)
+        # Convert 1's to BehaviorCodes.STIMULUS and 0's to BehaviorCodes.NOT_ANNOTATED
+        vec_stim = vec_stim.replace(1.0, BehaviorCodes.STIMULUS)
+        vec_stim = vec_stim.replace(0.0, BehaviorCodes.NOT_ANNOTATED)
+        return vec_stim
 
     # @lru_cache(maxsize=8)
     def _pause(self, fluorescence_fps=False, **kwargs) -> Optional[pd.DataFrame]:
@@ -1761,7 +1774,7 @@ class WormFullVideoPosture:
         tracking_cfg = project_config.get_tracking_config()
         subfolder = tracking_cfg.resolve_relative_path('manual_annotation', prepend_subfolder=True)
         if Path(subfolder).exists():
-            fnames = [fn for fn in glob.glob(os.path.join(subfolder, '*stimulus_timeseries.csv'))]
+            fnames = [fn for fn in glob.glob(os.path.join(subfolder, '*stimulus.csv'))]
             if len(fnames) != 1:
                 # logging.warning(f"Did not find stimulus file in {subfolder}")
                 opt['filename_stimulus'] = None
