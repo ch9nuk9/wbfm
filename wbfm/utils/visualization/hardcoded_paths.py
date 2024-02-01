@@ -81,7 +81,7 @@ def load_paper_datasets(genotype='gcamp', require_behavior=False, **kwargs) -> d
         problem_project = '2022-12-13_10-14_ZIM2165_immob_worm6-2022-12-13'
         good_projects.pop(problem_project)
     elif genotype == 'hannah_O2':
-        folder_path = '/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze_temp'
+        folder_path = '/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/immobilized'
         good_projects = load_all_projects_in_folder(folder_path, **kwargs)
     else:
         raise NotImplementedError
