@@ -709,6 +709,10 @@ class WormFullVideoPosture:
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(do_abs=False,
                                                      start_segment=5, end_segment=30, **kwargs)
+        elif behavior_alias == 'vb02_curvature':
+            # Segment 15 is the hardcoded location of the vb02 neuron
+            self.check_has_full_kymograph()
+            y = self.curvature(**kwargs).loc[:, 15]
         elif behavior_alias == 'quantile_curvature':
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=10, end_segment=90,
