@@ -954,16 +954,16 @@ class TrackletAndSegmentationAnnotator:
 
     def save_manual_matches_to_disk_dispatch(self):
         # Saves the new dataframe (possibly with split tracklets) and the new matches
-        self.logger.warning("Saving tracklet dataframe, DO NOT QUIT")
-        self.logger.info("Note: the GUI might still respond, but you can't split or save any tracklets")
         # self.saving_lock.acquire(blocking=True)
         self.logger.info("Acquired saving lock; currently saving")
         t = threading.Thread(target=self.save_manual_matches_to_disk)
         t.start()
-        return True
+        return None  # Doesn't know the status of the saving
 
     def save_manual_matches_to_disk(self):
         with self.saving_lock:
+            self.logger.warning("Saving tracklet dataframe, DO NOT QUIT")
+            self.logger.info("Note: the GUI might still respond, but you can't split or save any tracklets")
             try:
                 self.tracking_cfg.pickle_data_in_local_project(self.combined_global2tracklet_dict, self.output_match_fname)
                 match_fname = self.tracking_cfg.unresolve_absolute_path(self.output_match_fname)
@@ -985,8 +985,12 @@ class TrackletAndSegmentationAnnotator:
 
                 self.tracking_cfg.update_self_on_disk()
 
+                return True
+
             except (PermissionError, OSError) as e:
                 self.logger.error(f"Failed to save tracklets or related pickles to disk with error: {e}")
+
+                return False
 
     def split_current_tracklet(self, i_split, set_right_half_to_current=True, verbose=1):
         """

@@ -612,7 +612,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # ... even if I add sleep and etc.
         dict_of_saving_callbacks = {
             'segmentation_metadata': self.dat.segmentation_metadata.overwrite_original_detection_file,
-            'tracklets': self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch,
+            'tracklets': self.dat.tracklet_annotator.save_manual_matches_to_disk,
             'segmentation': self.dat.modify_segmentation_on_disk_using_buffer
         }
         if self.manualNeuronNameEditor is not None:

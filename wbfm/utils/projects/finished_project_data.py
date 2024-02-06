@@ -1311,7 +1311,10 @@ class ProjectData:
         for t in self.tracklet_annotator.t_buffer_masks:
             self.raw_segmentation[t, ...] = self.tracklet_annotator.buffer_masks[t, ...]
 
-        return True
+        if len(self.tracklet_annotator.t_buffer_masks) > 0:
+            return True
+        else:
+            return None
 
     def shade_axis_using_behavior(self, ax=None, plotly_fig=None, **kwargs):
         """
