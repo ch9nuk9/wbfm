@@ -280,7 +280,8 @@ def build_trace_time_series_from_multiple_projects(all_projects: Dict[str, Proje
     return df_traces
 
 
-def build_manifold_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData], **kwargs) -> pd.DataFrame:
+def build_manifold_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData], n_components=2,
+                                                      **kwargs) -> pd.DataFrame:
     """
     Builds a time series of the global manifold, i.e. the top 2 PCA modes, from multiple projects
     Note: keeps the pca modes separate
@@ -298,7 +299,7 @@ def build_manifold_time_series_from_multiple_projects(all_projects: Dict[str, Pr
 
     all_dfs = {}
     for dataset_name, p in all_projects.items():
-        df = p.calc_pca_modes(n_components=2, **kwargs)
+        df = p.calc_pca_modes(n_components=n_components, **kwargs)
         all_dfs[dataset_name] = df
     df_traces = pd.concat(all_dfs)
     df_traces = df_traces.reset_index(names=['dataset_name', 'local_time'])
