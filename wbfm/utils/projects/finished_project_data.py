@@ -1500,7 +1500,7 @@ class ProjectData:
                                csv=Path(excel_fname).with_name(self.shortened_name).with_suffix('.csv'),
                                h5=Path(excel_fname).with_name(self.shortened_name).with_suffix('.h5'))
         possible_fnames = {k: str(v) for k, v in possible_fnames.items()}
-        # fname_precedence = ['excel', 'csv', 'h5']
+        # fname_precedence = ['excel', 'csv', 'h5']  # This precedence is used because humans may have added things
         fname_precedence = ['newest']
         df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
                                                                       this_reader=read_if_exists, na_filter=False)
