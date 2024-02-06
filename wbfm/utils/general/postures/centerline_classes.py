@@ -861,8 +861,11 @@ class WormFullVideoPosture:
             print("Warning: could not find one of the additional behavior annotations, skipping")
 
         # Optional: filter based on common problems with the pipeline
+        # Note that this will not work for immobilized worms
         if use_pause_to_exclude_other_states:
             # If a pause is detected, remove and FWD, REV, or TURN annotations
+            if not include_pause:
+                logging.warning("use_pause_to_exclude_other_states is True, but include_pause is False")
             beh = BehaviorCodes.use_pause_to_filter_vector(beh)
 
         # Make sure there are no nan values.
