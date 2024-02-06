@@ -344,6 +344,8 @@ class WormFullVideoPosture:
     @cached_property
     def _raw_stimulus(self) -> Optional[pd.Series]:
         df_stim = read_if_exists(self.filename_stimulus, reader=pd.read_csv)
+        if df_stim is None:
+            return None
         # This is a dataframe of starts and ends, and should be converted to a full vector
         # Note: the units are SECONDS, not frames
         all_starts_seconds, all_ends_seconds = df_stim['start'], df_stim['end']
@@ -820,7 +822,8 @@ class WormFullVideoPosture:
     # @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
                        include_collision=True, include_turns=True, include_head_cast=True, include_pause=True,
-                       include_slowing=True, include_stiumulus=True) -> \
+                       include_slowing=True, include_stiumulus=True,
+                       filter_reversals_based_on_speed=True) -> \
             Optional[pd.Series]:
         """
         Name is shortened to avoid US-UK spelling confusion
