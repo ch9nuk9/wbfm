@@ -823,7 +823,7 @@ class WormFullVideoPosture:
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
                        include_collision=True, include_turns=True, include_head_cast=True, include_pause=True,
                        include_slowing=True, include_stiumulus=True,
-                       filter_reversals_based_on_speed=True) -> \
+                       use_pause_to_exclude_other_states=True) -> \
             Optional[pd.Series]:
         """
         Name is shortened to avoid US-UK spelling confusion
@@ -859,6 +859,11 @@ class WormFullVideoPosture:
                 beh = beh + self._stimulus(fluorescence_fps=False, reset_index=False)
         except MissingAnalysisError:
             print("Warning: could not find one of the additional behavior annotations, skipping")
+
+        # Optional: filter based on common problems with the pipeline
+        if use_pause_to_exclude_other_states:
+            # If a pause is detected, remove and FWD, REV, or TURN annotations
+            beh = BehaviorCodes.use_pause_to_filter_vector(beh)
 
         # Make sure there are no nan values.
         # Necessary because sometimes removing tracking failures adds nan, even when they should be recognized

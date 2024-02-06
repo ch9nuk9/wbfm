@@ -474,6 +474,17 @@ class BehaviorCodes(Flag):
         return cls.UNKNOWN
 
     @classmethod
+    def use_pause_to_filter_vector(cls, query_vec: pd.Series):
+        """
+        Collapses simultaneous PAUSE + other states into just PAUSE
+
+        Returns
+        -------
+
+        """
+        return query_vec.apply(lambda x: cls.PAUSE if cls.PAUSE in x else x)
+
+    @classmethod
     def convert_to_simple_states_vector(cls, query_vec: pd.Series):
         """
         Uses convert_to_simple_states on a vector
