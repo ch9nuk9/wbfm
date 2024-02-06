@@ -916,6 +916,27 @@ def make_binary_vector_from_starts_and_ends(starts, ends, original_vals, pad_nan
     return idx_boolean
 
 
+def extend_binary_vector(binary_state: pd.Series, alt_binary_state: pd.Series):
+    starts, ends = get_contiguous_blocks_from_column(binary_state, already_boolean=True)
+    _, alt_ends = get_contiguous_blocks_from_column(alt_binary_state, already_boolean=True)
+    for i in range(len(ends)):
+        # If the next time point is one of the allowed succeeding states, extend the end by replacing it
+        # with the next end of the allowed succeeding state
+        if binary_state.iat[ends[i]] and alt_binary_state.iat[ends[i] + 1]:
+            # The index of the alt state is not generally the same as the index of the state
+            # So we have to find the next end of the alt state
+            next_end = alt_ends[alt_ends > ends[i]].min()
+            # But make sure that it doesn't overlap with the next start of the state
+            next_start = starts[starts > ends[i]].min()
+            if next_end < next_start:
+                ends[i] = next_end
+            else:
+                ends[i] = next_start - 1
+    # Recreate the binary state from the modified ends
+    binary_state = pd.Series(make_binary_vector_from_starts_and_ends(starts, ends, len(binary_state)))
+    return binary_state
+
+
 def pad_events_in_binary_vector(vec, pad_length=(1, 1)):
     starts, ends = get_contiguous_blocks_from_column(vec, already_boolean=True)
     vec_padded = make_binary_vector_from_starts_and_ends(starts, ends, vec, pad_nan_points=pad_length)

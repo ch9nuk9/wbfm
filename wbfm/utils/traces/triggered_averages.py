@@ -24,7 +24,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior, shade_triggered_average
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
-    calc_surpyval_durations_and_censoring, combine_columns_with_suffix
+    calc_surpyval_durations_and_censoring, combine_columns_with_suffix, extend_binary_vector
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
 from wbfm.utils.general.utils_paper import apply_figure_settings, neurons_with_confident_ids
@@ -139,6 +139,7 @@ class TriggeredAverageIndices:
     behavioral_state: BehaviorCodes = BehaviorCodes.REV  # Note: not used if behavioral_annotation_is_continuous is True
     min_duration: int = 0
     ind_preceding: int = 10
+    allowed_succeeding_state: BehaviorCodes = None  # Also include time points where the state is followed this state
 
     max_duration: int = None
     gap_size_to_remove: int = None
@@ -203,6 +204,12 @@ class TriggeredAverageIndices:
             binary_state = self.behavioral_annotation > self.behavioral_annotation_threshold
         else:
             binary_state = BehaviorCodes.vector_equality(self.behavioral_annotation, self.behavioral_state)
+            if self.allowed_succeeding_state is not None:
+                # Extend the ends of the state to include the allowed succeeding states
+                # But do not modify the starts
+                alt_binary_state = BehaviorCodes.vector_equality(self.behavioral_annotation, self.allowed_succeeding_state)
+                binary_state = extend_binary_vector(binary_state, alt_binary_state)
+
         if self.gap_size_to_remove is not None:
             binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
         return binary_state
