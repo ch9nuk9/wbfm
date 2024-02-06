@@ -852,6 +852,8 @@ class WormFullVideoPosture:
                 beh = beh + self._turn_annotation(fluorescence_fps=False, reset_index=False)
             if include_head_cast and self._head_cast_annotation() is not None:
                 beh = beh + self._head_cast_annotation(fluorescence_fps=False, reset_index=False)
+            if include_stiumulus and self._stimulus() is not None:
+                beh = beh + self._stimulus(fluorescence_fps=False, reset_index=False)
         except MissingAnalysisError:
             print("Warning: could not find one of the additional behavior annotations, skipping")
 
