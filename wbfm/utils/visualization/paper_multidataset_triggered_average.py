@@ -119,6 +119,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
     trace_opt: Optional[dict] = None
 
+    # Optional: stimulus
+    calc_stimulus: bool = False
+
     def __post_init__(self):
         # Analyze the project data to get the clusterers and intermediates
         trace_base_opt = self.get_trace_opt(min_nonnan=self.min_nonnan)
@@ -199,6 +202,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             self.dataset_clusterer_dict[trigger_type] = out[0]
             self.intermediates_dict[trigger_type] = out[1]
 
+        # Optional
+        if self.calc_stimulus:
+            trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.STIMULUS)
+            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                     trace_opt=trace_opt)
+            self.dataset_clusterer_dict['stimulus'] = out[0]
+            self.intermediates_dict['stimulus'] = out[1]
+
     def get_clusterer_from_trigger_type(self, trigger_type):
         trigger_mapping = self.dataset_clusterer_dict
         if trigger_type not in trigger_mapping:
@@ -242,7 +253,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                          'residual_collision': 'Residual collision triggered',
                          'residual_rectified_fwd': 'Residual (rectified fwd, undulation triggered)',
                          'residual_rectified_rev': 'Residual (rectified rev, undulation triggered)',
-                         'kymo': 'Kymograph'}
+                         'kymo': 'Kymograph',
+                         'stimulus': 'Stimulus triggered'}
         if trigger_type not in title_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(title_mapping.keys())}')
         return title_mapping[trigger_type]
