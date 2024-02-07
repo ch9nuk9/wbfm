@@ -10,6 +10,7 @@ segmentation_params:
   stardist_model_name: students_and_lukas_3d_zarr
   zero_out_borders: false
   full_erosion: false
+  sum_red_and_green_channels: false
 
 # Postprocessing (only for 2d segmentation type)
 postprocessing_params:
