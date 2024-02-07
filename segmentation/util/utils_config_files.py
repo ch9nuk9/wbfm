@@ -36,7 +36,7 @@ def _unpack_config_file(preprocessing_cfg, segment_cfg, project_cfg, DEBUG):
         all_bounding_boxes = None
         project_cfg.logger.warning(f"Did not find bounding boxes at: {bbox_fname},"
                                    f"a large number of false positive segmentations might be generated.")
-    sum_red_and_green_channels = preprocessing_cfg.config.get('sum_red_and_green_channels', False)
+    sum_red_and_green_channels = segment_cfg.config['segmentation_params'].get('sum_red_and_green_channels', False)
     if sum_red_and_green_channels:
         project_cfg.logger.warning("Summing red and green channels for segmentation; does not affect metadata.")
     return (frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path,
