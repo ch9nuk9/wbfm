@@ -866,7 +866,7 @@ class WormFullVideoPosture:
             except MissingAnalysisError:
                 if num_warnings < 1:
                     num_warnings += 1
-                    logging.warning(f"Warning: could not find or calculate {beh_func}, "
+                    logging.warning(f"Warning: could not find or calculate {beh_func.__name__}, "
                                     f"skipping and suppressing further warnings")
 
         # Optional: filter based on common problems with the pipeline
