@@ -6,19 +6,19 @@ from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
 
-def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshold=None, verbose=0):
+def remove_outliers_via_rolling_mean(y: pd.Series, window: int, outlier_threshold=None, std_factor=2, fill_value=np.nan, verbose=0):
     # In practice very sensitive to exact threshold value, which only really works for the ratio
     y = y.copy()
     y_filt = y.rolling(window, min_periods=1, center=True).mean()
     error = np.abs(y - y_filt)
     if outlier_threshold is None:
         # logging.warning("not working very well")
-        outlier_threshold = 2*error.std() + error.mean()
+        outlier_threshold = std_factor*error.std() + error.mean()
         if verbose >= 1:
             print(f"Calculated error threshold at {outlier_threshold}")
         # logging.info(f"Calculated error threshold at {outlier_threshold}")
     is_outlier = error > outlier_threshold
-    y[is_outlier] = np.nan
+    y[is_outlier] = fill_value
 
     return y
 
