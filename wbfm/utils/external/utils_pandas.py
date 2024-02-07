@@ -916,6 +916,27 @@ def make_binary_vector_from_starts_and_ends(starts, ends, original_vals, pad_nan
     return idx_boolean
 
 
+def extend_binary_vector(binary_state: pd.Series, alt_binary_state: pd.Series):
+    starts, ends = get_contiguous_blocks_from_column(binary_state, already_boolean=True)
+    _, alt_ends = get_contiguous_blocks_from_column(alt_binary_state, already_boolean=True)
+    for i in range(len(ends)):
+        # If the next time point is one of the allowed succeeding states, extend the end by replacing it
+        # with the next end of the allowed succeeding state
+        if binary_state.iat[ends[i]] and alt_binary_state.iat[ends[i] + 1]:
+            # The index of the alt state is not generally the same as the index of the state
+            # So we have to find the next end of the alt state
+            next_end = alt_ends[alt_ends > ends[i]].min()
+            # But make sure that it doesn't overlap with the next start of the state
+            next_start = starts[starts > ends[i]].min()
+            if next_end < next_start:
+                ends[i] = next_end
+            else:
+                ends[i] = next_start - 1
+    # Recreate the binary state from the modified ends
+    binary_state = pd.Series(make_binary_vector_from_starts_and_ends(starts, ends, len(binary_state)))
+    return binary_state
+
+
 def pad_events_in_binary_vector(vec, pad_length=(1, 1)):
     starts, ends = get_contiguous_blocks_from_column(vec, already_boolean=True)
     vec_padded = make_binary_vector_from_starts_and_ends(starts, ends, vec, pad_nan_points=pad_length)
@@ -959,13 +980,18 @@ def build_tracks_from_dataframe(df_single_track, likelihood_thresh=None, z_to_xy
 
 
 def get_dataframe_of_transitions(state_vector: pd.Series, convert_to_probabilities=False,
-                                 ignore_diagonal=False):
+                                 ignore_diagonal=False,
+                                 transition_observation_threshold=1, state_observation_threshold=None, DEBUG=False):
     """
     Gets the transition dictionary of a state vector, i.e. the number of times each state transition occurs
 
     Parameters
     ----------
     state_vector
+    convert_to_probabilities - if True, converts the counts to probabilities
+    ignore_diagonal - if True, sets the diagonal to 0
+    state_occupancy_threshold - if not None, removes states that have less than this number of observations
+        (note: this is in observation units, not percentage units)
 
     Returns
     -------
@@ -976,6 +1002,21 @@ def get_dataframe_of_transitions(state_vector: pd.Series, convert_to_probabiliti
         state_vector = state_vector.values
     df_transitions = pd.crosstab(pd.Series(state_vector[:-1], name='from_category'),
                                  pd.Series(state_vector[1:], name='to_category'))
+
+    if state_observation_threshold is not None:
+        # Remove individual entries that have less than the threshold number of observations
+        bad_entries = df_transitions < state_observation_threshold
+        df_transitions[bad_entries] = 0
+        if DEBUG:
+            print(bad_entries)
+
+    if transition_observation_threshold is not None:
+        # Remove rows and columns that have less than the threshold number of observations
+        # Should keep the matrix square, so just use the row sums
+        good_rows = df_transitions.sum(axis=1) > transition_observation_threshold
+        df_transitions = df_transitions.loc[good_rows, good_rows]
+        if DEBUG:
+            print(good_rows)
 
     if ignore_diagonal:
         np.fill_diagonal(df_transitions.values, 0)
@@ -1033,7 +1074,7 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
         # AQR has no AQL partner
         raw_names_to_keep = {'AQR'}
 
-    df_combined = pd.DataFrame()
+    dict_df_combined = dict()
     # Loop through columns and check if they have a suffix; if so, search for the other suffix and combine
     base_names_found = set()
     for col in df.columns:
@@ -1049,19 +1090,19 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
                             continue
                         col_other = col_base + other_suffix
                         if col_other in df.columns:
-                            df_combined[col_base] = df[col] + df[col_other]
+                            dict_df_combined[col_base] = df[col] + df[col_other]
                             num_suffixes_found += 1
                 else:
                     base_names_found.add(col_base)
         if num_suffixes_found == 0:
             if col_base is not None and col not in raw_names_to_keep:
                 # Then one was found, but no partners... still keep only the base
-                df_combined[col_base] = df[col]
+                dict_df_combined[col_base] = df[col]
             else:
-                df_combined[col] = df[col]
+                dict_df_combined[col] = df[col]
         elif col_base is not None:
             if how == 'mean':
-                df_combined[col_base] /= num_suffixes_found
+                dict_df_combined[col_base] /= num_suffixes_found
             elif how == 'sum':
                 pass
             else:
@@ -1070,4 +1111,88 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
             # Should not happen
             raise NotImplementedError
 
+    # Reinitialize the dataframe to fix fragmentation... but doesn't actually work :/
+    df_combined = pd.DataFrame(dict_df_combined)
+
     return df_combined
+
+
+def fill_gaps_categorical(x, window):
+    """Fill gaps in a categorical series using a rolling window median on the factorized values"""
+    # From: https://stackoverflow.com/questions/70551614/python-pandas-most-common-value-over-rolling-window
+    # Factorize
+    y, label = pd.factorize(x)
+    y = pd.Series(y)
+    # Replace the nan factorization with nan
+    y.replace(-1, np.nan, inplace=True)
+    label = pd.Series(label)
+    # Correct values
+    y = y.rolling(window=window, min_periods=1, center=True).median().round()
+    # Unfactorize
+    y = y.map(label)
+    return y
+
+
+def combine_indices_categorical(x):
+    """Combine indices of a categorical series using a rolling window median on the factorized values"""
+    # Factorize
+    y, label = pd.factorize(x)
+    y = pd.Series(y, index=x.index)
+    label = pd.Series(label)
+    # Correct values (combine indices)
+    y = y.groupby(y.index).median().round()
+    # Unfactorize
+    y = y.map(label)
+    return y
+
+
+def resample_categorical(x, target_len=100):
+    """
+    Resample a categorical series to a target length using either:
+    1. combine_indices_categorical if downsampling
+    2. fill_gaps_categorical if upsampling
+    """
+    # Create the output series
+    x_new = pd.Series(index=np.arange(target_len))
+    # Set the index of the input to be fractions of the target, but round
+    x_old = pd.Series(x)
+    new_index = np.round(np.linspace(0, target_len - 1, len(x))).astype(int)
+    x_old.index = new_index
+
+    # If we are downsampling, then there will be duplicate indices
+    if len(x) > target_len:
+        x_new = combine_indices_categorical(x_old)
+    else:
+        # Update the new x with the rounded values
+        x_new.update(x_old)
+
+        # Interpolate using regular rolling mean
+        x_new = fill_gaps_categorical(x_new, window=target_len)
+
+    return list(x_new)
+
+
+def get_contiguous_blocks_from_two_columns(df, col_group, col_value):
+    """
+    Somewhat similar to get_contiguous_blocks_from_column, but directly groups and returns the values of another column
+
+    Parameters
+    ----------
+    df
+    col_group
+    col_value
+
+    Returns
+    -------
+
+    """
+    df = df.copy()
+
+    # Create a grouping variable for each contiguous block of 'A'
+    grouping_variable = (df[col_group] != df[col_group].shift()).cumsum()
+
+    # Group by the new grouping variable and apply the function
+    result = df.groupby([col_group, grouping_variable])[col_value].apply(list)
+    result.index.set_names((col_group, col_value), inplace=True)
+
+    return result

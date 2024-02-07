@@ -11,6 +11,7 @@ import pandas as pd
 import pprint
 
 from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
+from wbfm.utils.general.custom_errors import NoBehaviorDataError
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
 from wbfm.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
     get_sequential_filename, get_location_of_new_project_defaults
@@ -37,8 +38,13 @@ class ConfigFileWithProjectContext:
     log_to_file: bool = True
 
     def __post_init__(self):
+        if Path(self.self_path).is_dir():
+            # Then it was a folder, and we should find the config file inside
+            self.project_dir = self.self_path
+            self.self_path = str(Path(self.self_path).joinpath('project_config.yaml'))
+        else:
+            self.project_dir = str(Path(self.self_path).parent)
         self.config = load_config(self.self_path)
-        self.project_dir = str(Path(self.self_path).parent)
 
     @property
     def logger(self):
@@ -438,7 +444,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         for content in behavior_subfolder.iterdir():
             if content.is_file():
                 # UK spelling, and there may be preprocessed bigtiffs in the folder
-                if str(content).endswith('-behaviour-bigtiff.btf'):
+                if str(content).endswith('-BH_bigtiff.btf'):
                     behavior_fname = behavior_subfolder.joinpath(content)
                     break
         else:
@@ -447,13 +453,16 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return behavior_fname, behavior_subfolder
 
-    def get_behavior_raw_parent_folder_from_red_fname(self) -> Tuple[Optional[Path], bool]:
-        # red_fname = self.config['red_bigtiff_fname']
+    def get_behavior_raw_parent_folder_from_red_fname(self, verbose=0) -> Tuple[Optional[Path], bool]:
         red_fname = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
         if red_fname is None:
+            if verbose >= 1:
+                print("Could not find red_bigtiff_fname, aborting")
             return None, False
         main_data_folder = Path(red_fname).parents[1]
         if not main_data_folder.exists():
+            if verbose >= 1:
+                print(f"Could not find main data folder {main_data_folder}, aborting")
             return None, False
         # First, get the subfolder
         for content in main_data_folder.iterdir():
@@ -464,10 +473,35 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                     flag = True
                     break
         else:
-            print(f"Found no behavior subfolder in {main_data_folder}, aborting")
+            if verbose >= 1:
+                print(f"Found no behavior subfolder in {main_data_folder}, aborting")
             flag = False
             behavior_subfolder = None
+        if verbose >= 1:
+            print(f"Found behavior subfolder: {behavior_subfolder}")
         return behavior_subfolder, flag
+
+    def get_folders_for_behavior_pipeline(self):
+        """
+        Requires the raw behavior folder and the behavior folder in the project
+
+        Returns
+        -------
+
+        """
+        behavior_raw_folder, flag = self.get_behavior_raw_parent_folder_from_red_fname()
+        if not flag:
+            raise NoBehaviorDataError()
+        behavior_raw_folder = str(behavior_raw_folder.parent)
+
+        # Second
+        beh_cfg = self.get_behavior_config()
+        behavior_output_folder = beh_cfg.subfolder
+
+        if not Path(behavior_output_folder).exists():
+            update_path_to_behavior_in_config(self)
+
+        return behavior_raw_folder, behavior_output_folder
 
 
 def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> SubfolderConfigFile:
@@ -486,7 +520,18 @@ def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> Subfolde
 
 
 def update_path_to_behavior_in_config(cfg: ModularProjectConfig):
-    # Used to update old projects that were not initialized with a behavior folder
+    """
+    Used to update old projects that were not initialized with a behavior folder
+
+    Parameters
+    ----------
+    cfg
+
+    Returns
+    -------
+
+    """
+
     try:
         _ = cfg.get_behavior_config()
         print("Project already has a behavior config; update cannot be clearly automated")

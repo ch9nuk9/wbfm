@@ -111,3 +111,12 @@ class NeedsAnnotatedNeuronError(Exception):
     def __init__(self, message=""):
         self.message = "Did not find necessary manually annotated neuron(s): " + message
         super().__init__(self.message)
+
+
+class NoBehaviorDataError(Exception):
+    def __init__(self, message=""):
+        if len(message) > 0:
+            self.message = "No behavior data found; " + message
+        else:
+            self.message = "No behavior data found"
+        super().__init__(self.message)

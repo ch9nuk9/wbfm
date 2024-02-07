@@ -148,4 +148,4 @@ def csv_annotations2config_names(path_config_file,
         updates = {"skeleton": [list(e) for e in edge_iter]}
         auxiliaryfunctions.edit_config(path_config_file, updates)
 
-    print("Finished! Check the config.yaml file to make sure the bodyparts are properly written")
+    print("Finished! Check the snakemake_config.yaml file to make sure the bodyparts are properly written")

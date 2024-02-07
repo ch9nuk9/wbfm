@@ -582,9 +582,9 @@ class NeuronNameEditor(QWidget):
 
         # Set up filename, which will be used to save the dataframe
         self.filename = filename
-        self.save_df_to_disk(use_h5=True)
+        self.save_df_to_disk(also_save_h5=True)  # Save initial version as .h5
 
-    def save_df_to_disk(self, use_h5=False):
+    def save_df_to_disk(self, also_save_h5=True):
         """
         Saves the dataframe as a .h5 or .xlsx file, overwriting any existing file
 
@@ -599,18 +599,19 @@ class NeuronNameEditor(QWidget):
         df['ID1'] = df['ID1'].where(df['ID1'] != df['Neuron ID'], '')
 
         # Save
-        if use_h5:
+        if also_save_h5:
             fname = str(Path(self.filename).with_suffix('.h5'))
             df.to_hdf(fname, key='df_with_missing', mode='w')
-        else:
-            assert self.filename.endswith(".xlsx"), f"Filename must end with .xlsx; found {self.filename}"
-            fname = self.filename
-            try:
-                df.to_excel(fname, index=False)
-            except PermissionError:
-                logging.warning(f"Permission error when saving {fname}; "
-                                f"Do you have the file open in another program?")
-                return False
+
+        fname = self.filename
+        try:
+            if not fname.endswith(".xlsx"):
+                raise FileNotFoundError(f"Filename must end with .xlsx; found {fname}")
+            df.to_excel(fname, index=False)
+        except (PermissionError, FileNotFoundError):
+            logging.warning(f"Error when saving {fname}; "
+                            f"Do you have the file open in another program?")
+            return False
 
         return True
 

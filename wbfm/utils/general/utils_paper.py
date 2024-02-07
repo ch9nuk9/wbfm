@@ -43,9 +43,19 @@ def plotly_paper_color_discrete_map():
 
     """
     base_cmap = px.colors.qualitative.D3
-    cmap_dict = {'gcamp': base_cmap[0], 'immob': base_cmap[1], 'gfp': base_cmap[2],
+    cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0], 'immob': base_cmap[1], 'gfp': base_cmap[2],
                  'global': base_cmap[3], 'residual': base_cmap[4]}
+    # Add alternative names
+    for k, v in data_type_name_mapping().items():
+        cmap_dict[v] = cmap_dict[k]
     return cmap_dict
+
+
+def data_type_name_mapping():
+    return {'wbfm': 'Freely Moving (GCaMP)',
+            'gcamp': 'Freely Moving (GCaMP)',
+            'immob': 'Immobilized (GCaMP)',
+            'gfp': 'Freely Moving (GFP)'}
 
 
 # Basic settings based on the physical dimensions of the paper
@@ -152,7 +162,11 @@ def behavior_name_mapping():
         dorsal_only_head_curvature='Dorsal head curvature',
         ventral_only_head_curvature='Ventral head curvature',
         dorsal_only_body_curvature='Dorsal curvature',
-        ventral_only_body_curvature='Ventral curvature'
+        ventral_only_body_curvature='Ventral curvature',
+        FWD='Forward crawling',
+        REV='Backward crawling',
+        VENTRAL_TURN='Ventral turning',
+        DORSAL_TURN='Dorsal turning',
     )
     return name_mapping
 
@@ -183,6 +197,8 @@ class PaperDataCache:
         return to_remove
 
     def invalid_indices_cache_fname(self):
+        if self.cache_dir is None:
+            return None
         return os.path.join(self.cache_dir, 'invalid_indices.npy')
 
     @cache_to_disk_class('paper_traces_cache_fname',
@@ -206,7 +222,61 @@ class PaperDataCache:
         return df
 
     def paper_traces_cache_fname(self):
+        if self.cache_dir is None:
+            return None
         return os.path.join(self.cache_dir, 'paper_traces.h5')
+
+    @cache_to_disk_class('paper_traces_cache_fname_red',
+                         func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
+                         func_load_from_disk=pd.read_hdf)
+    def calc_paper_traces_red(self):
+        """
+        Uses calc_default_traces to calculate traces according to settings used for the paper.
+        See paper_trace_settings() for details
+
+        Returns
+        -------
+
+        """
+        opt = paper_trace_settings()
+        opt['channel_mode'] = 'red'
+        assert not opt.get('use_paper_traces', False), \
+            "paper_trace_settings should have use_paper_traces=False (recursion error)"
+        df = self.project_data.calc_default_traces(**opt)
+        if df is None:
+            raise ValueError(f"Paper traces for project {self.project_data.project_dir} is None")
+        return df
+
+    def paper_traces_cache_fname_red(self):
+        if self.cache_dir is None:
+            return None
+        return os.path.join(self.cache_dir, 'paper_traces_red.h5')
+
+    @cache_to_disk_class('paper_traces_cache_fname_green',
+                         func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
+                         func_load_from_disk=pd.read_hdf)
+    def calc_paper_traces_green(self):
+        """
+        Uses calc_default_traces to calculate traces according to settings used for the paper.
+        See paper_trace_settings() for details
+
+        Returns
+        -------
+
+        """
+        opt = paper_trace_settings()
+        opt['channel_mode'] = 'green'
+        assert not opt.get('use_paper_traces', False), \
+            "paper_trace_settings should have use_paper_traces=False (recursion error)"
+        df = self.project_data.calc_default_traces(**opt)
+        if df is None:
+            raise ValueError(f"Paper traces for project {self.project_data.project_dir} is None")
+        return df
+
+    def paper_traces_cache_fname_green(self):
+        if self.cache_dir is None:
+            return None
+        return os.path.join(self.cache_dir, 'paper_traces_green.h5')
 
     @cache_to_disk_class('paper_traces_residual_cache_fname',
                          func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
@@ -226,6 +296,8 @@ class PaperDataCache:
         return df
 
     def paper_traces_residual_cache_fname(self):
+        if self.cache_dir is None:
+            return None
         return os.path.join(self.cache_dir, 'paper_traces_residual.h5')
 
     @cache_to_disk_class('paper_traces_global_cache_fname',
@@ -246,13 +318,19 @@ class PaperDataCache:
         return df
 
     def paper_traces_global_cache_fname(self):
+        if self.cache_dir is None:
+            return None
         return os.path.join(self.cache_dir, 'paper_traces_global.h5')
 
     @property
     def cache_dir(self):
         fname = os.path.join(self.project_data.project_dir, '.cache')
         if not os.path.exists(fname):
-            os.makedirs(fname)
+            try:
+                os.makedirs(fname)
+            except PermissionError:
+                print(f"Could not create cache directory {fname}")
+                fname = None
         return fname
 
     def clear_disk_cache(self, delete_traces=True, delete_invalid_indices=True,
@@ -277,3 +355,10 @@ class PaperDataCache:
                     print(f"Deleting {fname}")
                 if not dry_run:
                     os.remove(fname)
+
+
+def neurons_with_confident_ids():
+    neuron_names = ['AVAL', 'AVAR', 'BAGL', 'BAGR', 'RIMR', 'RIML', 'AVEL', 'AVER', 'RIVR', 'RIVL', 'SMDVL', 'SMDVR',
+                    'ALA', 'RIS',
+                    'VB02', 'RIBL', 'RIBR', 'RMEL', 'RMER', 'RMED', 'RMEV', 'RID', 'AVBL', 'AVBR']
+    return neuron_names

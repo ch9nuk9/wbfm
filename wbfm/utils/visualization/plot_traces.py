@@ -12,7 +12,7 @@ import scipy.io
 from sklearn.decomposition import PCA
 
 from wbfm.utils.general.utils_paper import paper_trace_settings, paper_figure_page_settings, \
-    apply_figure_settings
+    apply_figure_settings, behavior_name_mapping
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, options_for_ethogram, shade_using_behavior
 from wbfm.utils.general.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.general.utils_matplotlib import get_twin_axis
@@ -930,7 +930,7 @@ def make_default_summary_plots_using_config(project_cfg):
         pass
     # Also save a PC1-correlated grid plot
     grid_opt['channel_mode'] = 'ratio'
-    grid_opt['filter_mode'] = 'bilateral'
+    grid_opt['filter_mode'] = 'rolling_mean'
     grid_opt['behavioral_correlation_shading'] = 'pc1'
     grid_opt['sort_using_shade_value'] = True
     try:
@@ -1167,7 +1167,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
         legend=dict(
             itemsizing='constant',  # Display legend items as colored boxes and text
             x=0.63,  # Adjust the x position of the legend
-            y=0.54,  # Adjust the y position of the legend
+            y=0.5, #0.54,  # Adjust the y position of the legend
             bgcolor='rgba(0, 0, 0, 0.00)',  # Set the background color of the legend
             bordercolor='Black',  # Set the border color of the legend
             borderwidth=1,  # Set the border width of the legend
@@ -1333,7 +1333,7 @@ def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html', o
 
 
 def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, to_show=False, keep_reversal_turns=False,
-                                                     **kwargs):
+                                                     crop_x_axis=True, apply_figure_size_settings=True, **kwargs):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of the neural traces
 
@@ -1366,7 +1366,7 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     row_heights = row_heights[:rows]
 
     # Build figure
-    ## Kymograph and ethogram (large image subplots
+    ## Kymograph and ethogram (large image subplots)
     subplot_titles = ['', '']
     subplot_titles.extend(list(behavior_alias_dict.keys()))
     subplot_titles.append('Speed')
@@ -1404,7 +1404,6 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
             for i in range(num_before_adding_shapes, len(fig.layout.shapes)):
                 fig.layout.shapes[i]['yref'] = 'paper'
 
-
     # for trace, trace_opt in zip(trace_list, trace_opt_list):
     #     fig.add_trace(trace, **trace_opt)
     #     num_before_adding_shapes = len(fig.layout.shapes)
@@ -1416,10 +1415,10 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     #     for i in range(num_before_adding_shapes, len(fig.layout.shapes)):
     #         fig.layout.shapes[i]['yref'] = 'paper'
 
-
     ### Final updates
-    fig.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x',
-                     range=[25000, 29000])
+    fig.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
+    if crop_x_axis:
+        fig.update_xaxes(dict(range=[25000, 29000]), row=1, col=1, overwrite=True)
     fig.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
 
     # Flip the kymograph
@@ -1433,7 +1432,8 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     fig.update_annotations(yshift=-7)
 
     fig.update_layout(showlegend=False)
-    apply_figure_settings(fig, width_factor=0.75, height_factor=0.75, plotly_not_matplotlib=True)
+    if apply_figure_size_settings:
+        apply_figure_settings(fig, width_factor=0.75, height_factor=0.75, plotly_not_matplotlib=True)
 
     # Get the colormaps and legends in the right places, and not overlapping
     fig.update_layout(
@@ -1666,6 +1666,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
             # Traces are pca modes
             trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index,
                                          line=dict(color=mode_colormap[i], width=2), showlegend=False))
+            trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
         else:
             # Traces are specific behaviors
             name_key = list(behavior_alias_dict.keys())[i]
@@ -1678,8 +1679,8 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                 # Do not control the line colors here, because we want different ones on one plot
                 trace_list.append(go.Scatter(y=y, x=y.index, name=single_name, showlegend=True))
 
-        # Same options regardless of behavior or not
-        trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
+                # Same options, but additional entries to match length of trace_list
+                trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
 
     #### Shading on top of the PCA modes
     try:
@@ -1752,11 +1753,14 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         for i, state_code in enumerate(state_codes):
             try:
                 # Only show the legend if the behavior is FWD or REV
-                showlegend = state_code.full_name in {'FWD', 'REV', 'VENTRAL_TURN and FWD', 'FWD and VENTRAL_TURN'}
+                showlegend = state_code.full_name in {'FWD', 'REV',
+                                                      'VENTRAL_TURN and FWD', 'FWD and VENTRAL_TURN',
+                                                      'DORSAL_TURN and FWD', 'FWD and DORSAL_TURN'}
                 name = state_code.name
                 if name is None:
                     # If there is a complex state
                     name = state_code.full_name.split(' and ')[0]
+                name = behavior_name_mapping().get(name, name)
                 phase_plot_list.append(
                     go.Scatter3d(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], z=df_out[col_names[2][i]],
                                  mode='lines',
@@ -1777,6 +1781,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     return column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, \
         phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, \
         var_explained_line, var_explained_line_opt, weights_list, weights_opt_list
+
 
 def make_summary_hilbert_triggered_average_grid_plot(project_cfg, i_body_segment=41,
                                                      return_fast_scale_separation=False, residual_mode=None,

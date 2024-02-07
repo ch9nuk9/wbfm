@@ -320,6 +320,7 @@ class ProjectData:
     @cached_property
     def df_all_tracklets(self) -> pd.DataFrame:
         """Sparse Dataframe of all tracklets"""
+        # TODO: Should this just use _load_df_tracklets?
 
         df_all_tracklets, fname = self._load_df_tracklets()
         self.df_all_tracklets_fname = fname
@@ -363,6 +364,9 @@ class ProjectData:
         return df_all_tracklets, fname
 
     def has_tracklets(self):
+        return self._load_df_tracklets(dryrun=True)[1] is not None
+
+    def has_global2tracklet(self):
         return self._load_df_tracklets(dryrun=True)[1] is not None
 
     @cached_property
@@ -832,7 +836,13 @@ class ProjectData:
         # There are currently 3 cached versions of the data, depending on the residual option
         if use_paper_options:
             if residual_mode is None:
-                return self.calc_paper_traces()
+                channel_mode = kwargs.get('channel_mode', 'dr_over_r_50')
+                if channel_mode == 'green':
+                    return self.calc_paper_traces_green()
+                elif channel_mode == 'red':
+                    return self.calc_paper_traces_red()
+                else:
+                    return self.calc_paper_traces()
             elif residual_mode == 'pca':
                 return self.calc_paper_traces_residual()
             elif residual_mode == 'pca_global':
@@ -980,6 +990,12 @@ class ProjectData:
     def calc_paper_traces(self):
         return self.data_cacher.calc_paper_traces()
 
+    def calc_paper_traces_red(self):
+        return self.data_cacher.calc_paper_traces_red()
+
+    def calc_paper_traces_green(self):
+        return self.data_cacher.calc_paper_traces_green()
+
     def calc_paper_traces_residual(self):
         return self.data_cacher.calc_paper_traces_residual()
 
@@ -1112,14 +1128,14 @@ class ProjectData:
     def calc_plateau_state_using_pc1(self, replace_nan=True, DEBUG=False, **trace_kwargs):
         # Get the trace that will be used to calculate the plateau state
         pca_modes = self.calc_pca_modes(n_components=1, **trace_kwargs)
-        pc1 = pd.Series(pca_modes[:, 0])
+        pc1 = pd.Series(pca_modes.loc[:, 0])
         # Calculate plateaus using worm posture class method
         plateaus, working_pw_fits = self.worm_posture_class.calc_plateau_state_from_trace(pc1, n_breakpoints=2,
                                                                                           replace_nan=replace_nan,
                                                                                           DEBUG=DEBUG)
         return plateaus, working_pw_fits
 
-    def plot_neuron_with_kymograph(self, neuron_name: str):
+    def plot_neuron_with_kymograph(self, neuron_name: str, **kwargs):
         """
         Plots a subplot with a neuron trace and the kymograph, if found
 
@@ -1131,9 +1147,11 @@ class ProjectData:
         -------
 
         """
-        t, y = self.calculate_traces(channel_mode='ratio', calculation_mode='integration',
-                                     neuron_name=neuron_name)
-        df_kymo = self.worm_posture_class.curvature(fluorescence_fps=True) 
+        df = self.calc_default_traces(channel_mode='ratio', calculation_mode='integration',
+                                      neuron_names=(neuron_name, ), **kwargs)
+        t, y = df.index, df[neuron_name]
+        df_kymo = self.worm_posture_class.curvature(fluorescence_fps=True)
+        df_kymo.index = df.index
 
         fig, axes = plt.subplots(nrows=2, figsize=(30, 10), sharex=True)
         axes[0].imshow(df_kymo.T, origin="upper", cmap='seismic', extent=[0, df_kymo.shape[0], df_kymo.shape[1], 0],
@@ -1293,7 +1311,10 @@ class ProjectData:
         for t in self.tracklet_annotator.t_buffer_masks:
             self.raw_segmentation[t, ...] = self.tracklet_annotator.buffer_masks[t, ...]
 
-        return True
+        if len(self.tracklet_annotator.t_buffer_masks) > 0:
+            return True
+        else:
+            return None
 
     def shade_axis_using_behavior(self, ax=None, plotly_fig=None, **kwargs):
         """
@@ -1482,7 +1503,8 @@ class ProjectData:
                                csv=Path(excel_fname).with_name(self.shortened_name).with_suffix('.csv'),
                                h5=Path(excel_fname).with_name(self.shortened_name).with_suffix('.h5'))
         possible_fnames = {k: str(v) for k, v in possible_fnames.items()}
-        fname_precedence = ['excel', 'csv', 'h5']
+        # fname_precedence = ['excel', 'csv', 'h5']  # This precedence is used because humans may have added things
+        fname_precedence = ['newest']
         df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
                                                                       this_reader=read_if_exists, na_filter=False)
         self.df_manual_tracking_fname = fname
@@ -1947,8 +1969,7 @@ green_data:               {self.green_data is not None}\n\
 raw_segmentation:         {self.raw_segmentation is not None}\n\
 colored_segmentation:     {self.segmentation is not None}\n\
 ============Tracking===================\n\
-tracklets:                {self.has_tracklets() is not None}\n\
-global2tracklet:          {self.global2tracklet is not None}\n\
+tracklets:                {self.has_tracklets()}\n\
 final_tracks:             {self.final_tracks is not None}\n\
 manual_tracking:          {self.df_manual_tracking is not None}\n\
 ============Traces=====================\n\

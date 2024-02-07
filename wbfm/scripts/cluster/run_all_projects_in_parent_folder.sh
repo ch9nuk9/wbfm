@@ -5,13 +5,27 @@
 # For real usage, remove '-n True' and update the path after -t
 #
 
+# Add help function
+function usage {
+  echo "Usage: $0 [-t folder_of_projects] [-n] [-d] [-s rule] [-h]"
+  echo "  -t: folder of projects (required)"
+  echo "  -n: dry run of this script (default: false)"
+  echo "  -d: dry run of snakemake (default: false)"
+  echo "  -s: snakemake rule to run (default: traces_and_behavior; other options: traces, behavior)"
+  echo "  -h: display help (this message)"
+}
+
+RULE="traces_and_behavior"
+is_dry_run=""
 # Get all user flags
-while getopts t:n:s:d: flag
+while getopts t:n:s:d:h flag
 do
     case "${flag}" in
         t) folder_of_projects=${OPTARG};;
-        n) is_dry_run=${OPTARG};;
+        n) is_dry_run="True";;
         d) is_snakemake_dry_run=${OPTARG};;
+        s) RULE=${OPTARG};;
+        h) usage;;
         *) raise error "Unknown flag"
     esac
 done
@@ -34,10 +48,10 @@ for f in "$folder_of_projects"/*; do
                     setup_cmd="conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/"
                     snakemake_folder="$f/snakemake"
                     if [ "$is_snakemake_dry_run" ]; then
-                       snakemake_cmd="$snakemake_folder/DRYRUN.sh"
+                       snakemake_cmd="$snakemake_folder/RUNME.sh -n -s $RULE"
                        echo "Running snakemake dry run"
                     else
-                       snakemake_cmd="$snakemake_folder/RUNME_cluster.sh"
+                       snakemake_cmd="$snakemake_folder/RUNME.sh -s $RULE"
                     fi
                     # Check if the session exists... don't see how to do a while loop here, because I'm using $?
                     tmux has-session -t=$tmux_name 2>/dev/null

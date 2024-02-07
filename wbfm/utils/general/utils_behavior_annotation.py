@@ -8,20 +8,22 @@ from typing import List, Union, Optional, Dict
 import matplotlib
 import numpy as np
 import pandas as pd
-import plotly.express as px
+import tifffile
 from matplotlib import pyplot as plt
+from plotly import express as px
 from plotly.subplots import make_subplots
 from scipy.interpolate import interp1d
 from scipy.signal import find_peaks, peak_prominences, peak_widths
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends, \
-    remove_short_state_changes
+    remove_short_state_changes, get_contiguous_blocks_from_two_columns, resample_categorical, \
+    combine_columns_with_suffix
 from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError, NeedsAnnotatedNeuronError
 import plotly.graph_objects as go
 
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
+from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe, filter_gaussian_moving_average
 from wbfm.utils.visualization.hardcoded_paths import get_summary_visualization_dir
 
 
@@ -52,10 +54,13 @@ class BehaviorCodes(Flag):
     HEAD_CAST = auto()  # Manually annotated
     SLOWING = auto()  # Annotated using Charlie's pipeline
     PAUSE = auto()  # Annotated using Charlie's pipeline
+    STIMULUS = auto()  # Annotated using a manual excel file
 
     NOT_ANNOTATED = auto()
     UNKNOWN = auto()
     TRACKING_FAILURE = auto()
+
+    CUSTOM = auto()  # Used when annotations are manually passed as a numpy array; can only deal with one custom state
 
     @classmethod
     def _ulises_int_2_flag(cls, flip: bool = False):
@@ -469,6 +474,17 @@ class BehaviorCodes(Flag):
         return cls.UNKNOWN
 
     @classmethod
+    def use_pause_to_filter_vector(cls, query_vec: pd.Series):
+        """
+        Collapses simultaneous PAUSE + other states into just PAUSE
+
+        Returns
+        -------
+
+        """
+        return query_vec.apply(lambda x: cls.PAUSE if cls.PAUSE in x else x)
+
+    @classmethod
     def convert_to_simple_states_vector(cls, query_vec: pd.Series):
         """
         Uses convert_to_simple_states on a vector
@@ -607,7 +623,7 @@ def shade_stacked_figure_using_behavior_plotly(beh_df, fig, **kwargs):
 def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
                                                            names_to_plot: Union[str, List[str]],
                                                            to_shade=True, to_save=False, fname_suffix='',
-                                                           trace_kwargs=None,
+                                                           trace_kwargs=None, combine_neuron_pairs=True,
                                                            DEBUG=False, **kwargs):
     """
     Loads the traces and behaviors from each project, producing a stack of plotly figures that
@@ -661,8 +677,14 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
             beh_columns.append(name)
     df_all_beh = build_behavior_time_series_from_multiple_projects(all_projects, beh_columns)
     df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, **trace_kwargs)
+    if combine_neuron_pairs:
+        df_all_traces = combine_columns_with_suffix(df_all_traces)
     # Note: if there is one extra frame in the traces, it will be dropped here
     df_traces_and_behavior = pd.merge(df_all_traces, df_all_beh, how='inner', on=['dataset_name', 'local_time'])
+    # Check if the physical time is set in the projects
+    if not all([project.use_physical_time for project in all_projects.values()]):
+        logging.warning(f"Physical time is not set in all projects, so the x axis will be in frames instead of time. "
+                        f"This will cause problems if the traces are indexed using physical time")
     if DEBUG:
         print(f"df_all_traces: {df_all_traces}")
         print(f"df_all_beh: {df_all_beh}")
@@ -934,7 +956,7 @@ def detect_peaks_and_interpolate_using_inter_event_intervals(dat, to_plot=False,
     return x, y_interp, interp_obj
 
 
-def approximate_behavioral_annotation_using_pc1(project_cfg, to_save=True):
+def approximate_behavioral_annotation_using_pc1(project_cfg, trace_kwargs=None, to_save=True):
     """
     Uses the first principal component of the traces to approximate annotations for forward and reversal
     IMPORTANT: Although pc0 should correspond to rev/fwd, the sign of the PC is arbitrary, so we need to check
@@ -964,9 +986,11 @@ def approximate_behavioral_annotation_using_pc1(project_cfg, to_save=True):
                nan_tracking_failure_points=True,
                #nan_using_ppca_manifold=True,
                channel_mode='dr_over_r_50')
+    if trace_kwargs is not None:
+        opt.update(trace_kwargs)
     pca_modes = project_data.calc_pca_modes(n_components=2, flip_pc1_to_have_reversals_high=True,
                                             **opt)
-    pc0 = pca_modes[:, 0]
+    pc0 = pca_modes.loc[:, 0]
 
     # df_traces = project_data.calc_default_traces(**opt)
     # from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
@@ -1096,7 +1120,7 @@ def approximate_slowing_using_speed_from_config(project_cfg, min_length=3, retur
 
 def calc_slowing_from_speed(y, min_length):
     # At the default height of 0.5, every body bend will show "slowing"
-    beh_vec_raw = calculate_rise_high_fall_low(y, min_length=min_length, width=100, height=1.0, verbose=0)
+    beh_vec_raw = calculate_rise_high_fall_low(y - y.mean(), min_length=min_length, height=1.0, width=100, verbose=0)
     # Convert this to slowing periods
     # For each period check what the mean speed is
     beh_vec = pd.Series(np.zeros_like(beh_vec_raw), index=beh_vec_raw.index, dtype=bool)
@@ -1126,17 +1150,23 @@ def calc_slowing_from_speed(y, min_length):
     return beh_vec, beh_vec_raw
 
 
-def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5, DEBUG=False):
+def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominence=0.0,
+                                 signal_delta_threshold=0.15, high_assignment_threshold=0.4,
+                                 verbose=1, DEBUG=False):
     """
     From a time series, calculates the "rise", "high", "fall", and "low" states
 
     Algorithm:
-    1. Find the peaks in the derivative
-    2. Find the peaks in the negative derivative
-    3. Assign the positive peak regions as "rise" and the negative peak regions as "fall"
-    4. Assign intermediate regions based on two passes:
-        - If it is after a rise and before a fall and the amplitude is > 0, it is "high"
-        - If it is after a fall and before a rise and the amplitude is < 0, it is "low"
+    - Find the peaks in the derivative in two steps:
+        - Find peaks in a strongly smoothed signal
+        - Find peaks in the original signal
+        - Keep peaks that are in both (or close)
+        - Remove peaks that do not have a large enough delta in the original signal
+    - Same for negative derivative
+    - Assign the positive peak regions as "rise" and the negative peak regions as "fall"
+    - Assign intermediate regions based on two passes:
+        - If it is after a rise and before a fall and the amplitude is > high_assignment_threshold, it is "high"
+        - If it is after a fall and before a rise and the amplitude is < high_assignment_threshold, it is "low"
         - Otherwise it is "ambiguous" and assigned based on the mean amplitude (closer to previously assigned high or
         low)
 
@@ -1147,6 +1177,7 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
     verbose
     height - See scipy.signal.find_peaks
     width - See scipy.signal.find_peaks
+    prominence - See scipy.signal.find_peaks
     DEBUG - bool. If True, plots the derivative and the peaks
 
     Returns
@@ -1154,6 +1185,10 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
     A pandas series with the same index as y, with the states as strings:
 
     """
+    # Check if it was mean subtracted
+    eps = 1e-3
+    if np.abs(np.nanmean(y)) > eps:
+        logging.warning("The input vector was not mean subtracted; this may lead to incorrect results")
     # Reset the index, because everything in this function uses raw indices
     y = y.copy().reset_index(drop=True)
     # Take derivative and standardize
@@ -1165,18 +1200,57 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
     # Unfortunately scipy only allows relative height calculations, so we have to hack an absolute height
     # https://stackoverflow.com/questions/53778703/python-scipy-signal-peak-widths-absolute-heigth-fft-3db-damping
     beh_vec = pd.Series(np.zeros_like(y))
-    for i, x in enumerate([dy, -dy]):
-        peaks, properties = find_peaks(x, height=height, width=width)
-        prominences, left_bases, right_bases = peak_prominences(x, peaks)
+    peak_eps = width
+    opt_find_peaks = dict(height=height, width=width, prominence=prominence)
+    for i, this_dy in enumerate([dy, -dy]):
+        # First find peaks in the smoothed signal
+        df_smooth = filter_gaussian_moving_average(pd.Series(this_dy), 2)
+        peaks_smooth, properties_smooth = find_peaks(df_smooth, **opt_find_peaks)
+        # Second find the peaks in the original signal
+        peaks_raw, properties_raw = find_peaks(this_dy, **opt_find_peaks)
+        # Build a consensus list of peaks found in both signals
+        peaks, heights = [], []
+        for peak, prop in zip(peaks_raw, properties_raw['peak_heights']):
+            if np.any(np.abs(peaks_smooth - peak) < peak_eps):
+                peaks.append(peak)
+                heights.append(prop)
+        heights = np.array(heights)
+
+        prominences, left_bases, right_bases = peak_prominences(this_dy, peaks)
         # Instead of prominences, pass the peaks heights to get the intersection at 0
         # But, because the derivative might not exactly be 0, pass an epslion value
         # Note that this epsilon is quite high; some "high" periods can have a negative slope almost as high as a "fall"
         deriv_epsilon = 0.4
         widths, h_eval, left_ips, right_ips = peak_widths(
-            x, peaks,
+            this_dy, peaks,
             rel_height=1,
-            prominence_data=(properties['peak_heights'] - deriv_epsilon, left_bases, right_bases)
+            prominence_data=(heights - deriv_epsilon, left_bases, right_bases)
         )
+
+        # Filter: remove peaks that do not have a large enough delta in the original signal
+        peaks_filtered, heights_filtered = [], []
+        for i_left, i_right, peak, height in zip(left_ips, right_ips, peaks, heights):
+            delta = np.abs(y[int(i_left)] - y[int(i_right)])
+            if delta > signal_delta_threshold:
+                peaks_filtered.append(peak)
+                heights_filtered.append(height)
+                if DEBUG:
+                    print(f"Keeping peak at {int(i_left)} because delta ({delta}) is large enough")
+            else:
+                if DEBUG:
+                    print(f"Removing peak at {int(i_left)} because delta ({delta}) is too small "
+                          f"({signal_delta_threshold})")
+        heights = np.array(heights_filtered)
+        peaks = np.array(peaks_filtered)
+
+        # Recalculate metadata using the final filtered peaks
+        prominences, left_bases, right_bases = peak_prominences(this_dy, peaks)
+        widths, h_eval, left_ips, right_ips = peak_widths(
+            this_dy, peaks,
+            rel_height=1,
+            prominence_data=(heights - deriv_epsilon, left_bases, right_bases)
+        )
+
         if DEBUG:
             # Plot the derivative with the peaks and widths
             print(h_eval)
@@ -1186,9 +1260,10 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
                 print("Positive peaks")
             else:
                 print("Negative peaks")
-            for i_left, i_right in zip(left_ips, right_ips):
+            for i_left, i_right, i_prom in zip(left_ips, right_ips, prominences):
                 plt.plot(np.arange(int(i_left), int(i_right)), dy[int(i_left): int(i_right)], "x")
-                print(f"left: {int(i_left)}, right: {int(i_right)}")
+                print(f"left: {int(i_left)}, right: {int(i_right)}, "
+                      f"height_delta: {this_dy[int(i_left)] - this_dy[int(i_right)]}, prominence: {i_prom}")
 
         # Actually assign the state
         if i == 0:
@@ -1215,22 +1290,23 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
     ambiguous_periods = []
     for i, (s, e) in enumerate(zip(starts, ends)):
         # Special cases for the first and last regions, based on the next start or previous end
+        is_above_high_threshold = np.mean(y[s:e]) > high_assignment_threshold
         if s == 0:
             # First
-            if beh_vec[e + 1] == 'fall':
+            if beh_vec[e + 1] == 'fall' and is_above_high_threshold:
                 beh_vec[s:e] = 'high'
             else:
                 beh_vec[s:e] = 'low'
         elif e == len(beh_vec):
             # Last
-            if beh_vec[s - 1] == 'rise':
+            if beh_vec[s - 1] == 'rise' and is_above_high_threshold:
                 beh_vec[s:e] = 'high'
             else:
                 beh_vec[s:e] = 'low'
-        elif (beh_vec[s - 1] == 'rise' and beh_vec[e + 1] == 'fall') and np.mean(y[s:e]) > 0:
+        elif (beh_vec[s - 1] == 'rise' and beh_vec[e + 1] == 'fall') and is_above_high_threshold:
             # In between
             beh_vec[s:e] = 'high'
-        elif (beh_vec[s - 1] == 'fall' and beh_vec[e + 1] == 'rise') and np.mean(y[s:e]) < 0:
+        elif (beh_vec[s - 1] == 'fall' and beh_vec[e + 1] == 'rise') and not is_above_high_threshold:
             beh_vec[s:e] = 'low'
         else:
             if beh_vec[s - 1] == beh_vec[e + 1] and verbose > 0:
@@ -1255,6 +1331,10 @@ def calculate_rise_high_fall_low(y, min_length=5, verbose=1, height=0.5, width=5
             beh_vec[s:e] = 'low'
             if DEBUG:
                 print(f"Region from {s} to {e} with mean {this_mean} assigned to low")
+
+    if DEBUG:
+        df = pd.DataFrame({'y': y, 'dy': dy, 'state': beh_vec})
+        px.scatter(df, y='y', color='state').show()
     return beh_vec
 
 
@@ -1448,7 +1528,8 @@ def rgb_to_hex(rgb: List[int]):
     return '#%02x%02x%02x' % rgb
 
 
-def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_folder=None, to_view=True, engine=None):
+def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_folder=None, to_view=True, engine=None,
+                                  use_behavior_codes_colors=True, verbose=1, DEBUG=False):
     """
 
     Parameters
@@ -1467,6 +1548,7 @@ def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_f
     dot = Digraph(comment='State Transition Diagram')
 
     # Add nodes to the graph
+    num_nodes = 0
     for state in df_probabilities.index:
         # Set the size parameter based on df_raw_number, if present
         # See https://www.graphviz.org/pdf/dotguide.pdf for parameters
@@ -1477,30 +1559,46 @@ def plot_dataframe_of_transitions(df_probabilities, df_raw_number=None, output_f
             print(state, size)
             _opt = dict(width=str(size), height=str(size), shape='circle', fixedsize='true')
             opt.update(_opt)
-        # Also set the color based on the state
-        state_enum = BehaviorCodes[state]
-        color = state_enum.ethogram_cmap(include_turns=True, use_plotly_style_strings=False)[state_enum]
+        if use_behavior_codes_colors:
+            # Also set the color based on the state
+            state_enum = BehaviorCodes[state]
+            color = state_enum.ethogram_cmap(include_turns=True, use_plotly_style_strings=False)[state_enum]
+        else:
+            color = 'white'
         opt['fillcolor'] = color
         opt['style'] = 'filled'
         # opt['fontcolor'] = color
 
         dot.node(state, **opt)
+        num_nodes += 1
+        if DEBUG:
+            print(state, opt)
+    if verbose >= 1:
+        print(f"Added {num_nodes} nodes")
 
     # Add edges to the graph with labels and widths based on transition probabilities
     eps = 0.01
+    num_edges = 0
     for from_state in df_probabilities.index:
         for to_state in df_probabilities.columns:
             probability = df_probabilities.loc[from_state, to_state]
             if probability > eps:
-                dot.edge(from_state, to_state, label=f'{probability:.2f}', penwidth=str(probability * 5))
+                edge_opt = dict(tail_name=from_state, head_name=to_state,
+                                label=f'{probability:.2f}', width=str(probability * 5))
+                dot.edge(**edge_opt)
+                num_edges += 1
+                if DEBUG:
+                    print(edge_opt)
+    if verbose >= 1:
+        print(f"Added {num_edges} edges")
 
     # Render the graph to a file or display it
     if output_folder is not None:
         fname = os.path.join(output_folder, 'state_transition_diagram')
         dot.render(fname, view=False, format='png', engine=engine)
         dot.render(fname, view=to_view, format='pdf', engine=engine)
-    else:
-        dot.render(view=to_view, format='pdf', engine=engine)
+    # else:
+    #     dot.render(view=to_view, format='pdf', engine=engine)
 
     return dot
 
@@ -1544,8 +1642,8 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, post_rever
     y_dorsal = combine_pair_of_ided_neurons(df_traces, base_name='SMDD')
     y_ventral = combine_pair_of_ided_neurons(df_traces, base_name='SMDV')
 
-    dorsal_vec = calculate_rise_high_fall_low(y_dorsal)
-    ventral_vec = calculate_rise_high_fall_low(y_ventral)
+    dorsal_vec = calculate_rise_high_fall_low(y_dorsal - y_dorsal.mean())
+    ventral_vec = calculate_rise_high_fall_low(y_ventral - y_ventral.mean())
 
     dorsal_rise_starts, dorsal_rise_ends = get_contiguous_blocks_from_column(dorsal_vec == 'rise', already_boolean=True)
     ventral_rise_starts, ventral_rise_ends = get_contiguous_blocks_from_column(ventral_vec == 'rise',
@@ -1648,12 +1746,31 @@ def combine_pair_of_ided_neurons(df_traces, base_name='AVA'):
             num_y += 1
             # If both L/R are present, average them
             y = (y + df_traces[this_name]) / num_y
+    if num_y == 0 and base_name in col_names:
+        # Check for just that name, without the suffix
+        num_y = 1
+        y = df_traces[base_name]
     if num_y == 0:
         raise NeedsAnnotatedNeuronError(base_name)
     return y
 
 
 def annotate_turns_from_reversal_ends(rev_ends, y_curvature):
+    """
+    Uses the reversal ends and curvature to annotate turns in the following way:
+    1. A turn starts at the end of the reversal
+    2. A turn ends at the next zero crossing of the curvature
+    3. If the curvature is positive at the end of the reversal, it is a ventral turn, otherwise dorsal
+
+    Parameters
+    ----------
+    rev_ends
+    y_curvature
+
+    Returns
+    -------
+
+    """
     ventral_starts = []
     ventral_ends = []
     dorsal_starts = []
@@ -1700,3 +1817,188 @@ def annotate_turns_from_reversal_ends(rev_ends, y_curvature):
     _raw_vector = _raw_vector.replace(np.nan, BehaviorCodes.NOT_ANNOTATED)
     BehaviorCodes.assert_all_are_valid(_raw_vector)
     return _raw_vector
+
+
+def plot_behavior_syncronized_discrete_states_from_traces(df_traces, neuron_group, neuron_plot, plot_style='bar',
+                                                          normalize=True, target_len=100, DEBUG=False):
+    """
+    Calculates discrete states using neuron_group, then plots the discretized states of neuron_plot
+
+    Parameters
+    ----------
+    df_traces
+    neuron_group
+    neuron_plot
+
+    Returns
+    -------
+
+    """
+    idx_list = ['low', 'rise', 'high', 'fall']
+
+    df = calculate_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_plot, idx_list, target_len,
+                                                        DEBUG)
+    df_counts = convert_discrete_state_df_to_counts(df, idx_list, normalize, target_len)
+
+    if plot_style is not None:
+        if plot_style == 'imshow':
+            # Plot each state separately
+            # First, make a plotly figure with subplots
+            fig = make_subplots(cols=len(idx_list), rows=1, shared_yaxes=True, vertical_spacing=0.02,
+                                subplot_titles=idx_list)
+            grouped = df_counts.T.groupby('state')
+
+            for i, key in enumerate(grouped.groups.keys()):
+                g = grouped.get_group(key)
+                # Add this dataframe as a heatmap
+                fig.add_trace(go.Heatmap(z=g.drop(columns='state').T, showscale=False,),
+                              row=1, col=i + 1)
+            fig.update_yaxes(tickvals=np.arange(len(df_counts.index)), ticktext=df_counts.index,
+                             overwrite=True, row=1, col=1, title=neuron_plot)
+            fig.update_layout(title=f"Activity of {neuron_plot} seperated by {neuron_group}")
+        elif plot_style == 'bar':
+            fig = plot_fractional_state_annotations(df_counts, neuron_group, neuron_plot)
+        else:
+            raise NotImplementedError(f"plot_style {plot_style} not implemented")
+        fig.show()
+    else:
+        fig = None
+
+    return fig, (df, df_counts)
+
+
+def convert_discrete_state_df_to_counts(df, idx_list=None, normalize=True, target_len=100):
+    if idx_list is None:
+        idx_list = ['low', 'rise', 'high', 'fall']
+    df_counts = df.apply(lambda x: x.value_counts()).fillna(0)
+    if normalize:
+        df_counts = df_counts / df_counts.sum()
+    # Add a row for the state of the grouping variable, which is a constant for target_len frames at a time
+    idx_row = []
+    for idx in idx_list:
+        idx_row.extend([idx for _ in range(target_len)])
+    df_counts.loc['state', :] = idx_row
+    return df_counts
+
+
+def calculate_behavior_syncronized_discrete_states(df_traces, neuron_group, neuron_plot, idx_list=None, target_len=100,
+                                                   DEBUG=False):
+    if idx_list is None:
+        idx_list = ['low', 'rise', 'high', 'fall']
+    # if neuron_group not in df_traces or neuron_plot not in df_traces:
+    #     raise NeedsAnnotatedNeuronError(f"neuron_group ({neuron_group}) or neuron_plot ({neuron_plot}) not found")
+    # Calculate discrete states ('low', 'rise', 'high', 'fall')
+    y_ava = combine_pair_of_ided_neurons(df_traces, neuron_group)
+    y_ava = filter_gaussian_moving_average(y_ava, 1)
+    beh_ava = calculate_rise_high_fall_low(y_ava, verbose=0, DEBUG=False)
+    y_riv = combine_pair_of_ided_neurons(df_traces, neuron_plot)
+    y_riv = filter_gaussian_moving_average(y_riv, 1)
+    beh_riv = calculate_rise_high_fall_low(y_riv, verbose=0, DEBUG=False)
+    if DEBUG:
+        # Plot both traces with their discrete states as colors
+
+        df_ava = pd.DataFrame({'y': y_ava.values, 'state': beh_ava.values}).reset_index()
+        df_ava['id'] = neuron_group
+        df_riv = pd.DataFrame({'y': y_riv.values, 'state': beh_riv.values}).reset_index()
+        df_riv['id'] = neuron_plot
+        # New column for both states simultaneously
+        df_ava['state_combined'] = neuron_group + df_ava['state'] + '_' + neuron_plot + df_riv['state']
+        df_riv['state_combined'] = neuron_group + df_ava['state'] + '_' + neuron_plot + df_riv['state']
+        # Stack the two dataframes, keeping the local indices
+        df = pd.concat([df_ava, df_riv], axis=0, ignore_index=True)
+        fig = px.scatter(df, x='index', y='y', color='state', facet_row='id')
+        fig.show()
+        fig = px.scatter(df, x='index', y='y', color='state_combined', facet_row='id')
+        fig.show()
+    df_combined = pd.DataFrame({f'beh_{neuron_group}': beh_ava, f'beh_{neuron_plot}': beh_riv})
+    # Get the variable length series from each bout
+    df_each_bout = get_contiguous_blocks_from_two_columns(df_combined, f'beh_{neuron_group}', f'beh_{neuron_plot}')
+    # Resample each bout to be the same length
+    func = lambda x: resample_categorical(x, target_len=target_len)
+    result_synced = df_each_bout.map(func)
+    # Combine into single dataframe
+    all_dfs = []
+    for idx in idx_list:
+        if idx not in result_synced:
+            continue
+        s = result_synced[idx]
+        df = pd.DataFrame.from_dict(dict(zip(s.index, s.values))).T
+        all_dfs.append(df.reset_index(drop=True))
+    df = pd.concat(all_dfs, axis=1)
+    df.columns = np.arange(len(df.columns))
+    return df
+
+
+def plot_fractional_state_annotations(df_counts, neuron_group, neuron_plot):
+    df_counts_melted = df_counts.T.reset_index().drop(columns='state')
+    var_name = f'{neuron_plot}_state'
+    df_counts_melted = pd.melt(df_counts_melted, id_vars='index', var_name=var_name,
+                               value_name='fraction')
+    fig = px.bar(df_counts_melted, x='index', y='fraction', color=var_name, orientation='v')
+    # Vertical black lines at the transition points
+    x_list = [100, 200, 300]
+    for x in x_list:
+        fig.add_shape(type='line', x0=x, x1=x, y0=0, y1=1, line=dict(color='black', width=1))
+    fig.update_layout(barmode='stack', bargap=0)
+    # Update the xticks to use the 'state' column
+    x_ticks = np.arange(50, len(df_counts.columns), step=100)
+    x_tick_text = df_counts.loc['state', x_ticks]
+    fig.update_xaxes(tickvals=x_ticks, ticktext=x_tick_text,
+                     overwrite=True, title=f"{neuron_group} state")
+    return fig
+
+
+def approximate_background_using_video(behavior_video, num_frames=1000):
+    """
+    Approximates the background of a behavior video using the mean of the first 1000 frames
+
+    Should only be used for old projects where a proper background was not measured
+
+    Parameters
+    ----------
+    behavior_video
+
+    Returns
+    -------
+
+    """
+
+    with tifffile.TiffFile(behavior_video, 'r') as behavior_dat:
+        # Get the first 1000 frames
+        frames = behavior_dat.asarray(key=np.arange(num_frames))
+        # Take the mean
+        background = np.mean(frames, axis=0)
+
+    return np.array(background, dtype=frames.dtype)
+
+
+def save_background_in_project(cfg, **kwargs):
+    """
+
+    Parameters
+    ----------
+    project_cfg
+
+    Returns
+    -------
+
+    """
+
+    from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+    cfg = ModularProjectConfig(cfg)
+
+    # Get the .btf of the behavioral video
+    behavior_video, _ = cfg.get_behavior_raw_file_from_red_fname()
+    background = approximate_background_using_video(behavior_video, **kwargs)
+
+    # Save in the raw data background folder
+    background_raw_data_folder = cfg.get_folder_with_background()
+    # Get subfolder for behavior
+    subfolder = [f for f in os.listdir(background_raw_data_folder) if f.endswith('-BH')][0]
+    fname = os.path.join(background_raw_data_folder, subfolder, 'AVG_approximate_background_Ch0-BHbigtiff.btf')
+
+    # Save (btf)
+    print(f"Saving background to {fname} with dtype {background.dtype}")
+    tifffile.imwrite(fname, background)
+
+    return background

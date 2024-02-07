@@ -207,7 +207,8 @@ def impute_missing_values_in_dataframe(df: pd.DataFrame, d=None) -> pd.DataFrame
     Parameters
     ----------
     df
-    d
+    d - Number of ppca components to use for imputation. Default (None) is to use all modes
+        Specifically: d = data.shape[1]
 
     Returns
     -------

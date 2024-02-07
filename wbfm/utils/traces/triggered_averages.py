@@ -24,10 +24,10 @@ from tqdm.auto import tqdm
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior, shade_triggered_average
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
-    calc_surpyval_durations_and_censoring, combine_columns_with_suffix
+    calc_surpyval_durations_and_censoring, combine_columns_with_suffix, extend_binary_vector
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
-from wbfm.utils.general.utils_paper import apply_figure_settings
+from wbfm.utils.general.utils_paper import apply_figure_settings, neurons_with_confident_ids
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
@@ -139,6 +139,7 @@ class TriggeredAverageIndices:
     behavioral_state: BehaviorCodes = BehaviorCodes.REV  # Note: not used if behavioral_annotation_is_continuous is True
     min_duration: int = 0
     ind_preceding: int = 10
+    allowed_succeeding_state: BehaviorCodes = None  # Also include time points where the state is followed this state
 
     max_duration: int = None
     gap_size_to_remove: int = None
@@ -162,6 +163,23 @@ class TriggeredAverageIndices:
     DEBUG: bool = False
 
     def __post_init__(self):
+        # Check the types of the behavioral annotation and state
+        if not isinstance(self.behavioral_annotation.iat[0], BehaviorCodes):
+            # Attempt to cast using the 'custom' BehaviorCodes, but only if there is only one nontrivial behavior
+            self.behavioral_annotation = pd.Series(self.behavioral_annotation)
+            behavior_values = self.behavioral_annotation.unique()
+            self.behavioral_state = BehaviorCodes.CUSTOM
+            behavior_mapping = {k: BehaviorCodes.NOT_ANNOTATED for k in [-1, 0, '-1', '0', np.nan]}
+            # Check if there is an additional behavior to be mapped
+            unmapped_behavior = set(behavior_values) - set(behavior_mapping.keys())
+            if len(unmapped_behavior) == 1:
+                behavior_mapping[unmapped_behavior.pop()] = self.behavioral_state
+            else:
+                raise ValueError(f"Could not map behavioral annotation to Custom BehaviorCodes. "
+                                 f"Unique values: {behavior_values}")
+            # Build the Series of BehaviorCodes
+            self.behavioral_annotation = self.behavioral_annotation.map(behavior_mapping)
+
         # Build a dict_of_events_to_keep if only_allow_events_during_state is not None
         state = self.only_allow_events_during_state
         if state is not None:
@@ -186,6 +204,12 @@ class TriggeredAverageIndices:
             binary_state = self.behavioral_annotation > self.behavioral_annotation_threshold
         else:
             binary_state = BehaviorCodes.vector_equality(self.behavioral_annotation, self.behavioral_state)
+            if self.allowed_succeeding_state is not None:
+                # Extend the ends of the state to include the allowed succeeding states
+                # But do not modify the starts
+                alt_binary_state = BehaviorCodes.vector_equality(self.behavioral_annotation, self.allowed_succeeding_state)
+                binary_state = extend_binary_vector(binary_state, alt_binary_state)
+
         if self.gap_size_to_remove is not None:
             binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
         return binary_state
@@ -726,6 +750,17 @@ class FullDatasetTriggeredAverages:
         return names
 
     def triggered_average_matrix_from_name(self, name):
+        """
+        Calculates the triggered average matrix (events are rows, time is columns) for a single neuron
+
+        Parameters
+        ----------
+        name
+
+        Returns
+        -------
+
+        """
         return self.ind_class.calc_triggered_average_matrix(self.df_traces[name])
 
     def dict_of_all_triggered_averages(self):
@@ -745,9 +780,7 @@ class FullDatasetTriggeredAverages:
 
     def df_of_all_triggered_averages(self):
         """
-        Just saves the mean of the triggered average
-
-        Fills nan by default
+        Like triggered_average_matrix_from_name, but just saves the mean of the triggered average
         """
         df_triggered = {}
         for name in self.neuron_names:
@@ -763,7 +796,6 @@ class FullDatasetTriggeredAverages:
 
         df_triggered = pd.DataFrame(df_triggered)
         df_triggered = df_triggered.loc[:df_triggered.last_valid_index()]
-        # df_triggered = fill_nan_in_dataframe(df_triggered)
         return df_triggered
 
     def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100,
@@ -837,6 +869,17 @@ class FullDatasetTriggeredAverages:
     def load_from_project(project_data, trigger_opt=None, trace_opt=None, triggered_time_series_mode="traces",
                           **kwargs):
         """
+        Loads a FullDatasetTriggeredAverages class from a ProjectData class
+
+        Uses the default traces from the ProjectData class, and the default triggered average indices from the
+        WormFullVideoPosture class (which uses automatic behavioral annotations)
+
+        If you want to use custom traces or triggers, use trace_opt or trigger_opt
+        A specific example is to use pass a custom behavioral annotation using:
+            behavioral_annotation = np.array([0, 0, ..., 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, ...])
+            trigger_opt = dict(behavioral_annotation=behavioral_annotation, state=1)
+            triggered_class = FullDatasetTriggeredAverages.load_from_project(project_data_gcamp,
+                                                                             trigger_opt=trigger_opt)
 
         Parameters
         ----------
@@ -2101,7 +2144,7 @@ class ClusteredTriggeredAverages:
         return df_id_counts
 
     def plot_manual_ids_per_cluster(self, all_projects, use_bar_plot=True, neuron_threshold=0,
-                                    normalize_by_number_of_ids=False, legend=False,
+                                    neuron_subset='paper', normalize_by_number_of_ids=False, legend=False,
                                     combine_left_right=False, allow_temporary_names=False,
                                     output_folder=None, **kwargs):
         """
@@ -2125,6 +2168,11 @@ class ClusteredTriggeredAverages:
         if not allow_temporary_names:
             # Remove names with an underscore, which are temporary names
             df_id_counts = df_id_counts.loc[:, [i for i in df_id_counts.columns if '_' not in i]]
+
+        if neuron_subset is not None:
+            if isinstance(neuron_subset, str) and neuron_subset == 'paper':
+                neuron_subset = neurons_with_confident_ids()
+            df_id_counts = df_id_counts.loc[:, neuron_subset]
 
         if not use_bar_plot:
             fig = px.imshow(df_id_counts, title=f"Number of neurons per manual ID per cluster", **kwargs)
@@ -2274,8 +2322,24 @@ def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets
 
 
 def build_ind_matrix_from_starts_and_ends(all_ends: List[int], all_starts: List[int], ind_preceding: int,
-                                          validity_checks=None,
-                                          DEBUG=False):
+                                          validity_checks=None, DEBUG=False):
+    """
+    Builds a matrix of indices, where each row is a block of indices corresponding to a start and end
+
+
+
+    Parameters
+    ----------
+    all_ends
+    all_starts
+    ind_preceding
+    validity_checks
+    DEBUG
+
+    Returns
+    -------
+
+    """
     if validity_checks is None:
         validity_checks = []
     all_ind = []
@@ -2296,6 +2360,31 @@ def build_ind_matrix_from_starts_and_ends(all_ends: List[int], all_starts: List[
 
 
 def calc_time_series_from_starts_and_ends(all_starts, all_ends, num_pts, min_duration=0, only_onset=False):
+    """
+    Calculates a time series from a list of starts and ends
+
+    Example:
+    all_starts = [0, 10, 20]
+    all_ends = [5, 15, 25]
+    num_pts = 30
+    min_duration = 0
+    only_onset = False
+
+    Then the output will be:
+    [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, ...]
+
+    Parameters
+    ----------
+    all_starts
+    all_ends
+    num_pts
+    min_duration
+    only_onset
+
+    Returns
+    -------
+
+    """
     state_trace = np.zeros(num_pts)
     for start, end in zip(all_starts, all_ends):
         if end - start < min_duration:

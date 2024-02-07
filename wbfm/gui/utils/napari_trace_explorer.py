@@ -612,7 +612,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # ... even if I add sleep and etc.
         dict_of_saving_callbacks = {
             'segmentation_metadata': self.dat.segmentation_metadata.overwrite_original_detection_file,
-            'tracklets': self.dat.tracklet_annotator.save_manual_matches_to_disk_dispatch,
+            'tracklets': self.dat.tracklet_annotator.save_manual_matches_to_disk,
             'segmentation': self.dat.modify_segmentation_on_disk_using_buffer
         }
         if self.manualNeuronNameEditor is not None:
@@ -625,7 +625,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         all_flags = {}
         for i, (name, callback) in enumerate(dict_of_saving_callbacks.items()):
             progress.setValue(i)
-            flag = callback()
+            try:
+                flag = callback()
+            except PermissionError as e:
+                self.logger.warning(f"Failed to save {name} to disk (other steps should succeed): {e}")
+                flag = False
             all_flags[name] = flag
             # Sleep to make sure that the progress bar is updated
             time.sleep(0.1)
@@ -1252,7 +1256,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # Something about an un-invertable matrix
             time_line_options['ymin'] = 0
             time_line_options['ymin'] = 1
-            self.time_line = self.static_ax.axvline(**time_line_options)
+            try:
+                self.time_line = self.static_ax.axvline(**time_line_options)
+            except (ValueError, LinAlgError) as e:
+                # If it doesn't work the second time, just give up
+                self.logger.warning(f"Error creating time line: {e}; giving up")
+                self.time_line = None
 
         # Try to preserve the xlimits
         self.static_ax.set_ylabel(self.changeTraceCalculationDropdown.currentText())
@@ -1740,9 +1749,14 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_time_line(self):
         # Doesn't work if the time line needs to be initialized
         time_options = self.calculate_time_line_options()
-        self.time_line.set_xdata(time_options['x'])
-        # self.time_line.set_data(time_options[:2])
-        self.time_line.set_color(time_options['color'])
+        try:
+            self.time_line.set_xdata(time_options['x'])
+            # self.time_line.set_data(time_options[:2])
+            self.time_line.set_color(time_options['color'])
+        except AttributeError as e:
+            # Sometimes a graphics error causes the time line to fail to be initialized; if so just ignore it
+            self.logger.warning("Failed to update time line; probably a graphics error; ignoring it")
+            self.logger.debug(f"Error when updating time line: {e}")
         self.mpl_widget.draw()
 
     @property

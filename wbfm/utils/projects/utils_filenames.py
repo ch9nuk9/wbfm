@@ -26,7 +26,7 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
 
     Does nothing if the path is relative
 
-    Note: This is specific to the Zimmer lab, as of 23.06.2021 (at the IMP)
+    Note: This is specific to the Zimmer lab, as of Nov 2023
     """
     is_abs = PurePosixPath(raw_path).is_absolute() or PureWindowsPath(raw_path).is_absolute()
     if not is_abs:
@@ -35,50 +35,53 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
     if verbose >= 1:
         print(f"Checking path {raw_path} on os {os.name}...")
 
-    is_linux = "ix" in os.name.lower()
-    is_windows = os.name.lower() == "windows" or os.name.lower() == "nt"
+    machine_is_linux = "ix" in os.name.lower()
+    machine_is_windows = os.name.lower() == "windows" or os.name.lower() == "nt"
 
-    # Check for silly things
+    # Check for the path already working
     if os.path.exists(raw_path):
         return raw_path
 
     # Check for unreachable local drives
     local_drives = ['C:', 'D:']
-    if is_linux:
+    if machine_is_linux:
         for drive in local_drives:
             if raw_path.startswith(drive):
                 raise FileNotFoundError("File mounted to local drive; network system can't find it")
 
     # Swap mounted drive locations
     # UPDATE REGULARLY
-    mounted_drive_dict = {
-        'Y:': "/groups/zimmer",
-        'Z:': "/scratch",
-        'S:': "/scratch"
-    }
+    # Last updated: Nov 2023
+    mounted_drive_pairs = [
+        ('Y:', "/groups/zimmer"),
+        ('Z:', "/scratch"),
+        ('Z:', "/lisc/scratch"),
+        ('S:', "/scratch"),
+        ('S:', "/lisc/scratch")
+    ]
 
     # Loop through drive name matches, and test each one
-    for win_drive, linux_drive in mounted_drive_dict.items():
-        is_windows_style = raw_path.startswith(win_drive)
-        is_linux_style = raw_path.startswith(linux_drive)
+    for win_drive, linux_drive in mounted_drive_pairs:
+        path_is_windows_style = raw_path.startswith(win_drive)
+        path_is_linux_style = raw_path.startswith(linux_drive)
 
         path = None
-        if is_linux and is_windows_style:
+        if machine_is_linux and path_is_windows_style:
             path = raw_path.replace(win_drive, linux_drive)
             path = str(Path(path).resolve())
-        elif is_windows and is_linux_style:
+        elif machine_is_windows and path_is_linux_style:
             path = raw_path.replace(linux_drive, win_drive)
             path = str(Path(path).resolve())
 
         if path and os.path.exists(path):
             # For example on windows, tries Z: and if not found, tries S:
             if verbose >= 1:
-                print(f"Successfully resolved path to {path}")
+                print(f"Successfully resolved {raw_path} to {path}")
             break
     else:
         path = raw_path
         if verbose >= 1:
-            print(f"Did not successfully resolve path; returning raw {raw_path}")
+            print(f"Did not successfully resolve path; returning raw path: {raw_path}")
 
     assert path is not None
 

@@ -70,3 +70,38 @@ def get_adjacent_volumes(fname, first_vol, num_slices):
     dat0 = get_single_volume(fname, first_vol, num_slices)
     dat1 = get_single_volume(fname, first_vol + 1, num_slices)
     return dat0, dat1
+
+
+def crop_tiff_video(fname, out_fname=None, i_start=0, i_end=300, num_slices=None):
+    """
+    Crops a tiff video to a smaller video; tested on 2d and 3d videos
+
+    Parameters
+    ----------
+    fname
+    out_fname
+    i_start
+    i_end
+
+    Returns
+    -------
+
+    """
+
+    with tifffile.TiffFile(fname) as f:
+        dat = []
+        if num_slices is None:
+            # Assume 2d
+            for i in range(i_start, i_end):
+                dat.append(f.pages[i].asarray())
+        else:
+            # Assume 3d, with num_slices as the number of z slices
+            for i in range(i_start, i_end):
+                this_vol = [f.pages[i * num_slices + j].asarray() for j in range(num_slices)]
+                dat.append(np.array(this_vol))
+
+    dat = np.array(dat)
+    if out_fname is not None:
+        tifffile.imwrite(out_fname, dat)
+
+    return dat
