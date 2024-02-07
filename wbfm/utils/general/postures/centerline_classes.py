@@ -843,22 +843,31 @@ class WormFullVideoPosture:
         # Add additional annotations from other files
         # Note that these other annotations are one frame shorter than the behavior annotation
         beh = beh.iloc[:-1]
-        try:
-            if include_collision and self._self_collision() is not None:
-                beh = beh + self._self_collision(fluorescence_fps=False, reset_index=False)
-            if include_pause and self._pause() is not None:
-                beh = beh + self._pause(fluorescence_fps=False, reset_index=False)
-            if include_slowing and self._slowing() is not None:
-                beh = beh + self._slowing(fluorescence_fps=False, reset_index=False)
-            if include_turns and self._turn_annotation() is not None:
-                # Note that the turn annotation is one frame shorter than the behavior annotation
-                beh = beh + self._turn_annotation(fluorescence_fps=False, reset_index=False)
-            if include_head_cast and self._head_cast_annotation() is not None:
-                beh = beh + self._head_cast_annotation(fluorescence_fps=False, reset_index=False)
-            if include_stiumulus and self._stimulus() is not None:
-                beh = beh + self._stimulus(fluorescence_fps=False, reset_index=False)
-        except MissingAnalysisError:
-            print("Warning: could not find one of the additional behavior annotations, skipping")
+        # These functions might give an error when called, so loop as a list of functions first
+        beh_funcs_to_add = []
+        if include_collision:
+            beh_funcs_to_add.append(self._self_collision)
+        if include_pause:
+            beh_funcs_to_add.append(self._pause)
+        if include_slowing:
+            beh_funcs_to_add.append(self._slowing)
+        if include_turns:
+            beh_funcs_to_add.append(self._turn_annotation)
+        if include_head_cast:
+            beh_funcs_to_add.append(self._head_cast_annotation)
+        if include_stiumulus:
+            beh_funcs_to_add.append(self._stimulus)
+        num_warnings = 0
+        for beh_func in beh_funcs_to_add:
+            try:
+                if beh_func() is None:
+                    continue
+                beh = beh + beh_func(fluorescence_fps=False, reset_index=False)
+            except MissingAnalysisError:
+                if num_warnings < 1:
+                    num_warnings += 1
+                    logging.warning(f"Warning: could not find or calculate {beh_func}, "
+                                    f"skipping and suppressing further warnings")
 
         # Optional: filter based on common problems with the pipeline
         # Note that this will not work for immobilized worms
