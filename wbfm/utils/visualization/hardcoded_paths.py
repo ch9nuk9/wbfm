@@ -201,3 +201,17 @@ def list_of_neurons_to_id() -> pd.Series:
         "VB03"
     ]
     return pd.Series(items)
+
+
+def list_of_gas_sensing_neurons():
+    neuron_list = []
+    for raw_neuron in ['AQR', 'IL1L', 'IL2L', 'BAG', 'RMDV', 'AUA', 'URX']:
+        for suffix in ['L', 'R']:
+            if raw_neuron != 'AQR':
+                neuron = f"{raw_neuron}{suffix}"
+            elif raw_neuron == 'AQR' and suffix == 'L':
+                neuron = raw_neuron
+            else:
+                continue
+            neuron_list.append(neuron)
+    return neuron_list
