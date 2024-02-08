@@ -13,6 +13,7 @@ from matplotlib import pyplot as plt
 from numpy.linalg import LinAlgError
 from scipy.signal import detrend
 from sklearn.decomposition import PCA
+from sklearn.metrics import explained_variance_score
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import split_flattened_index, flatten_multiindex_columns
@@ -306,6 +307,43 @@ def build_manifold_time_series_from_multiple_projects(all_projects: Dict[str, Pr
     return df_traces
 
 
+def build_dataframe_of_variance_explained(all_projects: Dict[str, ProjectData], n_components=2,
+                                          **kwargs) -> pd.DataFrame:
+    """
+    Builds a dataframe of the variance explained by the number of PCA components given per neuron per dataset
+
+    Parameters
+    ----------
+    all_projects
+    n_components
+    kwargs
+
+    Returns
+    -------
+
+    """
+    kwargs['rename_neurons_using_manual_ids'] = kwargs.get('rename_neurons_using_manual_ids', True)
+
+    df_traces_global = build_manifold_time_series_from_multiple_projects(all_projects, n_components, **kwargs)
+    df_traces = build_trace_time_series_from_multiple_projects(all_projects, **kwargs)
+
+    # Group by dataset in each of the dataframes, and calculate the variance explained per neuron
+    all_variances = {}
+    for dataset_name, df_traces_single in df_traces.groupby('dataset_name'):
+        df_global_single = df_traces_global.groupby('dataset_name').get_group(dataset_name)
+        # Calculate the variance explained for each neuron
+        these_variances = {}
+        for neuron_name, neuron_trace in df_traces_single.items():
+            if neuron_name in ['dataset_name', 'local_time']:
+                continue
+            global_trace = df_global_single[neuron_name]
+            these_variances[neuron_name] = explained_variance_score(global_trace, neuron_trace)
+        all_variances[dataset_name] = these_variances
+    # Make a dataframe from the dictionary
+    df_variances = pd.DataFrame(all_variances)
+    return df_variances
+
+
 def build_time_series_from_multiple_project_clusters(all_projects: Dict[str, ProjectData],
                                                      cluster_opt: dict = None,
                                                      z_score=False, trigger_opt: dict = None,
@@ -414,7 +452,19 @@ def get_variance_explained(project_data, trace_kwargs=None):
 
 
 def get_all_variance_explained(all_projects_gcamp, all_projects_gfp, all_projects_immob):
-    # PERCENT VARIANCE EXPLAINED
+    """
+    Gets the variance explained by PCA for all projects up to 20 components
+
+    Parameters
+    ----------
+    all_projects_gcamp
+    all_projects_gfp
+    all_projects_immob
+
+    Returns
+    -------
+
+    """
     gcamp_var = {name: get_variance_explained(p) for name, p in tqdm(all_projects_gcamp.items())}
     gfp_var = {name: get_variance_explained(p) for name, p in tqdm(all_projects_gfp.items())}
     immob_var = {name: get_variance_explained(p) for name, p in tqdm(all_projects_immob.items())}
