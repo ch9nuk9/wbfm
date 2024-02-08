@@ -1,8 +1,10 @@
 import logging
 import os
 import threading
+from typing import Union
 
 import cv2
+import dask.array as da
 from skimage.measure import regionprops
 from wbfm.utils.general.custom_errors import NoMatchesError
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -44,12 +46,20 @@ def segment_video_using_config_3d(preprocessing_cfg: ConfigFileWithProjectContex
 
     """
 
-    frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, _, all_bounding_boxes = _unpack_config_file(
+    (frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, _,
+     all_bounding_boxes, sum_red_and_green_channels) = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Open the file
     project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
-    video_dat = project_dat.red_data
+    red_dat = project_dat.red_data
+    video_dat = red_dat
+
+    if sum_red_and_green_channels:
+        import dask.array as da
+        green_dat = project_dat.green_data
+        # Cannot directly sum zarr Arrays, so need to convert to dask and lazy sum
+        video_dat = da.from_zarr(video_dat) + da.from_zarr(green_dat)
 
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # For now don't worry about postprocessing the first volume
@@ -72,7 +82,8 @@ def segment_video_using_config_3d(preprocessing_cfg: ConfigFileWithProjectContex
     _segment_full_video_3d(segment_cfg, frame_list, mask_fname, num_frames, verbose, video_dat,
                            segmentation_options, continue_from_frame)
 
-    calc_metadata_full_video(frame_list, masks_zarr, video_dat, metadata_fname)
+    # Note that metadata is calculated on the red channel only
+    calc_metadata_full_video(frame_list, masks_zarr, red_dat, metadata_fname)
 
 
 def _segment_full_video_3d(segment_cfg: ConfigFileWithProjectContext,
@@ -129,7 +140,8 @@ def segment_video_using_config_2d(preprocessing_cfg: ConfigFileWithProjectContex
     See segment2d.py for parameter documentation
     """
 
-    frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, zero_out_borders, all_bounding_boxes = _unpack_config_file(
+    (frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, zero_out_borders,
+     all_bounding_boxes, sum_red_and_green_channels) = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Open the file
@@ -236,7 +248,8 @@ def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int,
     return masks_zarr
 
 
-def get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat):
+def get_volume_using_bbox(all_bounding_boxes: dict, i_volume: int, video_dat: Union[zarr.Array, da.Array]) \
+        -> np.ndarray:
     if all_bounding_boxes is None:
         raise NotImplementedError("Bounding box not found, but will cause significant artifacts")
         # volume = video_dat[i_volume, ...]
@@ -246,11 +259,14 @@ def get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat):
             volume = video_dat[i_volume, ...]
         else:
             volume = video_dat[i_volume, :, bbox[0]:bbox[2], bbox[1]:bbox[3]]
+    # Check if the volume is a dask object; if so, actually load it
+    if isinstance(volume, da.Array):
+        volume = volume.compute()
     return volume
 
 
 def _do_first_volume3d(frame_list: list, mask_fname: str, num_frames: int,
-                       sd_model, verbose: int, video_dat: zarr.Array,
+                       sd_model, verbose: int, video_dat: Union[zarr.Array, da.Array],
                        all_bounding_boxes: list = None,
                        continue_from_frame: int = None) -> zarr.Array:
     # Do first loop to initialize the zarr data
@@ -556,7 +572,8 @@ def resplit_masks_in_z_from_config(preprocessing_cfg: ConfigFileWithProjectConte
 
     """
 
-    frame_list, mask_fname, metadata_fname, num_frames, _, verbose, video_path, zero_out_borders, all_bounding_boxes = _unpack_config_file(
+    (frame_list, mask_fname, metadata_fname, num_frames, _, verbose, video_path, zero_out_borders,
+     all_bounding_boxes, sum_red_and_green_channels) = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Get data: needs both segmentation and raw video
