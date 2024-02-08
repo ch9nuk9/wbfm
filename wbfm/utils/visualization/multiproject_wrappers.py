@@ -23,6 +23,7 @@ from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, ProjectData
 from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages, \
     clustered_triggered_averages_from_list_of_projects
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivariateEncoding
 from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std
 
@@ -333,9 +334,10 @@ def build_dataframe_of_variance_explained(all_projects: Dict[str, ProjectData], 
         df_global_single = df_traces_global.groupby('dataset_name').get_group(dataset_name)
         # Calculate the variance explained for each neuron
         these_variances = {}
-        for neuron_name, neuron_trace in df_traces_single.items():
+        for neuron_name in get_names_from_df(df_traces_single):
             if neuron_name in ['dataset_name', 'local_time']:
                 continue
+            neuron_trace = df_traces_single[neuron_name]
             global_trace = df_global_single[neuron_name]
             these_variances[neuron_name] = explained_variance_score(global_trace, neuron_trace)
         all_variances[dataset_name] = these_variances
