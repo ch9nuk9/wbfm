@@ -325,28 +325,32 @@ def build_dataframe_of_variance_explained(all_projects: Dict[str, ProjectData], 
     """
     kwargs['rename_neurons_using_manual_ids'] = kwargs.get('rename_neurons_using_manual_ids', True)
 
-    df_traces_global = build_manifold_time_series_from_multiple_projects(all_projects, n_components, **kwargs)
+    df_traces_global = build_trace_time_series_from_multiple_projects(all_projects, residual_mode='pca_global', **kwargs)
     df_traces = build_trace_time_series_from_multiple_projects(all_projects, **kwargs)
 
     # Group by dataset in each of the dataframes, and calculate the variance explained per neuron
     all_variances = {}
-    for dataset_name, df_traces_single in df_traces.groupby('dataset_name'):
+    for dataset_name, df_traces_single in tqdm(df_traces.groupby('dataset_name')):
         df_global_single = df_traces_global.groupby('dataset_name').get_group(dataset_name)
         # Calculate the variance explained for each neuron
         these_variances = {}
+        # Drop the columns that have no values
+        df_traces_single = df_traces_single.dropna(axis=1, how='all')
         for neuron_name in get_names_from_df(df_traces_single):
             if neuron_name in ['dataset_name', 'local_time']:
                 continue
             try:
                 neuron_trace = df_traces_single[neuron_name]
                 global_trace = df_global_single[neuron_name]
+                # These time series should have no nan values
                 these_variances[neuron_name] = explained_variance_score(global_trace, neuron_trace)
-            except KeyError:
-                # Why does this happen?
+            except KeyError as e:
+                # This shouldn't happen
                 these_variances[neuron_name] = np.nan
+                print(e)
         all_variances[dataset_name] = these_variances
     # Make a dataframe from the dictionary
-    df_variances = pd.DataFrame(all_variances)
+    df_variances = pd.DataFrame(all_variances).T
     return df_variances
 
 
