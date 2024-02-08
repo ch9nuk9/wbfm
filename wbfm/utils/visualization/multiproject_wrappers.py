@@ -337,9 +337,13 @@ def build_dataframe_of_variance_explained(all_projects: Dict[str, ProjectData], 
         for neuron_name in get_names_from_df(df_traces_single):
             if neuron_name in ['dataset_name', 'local_time']:
                 continue
-            neuron_trace = df_traces_single[neuron_name]
-            global_trace = df_global_single[neuron_name]
-            these_variances[neuron_name] = explained_variance_score(global_trace, neuron_trace)
+            try:
+                neuron_trace = df_traces_single[neuron_name]
+                global_trace = df_global_single[neuron_name]
+                these_variances[neuron_name] = explained_variance_score(global_trace, neuron_trace)
+            except KeyError:
+                # Why does this happen?
+                these_variances[neuron_name] = np.nan
         all_variances[dataset_name] = these_variances
     # Make a dataframe from the dictionary
     df_variances = pd.DataFrame(all_variances)
