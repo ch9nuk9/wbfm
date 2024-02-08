@@ -343,7 +343,7 @@ def build_dataframe_of_variance_explained(all_projects: Dict[str, ProjectData], 
                 neuron_trace = df_traces_single[neuron_name]
                 global_trace = df_global_single[neuron_name]
                 # These time series should have no nan values
-                these_variances[neuron_name] = explained_variance_score(global_trace, neuron_trace)
+                these_variances[neuron_name] = explained_variance_score(neuron_trace, global_trace)
             except KeyError as e:
                 # This shouldn't happen
                 these_variances[neuron_name] = np.nan
