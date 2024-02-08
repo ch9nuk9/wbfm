@@ -11,6 +11,6 @@ python $COMMAND with project_path=$PROJECT_PATH dryrun=False
 
 # Run using the snakemake pipeline from a bash (would be sbatch on the cluster) controller job
 cd $PROJECT_DIR/snakemake || exit
-COMMAND="RUNME_non_cluster.sh"
+COMMAND="RUNME.sh -c"
 
 bash $COMMAND

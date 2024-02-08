@@ -1876,7 +1876,7 @@ class WormFullVideoPosture:
             else:
                 bh = self.beh_annotation(fluorescence_fps=True)
                 shade_using_behavior(bh, **kwargs)
-        except NoBehaviorAnnotationsError:
+        except (NoBehaviorAnnotationsError, AttributeError):
             pass
 
     @property
