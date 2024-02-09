@@ -117,14 +117,17 @@ class WormFullVideoPosture:
 
         return pca_proj
 
+    def check_requested_frame_rate(self, fluorescence_fps: bool):
+        if not fluorescence_fps and self.beh_annotation_already_converted_to_fluorescence_fps:
+            raise MissingAnalysisError("Full fps annotation requested, but only low resolution exists")
+
     def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool,
                                  reset_index=False, use_physical_time=False) -> Optional[
         Union[pd.DataFrame, pd.Series]]:
         if df is None:
             return df
-        elif self.beh_annotation_already_converted_to_fluorescence_fps and not fluorescence_fps:
-            raise MissingAnalysisError("Full fps annotation requested, but only low resolution exists")
         else:
+            self.check_requested_frame_rate(fluorescence_fps)
             # Get cleaned and downsampled dataframe
             needs_subsampling = fluorescence_fps and not self.beh_annotation_already_converted_to_fluorescence_fps
             try:
@@ -825,7 +828,7 @@ class WormFullVideoPosture:
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
                        include_collision=True, include_turns=True, include_head_cast=True, include_pause=True,
                        include_slowing=True, include_stiumulus=True,
-                       use_pause_to_exclude_other_states=True) -> \
+                       use_pause_to_exclude_other_states=True, DEBUG=False) -> \
             Optional[pd.Series]:
         """
         Name is shortened to avoid US-UK spelling confusion
@@ -842,34 +845,43 @@ class WormFullVideoPosture:
                 logging.warning("Using automatic annotation instead")
                 beh = self._raw_beh_annotation
 
+        self.check_requested_frame_rate(fluorescence_fps)
+
         # Add additional annotations from other files
         # Note that these other annotations are one frame shorter than the behavior annotation
         beh = beh.iloc[:-1]
         # These functions might give an error when called, so loop as a list of functions first
         beh_funcs_to_add = []
         if include_collision:
-            beh_funcs_to_add.append('_raw_self_collision')
+            beh_funcs_to_add.append(self._self_collision)
         if include_pause:
-            beh_funcs_to_add.append('_raw_pause')
+            beh_funcs_to_add.append(self._pause)
         if include_slowing:
-            beh_funcs_to_add.append('_raw_slowing')
+            beh_funcs_to_add.append(self._slowing)
         if include_turns:
-            beh_funcs_to_add.append('_raw_turn_annotation')
+            beh_funcs_to_add.append(self._turn_annotation)
         if include_head_cast:
-            beh_funcs_to_add.append('_raw_head_cast_annotation')
+            beh_funcs_to_add.append(self._head_cast_annotation)
         if include_stiumulus:
-            beh_funcs_to_add.append('_raw_stimulus')
+            beh_funcs_to_add.append(self._stimulus)
         num_warnings = 0
-        for beh_str in beh_funcs_to_add:
+        if DEBUG:
+            print("Behavior before any additional annotations")
+            print(beh)
+        for beh_func in beh_funcs_to_add:
             try:
-                this_beh = getattr(self, beh_str)
+                # this_beh = getattr(self, beh_func)
+                this_beh = beh_func(fluorescence_fps=fluorescence_fps, reset_index=reset_index)
                 if this_beh is None:
                     continue
                 beh = beh + this_beh
+                if DEBUG:
+                    print("Added behavior: ", beh_func.__name__)
+                    print(beh)
             except (MissingAnalysisError, NoBehaviorAnnotationsError) as e:
                 if num_warnings < 1:
                     num_warnings += 1
-                    logging.warning(f"Warning: could not find or calculate {beh_str}, "
+                    logging.warning(f"Warning: could not find or calculate {beh_func.__name__}, "
                                     f"skipping and suppressing further warnings")
 
         # Optional: filter based on common problems with the pipeline
