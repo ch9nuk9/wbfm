@@ -174,9 +174,9 @@ class WormFullVideoPosture:
             raise ValueError("Requested padding, but index is not numeric or datetime64")
 
         if len(df.shape) == 2:
-            n = len(self._raw_stage_position) - df.shape[0]
+            n = self.num_high_res_frames - df.shape[0]
         else:
-            n = len(self._raw_stage_position) - len(df)
+            n = self.num_high_res_frames - len(df)
 
         # Pad the dataframe with nan if it isn't long enough
         if n > 0:
