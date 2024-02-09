@@ -79,7 +79,7 @@ class WormFullVideoPosture:
     bigtiff_start_volume: int = 0
 
     project_config: ModularProjectConfig = None
-    num_trace_frames: int = None
+    num_volumes: int = None
 
     # Postprocessing the time series
     tracking_failure_idx: np.ndarray = None  # See estimate_tracking_failures_from_project
@@ -160,9 +160,9 @@ class WormFullVideoPosture:
 
         return df
 
-    # @property
-    # def num_high_res_frames(self):
-    #     return int(self.num_trace_frames * )
+    @property
+    def num_high_res_frames(self):
+        return int(self.num_volumes * self.physical_unit_conversion.frames_per_volume)
 
     def _pad_if_not_long_enough(self, df):
         # Need to properly continue the index
@@ -189,22 +189,22 @@ class WormFullVideoPosture:
     @property
     def _x_physical_time_frames(self):
         """Helper for reindexing plots from frames to seconds"""
-        x = np.arange(self.num_trace_frames)
+        x = np.arange(self.num_volumes)
         x = x / self.physical_unit_conversion.frames_per_second
         return x
 
     @property
     def _x_physical_time_volumes(self):
         """Helper for reindexing plots from frames to seconds"""
-        x = np.arange(self.num_trace_frames)
+        x = np.arange(self.num_volumes)
         x = x / self.physical_unit_conversion.volumes_per_second
         return x
 
     def _shorten_to_trace_length(self, df: Union[pd.DataFrame, pd.Series]):
         if len(df.shape) == 2:
-            df = df.iloc[:self.num_trace_frames, :]
+            df = df.iloc[:self.num_volumes, :]
         elif len(df.shape) == 1:
-            df = df.iloc[:self.num_trace_frames]
+            df = df.iloc[:self.num_volumes]
         return df
 
     ##
@@ -355,9 +355,7 @@ class WormFullVideoPosture:
         all_starts_seconds, all_ends_seconds = df_stim['start'], df_stim['end']
         all_starts_frames = (all_starts_seconds * self.physical_unit_conversion.frames_per_second).astype(int)
         all_ends_frames = (all_ends_seconds * self.physical_unit_conversion.frames_per_second).astype(int)
-        # TODO: make it the full number of frames, not volumes
-        num_pts = self.num_trace_frames
-        vec_stim = calc_time_series_from_starts_and_ends(all_starts_frames, all_ends_frames, num_pts)
+        vec_stim = calc_time_series_from_starts_and_ends(all_starts_frames, all_ends_frames, self.num_high_res_frames)
         vec_stim = pd.Series(vec_stim)
         # Convert 1's to BehaviorCodes.STIMULUS and 0's to BehaviorCodes.NOT_ANNOTATED
         vec_stim = vec_stim.replace(1.0, BehaviorCodes.STIMULUS)
@@ -1287,7 +1285,7 @@ class WormFullVideoPosture:
     def plot_pca_eigenworms(self):
         fig = plt.figure(figsize=(15, 15))
         ax = fig.add_subplot(111, projection='3d')
-        c = np.arange(self.num_trace_frames) / 1e6
+        c = np.arange(self.num_volumes) / 1e6
         ax.scatter(self.pca_projections[:, 0], self.pca_projections[:, 1], self.pca_projections[:, 2], c=c)
         plt.colorbar()
 
@@ -1366,7 +1364,7 @@ class WormFullVideoPosture:
                    behavioral_annotation_for_rectification=behavioral_annotation_for_rectification,
                    min_duration=min_duration,
                    ind_preceding=ind_preceding,
-                   trace_len=self.num_trace_frames,
+                   trace_len=self.num_volumes,
                    behavioral_state=state)
         opt.update(kwargs)
         ind_class = TriggeredAverageIndices(**opt)
@@ -1741,7 +1739,7 @@ class WormFullVideoPosture:
         bigtiff_start_volume = project_config.config['dataset_params'].get('bigtiff_start_volume', 0)
         opt = dict(frames_per_volume=frames_per_volume,
                    bigtiff_start_volume=bigtiff_start_volume,
-                   num_trace_frames=project_data.num_frames,
+                   num_volumes=project_data.num_frames,
                    project_config=project_config,
                    tracking_failure_idx=invalid_idx)
 
