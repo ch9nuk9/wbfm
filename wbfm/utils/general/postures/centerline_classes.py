@@ -104,11 +104,10 @@ class WormFullVideoPosture:
             else:
                 self.filename_table_position = fnames[0]
 
-        if self.filename_table_position is None:
-            # Then subsampling won't work
-            # TODO: subsampling shouldn't be dependent on this file
-            logging.warning("No stage position file found; disallowing subsampling")
-            self.beh_annotation_already_converted_to_fluorescence_fps = True
+        # if self.filename_table_position is None:
+        #     # Then subsampling won't work
+        #     logging.warning("No stage position file found; disallowing subsampling")
+        #     self.beh_annotation_already_converted_to_fluorescence_fps = True
 
     @cached_property
     def pca_projections(self):
@@ -1887,7 +1886,7 @@ class WormFullVideoPosture:
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
         fpv = self.physical_unit_conversion.frames_per_volume
         offset = fpv // 2  # Take the middle frame
-        return range(self.bigtiff_start_volume * fpv + offset, len(self._raw_stage_position), fpv)
+        return range(self.bigtiff_start_volume * fpv + offset, self.num_high_res_frames, fpv)
 
     def remove_idx_of_tracking_failures(self, vec: Union[pd.Series, pd.DataFrame],
                                         estimate_failures_from_kymograph=True,
