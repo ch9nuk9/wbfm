@@ -44,7 +44,8 @@ class PaperColoredTracePlotter:
                          'residual_collision': cmap(4),
                          'residual_rectified_fwd': cmap(4),
                          'residual_rectified_rev': cmap(4),
-                         'kymo': 'black'}
+                         'kymo': 'black',
+                         'stimulus': 'black'}
         if trigger_type not in color_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(color_mapping.keys())}')
         return color_mapping[trigger_type]
@@ -202,7 +203,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                                                          trace_opt=trace_opt)
                 self.dataset_clusterer_dict[trigger_type] = out[0]
                 self.intermediates_dict[trigger_type] = out[1]
-            except IndexError:
+            except (IndexError, KeyError):
                 print(f"Trigger type {trigger_type} failed; this may be because the data is immobilized")
 
         # Optional
