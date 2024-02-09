@@ -343,14 +343,15 @@ class WormFullVideoPosture:
 
     @cached_property
     def _raw_stimulus(self) -> Optional[pd.Series]:
+        # Takes a dataframe of starts and ends, and converts it to a full vector (high frame rate)
         df_stim = read_if_exists(self.filename_stimulus, reader=pd.read_csv)
         if df_stim is None:
             return None
         # This is a dataframe of starts and ends, and should be converted to a full vector
         # Note: the units are SECONDS, not frames
         all_starts_seconds, all_ends_seconds = df_stim['start'], df_stim['end']
-        all_starts_frames = (all_starts_seconds * self.physical_unit_conversion.volumes_per_second).astype(int)
-        all_ends_frames = (all_ends_seconds * self.physical_unit_conversion.volumes_per_second).astype(int)
+        all_starts_frames = (all_starts_seconds * self.physical_unit_conversion.frames_per_second).astype(int)
+        all_ends_frames = (all_ends_seconds * self.physical_unit_conversion.frames_per_second).astype(int)
         # TODO: make it the full number of frames, not volumes
         num_pts = self.num_trace_frames
         vec_stim = calc_time_series_from_starts_and_ends(all_starts_frames, all_ends_frames, num_pts)
@@ -846,23 +847,23 @@ class WormFullVideoPosture:
         # These functions might give an error when called, so loop as a list of functions first
         beh_funcs_to_add = []
         if include_collision:
-            beh_funcs_to_add.append(self._self_collision)
+            beh_funcs_to_add.append(self._raw_self_collision)
         if include_pause:
-            beh_funcs_to_add.append(self._pause)
+            beh_funcs_to_add.append(self._raw_pause)
         if include_slowing:
-            beh_funcs_to_add.append(self._slowing)
+            beh_funcs_to_add.append(self._raw_slowing)
         if include_turns:
-            beh_funcs_to_add.append(self._turn_annotation)
+            beh_funcs_to_add.append(self._raw_turn_annotation)
         if include_head_cast:
-            beh_funcs_to_add.append(self._head_cast_annotation)
+            beh_funcs_to_add.append(self._raw_head_cast_annotation)
         if include_stiumulus:
-            beh_funcs_to_add.append(self._stimulus)
+            beh_funcs_to_add.append(self._raw_stimulus)
         num_warnings = 0
         for beh_func in beh_funcs_to_add:
             try:
-                if beh_func() is None:
+                if beh_func is None:
                     continue
-                beh = beh + beh_func(fluorescence_fps=False, reset_index=False)
+                beh = beh + beh_func
             except MissingAnalysisError:
                 if num_warnings < 1:
                     num_warnings += 1
