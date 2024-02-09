@@ -23,6 +23,10 @@ class PhysicalUnitConversion:
         return self.volumes_per_second * self.num_z_slices
 
     @property
+    def frames_per_volume(self):
+        return self.num_z_slices
+
+    @property
     def z_to_xy_ratio(self):
         return self.zimmer_um_per_pixel_z / self.zimmer_fluroscence_um_per_pixel_xy
 

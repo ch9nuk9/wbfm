@@ -111,7 +111,7 @@ def save_video_of_behavior(project_data: ProjectData, t0=0, t1=None, fps=7,
     store = tifffile.imread(video_fname, aszarr=True)
     video_zarr = zarr.open(store, mode='r')
     # Subset video to be the same fps as the fluorescence
-    video_zarr = video_zarr[::project_data.worm_posture_class.frames_per_volume, :, :]
+    video_zarr = video_zarr[::project_data.physical_unit_conversion.frames_per_volume, :, :]
 
     if to_save:
         vis_cfg = project_data.project_config.get_visualization_config()

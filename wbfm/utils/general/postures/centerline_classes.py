@@ -77,7 +77,6 @@ class WormFullVideoPosture:
     pca_i_end: int = -10
 
     bigtiff_start_volume: int = 0
-    frames_per_volume: int = 32  # Enhancement: make sure this is synchronized with z_slices
 
     project_config: ModularProjectConfig = None
     num_trace_frames: int = None
@@ -160,6 +159,10 @@ class WormFullVideoPosture:
                 df.index = self._x_physical_time_frames
 
         return df
+
+    # @property
+    # def num_high_res_frames(self):
+    #     return int(self.num_trace_frames * )
 
     def _pad_if_not_long_enough(self, df):
         # Need to properly continue the index
@@ -341,7 +344,7 @@ class WormFullVideoPosture:
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
-    @cached_property
+    # @cached_property
     def _raw_stimulus(self) -> Optional[pd.Series]:
         # Takes a dataframe of starts and ends, and converts it to a full vector (high frame rate)
         df_stim = read_if_exists(self.filename_stimulus, reader=pd.read_csv)
@@ -1289,8 +1292,8 @@ class WormFullVideoPosture:
         plt.colorbar()
 
     def get_centerline_for_time(self, t):
-        c_x = self.centerlineX().iloc[t * self.frames_per_volume]
-        c_y = self.centerlineY().iloc[t * self.frames_per_volume]
+        c_x = self.centerlineX().iloc[t * self.physical_unit_conversion.frames_per_volume]
+        c_y = self.centerlineY().iloc[t * self.physical_unit_conversion.frames_per_volume]
         return np.vstack([c_x, c_y]).T
 
     def calc_triggered_average_indices(self, state=BehaviorCodes.FWD, min_duration=5, ind_preceding=20,
@@ -1883,10 +1886,9 @@ class WormFullVideoPosture:
     @property
     def subsample_indices(self):
         # Note: sometimes the curvature and beh_annotations are different length, if one is manually created
-        offset = self.frames_per_volume // 2  # Take the middle frame
-        return range(self.bigtiff_start_volume * self.frames_per_volume + offset,
-                     len(self._raw_stage_position),
-                     self.frames_per_volume)
+        fpv = self.physical_unit_conversion.frames_per_volume
+        offset = fpv // 2  # Take the middle frame
+        return range(self.bigtiff_start_volume * fpv + offset, len(self._raw_stage_position), fpv)
 
     def remove_idx_of_tracking_failures(self, vec: Union[pd.Series, pd.DataFrame],
                                         estimate_failures_from_kymograph=True,
