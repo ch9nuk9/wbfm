@@ -106,6 +106,7 @@ class WormFullVideoPosture:
 
         if self.filename_table_position is None:
             # Then subsampling won't work
+            # TODO: subsampling shouldn't be dependent on this file
             logging.warning("No stage position file found; disallowing subsampling")
             self.beh_annotation_already_converted_to_fluorescence_fps = True
 
@@ -344,7 +345,7 @@ class WormFullVideoPosture:
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
-    # @cached_property
+    @cached_property
     def _raw_stimulus(self) -> Optional[pd.Series]:
         # Takes a dataframe of starts and ends, and converts it to a full vector (high frame rate)
         df_stim = read_if_exists(self.filename_stimulus, reader=pd.read_csv)
@@ -848,27 +849,28 @@ class WormFullVideoPosture:
         # These functions might give an error when called, so loop as a list of functions first
         beh_funcs_to_add = []
         if include_collision:
-            beh_funcs_to_add.append(self._raw_self_collision)
+            beh_funcs_to_add.append('_raw_self_collision')
         if include_pause:
-            beh_funcs_to_add.append(self._raw_pause)
+            beh_funcs_to_add.append('_raw_pause')
         if include_slowing:
-            beh_funcs_to_add.append(self._raw_slowing)
+            beh_funcs_to_add.append('_raw_slowing')
         if include_turns:
-            beh_funcs_to_add.append(self._raw_turn_annotation)
+            beh_funcs_to_add.append('_raw_turn_annotation')
         if include_head_cast:
-            beh_funcs_to_add.append(self._raw_head_cast_annotation)
+            beh_funcs_to_add.append('_raw_head_cast_annotation')
         if include_stiumulus:
-            beh_funcs_to_add.append(self._raw_stimulus)
+            beh_funcs_to_add.append('_raw_stimulus')
         num_warnings = 0
-        for beh_func in beh_funcs_to_add:
+        for beh_str in beh_funcs_to_add:
             try:
-                if beh_func is None:
+                this_beh = getattr(self, beh_str)
+                if this_beh is None:
                     continue
-                beh = beh + beh_func
-            except MissingAnalysisError:
+                beh = beh + this_beh
+            except (MissingAnalysisError, NoBehaviorAnnotationsError) as e:
                 if num_warnings < 1:
                     num_warnings += 1
-                    logging.warning(f"Warning: could not find or calculate {beh_func.__name__}, "
+                    logging.warning(f"Warning: could not find or calculate {beh_str}, "
                                     f"skipping and suppressing further warnings")
 
         # Optional: filter based on common problems with the pipeline
@@ -1737,8 +1739,7 @@ class WormFullVideoPosture:
         invalid_idx = project_data.estimate_tracking_failures_from_project()
 
         bigtiff_start_volume = project_config.config['dataset_params'].get('bigtiff_start_volume', 0)
-        opt = dict(frames_per_volume=frames_per_volume,
-                   bigtiff_start_volume=bigtiff_start_volume,
+        opt = dict(bigtiff_start_volume=bigtiff_start_volume,
                    num_volumes=project_data.num_frames,
                    project_config=project_config,
                    tracking_failure_idx=invalid_idx)
