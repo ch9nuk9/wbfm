@@ -196,11 +196,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         trace_opt.update(trace_base_opt)
         # Raw reversal triggered and forward triggered
         for trigger_type, state in trigger_dict.items():
-            trigger_opt = dict(use_hilbert_phase=False, state=state)
-            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
-                                                                     trace_opt=trace_opt)
-            self.dataset_clusterer_dict[trigger_type] = out[0]
-            self.intermediates_dict[trigger_type] = out[1]
+            try:
+                trigger_opt = dict(use_hilbert_phase=False, state=state)
+                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                         trace_opt=trace_opt)
+                self.dataset_clusterer_dict[trigger_type] = out[0]
+                self.intermediates_dict[trigger_type] = out[1]
+            except IndexError:
+                print(f"Trigger type {trigger_type} failed; this may be because the data is immobilized")
 
         # Optional
         if self.calc_stimulus:
