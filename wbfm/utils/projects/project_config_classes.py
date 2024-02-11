@@ -1,3 +1,4 @@
+import glob
 import json
 import logging
 import os
@@ -489,6 +490,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         -------
 
         """
+        # General folders
         behavior_raw_folder, flag = self.get_behavior_raw_parent_folder_from_red_fname()
         if not flag:
             raise NoBehaviorDataError()
@@ -501,7 +503,50 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         if not Path(behavior_output_folder).exists():
             update_path_to_behavior_in_config(self)
 
-        return behavior_raw_folder, behavior_output_folder
+        # Find the specific folders to use
+        raw_data_subfolder = glob.glob(f"{behavior_raw_folder}/*Ch0-BH/")
+        print("Found raw data subfolder(s): ", raw_data_subfolder)
+        if len(raw_data_subfolder) == 1:
+            raw_data_subfolder = raw_data_subfolder[0]
+        elif len(raw_data_subfolder) > 1:
+            raise ValueError("There is more than one raw dataset")
+        else:
+            raise ValueError("No raw data found")
+
+        # See if the .btf file has already been produced... unfortunately this is a modification of the raw data folder
+        # Assume that any .btf file is the correct one, IF it doesn't have 'AVG' in the name (refers to background subtraction)
+        btf_file = [f for f in os.listdir(raw_data_subfolder) if f.endswith(".btf") and 'AVG' not in f]
+        if len(btf_file) == 1:
+            btf_file = btf_file[0]
+            print(".btf file already produced: ", btf_file)
+            btf_file = os.path.join(raw_data_subfolder, btf_file)
+        elif len(btf_file) > 1:
+            raise ValueError(f"There is more than one .btf file in {raw_data_subfolder}")
+        else:
+            # Then it will need to be produced
+            btf_file = os.path.join(raw_data_subfolder, 'raw_stack.btf')
+            print("WARNING: No .btf file found, will produce it in the raw data folder ", btf_file)
+
+        # Look for background image
+        background_video = glob.glob(f"{behavior_raw_folder}/../background/*background*BH*/*background*")
+        # Remove any with AVG in the name
+        background_video = [f for f in background_video if 'AVG' not in f]
+        background_video = [f for f in background_video if 'metadata' not in f]
+        if len(background_video) == 1:
+            background_video = background_video[0]
+            background_video = str(Path(background_video).resolve())  # This is needed because the path is relative
+            print("This is the background video: ", background_video)
+
+            # Name of the background image is the same, but with 'AVG' prepended
+            background_img = os.path.join(behavior_output_folder, 'AVG' + os.path.basename(background_video))
+            background_img = str(Path(background_img).with_suffix('.tif'))
+
+        elif len(background_video) > 1:
+            raise ValueError(f"There is more than one background video: {background_video}")
+        else:
+            raise ValueError(f"No background videos found in {behavior_raw_folder}/../background/")
+
+        return behavior_raw_folder, behavior_output_folder, background_img
 
 
 def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> SubfolderConfigFile:

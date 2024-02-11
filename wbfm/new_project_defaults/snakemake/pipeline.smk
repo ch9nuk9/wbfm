@@ -1,7 +1,9 @@
 import glob
+import logging
 import os
 from pathlib import Path
 
+from wbfm.utils.general.custom_errors import NoBehaviorDataError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 
@@ -14,8 +16,14 @@ print("Detected project folder: ", project_dir)
 project_cfg = os.path.join(project_dir, "project_config.yaml")
 
 # Load the folders needed for the behavioral part of the pipeline
-cfg = ModularProjectConfig(project_dir)
-raw_data_dir, output_behavior_dir = cfg.get_folders_for_behavior_pipeline()
+try:
+    cfg = ModularProjectConfig(project_dir)
+    raw_data_dir, output_behavior_dir, background_img = cfg.get_folders_for_behavior_pipeline()
+except NoBehaviorDataError:
+    logging.warning("No behavior data found, behavior will not run. Only 'traces' can be processed.")
+    raw_data_dir = None
+    output_behavior_dir = None
+    background_img = None
 
 
 def _run_helper(script_name, project_path):
@@ -170,48 +178,6 @@ rule extract_full_traces:
 # Behavioral analysis (kymographs)
 #
 
-# Find the specific folders to use
-raw_data_subfolder = glob.glob(f"{raw_data_dir}/*Ch0-BH/")
-print("Found raw data subfolder(s): ", raw_data_subfolder)
-if len(raw_data_subfolder) == 1:
-    raw_data_subfolder = raw_data_subfolder[0]
-elif len(raw_data_subfolder) > 1:
-    raise ValueError("There is more than one raw dataset")
-else:
-    raise ValueError("No raw data found")
-
-# See if the .btf file has already been produced... unfortunately this is a modification of the raw data folder
-# Assume that any .btf file is the correct one, IF it doesn't have 'AVG' in the name (refers to background subtraction)
-btf_file = [f for f in os.listdir(raw_data_subfolder) if f.endswith(".btf") and 'AVG' not in f]
-if len(btf_file) == 1:
-    btf_file = btf_file[0]
-    print(".btf file already produced: ", btf_file)
-    btf_file = os.path.join(raw_data_subfolder, btf_file)
-elif len(btf_file) > 1:
-    raise ValueError(f"There is more than one .btf file in {raw_data_subfolder}")
-else:
-    # Then it will need to be produced
-    btf_file = os.path.join(raw_data_subfolder, 'raw_stack.btf')
-    print("WARNING: No .btf file found, will produce it in the raw data folder ", btf_file)
-
-# Look for background image
-background_video = glob.glob(f"{raw_data_dir}/../background/*background*BH*/*background*")
-# Remove any with AVG in the name
-background_video = [f for f in background_video if 'AVG' not in f]
-background_video = [f for f in background_video if 'metadata' not in f]
-if len(background_video) == 1:
-    background_video = background_video[0]
-    background_video = str(Path(background_video).resolve()) # This is needed because the path is relative
-    print("This is the background video: ", background_video)
-
-    # Name of the background image is the same, but with 'AVG' prepended
-    background_img = os.path.join(output_behavior_dir, 'AVG'+os.path.basename(background_video))
-    background_img = str(Path(background_img).with_suffix('.tif'))
-
-elif len(background_video) > 1:
-    raise ValueError(f"There is more than one background video: {background_video}")
-else:
-    raise ValueError(f"No background videos found in {raw_data_dir}/../background/")
 
 # Start snakemake
 
