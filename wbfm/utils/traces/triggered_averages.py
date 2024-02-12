@@ -276,6 +276,9 @@ class TriggeredAverageIndices:
                    fixed_num_points_after_event=self.fixed_num_points_after_event,
                    DEBUG=DEBUG)
 
+        if self.offset_trigger:
+            binary_state = ~binary_state
+
         all_ind = calculate_and_filter_triggered_average_indices(binary_state, **opt)
         return all_ind
 
