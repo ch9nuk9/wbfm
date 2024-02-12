@@ -4,7 +4,7 @@ Designed to plot the triggered average of the paper's datasets.
 import itertools
 import os
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import random
 from typing import Dict, Optional, Tuple
 
@@ -119,6 +119,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     intermediates_dict: Dict[str, tuple] = None
 
     trace_opt: Optional[dict] = None
+    trigger_opt: dict = field(default_factory=dict)
 
     # Optional: stimulus
     calc_stimulus: bool = False
@@ -139,6 +140,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
                 # Fast (residual)
                 trigger_opt = dict(use_hilbert_phase=True, state=None)
+                trigger_opt.update(self.trigger_opt)
                 trace_opt = dict(residual_mode='pca')
                 trace_opt.update(trace_base_opt)
                 out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
@@ -164,6 +166,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
                 # Only used for BAG: self-collision triggered
                 trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.SELF_COLLISION)
+                trigger_opt.update(self.trigger_opt)
                 trace_opt = dict(residual_mode='pca')
                 trace_opt.update(trace_base_opt)
                 out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
@@ -177,6 +180,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         # Slow reversal triggered (global)
         trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.REV)
+        trigger_opt.update(self.trigger_opt)
         trace_opt = dict(residual_mode='pca_global')
         trace_opt.update(trace_base_opt)
         out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
@@ -186,6 +190,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         # Slow forward triggered (global)
         trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.FWD)
+        trigger_opt.update(self.trigger_opt)
         out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                  trace_opt=trace_opt)
         self.dataset_clusterer_dict['global_fwd'] = out[0]
@@ -199,6 +204,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         for trigger_type, state in trigger_dict.items():
             try:
                 trigger_opt = dict(use_hilbert_phase=False, state=state)
+                trigger_opt.update(self.trigger_opt)
                 out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                          trace_opt=trace_opt)
                 self.dataset_clusterer_dict[trigger_type] = out[0]
@@ -209,6 +215,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         # Optional
         if self.calc_stimulus:
             trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.STIMULUS)
+            trigger_opt.update(self.trigger_opt)
             out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                      trace_opt=trace_opt)
             self.dataset_clusterer_dict['stimulus'] = out[0]

@@ -101,9 +101,21 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
 
 def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, ind_preceding=0,
                                                    dict_of_events_to_keep=None,
-                                                   min_duration=0, max_duration=None, DEBUG=False):
+                                                   min_duration=0, max_duration=None, fixed_num_points_after_event=None,
+                                                   DEBUG=False):
     all_starts, all_ends = get_contiguous_blocks_from_column(binary_state,
                                                              already_boolean=True, skip_boolean_check=True)
+    if fixed_num_points_after_event:
+        # Add this offset to the ends, but make sure they don't go past the next start
+        all_ends = []
+        for i in range(len(all_starts)):
+            i_start = all_starts[i]
+            if i == len(all_starts) - 1:
+                i_next_start = len(binary_state)
+            else:
+                i_next_start = all_starts[i + 1]
+            i_new_end = min(i_start + fixed_num_points_after_event, i_next_start - 1)
+            all_ends.append(i_new_end)
     if DEBUG:
         print("All starts: ", all_starts)
         print("All ends: ", all_ends)
@@ -142,7 +154,7 @@ class TriggeredAverageIndices:
     # Alternative: continuous behavioral annotations
     behavioral_annotation_is_continuous: bool = False
     behavioral_annotation_threshold: float = 0.0  # Not used if behavioral_annotation_is_continuous is False
-
+r
     # Alternate way to define the start point of each time series
     ind_preceding: int = 10
 
@@ -260,6 +272,7 @@ class TriggeredAverageIndices:
                    beh_vec=self.behavioral_annotation.to_numpy(),
                    dict_of_events_to_keep=dict_of_events_to_keep,
                    ind_preceding=self.ind_preceding,
+                   fixed_num_points_after_event=self.fixed_num_points_after_event,
                    DEBUG=DEBUG)
 
         all_ind = calculate_and_filter_triggered_average_indices(binary_state, **opt)
