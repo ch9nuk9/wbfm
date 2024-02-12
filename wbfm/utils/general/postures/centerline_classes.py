@@ -870,8 +870,10 @@ class WormFullVideoPosture:
             print(beh)
         for beh_func in beh_funcs_to_add:
             try:
-                # this_beh = getattr(self, beh_func)
-                this_beh = beh_func(fluorescence_fps=fluorescence_fps, reset_index=reset_index)
+                # This should not be fluorescence fps, unless the downsampling below is not used
+                # i.e. unless the entire behavior annotation is low-res, meaning there is no downsampling
+                this_beh = beh_func(fluorescence_fps=self.beh_annotation_already_converted_to_fluorescence_fps,
+                                    reset_index=reset_index)
                 if this_beh is None:
                     continue
                 beh = beh + this_beh
