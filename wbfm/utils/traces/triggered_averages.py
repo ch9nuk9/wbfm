@@ -675,8 +675,9 @@ class TriggeredAverageIndices:
         fig, ax = plt.subplots(dpi=100)
         ax.plot(trace)
         self.plot_events_over_trace(trace, ax)
+        return ax
 
-    def plot_events_over_trace(self, trace, ax, vertical_lines=True, dots=True, DEBUG=False):
+    def plot_events_over_trace(self, trace, ax=None, vertical_lines=True, dots=True, DEBUG=False):
         """
         Plots dots where the preceding indices start, and vertical lines where the event onsets are
 
@@ -691,6 +692,8 @@ class TriggeredAverageIndices:
         -------
 
         """
+        if ax is None:
+            fig, ax = plt.subplots(dpi=100)
         for i_start in self.idx_onsets:
             if isinstance(trace, pd.Series):
                 trace = trace.values
@@ -864,7 +867,12 @@ class FullDatasetTriggeredAverages:
         y = self.df_traces[neuron]
         ax = self.ax_plot_func_for_grid_plot(None, y, ax, neuron, **kwargs)
         plt.title(f"Triggered average for {neuron}")
+        return ax
 
+    def plot_events_over_trace(self, neuron):
+        trace = self.df_traces[neuron]
+        ax = self.ind_class.plot_ind_over_trace(trace)
+        plt.title(f"Trace with events for {neuron}")
         return ax
 
     def ax_plot_func_for_grid_plot(self, t, y, ax, name, **kwargs):
