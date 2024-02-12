@@ -134,19 +134,26 @@ class TriggeredAverageIndices:
 
     Does not work well with multiple datasets
     """
-    # Initial calculation of indices
+    # Initial calculation of binarized indices
     behavioral_annotation: pd.Series
+
     behavioral_state: BehaviorCodes = BehaviorCodes.REV  # Note: not used if behavioral_annotation_is_continuous is True
-    min_duration: int = 0
-    ind_preceding: int = 10
-    allowed_succeeding_state: BehaviorCodes = None  # Also include time points where the state is followed this state
 
-    max_duration: int = None
-    gap_size_to_remove: int = None
-
+    # Alternative: continuous behavioral annotations
     behavioral_annotation_is_continuous: bool = False
     behavioral_annotation_threshold: float = 0.0  # Not used if behavioral_annotation_is_continuous is False
 
+    # Alternate way to define the start point of each time series
+    ind_preceding: int = 10
+
+    # Alternate ways to define the end point of each time series
+    allowed_succeeding_state: BehaviorCodes = None  # Also include time points where the state is followed this state
+    fixed_num_points_after_event: int = None  # If not None, then use this number of points after the event
+
+    # Options for filtering the events
+    min_duration: int = 0
+    max_duration: int = None
+    gap_size_to_remove: int = None
     behavioral_annotation_for_rectification: pd.Series = None
     only_allow_events_during_state: int = None  # If not None, only allow events that start during this state
 
