@@ -154,7 +154,7 @@ class TriggeredAverageIndices:
     # Alternative: continuous behavioral annotations
     behavioral_annotation_is_continuous: bool = False
     behavioral_annotation_threshold: float = 0.0  # Not used if behavioral_annotation_is_continuous is False
-r
+
     # Alternate way to define the start point of each time series
     ind_preceding: int = 10
 
