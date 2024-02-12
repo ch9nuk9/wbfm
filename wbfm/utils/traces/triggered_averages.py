@@ -157,6 +157,7 @@ class TriggeredAverageIndices:
 
     # Alternate way to define the start point of each time series
     ind_preceding: int = 10
+    offset_trigger: bool = False  # Trigger to the offset instead of the onset
 
     # Alternate ways to define the end point of each time series
     allowed_succeeding_state: BehaviorCodes = None  # Also include time points where the state is followed this state
@@ -694,16 +695,19 @@ class TriggeredAverageIndices:
         """
         if ax is None:
             fig, ax = plt.subplots(dpi=100)
-        for i_start in self.idx_onsets:
+        for idx_list in self.triggered_average_indices():
             if isinstance(trace, pd.Series):
                 trace = trace.values
+            i_start = idx_list[self.ind_preceding]
+            i_end = idx_list[-1]
             if dots:
-                i_start_clipped = np.clip(i_start - self.ind_preceding, 0, len(trace) - 1)
-                ax.plot(i_start_clipped, trace[i_start_clipped], '.', color='tab:orange')
+                i_start_with_previous = idx_list[0]
+                ax.plot(i_start_with_previous, trace[i_start_with_previous], '.', color='tab:orange')
                 if DEBUG:
-                    print(f"i_start: {i_start}, i_start_clipped: {i_start_clipped}")
+                    print(f"i_start: {i_start}, i_start_clipped: {i_start_with_previous}")
             if vertical_lines:
-                ax.axvline(i_start, trace[i_start], linestyle='--', color='tab:red')
+                ax.axvline(i_start, trace[i_start], linestyle='--', color='tab:green')
+                ax.axvline(i_end, trace[i_end], linestyle='--', color='tab:red')
 
     @property
     def idx_onsets(self):
