@@ -116,7 +116,7 @@ def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, i
                                      (dict_of_events_to_keep.get(start, 0) == 0)
     validity_checks = [is_too_short, is_too_long, is_at_edge, starts_with_misannotation, not_in_dict]
     # Build actual indices
-    all_ind = build_ind_matrix_from_starts_and_ends(all_ends, all_starts, ind_preceding, validity_checks, DEBUG)
+    all_ind = build_ind_matrix_from_starts_and_ends(all_starts, all_ends, ind_preceding, validity_checks, DEBUG)
     return all_ind
 
 
@@ -2328,7 +2328,7 @@ def assign_id_based_on_closest_onset_in_split_lists(class1_onsets, class0_onsets
     return dict_of_rev_with_id
 
 
-def build_ind_matrix_from_starts_and_ends(all_ends: List[int], all_starts: List[int], ind_preceding: int,
+def build_ind_matrix_from_starts_and_ends(all_starts: List[int], all_ends: List[int], ind_preceding: int,
                                           validity_checks=None, DEBUG=False):
     """
     Builds a matrix of indices, where each row is a block of indices corresponding to a start and end
