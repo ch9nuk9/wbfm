@@ -866,6 +866,7 @@ class ProjectData:
             invalid_names = self.finished_neuron_names(finished_not_invalid=False)
             neuron_names = tuple([n for n in neuron_names if n not in invalid_names])
 
+        # TODO: this doesn't work if the only neuron name passed is a manually id'ed name
         df = self.calc_raw_traces(neuron_names, **opt).copy()
 
         # Shorten dataframe to only use expected number of time points
@@ -1147,9 +1148,16 @@ class ProjectData:
         -------
 
         """
+        # Note: neuron_name can't be a manually ided name at first
+        name_mapping = self.neuron_name_to_manual_id_mapping(flip_names_and_ids=True,
+                                                             remove_unnamed_neurons=True,
+                                                             confidence_threshold=0)
+        original_neuron_name = name_mapping.get(neuron_name, neuron_name)
+
         df = self.calc_default_traces(channel_mode='ratio', calculation_mode='integration',
-                                      neuron_names=(neuron_name, ), **kwargs)
-        t, y = df.index, df[neuron_name]
+                                      neuron_names=(original_neuron_name, ), **kwargs)
+        # At this point, get the name of the neuron that was actually used
+        t, y = df.index, df[original_neuron_name]
         df_kymo = self.worm_posture_class.curvature(fluorescence_fps=True)
         df_kymo.index = df.index
 
