@@ -2104,6 +2104,10 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
         if behavior_fname is not None:
             if Path(abs_behavior_fname).exists():
                 # Unclear if it is manually annotated or not
+                if 'generate_reversal_annotation.xlsx' in str(abs_behavior_fname):
+                    # This is generated from the traces, and thus only has low-res
+                    is_likely_manually_annotated = True
+
                 if make_absolute:
                     return abs_behavior_fname, is_likely_manually_annotated
                 else:
