@@ -356,9 +356,17 @@ class WormFullVideoPosture:
         # This is a dataframe of starts and ends, and should be converted to a full vector
         # Note: the units are SECONDS, not frames
         all_starts_seconds, all_ends_seconds = df_stim['start'], df_stim['end']
-        all_starts_frames = (all_starts_seconds * self.physical_unit_conversion.frames_per_second).astype(int)
-        all_ends_frames = (all_ends_seconds * self.physical_unit_conversion.frames_per_second).astype(int)
-        vec_stim = calc_time_series_from_starts_and_ends(all_starts_frames, all_ends_frames, self.num_high_res_frames)
+
+        if self.beh_annotation_already_converted_to_fluorescence_fps:
+            fps_or_vps = self.physical_unit_conversion.volumes_per_second
+            num_frames = self.num_volumes
+        else:
+            fps_or_vps = self.physical_unit_conversion.frames_per_second
+            num_frames = self.num_high_res_frames
+
+        all_starts_frames = (all_starts_seconds * fps_or_vps).astype(int)
+        all_ends_frames = (all_ends_seconds * fps_or_vps).astype(int)
+        vec_stim = calc_time_series_from_starts_and_ends(all_starts_frames, all_ends_frames, num_frames)
         vec_stim = pd.Series(vec_stim)
         # Convert 1's to BehaviorCodes.STIMULUS and 0's to BehaviorCodes.NOT_ANNOTATED
         vec_stim = vec_stim.replace(1.0, BehaviorCodes.STIMULUS)
