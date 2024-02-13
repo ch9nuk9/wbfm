@@ -274,6 +274,19 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         fname = Path(self.config['subfolder_configs']['traces'])
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
+    def get_raw_data_config(self) -> SubfolderConfigFile:
+        """
+        This is a different kind of config file, which is present in the raw data folder, and not in the local project
+
+        Returns
+        -------
+
+        """
+        fname = self.get_folder_for_all_channels()
+        fname = Path(fname).joinpath('config.yaml')
+        print(fname)
+        return SubfolderConfigFile(**self._check_path_and_load_config(fname))
+
     def _check_path_and_load_config(self, subconfig_path: Path,
                                     allow_config_to_not_exist: bool = False) -> Dict:
         if subconfig_path.is_absolute():
@@ -334,19 +347,24 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             return None
         return Path(resolve_mounted_path_in_current_os(path))
 
-    def get_folder_with_calibration_for_day(self) -> Optional[Path]:
+    def get_folder_for_entire_day(self) -> Optional[Path]:
+        return self._get_variable_parent_folder_of_raw_data(2)
+
+    def get_folder_for_all_channels(self) -> Optional[Path]:
+        return self._get_variable_parent_folder_of_raw_data(1)
+
+    def _get_variable_parent_folder_of_raw_data(self, i_parent):
         raw_bigtiff_filename = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
         if raw_bigtiff_filename is None:
             raise FileNotFoundError(raw_bigtiff_filename)
         raw_bigtiff_filename = Path(raw_bigtiff_filename)
-        folder_for_entire_day = raw_bigtiff_filename.parents[2]  # 3 folders up
-
-        if not Path(folder_for_entire_day).exists():
-            raise FileNotFoundError(folder_for_entire_day)
-        return folder_for_entire_day
+        parent_folder = raw_bigtiff_filename.parents[i_parent]
+        if not Path(parent_folder).exists():
+            raise FileNotFoundError(parent_folder)
+        return parent_folder
 
     def get_folder_with_background(self) -> Path:
-        folder_for_entire_day = self.get_folder_with_calibration_for_day()
+        folder_for_entire_day = self.get_folder_for_entire_day()
         folder_for_background = folder_for_entire_day.joinpath('background')
         if not folder_for_background.exists():
             raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
@@ -354,7 +372,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return folder_for_background
 
     def get_folder_with_calibration(self):
-        folder_for_entire_day = self.get_folder_with_calibration_for_day()
+        folder_for_entire_day = self.get_folder_for_entire_day()
         folder_for_calibration = folder_for_entire_day.joinpath('calibration')
         if not folder_for_calibration.exists():
             raise FileNotFoundError(f"Could not find calibration folder {folder_for_calibration}")
@@ -362,7 +380,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return folder_for_calibration
 
     def get_folder_with_alignment(self):
-        folder_for_entire_day = self.get_folder_with_calibration_for_day()
+        folder_for_entire_day = self.get_folder_for_entire_day()
         folder_for_alignment = folder_for_entire_day.joinpath('alignment')
         if not folder_for_alignment.exists():
             raise FileNotFoundError(f"Could not find alignment folder {folder_for_alignment}")
@@ -395,7 +413,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         """
         # Note: this will probably change in the future
-        folder_for_entire_day = self.get_folder_with_calibration_for_day()
+        folder_for_entire_day = self.get_folder_for_entire_day()
         folder_for_alignment = folder_for_entire_day.parent
 
         red_btf_fname, green_btf_fname = {}, {}
