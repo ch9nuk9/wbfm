@@ -215,3 +215,19 @@ def list_of_gas_sensing_neurons():
                 continue
             neuron_list.append(neuron)
     return neuron_list
+
+
+def default_raw_data_config():
+    """As of Feb 2024"""
+    return {'num_z_planes': 22,
+            'flyback_saved': False,
+            'num_flyback_planes_discarded': 2,
+            'z_step_size': 1.5,
+            'laser_561': 260,
+            'laser_488': 985,
+            'exposure_time': 12,
+            'agar': 2,
+            'recording_length_minutes': 8,
+            'ventral': 'left',
+            'strain': 'ZIM2165'
+            }

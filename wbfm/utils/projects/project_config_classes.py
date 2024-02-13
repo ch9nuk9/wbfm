@@ -18,6 +18,7 @@ from wbfm.utils.projects.utils_filenames import check_exists, resolve_mounted_pa
     get_sequential_filename, get_location_of_new_project_defaults
 from wbfm.utils.projects.utils_project import load_config, edit_config, safe_cd, update_project_config_path, \
     update_snakemake_config_path
+from wbfm.utils.visualization.hardcoded_paths import default_raw_data_config
 
 
 @dataclass
@@ -282,10 +283,15 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         -------
 
         """
-        fname = self.get_folder_for_all_channels()
-        fname = Path(fname).joinpath('config.yaml')
-        print(fname)
-        return SubfolderConfigFile(**self._check_path_and_load_config(fname))
+        try:
+            fname = self.get_folder_for_all_channels()
+            fname = Path(fname).joinpath('config.yaml')
+            return SubfolderConfigFile(**self._check_path_and_load_config(fname))
+        except FileNotFoundError:
+            # Allow a hardcoded default... fragile, but necessary for projects with deleted raw data
+            cfg = default_raw_data_config()
+            self._logger.warning(f"Using hardcoded default raw data config: {cfg}")
+            return SubfolderConfigFile(self_path=None, config=cfg, project_dir=self.project_dir)
 
     def _check_path_and_load_config(self, subconfig_path: Path,
                                     allow_config_to_not_exist: bool = False) -> Dict:
