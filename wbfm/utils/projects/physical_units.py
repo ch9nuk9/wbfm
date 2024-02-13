@@ -17,14 +17,15 @@ class PhysicalUnitConversion:
     exposure_time: int = 12  # Only used if volumes_per_second is not specified
 
     num_z_slices: int = None
+    num_flyback_slices_removed: int = 2  # TODO: This is hardcoded!!!
 
     @property
     def frames_per_second(self):
-        return self.volumes_per_second * self.num_z_slices
+        return self.volumes_per_second * self.frames_per_volume
 
     @property
     def frames_per_volume(self):
-        return self.num_z_slices
+        return self.num_z_slices + self.num_flyback_slices_removed
 
     @property
     def z_to_xy_ratio(self):
