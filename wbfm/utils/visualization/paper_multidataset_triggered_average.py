@@ -112,6 +112,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
     # Options for traces
     calculate_residual: bool = True
+    calculate_global: bool = True
+    calculate_turns: bool = True
     min_nonnan: Optional[float] = 0.8
 
     # Three different sets of parameters: raw, global, and residual
@@ -178,26 +180,29 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 print("Hilbert triggered averages failed; this may be because the data is immobilized")
                 print("Only 'global' triggered averages will be available")
 
-        # Slow reversal triggered (global)
-        trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.REV)
-        trigger_opt.update(self.trigger_opt)
-        trace_opt = dict(residual_mode='pca_global')
-        trace_opt.update(trace_base_opt)
-        out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
-                                                                 trace_opt=trace_opt)
-        self.dataset_clusterer_dict['global_rev'] = out[0]
-        self.intermediates_dict['global_rev'] = out[1]
+        if self.calculate_global:
+            # Slow reversal triggered (global)
+            trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.REV)
+            trigger_opt.update(self.trigger_opt)
+            trace_opt = dict(residual_mode='pca_global')
+            trace_opt.update(trace_base_opt)
+            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                     trace_opt=trace_opt)
+            self.dataset_clusterer_dict['global_rev'] = out[0]
+            self.intermediates_dict['global_rev'] = out[1]
 
-        # Slow forward triggered (global)
-        trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.FWD)
-        trigger_opt.update(self.trigger_opt)
-        out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
-                                                                 trace_opt=trace_opt)
-        self.dataset_clusterer_dict['global_fwd'] = out[0]
-        self.intermediates_dict['global_fwd'] = out[1]
+            # Slow forward triggered (global)
+            trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.FWD)
+            trigger_opt.update(self.trigger_opt)
+            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                     trace_opt=trace_opt)
+            self.dataset_clusterer_dict['global_fwd'] = out[0]
+            self.intermediates_dict['global_fwd'] = out[1]
 
-        trigger_dict = {'raw_rev': BehaviorCodes.REV, 'raw_fwd': BehaviorCodes.FWD,
-                        'raw_vt': BehaviorCodes.VENTRAL_TURN, 'raw_dt': BehaviorCodes.DORSAL_TURN}
+        # Always calculate: raw
+        trigger_dict = {'raw_rev': BehaviorCodes.REV, 'raw_fwd': BehaviorCodes.FWD}
+        if self.calculate_turns:
+            trigger_dict.update({'raw_vt': BehaviorCodes.VENTRAL_TURN, 'raw_dt': BehaviorCodes.DORSAL_TURN})
         trace_opt = dict(residual_mode=None)
         trace_opt.update(trace_base_opt)
         # Raw reversal triggered and forward triggered
