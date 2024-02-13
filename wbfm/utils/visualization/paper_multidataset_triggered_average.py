@@ -423,7 +423,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         if df_subset.shape[1] == 0:
             print(f"Neuron name {neuron_name} not found, skipping")
-            return
+            return fig, ax
 
         # Plot the triggered average for each neuron
         if ax is None:
