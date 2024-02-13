@@ -2104,9 +2104,11 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
         if behavior_fname is not None:
             if Path(abs_behavior_fname).exists():
                 # Unclear if it is manually annotated or not
-                if 'generate_reversal_annotation.xlsx' in str(abs_behavior_fname):
+                if 'generated_reversal_annotation.xlsx' in str(abs_behavior_fname):
                     # This is generated from the traces, and thus only has low-res
                     is_likely_manually_annotated = True
+                if verbose >= 1:
+                    print(f"Found absolute path behavior annotation in config file: {abs_behavior_fname}")
 
                 if make_absolute:
                     return abs_behavior_fname, is_likely_manually_annotated
@@ -2120,6 +2122,9 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
                     is_likely_manually_annotated = True
                 if not os.path.exists(behavior_fname):
                     behavior_fname = None
+                else:
+                    if verbose >= 1:
+                        print(f"Found relative path behavior annotation in config file: {abs_behavior_fname}")
     except FileNotFoundError:
         # Old style project
         behavior_fname = None
@@ -2142,6 +2147,8 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
         behavior_fname = None
     if behavior_fname is not None:
         logging.warning("Note: all annotation should be in the Ulises format")
+        if verbose >= 1:
+            print(f"Found behavior annotation by searching hard-coded paths in local project: {behavior_fname}")
         return behavior_fname, is_likely_manually_annotated
 
     # Final checks are all in raw behavior data folders, implying they are not the stable style
@@ -2165,6 +2172,8 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
                 behavior_fname = None
             elif len(behavior_fname) == 1:
                 behavior_fname = behavior_fname[0]
+                if verbose >= 1:
+                    print(f"Found behavior annotation by searching hard-coded paths in raw data folder: {behavior_fname}")
             else:
                 logging.warning(f"Found multiple possible behavior annotations {behavior_fname}; taking the first one")
                 behavior_fname = behavior_fname[0]
