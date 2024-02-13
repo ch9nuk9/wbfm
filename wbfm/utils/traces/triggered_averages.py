@@ -681,7 +681,8 @@ class TriggeredAverageIndices:
         self.plot_events_over_trace(trace, ax)
         return ax
 
-    def plot_events_over_trace(self, trace, ax=None, vertical_lines=True, dots=True, DEBUG=False):
+    def plot_events_over_trace(self, trace: pd.Series, ax=None, vertical_lines=True, dots=True,
+                               DEBUG=False):
         """
         Plots dots where the preceding indices start, and vertical lines where the event onsets are
 
@@ -696,21 +697,20 @@ class TriggeredAverageIndices:
         -------
 
         """
+        trace_idx = list(trace.index)
         if ax is None:
             fig, ax = plt.subplots(dpi=100)
         for idx_list in self.triggered_average_indices():
-            if isinstance(trace, pd.Series):
-                trace = trace.values
             i_start = idx_list[self.ind_preceding]
             i_end = idx_list[-1]
             if dots:
                 i_start_with_previous = idx_list[0]
-                ax.plot(i_start_with_previous, trace[i_start_with_previous], '.', color='tab:orange')
+                ax.plot(trace_idx[i_start_with_previous], trace.iat[i_start_with_previous], '.', color='tab:orange')
                 if DEBUG:
                     print(f"i_start: {i_start}, i_start_clipped: {i_start_with_previous}")
             if vertical_lines:
-                ax.axvline(i_start, trace[i_start], linestyle='--', color='tab:green')
-                ax.axvline(i_end, trace[i_end], linestyle='--', color='tab:red')
+                ax.axvline(trace_idx[i_start], trace.iat[i_start], linestyle='--', color='tab:green')
+                ax.axvline(trace_idx[i_end], trace.iat[i_end], linestyle='--', color='tab:red')
 
     @property
     def idx_onsets(self):
