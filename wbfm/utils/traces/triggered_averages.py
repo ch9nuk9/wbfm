@@ -157,7 +157,7 @@ class TriggeredAverageIndices:
 
     # Alternate way to define the start point of each time series
     ind_preceding: int = 10
-    offset_trigger: bool = False  # Trigger to the offset instead of the onset
+    trigger_on_downshift: bool = False  # Trigger to the offset instead of the onset
 
     # Alternate ways to define the end point of each time series
     allowed_succeeding_state: BehaviorCodes = None  # Also include time points where the state is followed this state
@@ -276,7 +276,7 @@ class TriggeredAverageIndices:
                    fixed_num_points_after_event=self.fixed_num_points_after_event,
                    DEBUG=DEBUG)
 
-        if self.offset_trigger:
+        if self.trigger_on_downshift:
             binary_state = ~binary_state
 
         all_ind = calculate_and_filter_triggered_average_indices(binary_state, **opt)
