@@ -827,11 +827,16 @@ class WormFullVideoPosture:
     # @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
                        include_collision=True, include_turns=True, include_head_cast=True, include_pause=True,
-                       include_slowing=True, include_stiumulus=True,
+                       include_slowing=False, include_stiumulus=True,
                        use_pause_to_exclude_other_states=True, DEBUG=False) -> \
             Optional[pd.Series]:
         """
-        Name is shortened to avoid US-UK spelling confusion
+        Main function for calculating the behavioral state vector. See BehaviorCodes for the possible states
+        This is a vector of BehaviorCodes enums, designed like this for two reasons:
+        1. Multiple states can be active at once
+        2. Integer values can be different for different pipelines, and need documentation to interpret
+
+        Note: Name is shortened to avoid US-UK spelling confusion
 
         Note that _raw_beh_annotation raises NoBehaviorAnnotationsError if no behavior annotation is found
         """
