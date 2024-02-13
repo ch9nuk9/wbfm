@@ -120,3 +120,12 @@ class NoBehaviorDataError(Exception):
         else:
             self.message = "No behavior data found"
         super().__init__(self.message)
+
+
+class IncompleteConfigFileError(Exception):
+    def __init__(self, message=""):
+        if len(message) > 0:
+            self.message = "Missing config file; " + message
+        else:
+            self.message = "Missing config file"
+        super().__init__(self.message)

@@ -2,6 +2,8 @@ import logging
 from dataclasses import dataclass
 import numpy as np
 
+from wbfm.utils.general.custom_errors import IncompleteConfigFileError
+
 
 @dataclass
 class PhysicalUnitConversion:
@@ -17,7 +19,7 @@ class PhysicalUnitConversion:
     exposure_time: int = 12  # Only used if volumes_per_second is not specified
 
     num_z_slices: int = None
-    num_flyback_slices_removed: int = 2  # TODO: This is hardcoded!!!
+    num_flyback_planes_discarded: int = None  # This should give an error if not properly set
 
     @property
     def frames_per_second(self):
@@ -25,7 +27,10 @@ class PhysicalUnitConversion:
 
     @property
     def frames_per_volume(self):
-        return self.num_z_slices + self.num_flyback_slices_removed
+        if self.num_flyback_planes_discarded is None:
+            raise IncompleteConfigFileError("num_flyback_planes_discarded not found; "
+                                            "cannot calculate frames_per_volume")
+        return self.num_z_slices + self.num_flyback_planes_discarded
 
     @property
     def z_to_xy_ratio(self):
@@ -105,6 +110,7 @@ class PhysicalUnitConversion:
     def load_from_config(project_cfg, DEBUG=False):
 
         from wbfm.utils.general.postures.centerline_classes import get_behavior_fluorescence_fps_conversion
+        # First, load from the main project config file
         if 'physical_units' in project_cfg.config:
             if DEBUG:
                 print("Using physical unit conversions from project config")
@@ -132,8 +138,16 @@ class PhysicalUnitConversion:
             else:
                 # This is a very old parameter, and should be in all projects
                 raise ValueError("num_slices not found in dataset_params")
-
-            return PhysicalUnitConversion(**opt)
         else:
             project_cfg.logger.warning("Using default physical unit conversions")
-            return PhysicalUnitConversion()
+            opt = dict()
+
+        # Second, load from the raw data config file (only needed for flyback removal, i.e. data that isn't included)
+        raw_data_cfg = project_cfg.get_raw_data_config()
+        if not raw_data_cfg.config.get('flyback_saved', False):
+            num_flyback_planes_discarded = raw_data_cfg.config.get('num_flyback_planes_discarded', None)
+            if num_flyback_planes_discarded is None:
+                raise IncompleteConfigFileError("num_flyback_planes_discarded not found in raw data config")
+            opt['num_flyback_planes_discarded'] = num_flyback_planes_discarded
+
+        return PhysicalUnitConversion(**opt)
