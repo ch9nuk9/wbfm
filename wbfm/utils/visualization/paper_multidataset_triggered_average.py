@@ -549,6 +549,24 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                                                 color=color, **kwargs)
         return fig, ax
 
+    def plot_events_over_trace(self, neuron_name, trigger_type, output_foldername=None, **kwargs):
+        """
+        Plot the full trace with the event
+
+        Loops through individual triggered average objects and plots the full trace with the event.
+        """
+
+        these_intermediates = self.intermediates_dict[trigger_type][0]
+        for dataset_name, triggered_average_class in these_intermediates.items():
+            fig, ax = plt.subplots(dpi=100)
+            try:
+                triggered_average_class.plot_events_over_trace(neuron_name, ax=ax, **kwargs)
+                plt.title(f"{neuron_name} - {dataset_name}")
+                plt.show()
+            except KeyError:
+                # print(f"Neuron {neuron_name} not found in {name}; skipping")
+                continue
+
 
 @dataclass
 class PaperExampleTracePlotter(PaperColoredTracePlotter):

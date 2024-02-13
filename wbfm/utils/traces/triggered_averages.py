@@ -663,7 +663,7 @@ class TriggeredAverageIndices:
 
         return ax
 
-    def plot_ind_over_trace(self, trace):
+    def plot_events_over_trace_from_name(self, trace, ax=None):
         """
         Plots the indices stored here over a trace (for debugging)
 
@@ -675,8 +675,8 @@ class TriggeredAverageIndices:
         -------
 
         """
-
-        fig, ax = plt.subplots(dpi=100)
+        if ax is None:
+            fig, ax = plt.subplots(dpi=100)
         ax.plot(trace)
         self.plot_events_over_trace(trace, ax)
         return ax
@@ -876,9 +876,9 @@ class FullDatasetTriggeredAverages:
         plt.title(f"Triggered average for {neuron}")
         return ax
 
-    def plot_events_over_trace(self, neuron):
+    def plot_events_over_trace(self, neuron, **kwargs):
         trace = self.df_traces[neuron]
-        ax = self.ind_class.plot_ind_over_trace(trace)
+        ax = self.ind_class.plot_events_over_trace_from_name(trace, **kwargs)
         plt.title(f"Trace with events for {neuron}")
         return ax
 
