@@ -485,7 +485,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         plt.tight_layout()
 
         if output_folder is not None:
-            if i_figure == 3:
+            if i_figure == 0:  # Big
+                fig_opt = dict(width_factor=1.0, height_factor=0.5)
+            elif i_figure == 3:
                 fig_opt = dict(width_factor=0.5, height_factor=0.25)
             elif i_figure > 3:
                 if 'rectified' in trigger_type:
@@ -541,6 +543,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             # Only set the output folder for the last neuron
             if i == len(neuron_list) - 1:
                 this_output_folder = output_folder
+                plt.legend(loc='lower left')
             else:
                 this_output_folder = None
             fig, ax = self.plot_triggered_average_single_neuron(neuron, trigger_type, output_folder=this_output_folder,
