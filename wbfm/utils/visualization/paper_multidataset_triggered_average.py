@@ -54,7 +54,7 @@ class PaperColoredTracePlotter:
     def get_trace_opt(self, **kwargs):
         trace_opt = dict(interpolate_nan=True, channel_mode='dr_over_r_50', remove_outliers=True,
                          rename_neurons_using_manual_ids=True, manual_id_confidence_threshold=0,
-                         min_nonnan=0.8)
+                         min_nonnan=0.8, use_physical_time=True)
         trace_opt.update(kwargs)
         return trace_opt
 
@@ -488,7 +488,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                         plt.title(title)
             else:
                 plt.title("")
-            plt.xlabel("Time (s)")
+            proj = self.all_projects[list(self.all_projects.keys())[0]]
+            plt.xlabel(proj.x_label_for_plots)
             if legend:
                 plt.legend()
             plt.tight_layout()
