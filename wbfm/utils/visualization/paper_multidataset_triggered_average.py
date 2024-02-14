@@ -52,7 +52,7 @@ class PaperColoredTracePlotter:
         return color_mapping[trigger_type]
 
     def get_trace_opt(self, **kwargs):
-        trace_opt = dict(interpolate_nan=True, channel_mode='dr_over_r_50', remove_outliers=True,
+        trace_opt = dict(interpolate_nan=True, channel_mode='dr_over_r_20', remove_outliers=True,
                          rename_neurons_using_manual_ids=True, manual_id_confidence_threshold=0,
                          min_nonnan=0.8, use_physical_time=True)
         trace_opt.update(kwargs)
