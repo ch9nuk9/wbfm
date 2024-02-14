@@ -305,7 +305,7 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name, connect_at
 
 
 def plot_with_shading(mean_vals, std_vals, xmax=None, x=None,
-                      ax=None, std_vals_upper=None, **kwargs):
+                      ax=None, std_vals_upper=None, show_legend=False, **kwargs):
     if std_vals_upper is not None:
         # Then the quantiles were passed, and they can be directly used
         upper_shading = std_vals_upper
@@ -332,6 +332,8 @@ def plot_with_shading(mean_vals, std_vals, xmax=None, x=None,
     if "color" in kwargs:
         fill_kwargs["color"] = kwargs["color"]
     ax.fill_between(x, upper_shading, lower_shading, alpha=0.2, linewidth=0.0, **fill_kwargs)
+    if show_legend:
+        ax.legend()
     return ax, lower_shading, upper_shading
 
 

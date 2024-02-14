@@ -21,6 +21,7 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score, silhouette_samples
 from tqdm.auto import tqdm
 
+from wbfm.utils.general.custom_errors import NeedsAnnotatedNeuronError
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior, shade_triggered_average
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
@@ -28,6 +29,7 @@ from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, 
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
 from wbfm.utils.general.utils_paper import apply_figure_settings, neurons_with_confident_ids
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
@@ -50,7 +52,7 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
     xlim
     z_score
     show_shading
-    fps
+    show_legend
     kwargs
 
     Returns
@@ -797,6 +799,10 @@ class FullDatasetTriggeredAverages:
         names.sort()
         return names
 
+    @property
+    def df_left_right_combined(self):
+        return combine_columns_with_suffix(self.df_traces)
+
     def triggered_average_matrix_from_name(self, name):
         """
         Calculates the triggered average matrix (events are rows, time is columns) for a single neuron
@@ -889,9 +895,28 @@ class FullDatasetTriggeredAverages:
         return names_to_keep, all_p_values, all_effect_sizes
 
     def plot_single_neuron_triggered_average(self, neuron, ax=None, **kwargs):
-        y = self.df_traces[neuron]
+        if neuron in self.neuron_names:
+            y = self.df_traces[neuron]
+        elif neuron in get_names_from_df(self.df_left_right_combined):
+            y = self.df_left_right_combined[neuron]
+        else:
+            raise NeedsAnnotatedNeuronError(neuron)
         ax = self.ax_plot_func_for_grid_plot(None, y, ax, neuron, **kwargs)
         plt.title(f"Triggered average for {neuron}")
+        return ax
+
+    def plot_multi_neuron_triggered_average(self, neuron_list, ax=None, skip_if_not_present=True, **kwargs):
+        for i, neuron in enumerate(neuron_list):
+            opt = dict()
+            if i > 0:
+                opt['show_horizontal_line'] = False
+            try:
+                ax = self.plot_single_neuron_triggered_average(neuron, ax, **kwargs, **opt)
+            except NeedsAnnotatedNeuronError as e:
+                if skip_if_not_present:
+                    pass
+                else:
+                    raise e
         return ax
 
     def plot_events_over_trace(self, neuron, **kwargs):
