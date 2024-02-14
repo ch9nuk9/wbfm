@@ -403,8 +403,8 @@ class TriggeredAverageIndices:
                 invalid_states = {False}
             else:
                 # Get all states that are not the one we are triggering on
-                all_present_states = set(self.behavioral_annotation.unique())
-                invalid_states = all_present_states - {self.behavioral_state}
+                all_present_states = BehaviorCodes.convert_to_simple_states_vector(pd.Series(self.behavioral_annotation.unique()))
+                invalid_states = set(all_present_states) - {self.behavioral_state}
         else:
             if self.behavioral_annotation_is_continuous:
                 invalid_states = {True}
