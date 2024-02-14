@@ -134,6 +134,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         if self.trace_opt is not None:
             trace_base_opt.update(self.trace_opt)
 
+        # Set each project to use physical time
+        for proj in self.all_projects.values():
+            proj.use_physical_time = True
+
         self.dataset_clusterer_dict = defaultdict(None)
         self.intermediates_dict = defaultdict(lambda: (None, None, None))
 
