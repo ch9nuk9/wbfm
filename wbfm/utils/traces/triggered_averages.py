@@ -346,14 +346,11 @@ class TriggeredAverageIndices:
             triggered_avg_matrix[:, times_to_remove] = np.nan
 
         # If the trace has a nontrivial index, then use that for the columns of this matrix
-        # try:
         raw_index = raw_trace.index
         # However, the event itself should be at t=0, and times previous to that should be negative
         index = raw_index - raw_index[self.ind_preceding]
         index = index[:triggered_avg_matrix.shape[1]]
         triggered_avg_matrix = pd.DataFrame(triggered_avg_matrix, columns=index)
-        # except AttributeError:
-        #     triggered_avg_matrix = pd.DataFrame(triggered_avg_matrix)
 
         return triggered_avg_matrix
 
@@ -364,7 +361,8 @@ class TriggeredAverageIndices:
         mat_jitter = self.calc_triggered_average_matrix(trace, custom_ind=ind_jitter, **kwargs)
         return mat_jitter
 
-    def nan_points_of_state_before_point(self, triggered_average_mat, list_of_triggered_ind):
+    def nan_points_of_state_before_point(self, triggered_average_mat, list_of_triggered_ind,
+                                         DEBUG=False):
         """
         Checks points up to a certain level, and nans them if they are invalid. Only checks up to a certain threshold
 
@@ -381,6 +379,8 @@ class TriggeredAverageIndices:
         else:
             beh_annotations = self.behavioral_annotation.to_numpy()
         invalid_states = self._get_invalid_states_for_prior_index_removal()
+        if DEBUG:
+            print(f"Invalid states: {invalid_states}")
         for i_trace in range(len(list_of_triggered_ind)):
             these_ind = list_of_triggered_ind[i_trace]
             for i_local, i_global in enumerate(these_ind):
@@ -392,6 +392,8 @@ class TriggeredAverageIndices:
                     # Remove all points before this
                     for i_to_remove in range(i_local + 1):
                         triggered_average_mat[i_trace, i_to_remove] = np.nan
+                        if DEBUG:
+                            print(f"Removing point {i_to_remove} from trace {i_trace}")
         return triggered_average_mat
 
     def _get_invalid_states_for_prior_index_removal(self):
