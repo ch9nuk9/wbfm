@@ -377,11 +377,10 @@ class TriggeredAverageIndices:
 
         """
         if self.behavioral_annotation_is_continuous:
-            invalid_states = {True}
             beh_annotations = self.cleaned_binary_state
         else:
-            invalid_states = {self.behavioral_state, BehaviorCodes.UNKNOWN}
             beh_annotations = self.behavioral_annotation.to_numpy()
+        invalid_states = self._get_invalid_states_for_prior_index_removal()
         for i_trace in range(len(list_of_triggered_ind)):
             these_ind = list_of_triggered_ind[i_trace]
             for i_local, i_global in enumerate(these_ind):
@@ -394,6 +393,23 @@ class TriggeredAverageIndices:
                     for i_to_remove in range(i_local + 1):
                         triggered_average_mat[i_trace, i_to_remove] = np.nan
         return triggered_average_mat
+
+    def _get_invalid_states_for_prior_index_removal(self):
+        if self.trigger_on_downshift:
+            # This flips all of the states that should be removed
+            if self.behavioral_annotation_is_continuous:
+                invalid_states = {False}
+            else:
+                # Get all states that are not the one we are triggering on
+                all_present_states = set(self.behavioral_annotation.unique())
+                invalid_states = all_present_states - {self.behavioral_state}
+        else:
+            if self.behavioral_annotation_is_continuous:
+                invalid_states = {True}
+            else:
+                invalid_states = {self.behavioral_state, BehaviorCodes.UNKNOWN}
+
+        return invalid_states
 
     @staticmethod
     def prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines, shorten_to_last_valid=True,
