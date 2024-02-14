@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Union
 
 import pandas as pd
 
@@ -26,7 +27,7 @@ def get_project_parent_folder():
     return "/scratch/neurobiology/zimmer/fieseler/wbfm_projects"
 
 
-def load_paper_datasets(genotype='gcamp', require_behavior=False, **kwargs) -> dict:
+def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=False, **kwargs) -> dict:
     """
 
     As of Dec 2022, these are the datasets we will use, with this condition:
@@ -44,6 +45,12 @@ def load_paper_datasets(genotype='gcamp', require_behavior=False, **kwargs) -> d
 
     """
     from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, load_all_projects_in_folder
+
+    if isinstance(genotype, list):
+        good_projects = {}
+        for this_genotype in genotype:
+            good_projects.update(load_paper_datasets(this_genotype, require_behavior=require_behavior, **kwargs))
+        return good_projects
 
     # Build a dictionary of all
     if genotype == 'gcamp':
