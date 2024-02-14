@@ -2,6 +2,7 @@
 Designed to plot the triggered average of the paper's datasets.
 """
 import itertools
+import logging
 import os
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -422,7 +423,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         df_subset = self.get_traces_single_neuron(trigger_type, neuron_name, DEBUG)
 
         if df_subset.shape[1] == 0:
-            print(f"Neuron name {neuron_name} not found, skipping")
+            logging.debug(f"Neuron name {neuron_name} not found, skipping")
             return fig, ax
 
         # Plot the triggered average for each neuron
@@ -439,9 +440,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         min_lines = min(min_lines, df_subset.shape[1])
         if DEBUG:
             print('df_subset', df_subset)
-        plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines, show_individual_lines=False,
-                                                     is_second_plot=is_second_plot, ax=ax,
-                                                     color=color, label=neuron_name, show_horizontal_line=False)
+        ax, triggered_avg = plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines,
+                                                                         show_individual_lines=False,
+                                                                         is_second_plot=is_second_plot, ax=ax,
+                                                                         color=color, label=neuron_name,
+                                                                         show_horizontal_line=False)
+        if triggered_avg is None:
+            logging.debug(f"Triggered average for {neuron_name} not valid, skipping")
+            return fig, ax
         if 'rectified_rev' in trigger_type:
             behavior_shading_type = 'both'
         elif 'rectified_fwd' in trigger_type:
@@ -543,7 +549,6 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             # Only set the output folder for the last neuron
             if i == len(neuron_list) - 1:
                 this_output_folder = output_folder
-                plt.legend(loc='lower left')
             else:
                 this_output_folder = None
             fig, ax = self.plot_triggered_average_single_neuron(neuron, trigger_type, output_folder=this_output_folder,

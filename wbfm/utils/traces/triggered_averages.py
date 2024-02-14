@@ -64,7 +64,7 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
 
     if not is_valid:
         logging.warning("Found invalid neuron (empty triggered average)")
-        return None, None
+        return ax, None
     # Plot
     if show_shading:
         ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_lower_std, xmax, ax=ax, **kwargs,
