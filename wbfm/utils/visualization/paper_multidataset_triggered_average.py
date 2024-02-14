@@ -415,6 +415,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              xlim=None, ylim=None, min_lines=2,
                                              show_title=False,
                                              color=None, z_score=False, fig_kwargs=None, legend=False, i_figure=3,
+                                             apply_changes_even_if_no_trace=True,
                                              DEBUG=False):
         if fig_kwargs is None:
             fig_kwargs = {}
@@ -424,91 +425,93 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         if df_subset.shape[1] == 0:
             logging.debug(f"Neuron name {neuron_name} not found, skipping")
-            return fig, ax
-
-        # Plot the triggered average for each neuron
-        if ax is None:
-            fig_opt_trigger = self.get_fig_opt(**fig_kwargs)
-            fig, ax = plt.subplots(**fig_opt_trigger)
-            is_second_plot = False
+            triggered_avg = None
         else:
-            is_second_plot = True
-        if z_score:
-            df_subset = (df_subset - df_subset.mean()) / df_subset.std()
-        df_subset = df_subset.T
+            # Plot the triggered average for each neuron
+            if ax is None:
+                fig_opt_trigger = self.get_fig_opt(**fig_kwargs)
+                fig, ax = plt.subplots(**fig_opt_trigger)
+                is_second_plot = False
+            else:
+                is_second_plot = True
+            if z_score:
+                df_subset = (df_subset - df_subset.mean()) / df_subset.std()
+            df_subset = df_subset.T
 
-        min_lines = min(min_lines, df_subset.shape[1])
-        if DEBUG:
-            print('df_subset', df_subset)
-        ax, triggered_avg = plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines,
-                                                                         show_individual_lines=False,
-                                                                         is_second_plot=is_second_plot, ax=ax,
-                                                                         color=color, label=neuron_name,
-                                                                         show_horizontal_line=False)
-        if triggered_avg is None:
-            logging.debug(f"Triggered average for {neuron_name} not valid, skipping")
-            return fig, ax
-        if 'rectified_rev' in trigger_type:
-            behavior_shading_type = 'both'
-        elif 'rectified_fwd' in trigger_type:
-            behavior_shading_type = None
-        elif 'rev' in trigger_type:
-            behavior_shading_type = 'rev'
-        elif 'fwd' in trigger_type:
-            behavior_shading_type = 'fwd'
-        else:
-            behavior_shading_type = None
-        if behavior_shading_type is not None:
-            index_conversion = df_subset.columns
-            try:
-                shade_triggered_average(ind_preceding=20, index_conversion=index_conversion,
-                                        behavior_shading_type=behavior_shading_type, ax=ax)
-            except IndexError:
-                print(f"Index error for {neuron_name} and {trigger_type}; skipping shading")
+            min_lines = min(min_lines, df_subset.shape[1])
+            if DEBUG:
+                print('df_subset', df_subset)
+            ax, triggered_avg = plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines,
+                                                                             show_individual_lines=False,
+                                                                             is_second_plot=is_second_plot, ax=ax,
+                                                                             color=color, label=neuron_name,
+                                                                             show_horizontal_line=False)
+            if triggered_avg is None:
+                logging.debug(f"Triggered average for {neuron_name} not valid, skipping")
 
-        if xlim is not None:
-            ax.set_xlim(xlim)
-        if ylim is not None:
-            ax.set_ylim(ylim)
-        if z_score:
-            plt.ylabel("Amplitude (z-scored)")
-        else:
-            plt.ylabel("$\Delta R / R_{50}$")
-        if show_title:
-            if title is None:
+        # Apply additional settings, even if the above failed
+        if apply_changes_even_if_no_trace or triggered_avg is not None:
+            if 'rectified_rev' in trigger_type:
+                behavior_shading_type = 'both'
+            elif 'rectified_fwd' in trigger_type:
+                behavior_shading_type = None
+            elif 'rev' in trigger_type:
+                behavior_shading_type = 'rev'
+            elif 'fwd' in trigger_type:
+                behavior_shading_type = 'fwd'
+            else:
+                behavior_shading_type = None
+            if behavior_shading_type is not None:
+                index_conversion = df_subset.columns
+                try:
+                    shade_triggered_average(ind_preceding=20, index_conversion=index_conversion,
+                                            behavior_shading_type=behavior_shading_type, ax=ax)
+                except IndexError:
+                    print(f"Index error for {neuron_name} and {trigger_type}; skipping shading")
+
+            if xlim is not None:
+                ax.set_xlim(xlim)
+            if ylim is not None:
+                ax.set_ylim(ylim)
+            if z_score:
+                plt.ylabel("Amplitude (z-scored)")
+            else:
+                plt.ylabel("$\Delta R / R_{50}$")
+            if show_title:
+                if title is None:
+                    title = self.get_title_from_trigger_type(trigger_type)
+                    plt.title(f"{neuron_name} (n={df_subset.shape[1]}) {title}")
+                else:
+                    if include_neuron_in_title:
+                        plt.title(f"{neuron_name} {title}")
+                    else:
+                        plt.title(title)
+            else:
+                plt.title("")
+            plt.xlabel("Time (s)")
+            if legend:
+                plt.legend()
+            plt.tight_layout()
+
+            if output_folder is not None:
+                if i_figure == 0:  # Big
+                    fig_opt = dict(width_factor=1.0, height_factor=0.5)
+                elif i_figure == 3:
+                    fig_opt = dict(width_factor=0.5, height_factor=0.25)
+                elif i_figure > 3:
+                    if 'rectified' in trigger_type:
+                        fig_opt = dict(width_factor=0.35, height_factor=0.15)
+                    else:
+                        fig_opt = dict(width_factor=0.25, height_factor=0.15)
+                else:
+                    raise NotImplementedError(f"i_figure={i_figure} not implemented")
+                apply_figure_settings(fig, plotly_not_matplotlib=False, **fig_opt)
+
                 title = self.get_title_from_trigger_type(trigger_type)
-                plt.title(f"{neuron_name} (n={df_subset.shape[1]}) {title}")
-            else:
-                if include_neuron_in_title:
-                    plt.title(f"{neuron_name} {title}")
-                else:
-                    plt.title(title)
-        else:
-            plt.title("")
-        plt.xlabel("Time (s)")
-        if legend:
-            plt.legend()
-        plt.tight_layout()
-
-        if output_folder is not None:
-            if i_figure == 0:  # Big
-                fig_opt = dict(width_factor=1.0, height_factor=0.5)
-            elif i_figure == 3:
-                fig_opt = dict(width_factor=0.5, height_factor=0.25)
-            elif i_figure > 3:
-                if 'rectified' in trigger_type:
-                    fig_opt = dict(width_factor=0.35, height_factor=0.15)
-                else:
-                    fig_opt = dict(width_factor=0.25, height_factor=0.15)
-            else:
-                raise NotImplementedError(f"i_figure={i_figure} not implemented")
-            apply_figure_settings(fig, plotly_not_matplotlib=False, **fig_opt)
-
-            title = self.get_title_from_trigger_type(trigger_type)
-            fname = title.replace(" ", "_").replace(",", "").lower()
-            fname = os.path.join(output_folder, f'{neuron_name}-{fname}.png')
-            plt.savefig(fname, transparent=True)
-            plt.savefig(fname.replace(".png", ".svg"))
+                fname = title.replace(" ", "_").replace(",", "").lower()
+                fname = os.path.join(output_folder, f'{neuron_name}-{fname}.png')
+                plt.savefig(fname, transparent=True)
+                plt.savefig(fname.replace(".png", ".svg"))
 
         return fig, ax
 
