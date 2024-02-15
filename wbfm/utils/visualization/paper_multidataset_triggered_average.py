@@ -46,7 +46,8 @@ class PaperColoredTracePlotter:
                          'residual_rectified_fwd': cmap(4),
                          'residual_rectified_rev': cmap(4),
                          'kymo': 'black',
-                         'stimulus': 'black'}
+                         'stimulus': cmap(5),
+                         'self_collision': cmap(6)}
         if trigger_type not in color_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(color_mapping.keys())}')
         return color_mapping[trigger_type]
@@ -112,9 +113,6 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     all_projects: Dict[str, ProjectData]
 
     # Options for traces
-    calculate_residual: bool = True
-    calculate_global: bool = True
-    calculate_turns: bool = True
     min_nonnan: Optional[float] = 0.8
 
     # Three different sets of parameters: raw, global, and residual
@@ -126,6 +124,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
     # Optional: stimulus
     calc_stimulus: bool = False
+    calculate_residual: bool = True
+    calculate_global: bool = True
+    calculate_turns: bool = True
+    calculate_self_collision: bool = False
 
     def __post_init__(self):
         # Analyze the project data to get the clusterers and intermediates
@@ -231,6 +233,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             self.dataset_clusterer_dict['stimulus'] = out[0]
             self.intermediates_dict['stimulus'] = out[1]
 
+        if self.calculate_self_collision:
+            trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.SELF_COLLISION)
+            trigger_opt.update(self.trigger_opt)
+            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                     trace_opt=trace_opt)
+            self.dataset_clusterer_dict['self_collision'] = out[0]
+            self.intermediates_dict['self_collision'] = out[1]
+
     def get_clusterer_from_trigger_type(self, trigger_type):
         trigger_mapping = self.dataset_clusterer_dict
         if trigger_type not in trigger_mapping:
@@ -275,7 +285,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                          'residual_rectified_fwd': 'Residual (rectified fwd, undulation triggered)',
                          'residual_rectified_rev': 'Residual (rectified rev, undulation triggered)',
                          'kymo': 'Kymograph',
-                         'stimulus': 'Stimulus triggered'}
+                         'stimulus': 'Stimulus triggered',
+                         'self_collision': 'Self-collision triggered'}
         if trigger_type not in title_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(title_mapping.keys())}')
         return title_mapping[trigger_type]
