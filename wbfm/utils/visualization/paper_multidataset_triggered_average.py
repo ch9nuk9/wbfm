@@ -31,8 +31,12 @@ class PaperColoredTracePlotter:
     Specifically for raw/global/residual decompositions
     """
 
-    def get_color_from_trigger_type(self, trigger_type):
+    @staticmethod
+    def get_color_from_data_type(trigger_type, is_mutant=False):
         cmap = plt.get_cmap('tab10')
+        if is_mutant:
+            # Mutant color is unique (pink)
+            return cmap(6)
         color_mapping = {'raw_rev': cmap(0),
                          'raw': cmap(0),
                          'raw_fwd': cmap(0),
@@ -45,6 +49,7 @@ class PaperColoredTracePlotter:
                          'residual_collision': cmap(4),
                          'residual_rectified_fwd': cmap(4),
                          'residual_rectified_rev': cmap(4),
+                         # Should I use the 'raw' colors for this?
                          'kymo': 'black',
                          'stimulus': cmap(5),
                          'self_collision': cmap(6)}
@@ -428,14 +433,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
                                              fig=None, ax=None, title=None, include_neuron_in_title=False,
                                              xlim=None, ylim=None, min_lines=2,
-                                             show_title=False,
-                                             color=None, z_score=False, fig_kwargs=None, legend=False, i_figure=3,
+                                             show_title=False, color=None, is_mutant=False,
+                                             z_score=False, fig_kwargs=None, legend=False, i_figure=3,
                                              apply_changes_even_if_no_trace=True,
                                              DEBUG=False):
         if fig_kwargs is None:
             fig_kwargs = {}
         if color is None:
-            color = self.get_color_from_trigger_type(trigger_type)
+            color = self.get_color_from_data_type(trigger_type, is_mutant=is_mutant)
         df_subset = self.get_traces_single_neuron(trigger_type, neuron_name, DEBUG)
 
         if df_subset.shape[1] == 0:
@@ -657,9 +662,9 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         ylim = kwargs.get('ylim', self.ylim)
 
         # Do all on one plot
-        trace_dict = {'Raw': (df_traces[neuron_name], self.get_color_from_trigger_type('raw')),
-                      'Global': (df_traces_global[neuron_name], self.get_color_from_trigger_type('global')),
-                      'Residual': (df_traces_residual[neuron_name], self.get_color_from_trigger_type('residual'))}
+        trace_dict = {'Raw': (df_traces[neuron_name], self.get_color_from_data_type('raw')),
+                      'Global': (df_traces_global[neuron_name], self.get_color_from_data_type('global')),
+                      'Residual': (df_traces_residual[neuron_name], self.get_color_from_data_type('residual'))}
 
         for i, (name, vals) in enumerate(trace_dict.items()):
             # Original trace

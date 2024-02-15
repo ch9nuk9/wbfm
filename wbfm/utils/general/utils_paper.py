@@ -44,12 +44,14 @@ def plotly_paper_color_discrete_map():
     """
     base_cmap = px.colors.qualitative.D3
     cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0], 'Other neurons active in FM only': base_cmap[0],
-                 'immob': base_cmap[1], 'Active in Immob': base_cmap[1],
-                 'gfp': base_cmap[2],
+                 # Skip orange... don't like it!
+                 'immob': base_cmap[2], 'Active in Immob': base_cmap[2],
+                 'gfp': base_cmap[7],  # Gray
                  'global': base_cmap[3],
                  'residual': base_cmap[4],
                  'O2 or CO2 sensing': base_cmap[5],
-                 'Not IDed': base_cmap[6]}
+                 'Not IDed': base_cmap[7]  # Same as gfp; shouldn't ever be on same plot
+                 }
     # Add alternative names
     for k, v in data_type_name_mapping().items():
         cmap_dict[v] = cmap_dict[k]
