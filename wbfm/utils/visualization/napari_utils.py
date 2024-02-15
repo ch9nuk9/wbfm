@@ -4,6 +4,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 from backports import cached_property
+from matplotlib import colors as mcolors
 from matplotlib import pyplot as plt
 
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
@@ -203,39 +204,70 @@ class NapariPropertyHeatMapper:
 
     def max_of_red(self):
         val_to_plot = list(self.mean_red.max())
-        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels, scale_to_minus_1_and_1=False)
 
     def std_of_red(self):
         val_to_plot = list(self.mean_red.std())
-        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels, scale_to_minus_1_and_1=False)
 
     def max_of_green(self):
         val_to_plot = list(self.mean_green.max())
-        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels, scale_to_minus_1_and_1=False)
 
     def std_of_green(self):
         val_to_plot = list(self.mean_green.std())
-        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels, scale_to_minus_1_and_1=False)
 
     def max_of_ratio(self):
         val_to_plot = list((self.mean_green / self.mean_red).max())
-        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels, scale_to_minus_1_and_1=False)
 
     def std_of_ratio(self):
         val_to_plot = list((self.mean_green / self.mean_red).std())
-        return property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+        return property_vector_to_colormap(val_to_plot, self.vec_of_labels, scale_to_minus_1_and_1=False)
 
-    def custom_val_to_plot(self, val_to_plot: pd.Series):
-        prop_dict = property_vector_to_colormap(val_to_plot, self.vec_of_labels)
+    def custom_val_to_plot(self, val_to_plot: pd.Series, scale_to_minus_1_and_1):
+        prop_dict = property_vector_to_colormap(val_to_plot, self.vec_of_labels,
+                                                scale_to_minus_1_and_1=scale_to_minus_1_and_1)
         return prop_dict
 
 
-def property_vector_to_colormap(val_to_plot, vec_of_labels, cmap=plt.cm.RdBu):
+def property_vector_to_colormap(val_to_plot, vec_of_labels, cmap=plt.cm.RdBu,
+                                scale_to_minus_1_and_1=True) -> Dict[int, float]:
+    """
+    Takes a vector of values and a vector of labels, and returns a dictionary with the labels as keys and the values
+    as colors
+
+    The colormap is scaled assuming that the values are in the range [-1, 1], e.g. a correlation coefficient
+        In this case, white = 0
+    Alternatively, if scale_to_minus_1_and_1 is False, the values are assumed to be in the range [xmin, xmax],
+    and white has a special meaning only if xmin < 0 and xmax > 0
+
+    Parameters
+    ----------
+    val_to_plot
+    vec_of_labels
+    cmap
+
+    Returns
+    -------
+
+    """
     prop = np.array(val_to_plot)
-    # Scale values to [0, 1]
-    prop_scaled = (
-            (prop - np.nanmin(prop)) / (np.nanmax(prop) - np.nanmin(prop))
-    )  # matplotlib cmaps need values in [0, 1]
+    # Check if the values are already in the range [-1, 1]
+    if scale_to_minus_1_and_1:
+        if np.nanmax(prop) > 1 or np.nanmin(prop) < -1:
+            raise ValueError("Values should be in the range [-1, 1] for this colormap")
+        # matplotlib cmaps need values in [0, 1]
+        prop_scaled = 2*prop - 1
+    elif np.nanmax(prop) > 0 > np.nanmin(prop):
+        # Then we have a special case where white is 0
+        scaler = mcolors.TwoSlopeNorm(vmin=np.nanmin(prop), vcenter=0, vmax=np.nanmax(prop))
+        prop_scaled = scaler(prop)
+    else:
+        # Then white doesn't have a special meaning
+        scaler = mcolors.Normalize(vmin=np.nanmin(prop), vmax=np.nanmax(prop))
+        prop_scaled = scaler(prop)
 
     colors = cmap(prop_scaled)
     prop_dict = dict(zip(vec_of_labels, colors))
