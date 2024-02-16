@@ -51,8 +51,8 @@ class PaperColoredTracePlotter:
                          'residual_rectified_rev': cmap(4),
                          # Should I use the 'raw' colors for this?
                          'kymo': 'black',
-                         'stimulus': cmap(5),
-                         'self_collision': cmap(6)}
+                         'stimulus': cmap(2),
+                         'self_collision': cmap(0)}
         if trigger_type not in color_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(color_mapping.keys())}')
         return color_mapping[trigger_type]
