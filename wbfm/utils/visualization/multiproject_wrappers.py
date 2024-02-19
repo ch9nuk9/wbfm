@@ -526,7 +526,7 @@ def get_all_variance_explained(all_projects_gcamp, all_projects_gfp, all_project
 
 def plot_variance_all_neurons(all_projects_gcamp, all_projects_gfp, include_gfp=True, include_legend=True,
                               match_yaxes=True, loop_not_facet_row=False, significance_line_at_95=True,
-                              x='fraction_variance_explained', y='acv',
+                              x='fraction_variance_explained', y='acv', names_to_keep_in_simple_id=('VB02', 'DB01'),
                               lag=1, output_folder=None, **kwargs):
     """
     Calculates the autocovariance of all neural traces, and plots a 4-panel figure
@@ -545,7 +545,7 @@ def plot_variance_all_neurons(all_projects_gcamp, all_projects_gfp, include_gfp=
         all_projects_gfp,
         significance_line_at_95,
         lag=lag,
-        names_to_keep_in_simple_id=('VB02', 'DB01'),
+        names_to_keep_in_simple_id=names_to_keep_in_simple_id,
         **kwargs
     )
 
@@ -561,7 +561,7 @@ def plot_variance_all_neurons(all_projects_gcamp, all_projects_gfp, include_gfp=
         print("Excluding gfp")
         df_summary = df_summary[df_summary['Type of data'] != 'gfp']
     scatter_opt = dict(y=y, x=x, symbol='Simple Neuron ID', marginal_y='box', size='multiplex_size', log_y=True,
-                       size_max=1)
+                       size_max=10)
     if loop_not_facet_row:
         categories = df_summary['Type of data'].unique()
         cmap_copy = cmap.copy()
@@ -590,7 +590,7 @@ def plot_variance_all_neurons(all_projects_gcamp, all_projects_gfp, include_gfp=
             fig.data[0].name = new_legend
     else:
         fig = px.scatter(df_summary, facet_row='Type of data',
-                         color_discrete_sequence=cmap, range_y=[0.00005, 0.2],
+                         color_discrete_sequence=cmap, range_y=[0.00005, 0.3],
                          color='Genotype and datatype', **scatter_opt)
         all_figs = [fig]
 
@@ -620,6 +620,9 @@ def plot_variance_all_neurons(all_projects_gcamp, all_projects_gfp, include_gfp=
             # Turn off most yaxis labels
             fig.update_yaxes(row=1, title="", overwrite=True)
             fig.update_yaxes(row=3, title="", overwrite=True)
+
+        # Remove white border around individual markers
+        # fig.update_traces(marker=dict(line=dict(width=0)))
 
         if not include_legend:
             fig.update_traces(showlegend=False)
