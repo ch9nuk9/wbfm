@@ -212,16 +212,42 @@ def list_of_neurons_to_id() -> pd.Series:
 
 def list_of_gas_sensing_neurons():
     neuron_list = []
+    unilateral_neurons = list_of_unilateral_neurons()
     for raw_neuron in ['AQR', 'IL1L', 'IL2L', 'BAG', 'RMDV', 'AUA', 'URX']:
         for suffix in ['L', 'R']:
-            if raw_neuron != 'AQR':
+            if raw_neuron not in unilateral_neurons:
                 neuron = f"{raw_neuron}{suffix}"
-            elif raw_neuron == 'AQR' and suffix == 'L':
+            elif suffix == 'L':
                 neuron = raw_neuron
             else:
                 continue
             neuron_list.append(neuron)
     return neuron_list
+
+
+def list_neurons_manifold_in_immob():
+    neuron_list = []
+    unilateral_neurons = list_of_unilateral_neurons()
+    for raw_neuron in ['AIB', 'AVA', 'AVB', 'AVE', 'BAG', 'OLQD', 'OLQV', 'RIB', 'RID', 'RIM', 'RIS',
+                       'RME', 'RMED', 'RMEV', 'SIAD', 'SIAV', 'URAD', 'URAV', 'URYD', 'URYV',
+                       'VA01', 'VA02', 'VB02', 'VB03', 'DA01']:
+        for suffix in ['L', 'R']:
+            if raw_neuron not in unilateral_neurons:
+                neuron = f"{raw_neuron}{suffix}"
+            elif suffix == 'L':
+                neuron = raw_neuron
+            else:
+                # Do not add unilateral neurons twice
+                continue
+            neuron_list.append(neuron)
+    return neuron_list
+
+
+def list_of_unilateral_neurons():
+    unilateral_neurons = ['AQR', 'RID', 'RIS', 'RMED', 'RMEV']
+    # Also all neurons like 'DB0X' and 'VA0X'
+    unilateral_neurons.extend([f"{dv}{ab}{i:02d}" for dv in ['D', 'V'] for ab in ['A', 'B'] for i in range(1, 5)])
+    return unilateral_neurons
 
 
 def default_raw_data_config():
