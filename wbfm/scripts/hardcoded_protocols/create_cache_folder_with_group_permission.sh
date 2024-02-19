@@ -15,8 +15,11 @@ if [ ! -d "$1" ]; then
     exit 1
 fi
 
-# Loop through subfolders
-find "$1" -type d -exec mkdir -p {}/.cache \;
-
-# Set write group permission on only the .cache folders
-find "$1" -type d -name .cache -exec chmod g+w {} \;
+# Loop through subfolders, and print the .cache folder
+for dir in $1/*; do
+    if [ -d "$dir" ]; then
+        mkdir -pv "$dir/.cache"
+        # Change permissions to allow group write
+        chmod g+w "$dir/.cache"
+    fi
+done
