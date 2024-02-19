@@ -45,7 +45,7 @@ def plotly_paper_color_discrete_map():
     base_cmap = px.colors.qualitative.D3
     cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0], 'Other neurons active in FM only': base_cmap[0],
                  # Skip orange... don't like it!
-                 'immob': base_cmap[2], 'Active in Immob': base_cmap[2],
+                 'immob': base_cmap[2], 'Active in Immob': base_cmap[2], 'Manifold in Immob': base_cmap[2],
                  'gfp': base_cmap[7],  # Gray
                  'global': base_cmap[3],
                  'residual': base_cmap[4],
