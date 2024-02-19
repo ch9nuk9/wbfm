@@ -26,6 +26,7 @@ from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages, \
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivariateEncoding
 from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std
+from wbfm.utils.visualization.hardcoded_paths import list_of_gas_sensing_neurons, list_neurons_manifold_in_immob
 
 
 @dataclass
@@ -309,7 +310,7 @@ def build_manifold_time_series_from_multiple_projects(all_projects: Dict[str, Pr
 
 
 def build_dataframe_of_variance_explained(all_projects: Dict[str, ProjectData], n_components=2,
-                                          **kwargs) -> pd.DataFrame:
+                                          melt=True,  **kwargs) -> pd.DataFrame:
     """
     Builds a dataframe of the variance explained by the number of PCA components given per neuron per dataset
 
@@ -325,7 +326,8 @@ def build_dataframe_of_variance_explained(all_projects: Dict[str, ProjectData], 
     """
     kwargs['rename_neurons_using_manual_ids'] = kwargs.get('rename_neurons_using_manual_ids', True)
 
-    df_traces_global = build_trace_time_series_from_multiple_projects(all_projects, residual_mode='pca_global', **kwargs)
+    df_traces_global = build_trace_time_series_from_multiple_projects(all_projects, residual_mode='pca_global',
+                                                                      **kwargs)
     df_traces = build_trace_time_series_from_multiple_projects(all_projects, **kwargs)
 
     # Group by dataset in each of the dataframes, and calculate the variance explained per neuron
@@ -351,7 +353,41 @@ def build_dataframe_of_variance_explained(all_projects: Dict[str, ProjectData], 
         all_variances[dataset_name] = these_variances
     # Make a dataframe from the dictionary
     df_variances = pd.DataFrame(all_variances).T
-    return df_variances
+
+    if melt:
+        df_var_exp_gcamp_melt = df_variances.reset_index().melt(id_vars='index')
+        df_var_exp_gcamp_melt.rename(columns={'index': 'dataset_name', 'value': 'fraction_variance_explained'},
+                                     inplace=True)
+
+        # Add a column for the simple variance threshold
+        df_group = df_traces.drop(columns=['local_time']).groupby('dataset_name')
+        df_active = df_group.var()
+        df_active_melt = df_active.reset_index().melt(id_vars='dataset_name')
+        df_active_melt.rename(columns={'index': 'dataset_name', 'value': 'variance', 'variable': 'neuron_name'}, inplace=True)
+
+        df_var_exp_gcamp_melt = df_var_exp_gcamp_melt.merge(df_active_melt, on=['dataset_name', 'neuron_name'])
+
+        # Add columns for the relevant categories
+        gas_sensing_neurons = list_of_gas_sensing_neurons()
+        neurons_active_and_manifold_in_immob = list_neurons_manifold_in_immob()
+
+        df_var_exp_gcamp_melt['has_id'] = df_var_exp_gcamp_melt['variable'].apply(
+            lambda x: 'neuron' not in x and 'VG_' not in x)
+        df_var_exp_gcamp_melt['is_o2'] = df_var_exp_gcamp_melt['variable'].apply(lambda x: x in gas_sensing_neurons)
+        df_var_exp_gcamp_melt['active_in_immob'] = df_var_exp_gcamp_melt['variable'].apply(
+            lambda x: x in neurons_active_and_manifold_in_immob)
+
+        df_var_exp_gcamp_melt['category'] = np.nan
+        df_var_exp_gcamp_melt['category'] = df_var_exp_gcamp_melt['has_id'].replace({True: np.nan, False: 'Not IDed'})
+        tmp = df_var_exp_gcamp_melt['is_o2'].replace({True: 'O2 or CO2 sensing', False: np.nan})
+        df_var_exp_gcamp_melt['category'].fillna(tmp, inplace=True)
+        tmp = df_var_exp_gcamp_melt['active_in_immob'].replace({True: 'Manifold in Immob', False: np.nan})
+        df_var_exp_gcamp_melt['category'].fillna(tmp, inplace=True)
+        df_var_exp_gcamp_melt['category'].fillna('Other neurons active in FM only', inplace=True)
+
+        return df_var_exp_gcamp_melt
+    else:
+        return df_variances
 
 
 def build_time_series_from_multiple_project_clusters(all_projects: Dict[str, ProjectData],
@@ -501,89 +537,11 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
     -------
 
     """
-    base_marker_size = 0.05
-    big_marker_size = 0.5
-    str_other_neurons = 'Other neurons'
-
-    all_proj = MultiProjectWrapper(all_projects=all_projects_gcamp)
-    all_proj_gfp = MultiProjectWrapper(all_projects=all_projects_gfp)
-
-    # Calculate traces
-    trace_opt = dict(rename_neurons_using_manual_ids=True)
-    trace_opt.update(kwargs)
-    dict_all_traces = all_proj.calc_default_traces(**trace_opt)
-    df_all_traces = flatten_multiindex_columns(pd.concat(dict_all_traces, axis=1))
-    pca_mode0 = pd.concat(all_proj.calc_correlation_to_pc1(**trace_opt)).values
-
-    # Also residuals
-    dict_all_traces = all_proj.calc_default_traces(**trace_opt, residual_mode='pca', interpolate_nan=True)
-    df_all_traces_resid = flatten_multiindex_columns(pd.concat(dict_all_traces, axis=1))
-
-    # Also global mode
-    dict_all_traces = all_proj.calc_default_traces(**trace_opt, residual_mode='pca_global', interpolate_nan=True)
-    df_all_traces_global = flatten_multiindex_columns(pd.concat(dict_all_traces, axis=1))
-
-    # Also for gfp
-    dict_all_traces_gfp = all_proj_gfp.calc_default_traces(**trace_opt)
-    df_all_traces_gfp = flatten_multiindex_columns(pd.concat(dict_all_traces_gfp, axis=1))
-    pca_mode0_gfp = pd.concat(all_proj_gfp.calc_correlation_to_pc1(**trace_opt)).values
-
-    all_summary_dfs = []
-    all_trace_dfs = {'gcamp': df_all_traces, 'global gcamp': df_all_traces_global,
-                     'residual gcamp': df_all_traces_resid, 'gfp': df_all_traces_gfp}
-
-    # Calculate autocovariance and other metadata
-    for name, df_base in all_trace_dfs.items():
-        gcamp_std = df_base.std()
-        gcamp_mean = df_base.mean()
-        gcamp_corr = df_base.apply(lambda col: col.autocorr(lag=lag))
-        gcamp_cov = df_base.apply(lambda col: col.autocorr(lag=lag) * col.var())
-        df = pd.DataFrame({'std': gcamp_std, 'mean': gcamp_mean, 'acf': gcamp_corr, 'acovf': gcamp_cov})
-        df['genotype'] = name
-        if name == 'gfp':
-            mode = pca_mode0_gfp
-        else:
-            mode = pca_mode0
-        df['pc0'] = mode
-        df['pc0_high'] = mode > 0.2
-        df['pc0_low'] = mode < -0.2
-        all_summary_dfs.append(df)
-    df_summary = pd.concat(all_summary_dfs, axis=0)
-    df_summary.columns = ['std', 'mean', 'Autocorrelation', 'acv', 'Type of data',
-                          'Correlation to PC1', 'pc0_high', 'pc0_low']
-
-    flattened_names = pd.DataFrame(split_flattened_index(df_summary.index)).T
-    df_summary['dataset_name'] = flattened_names[0]
-    df_summary['neuron_name'] = flattened_names[1]
-    df_summary['has_manual_id'] = ['neuron' not in name and name != '' for name in df_summary['neuron_name']]
-    df_summary['bag'] = ['BAG' in name for name in df_summary['neuron_name']]
-    df_summary['neuron_name_simple'] = [name[:-1] if name.endswith(('L', 'R')) else name for name in
-                                        df_summary['neuron_name']]
-    df_summary['vb02'] = ['VB02' in name for name in df_summary['neuron_name']]
-    df_summary['Neuron ID'] = [name if 'VB02' in name or 'BAG' in name else str_other_neurons for name in
-                               df_summary['neuron_name']]
-    df_summary['Simple Neuron ID'] = [name if 'VB02' in name or 'BAG' in name else str_other_neurons for name in
-                                      df_summary['neuron_name_simple']]
-    df_summary['multiplex_size'] = [big_marker_size if 'VB02' in name or 'BAG' in name else base_marker_size for name in df_summary['neuron_name']]
-
-    # Build the rows that will be in the final plot
-    col_name = 'Genotype and datatype'
-    color_col = []
-    color_name_mapping = {'gcamp': 'Raw', 'global gcamp': 'Global', 'residual gcamp': 'Residual', 'gfp': 'GFP'}
-    for i, row in df_summary.iterrows():
-        # Put all of the other neurons in the background, regardless of data type
-        if row['Neuron ID'] == str_other_neurons:
-            color_col.append('Other neurons')
-        # These neurons will actually have color
-        else:
-            color_col.append(color_name_mapping[row['Type of data']])
-    df_summary[col_name] = color_col
-    # Final calculation
-    if significance_line_at_95:
-        significance_line = df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'acv']
-    else:
-        significance_line = df_summary.groupby('Type of data').quantile(0.5, numeric_only=True).at['gfp', 'acv']
-    df_summary['Significant'] = df_summary['acv'] > significance_line
+    df_summary, color_name_mapping, significance_line = calc_summary_dataframe_all_datasets(all_projects_gcamp,
+                                                                                            all_projects_gfp,
+                                                                                            significance_line_at_95,
+                                                                                            lag=lag,
+                                                                                            **kwargs)
 
     # Use D3 with the first gray, but skip orange and green (used for immobilized and gfp)
     cmap = px.colors.qualitative.D3.copy()
@@ -681,3 +639,100 @@ def calc_all_autocovariance(all_projects_gcamp, all_projects_gfp, include_gfp=Tr
         fig.show()
 
     return all_figs, df_summary, significance_line, cmap
+
+
+def calc_summary_dataframe_all_datasets(all_projects_gcamp, all_projects_gfp, significance_line_at_95=True, lag=1,
+                                        **trace_kwargs):
+    base_marker_size = 0.05
+    big_marker_size = 0.5
+    str_other_neurons = 'Other neurons'
+
+
+    all_proj = MultiProjectWrapper(all_projects=all_projects_gcamp)
+    all_proj_gfp = MultiProjectWrapper(all_projects=all_projects_gfp)
+    # Calculate traces
+    trace_opt = dict(rename_neurons_using_manual_ids=True)
+    trace_opt.update(trace_kwargs)
+    dict_all_traces = all_proj.calc_default_traces(**trace_opt)
+    df_all_traces = flatten_multiindex_columns(pd.concat(dict_all_traces, axis=1))
+    pca_mode0 = pd.concat(all_proj.calc_correlation_to_pc1(**trace_opt)).values
+    # Also residuals
+    dict_all_traces = all_proj.calc_default_traces(**trace_opt, residual_mode='pca', interpolate_nan=True)
+    df_all_traces_resid = flatten_multiindex_columns(pd.concat(dict_all_traces, axis=1))
+    # Also global mode
+    dict_all_traces = all_proj.calc_default_traces(**trace_opt, residual_mode='pca_global', interpolate_nan=True)
+    df_all_traces_global = flatten_multiindex_columns(pd.concat(dict_all_traces, axis=1))
+    # Also for gfp
+    dict_all_traces_gfp = all_proj_gfp.calc_default_traces(**trace_opt)
+    df_all_traces_gfp = flatten_multiindex_columns(pd.concat(dict_all_traces_gfp, axis=1))
+    pca_mode0_gfp = pd.concat(all_proj_gfp.calc_correlation_to_pc1(**trace_opt)).values
+    all_summary_dfs = []
+    all_trace_dfs = {'gcamp': df_all_traces, 'global gcamp': df_all_traces_global,
+                     'residual gcamp': df_all_traces_resid, 'gfp': df_all_traces_gfp}
+    # Calculate autocovariance and other metadata
+    for name, df_base in all_trace_dfs.items():
+        this_var = df_base.var()
+        this_mean = df_base.mean()
+        this_corr = df_base.apply(lambda col: col.autocorr(lag=lag))
+        this_cov = df_base.apply(lambda col: col.autocorr(lag=lag) * col.var())
+        df = pd.DataFrame({'var': this_var, 'mean': this_mean, 'acf': this_corr, 'acovf': this_cov})
+        df['genotype'] = name
+        if name == 'gfp':
+            mode = pca_mode0_gfp
+        else:
+            mode = pca_mode0
+        df['pc0'] = mode
+        df['pc0_high'] = mode > 0.2
+        df['pc0_low'] = mode < -0.2
+        all_summary_dfs.append(df)
+    df_summary = pd.concat(all_summary_dfs, axis=0)
+    df_summary.columns = ['var', 'mean', 'Autocorrelation', 'acv', 'Type of data',
+                          'Correlation to PC1', 'pc0_high', 'pc0_low']
+    flattened_names = pd.DataFrame(split_flattened_index(df_summary.index)).T
+    df_summary['dataset_name'] = flattened_names[0]
+    df_summary['neuron_name'] = flattened_names[1]
+    df_summary['has_manual_id'] = ['neuron' not in name and name != '' for name in df_summary['neuron_name']]
+    df_summary['bag'] = ['BAG' in name for name in df_summary['neuron_name']]
+    df_summary['neuron_name_simple'] = [name[:-1] if name.endswith(('L', 'R')) else name for name in
+                                        df_summary['neuron_name']]
+    df_summary['vb02'] = ['VB02' in name for name in df_summary['neuron_name']]
+    df_summary['Neuron ID'] = [name if 'VB02' in name or 'BAG' in name else str_other_neurons for name in
+                               df_summary['neuron_name']]
+    df_summary['Simple Neuron ID'] = [name if 'VB02' in name or 'BAG' in name else str_other_neurons for name in
+                                      df_summary['neuron_name_simple']]
+    df_summary['multiplex_size'] = [big_marker_size if 'VB02' in name or 'BAG' in name else base_marker_size for name in
+                                    df_summary['neuron_name']]
+    # Build the rows that will be in the final plot
+    col_name = 'Genotype and datatype'
+    color_col = []
+    color_name_mapping = {'gcamp': 'Raw', 'global gcamp': 'Global', 'residual gcamp': 'Residual', 'gfp': 'GFP'}
+    for i, row in df_summary.iterrows():
+        # Put all of the other neurons in the background, regardless of data type
+        if row['Neuron ID'] == str_other_neurons:
+            color_col.append('Other neurons')
+        # These neurons will actually have color
+        else:
+            color_col.append(color_name_mapping[row['Type of data']])
+    df_summary[col_name] = color_col
+    # Column relative to gfp
+    if significance_line_at_95:
+        significance_line = df_summary.groupby('Type of data').quantile(0.95, numeric_only=True).at['gfp', 'acv']
+    else:
+        significance_line = df_summary.groupby('Type of data').quantile(0.5, numeric_only=True).at['gfp', 'acv']
+    df_summary['Significant'] = df_summary['acv'] > significance_line
+
+    # Update formatting to be like others
+    df_summary.reset_index(inplace=True)
+    df_summary.rename(columns={'index': 'neuron_name_with_dataset'}, inplace=True)
+
+    # Add new things: variance explained by PCA
+    df_var_exp_gcamp = build_dataframe_of_variance_explained(all_projects_gcamp, melt=True)
+    df_var_exp_gfp = build_dataframe_of_variance_explained(all_projects_gfp, melt=True)
+    df_var_exp = pd.concat([df_var_exp_gcamp, df_var_exp_gfp], axis=0)
+
+    assert len(df_var_exp) == len(df_summary), \
+        "Mismatch in length of variance explained dataframe and summary dataframe"
+
+    df_summary = df_summary.merge(df_var_exp, on=['dataset_name', 'neuron_name'])
+
+    return df_summary, color_name_mapping, significance_line
