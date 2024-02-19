@@ -16,7 +16,7 @@ if [ ! -d "$1" ]; then
 fi
 
 # Loop through subfolders, and print the .cache folder
-for dir in $1/*; do
+for dir in "$1"/*; do
     if [ -d "$dir" ]; then
         mkdir -pv "$dir/.cache"
         # Change permissions to allow group write
