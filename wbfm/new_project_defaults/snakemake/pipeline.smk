@@ -22,6 +22,9 @@ except NoBehaviorDataError:
     raw_data_dir = None
     output_behavior_dir = None
     background_img = None
+    background_video = None
+    behavior_btf = None
+    raw_data_subfolder = None
 
 
 def _run_helper(script_name, project_path):
