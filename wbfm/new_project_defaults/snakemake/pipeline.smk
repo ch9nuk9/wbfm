@@ -1,8 +1,5 @@
-import glob
 import logging
 import os
-from pathlib import Path
-
 from wbfm.utils.general.custom_errors import NoBehaviorDataError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
@@ -18,7 +15,8 @@ project_cfg = os.path.join(project_dir, "project_config.yaml")
 # Load the folders needed for the behavioral part of the pipeline
 try:
     cfg = ModularProjectConfig(project_dir)
-    raw_data_dir, output_behavior_dir, background_img, behavior_btf = cfg.get_folders_for_behavior_pipeline()
+    raw_data_di, raw_data_subfolder, output_behavior_dir, background_img, background_video, behavior_btf = \
+        cfg.get_folders_for_behavior_pipeline()
 except NoBehaviorDataError:
     logging.warning("No behavior data found, behavior will not run. Only 'traces' can be processed.")
     raw_data_dir = None
@@ -184,7 +182,7 @@ rule extract_full_traces:
 # TODO: this modifies the raw data folder... which is consistent with the fluorescence unfortunately
 rule ometiff2bigtiff:
     output:
-        btf_file = {behavior_btf}
+        btf_file = behavior_btf
     run:
         from imutils.src import imutils_parser_main
 
@@ -196,7 +194,7 @@ rule ometiff2bigtiff:
 
 rule z_project_background:
     input:
-        background_video = {background_video}
+        background_video = background_video
     output:
         # New: put the background image in the output folder, and make it temporary
         background_img = _cleanup_helper(background_img)
@@ -213,7 +211,7 @@ rule z_project_background:
 
 rule subtract_background:
     input:
-        raw_img  = {behavior_btf},
+        raw_img  = behavior_btf,
         background_img = background_img
     params:
         do_inverse = config["do_inverse"]
