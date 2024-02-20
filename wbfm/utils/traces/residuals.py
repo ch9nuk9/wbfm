@@ -8,6 +8,8 @@ from sklearn.decomposition import PCA, NMF
 from sklearn.preprocessing import StandardScaler
 import plotly.express as px
 
+from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
+
 
 def calculate_residual_subtract_pca(df: pd.DataFrame, n_components=2) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Note: must not contain nan"""
@@ -67,7 +69,7 @@ def rectified_linear_model_on_all_datasets(df_all_traces, df_all_pca, df_all_beh
 
     """
     # Drop any columns that are not real neurons, i.e. contain 'neuron' in the name
-    df_all_traces = df_all_traces.loc[:, ~df_all_traces.columns.str.contains('neuron')]
+    df_all_traces = df_all_traces.loc[:, ~df_all_traces.columns.str.contains('neuron')].copy()
     # Make sure that the local_time column exists and is an integer
     df_all_traces['local_time'] = df_all_traces.groupby('dataset_name').cumcount()
     df_all_pca['local_time'] = df_all_pca.groupby('dataset_name').cumcount()
@@ -85,14 +87,25 @@ def rectified_linear_model_on_all_datasets(df_all_traces, df_all_pca, df_all_beh
     df_all_models = df_all.groupby('dataset_name').apply(lambda x: rectified_linear_model(x, y_name))
     df_all_models = pd.DataFrame(df_all_models)
 
+    all_output_dfs = []
+
     for beh_name in ['rev', 'fwd']:
-        df_all_models[f'{y_name}_{beh_name}_pvalue'] = df_all_models[0].apply(
+        df = dict()
+        df[f'pvalue'] = df_all_models[0].apply(
             lambda x: x.pvalues[f'{beh_name}_curvature'])
-        df_all_models[f'{y_name}_{beh_name}'] = df_all_models[0].apply(
+        df[f'param'] = df_all_models[0].apply(
             lambda x: x.params[f'{beh_name}_curvature'])
+        df['behavior'] = beh_name
+        df['neuron_name'] = y_name
+
+        all_output_dfs.append(pd.DataFrame(df))
+
+    df_output = pd.concat(all_output_dfs, axis=0)
 
     # Plot
-    fig = px.box(df_all_models, y=['rev', 'fwd'])
+    fig = px.box(df_output, x='neuron_name', y='param', color='behavior',
+                 title=f'Curvature coefficients for {y_name}')
+    add_p_value_annotation(fig, x_label='all')
     fig.show()
 
     return df_all, df_all_models, fig

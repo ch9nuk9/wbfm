@@ -422,7 +422,14 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
 
     Adds notations giving the p-value between two box plot data (t-test two-sided comparison)
     Note: designed for individually adding traces using fig.add_trace, not plotly express
-        However, does work with px.box with color separation using x_label
+        However, does work with px.box with color using x_label='all'
+        BUT: there must be an x label, with the colors producing paired boxes
+
+    Note: doesn't work with additional options like points='all' in px.box
+
+    Example:
+        fig = px.box(df, x="x", y="y", color="color")
+        add_p_value_annotation(fig, x_label='all')
 
     Parameters:
     ----------
@@ -446,9 +453,14 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
     fig: figure
         figure with the added notation
     """
+    if DEBUG:
+        print(f"Adding p-value annotation to subplot {subplot}")
+
     if x_label == 'all':
         # Get all x_labels and call recursively
         all_x_labels = pd.Series(fig.data[0].x).unique()
+        if DEBUG:
+            print(f"Detected x_labels: {all_x_labels}")
         for x_label in all_x_labels:
             if x_label == 'all':
                 logging.warning("x_label is 'all', which is a reserved keyword. Skipping")
@@ -456,7 +468,7 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
             if bonferroni_factor is None:
                 bonferroni_factor = len(all_x_labels)
             fig = add_p_value_annotation(fig, array_columns, subplot=subplot, x_label=x_label, _format=_format,
-                                         bonferroni_factor=bonferroni_factor)
+                                         bonferroni_factor=bonferroni_factor, DEBUG=DEBUG, permutations=permutations)
         return fig
 
     if array_columns is None:
@@ -486,9 +498,12 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
             if data['xaxis'] == 'x' + subplot_str:
                 indices = np.append(indices, index)
         indices = [int(i) for i in indices]
-        print((indices))
+        print(indices)
     else:
         subplot_str = ''
+
+    if DEBUG:
+        print(f"Testing columns: {array_columns}")
 
     # Print the p-values
     for index, column_pair in enumerate(array_columns):
@@ -510,6 +525,9 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
 
             y0 = y0[np.where(x0 == x_label)[0]]
             y1 = y1[np.where(x1 == x_label)[0]]
+            # if len(y1) == 0:
+            #     # Then the figure is organized per-color, and we can use the direct index
+            #     y1 = fig_dict['data'][data_pair[1]]['y']
             if DEBUG:
                 print(y0)
                 print(y1)
@@ -521,13 +539,15 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
             column_pair = [x_label_ind - 0.2, x_label_ind + 0.2]
 
         # Drop any nan values
-        y0 = y0[~np.isnan(y0)]
-        y1 = y1[~np.isnan(y1)]
+        valid_idx = np.logical_and(~np.isnan(y0), ~np.isnan(y1))
+        y0 = y0[valid_idx]
+        y1 = y1[valid_idx]
 
         # Get the p-value
         pvalue = stats.ttest_ind(y0, y1, equal_var=False, random_state=4242, permutations=permutations)[1] * bonferroni_factor
-        if DEBUG:
-            print(pvalue)
+        # if DEBUG:
+        #     print(f"p-value: {pvalue}")
+        #     print(f"Data: {y0}, {y1}")
         if pvalue >= 0.05:
             symbol = 'ns'
         elif pvalue >= 0.01:
@@ -568,6 +588,10 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
                                 xref="x" + subplot_str,
                                 yref="y" + subplot_str + " domain"
                                 ))
+        if DEBUG:
+            print(f"p-value: {pvalue}")
+            print(f"Adding annotation at x= {column_pair[0]} and {column_pair[1]}")
+            print(f"Adding annotation at y={y_range[index][1] * _format['text_height'] + annotation_y_shift}")
     return fig
 
 
