@@ -18,7 +18,7 @@ from wbfm.utils.projects.utils_filenames import check_exists, resolve_mounted_pa
     get_sequential_filename, get_location_of_new_project_defaults
 from wbfm.utils.projects.utils_project import load_config, edit_config, safe_cd, update_project_config_path, \
     update_snakemake_config_path
-from wbfm.utils.visualization.hardcoded_paths import default_raw_data_config
+from wbfm.utils.general.hardcoded_paths import default_raw_data_config
 
 
 @dataclass

@@ -264,3 +264,11 @@ def default_raw_data_config():
             'ventral': 'left',
             'strain': 'ZIM2165'
             }
+
+
+def neurons_with_confident_ids():
+    neuron_names = ['AVAL', 'AVAR', 'BAGL', 'BAGR', 'RIMR', 'RIML', 'AVEL', 'AVER',
+                    'RIVR', 'RIVL', 'SMDVL', 'SMDVR', 'SMDDR', 'SMDDL',
+                    'ALA', 'RIS', 'AQR',
+                    'VB02', 'RIBL', 'RIBR', 'RMEL', 'RMER', 'RMED', 'RMEV', 'RID', 'AVBL', 'AVBR', 'DB01']
+    return neuron_names

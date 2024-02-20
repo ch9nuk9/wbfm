@@ -10,13 +10,12 @@ import pandas as pd
 from PyQt5 import QtGui
 from PyQt5.QtCore import pyqtSignal, Qt, QItemSelectionModel
 from PyQt5.QtWidgets import QComboBox, QVBoxLayout, QMessageBox, QStyledItemDelegate
-from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QTableView, QLineEdit, QAbstractItemView, QListWidget, QLabel, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QTableView, QAbstractItemView, QListWidget, QLabel, QPushButton
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 
 from wbfm.utils.general.postprocessing.base_cropping_utils import get_crop_coords3d
 from wbfm.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume, \
     get_single_volume_specific_slices
-from wbfm.utils.visualization.hardcoded_paths import names_of_neurons_to_id
 
 
 def get_cropped_frame(fname, t, num_slices, zxy, crop_sz, to_flip=False):

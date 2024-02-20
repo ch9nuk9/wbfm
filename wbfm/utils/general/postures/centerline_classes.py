@@ -35,7 +35,7 @@ from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, \
     filter_gaussian_moving_average, fill_nan_in_dataframe
-from wbfm.utils.visualization.hardcoded_paths import forward_distribution_statistics, reverse_distribution_statistics
+from wbfm.utils.general.hardcoded_paths import forward_distribution_statistics, reverse_distribution_statistics
 
 
 @dataclass

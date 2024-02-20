@@ -26,7 +26,7 @@ from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages, \
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivariateEncoding
 from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std
-from wbfm.utils.visualization.hardcoded_paths import list_of_gas_sensing_neurons, list_neurons_manifold_in_immob
+from wbfm.utils.general.hardcoded_paths import list_of_gas_sensing_neurons, list_neurons_manifold_in_immob
 
 
 @dataclass

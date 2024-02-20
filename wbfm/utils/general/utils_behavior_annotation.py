@@ -24,7 +24,7 @@ import plotly.graph_objects as go
 
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe, filter_gaussian_moving_average
-from wbfm.utils.visualization.hardcoded_paths import get_summary_visualization_dir
+from wbfm.utils.general.hardcoded_paths import get_summary_visualization_dir
 
 
 class BehaviorCodes(Flag):
