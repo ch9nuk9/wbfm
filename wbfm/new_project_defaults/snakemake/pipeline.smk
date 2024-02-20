@@ -18,7 +18,7 @@ project_cfg = os.path.join(project_dir, "project_config.yaml")
 # Load the folders needed for the behavioral part of the pipeline
 try:
     cfg = ModularProjectConfig(project_dir)
-    raw_data_dir, output_behavior_dir, background_img = cfg.get_folders_for_behavior_pipeline()
+    raw_data_dir, output_behavior_dir, background_img, behavior_btf = cfg.get_folders_for_behavior_pipeline()
 except NoBehaviorDataError:
     logging.warning("No behavior data found, behavior will not run. Only 'traces' can be processed.")
     raw_data_dir = None
@@ -184,7 +184,7 @@ rule extract_full_traces:
 # TODO: this modifies the raw data folder... which is consistent with the fluorescence unfortunately
 rule ometiff2bigtiff:
     output:
-        btf_file = {btf_file}
+        btf_file = {behavior_btf}
     run:
         from imutils.src import imutils_parser_main
 
@@ -213,7 +213,7 @@ rule z_project_background:
 
 rule subtract_background:
     input:
-        raw_img  = {btf_file},
+        raw_img  = {behavior_btf},
         background_img = background_img
     params:
         do_inverse = config["do_inverse"]

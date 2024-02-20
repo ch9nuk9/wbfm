@@ -570,7 +570,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         else:
             raise ValueError(f"No background videos found in {behavior_raw_folder}/../background/")
 
-        return behavior_raw_folder, behavior_output_folder, background_img
+        return behavior_raw_folder, behavior_output_folder, background_img, btf_file
 
 
 def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> SubfolderConfigFile:
