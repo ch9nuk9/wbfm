@@ -210,7 +210,7 @@ def list_of_neurons_to_id() -> pd.Series:
     return pd.Series(items)
 
 
-def list_of_gas_sensing_neurons():
+def list_of_gas_sensing_neurons(include_non_suffix_names=False):
     neuron_list = []
     unilateral_neurons = list_of_unilateral_neurons()
     for raw_neuron in ['AQR', 'IL1L', 'IL2L', 'BAG', 'RMDV', 'AUA', 'URX']:
@@ -222,6 +222,8 @@ def list_of_gas_sensing_neurons():
             else:
                 continue
             neuron_list.append(neuron)
+        if include_non_suffix_names and raw_neuron not in unilateral_neurons:
+            neuron_list.append(raw_neuron)
     return neuron_list
 
 
@@ -269,6 +271,6 @@ def default_raw_data_config():
 def neurons_with_confident_ids():
     neuron_names = ['AVAL', 'AVAR', 'BAGL', 'BAGR', 'RIMR', 'RIML', 'AVEL', 'AVER',
                     'RIVR', 'RIVL', 'SMDVL', 'SMDVR', 'SMDDR', 'SMDDL',
-                    'ALA', 'RIS', 'AQR',
+                    'ALA', 'RIS', 'AQR', 'RMDVL', 'RMDVR', 'URXL', 'URXR',
                     'VB02', 'RIBL', 'RIBR', 'RMEL', 'RMER', 'RMED', 'RMEV', 'RID', 'AVBL', 'AVBR', 'DB01']
     return neuron_names
