@@ -568,11 +568,14 @@ def plot_variance_all_neurons(all_projects_gcamp, all_projects_gfp, include_gfp=
         all_figs = []
         for c in categories:
             df_subset = df_summary[df_summary['Type of data'] == c]
-            fig = px.scatter(df_subset,
+            range_y = [0.00005, 0.3]
+            fig = px.scatter(df_subset, range_y=range_y,
                              color='Genotype and datatype', color_discrete_sequence=cmap_copy, **scatter_opt)
             # Create custom ticks for the y axis: logarithmic, but only on even powers of 10
-            min_val_power_10 = np.floor(np.log10(df_subset['acv'].min()))
-            max_val_power_10 = np.ceil(np.log10(df_subset['acv'].max()))
+            min_val_power_10 = np.log10(range_y[0])
+            max_val_power_10 = np.log10(range_y[1])
+            # min_val_power_10 = np.floor(np.log10(df_subset['acv'].min()))
+            # max_val_power_10 = np.ceil(np.log10(df_subset['acv'].max()))
             # Get ticks, but not more than 3
             power_delta = max_val_power_10 - min_val_power_10
             num_to_skip = power_delta // 3
