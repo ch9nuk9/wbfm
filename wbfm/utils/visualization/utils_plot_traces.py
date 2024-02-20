@@ -425,8 +425,6 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
         However, does work with px.box with color using x_label='all'
         BUT: there must be an x label, with the colors producing paired boxes
 
-    Note: doesn't work with additional options like points='all' in px.box
-
     Example:
         fig = px.box(df, x="x", y="y", color="color")
         add_p_value_annotation(fig, x_label='all')

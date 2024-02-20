@@ -102,9 +102,9 @@ def rectified_linear_model_on_all_datasets(df_all_traces, df_all_pca, df_all_beh
 
     df_output = pd.concat(all_output_dfs, axis=0)
 
-    # Plot
+    # Plot... note that this should really be a hierarchical model
     fig = px.box(df_output, x='neuron_name', y='param', color='behavior',
-                 title=f'Curvature coefficients for {y_name}')
+                 title=f'Curvature coefficients for {y_name}', points='all')
     add_p_value_annotation(fig, x_label='all')
     fig.show()
 
