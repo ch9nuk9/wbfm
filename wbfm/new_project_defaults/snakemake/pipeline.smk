@@ -15,7 +15,7 @@ project_cfg = os.path.join(project_dir, "project_config.yaml")
 # Load the folders needed for the behavioral part of the pipeline
 try:
     cfg = ModularProjectConfig(project_dir)
-    raw_data_di, raw_data_subfolder, output_behavior_dir, background_img, background_video, behavior_btf = \
+    raw_data_dir, raw_data_subfolder, output_behavior_dir, background_img, background_video, behavior_btf = \
         cfg.get_folders_for_behavior_pipeline()
 except NoBehaviorDataError:
     logging.warning("No behavior data found, behavior will not run. Only 'traces' can be processed.")
