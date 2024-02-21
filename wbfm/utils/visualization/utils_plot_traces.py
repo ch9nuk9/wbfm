@@ -10,7 +10,7 @@ from scipy.stats import stats
 from sklearn.linear_model import LinearRegression
 
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan, get_contiguous_blocks_from_column
-from wbfm.utils.general.utils_paper import paper_trace_settings, apply_figure_settings
+from wbfm.utils.general.utils_paper import paper_trace_settings, apply_figure_settings, plotly_paper_color_discrete_map
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 import plotly.graph_objects as go
@@ -600,7 +600,8 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
 
 # First, do wbfm
 
-def plot_triggered_averages(project_data_list, output_foldername=None):
+def plot_triggered_averages(project_data_list, output_foldername=None,
+                            project_data_color_map=None):
     """
     For figure 1 of the paper: averaged triggered averages between two example datasets
 
@@ -617,6 +618,9 @@ def plot_triggered_averages(project_data_list, output_foldername=None):
     from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
     xlim = [-5, 15]
     trace_opt = paper_trace_settings()
+    if project_data_color_map is None:
+        base_cmap = plotly_paper_color_discrete_map()
+        project_data_color_map = [base_cmap['wbfm'], base_cmap['immob']]
 
     # Example neurons
     for neuron_base in ['AVAL', 'PC1']:
@@ -626,6 +630,7 @@ def plot_triggered_averages(project_data_list, output_foldername=None):
             fig, ax = plt.subplots(dpi=200, figsize=(4, 2.5))
             for i_trace, project_data in enumerate(project_data_list):
 
+                color = project_data_color_map[i_trace]
                 df_traces = project_data.calc_paper_traces()
                 ind_class = project_data.worm_posture_class.calc_triggered_average_indices(state=state)
 
@@ -642,7 +647,8 @@ def plot_triggered_averages(project_data_list, output_foldername=None):
 
                 mat = ind_class.calc_triggered_average_matrix(y)
 
-                ind_class.plot_triggered_average_from_matrix(mat, ax=ax, is_second_plot=(i_trace > 0), lw=2)
+                ind_class.plot_triggered_average_from_matrix(mat, ax=ax, is_second_plot=(i_trace > 0),
+                                                             lw=2, color=color)
                 ax.set_title(f"{neuron}")
                 ax.set_xlim(xlim)
                 ax.set_xlabel("Time (seconds)")

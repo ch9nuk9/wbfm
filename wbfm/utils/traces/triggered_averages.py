@@ -131,6 +131,8 @@ def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, i
                                      (dict_of_events_to_keep.get(start, 0) == 0)
     validity_checks = [is_too_short, is_too_long, is_at_edge, starts_with_misannotation, not_in_dict]
     # Build actual indices
+    if DEBUG:
+        print(f"Names of validity checks: {[f.__name__ for f in validity_checks]}")
     all_ind = build_ind_matrix_from_starts_and_ends(all_starts, all_ends, ind_preceding, validity_checks, DEBUG)
     return all_ind
 
@@ -219,6 +221,7 @@ class TriggeredAverageIndices:
             self.dict_of_events_to_keep = {i: state in beh[i] for i in range(len(self.behavioral_annotation))}
 
         if self.num_events == 0:
+            err
             logging.warning(f"No instances of state {self.behavioral_state} found in behavioral annotation!!")
 
     @property
