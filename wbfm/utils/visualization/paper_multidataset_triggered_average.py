@@ -12,6 +12,7 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from matplotlib.ticker import FixedLocator
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import split_flattened_index
@@ -637,7 +638,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
     def get_figure_opt(self):
         return dict(dpi=300, figsize=(10/3, 10/2), gridspec_kw={'wspace': 0.0, 'hspace': 0.0})
 
-    def plot_triple_traces(self, neuron_name, title=False, legend=False,
+    def plot_triple_traces(self, neuron_name, title=False, legend=False, round_y_ticks=False,
                            output_foldername=None, **kwargs):
         """
         Plot the three traces (raw, global, residual) on the same plot.
@@ -691,6 +692,12 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         # Remove space between subplots
         plt.subplots_adjust(hspace=0)
+
+        if round_y_ticks:
+            for ax in axes:
+                y_ticks_raw = ax.get_yticks()
+                y_tick_locations = [round(val, 1) for val in y_ticks_raw]
+                ax.yaxis.set_major_locator(FixedLocator(y_tick_locations))
 
         apply_figure_settings(fig, width_factor=0.25, height_factor=0.3, plotly_not_matplotlib=False)
 
