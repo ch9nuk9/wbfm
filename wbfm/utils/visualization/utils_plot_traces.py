@@ -537,9 +537,12 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
             column_pair = [x_label_ind - 0.2, x_label_ind + 0.2]
 
         # Drop any nan values
-        valid_idx = np.logical_and(~np.isnan(y0), ~np.isnan(y1))
-        y0 = y0[valid_idx]
-        y1 = y1[valid_idx]
+        y0 = y0[~np.isnan(y0)]
+        y1 = y1[~np.isnan(y1)]
+
+        if len(y0) == 0 or len(y1) == 0:
+            print(f"Skipping annotation for {x_label} because one of the datasets is empty")
+            continue
 
         # Get the p-value
         pvalue = stats.ttest_ind(y0, y1, equal_var=False, random_state=4242, permutations=permutations)[1] * bonferroni_factor
