@@ -624,7 +624,6 @@ def plot_triggered_averages(project_data_list, output_foldername=None,
 
     # Example neurons
     for neuron_base in ['AVAL', 'PC1']:
-        # for neuron_base in ['AVA', 'RME', 'VB02', 'BAG', 'PC1']:
         for state in [BehaviorCodes.REV, BehaviorCodes.FWD]:
 
             fig, ax = plt.subplots(dpi=200, figsize=(4, 2.5))
@@ -651,8 +650,8 @@ def plot_triggered_averages(project_data_list, output_foldername=None,
                                                              lw=2, color=color)
                 ax.set_title(f"{neuron}")
                 ax.set_xlim(xlim)
-                ax.set_xlabel("Time (seconds)")
-                ax.set_ylabel("Activity")
+                ax.set_xlabel(project_data.x_label_for_plots)
+                ax.set_ylabel("dR/R20")
                 plt.tight_layout()
 
                 # Make a fake behavioral vector to shade this
@@ -668,7 +667,7 @@ def plot_triggered_averages(project_data_list, output_foldername=None,
 
             # Save
             if output_foldername is not None:
-                fname = f"multiproject-{neuron}-{state}.png"
+                fname = f"example-{neuron}-{state}.png"
                 # if 'immob' in fname:
                 #     fname = os.path.join(output_foldername, 'immob', fname)
                 # else:
