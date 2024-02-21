@@ -53,7 +53,8 @@ class PaperColoredTracePlotter:
                          # Should I use the 'raw' colors for this?
                          'kymo': 'black',
                          'stimulus': cmap(2),
-                         'self_collision': cmap(0)}
+                         'self_collision': cmap(0),
+                         'mutant': cmap(6)}
         if trigger_type not in color_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(color_mapping.keys())}')
         return color_mapping[trigger_type]
@@ -635,6 +636,16 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
     def df_traces_global(self):
         return self.project.calc_paper_traces_global()
 
+    def get_df_from_data_type(self, data_type):
+        if data_type == 'raw':
+            return self.df_traces
+        elif data_type == 'global':
+            return self.df_traces_global
+        elif data_type == 'residual':
+            return self.df_traces_residual
+        else:
+            raise ValueError(f"Invalid data type {data_type}; must be one of 'raw', 'global', 'residual'")
+
     def get_figure_opt(self):
         return dict(dpi=300, figsize=(10/3, 10/2), gridspec_kw={'wspace': 0.0, 'hspace': 0.0})
 
@@ -695,13 +706,67 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         if round_y_ticks:
             for ax in axes:
-                y_ticks_raw = ax.get_yticks()
-                y_tick_locations = [round(val, 1) for val in y_ticks_raw]
-                ax.yaxis.set_major_locator(FixedLocator(y_tick_locations))
+                self._round_yticks(ax)
 
         apply_figure_settings(fig, width_factor=0.25, height_factor=0.3, plotly_not_matplotlib=False)
 
         if output_foldername:
-            fname = os.path.join(output_foldername, f'{neuron_name}-combined_traces.png')
-            plt.savefig(fname, transparent=True)
-            fig.savefig(fname.replace(".png", ".svg"))
+            self._save_fig(neuron_name, output_foldername)
+
+        return fig, axes
+
+    def _round_yticks(self, ax):
+        y_ticks_raw = ax.get_yticks()
+        y_tick_locations = [round(val, 1) for val in y_ticks_raw]
+        ax.yaxis.set_major_locator(FixedLocator(y_tick_locations))
+
+    def _save_fig(self, neuron_name, output_foldername):
+        fname = os.path.join(output_foldername, f'{neuron_name}-combined_traces.png')
+        plt.savefig(fname, transparent=True)
+        plt.savefig(fname.replace(".png", ".svg"))
+
+    def plot_single_trace(self, neuron_name, trace_type='raw', color_type=None, title=False, legend=False, round_y_ticks=False,
+                          ax=None, color=None, output_foldername=None, **kwargs):
+        """
+        Plot the three traces (raw, global, residual) on the same plot.
+        If output_foldername is not None, save the plot in that folder.
+
+        Parameters
+        ----------
+        neuron_name
+        output_foldername
+
+        Returns
+        -------
+
+        """
+        df_traces = self.get_df_from_data_type(trace_type)
+
+        fig_opt = self.get_figure_opt()
+        if color is None:
+            if color_type is None:
+                color_type = trace_type
+            color = self.get_color_from_data_type(color_type)
+        if ax is None:
+            fig, ax = plt.subplots(**fig_opt)
+
+        # Plot a single trace
+        ax.plot(df_traces[neuron_name],
+                color=color,
+                label=trace_type)
+
+        if title:
+            ax.set_title(neuron_name)
+        if legend:
+            ax.legend(frameon=False)
+
+        ax.set_ylabel(r"$\Delta R / R_{50}$")
+        ax.set_xlim(kwargs.get('xlim', self.xlim))
+        self.project.shade_axis_using_behavior(ax)
+        if round_y_ticks:
+            self._round_yticks(ax)
+
+        apply_figure_settings(width_factor=0.25, height_factor=0.15, plotly_not_matplotlib=False)
+
+        if output_foldername:
+            self._save_fig(neuron_name, output_foldername)
