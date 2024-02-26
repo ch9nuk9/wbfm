@@ -239,7 +239,10 @@ def build_behavior_time_series_from_multiple_projects(all_projects: Dict[str, Pr
             trace = worm.calc_behavior_from_alias(b)
             output_dict[b].extend(trace)
             output_dict['dataset_name'].extend([dataset_name] * len(trace))
-            output_dict['local_time'].extend(p.x_for_plots[:len(trace)])
+            local_time = p.x_for_plots
+            if len(local_time) < len(trace):
+                raise ValueError(f"Length of local time ({len(local_time)}) is less than trace ({len(trace)})")
+            output_dict['local_time'].extend(local_time[:len(trace)])
         # Make sure the final dataframe is sorted correctly
         this_df_beh = pd.DataFrame(output_dict)
         this_df_beh = this_df_beh.sort_values(['dataset_name', 'local_time']).reset_index(drop=True)
@@ -284,13 +287,16 @@ def build_trace_time_series_from_multiple_projects(all_projects: Dict[str, Proje
     return df_traces
 
 
-def build_manifold_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData], n_components=2,
-                                                      **kwargs) -> pd.DataFrame:
+def build_pca_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData], n_components=2,
+                                                 **kwargs) -> pd.DataFrame:
     """
     Builds a time series of the global manifold, i.e. the top 2 PCA modes, from multiple projects
     Note: keeps the pca modes separate
 
     Similar to build_trace_time_series_from_multiple_projects, but for the calc_pca_modes method
+
+    Note that if you want the pca reconstruction of the traces, you should use build_trace_time_series_from_multiple_projects
+    with the residual_mode='pca' option
 
     Parameters
     ----------
