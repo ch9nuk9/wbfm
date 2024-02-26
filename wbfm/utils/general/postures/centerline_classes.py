@@ -827,7 +827,8 @@ class WormFullVideoPosture:
             # i.e. the full string should be 'eigenworm0', 'eigenworm1', etc.
             # First get the number
             i = int(behavior_alias[-1])
-            y = self.eigenworms[:, i]
+            y = pd.Series(self.eigenworms[:, i])
+            y = self._validate_and_downsample(y, **kwargs)
         else:
             # Check if there is a BehaviorCodes enum with this name
             try:
