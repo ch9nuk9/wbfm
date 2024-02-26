@@ -73,8 +73,8 @@ class WormFullVideoPosture:
     beh_annotation_already_converted_to_fluorescence_fps: bool = False
     _beh_annotation: pd.Series = None
 
-    pca_i_start: int = 10
-    pca_i_end: int = -10
+    i_eigenworm_start: int = 10
+    i_eigenworm_end: int = -10
 
     bigtiff_start_volume: int = 0
 
@@ -110,10 +110,10 @@ class WormFullVideoPosture:
         #     self.beh_annotation_already_converted_to_fluorescence_fps = True
 
     @cached_property
-    def pca_projections(self):
-        pca = PCA(n_components=3, whiten=True)
+    def eigenworms(self) -> np.ndarray:
+        pca = PCA(n_components=5, whiten=True)
         curvature_nonan = self.curvature().replace(np.nan, 0.0)
-        pca_proj = pca.fit_transform(curvature_nonan.iloc[:, self.pca_i_start:self.pca_i_end])
+        pca_proj = pca.fit_transform(curvature_nonan.iloc[:, self.i_eigenworm_start:self.i_eigenworm_end])
 
         return pca_proj
 
@@ -822,6 +822,12 @@ class WormFullVideoPosture:
             y1 = self.calc_behavior_from_alias('interpolated_ventral_midbody_curvature', **kwargs)
             y0 = self.calc_behavior_from_alias('interpolated_dorsal_midbody_curvature', **kwargs)
             y = y1 + y0
+        elif 'eigenworm' in behavior_alias:
+            # Eigenworms 0-4 are possible, calculated on curvature
+            # i.e. the full string should be 'eigenworm0', 'eigenworm1', etc.
+            # First get the number
+            i = int(behavior_alias[-1])
+            y = self.eigenworms[:, i]
         else:
             # Check if there is a BehaviorCodes enum with this name
             try:
@@ -962,7 +968,7 @@ class WormFullVideoPosture:
     def _raw_worm_angular_velocity(self):
         """Using angular velocity in 2d pca space"""
 
-        xyz_pca = self.pca_projections
+        xyz_pca = self.eigenworms
         window = 5
         x = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 0]), window)
         y = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 1]), window)
@@ -1314,7 +1320,7 @@ class WormFullVideoPosture:
         fig = plt.figure(figsize=(15, 15))
         ax = fig.add_subplot(111, projection='3d')
         c = np.arange(self.num_volumes) / 1e6
-        ax.scatter(self.pca_projections[:, 0], self.pca_projections[:, 1], self.pca_projections[:, 2], c=c)
+        ax.scatter(self.eigenworms[:, 0], self.eigenworms[:, 1], self.eigenworms[:, 2], c=c)
         plt.colorbar()
 
     def get_centerline_for_time(self, t):
@@ -2253,7 +2259,7 @@ class WormReferencePosture:
 
     @property
     def pca_projections(self):
-        return self.all_postures.pca_projections
+        return self.all_postures.eigenworms
 
     @property
     def reference_posture(self):
