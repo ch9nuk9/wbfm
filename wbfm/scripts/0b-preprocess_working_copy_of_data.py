@@ -61,6 +61,7 @@ def main(_config, _run):
         red_bigtiff_fname = cfg.config['red_bigtiff_fname']
         num_volumes = calculate_number_of_volumes_from_tiff_file(num_raw_slices, red_bigtiff_fname)
         num_frames = int(num_volumes)
+        cfg.logger.debug(f"Calculated number of frames: {num_frames}")
         cfg.config['dataset_params']['num_frames'] = num_frames
         cfg.update_self_on_disk()
 
