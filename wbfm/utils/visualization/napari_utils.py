@@ -259,7 +259,7 @@ def property_vector_to_colormap(val_to_plot, vec_of_labels, cmap=plt.cm.RdBu,
         if np.nanmax(prop) > 1 or np.nanmin(prop) < -1:
             raise ValueError("Values should be in the range [-1, 1] for this colormap")
         # matplotlib cmaps need values in [0, 1]
-        prop_scaled = 2*prop - 1
+        prop_scaled = (prop + 1) / 2
     elif np.nanmax(prop) > 0 > np.nanmin(prop):
         # Then we have a special case where white is 0
         scaler = mcolors.TwoSlopeNorm(vmin=np.nanmin(prop), vcenter=0, vmax=np.nanmax(prop))
