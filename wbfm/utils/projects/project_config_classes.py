@@ -283,6 +283,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         -------
 
         """
+        fname = None
         try:
             fname = self.get_folder_for_all_channels()
             fname = Path(fname).joinpath('config.yaml')
@@ -290,7 +291,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         except FileNotFoundError:
             # Allow a hardcoded default... fragile, but necessary for projects with deleted raw data
             cfg = default_raw_data_config()
-            self._logger.warning(f"Using hardcoded default raw data config: {cfg}")
+            self._logger.warning(f"Could not find file {fname}; "
+                                 f"Using hardcoded default raw data config: {cfg}")
             return SubfolderConfigFile(self_path=None, config=cfg, project_dir=self.project_dir)
 
     def _check_path_and_load_config(self, subconfig_path: Path,
