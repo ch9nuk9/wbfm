@@ -65,6 +65,29 @@ def fit_multiple_models(Xy, neuron_name):
         sigma = pm.HalfNormal('sigma', sigma=1)
         likelihood = pm.Normal('y', mu=mu, sigma=sigma, observed=y)
 
+    with pm.Model() as nonhierarchical_model:
+        # Priors for parameters
+        log_amplitude = pm.Normal('log_amplitude', mu=0, sigma=2)  # Using log-amplitude for positivity
+        # Baseline term
+        intercept = pm.Normal('intercept', mu=0, sigma=10)
+
+        # Transforming log-amplitude to ensure positivity
+        amplitude = pm.Deterministic('amplitude', pm.math.exp(log_amplitude))
+
+        # Alternative: Define covariance matrix to enforce sum of squares constraint
+        num_coefficients = curvature.shape[1]
+        covariance_matrix = np.eye(num_coefficients) / num_coefficients
+        coefficients_vec = pm.MvNormal('coefficients_vec', mu=0, cov=covariance_matrix, shape=num_coefficients)
+
+        curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
+
+        # Expected value of outcome
+        mu = pm.Deterministic('mu', intercept + amplitude * curvature_term)
+
+        # Likelihood
+        sigma = pm.HalfNormal('sigma', sigma=1)
+        likelihood = pm.Normal('y', mu=mu, sigma=sigma, observed=y)
+
     with pm.Model() as null_model:
         # Just do a flat line (intercept)
         intercept = pm.Normal('intercept', mu=0, sigma=10)
@@ -72,11 +95,11 @@ def fit_multiple_models(Xy, neuron_name):
         likelihood = pm.Normal('y', mu=intercept, sigma=sigma, observed=y)
 
     # Run inference on all models
-    all_models = [complex_model, null_model]
+    all_models = [complex_model, nonhierarchical_model, null_model]
     all_traces = []
     for model in all_models:
         with model:
-            trace = pm.sample(1000, tune=1000, cores=64, target_accept=0.99, return_inferencedata=True,
+            trace = pm.sample(1000, tune=1000, cores=64, target_accept=0.98, return_inferencedata=True,
                               idata_kwargs={"log_likelihood": True})
             all_traces.append(trace)
 
