@@ -35,7 +35,7 @@ def fit_multiple_models(Xy, neuron_name):
     # curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']][ind_data].values
     curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
 
-    with pm.Model() as complex_model:
+    with pm.Model() as hierarchical_model:
         # Priors for parameters
         # Sigmoid (hierarchy) term
         log_sigmoid_slope = pm.Normal('log_sigmoid_slope', mu=0, sigma=1)  # Using log-amplitude for positivity
@@ -95,7 +95,7 @@ def fit_multiple_models(Xy, neuron_name):
         likelihood = pm.Normal('y', mu=intercept, sigma=sigma, observed=y)
 
     # Run inference on all models
-    all_models = [complex_model, nonhierarchical_model, null_model]
+    all_models = [hierarchical_model, nonhierarchical_model, null_model]
     all_traces = []
     for model in all_models:
         with model:
@@ -109,6 +109,6 @@ def fit_multiple_models(Xy, neuron_name):
         loo = az.loo(trace)
         all_loo.append(loo)
 
-    df_compare = az.compare({'complex': all_loo[0], 'null': all_loo[1]})
+    df_compare = az.compare({'hierarchical': all_loo[0], 'nonhierarchical': all_loo[1], 'null': all_loo[2]})
 
     return df_compare, all_traces, all_models
