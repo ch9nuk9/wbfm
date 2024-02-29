@@ -1,9 +1,10 @@
 import numpy as np
+import pandas as pd
 import pymc as pm
 import arviz as az
 
 
-def fit_multiple_models(Xy, neuron_name):
+def fit_multiple_models(Xy, neuron_name, dataset_name = '2022-11-23_worm8'):
     """
     Fit multiple models to the same data, to be used for model comparison
 
@@ -19,11 +20,14 @@ def fit_multiple_models(Xy, neuron_name):
 
     # Unpack data into x, y, and curvature
     # For now, just use one dataset
-
-    ind_data = Xy['dataset_name'] == '2022-11-23_worm8'
+    ind_data = Xy['dataset_name'] == dataset_name
     # Allow gating based on the global component
     x = Xy[f'{neuron_name}_manifold'][ind_data].values
     x = (x - x.mean()) / x.std()  # z-score
+
+    if pd.Series(x).count() == 0:
+        print(f"Skipping {neuron_name} because there is no valid data")
+        return None, None, None
 
     # Just predict the residual
     y = Xy[f'{neuron_name}'][ind_data].values - Xy[f'{neuron_name}_manifold'][ind_data].values
