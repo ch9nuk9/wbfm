@@ -18,6 +18,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import split_flattened_index, flatten_multiindex_columns
 from wbfm.utils.general.postprocessing.utils_imputation import impute_missing_values_in_dataframe
+from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.general.utils_matplotlib import corrfunc, paired_boxplot_from_dataframes
 from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, ProjectData
@@ -285,6 +286,60 @@ def build_trace_time_series_from_multiple_projects(all_projects: Dict[str, Proje
     df_traces = pd.concat(all_dfs)
     df_traces = df_traces.reset_index(names=['dataset_name', 'local_time'])
     return df_traces
+
+
+def build_curvature_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData], **kwargs) -> pd.DataFrame:
+    """
+    Like build_behavior_time_series_from_multiple_projects, but for the curvature
+        That this is a full dataframe per dataset, so it doesn't fit the logic of the above function
+
+    Parameters
+    ----------
+    all_projects
+    kwargs
+
+    Returns
+    -------
+
+    """
+
+    all_dfs = {}
+    for dataset_name, p in all_projects.items():
+        df = p.worm_posture_class.curvature(fluorescence_fps=True, reset_index=True)
+        all_dfs[dataset_name] = df
+    df_curvature = pd.concat(all_dfs)
+    df_curvature = df_curvature.reset_index(names=['dataset_name', 'local_time'])
+    return df_curvature
+
+
+def build_cross_dataset_eigenworms(all_projects: Dict[str, ProjectData], i_eigenworm_start=10, i_eigenworm_end=-10,
+                                   n_components=5, **kwargs) -> pd.DataFrame:
+    """
+    Uses build_curvature_time_series_from_multiple_projects, and then recalculates the eigenworms
+
+    Note: different from using ['eigenwormX'] in build_behavior_time_series_from_multiple_projects, because that is
+    calculated per-dataset
+
+    Parameters
+    ----------
+    all_projects
+    kwargs
+
+    Returns
+    -------
+
+    """
+
+    df_curvature = build_curvature_time_series_from_multiple_projects(all_projects, **kwargs)
+    # Remove nan values and other columns
+    df_curvature_nonan = df_curvature.replace(np.nan, 0.0).drop(columns=['dataset_name', 'local_time'])
+    # Calculate the eigenworms
+    df_eigenworms = WormFullVideoPosture.calculate_eigenworms_from_curvature(df_curvature_nonan, n_components,
+                                                                             i_eigenworm_start, i_eigenworm_end)
+    df_eigenworms = pd.DataFrame(df_eigenworms, columns=[f'eigenworm{i}' for i in range(n_components)])
+    df_eigenworms['local_time'] = df_curvature['local_time']
+    df_eigenworms['dataset_name'] = df_curvature['dataset_name']
+    return df_eigenworms
 
 
 def build_pca_time_series_from_multiple_projects(all_projects: Dict[str, ProjectData], n_components=2,

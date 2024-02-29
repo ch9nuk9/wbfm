@@ -111,10 +111,16 @@ class WormFullVideoPosture:
 
     @cached_property
     def eigenworms(self) -> np.ndarray:
-        pca = PCA(n_components=5, whiten=True)
         curvature_nonan = self.curvature().replace(np.nan, 0.0)
-        pca_proj = pca.fit_transform(curvature_nonan.iloc[:, self.i_eigenworm_start:self.i_eigenworm_end])
+        pca_proj = self.calculate_eigenworms_from_curvature(curvature_nonan, 5,
+                                                            self.i_eigenworm_start, self.i_eigenworm_end)
+        return pca_proj
 
+    @staticmethod
+    def calculate_eigenworms_from_curvature(curvature: pd.DataFrame, n_components,
+                                            i_eigenworm_start: int, i_eigenworm_end: int) -> np.ndarray:
+        pca = PCA(n_components=n_components, whiten=True)
+        pca_proj = pca.fit_transform(curvature.iloc[:, i_eigenworm_start:i_eigenworm_end])
         return pca_proj
 
     def check_requested_frame_rate(self, fluorescence_fps: bool):
