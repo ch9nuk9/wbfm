@@ -101,23 +101,31 @@ def build_sigmoid_term(x):
     return sigmoid_term
 
 
-def build_curvature_term(curvature):
+def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     # Alternative: sample directly from the phase shift and amplitude, then convert into coefficients
     # This assumes that eigenworms 1 and 2 are approximately a sine and cosine wave
     # See trig identities: https://en.wikipedia.org/wiki/List_of_trigonometric_identities#Linear_combinations
     # And this for solving the equations: https://www.wolframalpha.com/input?i=Solve+c%3Dsign%28a%29sqrt%28a%5E2%2Bb%5E2%29+and+phi%3Darctan%28-b%2Fa%29+for+a+and+b
     phase_shift = pm.Uniform('phase_shift', lower=-np.pi, upper=np.pi, transform=pm.distributions.transforms.circular)
-    amplitude = pm.HalfNormal('amplitude', sigma=1)
+    amplitude = pm.HalfNormal('amplitude', sigma=1, dims=dims)
     # There is a positive and negative solution, so choose the positive one for the first term
     eigenworm1_coefficient = pm.Deterministic('eigenworm1_coefficient', amplitude * pm.math.cos(phase_shift))
     eigenworm2_coefficient = pm.Deterministic('eigenworm2_coefficient', -amplitude * pm.math.sin(phase_shift))
     # This one is not part of the sine/cosine pair
-    eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5)
+    eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5, dims=None)
 
-    coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack([eigenworm1_coefficient,
-                                                                           eigenworm2_coefficient,
-                                                                           eigenworm3_coefficient]))
-    curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
+    if dims is None:
+        coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack([eigenworm1_coefficient,
+                                                                               eigenworm2_coefficient,
+                                                                               eigenworm3_coefficient]))
+        curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
+    else:
+
+        # Multiply them separately
+        curvature_term = pm.Deterministic('curvature_term',
+                                          eigenworm1_coefficient[dataset_name_idx] * curvature[:, 0] +
+                                          eigenworm2_coefficient[dataset_name_idx] * curvature[:, 1] +
+                                          eigenworm3_coefficient * curvature[:, 2])
     return curvature_term
 
 
