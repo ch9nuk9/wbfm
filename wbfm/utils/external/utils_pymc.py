@@ -34,9 +34,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name = '2022-11-23_worm8'):
     y = (y - y.mean()) / y.std()  # z-score
 
     # Interesting covariate
-    # curvature = Xy['vb02_curvature'][ind_data].values
     curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2']][ind_data].values
-    # curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']][ind_data].values
     curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
 
     with pm.Model() as hierarchical_model:
@@ -115,6 +113,7 @@ def build_curvature_term(curvature):
     eigenworm2_coefficient = pm.Deterministic('eigenworm2_coefficient', -amplitude * pm.math.sin(phase_shift))
     # This one is not part of the sine/cosine pair
     eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5)
+
     coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack([eigenworm1_coefficient,
                                                                            eigenworm2_coefficient,
                                                                            eigenworm3_coefficient]))
