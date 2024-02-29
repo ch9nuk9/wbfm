@@ -61,6 +61,8 @@ def fit_multiple_models(Xy, neuron_name, dataset_name = '2022-11-23_worm8'):
         # coefficients_vec = pm.MvNormal('coefficients_vec', mu=0, cov=covariance_matrix, shape=num_coefficients)
         # Alternative: sample directly from the phase shift and amplitude, then convert into coefficients
         # This assumes that eigenworms 1 and 2 are approximately a sine and cosine wave
+        # See trig identities: https://en.wikipedia.org/wiki/List_of_trigonometric_identities#Linear_combinations
+        # And this for solving the equations: https://www.wolframalpha.com/input?i=Solve+c%3Dsign%28a%29sqrt%28a%5E2%2Bb%5E2%29+and+phi%3Darctan%28-b%2Fa%29+for+a+and+b
         phase_shift = pm.Uniform('phase_shift', lower=-np.pi, upper=np.pi)
         amplitude = pm.HalfNormal('amplitude', sigma=1)
         # There is a positive and negative solution, so choose the positive one for the first term
