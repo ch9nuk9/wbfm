@@ -21,6 +21,7 @@ def export_data_for_hierarchical_model():
     df_all_traces = build_trace_time_series_from_multiple_projects(all_projects_gcamp, use_paper_options=True)
     df_all_traces.sort_values(['dataset_name', 'local_time'], inplace=True)
 
+    # TODO: recalculate eigenworms from curvature to align phase of modes 1 and 2
     df_all_behavior = build_behavior_time_series_from_multiple_projects(all_projects_gcamp,
                                                                         behavior_names=['vb02_curvature', 'fwd',
                                                                                         'eigenworm0', 'eigenworm1',

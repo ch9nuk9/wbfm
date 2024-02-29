@@ -119,3 +119,63 @@ def build_curvature_term(curvature):
                                                                            eigenworm3_coefficient]))
     curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
     return curvature_term
+
+
+def build_multidataset_model(Xy, neuron_name):
+    """
+    Builds the main model, but with certain variables stratefied by dataset
+
+    Parameters
+    ----------
+    Xy
+    neuron_name
+
+    Returns
+    -------
+
+    """
+
+    # First, extract data, z-score, and drop na values
+    # Allow gating based on the global component
+    x = Xy[f'{neuron_name}_manifold']
+    x = (x - x.mean()) / x.std()  # z-score
+
+    # Just predict the residual
+    y = Xy[f'{neuron_name}'] - Xy[f'{neuron_name}_manifold']
+    y = (y - y.mean()) / y.std()  # z-score
+
+    # Interesting covariate
+    curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2']]
+    curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
+
+    # Package as dataframe again, and drop na values
+    df_model = pd.concat([pd.DataFrame({'y': y, 'x': x, 'dataset_name': Xy['dataset_name']}), pd.DataFrame(curvature)], axis=1)
+    df_model = df_model.dropna()
+
+    # Build model
+    dataset_name_idx, dataset_name_values = df_model.dataset_name.factorize()
+
+    coords = {'dataset_name': dataset_name_values}
+
+    with pm.Model(coords=coords) as model:
+        # Only random effect: intercept
+        intercept = pm.Normal('intercept', mu=0, sigma=10, dims='dataset_name')
+
+        # First try: pooling for sigmoid term
+        x = df_model['x'].values
+        sigmoid_term = build_sigmoid_term(x)
+
+        # Also pool curvature
+        curvature = df_model[['eigenworm0', 'eigenworm1', 'eigenworm2']].values
+        curvature_term = build_curvature_term(curvature)
+
+        # Expected value of outcome
+        mu = pm.Deterministic('mu', intercept[dataset_name_idx] + sigmoid_term * curvature_term)
+
+        # Likelihood
+        sigma = pm.HalfCauchy("sigma", beta=10)
+
+        y = df_model['y'].values
+        likelihood = build_final_likelihood(mu, sigma, y)
+
+    return model, df_model
