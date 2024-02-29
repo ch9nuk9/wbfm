@@ -82,8 +82,14 @@ def fit_multiple_models(Xy, neuron_name, dataset_name = '2022-11-23_worm8'):
     return df_compare, all_traces, all_models
 
 
-def build_final_likelihood(mu, sigma, y):
-    return pm.Normal('y', mu=mu, sigma=sigma, observed=y)
+def build_baseline_priors():
+    intercept = pm.Normal('intercept', mu=0, sigma=1)
+    sigma = pm.HalfCauchy("sigma", beta=10)
+    return intercept, sigma
+
+
+def build_final_likelihood(mu, sigma, y, nu=3):
+    return pm.StudentT('y', mu=mu, sigma=sigma, nu=nu, observed=y)
 
 
 def build_sigmoid_term(x):
@@ -114,9 +120,3 @@ def build_curvature_term(curvature):
                                                                            eigenworm3_coefficient]))
     curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
     return curvature_term
-
-
-def build_baseline_priors():
-    intercept = pm.Normal('intercept', mu=0, sigma=1)
-    sigma = pm.HalfNormal('sigma', sigma=1)
-    return intercept, sigma
