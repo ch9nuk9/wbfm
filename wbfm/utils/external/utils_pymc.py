@@ -40,81 +40,27 @@ def fit_multiple_models(Xy, neuron_name, dataset_name = '2022-11-23_worm8'):
     curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
 
     with pm.Model() as hierarchical_model:
-        # Priors for parameters
-        # Sigmoid (hierarchy) term
-        log_sigmoid_slope = pm.Normal('log_sigmoid_slope', mu=0, sigma=1)  # Using log-amplitude for positivity
-        inflection_point = pm.Normal('inflection_point', mu=0, sigma=2)
-        # Baseline term
-        intercept = pm.Normal('intercept', mu=0, sigma=10)
+        # Full model
+        intercept, sigma = build_baseline_priors()
+        sigmoid_term = build_sigmoid_term(x)
+        curvature_term = build_curvature_term(curvature)
 
-        # Transforming log-amplitude to ensure positivity
-        sigmoid_slope = pm.Deterministic('sigmoid_slope', pm.math.exp(log_sigmoid_slope))
-
-        # Sigmoid term
-        sigmoid_term = pm.Deterministic('sigmoid_term', pm.math.sigmoid(sigmoid_slope * (x - inflection_point)))
-
-        # Alternative: sample directly from the phase shift and amplitude, then convert into coefficients
-        # This assumes that eigenworms 1 and 2 are approximately a sine and cosine wave
-        # See trig identities: https://en.wikipedia.org/wiki/List_of_trigonometric_identities#Linear_combinations
-        # And this for solving the equations: https://www.wolframalpha.com/input?i=Solve+c%3Dsign%28a%29sqrt%28a%5E2%2Bb%5E2%29+and+phi%3Darctan%28-b%2Fa%29+for+a+and+b
-        phase_shift = pm.Uniform('phase_shift', lower=-np.pi, upper=np.pi, transform=pm.distributions.transforms.circular)
-        amplitude = pm.HalfNormal('amplitude', sigma=1)
-        # There is a positive and negative solution, so choose the positive one for the first term
-        eigenworm1_coefficient = pm.Deterministic('eigenworm1_coefficient', amplitude * pm.math.cos(phase_shift))
-        eigenworm2_coefficient = pm.Deterministic('eigenworm2_coefficient', -amplitude * pm.math.sin(phase_shift))
-
-        # This one is not part of the sine/cosine pair
-        eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5)
-
-        coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack([eigenworm1_coefficient,
-                                                                               eigenworm2_coefficient,
-                                                                               eigenworm3_coefficient]))
-
-        curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
-
-        # Expected value of outcome
-        # mu = pm.Deterministic('mu', intercept + amplitude * sigmoid_term * curvature_term)
         mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
-
-        # Likelihood
-        sigma = pm.HalfNormal('sigma', sigma=1)
-        likelihood = pm.Normal('y', mu=mu, sigma=sigma, observed=y)
+        likelihood = build_final_likelihood(mu, sigma, y)
 
     with pm.Model() as nonhierarchical_model:
-        # Priors for parameters
-        # Baseline term
-        intercept = pm.Normal('intercept', mu=0, sigma=10)
+        # Everything except sigmoid
+        intercept, sigma = build_baseline_priors()
+        curvature_term = build_curvature_term(curvature)
 
-        # Alternative: sample directly from the phase shift and amplitude, then convert into coefficients
-        # This assumes that eigenworms 1 and 2 are approximately a sine and cosine wave
-        # See trig identities: https://en.wikipedia.org/wiki/List_of_trigonometric_identities#Linear_combinations
-        # And this for solving the equations: https://www.wolframalpha.com/input?i=Solve+c%3Dsign%28a%29sqrt%28a%5E2%2Bb%5E2%29+and+phi%3Darctan%28-b%2Fa%29+for+a+and+b
-        phase_shift = pm.Uniform('phase_shift', lower=-np.pi, upper=np.pi, transform=pm.distributions.transforms.circular)
-        amplitude = pm.HalfNormal('amplitude', sigma=1)
-        # There is a positive and negative solution, so choose the positive one for the first term
-        eigenworm1_coefficient = pm.Deterministic('eigenworm1_coefficient', amplitude * pm.math.cos(phase_shift))
-        eigenworm2_coefficient = pm.Deterministic('eigenworm2_coefficient', -amplitude * pm.math.sin(phase_shift))
-
-        # This one is not part of the sine/cosine pair
-        eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5)
-
-        coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack([eigenworm1_coefficient,
-                                                                               eigenworm2_coefficient,
-                                                                               eigenworm3_coefficient]))
-        curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
-
-        # Expected value of outcome
         mu = pm.Deterministic('mu', intercept + curvature_term)
-
-        # Likelihood
-        sigma = pm.HalfNormal('sigma', sigma=1)
-        likelihood = pm.Normal('y', mu=mu, sigma=sigma, observed=y)
+        likelihood = build_final_likelihood(mu, sigma, y)
 
     with pm.Model() as null_model:
         # Just do a flat line (intercept)
-        intercept = pm.Normal('intercept', mu=0, sigma=10)
-        sigma = pm.HalfNormal('sigma', sigma=1)
-        likelihood = pm.Normal('y', mu=intercept, sigma=sigma, observed=y)
+        intercept, sigma = build_baseline_priors()
+        mu = pm.Deterministic('mu', intercept)
+        likelihood = build_final_likelihood(mu, sigma, y)
 
     # Run inference on all models
     all_models = [hierarchical_model, nonhierarchical_model, null_model]
@@ -134,3 +80,43 @@ def fit_multiple_models(Xy, neuron_name, dataset_name = '2022-11-23_worm8'):
     df_compare = az.compare({'hierarchical': all_loo[0], 'nonhierarchical': all_loo[1], 'null': all_loo[2]})
 
     return df_compare, all_traces, all_models
+
+
+def build_final_likelihood(mu, sigma, y):
+    return pm.Normal('y', mu=mu, sigma=sigma, observed=y)
+
+
+def build_sigmoid_term(x):
+    # Sigmoid (hierarchy) term
+    log_sigmoid_slope = pm.Normal('log_sigmoid_slope', mu=0, sigma=1)  # Using log-amplitude for positivity
+    inflection_point = pm.Normal('inflection_point', mu=0, sigma=2)
+    # Transforming log-amplitude to ensure positivity
+    sigmoid_slope = pm.Deterministic('sigmoid_slope', pm.math.exp(log_sigmoid_slope))
+    # Sigmoid term
+    sigmoid_term = pm.Deterministic('sigmoid_term', pm.math.sigmoid(sigmoid_slope * (x - inflection_point)))
+    return sigmoid_term
+
+
+def build_curvature_term(curvature):
+    # Alternative: sample directly from the phase shift and amplitude, then convert into coefficients
+    # This assumes that eigenworms 1 and 2 are approximately a sine and cosine wave
+    # See trig identities: https://en.wikipedia.org/wiki/List_of_trigonometric_identities#Linear_combinations
+    # And this for solving the equations: https://www.wolframalpha.com/input?i=Solve+c%3Dsign%28a%29sqrt%28a%5E2%2Bb%5E2%29+and+phi%3Darctan%28-b%2Fa%29+for+a+and+b
+    phase_shift = pm.Uniform('phase_shift', lower=-np.pi, upper=np.pi, transform=pm.distributions.transforms.circular)
+    amplitude = pm.HalfNormal('amplitude', sigma=1)
+    # There is a positive and negative solution, so choose the positive one for the first term
+    eigenworm1_coefficient = pm.Deterministic('eigenworm1_coefficient', amplitude * pm.math.cos(phase_shift))
+    eigenworm2_coefficient = pm.Deterministic('eigenworm2_coefficient', -amplitude * pm.math.sin(phase_shift))
+    # This one is not part of the sine/cosine pair
+    eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5)
+    coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack([eigenworm1_coefficient,
+                                                                           eigenworm2_coefficient,
+                                                                           eigenworm3_coefficient]))
+    curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
+    return curvature_term
+
+
+def build_baseline_priors():
+    intercept = pm.Normal('intercept', mu=0, sigma=1)
+    sigma = pm.HalfNormal('sigma', sigma=1)
+    return intercept, sigma
