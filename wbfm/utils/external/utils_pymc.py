@@ -49,21 +49,36 @@ def fit_multiple_models(Xy, neuron_name, dataset_name = '2022-11-23_worm8'):
         intercept = pm.Normal('intercept', mu=0, sigma=10)
 
         # Transforming log-amplitude to ensure positivity
-        amplitude = pm.Deterministic('amplitude', pm.math.exp(log_amplitude))
+        # amplitude = pm.Deterministic('amplitude', pm.math.exp(log_amplitude))
         sigmoid_slope = pm.Deterministic('sigmoid_slope', pm.math.exp(log_sigmoid_slope))
 
         # Sigmoid term
         sigmoid_term = pm.Deterministic('sigmoid_term', pm.math.sigmoid(sigmoid_slope * (x - inflection_point)))
 
         # Alternative: Define covariance matrix to enforce sum of squares constraint
-        num_coefficients = curvature.shape[1]
-        covariance_matrix = np.eye(num_coefficients) / num_coefficients
-        coefficients_vec = pm.MvNormal('coefficients_vec', mu=0, cov=covariance_matrix, shape=num_coefficients)
+        # num_coefficients = curvature.shape[1]
+        # covariance_matrix = np.eye(num_coefficients) / num_coefficients
+        # coefficients_vec = pm.MvNormal('coefficients_vec', mu=0, cov=covariance_matrix, shape=num_coefficients)
+        # Alternative: sample directly from the phase shift and amplitude, then convert into coefficients
+        # This assumes that eigenworms 1 and 2 are approximately a sine and cosine wave
+        phase_shift = pm.Uniform('phase_shift', lower=-np.pi, upper=np.pi)
+        amplitude = pm.HalfNormal('amplitude', sigma=1)
+        # There is a positive and negative solution, so choose the positive one for the first term
+        eigenworm1_coefficient = pm.Deterministic('eigenworm1_coefficient', amplitude * pm.math.cos(phase_shift))
+        eigenworm2_coefficient = pm.Deterministic('eigenworm2_coefficient', -amplitude * pm.math.sin(phase_shift))
+
+        # This one is not part of the sine/cosine pair
+        eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5)
+
+        coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack([eigenworm1_coefficient,
+                                                                               eigenworm2_coefficient,
+                                                                               eigenworm3_coefficient]))
 
         curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
 
         # Expected value of outcome
-        mu = pm.Deterministic('mu', intercept + amplitude * sigmoid_term * curvature_term)
+        # mu = pm.Deterministic('mu', intercept + amplitude * sigmoid_term * curvature_term)
+        mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
 
         # Likelihood
         sigma = pm.HalfNormal('sigma', sigma=1)
