@@ -93,9 +93,8 @@ def build_final_likelihood(mu, sigma, y, nu=3):
 def build_sigmoid_term(x):
     # Sigmoid (hierarchy) term
     log_sigmoid_slope = pm.Normal('log_sigmoid_slope', mu=0, sigma=1)  # Using log-amplitude for positivity
-    inflection_point = pm.Normal('inflection_point', mu=0, sigma=2)
-    # Transforming log-amplitude to ensure positivity
     sigmoid_slope = pm.Deterministic('sigmoid_slope', pm.math.exp(log_sigmoid_slope))
+    inflection_point = pm.Normal('inflection_point', mu=0, sigma=2)
     # Sigmoid term
     sigmoid_term = pm.Deterministic('sigmoid_term', pm.math.sigmoid(sigmoid_slope * (x - inflection_point)))
     return sigmoid_term
@@ -107,12 +106,24 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     # See trig identities: https://en.wikipedia.org/wiki/List_of_trigonometric_identities#Linear_combinations
     # And this for solving the equations: https://www.wolframalpha.com/input?i=Solve+c%3Dsign%28a%29sqrt%28a%5E2%2Bb%5E2%29+and+phi%3Darctan%28-b%2Fa%29+for+a+and+b
     phase_shift = pm.Uniform('phase_shift', lower=-np.pi, upper=np.pi, transform=pm.distributions.transforms.circular)
-    amplitude = pm.HalfNormal('amplitude', sigma=1, dims=dims)
+    if dims is None:
+        hyper_log_amplitude = 0
+    else:
+        # Hyperprior
+        hyper_log_amplitude = pm.Normal('log_amplitude_mu', mu=0, sigma=1)
+    log_amplitude = pm.Normal('log_amplitude', mu=hyper_log_amplitude, sigma=1, dims=dims)
+    amplitude = pm.Deterministic('amplitude', pm.math.exp(log_amplitude))
     # There is a positive and negative solution, so choose the positive one for the first term
     eigenworm1_coefficient = pm.Deterministic('eigenworm1_coefficient', amplitude * pm.math.cos(phase_shift))
     eigenworm2_coefficient = pm.Deterministic('eigenworm2_coefficient', -amplitude * pm.math.sin(phase_shift))
     # This one is not part of the sine/cosine pair
-    eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5, dims=None)
+    # if dims is None:
+    #     hyper_eigenworm3_coefficient = 0
+    # else:
+    #     # Hyperprior
+    #     hyper_eigenworm3_coefficient = pm.Normal('hyper_eigenworm3_coefficient', mu=0, sigma=1)
+    eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0,
+                                       sigma=0.5, dims=None)
 
     if dims is None:
         coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack([eigenworm1_coefficient,
