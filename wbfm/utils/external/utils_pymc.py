@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
 
-def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8') -> Tuple[Dict, Dict, Dict]:
+def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8') -> Tuple[pd.DataFrame, Dict, Dict]:
     """
     Fit multiple models to the same data, to be used for model comparison
 
@@ -99,7 +99,9 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8') -> Tup
         loo = az.loo(trace)
         all_loo[name] = loo
 
-    return all_loo, all_traces, all_models
+    df_compare = az.compare(all_loo)
+
+    return df_compare, all_traces, all_models
 
 
 def build_baseline_priors(dims=None, dataset_name_idx=None):
@@ -246,25 +248,24 @@ def main(neuron_name):
     Xy = pd.read_hdf(fname)
 
     # Fit models
-    all_loo, all_traces, all_models = fit_multiple_models(Xy, neuron_name)
+    df_compare, all_traces, all_models = fit_multiple_models(Xy, neuron_name)
 
     # Save objects
     # all_loo is just a dictionary of dfs, so save it as a pickle without looping
-    fname = os.path.join(output_dir, f'{neuron_name}_loo.pkl')
-    with open(fname, 'wb') as f:
-        pickle.dump(all_loo, f)
+    fname = os.path.join(output_dir, f'{neuron_name}_loo.h5')
+    df_compare.to_hdf(fname, key='df_with_missing')
 
     # Save model directly with pickle
-    fname = os.path.join(output_dir, f'{neuron_name}_models.pkl')
-    with open(fname, 'wb') as f:
-        pickle.dump(all_models, f)
+    # fname = os.path.join(output_dir, f'{neuron_name}_models.pkl')
+    # with open(fname, 'wb') as f:
+    #     pickle.dump(all_models, f)
 
     # arviz has a specific function for traces
     for model_name, traces in all_traces.items():
         az.to_netcdf(traces, os.path.join(output_dir, f'{neuron_name}_{model_name}_trace.nc'))
 
     # Save plots
-    az.plot_compare(all_loo, insample_dev=False)
+    az.plot_compare(df_compare, insample_dev=False)
     plt.savefig(os.path.join(output_dir, 'model_comparison.png'))
     plt.close()
 
