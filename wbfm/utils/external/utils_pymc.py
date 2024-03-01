@@ -4,7 +4,7 @@ import pymc as pm
 import arviz as az
 
 
-def fit_multiple_models(Xy, neuron_name, dataset_name = '2022-11-23_worm8'):
+def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8'):
     """
     Fit multiple models to the same data, to be used for model comparison
 
@@ -17,47 +17,62 @@ def fit_multiple_models(Xy, neuron_name, dataset_name = '2022-11-23_worm8'):
     -------
 
     """
+    if dataset_name == 'all':
+        # First pack into a single dataframe for preprocessing, then unpack
+        df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
+        x = df_model['x'].values
+        y = df_model['y'].values
+        curvature = df_model[['eigenworm0', 'eigenworm1', 'eigenworm2']].values
 
-    # Unpack data into x, y, and curvature
-    # For now, just use one dataset
-    ind_data = Xy['dataset_name'] == dataset_name
-    # Allow gating based on the global component
-    x = Xy[f'{neuron_name}_manifold'][ind_data].values
-    x = (x - x.mean()) / x.std()  # z-score
+        dataset_name_idx, dataset_name_values = df_model.dataset_name.factorize()
+        coords = {'dataset_name': dataset_name_values}
+        dims = 'dataset_name'
+    else:
+        # Unpack data into x, y, and curvature
+        # For now, just use one dataset
+        ind_data = Xy['dataset_name'] == dataset_name
+        # Allow gating based on the global component
+        x = Xy[f'{neuron_name}_manifold'][ind_data].values
+        x = (x - x.mean()) / x.std()  # z-score
 
-    if pd.Series(x).count() == 0:
-        print(f"Skipping {neuron_name} because there is no valid data")
-        return None, None, None
+        if pd.Series(x).count() == 0:
+            print(f"Skipping {neuron_name} because there is no valid data")
+            return None, None, None
 
-    # Just predict the residual
-    y = Xy[f'{neuron_name}'][ind_data].values - Xy[f'{neuron_name}_manifold'][ind_data].values
-    y = (y - y.mean()) / y.std()  # z-score
+        # Just predict the residual
+        y = Xy[f'{neuron_name}'][ind_data].values - Xy[f'{neuron_name}_manifold'][ind_data].values
+        y = (y - y.mean()) / y.std()  # z-score
 
-    # Interesting covariate
-    curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2']][ind_data].values
-    curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
+        # Interesting covariate
+        curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2']][ind_data].values
+        curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
 
-    with pm.Model() as hierarchical_model:
-        # Full model
-        intercept, sigma = build_baseline_priors()
-        sigmoid_term = build_sigmoid_term(x)
-        curvature_term = build_curvature_term(curvature)
+        coords = {}
+        dims, dataset_name_idx = None, None
 
-        mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
+    dim_opt = dict(dims=dims, dataset_name_idx=dataset_name_idx)
+
+    with pm.Model() as null_model:
+        # Just do a flat line (intercept)
+        intercept, sigma = build_baseline_priors(**dim_opt)
+        mu = pm.Deterministic('mu', intercept)
         likelihood = build_final_likelihood(mu, sigma, y)
 
     with pm.Model() as nonhierarchical_model:
         # Everything except sigmoid
-        intercept, sigma = build_baseline_priors()
-        curvature_term = build_curvature_term(curvature)
+        intercept, sigma = build_baseline_priors(**dim_opt)
+        curvature_term = build_curvature_term(curvature, **dim_opt)
 
         mu = pm.Deterministic('mu', intercept + curvature_term)
         likelihood = build_final_likelihood(mu, sigma, y)
 
-    with pm.Model() as null_model:
-        # Just do a flat line (intercept)
-        intercept, sigma = build_baseline_priors()
-        mu = pm.Deterministic('mu', intercept)
+    with pm.Model(coords=coords) as hierarchical_model:
+        # Full model
+        intercept, sigma = build_baseline_priors(**dim_opt)
+        sigmoid_term = build_sigmoid_term(x)
+        curvature_term = build_curvature_term(curvature, **dim_opt)
+
+        mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
         likelihood = build_final_likelihood(mu, sigma, y)
 
     # Run inference on all models
@@ -80,8 +95,13 @@ def fit_multiple_models(Xy, neuron_name, dataset_name = '2022-11-23_worm8'):
     return df_compare, all_traces, all_models
 
 
-def build_baseline_priors():
-    intercept = pm.Normal('intercept', mu=0, sigma=1)
+def build_baseline_priors(dims=None, dataset_name_idx=None):
+    if dims is None:
+        intercept = pm.Normal('intercept', mu=0, sigma=1)
+    else:
+        # Include hyperprior
+        hyper_intercept = pm.Normal('hyper_intercept', mu=0, sigma=1)
+        intercept = pm.Normal('intercept', mu=hyper_intercept, sigma=1, dims='dataset_name')[dataset_name_idx]
     sigma = pm.HalfCauchy("sigma", beta=0.02)
     return intercept, sigma
 
@@ -154,28 +174,11 @@ def build_multidataset_model(Xy, neuron_name):
 
     """
 
-    # First, extract data, z-score, and drop na values
-    # Allow gating based on the global component
-    x = Xy[f'{neuron_name}_manifold']
-    x = (x - x.mean()) / x.std()  # z-score
-
-    # Just predict the residual
-    y = Xy[f'{neuron_name}'] - Xy[f'{neuron_name}_manifold']
-    y = (y - y.mean()) / y.std()  # z-score
-
-    # Interesting covariate
-    curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2']]
-    curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
-
-    # Package as dataframe again, and drop na values
-    df_model = pd.concat([pd.DataFrame({'y': y, 'x': x, 'dataset_name': Xy['dataset_name']}), pd.DataFrame(curvature)], axis=1)
-    df_model = df_model.dropna()
-
-    # Build model
+    df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
     dataset_name_idx, dataset_name_values = df_model.dataset_name.factorize()
-
     coords = {'dataset_name': dataset_name_values}
 
+    # Build model
     with pm.Model(coords=coords) as model:
         # Only random effect: intercept
         hyper_intercept = pm.Normal('hyper_intercept', mu=0, sigma=1)
@@ -199,3 +202,21 @@ def build_multidataset_model(Xy, neuron_name):
         likelihood = build_final_likelihood(mu, sigma, y)
 
     return model, df_model
+
+
+def get_dataframe_for_single_neuron(Xy, neuron_name):
+    # First, extract data, z-score, and drop na values
+    # Allow gating based on the global component
+    x = Xy[f'{neuron_name}_manifold']
+    x = (x - x.mean()) / x.std()  # z-score
+    # Just predict the residual
+    y = Xy[f'{neuron_name}'] - Xy[f'{neuron_name}_manifold']
+    y = (y - y.mean()) / y.std()  # z-score
+    # Interesting covariate
+    curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2']]
+    curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
+    # Package as dataframe again, and drop na values
+    df_model = pd.concat([pd.DataFrame({'y': y, 'x': x, 'dataset_name': Xy['dataset_name']}), pd.DataFrame(curvature)],
+                         axis=1)
+    df_model = df_model.dropna()
+    return df_model
