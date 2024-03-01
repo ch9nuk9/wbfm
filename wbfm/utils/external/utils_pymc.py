@@ -101,7 +101,8 @@ def build_baseline_priors(dims=None, dataset_name_idx=None):
     else:
         # Include hyperprior
         hyper_intercept = pm.Normal('hyper_intercept', mu=0, sigma=1)
-        intercept = pm.Normal('intercept', mu=hyper_intercept, sigma=1, dims=dims)[dataset_name_idx]
+        hyper_intercept_sigma = pm.Exponential('hyper_intercept_sigma', lam=1)
+        intercept = pm.Normal('intercept', mu=hyper_intercept, sigma=hyper_intercept_sigma, dims=dims)[dataset_name_idx]
     sigma = pm.HalfCauchy("sigma", beta=0.02)
     return intercept, sigma
 
@@ -127,11 +128,12 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     # And this for solving the equations: https://www.wolframalpha.com/input?i=Solve+c%3Dsign%28a%29sqrt%28a%5E2%2Bb%5E2%29+and+phi%3Darctan%28-b%2Fa%29+for+a+and+b
     phase_shift = pm.Uniform('phase_shift', lower=-np.pi, upper=np.pi, transform=pm.distributions.transforms.circular)
     if dims is None:
-        hyper_log_amplitude = 0
+        hyper_log_amplitude, hyper_log_sigma = 0, 1
     else:
         # Hyperprior
         hyper_log_amplitude = pm.Normal('log_amplitude_mu', mu=0, sigma=1)
-    log_amplitude = pm.Normal('log_amplitude', mu=hyper_log_amplitude, sigma=1, dims=dims)
+        hyper_log_sigma = pm.Exponential('log_amplitude_sigma', lam=1)
+    log_amplitude = pm.Normal('log_amplitude', mu=hyper_log_amplitude, sigma=hyper_log_sigma, dims=dims)
     amplitude = pm.Deterministic('amplitude', pm.math.exp(log_amplitude))
     # There is a positive and negative solution, so choose the positive one for the first term
     eigenworm1_coefficient = pm.Deterministic('eigenworm1_coefficient', amplitude * pm.math.cos(phase_shift))
