@@ -52,13 +52,13 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8'):
 
     dim_opt = dict(dims=dims, dataset_name_idx=dataset_name_idx)
 
-    with pm.Model() as null_model:
+    with pm.Model(coords=coords) as null_model:
         # Just do a flat line (intercept)
         intercept, sigma = build_baseline_priors(**dim_opt)
         mu = pm.Deterministic('mu', intercept)
         likelihood = build_final_likelihood(mu, sigma, y)
 
-    with pm.Model() as nonhierarchical_model:
+    with pm.Model(coords=coords) as nonhierarchical_model:
         # Everything except sigmoid
         intercept, sigma = build_baseline_priors(**dim_opt)
         curvature_term = build_curvature_term(curvature, **dim_opt)
@@ -80,7 +80,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8'):
     all_traces = []
     for model in all_models:
         with model:
-            trace = pm.sample(1000, tune=1000, cores=64, target_accept=0.98, return_inferencedata=True,
+            trace = pm.sample(1000, tune=1000, cores=4, target_accept=0.95, return_inferencedata=True,
                               idata_kwargs={"log_likelihood": True})
             all_traces.append(trace)
 
@@ -101,7 +101,7 @@ def build_baseline_priors(dims=None, dataset_name_idx=None):
     else:
         # Include hyperprior
         hyper_intercept = pm.Normal('hyper_intercept', mu=0, sigma=1)
-        intercept = pm.Normal('intercept', mu=hyper_intercept, sigma=1, dims='dataset_name')[dataset_name_idx]
+        intercept = pm.Normal('intercept', mu=hyper_intercept, sigma=1, dims=dims)[dataset_name_idx]
     sigma = pm.HalfCauchy("sigma", beta=0.02)
     return intercept, sigma
 
