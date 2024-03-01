@@ -89,7 +89,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8') -> Tup
     all_traces = {}
     for name, model in all_models.items():
         with model:
-            trace = pm.sample(1000, tune=1000, cores=4, return_inferencedata=True, target_accept=0.95,
+            trace = pm.sample(1000, tune=1000, cores=4, return_inferencedata=True, #target_accept=0.95,
                               idata_kwargs={"log_likelihood": True}, random_seed=rng)
             all_traces[name] = trace
 
@@ -111,7 +111,9 @@ def build_baseline_priors(dims=None, dataset_name_idx=None):
         # Include hyperprior
         hyper_intercept = pm.Normal('hyper_intercept', mu=0, sigma=1)
         hyper_intercept_sigma = pm.Exponential('hyper_intercept_sigma', lam=1)
-        intercept = pm.Normal('intercept', mu=hyper_intercept, sigma=hyper_intercept_sigma, dims=dims)[dataset_name_idx]
+        zscore_intercept = pm.Normal('z_intercept', mu=0, sigma=1, dims=dims)
+        intercept = pm.Deterministic('intercept', hyper_intercept + zscore_intercept*hyper_intercept_sigma)[dataset_name_idx]
+        # intercept = pm.Normal('intercept', mu=hyper_intercept, sigma=hyper_intercept_sigma, dims=dims)[dataset_name_idx]
     sigma = pm.HalfCauchy("sigma", beta=0.02)
     return intercept, sigma
 
