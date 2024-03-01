@@ -89,7 +89,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8') -> Tup
     all_traces = {}
     for name, model in all_models.items():
         with model:
-            trace = pm.sample(1000, tune=1000, cores=4, return_inferencedata=True,
+            trace = pm.sample(1000, tune=1000, cores=4, return_inferencedata=True, target_accept=0.95,
                               idata_kwargs={"log_likelihood": True}, random_seed=rng)
             all_traces[name] = trace
 
@@ -142,19 +142,14 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
         # Hyperprior
         hyper_log_amplitude = pm.Normal('log_amplitude_mu', mu=0, sigma=1)
         hyper_log_sigma = pm.Exponential('log_amplitude_sigma', lam=1)
-    log_amplitude = pm.Normal('log_amplitude', mu=hyper_log_amplitude, sigma=hyper_log_sigma, dims=dims)
+    zscore_log_amplitude = pm.Normal('z_log_amplitude', mu=0, sigma=1, dims=dims)
+    log_amplitude = pm.Deterministic('log_amplitude', hyper_log_amplitude + zscore_log_amplitude*hyper_log_sigma)
     amplitude = pm.Deterministic('amplitude', pm.math.exp(log_amplitude))
     # There is a positive and negative solution, so choose the positive one for the first term
     eigenworm1_coefficient = pm.Deterministic('eigenworm1_coefficient', amplitude * pm.math.cos(phase_shift))
     eigenworm2_coefficient = pm.Deterministic('eigenworm2_coefficient', -amplitude * pm.math.sin(phase_shift))
     # This one is not part of the sine/cosine pair
-    # if dims is None:
-    #     hyper_eigenworm3_coefficient = 0
-    # else:
-    #     # Hyperprior
-    #     hyper_eigenworm3_coefficient = pm.Normal('hyper_eigenworm3_coefficient', mu=0, sigma=1)
-    eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0,
-                                       sigma=0.5, dims=None)
+    eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5, dims=None)
 
     if dims is None:
         coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack([eigenworm1_coefficient,
@@ -191,9 +186,10 @@ def build_multidataset_model(Xy, neuron_name):
 
     # Build model
     with pm.Model(coords=coords) as model:
-        # Only random effect: intercept
+        # Group-level random effect: intercept
         hyper_intercept = pm.Normal('hyper_intercept', mu=0, sigma=1)
-        intercept = pm.Normal('intercept', mu=hyper_intercept, sigma=1, dims='dataset_name')
+        zscore_intercept = pm.Normal('z_intercept', mu=0, sigma=1, dims='dataset_name')
+        intercept = pm.Deterministic('intercept', hyper_intercept + zscore_intercept)
 
         # First try: pooling for sigmoid term
         x = df_model['x'].values
@@ -233,7 +229,7 @@ def get_dataframe_for_single_neuron(Xy, neuron_name):
     return df_model
 
 
-def main(neuron_name):
+def main(neuron_name, skip_if_exists=True):
     """
     Runs for hardcoded data location for a single neuron
 
@@ -249,9 +245,17 @@ def main(neuron_name):
 
     output_dir = os.path.join(data_dir, 'output')
     Path(output_dir).mkdir(exist_ok=True)
+    # Check if it already exists
+    if skip_if_exists and os.path.exists(os.path.join(output_dir, f'{neuron_name}_loo.h5')):
+        print(f"Skipping {neuron_name} because it already exists")
+        return
 
     # Fit models
-    df_compare, all_traces, all_models = fit_multiple_models(Xy, neuron_name)
+    df_compare, all_traces, all_models = fit_multiple_models(Xy, neuron_name, dataset_name='all')
+
+    if df_compare is None:
+        print(f"Skipping {neuron_name} because there is no valid data")
+        return
 
     # Save objects
     # all_loo is just a dictionary of dfs, so save it as a pickle without looping
