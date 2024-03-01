@@ -1,10 +1,16 @@
+import os
+from pathlib import Path
+from typing import Tuple, Dict
+
 import numpy as np
 import pandas as pd
 import pymc as pm
 import arviz as az
+from matplotlib import pyplot as plt
+from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
 
-def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8'):
+def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8') -> Tuple[Dict, Dict, Dict]:
     """
     Fit multiple models to the same data, to be used for model comparison
 
@@ -17,6 +23,8 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8'):
     -------
 
     """
+    rng = 424242
+
     if dataset_name == 'all':
         # First pack into a single dataframe for preprocessing, then unpack
         df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
@@ -76,23 +84,21 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8'):
         likelihood = build_final_likelihood(mu, sigma, y)
 
     # Run inference on all models
-    all_models = [hierarchical_model, nonhierarchical_model, null_model]
-    all_traces = []
-    for model in all_models:
+    all_models = {'hierarchical': hierarchical_model, 'nonhierarchical': nonhierarchical_model, 'null': null_model}
+    all_traces = {}
+    for name, model in all_models.items():
         with model:
-            trace = pm.sample(1000, tune=1000, cores=4, target_accept=0.95, return_inferencedata=True,
-                              idata_kwargs={"log_likelihood": True})
-            all_traces.append(trace)
+            trace = pm.sample(1000, tune=1000, cores=4, return_inferencedata=True,
+                              idata_kwargs={"log_likelihood": True}, random_seed=rng)
+            all_traces[name] = trace
 
     # Compute model comparisons
-    all_loo = []
-    for i, trace in enumerate(all_traces):
+    all_loo = {}
+    for name, trace in all_traces.items():
         loo = az.loo(trace)
-        all_loo.append(loo)
+        all_loo[name] = loo
 
-    df_compare = az.compare({'hierarchical': all_loo[0], 'nonhierarchical': all_loo[1], 'null': all_loo[2]})
-
-    return df_compare, all_traces, all_models
+    return all_loo, all_traces, all_models
 
 
 def build_baseline_priors(dims=None, dataset_name_idx=None):
@@ -222,3 +228,46 @@ def get_dataframe_for_single_neuron(Xy, neuron_name):
                          axis=1)
     df_model = df_model.dropna()
     return df_model
+
+
+def main(neuron_name):
+    """
+    Runs for hardcoded data location for a single neuron
+
+    Saves all the information in the same directory as the data, with a subfolder per neuron
+
+    Returns
+    -------
+
+    """
+
+    fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
+    Xy = pd.read_hdf(fname)
+
+    output_dir = os.path.join(get_hierarchical_modeling_dir(), neuron_name)
+    Path(output_dir).mkdir(exist_ok=True)
+
+    # Fit models
+    df_compare, all_traces, all_models = fit_multiple_models(Xy, neuron_name)
+
+    # Save objects
+    for name, df in df_compare.items():
+        df.to_csv(os.path.join(output_dir, f'{name}_loo.csv'))
+
+        az.to_netcdf(all_traces[name], os.path.join(output_dir, f'{name}_trace.nc'))
+        az.to_netcdf(all_models[name], os.path.join(output_dir, f'{name}_model.nc'))
+
+    # Save plots
+    az.plot_compare(df_compare, insample_dev=False)
+    plt.savefig(os.path.join(output_dir, 'model_comparison.png'))
+    plt.close()
+
+
+if __name__ == '__main__':
+    # Get neuron name from argparse
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('neuron_name', type=str)
+    args = parser.parse_args()
+
+    main(args.neuron_name)
