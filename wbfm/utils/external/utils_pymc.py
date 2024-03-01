@@ -82,11 +82,11 @@ def fit_multiple_models(Xy, neuron_name, dataset_name = '2022-11-23_worm8'):
 
 def build_baseline_priors():
     intercept = pm.Normal('intercept', mu=0, sigma=1)
-    sigma = pm.HalfCauchy("sigma", beta=10)
+    sigma = pm.HalfCauchy("sigma", beta=0.02)
     return intercept, sigma
 
 
-def build_final_likelihood(mu, sigma, y, nu=3):
+def build_final_likelihood(mu, sigma, y, nu=100):
     return pm.StudentT('y', mu=mu, sigma=sigma, nu=nu, observed=y)
 
 
@@ -192,7 +192,7 @@ def build_multidataset_model(Xy, neuron_name):
         mu = pm.Deterministic('mu', intercept[dataset_name_idx] + sigmoid_term * curvature_term)
 
         # Likelihood
-        sigma = pm.HalfCauchy("sigma", beta=10)
+        sigma = pm.HalfCauchy("sigma", beta=0.02)
 
         y = df_model['y'].values
         likelihood = build_final_likelihood(mu, sigma, y)
