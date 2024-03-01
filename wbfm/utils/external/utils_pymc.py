@@ -178,7 +178,8 @@ def build_multidataset_model(Xy, neuron_name):
 
     with pm.Model(coords=coords) as model:
         # Only random effect: intercept
-        intercept = pm.Normal('intercept', mu=0, sigma=10, dims='dataset_name')
+        hyper_intercept = pm.Normal('hyper_intercept', mu=0, sigma=1)
+        intercept = pm.Normal('intercept', mu=hyper_intercept, sigma=1, dims='dataset_name')
 
         # First try: pooling for sigmoid term
         x = df_model['x'].values
@@ -186,7 +187,7 @@ def build_multidataset_model(Xy, neuron_name):
 
         # Also pool curvature
         curvature = df_model[['eigenworm0', 'eigenworm1', 'eigenworm2']].values
-        curvature_term = build_curvature_term(curvature)
+        curvature_term = build_curvature_term(curvature, dims='dataset_name', dataset_name_idx=dataset_name_idx)
 
         # Expected value of outcome
         mu = pm.Deterministic('mu', intercept[dataset_name_idx] + sigmoid_term * curvature_term)
