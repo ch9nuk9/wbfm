@@ -243,9 +243,12 @@ def main(neuron_name):
     -------
 
     """
-    output_dir = get_hierarchical_modeling_dir()
-    fname = os.path.join(output_dir, 'data.h5')
+    data_dir = get_hierarchical_modeling_dir()
+    fname = os.path.join(data_dir, 'data.h5')
     Xy = pd.read_hdf(fname)
+
+    output_dir = os.path.join(data_dir, 'output')
+    Path(output_dir).mkdir(exist_ok=True)
 
     # Fit models
     df_compare, all_traces, all_models = fit_multiple_models(Xy, neuron_name)
@@ -266,8 +269,10 @@ def main(neuron_name):
 
     # Save plots
     az.plot_compare(df_compare, insample_dev=False)
-    plt.savefig(os.path.join(output_dir, 'model_comparison.png'))
+    plt.savefig(os.path.join(output_dir, f'{neuron_name}_model_comparison.png'))
     plt.close()
+
+    print(f"Saved all objects for {neuron_name} in {output_dir}")
 
 
 if __name__ == '__main__':
