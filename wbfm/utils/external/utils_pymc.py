@@ -1,4 +1,5 @@
 import os
+import pickle
 from pathlib import Path
 from typing import Tuple, Dict
 
@@ -240,25 +241,25 @@ def main(neuron_name):
     -------
 
     """
-
-    fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
+    output_dir = get_hierarchical_modeling_dir()
+    fname = os.path.join(output_dir, 'data.h5')
     Xy = pd.read_hdf(fname)
 
-    output_dir = os.path.join(get_hierarchical_modeling_dir(), neuron_name)
-    Path(output_dir).mkdir(exist_ok=True)
-
     # Fit models
-    df_compare, all_traces, all_models = fit_multiple_models(Xy, neuron_name)
+    all_loo, all_traces, all_models = fit_multiple_models(Xy, neuron_name)
 
     # Save objects
-    for name, df in df_compare.items():
-        df.to_csv(os.path.join(output_dir, f'{name}_loo.csv'))
+    # all_loo is just a dictionary of dfs, so save it as a pickle without looping
+    fname = os.path.join(output_dir, f'{neuron_name}_loo.pkl')
+    with open(fname, 'wb') as f:
+        pickle.dump(all_loo, f)
 
-        az.to_netcdf(all_traces[name], os.path.join(output_dir, f'{name}_trace.nc'))
-        az.to_netcdf(all_models[name], os.path.join(output_dir, f'{name}_model.nc'))
+    for model_name, traces in all_traces.items():
+        az.to_netcdf(traces, os.path.join(output_dir, f'{neuron_name}_{model_name}_trace.nc'))
+        az.to_netcdf(all_models[model_name], os.path.join(output_dir, f'{neuron_name}_{model_name}_model.nc'))
 
     # Save plots
-    az.plot_compare(df_compare, insample_dev=False)
+    az.plot_compare(all_loo, insample_dev=False)
     plt.savefig(os.path.join(output_dir, 'model_comparison.png'))
     plt.close()
 
