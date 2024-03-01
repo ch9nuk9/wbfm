@@ -254,9 +254,14 @@ def main(neuron_name):
     with open(fname, 'wb') as f:
         pickle.dump(all_loo, f)
 
+    # Save model directly with pickle
+    fname = os.path.join(output_dir, f'{neuron_name}_models.pkl')
+    with open(fname, 'wb') as f:
+        pickle.dump(all_models, f)
+
+    # arviz has a specific function for traces
     for model_name, traces in all_traces.items():
         az.to_netcdf(traces, os.path.join(output_dir, f'{neuron_name}_{model_name}_trace.nc'))
-        az.to_netcdf(all_models[model_name], os.path.join(output_dir, f'{neuron_name}_{model_name}_model.nc'))
 
     # Save plots
     az.plot_compare(all_loo, insample_dev=False)
