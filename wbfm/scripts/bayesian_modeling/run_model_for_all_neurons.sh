@@ -97,15 +97,17 @@ neuron_list=(
 # But parallelize so that 12 are running at a time
 
 CMD="/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/utils/external/utils_pymc.py"
+LOG_DIR="/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/logs"
 
 for neuron in "${neuron_list[@]}"
 do
   echo "Running model for neuron $neuron"
-  python $CMD "$neuron" &
-  # For now, just break after one run
-  break
-#  sleep 1
-#  while [ "$(jobs | wc -l)" -ge 12 ]; do
-#    sleep 10
-#  done
+  log_fname="log_$neuron.txt"
+  python $CMD "$neuron" > "$LOG_DIR/$log_fname" &
+  # DEBUG: just break after one run
+#  break
+  sleep 1
+  while [ "$(jobs | wc -l)" -ge 12 ]; do
+    sleep 10
+  done
 done

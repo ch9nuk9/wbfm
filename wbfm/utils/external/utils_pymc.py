@@ -85,11 +85,12 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8') -> Tup
         likelihood = build_final_likelihood(mu, sigma, y)
 
     # Run inference on all models
-    all_models = {'hierarchical': hierarchical_model, 'nonhierarchical': nonhierarchical_model, 'null': null_model}
+    all_models = {'null': null_model, 'nonhierarchical': nonhierarchical_model, 'hierarchical': hierarchical_model}
     all_traces = {}
     for name, model in all_models.items():
         with model:
-            trace = pm.sample(1000, tune=1000, cores=4, return_inferencedata=True, #target_accept=0.95,
+            trace = pm.sample(1000, tune=1000, #cores=32,
+                              chains=4, return_inferencedata=True, target_accept=0.95,
                               idata_kwargs={"log_likelihood": True}, random_seed=rng)
             all_traces[name] = trace
 
@@ -111,7 +112,7 @@ def build_baseline_priors(dims=None, dataset_name_idx=None):
         # Include hyperprior
         hyper_intercept = pm.Normal('hyper_intercept', mu=0, sigma=1)
         hyper_intercept_sigma = pm.Exponential('hyper_intercept_sigma', lam=1)
-        zscore_intercept = pm.Normal('z_intercept', mu=0, sigma=1, dims=dims)
+        zscore_intercept = pm.Normal('zscore_intercept', mu=0, sigma=1, dims=dims)
         intercept = pm.Deterministic('intercept', hyper_intercept + zscore_intercept*hyper_intercept_sigma)[dataset_name_idx]
         # intercept = pm.Normal('intercept', mu=hyper_intercept, sigma=hyper_intercept_sigma, dims=dims)[dataset_name_idx]
     sigma = pm.HalfCauchy("sigma", beta=0.02)
@@ -144,7 +145,7 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
         # Hyperprior
         hyper_log_amplitude = pm.Normal('log_amplitude_mu', mu=0, sigma=1)
         hyper_log_sigma = pm.Exponential('log_amplitude_sigma', lam=1)
-    zscore_log_amplitude = pm.Normal('z_log_amplitude', mu=0, sigma=1, dims=dims)
+    zscore_log_amplitude = pm.Normal('zscore_log_amplitude', mu=0, sigma=1, dims=dims)
     log_amplitude = pm.Deterministic('log_amplitude', hyper_log_amplitude + zscore_log_amplitude*hyper_log_sigma)
     amplitude = pm.Deterministic('amplitude', pm.math.exp(log_amplitude))
     # There is a positive and negative solution, so choose the positive one for the first term
@@ -168,49 +169,49 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     return curvature_term
 
 
-def build_multidataset_model(Xy, neuron_name):
-    """
-    Builds the main model, but with certain variables stratefied by dataset
-
-    Parameters
-    ----------
-    Xy
-    neuron_name
-
-    Returns
-    -------
-
-    """
-
-    df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
-    dataset_name_idx, dataset_name_values = df_model.dataset_name.factorize()
-    coords = {'dataset_name': dataset_name_values}
-
-    # Build model
-    with pm.Model(coords=coords) as model:
-        # Group-level random effect: intercept
-        hyper_intercept = pm.Normal('hyper_intercept', mu=0, sigma=1)
-        zscore_intercept = pm.Normal('z_intercept', mu=0, sigma=1, dims='dataset_name')
-        intercept = pm.Deterministic('intercept', hyper_intercept + zscore_intercept)
-
-        # First try: pooling for sigmoid term
-        x = df_model['x'].values
-        sigmoid_term = build_sigmoid_term(x)
-
-        # Also pool curvature
-        curvature = df_model[['eigenworm0', 'eigenworm1', 'eigenworm2']].values
-        curvature_term = build_curvature_term(curvature, dims='dataset_name', dataset_name_idx=dataset_name_idx)
-
-        # Expected value of outcome
-        mu = pm.Deterministic('mu', intercept[dataset_name_idx] + sigmoid_term * curvature_term)
-
-        # Likelihood
-        sigma = pm.HalfCauchy("sigma", beta=0.02)
-
-        y = df_model['y'].values
-        likelihood = build_final_likelihood(mu, sigma, y)
-
-    return model, df_model
+# def build_multidataset_model(Xy, neuron_name):
+#     """
+#     Builds the main model, but with certain variables stratefied by dataset
+#
+#     Parameters
+#     ----------
+#     Xy
+#     neuron_name
+#
+#     Returns
+#     -------
+#
+#     """
+#
+#     df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
+#     dataset_name_idx, dataset_name_values = df_model.dataset_name.factorize()
+#     coords = {'dataset_name': dataset_name_values}
+#
+#     # Build model
+#     with pm.Model(coords=coords) as model:
+#         # Group-level random effect: intercept
+#         hyper_intercept = pm.Normal('hyper_intercept', mu=0, sigma=1)
+#         zscore_intercept = pm.Normal('zscore_intercept', mu=0, sigma=1, dims='dataset_name')
+#         intercept = pm.Deterministic('intercept', hyper_intercept + zscore_intercept)
+#
+#         # First try: pooling for sigmoid term
+#         x = df_model['x'].values
+#         sigmoid_term = build_sigmoid_term(x)
+#
+#         # Also pool curvature
+#         curvature = df_model[['eigenworm0', 'eigenworm1', 'eigenworm2']].values
+#         curvature_term = build_curvature_term(curvature, dims='dataset_name', dataset_name_idx=dataset_name_idx)
+#
+#         # Expected value of outcome
+#         mu = pm.Deterministic('mu', intercept[dataset_name_idx] + sigmoid_term * curvature_term)
+#
+#         # Likelihood
+#         sigma = pm.HalfCauchy("sigma", beta=0.02)
+#
+#         y = df_model['y'].values
+#         likelihood = build_final_likelihood(mu, sigma, y)
+#
+#     return model, df_model
 
 
 def get_dataframe_for_single_neuron(Xy, neuron_name):
