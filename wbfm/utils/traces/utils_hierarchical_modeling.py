@@ -5,7 +5,7 @@ from wbfm.utils.visualization.multiproject_wrappers import build_trace_time_seri
     build_behavior_time_series_from_multiple_projects, build_cross_dataset_eigenworms
 
 
-def export_data_for_hierarchical_model():
+def export_data_for_hierarchical_model(do_gfp=False, skip_if_exists=True):
     """
     Loads the relevant projects, and exports both behavior and traces to a single .h5 file
 
@@ -13,15 +13,24 @@ def export_data_for_hierarchical_model():
     -------
 
     """
+    # Check if file exists
+    data_dir = get_hierarchical_modeling_dir(do_gfp)
+    fname = os.path.join(data_dir, 'data.h5')
+    if skip_if_exists and os.path.exists(fname):
+        print(f"File {fname} already exists, skipping")
+        return
 
     # Load projects
-    all_projects_gcamp = load_paper_datasets(['gcamp', 'hannah_O2_fm'])
+    if do_gfp:
+        project_code = 'gfp'
+    else:
+        project_code = ['gcamp', 'hannah_O2_fm']
+    all_projects_gcamp = load_paper_datasets(project_code)
 
     # Get individual data elements
     df_all_traces = build_trace_time_series_from_multiple_projects(all_projects_gcamp, use_paper_options=True)
     df_all_traces.sort_values(['dataset_name', 'local_time'], inplace=True)
 
-    # TODO: recalculate eigenworms from curvature to align phase of modes 1 and 2
     df_all_behavior = build_behavior_time_series_from_multiple_projects(all_projects_gcamp,
                                                                         behavior_names=['vb02_curvature', 'fwd'])
     df_all_behavior.sort_values(['dataset_name', 'local_time'], inplace=True)
@@ -47,5 +56,10 @@ def export_data_for_hierarchical_model():
     df_all = df_all.merge(df_eigenworms, on=['dataset_name', 'local_time'], how='inner')
 
     # Export
-    fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
+    fname = os.path.join(data_dir, 'data.h5')
     df_all.to_hdf(fname, key='df_with_missing')
+
+
+if __name__ == '__main__':
+    export_data_for_hierarchical_model()
+    export_data_for_hierarchical_model(do_gfp=True)

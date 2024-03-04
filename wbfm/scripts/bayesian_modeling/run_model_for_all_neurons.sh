@@ -2,6 +2,21 @@
 
 # This script runs the Bayesian model for all neurons in the dataset
 
+# Get an argument for whether to run gfp or not
+if [ "$#" -ne 1 ]; then
+  echo "Usage: $0 <gfp>"
+  exit 1
+fi
+
+# Set the gfp flag
+do_gfp=$1
+if [ "$do_gfp" != "True" ] && [ "$do_gfp" != "False" ]; then
+  echo "Invalid gfp flag: $do_gfp"
+  exit 1
+else
+  echo "Running model with gfp: $do_gfp"
+fi
+
 # First define the list of neurons
 neuron_list=(
 'AVEL'
@@ -103,7 +118,7 @@ for neuron in "${neuron_list[@]}"
 do
   echo "Running model for neuron $neuron"
   log_fname="log_$neuron.txt"
-  python $CMD "$neuron" > "$LOG_DIR/$log_fname" &
+  python $CMD "$neuron" --gfp $do_gfp > "$LOG_DIR/$log_fname" &
   # DEBUG: just break after one run
 #  break
   sleep 1

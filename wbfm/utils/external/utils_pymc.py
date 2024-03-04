@@ -232,7 +232,7 @@ def get_dataframe_for_single_neuron(Xy, neuron_name):
     return df_model
 
 
-def main(neuron_name, skip_if_exists=True):
+def main(neuron_name, do_gfp=False, skip_if_exists=True):
     """
     Runs for hardcoded data location for a single neuron
 
@@ -242,7 +242,9 @@ def main(neuron_name, skip_if_exists=True):
     -------
 
     """
-    data_dir = get_hierarchical_modeling_dir()
+    print(f"Running for {neuron_name} with do_gfp={do_gfp}")
+
+    data_dir = get_hierarchical_modeling_dir(do_gfp)
     fname = os.path.join(data_dir, 'data.h5')
     Xy = pd.read_hdf(fname)
 
@@ -286,7 +288,14 @@ if __name__ == '__main__':
     # Get neuron name from argparse
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('neuron_name', type=str)
+    parser.add_argument('--neuron_name', '-n', type=str)
+    parser.add_argument('--do_gfp', type=str)
     args = parser.parse_args()
 
-    main(args.neuron_name)
+    # Parse do_gfp into a boolean
+    if args.do_gfp is None:
+        do_gfp = False
+    else:
+        do_gfp = args.do_gfp.lower() == 'true'
+
+    main(neuron_name=args.neuron_name, do_gfp=do_gfp)

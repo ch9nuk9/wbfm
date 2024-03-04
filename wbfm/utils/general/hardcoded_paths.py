@@ -27,8 +27,11 @@ def get_project_parent_folder():
     return "/scratch/neurobiology/zimmer/fieseler/wbfm_projects"
 
 
-def get_hierarchical_modeling_dir():
-    return "/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling"
+def get_hierarchical_modeling_dir(gfp=False):
+    if gfp:
+        return "/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp"
+    else:
+        return "/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling"
 
 
 def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=False, **kwargs) -> dict:
