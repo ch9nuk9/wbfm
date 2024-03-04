@@ -118,7 +118,7 @@ for neuron in "${neuron_list[@]}"
 do
   echo "Running model for neuron $neuron"
   log_fname="log_$neuron.txt"
-  python $CMD "$neuron" --gfp $do_gfp > "$LOG_DIR/$log_fname" &
+  python $CMD --neuron_name "$neuron" --do_gfp "$do_gfp" > "$LOG_DIR/$log_fname" &
   # DEBUG: just break after one run
 #  break
   sleep 1

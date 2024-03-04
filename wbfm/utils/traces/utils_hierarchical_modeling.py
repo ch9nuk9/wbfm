@@ -25,21 +25,21 @@ def export_data_for_hierarchical_model(do_gfp=False, skip_if_exists=True):
         project_code = 'gfp'
     else:
         project_code = ['gcamp', 'hannah_O2_fm']
-    all_projects_gcamp = load_paper_datasets(project_code)
+    all_projects = load_paper_datasets(project_code)
 
     # Get individual data elements
-    df_all_traces = build_trace_time_series_from_multiple_projects(all_projects_gcamp, use_paper_options=True)
+    df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, use_paper_options=True)
     df_all_traces.sort_values(['dataset_name', 'local_time'], inplace=True)
 
-    df_all_behavior = build_behavior_time_series_from_multiple_projects(all_projects_gcamp,
+    df_all_behavior = build_behavior_time_series_from_multiple_projects(all_projects,
                                                                         behavior_names=['vb02_curvature', 'fwd'])
     df_all_behavior.sort_values(['dataset_name', 'local_time'], inplace=True)
     df_all_behavior['fwd'] = df_all_behavior['fwd'].astype(int)
 
     # Recalculate multi-dataset eigenworms
-    df_eigenworms = build_cross_dataset_eigenworms(all_projects_gcamp)
+    df_eigenworms = build_cross_dataset_eigenworms(all_projects)
 
-    df_all_manifold = build_trace_time_series_from_multiple_projects(all_projects_gcamp,
+    df_all_manifold = build_trace_time_series_from_multiple_projects(all_projects,
                                                                      use_paper_options=True, residual_mode='pca_global')
     df_all_manifold.sort_values(['dataset_name', 'local_time'], inplace=True)
 
