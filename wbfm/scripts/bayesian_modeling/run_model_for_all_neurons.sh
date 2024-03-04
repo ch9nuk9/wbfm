@@ -112,7 +112,12 @@ neuron_list=(
 # But parallelize so that 12 are running at a time
 
 CMD="/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/utils/external/utils_pymc.py"
-LOG_DIR="/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/logs"
+# Changes if running on gfp
+if [ "$do_gfp" == "True" ]; then
+  LOG_DIR="/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp/logs"
+else
+  LOG_DIR="/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/logs"
+fi
 
 for neuron in "${neuron_list[@]}"
 do

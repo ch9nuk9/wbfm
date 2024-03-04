@@ -250,7 +250,7 @@ def main(neuron_name, do_gfp=False, skip_if_exists=True):
     -------
 
     """
-    print(f"Running for {neuron_name} with do_gfp={do_gfp}")
+    print(f"Running all 3 bayesian models for {neuron_name} with do_gfp={do_gfp}")
 
     data_dir = get_hierarchical_modeling_dir(do_gfp)
     fname = os.path.join(data_dir, 'data.h5')
