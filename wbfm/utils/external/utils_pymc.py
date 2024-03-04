@@ -177,50 +177,6 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     return curvature_term
 
 
-# def build_multidataset_model(Xy, neuron_name):
-#     """
-#     Builds the main model, but with certain variables stratefied by dataset
-#
-#     Parameters
-#     ----------
-#     Xy
-#     neuron_name
-#
-#     Returns
-#     -------
-#
-#     """
-#
-#     df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
-#     dataset_name_idx, dataset_name_values = df_model.dataset_name.factorize()
-#     coords = {'dataset_name': dataset_name_values}
-#
-#     # Build model
-#     with pm.Model(coords=coords) as model:
-#         # Group-level random effect: intercept
-#         hyper_intercept = pm.Normal('hyper_intercept', mu=0, sigma=1)
-#         zscore_intercept = pm.Normal('zscore_intercept', mu=0, sigma=1, dims='dataset_name')
-#         intercept = pm.Deterministic('intercept', hyper_intercept + zscore_intercept)
-#
-#         # First try: pooling for sigmoid term
-#         x = df_model['x'].values
-#         sigmoid_term = build_sigmoid_term(x)
-#
-#         # Also pool curvature
-#         curvature = df_model[['eigenworm0', 'eigenworm1', 'eigenworm2']].values
-#         curvature_term = build_curvature_term(curvature, dims='dataset_name', dataset_name_idx=dataset_name_idx)
-#
-#         # Expected value of outcome
-#         mu = pm.Deterministic('mu', intercept[dataset_name_idx] + sigmoid_term * curvature_term)
-#
-#         # Likelihood
-#         sigma = pm.HalfCauchy("sigma", beta=0.02)
-#
-#         y = df_model['y'].values
-#         likelihood = build_final_likelihood(mu, sigma, y)
-#
-#     return model, df_model
-
 
 def get_dataframe_for_single_neuron(Xy, neuron_name):
     # First, extract data, z-score, and drop na values
@@ -240,11 +196,15 @@ def get_dataframe_for_single_neuron(Xy, neuron_name):
     return df_model
 
 
-def main(neuron_name, do_gfp=False, skip_if_exists=True):
+def main(neuron_name, do_gfp=False, dataset_name='all', skip_if_exists=True):
     """
     Runs for hardcoded data location for a single neuron
 
     Saves all the information in the same directory as the data, with a subfolder per neuron
+
+    Commonly used with:
+        dataset_name = 'all' to run the neuron for all datasets at once
+        dataset_name = 'loop' to run that neuron for each dataset seperately
 
     Returns
     -------
@@ -256,7 +216,19 @@ def main(neuron_name, do_gfp=False, skip_if_exists=True):
     fname = os.path.join(data_dir, 'data.h5')
     Xy = pd.read_hdf(fname)
 
-    output_dir = os.path.join(data_dir, 'output')
+    if dataset_name == 'loop':
+        # Loop over all datasets
+        for dataset_name in Xy['dataset_name'].unique():
+            if dataset_name == 'loop':
+                # Recursion error
+                continue
+            main(neuron_name, do_gfp=do_gfp, dataset_name=dataset_name, skip_if_exists=skip_if_exists)
+        return
+
+    if dataset_name == 'all':
+        output_dir = os.path.join(data_dir, 'output')
+    else:
+        output_dir = os.path.join(data_dir, 'output_single_dataset')
     Path(output_dir).mkdir(exist_ok=True)
     # Check if it already exists
     if skip_if_exists and os.path.exists(os.path.join(output_dir, f'{neuron_name}_loo.h5')):
@@ -264,29 +236,29 @@ def main(neuron_name, do_gfp=False, skip_if_exists=True):
         return
 
     # Fit models
-    df_compare, all_traces, all_models = fit_multiple_models(Xy, neuron_name, dataset_name='all')
+    df_compare, all_traces, all_models = fit_multiple_models(Xy, neuron_name, dataset_name=dataset_name)
 
     if df_compare is None:
         print(f"Skipping {neuron_name} because there is no valid data")
         return
 
     # Save objects
-    # all_loo is just a dictionary of dfs, so save it as a pickle without looping
-    fname = os.path.join(output_dir, f'{neuron_name}_loo.h5')
+    if dataset_name == 'all':
+        output_fname_base = f'{neuron_name}'
+
+        # arviz has a specific function for traces
+        for model_name, traces in all_traces.items():
+            az.to_netcdf(traces, os.path.join(output_dir, f'{output_fname_base}_{model_name}_trace.nc'))
+    else:
+        output_fname_base = f'{neuron_name}_{dataset_name}'
+
+    # Only save for the all dataset version
+    fname = os.path.join(output_dir, f'{output_fname_base}_loo.h5')
     df_compare.to_hdf(fname, key='df_with_missing')
-
-    # Save model directly with pickle
-    # fname = os.path.join(output_dir, f'{neuron_name}_models.pkl')
-    # with open(fname, 'wb') as f:
-    #     pickle.dump(all_models, f)
-
-    # arviz has a specific function for traces
-    for model_name, traces in all_traces.items():
-        az.to_netcdf(traces, os.path.join(output_dir, f'{neuron_name}_{model_name}_trace.nc'))
 
     # Save plots
     az.plot_compare(df_compare, insample_dev=False)
-    plt.savefig(os.path.join(output_dir, f'{neuron_name}_model_comparison.png'))
+    plt.savefig(os.path.join(output_dir, f'{output_fname_base}_model_comparison.png'))
     plt.close()
 
     print(f"Saved all objects for {neuron_name} in {output_dir}")
@@ -297,6 +269,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--neuron_name', '-n', type=str)
+    parser.add_argument('--dataset_name', type=str)
     parser.add_argument('--do_gfp', type=str)
     args = parser.parse_args()
 
