@@ -28,7 +28,11 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8') -> Tup
 
     if dataset_name == 'all':
         # First pack into a single dataframe for preprocessing, then unpack
-        df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
+        try:
+            df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
+        except KeyError:
+            print(f"Skipping {neuron_name} because there is no valid data")
+            return None, None, None
         x = df_model['x'].values
         y = df_model['y'].values
         curvature = df_model[['eigenworm0', 'eigenworm1', 'eigenworm2']].values
@@ -41,7 +45,11 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8') -> Tup
         # For now, just use one dataset
         ind_data = Xy['dataset_name'] == dataset_name
         # Allow gating based on the global component
-        x = Xy[f'{neuron_name}_manifold'][ind_data].values
+        key = f'{neuron_name}_manifold'
+        if key not in Xy:
+            print(f"Skipping {neuron_name} because there is no manifold data")
+            return None, None, None
+        x = Xy[key][ind_data].values
         x = (x - x.mean()) / x.std()  # z-score
 
         if pd.Series(x).count() == 0:
