@@ -101,7 +101,7 @@ def plot_model_elements(idata, y_list=None):
     return fig
 
 
-def load_from_disk_and_plot(trace_fname, check_if_exists=True):
+def load_from_disk_and_plot(trace_fname, model_substring='hierarchical', check_if_exists=True):
     """
     Loads a trace from disk, build the posterior predictive and plot it
 
@@ -109,17 +109,26 @@ def load_from_disk_and_plot(trace_fname, check_if_exists=True):
     -------
 
     """
-    out_fname = trace_fname.replace('.nc', '.html')
+    # Get the neuron name from the filename
+    # Assume it is like */output/{neuron_name}_{model_name}_trace.nc
+    neuron_name = Path(trace_fname).name.split('_')[0]
+    if 'neuron' in neuron_name:
+        print(f"Detected non-ided neuron, skipping {trace_fname}")
+        return None
+
+    out_fname = Path(trace_fname).parent.joinpath('plots').joinpath(f'{neuron_name}_posterior_predictive.html')
     if check_if_exists and os.path.exists(out_fname):
         print(f"File {out_fname} already exists. Skipping")
-        return
+        return None
+    Path(out_fname).parent.mkdir(parents=True, exist_ok=True)
+
+    if model_substring is not None:
+        if model_substring not in trace_fname:
+            print(f"Skipping {trace_fname} because it is not a {model_substring} model")
+            return None
 
     # Load the trace
     trace = az.from_netcdf(trace_fname)
-
-    # Get the neuron name from the filename
-    # Assume it is like */{neuron_name}_{model_name}_trace.nc
-    neuron_name = Path(trace_fname).name.split('_')[0]
 
     if 'posterior_predictive' not in trace:
         print(f"Posterior predictive not found in {trace_fname}. Rebuilding the model")
