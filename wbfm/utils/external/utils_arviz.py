@@ -102,7 +102,8 @@ def plot_model_elements(idata, y_list=None, to_show=True):
     return fig
 
 
-def load_from_disk_and_plot(trace_fname, model_substring='hierarchical', check_if_exists=True):
+def load_from_disk_and_plot(trace_fname, model_substring='hierarchical', check_if_exists=True,
+                            update_original_trace=True, verbose=1):
     """
     Loads a trace from disk, build the posterior predictive and plot it
 
@@ -114,33 +115,54 @@ def load_from_disk_and_plot(trace_fname, model_substring='hierarchical', check_i
     # Assume it is like */output/{neuron_name}_{model_name}_trace.nc
     neuron_name = Path(trace_fname).name.split('_')[0]
     if 'neuron' in neuron_name:
-        print(f"Detected non-ided neuron, skipping {trace_fname}")
+        if verbose >= 2:
+            print(f"Detected non-ided neuron, skipping {trace_fname}")
         return None
 
     out_fname = Path(trace_fname).parent.parent.joinpath('plots').joinpath(f'{neuron_name}_posterior_predictive.html')
     if check_if_exists and os.path.exists(out_fname):
-        print(f"File {out_fname} already exists. Skipping")
+        if verbose >= 1:
+            print(f"File {out_fname} already exists. Skipping")
         return None
     Path(out_fname).parent.mkdir(parents=True, exist_ok=True)
 
     if model_substring is not None:
         if model_substring not in trace_fname:
-            print(f"Skipping {trace_fname} because it is not a {model_substring} model")
+            if verbose >= 2:
+                print(f"Skipping {trace_fname} because it is not a {model_substring} model")
             return None
 
     # Load the trace
     trace = az.from_netcdf(trace_fname)
 
-    if 'posterior_predictive' not in trace:
-        print(f"Posterior predictive not found in {trace_fname}. Rebuilding the model")
+    # Check if gcamp or gfp
+    if Path(trace_fname).is_relative_to(get_hierarchical_modeling_dir()):
+        is_gfp = False
+    elif Path(trace_fname).is_relative_to(get_hierarchical_modeling_dir(gfp=True)):
+        is_gfp = True
+    else:
+        raise ValueError(f"Could not find the original data file for {neuron_name}")
 
-        # Check if gcamp or gfp
-        if Path(trace_fname).is_relative_to(get_hierarchical_modeling_dir()):
-            data_fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
-        elif Path(trace_fname).is_relative_to(get_hierarchical_modeling_dir(gfp=True)):
-            data_fname = os.path.join(get_hierarchical_modeling_dir(gfp=True), 'data.h5')
-        else:
-            raise ValueError(f"Could not find the original data file for {trace_fname}")
+    trace = sample_posterior_predictive(neuron_name, trace, is_gfp)
+    if update_original_trace:
+        if verbose >= 1:
+            print(f"Updating original trace {trace_fname}")
+        az.to_netcdf(trace, trace_fname)
+
+    # Plot
+    fig = plot_model_elements(trace, to_show=False)
+
+    # Save
+    fig.write_html(str(out_fname))
+
+    return fig
+
+
+def sample_posterior_predictive(neuron_name, trace, is_gfp=False):
+    if 'posterior_predictive' not in trace:
+        print(f"Posterior predictive not found for neuron {neuron_name}. Rebuilding the model")
+        data_fname = os.path.join(get_hierarchical_modeling_dir(gfp=is_gfp), 'data.h5')
+
         Xy = pd.read_hdf(data_fname)
         # Rebuild the model, which is required to build the posterior predictive
         from wbfm.utils.external.utils_pymc import get_dataframe_for_single_neuron
@@ -156,7 +178,7 @@ def load_from_disk_and_plot(trace_fname, model_substring='hierarchical', check_i
         dim_opt = dict(dims=dims, dataset_name_idx=dataset_name_idx)
         with pm.Model(coords=coords) as hierarchical_model:
             # Full model
-            from wbfm.utils.external.utils_pymc import build_baseline_priors, build_sigmoid_term, build_curvature_term,\
+            from wbfm.utils.external.utils_pymc import build_baseline_priors, build_sigmoid_term, build_curvature_term, \
                 build_final_likelihood
             intercept, sigma = build_baseline_priors(**dim_opt)
             sigmoid_term = build_sigmoid_term(x)
@@ -168,11 +190,4 @@ def load_from_disk_and_plot(trace_fname, model_substring='hierarchical', check_i
             # Sample
             trace = pm.sample_posterior_predictive(trace, var_names=['y', 'sigmoid_term',
                                                                      'curvature_term', 'mu'])
-
-    # Plot
-    fig = plot_model_elements(trace, to_show=False)
-
-    # Save
-    fig.write_html(str(out_fname))
-
-    return fig
+    return trace
