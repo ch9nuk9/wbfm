@@ -66,7 +66,7 @@ def plot_ts(idata, y='y', y_hat='y', num_samples=100):
     return fig
 
 
-def plot_model_elements(idata, y_list=None):
+def plot_model_elements(idata, y_list=None, to_show=True):
     """
 
     Parameters
@@ -97,7 +97,8 @@ def plot_model_elements(idata, y_list=None):
     df_pred['observed'] = y_obs
 
     fig = px.line(df_pred)
-    fig.show()
+    if to_show:
+        fig.show()
     return fig
 
 
@@ -116,7 +117,7 @@ def load_from_disk_and_plot(trace_fname, model_substring='hierarchical', check_i
         print(f"Detected non-ided neuron, skipping {trace_fname}")
         return None
 
-    out_fname = Path(trace_fname).parent.joinpath('plots').joinpath(f'{neuron_name}_posterior_predictive.html')
+    out_fname = Path(trace_fname).parent.parent.joinpath('plots').joinpath(f'{neuron_name}_posterior_predictive.html')
     if check_if_exists and os.path.exists(out_fname):
         print(f"File {out_fname} already exists. Skipping")
         return None
@@ -169,9 +170,9 @@ def load_from_disk_and_plot(trace_fname, model_substring='hierarchical', check_i
                                                                      'curvature_term', 'mu'])
 
     # Plot
-    fig = plot_model_elements(trace)
+    fig = plot_model_elements(trace, to_show=False)
 
     # Save
-    fig.write_html(out_fname)
+    fig.write_html(str(out_fname))
 
     return fig
