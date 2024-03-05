@@ -177,7 +177,6 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     return curvature_term
 
 
-
 def get_dataframe_for_single_neuron(Xy, neuron_name):
     # First, extract data, z-score, and drop na values
     # Allow gating based on the global component
