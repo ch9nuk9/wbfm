@@ -41,6 +41,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8') -> Tup
         coords = {'dataset_name': dataset_name_values}
         dims = 'dataset_name'
     else:
+        # TODO: use the same function as above
         # Unpack data into x, y, and curvature
         # For now, just use one dataset
         ind_data = Xy['dataset_name'] == dataset_name
@@ -131,10 +132,13 @@ def build_final_likelihood(mu, sigma, y, nu=100):
     return pm.StudentT('y', mu=mu, sigma=sigma, nu=nu, observed=y)
 
 
-def build_sigmoid_term(x):
+def build_sigmoid_term(x, force_positive_slope=True):
     # Sigmoid (hierarchy) term
-    log_sigmoid_slope = pm.Normal('log_sigmoid_slope', mu=0, sigma=1)  # Using log-amplitude for positivity
-    sigmoid_slope = pm.Deterministic('sigmoid_slope', pm.math.exp(log_sigmoid_slope))
+    if force_positive_slope:
+        log_sigmoid_slope = pm.Normal('log_sigmoid_slope', mu=0, sigma=1)  # Using log-amplitude for positivity
+        sigmoid_slope = pm.Deterministic('sigmoid_slope', pm.math.exp(log_sigmoid_slope))
+    else:
+        sigmoid_slope = pm.Normal('sigmoid_slope', mu=0, sigma=1)
     inflection_point = pm.Normal('inflection_point', mu=0, sigma=2)
     # Sigmoid term
     sigmoid_term = pm.Deterministic('sigmoid_term', pm.math.sigmoid(sigmoid_slope * (x - inflection_point)))
@@ -177,19 +181,24 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     return curvature_term
 
 
-def get_dataframe_for_single_neuron(Xy, neuron_name):
+def get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name='all'):
+    if dataset_name != 'all':
+        _Xy = Xy[Xy['dataset_name'] == dataset_name]
+    else:
+        _Xy = Xy
     # First, extract data, z-score, and drop na values
     # Allow gating based on the global component
-    x = Xy[f'{neuron_name}_manifold']
+    x = _Xy[f'{neuron_name}_manifold']
     x = (x - x.mean()) / x.std()  # z-score
     # Just predict the residual
-    y = Xy[f'{neuron_name}'] - Xy[f'{neuron_name}_manifold']
+    y = _Xy[f'{neuron_name}'] - _Xy[f'{neuron_name}_manifold']
     y = (y - y.mean()) / y.std()  # z-score
     # Interesting covariate
-    curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2']]
+    curvature = _Xy[['eigenworm0', 'eigenworm1', 'eigenworm2']]
     curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
     # Package as dataframe again, and drop na values
-    df_model = pd.concat([pd.DataFrame({'y': y, 'x': x, 'dataset_name': Xy['dataset_name']}), pd.DataFrame(curvature)],
+    df_model = pd.concat([pd.DataFrame({'y': y, 'x': x, 'dataset_name': _Xy['dataset_name']}),
+                          pd.DataFrame(curvature)],
                          axis=1)
     df_model = df_model.dropna()
     return df_model
