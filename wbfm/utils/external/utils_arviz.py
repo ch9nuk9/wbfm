@@ -92,9 +92,12 @@ def plot_model_elements(idata, y_list=None, to_show=True):
             raise ValueError(f"Could not find {y_name} in idata")
         all_pred[y_name] = y_pred
     df_pred = pd.DataFrame(all_pred)
-    # Also get the observed data
-    y_obs = idata.observed_data.y
-    df_pred['observed'] = y_obs
+    try:
+        # Also get the observed data
+        y_obs = idata.observed_data.y
+        df_pred['observed'] = y_obs
+    except AttributeError:
+        pass
 
     fig = px.line(df_pred)
     if to_show:
@@ -143,7 +146,7 @@ def load_from_disk_and_plot(trace_fname, model_substring='hierarchical', check_i
     else:
         raise ValueError(f"Could not find the original data file for {neuron_name}")
 
-    trace = sample_posterior_predictive(neuron_name, trace, is_gfp)
+    trace = trace.extend(sample_posterior_predictive(neuron_name, trace, is_gfp))
     if update_original_trace:
         if verbose >= 1:
             print(f"Updating original trace {trace_fname}")
