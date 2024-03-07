@@ -181,7 +181,7 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     return curvature_term
 
 
-def get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name='all'):
+def get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name='all', additional_columns=None):
     if dataset_name != 'all':
         _Xy = Xy[Xy['dataset_name'] == dataset_name]
     else:
@@ -197,9 +197,10 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name='all'):
     curvature = _Xy[['eigenworm0', 'eigenworm1', 'eigenworm2']]
     curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
     # Package as dataframe again, and drop na values
-    df_model = pd.concat([pd.DataFrame({'y': y, 'x': x, 'dataset_name': _Xy['dataset_name']}),
-                          pd.DataFrame(curvature)],
-                         axis=1)
+    all_dfs = [pd.DataFrame({'y': y, 'x': x, 'dataset_name': _Xy['dataset_name']}), pd.DataFrame(curvature)]
+    if additional_columns is not None:
+        all_dfs.append(_Xy[additional_columns])
+    df_model = pd.concat(all_dfs, axis=1)
     df_model = df_model.dropna()
     return df_model
 
