@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pymc as pm
 import arviz as az
+import cloudpickle
 from matplotlib import pyplot as plt
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
@@ -260,6 +261,12 @@ def main(neuron_name, do_gfp=False, dataset_name='all', skip_if_exists=True):
             az.to_netcdf(traces, os.path.join(output_dir, f'{output_fname_base}_{model_name}_trace.nc'))
     else:
         output_fname_base = f'{neuron_name}_{dataset_name}'
+
+    # Also save the model
+    # See https://discourse.pymc.io/t/how-save-pymc-v5-models/13022
+    model_fname = os.path.join(output_dir, f'{output_fname_base}_model.cloud_pkl')
+    with open(model_fname, 'wb') as buffer:
+        cloudpickle.dump(all_models, buffer)
 
     # Only save for the all dataset version
     fname = os.path.join(output_dir, f'{output_fname_base}_loo.h5')
