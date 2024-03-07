@@ -12,7 +12,8 @@ from matplotlib import pyplot as plt
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
 
-def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8') -> Tuple[pd.DataFrame, Dict, Dict]:
+def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
+                        sample_posterior=True, DEBUG=False) -> Tuple[pd.DataFrame, Dict, Dict]:
     """
     Fit multiple models to the same data, to be used for model comparison
 
@@ -73,35 +74,58 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8') -> Tup
 
     with pm.Model(coords=coords) as null_model:
         # Just do a flat line (intercept)
-        intercept, sigma = build_baseline_priors(**dim_opt)
+        intercept, sigma = build_baseline_priors()#**dim_opt)
         mu = pm.Deterministic('mu', intercept)
         likelihood = build_final_likelihood(mu, sigma, y)
 
     with pm.Model(coords=coords) as nonhierarchical_model:
-        # Everything except sigmoid
-        intercept, sigma = build_baseline_priors(**dim_opt)
+        # Curvature, but no sigmoid
+        intercept, sigma = build_baseline_priors()#**dim_opt)
         curvature_term = build_curvature_term(curvature, **dim_opt)
 
         mu = pm.Deterministic('mu', intercept + curvature_term)
         likelihood = build_final_likelihood(mu, sigma, y)
 
     with pm.Model(coords=coords) as hierarchical_model:
-        # Full model
-        intercept, sigma = build_baseline_priors(**dim_opt)
+        # Curvature multiplied by sigmoid
+        intercept, sigma = build_baseline_priors()#**dim_opt)
         sigmoid_term = build_sigmoid_term(x)
         curvature_term = build_curvature_term(curvature, **dim_opt)
 
         mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
         likelihood = build_final_likelihood(mu, sigma, y)
 
+    # New: just have rectification with given fwd/rev, not using a sigmoid term
+    fwd_idx, fwd_values = df_model.fwd.factorize()
+    coords = {'fwd': fwd_values}
+    dims = 'fwd'
+    dim_opt = dict(dims=dims, dataset_name_idx=fwd_idx)
+    with pm.Model(coords=coords) as rectified_model:
+        # Full model
+        intercept, sigma = build_baseline_priors()
+        curvature_term = build_curvature_term(curvature, **dim_opt)
+
+        mu = pm.Deterministic('mu', intercept + curvature_term)
+        likelihood = build_final_likelihood(mu, sigma, y)
+
     # Run inference on all models
-    all_models = {'null': null_model, 'nonhierarchical': nonhierarchical_model, 'hierarchical': hierarchical_model}
+    all_models = {'null': null_model,
+                  'nonhierarchical': nonhierarchical_model,
+                  'hierarchical': hierarchical_model,
+                  'rectified': rectified_model}
     all_traces = {}
     for name, model in all_models.items():
         with model:
-            trace = pm.sample(1000, tune=1000, #cores=32,
-                              chains=4, return_inferencedata=True, target_accept=0.95,
-                              idata_kwargs={"log_likelihood": True}, random_seed=rng)
+            opt = dict(draws=1000, tune=1000, random_seed=rng, target_accept=0.95)
+            if DEBUG:
+                opt['draws'] = 10
+                opt['tune'] = 10
+
+            trace = pm.sample(**opt, #cores=32,
+                              chains=4, return_inferencedata=True, idata_kwargs={"log_likelihood": True})
+            if sample_posterior:
+                trace = trace.extend(pm.sample_posterior_predictive(trace, random_seed=rng))
+
             all_traces[name] = trace
 
     # Compute model comparisons
@@ -124,7 +148,6 @@ def build_baseline_priors(dims=None, dataset_name_idx=None):
         hyper_intercept_sigma = pm.Exponential('hyper_intercept_sigma', lam=1)
         zscore_intercept = pm.Normal('zscore_intercept', mu=0, sigma=1, dims=dims)
         intercept = pm.Deterministic('intercept', hyper_intercept + zscore_intercept*hyper_intercept_sigma)[dataset_name_idx]
-        # intercept = pm.Normal('intercept', mu=hyper_intercept, sigma=hyper_intercept_sigma, dims=dims)[dataset_name_idx]
     sigma = pm.HalfCauchy("sigma", beta=0.02)
     return intercept, sigma
 
@@ -197,8 +220,11 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name='all', additio
     # Interesting covariate
     curvature = _Xy[['eigenworm0', 'eigenworm1', 'eigenworm2']]
     curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
+    # State
+    fwd = _Xy['fwd'].astype(str)
     # Package as dataframe again, and drop na values
-    all_dfs = [pd.DataFrame({'y': y, 'x': x, 'dataset_name': _Xy['dataset_name']}), pd.DataFrame(curvature)]
+    all_dfs = [pd.DataFrame({'y': y, 'x': x, 'dataset_name': _Xy['dataset_name'], 'fwd': fwd}),
+               pd.DataFrame(curvature)]
     if additional_columns is not None:
         all_dfs.append(_Xy[additional_columns])
     df_model = pd.concat(all_dfs, axis=1)
