@@ -4,8 +4,6 @@ import numpy as np
 import pandas as pd
 import scipy
 import sklearn
-from lmfit.models import ExponentialModel, ConstantModel
-from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
 
 
@@ -58,6 +56,7 @@ def detrend_exponential_lmfit(y_with_nan, x=None, ind_subset=None, restore_mean_
     -------
 
     """
+    from lmfit.models import ExponentialModel, ConstantModel
     original_mean = np.nanmean(y_with_nan)
 
     exp_mod = ExponentialModel(prefix='exp_')

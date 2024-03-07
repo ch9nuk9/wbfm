@@ -4,12 +4,9 @@ import dataclasses
 import logging
 import pickle
 import threading
-import warnings
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import List, Tuple
 
-import cv2
 import dask.array
 import numpy as np
 import zarr
@@ -547,6 +544,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
     if s.do_rigid_alignment:
         if not s.to_use_previous_warp_matrices:
+            import cv2
             try:
                 single_volume_raw, warp_matrices_dict = align_stack_to_middle_slice(single_volume_raw)
             except cv2.error as e:

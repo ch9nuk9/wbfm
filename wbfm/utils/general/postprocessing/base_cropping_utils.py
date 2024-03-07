@@ -1,6 +1,5 @@
 import os
 from math import ceil
-import cv2
 import numpy as np
 
 
@@ -18,6 +17,7 @@ def get_crop_from_avi(fname, this_xy, num_frames, sz=(28, 28), start_frame=0):
 
     Output format is TZXY (Z is 1d)
     """
+    import cv2  # Sometimes cv2 is a pain to install
 
     if not os.path.isfile(fname):
         raise ValueError
