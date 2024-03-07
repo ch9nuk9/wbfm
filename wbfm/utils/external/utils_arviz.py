@@ -146,7 +146,7 @@ def load_from_disk_and_plot(trace_fname, model_substring='hierarchical', check_i
     else:
         raise ValueError(f"Could not find the original data file for {neuron_name}")
 
-    trace = trace.extend(sample_posterior_predictive(neuron_name, trace, is_gfp))
+    trace.extend(sample_posterior_predictive(neuron_name, trace, is_gfp))
     if update_original_trace:
         if verbose >= 1:
             print(f"Updating original trace {trace_fname}")
