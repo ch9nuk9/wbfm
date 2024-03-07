@@ -13,34 +13,6 @@ from PyQt5.QtWidgets import QComboBox, QVBoxLayout, QMessageBox, QStyledItemDele
 from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QTableView, QAbstractItemView, QListWidget, QLabel, QPushButton
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 
-from wbfm.utils.general.postprocessing.base_cropping_utils import get_crop_coords3d
-from wbfm.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume, \
-    get_single_volume_specific_slices
-
-
-def get_cropped_frame(fname, t, num_slices, zxy, crop_sz, to_flip=False):
-    # print(f"Loading file: {fname}")
-    # print(f"Location: {zxy}")
-    if crop_sz is not None:
-        crop_coords = get_crop_coords3d(zxy, crop_sz)
-        z, x, y = crop_coords
-        if len(z) > 1:
-            start_slice, end_slice = z[0], z[-1]
-        else:
-            start_slice, end_slice = z[0], z[0] + 1
-        dat = get_single_volume_specific_slices(fname, t, num_slices,
-                                                start_slice, end_slice)
-        if to_flip:
-            dat = np.flip(dat, axis=1)
-        # print(f"crop_coords: {crop_coords}")
-        dat_crop = dat[x[0]:x[-1], y[0]:y[-1]]
-    else:
-        dat_crop = get_single_volume(fname, t, num_slices, dtype='uint16')
-        if to_flip:
-            dat_crop = np.flip(dat_crop, axis=2)
-
-    return _fix_dimension_for_plt(crop_sz, dat_crop)
-
 
 def _fix_dimension_for_plt(crop_sz, dat_crop):
     # Final output should be XYC
@@ -51,27 +23,6 @@ def _fix_dimension_for_plt(crop_sz, dat_crop):
         else:
             dat_crop = dat_crop[0]
     return np.array(dat_crop)
-
-
-def get_crop_from_zarr(zarr_array, t, zxy, crop_sz, force_2d=False):
-    if crop_sz is not None:
-        crop_coords = get_crop_coords3d(zxy, crop_sz)
-        z, x, y = crop_coords
-        if len(z) > 1:
-            start_slice, end_slice = z[0], z[-1] + 1
-        else:
-            start_slice, end_slice = z[0], z[0] + 1
-        # print(f"Zarr size before crop: {zarr_array.shape}")
-        this_volume = np.array(zarr_array[t, ...])
-        dat_crop = this_volume[start_slice:end_slice, x[0]:x[-1]+1, y[0]:y[-1]+1]
-        # print(f"Zarr size after crop: {dat_crop.shape}")
-    else:
-        dat_crop = zarr_array[t, :, :, :]
-
-    if force_2d:
-        return _fix_dimension_for_plt(crop_sz, dat_crop)
-    else:
-        return dat_crop
 
 
 def array2qt(img):
