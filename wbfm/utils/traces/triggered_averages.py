@@ -190,7 +190,8 @@ class TriggeredAverageIndices:
 
     def __post_init__(self):
         # Check the types of the behavioral annotation and state
-        if not isinstance(self.behavioral_annotation.iat[0], BehaviorCodes):
+        if not self.behavioral_annotation_is_continuous and\
+                not isinstance(self.behavioral_annotation.iat[0], BehaviorCodes):
             # Attempt to cast using the 'custom' BehaviorCodes, but only if there is only one nontrivial behavior
             self.behavioral_annotation = pd.Series(self.behavioral_annotation)
             behavior_values = self.behavioral_annotation.unique()
