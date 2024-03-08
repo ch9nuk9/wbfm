@@ -1387,7 +1387,7 @@ class WormFullVideoPosture:
             if use_hilbert_phase:
                 df_behavioral_annotation = self.hilbert_phase(fluorescence_fps=True, reset_index=True)
                 # Choose one body segment
-                behavioral_annotation = df_behavioral_annotation.loc[:, 41]
+                behavioral_annotation = df_behavioral_annotation.loc[:, 15]
                 behavioral_annotation = behavioral_annotation - behavioral_annotation.mean()
                 kwargs['behavioral_annotation_is_continuous'] = True
             elif behavior_name is None:
