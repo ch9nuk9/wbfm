@@ -2292,7 +2292,6 @@ def parse_behavior_annotation_file(cfg: ModularProjectConfig = None, behavior_fn
                 behavior_annotations.replace(0, -1, inplace=True)
                 # Reversals are already 1, as expected
                 is_fluorescence_fps = True
-                print("Using new loader")
             else:
                 behavior_annotations = pd.read_csv(behavior_fname, header=1, names=['annotation'], index_col=0)
                 if behavior_annotations.shape[1] > 1:
