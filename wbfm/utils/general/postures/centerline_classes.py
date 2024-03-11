@@ -1775,9 +1775,6 @@ class WormFullVideoPosture:
         # The exact files may not be in the config, so try to find them
         project_config = project_data.project_config
 
-        # Before anything, load metadata
-        # TODO: used?
-        frames_per_volume = get_behavior_fluorescence_fps_conversion(project_config)
         # Use the project data class to check for tracking failures
         invalid_idx = project_data.estimate_tracking_failures_from_project()
 
