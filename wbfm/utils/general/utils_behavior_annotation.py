@@ -511,6 +511,21 @@ class BehaviorCodes(Flag):
         """
         return query_vec.apply(cls.convert_to_simple_states)
 
+    @classmethod
+    def plot_behaviors(cls, vec: pd.Series):
+        """
+        Plots a vector of behaviors as a series of colored dots
+
+        Returns
+        -------
+
+        """
+        vec_strings = vec.apply(lambda x: x.full_name)
+        # Create dataframe that plotly can use
+        df = pd.DataFrame({'time': vec.index, 'behavior': vec_strings}).assign(y=0)
+        fig = px.scatter(df, x='time', y='y', color='behavior')
+        return fig
+
 
 def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, include_collision=False,
                          additional_shaded_states: Optional[List['BehaviorCodes']]=None,
