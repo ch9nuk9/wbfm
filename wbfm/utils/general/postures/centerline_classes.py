@@ -619,7 +619,7 @@ class WormFullVideoPosture:
 
         """
         if self._beh_annotation is None:
-            self._beh_annotation, _ = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
+            self._beh_annotation, _ = parse_behavior_annotation_file(behavior_fname=self.filename_beh_annotation)
         if isinstance(self._beh_annotation, pd.DataFrame):
             self._beh_annotation = self._beh_annotation.annotation
         if self._beh_annotation is not None:
@@ -652,14 +652,10 @@ class WormFullVideoPosture:
         -------
 
         """
-        # TODO: load using get_manual_behavior_annotation
-        df = read_if_exists(self.filename_manual_beh_annotation, reader=pd.read_csv)
+        df, _ = parse_behavior_annotation_file(behavior_fname=self.filename_manual_beh_annotation,
+                                               convert_to_behavior_codes=True)
         if df is None:
             raise NoManualBehaviorAnnotationsError(self.filename_manual_beh_annotation)
-        # Assume we only want the Annotation column
-        df = df['Annotation']
-        # Convert to BehaviorCodes
-        df = BehaviorCodes.load_using_dict_mapping(df)
         return df
 
     @classmethod
@@ -2231,8 +2227,8 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
         return behavior_fname, is_likely_manually_annotated
 
 
-def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fname: str = None,
-                                   template_vector = None) -> Tuple[pd.Series, bool]:
+def parse_behavior_annotation_file(cfg: ModularProjectConfig = None, behavior_fname: str = None,
+                                   template_vector = None, convert_to_behavior_codes = True) -> Tuple[pd.Series, bool]:
     """
     Reads from a directly passed filename, or from the config file if that fails
 
@@ -2251,6 +2247,7 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
     # Try to read it
     if behavior_fname is None:
         if cfg is not None:
+            logging.warning("No behavior annotation filename passed; trying to find MANUAL annotations")
             behavior_fname, is_fluorescence_fps = get_manual_behavior_annotation_fname(cfg, make_absolute=True)
         else:
             # Only None was passed
@@ -2299,6 +2296,9 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
 
     if behavior_annotations is None:
         raise NoBehaviorAnnotationsError()
+    else:
+        if convert_to_behavior_codes:
+            behavior_annotations = BehaviorCodes.load_using_dict_mapping(behavior_annotations)
 
     return behavior_annotations, is_fluorescence_fps
 

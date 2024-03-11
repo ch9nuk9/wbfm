@@ -1724,9 +1724,9 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, post_rever
                 raise FileNotFoundError(f"Could not find {fname} even after generating it")
 
         # Load the existing annotation
-        from wbfm.utils.general.postures.centerline_classes import get_manual_behavior_annotation
-        beh_vec_existing = get_manual_behavior_annotation(project_data.project_config)
-        beh_vec_existing = BehaviorCodes.load_using_dict_mapping(beh_vec_existing)
+        from wbfm.utils.general.postures.centerline_classes import parse_behavior_annotation_file
+        beh_vec_existing, _ = parse_behavior_annotation_file(project_data.project_config,
+                                                             convert_to_behavior_codes=True)
 
         # Add this new annotation to the existing one, and convert to ulises integers for disk saving
         beh_vec = beh_vec_existing + turn_vec
