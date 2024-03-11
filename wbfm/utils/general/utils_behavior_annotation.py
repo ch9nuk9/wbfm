@@ -168,7 +168,8 @@ class BehaviorCodes(Flag):
         """
         if mapping is None:
             mapping = cls._ulises_int_2_flag()
-        beh_vec = pd.Series([mapping[i] for i in vec])
+        # Map all values using the dict, unless they are already BehaviorCodes
+        beh_vec = pd.Series([mapping[i] if not isinstance(i, BehaviorCodes) else i for i in vec])
         cls.assert_all_are_valid(beh_vec)
         return beh_vec
 
