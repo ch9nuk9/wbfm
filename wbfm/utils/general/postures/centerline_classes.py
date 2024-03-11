@@ -4,7 +4,7 @@ import logging
 import math
 import os
 from pathlib import Path
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -24,7 +24,7 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_p
     shade_using_behavior_plotly, calc_slowing_from_speed, detect_peaks_and_interpolate_using_inter_event_intervals, \
     plot_dataframe_of_transitions, annotate_turns_from_reversal_ends
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
-    remove_short_state_changes, get_dataframe_of_transitions
+    remove_short_state_changes, get_dataframe_of_transitions, make_binary_vector_from_starts_and_ends
 from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
     MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
@@ -71,6 +71,7 @@ class WormFullVideoPosture:
 
     # This will be true for old manual annotations
     beh_annotation_already_converted_to_fluorescence_fps: bool = False
+    manual_beh_annotation_already_converted_to_fluorescence_fps: bool = False # TODO: properly use
     _beh_annotation: pd.Series = None
 
     i_eigenworm_start: int = 10
@@ -219,6 +220,12 @@ class WormFullVideoPosture:
     ##
     ## Basic properties
     ##
+
+    def template_vector(self, fluorescence_fps=False, **kwargs) -> pd.Series:
+        """Defines the expected length for the behavioral vectors, with all nan"""
+        df = pd.Series(index=range(self.num_high_res_frames))
+        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        return df
 
     @lru_cache(maxsize=8)
     def centerlineX(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
@@ -612,7 +619,7 @@ class WormFullVideoPosture:
 
         """
         if self._beh_annotation is None:
-            self._beh_annotation = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
+            self._beh_annotation, _ = get_manual_behavior_annotation(behavior_fname=self.filename_beh_annotation)
         if isinstance(self._beh_annotation, pd.DataFrame):
             self._beh_annotation = self._beh_annotation.annotation
         if self._beh_annotation is not None:
@@ -622,7 +629,6 @@ class WormFullVideoPosture:
     @lru_cache(maxsize=8)
     def manual_beh_annotation(self, fluorescence_fps=False, keep_reversal_turns=True, **kwargs) -> \
             Optional[pd.DataFrame]:
-        """Ulises' manual annotations of behavior"""
         df = self._raw_manual_beh_annotation
         if not keep_reversal_turns:
             # Map reversal turns to regular reversal state
@@ -646,6 +652,7 @@ class WormFullVideoPosture:
         -------
 
         """
+        # TODO: load using get_manual_behavior_annotation
         df = read_if_exists(self.filename_manual_beh_annotation, reader=pd.read_csv)
         if df is None:
             raise NoManualBehaviorAnnotationsError(self.filename_manual_beh_annotation)
@@ -1773,6 +1780,7 @@ class WormFullVideoPosture:
         project_config = project_data.project_config
 
         # Before anything, load metadata
+        # TODO: used?
         frames_per_volume = get_behavior_fluorescence_fps_conversion(project_config)
         # Use the project data class to check for tracking failures
         invalid_idx = project_data.estimate_tracking_failures_from_project()
@@ -1799,7 +1807,7 @@ class WormFullVideoPosture:
 
         # Try to read files from the behavior subfolder
         if raw_behavior_subfolder is not None:
-            all_files = WormFullVideoPosture._check_files_in_subfolder(raw_behavior_subfolder)
+            all_files = WormFullVideoPosture._check_ulises_pipeline_files_in_subfolder(raw_behavior_subfolder)
         else:
             all_files = dict()
 
@@ -1807,7 +1815,7 @@ class WormFullVideoPosture:
         # If it didn't find any files, even if it found in subfolder, then check the local behavior subfolder
         if all_files.get('filename_curvature', None) is None:
             behavior_subfolder = Path(project_config.get_behavior_config().absolute_subfolder)
-            all_files = WormFullVideoPosture._check_files_in_subfolder(behavior_subfolder)
+            all_files = WormFullVideoPosture._check_ulises_pipeline_files_in_subfolder(behavior_subfolder)
         else:
             # Then the files and the raw are the same (old style)
             behavior_subfolder = raw_behavior_subfolder
@@ -1824,17 +1832,25 @@ class WormFullVideoPosture:
                 filename_table_position = fnames[0]
         all_files['filename_table_position'] = filename_table_position
 
-        # Get other manual behavior annotations if automatic wasn't found
+        # Get manual behavior annotations
+        try:
+            filename_manual_beh_annotation, manual_beh_annotation_already_converted_to_fluorescence_fps = \
+                get_manual_behavior_annotation_fname(project_config, make_absolute=True)
+        except FileNotFoundError:
+            filename_manual_beh_annotation = None
+            manual_beh_annotation_already_converted_to_fluorescence_fps = False
+        all_files['filename_manual_beh_annotation'] = filename_manual_beh_annotation
+        opt.update(dict(manual_beh_annotation_already_converted_to_fluorescence_fps=
+                        manual_beh_annotation_already_converted_to_fluorescence_fps))
+
+        # Also save manual behavior annotations as automatic, if it wasn't found earlier
         if all_files.get('filename_beh_annotation', None) is None:
-            try:
-                filename_beh_annotation, is_manual_style = get_manual_behavior_annotation_fname(project_config,
-                                                                                                make_absolute=True)
-                opt.update(dict(beh_annotation_already_converted_to_fluorescence_fps=is_manual_style))
-            except FileNotFoundError:
-                # Many projects won't have either annotation
-                project_config.logger.warning("Did not find behavioral annotations")
-                filename_beh_annotation = None
-            all_files['filename_beh_annotation'] = filename_beh_annotation
+            all_files['filename_beh_annotation'] = all_files['filename_manual_beh_annotation']
+            opt['beh_annotation_already_converted_to_fluorescence_fps'] = \
+                manual_beh_annotation_already_converted_to_fluorescence_fps
+            logging.warning(f"Using manual behavior ({filename_manual_beh_annotation}) annotations as automatic "
+                            f"annotations, because they weren't found")
+
         all_files['behavior_subfolder'] = behavior_subfolder
         all_files['raw_behavior_subfolder'] = raw_behavior_subfolder
 
@@ -1856,7 +1872,7 @@ class WormFullVideoPosture:
         return WormFullVideoPosture(**all_files, **opt)
 
     @staticmethod
-    def _check_files_in_subfolder(behavior_subfolder):
+    def _check_ulises_pipeline_files_in_subfolder(behavior_subfolder):
         # Get the centerline-specific files
         all_files = dict(filename_curvature=None, filename_x=None, filename_y=None, filename_beh_annotation=None,
                          filename_hilbert_amplitude=None, filename_hilbert_phase=None,
@@ -1891,16 +1907,6 @@ class WormFullVideoPosture:
                 all_files['filename_beh_annotation'] = str(file)
         # Third, get manually annotated behavior (if it exists)
         # Note that these may have additional behaviors annotated that are not in the automatic annotation
-        filename_manual_beh_annotation = None
-        manual_annotation_subfolder = Path(behavior_subfolder).joinpath('ground_truth_beh_annotation')
-        if manual_annotation_subfolder.exists():
-            fnames = [fn for fn in glob.glob(os.path.join(manual_annotation_subfolder,
-                                                          '*beh_annotation_timeseries.csv'))]
-            if len(fnames) != 1:
-                logging.warning(f"Did not find manual behavior annotation file in {manual_annotation_subfolder}")
-            else:
-                filename_manual_beh_annotation = fnames[0]
-        all_files['filename_manual_beh_annotation'] = filename_manual_beh_annotation
         return all_files
 
     def shade_using_behavior(self, **kwargs):
@@ -2152,7 +2158,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
         behavior_fname = None
 
     if behavior_fname is not None:
-        logging.warning("Note: all annotation should be in the Ulises format")
+        logging.warning("Note: all annotation should be in the Ulises format (see BehaviorCodes._ulises_int_2_flag)")
         if make_absolute:
             return behavior_cfg.resolve_relative_path(behavior_fname), is_likely_manually_annotated
         else:
@@ -2171,7 +2177,7 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
             break
 
     if behavior_fname is not None:
-        logging.warning("Note: all annotation should be in the Ulises format")
+        logging.warning("Note: all annotation should be in the Ulises format (see BehaviorCodes._ulises_int_2_flag)")
         if verbose >= 1:
             print(f"Found behavior annotation by searching hard-coded paths in local project: {behavior_fname}")
         return behavior_fname, is_likely_manually_annotated
@@ -2180,29 +2186,42 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
 
     # Check if there is a manually corrected version with the raw data
     if not only_check_relative_paths:
+        
+        def _check_subfolder_for_manual_annotation(_subfolder, suffix) -> Optional[Path]:
+            # Exact match
+            if Path(_subfolder.joinpath(suffix)).exists():
+                return _subfolder.joinpath(suffix)
+            # Suffix match
+            _behavior_fname = [f for f in _subfolder.iterdir() if f.name.endswith(suffix) and not f.name.startswith('.')]
+            if len(_behavior_fname) == 0:
+                _behavior_fname = None
+            elif len(_behavior_fname) == 1:
+                _behavior_fname = _behavior_fname[0]
+                if verbose >= 1:
+                    print(
+                        f"Found behavior annotation by searching hard-coded paths in raw data folder: {_behavior_fname}")
+            elif len(_behavior_fname) > 1:
+                logging.warning(f"Found multiple possible behavior annotations {_behavior_fname}; taking the first one")
+                _behavior_fname = _behavior_fname[0]
+            else:
+                _behavior_fname = None
+            return _behavior_fname
+        
         is_likely_manually_annotated = False
         raw_behavior_folder, flag = cfg.get_behavior_raw_parent_folder_from_red_fname()
         if not flag:
             return None, is_likely_manually_annotated
-        manually_corrected_suffix = "beh_annotation_manual_corrected_timeseries.csv"
-        behavior_fname = Path(raw_behavior_folder).joinpath(manually_corrected_suffix)
-        if not behavior_fname.exists():
-            # Could be named this, or have this as a suffix
-            behavior_suffix = "beh_annotation.csv"
-            behavior_fname = Path(raw_behavior_folder).joinpath(behavior_suffix)
-            # Check if that exact file exists
-            if not behavior_fname.exists():
-                behavior_fname = [f for f in raw_behavior_folder.iterdir() if f.name.endswith(behavior_suffix) and
-                                  not f.name.startswith('.')]
-                if len(behavior_fname) == 0:
-                    behavior_fname = None
-                elif len(behavior_fname) == 1:
-                    behavior_fname = behavior_fname[0]
-                    if verbose >= 1:
-                        print(f"Found behavior annotation by searching hard-coded paths in raw data folder: {behavior_fname}")
-                else:
-                    logging.warning(f"Found multiple possible behavior annotations {behavior_fname}; taking the first one")
-                    behavior_fname = behavior_fname[0]
+        possible_manual_behavior_fnames = ["beh_annotation_manual_corrected_timeseries.csv",
+                                           "beh_annotation.csv",
+                                           "beh_annotation_timeseries.csv"]
+        possible_manual_behavior_subfolders = [raw_behavior_folder,
+                                               Path(raw_behavior_folder).joinpath('ground_truth_beh_annotation')]
+        for subfolder in possible_manual_behavior_subfolders:
+            for fname in possible_manual_behavior_fnames:
+                # Assume it can be a suffix
+                behavior_fname = _check_subfolder_for_manual_annotation(subfolder, fname)
+            if behavior_fname is not None and behavior_fname.exists():
+                break
     else:
         behavior_fname = None
 
@@ -2212,31 +2231,51 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
         return behavior_fname, is_likely_manually_annotated
 
 
-def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fname: str = None):
+def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fname: str = None,
+                                   template_vector = None) -> Tuple[pd.Series, bool]:
     """
     Reads from a directly passed filename, or from the config file if that fails
+
+    Attempts to convert various saved file formats to a uniform output of a pandas Series with the behavior annotations
 
     Parameters
     ----------
     cfg
     behavior_fname
+    template_vector - Only used if the file only contains starts and ends and must be processed with make_binary_vector_from_starts_and_ends
 
     Returns
     -------
 
     """
+    # Try to read it
     if behavior_fname is None:
         if cfg is not None:
-            behavior_fname, is_old_style = get_manual_behavior_annotation_fname(cfg, make_absolute=True)
+            behavior_fname, is_fluorescence_fps = get_manual_behavior_annotation_fname(cfg, make_absolute=True)
         else:
             # Only None was passed
             raise NoBehaviorAnnotationsError("Filename not passed")
+
+    # Process the filename into a full time series
+    is_fluorescence_fps = False
     if behavior_fname is not None:
         if str(behavior_fname).endswith('.csv'):
             # Old style had two columns with no header, manually corrected style has a header
             if 'manual_corrected_timeseries' in str(behavior_fname):
+                # Ulises made these
                 df_behavior_annotations = pd.read_csv(behavior_fname)
                 behavior_annotations = df_behavior_annotations['Annotation']
+            elif "AVAL_manual_annotation" in str(behavior_fname) or "AVAR_manual_annotation" in str(behavior_fname):
+                # From Itamar's tracify package, which saves only the starts and ends
+                # IN THE TRACE FRAME RATE
+                starts_ends = pd.read_csv(behavior_fname)
+                behavior_annotations = make_binary_vector_from_starts_and_ends(starts_ends['start'], starts_ends['end'],
+                                                                               original_vals=template_vector)
+                # Change the integers to match Ulises' original annotation; see _ulises_int_2_flag
+                behavior_annotations = pd.Series(behavior_annotations)
+                behavior_annotations.replace(0, -1, inplace=True)
+                # Reversals are already 1, as expected
+                is_fluorescence_fps = True
             else:
                 behavior_annotations = pd.read_csv(behavior_fname, header=1, names=['annotation'], index_col=0)
                 if behavior_annotations.shape[1] > 1:
@@ -2248,6 +2287,7 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
             try:
                 behavior_annotations = pd.read_excel(behavior_fname, sheet_name='behavior')['Annotation']
                 behavior_annotations.fillna(BehaviorCodes.UNKNOWN, inplace=True)
+                is_fluorescence_fps = True
             except PermissionError:
                 logging.warning(f"Permission error when reading {behavior_fname} "
                                 f"Do you have the excel sheet open elsewhere?")
@@ -2260,7 +2300,7 @@ def get_manual_behavior_annotation(cfg: ModularProjectConfig = None, behavior_fn
     if behavior_annotations is None:
         raise NoBehaviorAnnotationsError()
 
-    return behavior_annotations
+    return behavior_annotations, is_fluorescence_fps
 
 
 @dataclass
