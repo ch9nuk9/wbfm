@@ -167,10 +167,8 @@ class BehaviorCodes(Flag):
 
         """
         if mapping is None:
-            mapping_func = cls._ulises_int_2_flag
-        else:
-            mapping_func = lambda x: mapping[x]
-        beh_vec = pd.Series([mapping_func(i) for i in vec])
+            mapping = cls._ulises_int_2_flag()
+        beh_vec = pd.Series([mapping[i] for i in vec])
         cls.assert_all_are_valid(beh_vec)
         return beh_vec
 
