@@ -154,7 +154,8 @@ class BehaviorCodes(Flag):
         return pd.Series([cls(i) for i in vec])
 
     @classmethod
-    def load_using_dict_mapping(cls, vec: Union[pd.Series, List[int]], mapping: dict=None) -> pd.Series:
+    def load_using_dict_mapping(cls, vec: Union[pd.Series, pd.DataFrame, List[int]],
+                                mapping: dict=None) -> pd.Series:
         """
         Create a pd.Series from a list of integers, using a hardcoded mapping between Ulises' integers and BehaviorCodes
 
@@ -166,6 +167,12 @@ class BehaviorCodes(Flag):
         -------
 
         """
+        if isinstance(vec, pd.Series):
+            vec = vec.values
+        elif isinstance(vec, pd.DataFrame):
+            # Check that there is only one column, then convert to series
+            assert len(vec.columns) == 1, "Can only convert one column at a time"
+            vec = vec.iloc[:, 0].values
         if mapping is None:
             mapping = cls._ulises_int_2_flag()
         # Map all values using the dict, unless they are already BehaviorCodes

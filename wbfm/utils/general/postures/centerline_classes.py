@@ -2274,10 +2274,11 @@ def parse_behavior_annotation_file(cfg: ModularProjectConfig = None, behavior_fn
                 behavior_annotations = make_binary_vector_from_starts_and_ends(starts_ends['start'], starts_ends['end'],
                                                                                original_vals=template_vector)
                 # Change the integers to match Ulises' original annotation; see _ulises_int_2_flag
-                behavior_annotations = pd.Series(behavior_annotations)
+                behavior_annotations = pd.Series(behavior_annotations, name='annotation')
                 behavior_annotations.replace(0, -1, inplace=True)
                 # Reversals are already 1, as expected
                 is_fluorescence_fps = True
+                print("Using new loader")
             else:
                 behavior_annotations = pd.read_csv(behavior_fname, header=1, names=['annotation'], index_col=0)
                 if behavior_annotations.shape[1] > 1:
