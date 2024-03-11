@@ -195,7 +195,7 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
     def __post_init__(self):
         pass
 
-    def resolve_relative_path(self, raw_path: str, prepend_subfolder=False) -> Optional[str]:
+    def resolve_relative_path(self, raw_path: Optional[str], prepend_subfolder=False) -> Optional[str]:
         if raw_path is None:
             return None
         if Path(raw_path).is_absolute():

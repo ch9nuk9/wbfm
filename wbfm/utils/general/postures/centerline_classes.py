@@ -2113,7 +2113,8 @@ def get_behavior_fluorescence_fps_conversion(project_config):
     return raw_number_of_planes
 
 
-def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolute=True, verbose=0):
+def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolute=True,
+                                         only_check_relative_paths=True, verbose=0):
     """First tries to read from the config file, and if that fails, goes searching"""
 
     # Initial checks are all in project local folders
@@ -2157,15 +2158,18 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
         else:
             return behavior_fname, is_likely_manually_annotated
 
-    # Otherwise, check for other local places I used to put it
+    # Check for other local places
     is_likely_manually_annotated = True
-    behavior_fname = "3-tracking/manual_annotation/manual_behavior_annotation.xlsx"
-    behavior_fname = cfg.resolve_relative_path(behavior_fname)
-    if not os.path.exists(behavior_fname):
-        behavior_fname = "3-tracking/postprocessing/manual_behavior_annotation.xlsx"
-        behavior_fname = cfg.resolve_relative_path(behavior_fname)
-    if not os.path.exists(behavior_fname):
-        behavior_fname = None
+    behavior_fname_candidates = ['3-tracking/manual_annotation/manual_behavior_annotation.xlsx',
+                                 '3-tracking/postprocessing/manual_behavior_annotation.xlsx',
+                                 'behavior/AVAL_manual_annotation.csv',
+                                 'behavior/AVAR_manual_annotation.csv']
+    behavior_fname_candidates = [cfg.resolve_relative_path(f) for f in behavior_fname_candidates]
+    for this_fname in behavior_fname_candidates:
+        if os.path.exists(this_fname):
+            behavior_fname = this_fname
+            break
+
     if behavior_fname is not None:
         logging.warning("Note: all annotation should be in the Ulises format")
         if verbose >= 1:
@@ -2173,31 +2177,34 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
         return behavior_fname, is_likely_manually_annotated
 
     # Final checks are all in raw behavior data folders, implying they are not the stable style
-    is_likely_manually_annotated = False
-    raw_behavior_folder, flag = cfg.get_behavior_raw_parent_folder_from_red_fname()
-    if not flag:
-        return None, is_likely_manually_annotated
 
-    # Check if there is a manually corrected version
-    manually_corrected_suffix = "beh_annotation_manual_corrected_timeseries.csv"
-    behavior_fname = Path(raw_behavior_folder).joinpath(manually_corrected_suffix)
-    if not behavior_fname.exists():
-        # Could be named this, or have this as a suffix
-        behavior_suffix = "beh_annotation.csv"
-        behavior_fname = Path(raw_behavior_folder).joinpath(behavior_suffix)
-        # Check if that exact file exists
+    # Check if there is a manually corrected version with the raw data
+    if not only_check_relative_paths:
+        is_likely_manually_annotated = False
+        raw_behavior_folder, flag = cfg.get_behavior_raw_parent_folder_from_red_fname()
+        if not flag:
+            return None, is_likely_manually_annotated
+        manually_corrected_suffix = "beh_annotation_manual_corrected_timeseries.csv"
+        behavior_fname = Path(raw_behavior_folder).joinpath(manually_corrected_suffix)
         if not behavior_fname.exists():
-            behavior_fname = [f for f in raw_behavior_folder.iterdir() if f.name.endswith(behavior_suffix) and
-                              not f.name.startswith('.')]
-            if len(behavior_fname) == 0:
-                behavior_fname = None
-            elif len(behavior_fname) == 1:
-                behavior_fname = behavior_fname[0]
-                if verbose >= 1:
-                    print(f"Found behavior annotation by searching hard-coded paths in raw data folder: {behavior_fname}")
-            else:
-                logging.warning(f"Found multiple possible behavior annotations {behavior_fname}; taking the first one")
-                behavior_fname = behavior_fname[0]
+            # Could be named this, or have this as a suffix
+            behavior_suffix = "beh_annotation.csv"
+            behavior_fname = Path(raw_behavior_folder).joinpath(behavior_suffix)
+            # Check if that exact file exists
+            if not behavior_fname.exists():
+                behavior_fname = [f for f in raw_behavior_folder.iterdir() if f.name.endswith(behavior_suffix) and
+                                  not f.name.startswith('.')]
+                if len(behavior_fname) == 0:
+                    behavior_fname = None
+                elif len(behavior_fname) == 1:
+                    behavior_fname = behavior_fname[0]
+                    if verbose >= 1:
+                        print(f"Found behavior annotation by searching hard-coded paths in raw data folder: {behavior_fname}")
+                else:
+                    logging.warning(f"Found multiple possible behavior annotations {behavior_fname}; taking the first one")
+                    behavior_fname = behavior_fname[0]
+    else:
+        behavior_fname = None
 
     if make_absolute:
         return behavior_cfg.resolve_relative_path(behavior_fname), is_likely_manually_annotated
