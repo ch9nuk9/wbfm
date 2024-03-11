@@ -71,7 +71,7 @@ class WormFullVideoPosture:
 
     # This will be true for old manual annotations
     beh_annotation_already_converted_to_fluorescence_fps: bool = False
-    manual_beh_annotation_already_converted_to_fluorescence_fps: bool = False # TODO: properly use
+    manual_beh_annotation_already_converted_to_fluorescence_fps: bool = False
     _beh_annotation: pd.Series = None
 
     i_eigenworm_start: int = 10
@@ -124,8 +124,12 @@ class WormFullVideoPosture:
         pca_proj = pca.fit_transform(curvature.iloc[:, i_eigenworm_start:i_eigenworm_end])
         return pca_proj
 
-    def check_requested_frame_rate(self, fluorescence_fps: bool):
-        if not fluorescence_fps and self.beh_annotation_already_converted_to_fluorescence_fps:
+    def check_requested_frame_rate(self, fluorescence_fps: bool, manual_annotation=False):
+        if manual_annotation:
+            is_already_fluorescence_fps = self.manual_beh_annotation_already_converted_to_fluorescence_fps
+        else:
+            is_already_fluorescence_fps = self.beh_annotation_already_converted_to_fluorescence_fps
+        if not fluorescence_fps and is_already_fluorescence_fps:
             raise MissingAnalysisError("Full fps annotation requested, but only low resolution exists")
 
     def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool,
@@ -653,6 +657,7 @@ class WormFullVideoPosture:
 
         """
         df, _ = parse_behavior_annotation_file(behavior_fname=self.filename_manual_beh_annotation,
+                                               template_vector=self.template_vector(fluorescence_fps=True),
                                                convert_to_behavior_codes=True)
         if df is None:
             raise NoManualBehaviorAnnotationsError(self.filename_manual_beh_annotation)
@@ -866,15 +871,19 @@ class WormFullVideoPosture:
         """
         if not use_manual_annotation:
             beh = self._raw_beh_annotation
+            is_already_fluorescence_fps = self.beh_annotation_already_converted_to_fluorescence_fps
+            self.check_requested_frame_rate(fluorescence_fps)
         else:
             try:
                 beh = self._raw_manual_beh_annotation
+                is_already_fluorescence_fps = self.manual_beh_annotation_already_converted_to_fluorescence_fps
+                self.check_requested_frame_rate(fluorescence_fps, manual_annotation=True)
             except NoManualBehaviorAnnotationsError:
                 logging.warning("Requested manual annotation, but none exists")
                 logging.warning("Using automatic annotation instead")
                 beh = self._raw_beh_annotation
-
-        self.check_requested_frame_rate(fluorescence_fps)
+                is_already_fluorescence_fps = self.beh_annotation_already_converted_to_fluorescence_fps
+                self.check_requested_frame_rate(fluorescence_fps)
 
         # Add additional annotations from other files
         # Note that these other annotations are one frame shorter than the behavior annotation
@@ -901,8 +910,7 @@ class WormFullVideoPosture:
             try:
                 # This should not be fluorescence fps, unless the downsampling below is not used
                 # i.e. unless the entire behavior annotation is low-res, meaning there is no downsampling
-                this_beh = beh_func(fluorescence_fps=self.beh_annotation_already_converted_to_fluorescence_fps,
-                                    reset_index=reset_index)
+                this_beh = beh_func(fluorescence_fps=is_already_fluorescence_fps, reset_index=reset_index)
                 if this_beh is None:
                     continue
                 beh = beh + this_beh
