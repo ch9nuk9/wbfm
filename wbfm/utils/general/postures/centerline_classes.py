@@ -2136,7 +2136,9 @@ def get_behavior_fluorescence_fps_conversion(project_config):
 
 def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolute=True,
                                          only_check_relative_paths=True, verbose=0):
-    """First tries to read from the config file, and if that fails, goes searching"""
+    """
+    First tries to read from the config file, and if that fails, goes searching
+    """
 
     # Initial checks are all in project local folders
     is_likely_manually_annotated = False
@@ -2173,7 +2175,6 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
         behavior_fname = None
 
     if behavior_fname is not None:
-        logging.warning("Note: all annotation should be in the Ulises format (see BehaviorCodes._ulises_int_2_flag)")
         if make_absolute:
             return behavior_cfg.resolve_relative_path(behavior_fname), is_likely_manually_annotated
         else:
@@ -2192,7 +2193,6 @@ def get_manual_behavior_annotation_fname(cfg: ModularProjectConfig, make_absolut
             break
 
     if behavior_fname is not None:
-        logging.warning("Note: all annotation should be in the Ulises format (see BehaviorCodes._ulises_int_2_flag)")
         if verbose >= 1:
             print(f"Found behavior annotation by searching hard-coded paths in local project: {behavior_fname}")
         return behavior_fname, is_likely_manually_annotated
@@ -2252,6 +2252,8 @@ def parse_behavior_annotation_file(cfg: ModularProjectConfig = None, behavior_fn
     Reads from a directly passed filename, or from the config file if that fails
 
     Attempts to convert various saved file formats to a uniform output of a pandas Series with the behavior annotations
+
+    Note: all integer-based manual annotation should be in the Ulises format (see BehaviorCodes._ulises_int_2_flag)
 
     Parameters
     ----------
