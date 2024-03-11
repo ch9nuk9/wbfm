@@ -119,6 +119,10 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
     else:
         good_projects_filtered = good_projects
 
+    # Change setting to use physical time for all
+    for project in good_projects_filtered.values():
+        project.use_physical_time = True
+
     print(f"Loaded {len(good_projects_filtered)} projects")
 
     return good_projects_filtered
