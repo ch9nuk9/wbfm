@@ -462,8 +462,8 @@ class TriggeredAverageIndices:
             if z_score:
                 triggered_avg_matrix = (triggered_avg_matrix - np.nanmean(triggered_avg_matrix)) \
                                        / np.nanstd(triggered_avg_matrix)
-            triggered_avg = np.nanmean(triggered_avg_matrix, axis=0)
-            # Use quantiles that would be same as std if the distribution was normal
+            triggered_avg = np.nanmedian(triggered_avg_matrix, axis=0)
+            # Use quantiles that would be same as std if the distribution were normal
             # https://tidsskriftet.no/en/2020/06/medisin-og-tall/mean-and-standard-deviation-or-median-and-quartiles
             triggered_upper_std = np.nanquantile(triggered_avg_matrix, 0.84, axis=0)
             triggered_lower_std = np.nanquantile(triggered_avg_matrix, 0.16, axis=0)
