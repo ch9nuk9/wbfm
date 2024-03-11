@@ -154,8 +154,10 @@ class BehaviorCodes(Flag):
         return pd.Series([cls(i) for i in vec])
 
     @classmethod
-    def load_using_dict_mapping(cls, vec: Union[pd.Series, List[int]]) -> pd.Series:
+    def load_using_dict_mapping(cls, vec: Union[pd.Series, List[int]], mapping: dict=None) -> pd.Series:
         """
+        Create a pd.Series from a list of integers, using a hardcoded mapping between Ulises' integers and BehaviorCodes
+
         Load using the hardcoded mapping between Ulises' integers and BehaviorCodes
 
         See also: from_ulises_int
@@ -164,7 +166,11 @@ class BehaviorCodes(Flag):
         -------
 
         """
-        beh_vec = pd.Series([cls.ulises_int_to_enum(i) for i in vec])
+        if mapping is None:
+            mapping_func = cls._ulises_int_2_flag
+        else:
+            mapping_func = lambda x: mapping[x]
+        beh_vec = pd.Series([mapping_func(i) for i in vec])
         cls.assert_all_are_valid(beh_vec)
         return beh_vec
 
