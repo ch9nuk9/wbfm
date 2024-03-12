@@ -37,7 +37,7 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 
 def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines=0,
                                                  show_individual_lines=False, is_second_plot=False, ax=None, xlim=None,
-                                                 show_horizontal_line=True,
+                                                 show_horizontal_line=True, show_vertical_line=True,
                                                  z_score=False, show_shading=True, **kwargs):
     """
     Plot a triggered average from a matrix of traces
@@ -93,7 +93,8 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
             x_for_vertical_line = 0  # Assume the series has been properly indexed
         else:
             x_for_vertical_line = ind_preceding
-        ax.axvline(x=x_for_vertical_line, color='r', ls='--')
+        if show_vertical_line:
+            ax.axvline(x=x_for_vertical_line, color='r', ls='--')
         # ax.axvline(x=0, color='r', ls='--')
     else:
         ax.autoscale()
