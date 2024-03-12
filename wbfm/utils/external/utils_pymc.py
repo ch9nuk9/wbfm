@@ -28,50 +28,39 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     """
     rng = 424242
     curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
+    # First pack into a single dataframe to drop nan, then unpack
+    try:
+        df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
+    except KeyError:
+        print(f"Skipping {neuron_name} because there is no valid data")
+        return None, None, None
+    global_manifold = df_model['x'].values
+    pca_modes = df_model[['x_pca0', 'x_pca1']].values
+    y = df_model['y'].values
+    curvature = df_model[curvature_terms_to_use].values
+
+    if df_model.shape[0] == 0:
+        print(f"Skipping {neuron_name} because there is no valid data")
+        return None, None, None
 
     if dataset_name == 'all':
-        # First pack into a single dataframe to drop nan, then unpack
-        try:
-            df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
-        except KeyError:
-            print(f"Skipping {neuron_name} because there is no valid data")
-            return None, None, None
-        x = df_model['x'].values
-        y = df_model['y'].values
-        curvature = df_model[curvature_terms_to_use].values
-
         dataset_name_idx, dataset_name_values = df_model.dataset_name.factorize()
         coords = {'dataset_name': dataset_name_values}
         dims = 'dataset_name'
     else:
-        # TODO: use the same function as above
-        # Unpack data into x, y, and curvature
-        # For now, just use one dataset
-        ind_data = Xy['dataset_name'] == dataset_name
-        # Allow gating based on the global component
-        key = f'{neuron_name}_manifold'
-        if key not in Xy:
-            print(f"Skipping {neuron_name} because there is no manifold data")
-            return None, None, None
-        x = Xy[key][ind_data].values
-        x = (x - x.mean()) / x.std()  # z-score
-
-        if pd.Series(x).count() == 0:
-            print(f"Skipping {neuron_name} because there is no valid data")
-            return None, None, None
-
-        # Just predict the residual
-        y = Xy[f'{neuron_name}'][ind_data].values - Xy[f'{neuron_name}_manifold'][ind_data].values
-        y = (y - y.mean()) / y.std()  # z-score
-
-        # Interesting covariate
-        curvature = Xy[curvature_terms_to_use][ind_data].values
-        curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
-
         coords = {}
         dims, dataset_name_idx = None, None
 
     dim_opt = dict(dims=dims, dataset_name_idx=dataset_name_idx)
+
+    with pm.Model(coords=coords) as hierarchical_pca_model:
+        # Curvature multiplied by sigmoid
+        intercept, sigma = build_baseline_priors()#**dim_opt)
+        sigmoid_term = build_sigmoid_term_pca(global_manifold, **dim_opt)
+        curvature_term = build_curvature_term(curvature, **dim_opt)
+
+        mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
+        likelihood = build_final_likelihood(mu, sigma, y)
 
     with pm.Model(coords=coords) as null_model:
         # Just do a flat line (intercept)
@@ -90,7 +79,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     with pm.Model(coords=coords) as hierarchical_model:
         # Curvature multiplied by sigmoid
         intercept, sigma = build_baseline_priors()#**dim_opt)
-        sigmoid_term = build_sigmoid_term(x)
+        sigmoid_term = build_sigmoid_term(global_manifold)
         curvature_term = build_curvature_term(curvature, **dim_opt)
 
         mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
@@ -170,11 +159,41 @@ def build_sigmoid_term(x, force_positive_slope=True):
     return sigmoid_term
 
 
+def build_sigmoid_term_pca(x_pca_modes, force_positive_slope=True, dims=None, dataset_name_idx=None):
+    # Sigmoid (hierarchy) term
+    if force_positive_slope:
+        log_sigmoid_slope = pm.Normal('log_sigmoid_slope', mu=0, sigma=1)  # Using log-amplitude for positivity
+        sigmoid_slope = pm.Deterministic('sigmoid_slope', pm.math.exp(log_sigmoid_slope))
+    else:
+        sigmoid_slope = pm.Normal('sigmoid_slope', mu=0, sigma=1)
+    inflection_point = pm.Normal('inflection_point', mu=0, sigma=2)
+
+    # PCA modes and coefficients
+    if dims is None:
+        hyper_pca_amplitude, hyper_pca_sigma = np.array([0, 0]), np.array([1, 1])
+    else:
+        # Hyperprior
+        hyper_pca_amplitude = pm.Normal('hyper_pca_amplitude', mu=0, sigma=1, shape=2)
+        hyper_pca_sigma = pm.Exponential('hyper_pca_sigma', lam=1, shape=2)
+    zscore_pca_amplitude = pm.Normal('zscore_pca_amplitude', mu=0, sigma=1, dims=dims)
+    pca_amplitude = pm.Deterministic('pca_amplitude',
+                                     hyper_pca_amplitude + zscore_pca_amplitude*hyper_pca_sigma)
+
+    if dims is None:
+        pca_term = pm.Deterministic('pca_term', pm.math.dot(x_pca_modes, pca_amplitude))
+    else:
+        # Multiply them separately
+        pca_term = pm.Deterministic('pca_term',
+                                      pca_amplitude[dataset_name_idx] * x_pca_modes[:, 0] +
+                                      pca_amplitude[dataset_name_idx] * x_pca_modes[:, 1])
+    # Put it together Sigmoid term
+    sigmoid_term = pm.Deterministic('sigmoid_term', pm.math.sigmoid(sigmoid_slope * (pca_term - inflection_point)))
+    return sigmoid_term
+
+
 def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     # Alternative: sample directly from the phase shift and amplitude, then convert into coefficients
-    # This assumes that eigenworms 1 and 2 are approximately a sine and cosine wave
-    # See trig identities: https://en.wikipedia.org/wiki/List_of_trigonometric_identities#Linear_combinations
-    # And this for solving the equations: https://www.wolframalpha.com/input?i=Solve+c%3Dsign%28a%29sqrt%28a%5E2%2Bb%5E2%29+and+phi%3Darctan%28-b%2Fa%29+for+a+and+b
+    # This assumes that eigenworms 1 and 2 are approximately a sine and cosine wave, and puts it into polar coordinates
     phase_shift = pm.Uniform('phase_shift', lower=-np.pi, upper=np.pi, transform=pm.distributions.transforms.circular)
     if dims is None:
         hyper_log_amplitude, hyper_log_sigma = 0, 1
@@ -190,11 +209,13 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     eigenworm2_coefficient = pm.Deterministic('eigenworm2_coefficient', -amplitude * pm.math.sin(phase_shift))
     # This one is not part of the sine/cosine pair
     eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5, dims=None)
+    eigenworm4_coefficient = pm.Normal('eigenworm4_coefficient', mu=0, sigma=0.5, dims=None)
 
     if dims is None:
         coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack([eigenworm1_coefficient,
                                                                                eigenworm2_coefficient,
-                                                                               eigenworm3_coefficient]))
+                                                                               eigenworm3_coefficient,
+                                                                               eigenworm4_coefficient]))
         curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
     else:
 
@@ -202,7 +223,8 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
         curvature_term = pm.Deterministic('curvature_term',
                                           eigenworm1_coefficient[dataset_name_idx] * curvature[:, 0] +
                                           eigenworm2_coefficient[dataset_name_idx] * curvature[:, 1] +
-                                          eigenworm3_coefficient * curvature[:, 2])
+                                          eigenworm3_coefficient * curvature[:, 2] +
+                                          eigenworm4_coefficient * curvature[:, 3])
     return curvature_term
 
 
@@ -215,16 +237,22 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name='all', additio
     # Allow gating based on the global component
     x = _Xy[f'{neuron_name}_manifold']
     x = (x - x.mean()) / x.std()  # z-score
+    # Alternative: include the pca modes
+    x_pca0 = _Xy[f'pca_0']
+    x_pca0 = (x_pca0 - x_pca0.mean()) / x_pca0.std()  # z-score
+    x_pca1 = _Xy[f'pca_1']
+    x_pca1 = (x_pca1 - x_pca1.mean()) / x_pca1.std()  # z-score
     # Just predict the residual
     y = _Xy[f'{neuron_name}'] - _Xy[f'{neuron_name}_manifold']
     y = (y - y.mean()) / y.std()  # z-score
     # Interesting covariate
-    curvature = _Xy[['eigenworm0', 'eigenworm1', 'eigenworm2']]
+    curvature = _Xy[['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']]
     curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
     # State
     fwd = _Xy['fwd'].astype(str)
     # Package as dataframe again, and drop na values
-    all_dfs = [pd.DataFrame({'y': y, 'x': x, 'dataset_name': _Xy['dataset_name'], 'fwd': fwd}),
+    all_dfs = [pd.DataFrame({'y': y, 'x': x, 'x_pca0': x_pca0, 'x_pca1': x_pca1,
+                             'dataset_name': _Xy['dataset_name'], 'fwd': fwd}),
                pd.DataFrame(curvature)]
     if additional_columns is not None:
         all_dfs.append(_Xy[additional_columns])
