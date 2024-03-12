@@ -99,12 +99,13 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         likelihood = build_final_likelihood(mu, sigma, y)
 
     # Run inference on all models
-    all_models = {'hierarchical_pca_model': hierarchical_pca_model,
-                  'null': null_model,
+    all_models = {'null': null_model,
                   'nonhierarchical': nonhierarchical_model,
                   'hierarchical': hierarchical_model,
-                  'rectified': rectified_model}
+                  'rectified': rectified_model,
+                  'hierarchical_pca': hierarchical_pca_model}
     all_traces = {}
+    base_names_to_sample = {'y', 'sigmoid_term', 'curvature_term', 'phase_shift', 'sigmoid_slope'}
     for name, model in all_models.items():
         with model:
             opt = dict(draws=1000, tune=1000, random_seed=rng, target_accept=0.95)
@@ -112,10 +113,12 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
                 opt['draws'] = 10
                 opt['tune'] = 10
 
-            trace = pm.sample(**opt, #cores=32,
+            trace = pm.sample(**opt,
                               chains=4, return_inferencedata=True, idata_kwargs={"log_likelihood": True})
             if sample_posterior:
-                trace.extend(pm.sample_posterior_predictive(trace, random_seed=rng, progressbar=False))
+                var_names = base_names_to_sample.intersection(set(list(trace.posterior.keys())))
+                trace.extend(pm.sample_posterior_predictive(trace, random_seed=rng, progressbar=False,
+                                                            var_names=var_names))
 
             all_traces[name] = trace
 
