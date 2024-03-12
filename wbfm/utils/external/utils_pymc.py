@@ -67,14 +67,14 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         mu = pm.Deterministic('mu', intercept + curvature_term)
         likelihood = build_final_likelihood(mu, sigma, y)
 
-    with pm.Model(coords=coords) as hierarchical_model:
-        # Curvature multiplied by sigmoid
-        intercept, sigma = build_baseline_priors()#**dim_opt)
-        sigmoid_term = build_sigmoid_term(global_manifold)
-        curvature_term = build_curvature_term(curvature, **dim_opt)
-
-        mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
-        likelihood = build_final_likelihood(mu, sigma, y)
+    # with pm.Model(coords=coords) as hierarchical_model:
+    #     # Curvature multiplied by sigmoid
+    #     intercept, sigma = build_baseline_priors()#**dim_opt)
+    #     sigmoid_term = build_sigmoid_term(global_manifold)
+    #     curvature_term = build_curvature_term(curvature, **dim_opt)
+    #
+    #     mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
+    #     likelihood = build_final_likelihood(mu, sigma, y)
 
     with pm.Model(coords=coords) as hierarchical_pca_model:
         # Curvature multiplied by sigmoid
@@ -86,19 +86,19 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         likelihood = build_final_likelihood(mu, sigma, y)
 
     # New: just have rectification with given fwd/rev, not using a sigmoid term
-    fwd_idx, fwd_values = df_model.fwd.factorize()
-    coords = {'fwd': fwd_values}
-    dims = 'fwd'
-    dim_opt = dict(dims=dims, dataset_name_idx=fwd_idx)
-    with pm.Model(coords=coords) as rectified_model:
-        # Full model
-        intercept, sigma = build_baseline_priors()
-        curvature_term = build_curvature_term(curvature, **dim_opt)
+    # fwd_idx, fwd_values = df_model.fwd.factorize()
+    # coords = {'fwd': fwd_values}
+    # dims = 'fwd'
+    # dim_opt = dict(dims=dims, dataset_name_idx=fwd_idx)
+    # with pm.Model(coords=coords) as rectified_model:
+    #     # Full model
+    #     intercept, sigma = build_baseline_priors()
+    #     curvature_term = build_curvature_term(curvature, **dim_opt)
+    #
+    #     mu = pm.Deterministic('mu', intercept + curvature_term)
+    #     likelihood = build_final_likelihood(mu, sigma, y)
 
-        mu = pm.Deterministic('mu', intercept + curvature_term)
-        likelihood = build_final_likelihood(mu, sigma, y)
-
-    # Run inference on all models
+    # Run inference on final set of models
     # all_models = {'null': null_model,
     #               'nonhierarchical': nonhierarchical_model,
     #               'hierarchical': hierarchical_model,
@@ -117,7 +117,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
                 opt['tune'] = 10
 
             trace = pm.sample(**opt,
-                              chains=4, return_inferencedata=True, idata_kwargs={"log_likelihood": True})
+                              chains=8, return_inferencedata=True, idata_kwargs={"log_likelihood": True})
             if sample_posterior:
                 var_names = base_names_to_sample.intersection(set(list(trace.posterior.keys())))
                 trace.extend(pm.sample_posterior_predictive(trace, random_seed=rng, progressbar=False,

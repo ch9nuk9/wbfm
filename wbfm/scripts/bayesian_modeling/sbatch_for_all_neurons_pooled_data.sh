@@ -111,13 +111,9 @@ fi
 
 for neuron in "${neuron_list[@]}"
 do
-  echo "Running model for neuron $neuron"
+  echo "Dispatching model for neuron $neuron"
   log_fname="log_$neuron.txt"
-  python $CMD --neuron_name "$neuron" --do_gfp "$do_gfp" > "$LOG_DIR/$log_fname" &
-  # DEBUG: just break after one run
-#  break
-  sleep 1
-  while [ "$(jobs | wc -l)" -ge 12 ]; do
-    sleep 10
-  done
+  sbatch --time=4:00:00 --mem=32G --cpus-per-task=8 --wrap="python $CMD --neuron_name $neuron --do_gfp $do_gfp > $LOG_DIR/$log_fname"
+  break
+  sleep 0.1
 done
