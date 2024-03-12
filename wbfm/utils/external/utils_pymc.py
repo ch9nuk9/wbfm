@@ -27,9 +27,10 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
 
     """
     rng = 424242
+    curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
 
     if dataset_name == 'all':
-        # First pack into a single dataframe for preprocessing, then unpack
+        # First pack into a single dataframe to drop nan, then unpack
         try:
             df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
         except KeyError:
@@ -37,7 +38,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
             return None, None, None
         x = df_model['x'].values
         y = df_model['y'].values
-        curvature = df_model[['eigenworm0', 'eigenworm1', 'eigenworm2']].values
+        curvature = df_model[curvature_terms_to_use].values
 
         dataset_name_idx, dataset_name_values = df_model.dataset_name.factorize()
         coords = {'dataset_name': dataset_name_values}
@@ -64,7 +65,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         y = (y - y.mean()) / y.std()  # z-score
 
         # Interesting covariate
-        curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2']][ind_data].values
+        curvature = Xy[curvature_terms_to_use][ind_data].values
         curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
 
         coords = {}
