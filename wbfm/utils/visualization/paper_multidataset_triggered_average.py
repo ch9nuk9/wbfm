@@ -222,7 +222,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         # Raw reversal triggered and forward triggered
         for trigger_type, state in trigger_dict.items():
             try:
-                trigger_opt = dict(use_hilbert_phase=False, state=state)
+                trigger_opt = dict(use_hilbert_phase=False, state=state, fixed_num_points_after_event=30)
                 trigger_opt.update(self.trigger_opt)
                 out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                          trace_opt=trace_opt)
