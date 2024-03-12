@@ -114,6 +114,6 @@ do
   echo "Dispatching model for neuron $neuron"
   log_fname="log_$neuron.txt"
   sbatch --time=0-4:00:00 --mem=32G --cpus-per-task=4 --job_name="bayesian_model" --wrap="python $CMD --neuron_name $neuron --do_gfp $do_gfp > $LOG_DIR/$log_fname"
-  break
+#  break
   sleep 0.1
 done
