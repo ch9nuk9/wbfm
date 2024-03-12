@@ -342,6 +342,7 @@ def main(neuron_name, do_gfp=False, dataset_name='all', skip_if_exists=True):
 
     # Save plots
     az.plot_compare(df_compare, insample_dev=False)
+    plt.tight_layout()
     plt.savefig(os.path.join(output_dir, f'{output_fname_base}_model_comparison.png'))
     plt.close()
 
