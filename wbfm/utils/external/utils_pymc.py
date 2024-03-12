@@ -99,11 +99,14 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         likelihood = build_final_likelihood(mu, sigma, y)
 
     # Run inference on all models
-    all_models = {'null': null_model,
-                  'nonhierarchical': nonhierarchical_model,
-                  'hierarchical': hierarchical_model,
-                  'rectified': rectified_model,
-                  'hierarchical_pca': hierarchical_pca_model}
+    # all_models = {'null': null_model,
+    #               'nonhierarchical': nonhierarchical_model,
+    #               'hierarchical': hierarchical_model,
+    #               'rectified': rectified_model,
+    #               'hierarchical_pca': hierarchical_pca_model}
+    all_models = {'hierarchical_pca': hierarchical_pca_model,
+                  'null': null_model,
+                  'nonhierarchical': nonhierarchical_model}
     all_traces = {}
     base_names_to_sample = {'y', 'sigmoid_term', 'curvature_term', 'phase_shift', 'sigmoid_slope'}
     for name, model in all_models.items():
@@ -175,21 +178,28 @@ def build_sigmoid_term_pca(x_pca_modes, force_positive_slope=True, dims=None, da
     # PCA modes and coefficients
     if dims is None:
         hyper_pca_amplitude, hyper_pca_sigma = np.array([0, 0]), np.array([1, 1])
-    else:
-        # Hyperprior
-        hyper_pca_amplitude = pm.Normal('hyper_pca_amplitude', mu=0, sigma=1, shape=2)
-        hyper_pca_sigma = pm.Exponential('hyper_pca_sigma', lam=1, shape=2)
-    zscore_pca_amplitude = pm.Normal('zscore_pca_amplitude', mu=0, sigma=1, dims=dims)
-    pca_amplitude = pm.Deterministic('pca_amplitude',
-                                     hyper_pca_amplitude + zscore_pca_amplitude*hyper_pca_sigma)
-
-    if dims is None:
+        zscore_pca_amplitude = pm.Normal('zscore_pca_amplitude', mu=0, sigma=1, dims=dims)
+        pca_amplitude = pm.Deterministic('pca_amplitude',
+                                         hyper_pca_amplitude + zscore_pca_amplitude*hyper_pca_sigma)
         pca_term = pm.Deterministic('pca_term', pm.math.dot(x_pca_modes, pca_amplitude))
     else:
+        # Hyperprior
+        hyper_pca0_amplitude = pm.Normal('hyper_pca0_amplitude', mu=0, sigma=1)
+        hyper_pca0_sigma = pm.Exponential('hyper_pca0_sigma', lam=1)
+        hyper_pca1_amplitude = pm.Normal('hyper_pca1_amplitude', mu=0, sigma=1)
+        hyper_pca1_sigma = pm.Exponential('hyper_pca1_sigma', lam=1)
+        zscore_pca0_amplitude = pm.Normal('zscore_pca0_amplitude', mu=0, sigma=1, dims=dims)
+        zscore_pca1_amplitude = pm.Normal('zscore_pca1_amplitude', mu=0, sigma=1, dims=dims)
+
+        pca0_amplitude = pm.Deterministic('pca0_amplitude',
+                                          hyper_pca0_amplitude + zscore_pca0_amplitude*hyper_pca0_sigma)
+        pca1_amplitude = pm.Deterministic('pca1_amplitude',
+                                          hyper_pca1_amplitude + zscore_pca1_amplitude*hyper_pca1_sigma)
         # Multiply them separately
         pca_term = pm.Deterministic('pca_term',
-                                      pca_amplitude[dataset_name_idx] * x_pca_modes[:, 0] +
-                                      pca_amplitude[dataset_name_idx] * x_pca_modes[:, 1])
+                                    pca0_amplitude[dataset_name_idx] * x_pca_modes[:, 0] +
+                                    pca1_amplitude[dataset_name_idx] * x_pca_modes[:, 1])
+
     # Put it together Sigmoid term
     sigmoid_term = pm.Deterministic('sigmoid_term', pm.math.sigmoid(sigmoid_slope * (pca_term - inflection_point)))
     return sigmoid_term
@@ -222,7 +232,6 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
                                                                                eigenworm4_coefficient]))
         curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
     else:
-
         # Multiply them separately
         curvature_term = pm.Deterministic('curvature_term',
                                           eigenworm1_coefficient[dataset_name_idx] * curvature[:, 0] +
