@@ -324,7 +324,7 @@ def get_bigtiff_fname_from_folder(folder_fname, channel_to_check=0):
             fname = str(item)
             break
     else:
-        logging.warning(f"Did not find pattern {str_pattern} in folder {folder_fname}")
+        logging.warning(f"Did not find pattern {str_pattern} or {alt_str_pattern} in folder {folder_fname}")
     return fname
 
 
