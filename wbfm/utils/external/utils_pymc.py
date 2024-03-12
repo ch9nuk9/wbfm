@@ -30,7 +30,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
     # First pack into a single dataframe to drop nan, then unpack
     try:
-        df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
+        df_model = get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name=dataset_name)
     except KeyError:
         print(f"Skipping {neuron_name} because there is no valid data")
         return None, None, None
@@ -52,15 +52,6 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         dims, dataset_name_idx = None, None
 
     dim_opt = dict(dims=dims, dataset_name_idx=dataset_name_idx)
-
-    with pm.Model(coords=coords) as hierarchical_pca_model:
-        # Curvature multiplied by sigmoid
-        intercept, sigma = build_baseline_priors()#**dim_opt)
-        sigmoid_term = build_sigmoid_term_pca(global_manifold, **dim_opt)
-        curvature_term = build_curvature_term(curvature, **dim_opt)
-
-        mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
-        likelihood = build_final_likelihood(mu, sigma, y)
 
     with pm.Model(coords=coords) as null_model:
         # Just do a flat line (intercept)
@@ -85,6 +76,15 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
         likelihood = build_final_likelihood(mu, sigma, y)
 
+    with pm.Model(coords=coords) as hierarchical_pca_model:
+        # Curvature multiplied by sigmoid
+        intercept, sigma = build_baseline_priors()#**dim_opt)
+        sigmoid_term = build_sigmoid_term_pca(pca_modes, **dim_opt)
+        curvature_term = build_curvature_term(curvature, **dim_opt)
+
+        mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
+        likelihood = build_final_likelihood(mu, sigma, y)
+
     # New: just have rectification with given fwd/rev, not using a sigmoid term
     fwd_idx, fwd_values = df_model.fwd.factorize()
     coords = {'fwd': fwd_values}
@@ -99,7 +99,8 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         likelihood = build_final_likelihood(mu, sigma, y)
 
     # Run inference on all models
-    all_models = {'null': null_model,
+    all_models = {'hierarchical_pca_model': hierarchical_pca_model,
+                  'null': null_model,
                   'nonhierarchical': nonhierarchical_model,
                   'hierarchical': hierarchical_model,
                   'rectified': rectified_model}
