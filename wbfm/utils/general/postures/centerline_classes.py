@@ -2285,8 +2285,10 @@ def parse_behavior_annotation_file(cfg: ModularProjectConfig = None, behavior_fn
                 behavior_annotations = df_behavior_annotations['Annotation']
             elif "AVAL_manual_annotation" in str(behavior_fname) or "AVAR_manual_annotation" in str(behavior_fname):
                 # From Itamar's tracify package, which saves only the starts and ends
-                # IN THE TRACE FRAME RATE
-                starts_ends = pd.read_csv(behavior_fname)
+                # IN THE SECONDS, not trace frame rate
+                fps = 3.47
+                logging.warning(f"Assuming that the manual annotation is in the seconds, and using fps={fps}")
+                starts_ends = (pd.read_csv(behavior_fname) * fps).astype(int)
                 behavior_annotations = make_binary_vector_from_starts_and_ends(starts_ends['start'], starts_ends['end'],
                                                                                original_vals=template_vector)
                 # Change the integers to match Ulises' original annotation; see _ulises_int_2_flag
