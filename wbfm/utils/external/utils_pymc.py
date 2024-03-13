@@ -320,6 +320,10 @@ def main(neuron_name, do_gfp=False, dataset_name='all', skip_if_exists=True):
         print(f"Skipping {neuron_name} because there is no valid data")
         return
 
+    save_all_model_outputs(dataset_name, neuron_name, df_compare, all_traces, all_models, output_dir)
+
+
+def save_all_model_outputs(dataset_name, neuron_name, df_compare, all_traces, all_models, output_dir):
     # Save objects
     if dataset_name == 'all':
         output_fname_base = f'{neuron_name}'
@@ -329,23 +333,19 @@ def main(neuron_name, do_gfp=False, dataset_name='all', skip_if_exists=True):
             az.to_netcdf(traces, os.path.join(output_dir, f'{output_fname_base}_{model_name}_trace.nc'))
     else:
         output_fname_base = f'{neuron_name}_{dataset_name}'
-
     # Also save the model
     # See https://discourse.pymc.io/t/how-save-pymc-v5-models/13022
     model_fname = os.path.join(output_dir, f'{output_fname_base}_model.cloud_pkl')
     with open(model_fname, 'wb') as buffer:
         cloudpickle.dump(all_models, buffer)
-
     # Only save for the all dataset version
     fname = os.path.join(output_dir, f'{output_fname_base}_loo.h5')
     df_compare.to_hdf(fname, key='df_with_missing')
-
     # Save plots
     az.plot_compare(df_compare, insample_dev=False)
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, f'{output_fname_base}_model_comparison.png'))
     plt.close()
-
     print(f"Saved all objects for {neuron_name} in {output_dir}")
 
 
