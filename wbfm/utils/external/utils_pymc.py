@@ -168,11 +168,11 @@ def build_sigmoid_term(x, force_positive_slope=True):
 
 def build_sigmoid_term_pca(x_pca_modes, force_positive_slope=True, dims=None, dataset_name_idx=None):
     # Sigmoid (hierarchy) term
-    if force_positive_slope:
-        log_sigmoid_slope = pm.Normal('log_sigmoid_slope', mu=0, sigma=1)  # Using log-amplitude for positivity
-        sigmoid_slope = pm.Deterministic('sigmoid_slope', pm.math.exp(log_sigmoid_slope))
-    else:
-        sigmoid_slope = pm.Normal('sigmoid_slope', mu=0, sigma=1)
+    # if force_positive_slope:
+    #     log_sigmoid_slope = pm.Normal('log_sigmoid_slope', mu=0, sigma=1)  # Using log-amplitude for positivity
+    #     sigmoid_slope = pm.Deterministic('sigmoid_slope', pm.math.exp(log_sigmoid_slope))
+    # else:
+    #     sigmoid_slope = pm.Normal('sigmoid_slope', mu=0, sigma=1)
     inflection_point = pm.Normal('inflection_point', mu=0, sigma=2)
 
     # PCA modes and coefficients
@@ -201,7 +201,7 @@ def build_sigmoid_term_pca(x_pca_modes, force_positive_slope=True, dims=None, da
                                     pca1_amplitude[dataset_name_idx] * x_pca_modes[:, 1])
 
     # Put it together Sigmoid term
-    sigmoid_term = pm.Deterministic('sigmoid_term', pm.math.sigmoid(sigmoid_slope * (pca_term - inflection_point)))
+    sigmoid_term = pm.Deterministic('sigmoid_term', pm.math.sigmoid(pca_term - inflection_point))
     return sigmoid_term
 
 
