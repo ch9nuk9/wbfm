@@ -416,7 +416,7 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
 
 
 def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, bonferroni_factor=None,
-                           _format=None, permutations=None, DEBUG=False):
+                           _format=None, permutations=None, show_ns=True, DEBUG=False):
     """
     From: https://stackoverflow.com/questions/67505252/plotly-box-p-value-significant-annotation
 
@@ -465,7 +465,8 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
                 continue
             if bonferroni_factor is None:
                 bonferroni_factor = len(all_x_labels)
-            fig = add_p_value_annotation(fig, array_columns, subplot=subplot, x_label=x_label, _format=_format,
+            fig = add_p_value_annotation(fig, array_columns, subplot=subplot, x_label=x_label, show_ns=show_ns,
+                                         _format=_format,
                                          bonferroni_factor=bonferroni_factor, DEBUG=DEBUG, permutations=permutations)
         return fig
 
@@ -550,6 +551,8 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
         #     print(f"p-value: {pvalue}")
         #     print(f"Data: {y0}, {y1}")
         if pvalue >= 0.05:
+            if not show_ns:
+                continue
             symbol = 'ns'
         elif pvalue >= 0.01:
             symbol = '*'
