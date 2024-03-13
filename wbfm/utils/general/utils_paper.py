@@ -36,7 +36,6 @@ def plotly_paper_color_discrete_map():
 
     Parameters
     ----------
-    plotly_not_matplotlib
 
     Returns
     -------

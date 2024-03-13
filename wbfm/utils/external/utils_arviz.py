@@ -99,7 +99,14 @@ def plot_model_elements(idata, y_list=None, to_show=True):
     except AttributeError:
         pass
 
-    fig = px.line(df_pred)
+    # Move 'observed' to first position
+    df_pred = df_pred[['observed'] + [col for col in df_pred.columns if col != 'observed']]
+
+    # category_orders = ['observed']
+    # category_orders.extend(y_list)
+    fig = px.line(df_pred)#, category_orders=category_orders)
+    fig.update_yaxes(title_text='dR/R50')
+    fig.update_xaxes(title_text='Time (frames)')
     if to_show:
         fig.show()
     return fig
