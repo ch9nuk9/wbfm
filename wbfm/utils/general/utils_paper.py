@@ -49,8 +49,10 @@ def plotly_paper_color_discrete_map():
                  'Immobilized (GCaMP)': base_cmap[2],
                  'gfp': base_cmap[7],  # Gray
                  'Freely Moving (GFP)': base_cmap[7],
+                 'Freely Moving (GFP, residual)': base_cmap[7],
                  'global': base_cmap[3],
                  'residual': base_cmap[4],
+                 'Freely Moving (GCaMP, residual)': base_cmap[4],
                  'O2 or CO2 sensing': base_cmap[5],
                  'Not IDed': base_cmap[7]  # Same as gfp; shouldn't ever be on same plot
                  }

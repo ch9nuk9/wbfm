@@ -281,7 +281,9 @@ def default_raw_data_config():
 
 def neurons_with_confident_ids():
     neuron_names = ['AVAL', 'AVAR', 'BAGL', 'BAGR', 'RIMR', 'RIML', 'AVEL', 'AVER',
+                    'URAVL', 'URAVR', 'URYVL', 'URYVR', 'URADL', 'URADR', 'URYDL', 'URYDR',
                     'RIVR', 'RIVL', 'SMDVL', 'SMDVR', 'SMDDR', 'SMDDL',
                     'ALA', 'RIS', 'AQR', 'RMDVL', 'RMDVR', 'URXL', 'URXR',
-                    'VB02', 'RIBL', 'RIBR', 'RMEL', 'RMER', 'RMED', 'RMEV', 'RID', 'AVBL', 'AVBR', 'DB01']
+                    'VB02', 'VB03', 'DB01', 'VA01',
+                    'RIBL', 'RIBR', 'RMEL', 'RMER', 'RMED', 'RMEV', 'RID', 'AVBL', 'AVBR']
     return neuron_names
