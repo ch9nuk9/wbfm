@@ -6,7 +6,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import arviz as az
-import pymc as pm
 
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
@@ -186,6 +185,7 @@ def sample_posterior_predictive(neuron_name, trace, is_gfp=False):
         dims = 'dataset_name'
 
         dim_opt = dict(dims=dims, dataset_name_idx=dataset_name_idx)
+        import pymc as pm
         with pm.Model(coords=coords) as hierarchical_model:
             # Full model
             from wbfm.utils.external.utils_pymc import build_baseline_priors, build_sigmoid_term, build_curvature_term, \
