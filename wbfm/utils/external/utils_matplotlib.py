@@ -132,3 +132,20 @@ def round_yticks(ax, max_ticks=4, ndigits=1):
     y_ticks_raw = ax.get_yticks()
     tick_spacing = np.max([round((y_ticks_raw[1] - y_ticks_raw[0]), ndigits), 1 / 10 ** ndigits])
     ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
+
+
+def export_legend(legend=None, fig=None, fname="legend.png", expand=None):
+    """From https://stackoverflow.com/questions/4534480/get-legend-as-a-separate-picture-in-matplotlib"""
+    if fig is None and legend is None:
+        fig = plt.gcf()
+    if legend is None:
+        legend = fig.legend()
+    else:
+        fig = legend.figure
+    if expand is None:
+        expand = [-5, -5, 5, 5]
+    fig.canvas.draw()
+    bbox = legend.get_window_extent()
+    bbox = bbox.from_extents(*(bbox.extents + np.array(expand)))
+    bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
+    fig.savefig(fname, dpi="figure", bbox_inches=bbox)

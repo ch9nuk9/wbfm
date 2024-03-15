@@ -500,7 +500,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             if z_score:
                 plt.ylabel("Amplitude (z-scored)")
             else:
-                plt.ylabel("$\Delta R / R_{20}$")
+                plt.ylabel("$\Delta R / R_{50}$")
             if show_title:
                 if title is None:
                     title = self.get_title_from_trigger_type(trigger_type)
