@@ -726,7 +726,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         plt.savefig(fname.replace(".png", ".svg"))
 
     def plot_single_trace(self, neuron_name, trace_type='raw', color_type=None, title=False, legend=False, round_y_ticks=False,
-                          ax=None, color=None, output_foldername=None, **kwargs):
+                          xlabels=True, ax=None, color=None, output_foldername=None, **kwargs):
         """
         Plot the three traces (raw, global, residual) on the same plot.
         If output_foldername is not None, save the plot in that folder.
@@ -761,12 +761,19 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             ax.legend(frameon=False)
 
         ax.set_ylabel(r"$\Delta R / R_{50}$")
+
+        if xlabels:
+            ax.set_xlabel("Time (s)")
+            height_factor = 0.15
+        else:
+            ax.set_xticks([])
+            height_factor = 0.1
         ax.set_xlim(kwargs.get('xlim', self.xlim))
         self.project.shade_axis_using_behavior(ax)
         if round_y_ticks:
             self._round_yticks(ax)
 
-        apply_figure_settings(width_factor=0.25, height_factor=0.15, plotly_not_matplotlib=False)
+        apply_figure_settings(width_factor=0.25, height_factor=height_factor, plotly_not_matplotlib=False)
 
         if output_foldername:
             self._save_fig(neuron_name, output_foldername)
