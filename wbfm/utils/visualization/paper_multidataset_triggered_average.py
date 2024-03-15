@@ -129,8 +129,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     trace_opt: Optional[dict] = None
     trigger_opt: dict = field(default_factory=dict)
 
-    # Optional: stimulus
-    calc_stimulus: bool = False
+    # Optional trigger types
+    calculate_stimulus: bool = False
     calculate_residual: bool = True
     calculate_global: bool = True
     calculate_turns: bool = True
@@ -232,7 +232,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 print(f"Trigger type {trigger_type} failed; this may be because the data is immobilized")
 
         # Optional
-        if self.calc_stimulus:
+        if self.calculate_stimulus:
             trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.STIMULUS)
             trigger_opt.update(self.trigger_opt)
             out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
