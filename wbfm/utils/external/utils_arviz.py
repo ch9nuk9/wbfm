@@ -65,7 +65,7 @@ def plot_ts(idata, y='y', y_hat='y', num_samples=100):
     return fig
 
 
-def plot_model_elements(idata, y_list=None, to_show=True):
+def plot_model_elements(idata, y_list=None, to_show=True, include_observed=True):
     """
 
     Parameters
@@ -91,15 +91,17 @@ def plot_model_elements(idata, y_list=None, to_show=True):
             raise ValueError(f"Could not find {y_name} in idata")
         all_pred[y_name] = y_pred
     df_pred = pd.DataFrame(all_pred)
-    try:
-        # Also get the observed data
-        y_obs = idata.observed_data.y
-        df_pred['observed'] = y_obs
-    except AttributeError:
-        pass
+    if include_observed:
+        try:
+            # Also get the observed data
+            y_obs = idata.observed_data.y
+            df_pred['observed'] = y_obs
+        except AttributeError:
+            pass
+        # Move 'observed' to first position
+        # df_pred = df_pred[['observed'] + [col for col in df_pred.columns if col != 'observed']]
 
-    # Move 'observed' to first position
-    df_pred = df_pred[['observed'] + [col for col in df_pred.columns if col != 'observed']]
+    df_pred.rename(columns={'y': 'model_prediction', 'observed': 'data'}, inplace=True)
 
     # category_orders = ['observed']
     # category_orders.extend(y_list)
