@@ -2,7 +2,7 @@
 
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, ticker
 import matplotlib
 from matplotlib.ticker import FixedLocator
 from scipy.stats import pearsonr
@@ -126,9 +126,9 @@ def build_histogram_from_counts(all_dat, pixel_sz=0.1):
     return video_histogram
 
 
-def round_yticks(ax, max_ticks=4):
+def round_yticks(ax, max_ticks=4, ndigits=1):
     # First reduce number of ticks, then round them
     ax.yaxis.set_major_locator(plt.MaxNLocator(max_ticks))
     y_ticks_raw = ax.get_yticks()
-    y_tick_locations = [round(val, 1) for val in y_ticks_raw]
-    ax.yaxis.set_major_locator(FixedLocator(y_tick_locations))
+    tick_spacing = np.max([round((y_ticks_raw[1] - y_ticks_raw[0]), ndigits), 1 / 10 ** ndigits])
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
