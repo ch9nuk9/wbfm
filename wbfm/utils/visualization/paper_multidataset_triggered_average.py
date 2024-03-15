@@ -7,13 +7,13 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 import random
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from matplotlib.ticker import FixedLocator
 from tqdm.auto import tqdm
+from wbfm.utils.external.utils_matplotlib import round_yticks
 
 from wbfm.utils.external.utils_pandas import split_flattened_index
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
@@ -434,7 +434,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
                                              fig=None, ax=None, title=None, include_neuron_in_title=False,
-                                             xlim=None, ylim=None, min_lines=2,
+                                             xlim=None, ylim=None, min_lines=2, round_y_ticks=False,
                                              show_title=False, color=None, is_mutant=False,
                                              z_score=False, fig_kwargs=None, legend=False, i_figure=3,
                                              apply_changes_even_if_no_trace=True,
@@ -495,6 +495,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 ax.set_xlim(xlim)
             if ylim is not None:
                 ax.set_ylim(ylim)
+            # if round_y_ticks:
             if z_score:
                 plt.ylabel("Amplitude (z-scored)")
             else:
@@ -706,7 +707,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         if round_y_ticks:
             for ax in axes:
-                self._round_yticks(ax)
+                round_yticks(ax)
 
         apply_figure_settings(fig, width_factor=0.25, height_factor=0.3, plotly_not_matplotlib=False)
 
@@ -714,11 +715,6 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             self._save_fig(neuron_name, output_foldername)
 
         return fig, axes
-
-    def _round_yticks(self, ax):
-        y_ticks_raw = ax.get_yticks()
-        y_tick_locations = [round(val, 1) for val in y_ticks_raw]
-        ax.yaxis.set_major_locator(FixedLocator(y_tick_locations))
 
     def _save_fig(self, neuron_name, output_foldername):
         fname = os.path.join(output_foldername, f'{neuron_name}-combined_traces.png')
@@ -771,7 +767,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         ax.set_xlim(kwargs.get('xlim', self.xlim))
         self.project.shade_axis_using_behavior(ax)
         if round_y_ticks:
-            self._round_yticks(ax)
+            round_yticks(ax)
 
         apply_figure_settings(width_factor=0.25, height_factor=height_factor, plotly_not_matplotlib=False)
 

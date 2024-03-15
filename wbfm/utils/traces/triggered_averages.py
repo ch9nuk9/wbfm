@@ -27,7 +27,8 @@ from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, 
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
     calc_surpyval_durations_and_censoring, combine_columns_with_suffix, extend_binary_vector
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
-from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
+from wbfm.utils.external.utils_matplotlib import paired_boxplot_from_dataframes
+from wbfm.utils.external.utils_jupyter import check_plotly_rendering
 from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df

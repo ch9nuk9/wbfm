@@ -1,13 +1,11 @@
 # From https://stackoverflow.com/questions/48140576/matplotlib-toolbar-in-a-pyqt5-application
-import logging
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib
+from matplotlib.ticker import FixedLocator
 from scipy.stats import pearsonr
-
-from wbfm.utils.external.utils_jupyter import executing_in_notebook
 
 
 def get_twin_axis(ax, axis='x'):
@@ -128,19 +126,9 @@ def build_histogram_from_counts(all_dat, pixel_sz=0.1):
     return video_histogram
 
 
-def check_plotly_rendering(X: np.ndarray, max_size_for_notebook=200) -> (bool, dict):
-    if not executing_in_notebook():
-        return False
-    if any(np.array(X.shape) > max_size_for_notebook):
-        static_rendering_required = True
-        logging.warning(
-            f"Plotly will crash jupyter notebook if > {max_size_for_notebook} neurons (there are {X.shape}). "
-            "Will render static image instead.")
-    else:
-        static_rendering_required = False
-
-    if static_rendering_required:
-        render_opt = dict(renderer="svg")
-    else:
-        render_opt = dict()
-    return static_rendering_required, render_opt
+def round_yticks(ax, max_ticks=4):
+    # First reduce number of ticks, then round them
+    ax.yaxis.set_major_locator(plt.MaxNLocator(max_ticks))
+    y_ticks_raw = ax.get_yticks()
+    y_tick_locations = [round(val, 1) for val in y_ticks_raw]
+    ax.yaxis.set_major_locator(FixedLocator(y_tick_locations))
