@@ -435,7 +435,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
                                              fig=None, ax=None, title=None, include_neuron_in_title=False,
                                              xlim=None, ylim=None, min_lines=2, round_y_ticks=False,
-                                             show_title=False, color=None, is_mutant=False,
+                                             show_title=False, show_x_ticks=True, color=None, is_mutant=False,
                                              z_score=False, fig_kwargs=None, legend=False, i_figure=3,
                                              apply_changes_even_if_no_trace=True,
                                              DEBUG=False):
@@ -495,7 +495,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 ax.set_xlim(xlim)
             if ylim is not None:
                 ax.set_ylim(ylim)
-            # if round_y_ticks:
+            if round_y_ticks:
+                round_yticks(ax)
             if z_score:
                 plt.ylabel("Amplitude (z-scored)")
             else:
@@ -512,21 +513,27 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             else:
                 plt.title("")
             proj = self.all_projects[list(self.all_projects.keys())[0]]
-            plt.xlabel(proj.x_label_for_plots)
+            if show_x_ticks:
+                plt.xlabel(proj.x_label_for_plots)
+                height_factor_addition = 0.05
+            else:
+                ax.set_xticks([])
+                height_factor_addition = 0
+
             if legend:
                 plt.legend()
             plt.tight_layout()
 
             if output_folder is not None:
                 if i_figure == 0:  # Big
-                    fig_opt = dict(width_factor=1.0, height_factor=0.5)
+                    fig_opt = dict(width_factor=1.0, height_factor=0.45 + height_factor_addition)
                 elif i_figure == 3:
-                    fig_opt = dict(width_factor=0.5, height_factor=0.25)
+                    fig_opt = dict(width_factor=0.5, height_factor=0.20 + height_factor_addition)
                 elif i_figure > 3:
                     if 'rectified' in trigger_type:
-                        fig_opt = dict(width_factor=0.35, height_factor=0.15)
+                        fig_opt = dict(width_factor=0.35, height_factor=0.1 + height_factor_addition)
                     else:
-                        fig_opt = dict(width_factor=0.25, height_factor=0.15)
+                        fig_opt = dict(width_factor=0.25, height_factor=0.1 + height_factor_addition)
                 else:
                     raise NotImplementedError(f"i_figure={i_figure} not implemented")
                 apply_figure_settings(fig, plotly_not_matplotlib=False, **fig_opt)
