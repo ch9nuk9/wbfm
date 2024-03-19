@@ -962,6 +962,8 @@ class FullDatasetTriggeredAverages:
 
         mat = self.ind_class.calc_triggered_average_matrix(y)
         ax = self.ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("$\Delta R / R_{50}$")
         # ax.axhline(0, c='black', ls='--')
         # ax.plot(self.ind_class.ind_preceding, 0, "r>", markersize=10)
 

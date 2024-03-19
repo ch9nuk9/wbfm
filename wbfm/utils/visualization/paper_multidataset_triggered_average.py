@@ -723,8 +723,11 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         return fig, axes
 
-    def _save_fig(self, neuron_name, output_foldername):
-        fname = os.path.join(output_foldername, f'{neuron_name}-combined_traces.png')
+    def _save_fig(self, neuron_name, output_foldername, trigger_type='combined'):
+        if trigger_type == 'combined':
+            fname = os.path.join(output_foldername, f'{neuron_name}-combined_traces.png')
+        else:
+            fname = os.path.join(output_foldername, f'{neuron_name}-{trigger_type}.png')
         plt.savefig(fname, transparent=True)
         plt.savefig(fname.replace(".png", ".svg"))
 
@@ -776,7 +779,8 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         if round_y_ticks:
             round_yticks(ax)
 
-        apply_figure_settings(width_factor=0.25, height_factor=height_factor, plotly_not_matplotlib=False)
+        width_factor = kwargs.get('width_factor', 0.25)
+        apply_figure_settings(width_factor=width_factor, height_factor=height_factor, plotly_not_matplotlib=False)
 
         if output_foldername:
-            self._save_fig(neuron_name, output_foldername)
+            self._save_fig(neuron_name, output_foldername, trigger_type=trace_type)
