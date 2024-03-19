@@ -504,7 +504,6 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
     if DEBUG:
         print(f"Testing columns: {array_columns}")
 
-    # Print the p-values
     for index, column_pair in enumerate(array_columns):
         if subplot:
             data_pair = [indices[column_pair[0]], indices[column_pair[1]]]
@@ -527,9 +526,9 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
             # if len(y1) == 0:
             #     # Then the figure is organized per-color, and we can use the direct index
             #     y1 = fig_dict['data'][data_pair[1]]['y']
-            if DEBUG:
-                print(y0)
-                print(y1)
+            # if DEBUG:
+            #     print(y0)
+            #     print(y1)
 
             # In addition, the x values of the annotation should be the same as the x_label, not the raw column number
             # First we need to get which x value the label corresponds to
@@ -547,9 +546,10 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
 
         # Get the p-value
         pvalue = stats.ttest_ind(y0, y1, equal_var=False, random_state=4242, permutations=permutations)[1] * bonferroni_factor
-        # if DEBUG:
-        #     print(f"p-value: {pvalue}")
-        #     print(f"Data: {y0}, {y1}")
+        if DEBUG:
+            print(f"p-value: {pvalue}")
+            print(f"Data: {y0}, {y1}")
+            # err
         if pvalue >= 0.05:
             if not show_ns:
                 continue
