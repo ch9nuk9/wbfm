@@ -724,6 +724,19 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         return fig, axes
 
     def _save_fig(self, neuron_name, output_foldername, trigger_type='combined'):
+        """
+        Save the figure to the output foldername.
+
+        Parameters
+        ----------
+        neuron_name
+        output_foldername
+        trigger_type
+
+        Returns
+        -------
+
+        """
         if trigger_type == 'combined':
             fname = os.path.join(output_foldername, f'{neuron_name}-combined_traces.png')
         else:
