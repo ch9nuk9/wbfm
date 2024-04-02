@@ -2701,6 +2701,8 @@ def calculate_bundle_net_export(project_data, output_dir=None):
     df_beh = BehaviorCodes.convert_to_simple_states_vector(df_beh_raw)
     df_beh = df_beh.apply(lambda x: x.name)  # Save simple strings
 
+    df_curvature = worm.curvature(fluorescence_fps=True, reset_index=True)
+
     if output_dir is not None:
         traces_fname = os.path.join(output_dir, 'traces.csv')
         df_traces.to_csv(traces_fname)
@@ -2708,5 +2710,8 @@ def calculate_bundle_net_export(project_data, output_dir=None):
 
         beh_fname = os.path.join(output_dir, 'behavior.csv')
         df_beh.to_csv(beh_fname)
+
+        curvature_fname = os.path.join(output_dir, 'curvature.csv')
+        df_curvature.to_csv(curvature_fname)
 
     return df_traces, df_beh
