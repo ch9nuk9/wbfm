@@ -23,7 +23,7 @@ do
 done
 
 # Actually run
-COMMAND="/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/0a-create_new_project.py"
+COMMAND="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/0a-create_new_project.py"
 
 # Loop through the parent folder, then try to get the config file within each of these parent folders
 for f in "$DATA_PARENT_FOLDER"/*; do

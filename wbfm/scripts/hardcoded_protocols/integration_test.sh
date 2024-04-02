@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Clean and run the integration test, i.e. a shortened dataset
-PROJECT_DIR="/scratch/neurobiology/zimmer/fieseler/wbfm_projects/project_pytest"
-CODE_DIR="/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
+PROJECT_DIR="/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/project_pytest"
+CODE_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
 
 # Clean
 COMMAND=$CODE_DIR/"scripts/postprocessing/delete_analysis_files.py"
