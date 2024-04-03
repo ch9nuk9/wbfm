@@ -416,7 +416,7 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
 
 
 def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, bonferroni_factor=None,
-                           _format=None, permutations=None, show_ns=True, DEBUG=False):
+                           _format=None, permutations=None, show_only_stars=False, show_ns=True, DEBUG=False):
     """
     From: https://stackoverflow.com/questions/67505252/plotly-box-p-value-significant-annotation
 
@@ -467,7 +467,8 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
                 bonferroni_factor = len(all_x_labels)
             fig = add_p_value_annotation(fig, array_columns, subplot=subplot, x_label=x_label, show_ns=show_ns,
                                          _format=_format,
-                                         bonferroni_factor=bonferroni_factor, DEBUG=DEBUG, permutations=permutations)
+                                         bonferroni_factor=bonferroni_factor, DEBUG=DEBUG, permutations=permutations,
+                                         show_only_stars=show_only_stars)
         return fig
 
     if array_columns is None:
@@ -476,8 +477,11 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
     annotation_y_shift = -0.08  # Shift annotation down by this amount
 
     # Specify in what y_range to plot for each pair of columns
+    default_text_format = dict(interline=0.07, text_height=1.07, color='black')
     if _format is None:
-        _format = dict(interline=0.07, text_height=1.07, color='black')
+        _format = dict()
+    _format = {**default_text_format, **_format}
+
     y_range = np.zeros([len(array_columns), 2])
     for i in range(len(array_columns)):
         y_range[i] = [1.01 + i * _format['interline'], 1.02 + i * _format['interline']]
@@ -560,27 +564,28 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
             symbol = '**'
         else:
             symbol = '***'
-        # Vertical line
-        fig.add_shape(type="line",
-                      xref="x" + subplot_str, yref="y" + subplot_str + " domain",
-                      x0=column_pair[0], y0=y_range[index][0] + 1.5*annotation_y_shift,
-                      x1=column_pair[0], y1=y_range[index][1] + 1.5*annotation_y_shift,
-                      line=dict(color=_format['color'], width=2, )
-                      )
-        # Horizontal line
-        fig.add_shape(type="line",
-                      xref="x" + subplot_str, yref="y" + subplot_str + " domain",
-                      x0=column_pair[0], y0=y_range[index][1] + 1.5*annotation_y_shift,
-                      x1=column_pair[1], y1=y_range[index][1] + 1.5*annotation_y_shift,
-                      line=dict(color=_format['color'], width=2, )
-                      )
-        # Vertical line
-        fig.add_shape(type="line",
-                      xref="x" + subplot_str, yref="y" + subplot_str + " domain",
-                      x0=column_pair[1], y0=y_range[index][0] + 1.5*annotation_y_shift,
-                      x1=column_pair[1], y1=y_range[index][1] + 1.5*annotation_y_shift,
-                      line=dict(color=_format['color'], width=2, )
-                      )
+        if not show_only_stars:
+            # Vertical line
+            fig.add_shape(type="line",
+                          xref="x" + subplot_str, yref="y" + subplot_str + " domain",
+                          x0=column_pair[0], y0=y_range[index][0] + 1.5*annotation_y_shift,
+                          x1=column_pair[0], y1=y_range[index][1] + 1.5*annotation_y_shift,
+                          line=dict(color=_format['color'], width=2, )
+                          )
+            # Horizontal line
+            fig.add_shape(type="line",
+                          xref="x" + subplot_str, yref="y" + subplot_str + " domain",
+                          x0=column_pair[0], y0=y_range[index][1] + 1.5*annotation_y_shift,
+                          x1=column_pair[1], y1=y_range[index][1] + 1.5*annotation_y_shift,
+                          line=dict(color=_format['color'], width=2, )
+                          )
+            # Vertical line
+            fig.add_shape(type="line",
+                          xref="x" + subplot_str, yref="y" + subplot_str + " domain",
+                          x0=column_pair[1], y0=y_range[index][0] + 1.5*annotation_y_shift,
+                          x1=column_pair[1], y1=y_range[index][1] + 1.5*annotation_y_shift,
+                          line=dict(color=_format['color'], width=2, )
+                          )
         ## add text at the correct x, y coordinates
         ## for bars, there is a direct mapping from the bar number to 0, 1, 2...
         fig.add_annotation(dict(font=dict(color=_format['color'], size=14),
