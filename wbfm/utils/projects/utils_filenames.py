@@ -88,6 +88,16 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
     return path
 
 
+def correct_mounted_path_prefix(path: str, old_prefix='/scratch', new_prefix='/lisc/scratch'):
+    path = str(path)
+    if path.startswith(old_prefix):
+        path = path.replace(old_prefix, new_prefix)
+        updated_flag = True
+    else:
+        updated_flag = False
+    return path, updated_flag
+
+
 def pandas_read_any_filetype(filename, **kwargs):
     if filename is None:
         return None
