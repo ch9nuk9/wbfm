@@ -7,30 +7,35 @@
 
 channels:
   - conda-forge
-  - defaults
-  - pytorch-lts
+  - pytorch
+  - nvidia
   - bioconda
 dependencies:
-  - python=3.7
+  - python=3.8
   - pip
   - numpy
   - pandas
   - tqdm
   - zarr
-  - scipy=1.2.1
+  - scipy
   - torchaudio
   - cudatoolkit=10.0.130
   - cudnn=7.6.5
-  - opencv=3.4.2
+  - opencv=3.4
   - matplotlib
   - torchvision
-  - scikit-learn=0.24.2
-  - scikit-image=0.18.3
+  - scikit-learn
+  - scikit-image
   - networkx
   - lmfit
   - natsort
   - snakemake
-  - tsnecuda
+  - napari[all]
+  - pytorch=1.13.0
+  - torchvision=0.2.2
+  - torchaudio=0.13.0
+  - torchmetrics=0.10.3
+  - pytorch-cuda=11.6
   - plotly
   - pip:
     - tifffile
@@ -38,27 +43,21 @@ dependencies:
     - networkx
     - tensorflow
     - sacred
-    - napari[all]
-    - tables
     - ruamel.yaml
     - stardist
     - hashfs
-    - tinydb==3.15.2
+    - tinydb
     - tinydb-serialization
-    - methodtools
-    - pytorch-lightning
     - openpyxl
     - pytest
     - ruptures
     - backports.cached_property
     - pytorch-lightning==1.5.6
-    - torch==1.10.0
-    - torchmetrics==0.6.2
-    - torchvision==0.11.1
     - wandb
     - seaborn
     - hdbscan
-    - psf
-    - setuptools==59.8.0
+    - statsmodels
     - ppca
+    - methodtools
     - kaleido
+    - skan==0.9 # For behavior pipeline
