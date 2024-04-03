@@ -20,18 +20,18 @@ def get_summary_visualization_dir():
 
     """
 
-    return "/scratch/neurobiology/zimmer/fieseler/multiproject_visualizations"
+    return "/lisc/scratch/neurobiology/zimmer/fieseler/multiproject_visualizations"
 
 
 def get_project_parent_folder():
-    return "/scratch/neurobiology/zimmer/fieseler/wbfm_projects"
+    return "/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects"
 
 
 def get_hierarchical_modeling_dir(gfp=False):
     if gfp:
-        return "/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp"
+        return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp"
     else:
-        return "/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling"
+        return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling"
 
 
 def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=False, **kwargs) -> dict:
@@ -145,19 +145,19 @@ def _resolve_project_from_worm_id(folder_and_id_dict):
 
 
 def forward_distribution_statistics():
-    fname = "/scratch/neurobiology/zimmer/wbfm/DistributionsOfBehavior/forward_duration.pickle"
+    fname = "/lisc/scratch/neurobiology/zimmer/wbfm/DistributionsOfBehavior/forward_duration.pickle"
     forward_duration_dict = pickle_load_binary(fname)
     return forward_duration_dict
 
 
 def reverse_distribution_statistics():
-    fname = "/scratch/neurobiology/zimmer/wbfm/DistributionsOfBehavior/reversal_duration.pickle"
+    fname = "/lisc/scratch/neurobiology/zimmer/wbfm/DistributionsOfBehavior/reversal_duration.pickle"
     duration_dict = pickle_load_binary(fname)
     return duration_dict
 
 
 def names_of_neurons_to_id() -> pd.Series:
-    fname = "/scratch/neurobiology/zimmer/wbfm/id_resources/neurons_to_id.csv"
+    fname = "/lisc/scratch/neurobiology/zimmer/wbfm/id_resources/neurons_to_id.csv"
     if Path(fname).exists():
         df = pd.read_csv(fname, header=None)
     else:

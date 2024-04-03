@@ -12,7 +12,7 @@ from wbfm.barlow_project.utils.model_image_classifier import NeuronEmbeddingMode
 from wbfm.utils.nn_utils.superglue import SuperGlueModel, SuperGlueUnpacker
 from wbfm.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
 
-model_dir = "/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/nn_checkpoints/"
+model_dir = "/lisc/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/nn_checkpoints/"
 local_model_dir = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/nn_checkpoints/"
 PATH_TO_MODEL = os.path.join(model_dir, "superglue_neurons_4_datasets_adjacent_remove_nonmoving_05_11.ckpt")
 
