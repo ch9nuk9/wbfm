@@ -515,7 +515,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             proj = self.all_projects[list(self.all_projects.keys())[0]]
             if show_x_ticks:
                 plt.xlabel(proj.x_label_for_plots)
-                height_factor_addition = 0.03
+                height_factor_addition = 0.04
             else:
                 ax.set_xticks([])
                 height_factor_addition = 0
@@ -789,7 +789,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         if xlabels:
             ax.set_xlabel("Time (s)")
-            height_factor = 0.15
+            height_factor = 0.14
         else:
             ax.set_xticks([])
             height_factor = 0.1
