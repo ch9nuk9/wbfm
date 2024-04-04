@@ -26,9 +26,12 @@ done
 COMMAND="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/0a-create_new_project.py"
 
 # Loop through the parent folder, then try to get the config file within each of these parent folders
+# Counter for number of jobs actually submitted
+num_jobs=0
 for f in "$DATA_PARENT_FOLDER"/*; do
     if [[ -d "$f" ]] && [[ "$f" == *"_worm"* ]]; then
         echo "Checking folder: $f"
+        num_jobs=$((num_jobs+1))
         EXPERIMENTER=$(cd "$f" && pwd)
         EXPERIMENTER=$(basename "$EXPERIMENTER")
         if [ "$is_dry_run" ]; then
@@ -41,8 +44,8 @@ for f in "$DATA_PARENT_FOLDER"/*; do
 done
 
 echo "===================================================================================="
-echo "Dispatched all jobs in the background; they will finish in ~30 seconds if successful"
-echo "Note that the jobs will print out their progress as they complete"
+echo "Dispatched $num_jobs jobs in the background; they will finish in ~30 seconds if successful"
+echo "Note that the jobs will print out their progress as they complete, and will mix messages"
 echo "Expected message if successful:"
 echo "INFO - 0a-create_new_project - Completed after 0:00:XX"
 echo "===================================================================================="
