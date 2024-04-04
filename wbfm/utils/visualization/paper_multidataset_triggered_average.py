@@ -20,7 +20,7 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_tr
 from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_list_of_projects, \
-    ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level
+    ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level, calc_p_value_using_ttest_triggered_average
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -298,8 +298,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(title_mapping.keys())}')
         return title_mapping[trigger_type]
 
-    def get_trace_difference_auc(self, trigger_type, neuron0, neuron1, num_iters=100, z_score=False,
-                                 norm_type='corr', shuffle_dataset_pairs=True, return_individual_traces=False):
+    def get_trace_difference_auc(self, neuron0, neuron1, trigger_type, num_iters=100, z_score=False, norm_type='corr',
+                                 shuffle_dataset_pairs=True, return_individual_traces=False):
         """
         Calculates the area under the curve of the difference between two neurons.
 
@@ -402,7 +402,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         return all_norms
 
-    def get_trace_difference_auc_multiple_neurons(self, trigger_type, list_of_neurons, norm_type='corr',
+    def get_trace_difference_auc_multiple_neurons(self, list_of_neurons, trigger_type, norm_type='corr',
                                                   baseline_neuron=None, df_norms=None, **kwargs):
         """
         Use get_trace_difference for pairs of neurons, generated as all combinations of the neurons in list_of_neurons.
@@ -423,7 +423,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         dict_norms = {}
         for neuron0, neuron1 in tqdm(neuron_combinations, leave=False):
             key = f"{neuron0}-{neuron1}"
-            dict_norms[key] = self.get_trace_difference_auc(trigger_type, neuron0, neuron1, norm_type=norm_type,
+            dict_norms[key] = self.get_trace_difference_auc(neuron0, neuron1, trigger_type, norm_type=norm_type,
                                                             **kwargs)
 
         df_norms = pd.DataFrame(dict_norms)
@@ -443,7 +443,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             fig_kwargs = {}
         if color is None:
             color = self.get_color_from_data_type(trigger_type, is_mutant=is_mutant)
-        df_subset = self.get_traces_single_neuron(trigger_type, neuron_name, DEBUG)
+        df_subset = self.get_traces_single_neuron(neuron_name, trigger_type, DEBUG)
 
         if df_subset.shape[1] == 0:
             logging.debug(f"Neuron name {neuron_name} not found, skipping")
@@ -515,7 +515,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             proj = self.all_projects[list(self.all_projects.keys())[0]]
             if show_x_ticks:
                 plt.xlabel(proj.x_label_for_plots)
-                height_factor_addition = 0.05
+                height_factor_addition = 0.03
             else:
                 ax.set_xticks([])
                 height_factor_addition = 0
@@ -546,7 +546,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         return fig, ax
 
-    def get_traces_single_neuron(self, trigger_type, neuron_name, DEBUG=False):
+    def get_traces_single_neuron(self, neuron_name, trigger_type, DEBUG=False):
         df = self.get_df_triggered_from_trigger_type(trigger_type)
         # Get the full names of all the neurons with this name
         # Names will be like '2022-11-23_worm9_BAGL' and we are checking for 'BAGL'
@@ -608,6 +608,12 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             except KeyError:
                 # print(f"Neuron {neuron_name} not found in {name}; skipping")
                 continue
+
+    def ttest_before_and_after(self, neuron_name, trigger_type, gap=0):
+        """Does a ttest on the traces before and after the event"""
+        df_subset = self.get_traces_single_neuron(neuron_name, trigger_type)
+        p_value_dict = calc_p_value_using_ttest_triggered_average(df_subset, gap)
+        return p_value_dict
 
 
 @dataclass
