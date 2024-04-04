@@ -56,7 +56,8 @@ def plotly_paper_color_discrete_map():
                  'Freely Moving (GCaMP, residual)': base_cmap[4],
                  'O2 or CO2 sensing': base_cmap[5],  # Brown
                  'Not IDed': base_cmap[7],  # Same as gfp; shouldn't ever be on same plot
-                 'mutant': base_cmap[6], 'Freely Moving (gcy-31, gcy-35, gcy-9)': base_cmap[6],  # Pink
+                 'mutant': base_cmap[6], 'Freely Moving (gcy-31, gcy-35, gcy-9)': base_cmap[6],
+                 'gcy-31, gcy-35, gcy-9': base_cmap[6],  # Pink
                  # Colors for hierarchy
                  'No oscillations': base_cmap[7],  # Same as gfp
                  'Hierarchy only': base_cmap[0],  # Same as raw
@@ -71,7 +72,7 @@ def plotly_paper_color_discrete_map():
 
 def export_legend_for_paper(fname=None, frameon=True):
     cmap = plotly_paper_color_discrete_map()
-    labels = ['Freely Moving', 'Immobilized', 'Freely Moving (gcy-31, gcy-35, gcy-9)']
+    labels = ['Freely Moving', 'Immobilized', 'gcy-31, gcy-35, gcy-9']
     colors = [cmap[l] for l in labels]
     f = lambda m, c: plt.plot([], [], marker=m, color=c, ls="none")[0]
     handles = [f("s", colors[i]) for i in range(3)]
