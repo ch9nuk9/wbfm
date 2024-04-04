@@ -4,6 +4,7 @@ Designed to plot the triggered average of the paper's datasets.
 import itertools
 import logging
 import os
+import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
 import random
@@ -614,6 +615,15 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         df_subset = self.get_traces_single_neuron(neuron_name, trigger_type)
         p_value_dict = calc_p_value_using_ttest_triggered_average(df_subset, gap)
         return p_value_dict
+
+    def get_boxplot_before_and_after(self, neuron_name, trigger_type, gap=0):
+        """Preps data for a ttest or other comparison before and after the event"""
+        df_subset = self.get_traces_single_neuron(neuron_name, trigger_type)
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=RuntimeWarning)
+            means_before = np.nanmean(df_subset.loc[:, :-gap], axis=1)
+            means_after = np.nanmean(df_subset.loc[:, gap:], axis=1)
+        return means_before, means_after
 
 
 @dataclass
