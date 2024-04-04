@@ -29,7 +29,7 @@ COMMAND="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/0a-create
 # Counter for number of jobs actually submitted
 num_jobs=0
 for f in "$DATA_PARENT_FOLDER"/*; do
-    if [[ -d "$f" ]] && [[ "$f" == *"_worm"* ]]; then
+    if [[ -d "$f" ]] && [[ "$f" == *"worm"* ]]; then
         echo "Checking folder: $f"
         num_jobs=$((num_jobs+1))
         EXPERIMENTER=$(cd "$f" && pwd)
