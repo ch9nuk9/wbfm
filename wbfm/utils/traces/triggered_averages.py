@@ -2595,8 +2595,8 @@ def calc_p_value_using_ttest_triggered_average(df_triggered, gap=0):
     """
     with warnings.catch_warnings():
         warnings.simplefilter(action='ignore', category=RuntimeWarning)
-        means_before = np.nanmean(df_triggered.loc[:, :-gap], axis=1)
-        means_after = np.nanmean(df_triggered.loc[:, gap:], axis=1)
+        means_before = np.nanmean(df_triggered.loc[:-gap, :], axis=1)
+        means_after = np.nanmean(df_triggered.loc[gap:, :], axis=1)
     p = scipy.stats.ttest_rel(means_before, means_after, nan_policy='omit').pvalue
     effect_size = np.nanmean(means_after) - np.nanmean(means_before)
 

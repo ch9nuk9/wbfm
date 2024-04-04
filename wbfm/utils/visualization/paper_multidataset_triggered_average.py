@@ -621,8 +621,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         df_subset = self.get_traces_single_neuron(neuron_name, trigger_type)
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=RuntimeWarning)
-            means_before = np.nanmean(df_subset.loc[:, :-gap], axis=1)
-            means_after = np.nanmean(df_subset.loc[:, gap:], axis=1)
+            means_before = np.nanmean(df_subset.loc[:-gap, :], axis=1)
+            means_after = np.nanmean(df_subset.loc[gap:, :], axis=1)
         return means_before, means_after
 
 
