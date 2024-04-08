@@ -1,7 +1,15 @@
 """
-The top level function for producing dlc tracks in 3d
+Postprocessing script to delete all analysis files in a project directory.
 
-EXPERIMENTAL
+This script is useful when you want to re-run the analysis from scratch, or something crashed and can't be recovered
+
+Usage:
+```bash
+python wbfm/scripts/postprocessing/delete_analysis_files.py with project_path={PATH}/project_config.yaml dryrun=True
+```
+
+Note: dryrun=True will not actually delete anything, but will print out what would be deleted
+
 """
 
 # Experiment tracking
