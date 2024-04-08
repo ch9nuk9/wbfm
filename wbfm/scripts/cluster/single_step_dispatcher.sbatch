@@ -50,6 +50,7 @@ CMD_DICT["4-summary"]="visualization/4+make_summary_interactive_plot.py"
 CMD_DICT["4-encoding"]="folder_analysis/4+make_multiproject_behavioral_encodings.py"
 CMD_DICT["check_gpu"]="examples/check_gpu.py"
 CMD_DICT["manual"]="postprocessing/3b+update_after_manual_annotation.py"
+CMD_DICT["delete_DANGER"]="postprocessing/delete_analysis_files.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
 FULL_CMD="python $CMD with project_path=$project_path"
