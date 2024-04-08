@@ -25,7 +25,7 @@ do
 done
 
 # Path to the command directory
-CMD_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts"
+CMD_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/cluster"
 
 # Loop through the parent folder, then try to get the config file within each of these parent folders
 for f in "$folder_of_projects"/*; do
