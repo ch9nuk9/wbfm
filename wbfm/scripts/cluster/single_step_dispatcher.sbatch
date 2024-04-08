@@ -22,11 +22,12 @@ function show_help {
 }
 
 # Get all user flags
+is_dry_run=""
 while getopts t:n:s:h: flag
 do
     case "${flag}" in
         t) project_path=${OPTARG};;
-        n) is_dry_run=${OPTARG};;
+        n) is_dry_run="True";;
         s) step_reference=${OPTARG};;
         h) show_help
            exit 0;;
