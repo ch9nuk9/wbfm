@@ -3,7 +3,7 @@ Postprocessing script to delete all analysis files in a project directory.
 
 This script is useful when you want to re-run the analysis from scratch, or something crashed and can't be recovered
 
-Usage:
+Example:
 ```bash
 python wbfm/scripts/postprocessing/delete_analysis_files.py with project_path={PATH}/project_config.yaml dryrun=True
 ```
