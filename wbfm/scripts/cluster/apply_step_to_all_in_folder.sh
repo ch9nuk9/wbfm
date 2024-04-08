@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
-# Example usage:
-# bash apply_step_to_all_in_folder.sh -t '/scratch/neurobiology/zimmer/Charles/dlc_stacks/exposure_12ms' -s 0b
-# Found within the package in:
-# wbfm/scripts/cluster
+
+# Function to display a help message
+function show_help {
+    echo "Usage: $0 -t folder_of_projects -n is_dry_run -s step_reference"
+    echo "  -t folder_of_projects: path to the folder containing all the projects"
+    echo "  -n is_dry_run: whether to run the command or just print it"
+    echo "  -s step_reference: reference to the step to run (see single_step_dispatcher.sbatch for the list of steps)"
+    echo "  -h: display this help message"
+}
 
 # Get all user flags
-while getopts t:n:s: flag
+while getopts t:n:s:h: flag
 do
     case "${flag}" in
         t) folder_of_projects=${OPTARG};;
         n) is_dry_run=${OPTARG};;
         s) step_reference=${OPTARG};;
+        h) show_help
+           exit 0;;
         *) raise error "Unknown flag"
     esac
 done

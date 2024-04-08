@@ -12,17 +12,24 @@
 
 pwd; hostname; date
 
-# Necessary because the default home directory is not writable from the cluster
-# UPDATE: as of August 2022 this is not necessary
-#export HOME="/scratch/neurobiology/zimmer/Charles"
+# Function to display a help message
+function show_help {
+    echo "Usage: $0 -t project_path -n is_dry_run -s step_reference"
+    echo "  -t project_path: path to the project directory"
+    echo "  -n is_dry_run: whether to run the command or just print it"
+    echo "  -s step_reference: reference to the step to run (see single_step_dispatcher.sbatch for the list of steps)"
+    echo "  -h: display this help message"
+}
 
 # Get all user flags
-while getopts t:n:s: flag
+while getopts t:n:s:h: flag
 do
     case "${flag}" in
         t) project_path=${OPTARG};;
         n) is_dry_run=${OPTARG};;
         s) step_reference=${OPTARG};;
+        h) show_help
+           exit 0;;
         *) raise error "Unknown flag"
     esac
 done
