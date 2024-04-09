@@ -19,12 +19,12 @@ try:
         cfg.get_folders_for_behavior_pipeline()
 except NoBehaviorDataError:
     logging.warning("No behavior data found, behavior will not run. Only 'traces' can be processed.")
-    raw_data_dir = ""
-    output_behavior_dir = ""
-    background_img = ""
-    background_video = ""
-    behavior_btf = ""
-    raw_data_subfolder = ""
+    raw_data_dir = "NOTFOUND"
+    output_behavior_dir = "NOTFOUND"
+    background_img = "NOTFOUND"
+    background_video = "NOTFOUND"
+    behavior_btf = "NOTFOUND"
+    raw_data_subfolder = "NOTFOUND"
 
 
 def _run_helper(script_name, project_path):
