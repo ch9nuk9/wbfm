@@ -45,7 +45,7 @@ for f in "$folder_of_projects"/*; do
                 else
                     echo "Opening tmux session: $tmux_name"
                     # Get the snakemake command and run it
-                    setup_cmd="conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/"
+                    setup_cmd="conda activate /lisc/scratch/neurobiology/zimmer/.conda/envs/wbfm/"
                     snakemake_folder="$f/snakemake"
                     if [ "$is_snakemake_dry_run" ]; then
                        snakemake_cmd="$snakemake_folder/RUNME.sh -n -s $RULE"

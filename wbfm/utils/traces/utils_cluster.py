@@ -7,7 +7,7 @@ import scipy as scp
 from plotly.graph_objs import graph_objs
 import plotly.graph_objs as go
 
-from wbfm.utils.general.utils_matplotlib import check_plotly_rendering
+from wbfm.utils.external.utils_jupyter import check_plotly_rendering
 
 
 def ks_statistic(x, y, axis=0):

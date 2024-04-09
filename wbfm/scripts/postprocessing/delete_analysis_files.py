@@ -1,7 +1,5 @@
 """
-The top level function for producing dlc tracks in 3d
-
-EXPERIMENTAL
+Postprocessing script to delete all analysis files in a project directory.
 """
 
 # Experiment tracking

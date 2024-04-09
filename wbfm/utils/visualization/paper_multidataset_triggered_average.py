@@ -4,23 +4,24 @@ Designed to plot the triggered average of the paper's datasets.
 import itertools
 import logging
 import os
+import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
 import random
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from matplotlib.ticker import FixedLocator
 from tqdm.auto import tqdm
+from wbfm.utils.external.utils_matplotlib import round_yticks
 
 from wbfm.utils.external.utils_pandas import split_flattened_index
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
 from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_list_of_projects, \
-    ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level
+    ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level, calc_p_value_using_ttest_triggered_average
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -129,8 +130,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     trace_opt: Optional[dict] = None
     trigger_opt: dict = field(default_factory=dict)
 
-    # Optional: stimulus
-    calc_stimulus: bool = False
+    # Optional trigger types
+    calculate_stimulus: bool = False
     calculate_residual: bool = True
     calculate_global: bool = True
     calculate_turns: bool = True
@@ -232,7 +233,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 print(f"Trigger type {trigger_type} failed; this may be because the data is immobilized")
 
         # Optional
-        if self.calc_stimulus:
+        if self.calculate_stimulus:
             trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.STIMULUS)
             trigger_opt.update(self.trigger_opt)
             out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
@@ -298,8 +299,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(title_mapping.keys())}')
         return title_mapping[trigger_type]
 
-    def get_trace_difference_auc(self, trigger_type, neuron0, neuron1, num_iters=100, z_score=False,
-                                 norm_type='corr', shuffle_dataset_pairs=True, return_individual_traces=False):
+    def get_trace_difference_auc(self, neuron0, neuron1, trigger_type, num_iters=100, z_score=False, norm_type='corr',
+                                 shuffle_dataset_pairs=True, return_individual_traces=False):
         """
         Calculates the area under the curve of the difference between two neurons.
 
@@ -402,7 +403,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         return all_norms
 
-    def get_trace_difference_auc_multiple_neurons(self, trigger_type, list_of_neurons, norm_type='corr',
+    def get_trace_difference_auc_multiple_neurons(self, list_of_neurons, trigger_type, norm_type='corr',
                                                   baseline_neuron=None, df_norms=None, **kwargs):
         """
         Use get_trace_difference for pairs of neurons, generated as all combinations of the neurons in list_of_neurons.
@@ -423,7 +424,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         dict_norms = {}
         for neuron0, neuron1 in tqdm(neuron_combinations, leave=False):
             key = f"{neuron0}-{neuron1}"
-            dict_norms[key] = self.get_trace_difference_auc(trigger_type, neuron0, neuron1, norm_type=norm_type,
+            dict_norms[key] = self.get_trace_difference_auc(neuron0, neuron1, trigger_type, norm_type=norm_type,
                                                             **kwargs)
 
         df_norms = pd.DataFrame(dict_norms)
@@ -434,8 +435,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
                                              fig=None, ax=None, title=None, include_neuron_in_title=False,
-                                             xlim=None, ylim=None, min_lines=2,
-                                             show_title=False, color=None, is_mutant=False,
+                                             xlim=None, ylim=None, min_lines=2, round_y_ticks=False,
+                                             show_title=False, show_x_ticks=True, color=None, is_mutant=False,
                                              z_score=False, fig_kwargs=None, legend=False, i_figure=3,
                                              apply_changes_even_if_no_trace=True,
                                              DEBUG=False):
@@ -443,7 +444,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             fig_kwargs = {}
         if color is None:
             color = self.get_color_from_data_type(trigger_type, is_mutant=is_mutant)
-        df_subset = self.get_traces_single_neuron(trigger_type, neuron_name, DEBUG)
+        df_subset = self.get_traces_single_neuron(neuron_name, trigger_type, DEBUG)
 
         if df_subset.shape[1] == 0:
             logging.debug(f"Neuron name {neuron_name} not found, skipping")
@@ -495,10 +496,12 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 ax.set_xlim(xlim)
             if ylim is not None:
                 ax.set_ylim(ylim)
+            if round_y_ticks:
+                round_yticks(ax)
             if z_score:
                 plt.ylabel("Amplitude (z-scored)")
             else:
-                plt.ylabel("$\Delta R / R_{20}$")
+                plt.ylabel("$\Delta R / R_{50}$")
             if show_title:
                 if title is None:
                     title = self.get_title_from_trigger_type(trigger_type)
@@ -511,21 +514,27 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             else:
                 plt.title("")
             proj = self.all_projects[list(self.all_projects.keys())[0]]
-            plt.xlabel(proj.x_label_for_plots)
+            if show_x_ticks:
+                plt.xlabel(proj.x_label_for_plots)
+                height_factor_addition = 0.04
+            else:
+                ax.set_xticks([])
+                height_factor_addition = 0
+
             if legend:
                 plt.legend()
             plt.tight_layout()
 
             if output_folder is not None:
                 if i_figure == 0:  # Big
-                    fig_opt = dict(width_factor=1.0, height_factor=0.5)
+                    fig_opt = dict(width_factor=1.0, height_factor=0.45 + height_factor_addition)
                 elif i_figure == 3:
-                    fig_opt = dict(width_factor=0.5, height_factor=0.25)
+                    fig_opt = dict(width_factor=0.5, height_factor=0.20 + height_factor_addition)
                 elif i_figure > 3:
                     if 'rectified' in trigger_type:
-                        fig_opt = dict(width_factor=0.35, height_factor=0.15)
+                        fig_opt = dict(width_factor=0.35, height_factor=0.1 + height_factor_addition)
                     else:
-                        fig_opt = dict(width_factor=0.25, height_factor=0.15)
+                        fig_opt = dict(width_factor=0.25, height_factor=0.1 + height_factor_addition)
                 else:
                     raise NotImplementedError(f"i_figure={i_figure} not implemented")
                 apply_figure_settings(fig, plotly_not_matplotlib=False, **fig_opt)
@@ -538,7 +547,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         return fig, ax
 
-    def get_traces_single_neuron(self, trigger_type, neuron_name, DEBUG=False):
+    def get_traces_single_neuron(self, neuron_name, trigger_type, DEBUG=False):
         df = self.get_df_triggered_from_trigger_type(trigger_type)
         # Get the full names of all the neurons with this name
         # Names will be like '2022-11-23_worm9_BAGL' and we are checking for 'BAGL'
@@ -600,6 +609,28 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             except KeyError:
                 # print(f"Neuron {neuron_name} not found in {name}; skipping")
                 continue
+
+    def ttest_before_and_after(self, neuron_name, trigger_type, gap=0):
+        """Does a ttest on the traces before and after the event"""
+        df_subset = self.get_traces_single_neuron(neuron_name, trigger_type)
+        p_value_dict = calc_p_value_using_ttest_triggered_average(df_subset, gap)
+        return p_value_dict
+
+    def get_boxplot_before_and_after(self, neuron_name, trigger_type, gap=0, same_size_window=True):
+        """Preps data for a ttest or other comparison before and after the event"""
+        df_subset = self.get_traces_single_neuron(neuron_name, trigger_type)
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=RuntimeWarning)
+            means_before = np.nanmedian(df_subset.loc[:-gap, :], axis=1)
+            if same_size_window:
+                # Get last index based on size of means_before
+                len_before = len(means_before)
+                i_of_0 = df_subset.index.get_loc(0)
+                gap_idx = i_of_0 + gap + len_before
+                means_after = np.nanmedian(df_subset.iloc[i_of_0:gap_idx, :], axis=1)
+            else:
+                means_after = np.nanmedian(df_subset.loc[gap:, :], axis=1)
+        return means_before, means_after
 
 
 @dataclass
@@ -706,7 +737,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         if round_y_ticks:
             for ax in axes:
-                self._round_yticks(ax)
+                round_yticks(ax)
 
         apply_figure_settings(fig, width_factor=0.25, height_factor=0.3, plotly_not_matplotlib=False)
 
@@ -715,18 +746,29 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         return fig, axes
 
-    def _round_yticks(self, ax):
-        y_ticks_raw = ax.get_yticks()
-        y_tick_locations = [round(val, 1) for val in y_ticks_raw]
-        ax.yaxis.set_major_locator(FixedLocator(y_tick_locations))
+    def _save_fig(self, neuron_name, output_foldername, trigger_type='combined'):
+        """
+        Save the figure to the output foldername.
 
-    def _save_fig(self, neuron_name, output_foldername):
-        fname = os.path.join(output_foldername, f'{neuron_name}-combined_traces.png')
+        Parameters
+        ----------
+        neuron_name
+        output_foldername
+        trigger_type
+
+        Returns
+        -------
+
+        """
+        if trigger_type == 'combined':
+            fname = os.path.join(output_foldername, f'{neuron_name}-combined_traces.png')
+        else:
+            fname = os.path.join(output_foldername, f'{neuron_name}-{trigger_type}.png')
         plt.savefig(fname, transparent=True)
         plt.savefig(fname.replace(".png", ".svg"))
 
     def plot_single_trace(self, neuron_name, trace_type='raw', color_type=None, title=False, legend=False, round_y_ticks=False,
-                          ax=None, color=None, output_foldername=None, **kwargs):
+                          xlabels=True, ax=None, color=None, output_foldername=None, **kwargs):
         """
         Plot the three traces (raw, global, residual) on the same plot.
         If output_foldername is not None, save the plot in that folder.
@@ -761,12 +803,20 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             ax.legend(frameon=False)
 
         ax.set_ylabel(r"$\Delta R / R_{50}$")
+
+        if xlabels:
+            ax.set_xlabel("Time (s)")
+            height_factor = 0.14
+        else:
+            ax.set_xticks([])
+            height_factor = 0.1
         ax.set_xlim(kwargs.get('xlim', self.xlim))
         self.project.shade_axis_using_behavior(ax)
         if round_y_ticks:
-            self._round_yticks(ax)
+            round_yticks(ax)
 
-        apply_figure_settings(width_factor=0.25, height_factor=0.15, plotly_not_matplotlib=False)
+        width_factor = kwargs.get('width_factor', 0.25)
+        apply_figure_settings(width_factor=width_factor, height_factor=height_factor, plotly_not_matplotlib=False)
 
         if output_foldername:
-            self._save_fig(neuron_name, output_foldername)
+            self._save_fig(neuron_name, output_foldername, trigger_type=trace_type)

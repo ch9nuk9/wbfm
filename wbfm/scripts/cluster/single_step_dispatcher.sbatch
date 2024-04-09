@@ -8,27 +8,35 @@
 #SBATCH --time=0-12:00:00  # A normal video should only take <3 hours, but some could be longer
 #SBATCH --mem=128G
 #SBATCH --cpus-per-task=8
-#SBATCH --partition=basic,gpu
+#SBATCH --partition=basic
 
 pwd; hostname; date
 
-# Necessary because the default home directory is not writable from the cluster
-# UPDATE: as of August 2022 this is not necessary
-#export HOME="/scratch/neurobiology/zimmer/Charles"
+# Function to display a help message
+function show_help {
+    echo "Usage: $0 -t project_path -n is_dry_run -s step_reference"
+    echo "  -t project_path: path to the project directory"
+    echo "  -n is_dry_run: whether to run the command or just print it"
+    echo "  -s step_reference: reference to the step to run (see single_step_dispatcher.sbatch for the list of steps)"
+    echo "  -h: display this help message"
+}
 
 # Get all user flags
-while getopts t:n:s: flag
+is_dry_run=""
+while getopts t:n:s:h: flag
 do
     case "${flag}" in
         t) project_path=${OPTARG};;
-        n) is_dry_run=${OPTARG};;
+        n) is_dry_run="True";;
         s) step_reference=${OPTARG};;
+        h) show_help
+           exit 0;;
         *) raise error "Unknown flag"
     esac
 done
 
 # Unpack the flag into an actual command
-CMD_DIR="/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/scripts"
+CMD_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts"
 
 declare -A CMD_DICT
 CMD_DICT["0b"]="0b-preprocess_working_copy_of_data.py"
@@ -50,9 +58,16 @@ CMD_DICT["4-summary"]="visualization/4+make_summary_interactive_plot.py"
 CMD_DICT["4-encoding"]="folder_analysis/4+make_multiproject_behavioral_encodings.py"
 CMD_DICT["check_gpu"]="examples/check_gpu.py"
 CMD_DICT["manual"]="postprocessing/3b+update_after_manual_annotation.py"
+CMD_DICT["delete_DANGER"]="postprocessing/delete_analysis_files.py"
+CMD_DICT["delete_dryrun"]="postprocessing/delete_analysis_files.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
 FULL_CMD="python $CMD with project_path=$project_path"
+
+# Specify additional args, if any. For now, this is only non-trivial for the delete_DANGER step
+if [ "$step_reference" = "delete_DANGER" ]; then
+  FULL_CMD="$FULL_CMD dryrun=False"
+fi
 
 echo "Running step $step_reference using full command:"
 echo "$FULL_CMD"

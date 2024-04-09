@@ -39,7 +39,7 @@ def export_data_for_hierarchical_model(do_gfp=False, skip_if_exists=True):
 
     # Get pca modes
     df_all_pca = build_pca_time_series_from_multiple_projects(all_projects, use_paper_options=True)
-    df_all_pca.rename(columns={i: f'pca_{i}' for i in range(1, 4)}, inplace=True)
+    df_all_pca.rename(columns={i: f'pca_{i}' for i in range(4)}, inplace=True)
 
     # Recalculate multi-dataset eigenworms
     df_eigenworms = build_cross_dataset_eigenworms(all_projects)

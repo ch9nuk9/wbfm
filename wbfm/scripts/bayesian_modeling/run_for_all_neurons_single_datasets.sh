@@ -33,9 +33,9 @@ done
 CMD="/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/utils/external/utils_pymc.py"
 # Changes if running on gfp
 if [ "$do_gfp" == "True" ]; then
-  LOG_DIR="/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp/logs"
+  LOG_DIR="/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp/logs"
 else
-  LOG_DIR="/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/logs"
+  LOG_DIR="/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/logs"
 fi
 
 for neuron in "${neuron_list[@]}"

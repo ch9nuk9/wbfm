@@ -168,11 +168,11 @@ def build_sigmoid_term(x, force_positive_slope=True):
 
 def build_sigmoid_term_pca(x_pca_modes, force_positive_slope=True, dims=None, dataset_name_idx=None):
     # Sigmoid (hierarchy) term
-    if force_positive_slope:
-        log_sigmoid_slope = pm.Normal('log_sigmoid_slope', mu=0, sigma=1)  # Using log-amplitude for positivity
-        sigmoid_slope = pm.Deterministic('sigmoid_slope', pm.math.exp(log_sigmoid_slope))
-    else:
-        sigmoid_slope = pm.Normal('sigmoid_slope', mu=0, sigma=1)
+    # if force_positive_slope:
+    #     log_sigmoid_slope = pm.Normal('log_sigmoid_slope', mu=0, sigma=1)  # Using log-amplitude for positivity
+    #     sigmoid_slope = pm.Deterministic('sigmoid_slope', pm.math.exp(log_sigmoid_slope))
+    # else:
+    #     sigmoid_slope = pm.Normal('sigmoid_slope', mu=0, sigma=1)
     inflection_point = pm.Normal('inflection_point', mu=0, sigma=2)
 
     # PCA modes and coefficients
@@ -201,7 +201,7 @@ def build_sigmoid_term_pca(x_pca_modes, force_positive_slope=True, dims=None, da
                                     pca1_amplitude[dataset_name_idx] * x_pca_modes[:, 1])
 
     # Put it together Sigmoid term
-    sigmoid_term = pm.Deterministic('sigmoid_term', pm.math.sigmoid(sigmoid_slope * (pca_term - inflection_point)))
+    sigmoid_term = pm.Deterministic('sigmoid_term', pm.math.sigmoid(pca_term - inflection_point))
     return sigmoid_term
 
 
@@ -320,6 +320,10 @@ def main(neuron_name, do_gfp=False, dataset_name='all', skip_if_exists=True):
         print(f"Skipping {neuron_name} because there is no valid data")
         return
 
+    save_all_model_outputs(dataset_name, neuron_name, df_compare, all_traces, all_models, output_dir)
+
+
+def save_all_model_outputs(dataset_name, neuron_name, df_compare, all_traces, all_models, output_dir):
     # Save objects
     if dataset_name == 'all':
         output_fname_base = f'{neuron_name}'
@@ -329,23 +333,19 @@ def main(neuron_name, do_gfp=False, dataset_name='all', skip_if_exists=True):
             az.to_netcdf(traces, os.path.join(output_dir, f'{output_fname_base}_{model_name}_trace.nc'))
     else:
         output_fname_base = f'{neuron_name}_{dataset_name}'
-
     # Also save the model
     # See https://discourse.pymc.io/t/how-save-pymc-v5-models/13022
     model_fname = os.path.join(output_dir, f'{output_fname_base}_model.cloud_pkl')
     with open(model_fname, 'wb') as buffer:
         cloudpickle.dump(all_models, buffer)
-
     # Only save for the all dataset version
     fname = os.path.join(output_dir, f'{output_fname_base}_loo.h5')
     df_compare.to_hdf(fname, key='df_with_missing')
-
     # Save plots
     az.plot_compare(df_compare, insample_dev=False)
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, f'{output_fname_base}_model_comparison.png'))
     plt.close()
-
     print(f"Saved all objects for {neuron_name} in {output_dir}")
 
 

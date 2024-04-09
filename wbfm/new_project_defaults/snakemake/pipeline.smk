@@ -356,7 +356,7 @@ rule dlc_analyze_videos:
         hdf5_file = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["dlc_network_string"]+".h5"
     shell:
         """
-        source /apps/conda/miniconda3/bin/activate {params.dlc_conda_env}
+        source /lisc/app/conda/miniconda3/bin/activate {params.dlc_conda_env}
         python -c "from centerline_behavior_annotation.dlc_utils import cluster_analyze_videos; cluster_analyze_videos.main(['-path_config_file', '{params.dlc_model_configfile_path}', '-videofile_path', '{input.input_avi}'])"
         """
 

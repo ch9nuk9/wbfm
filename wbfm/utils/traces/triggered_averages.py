@@ -27,7 +27,8 @@ from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, 
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
     calc_surpyval_durations_and_censoring, combine_columns_with_suffix, extend_binary_vector
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
-from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes, check_plotly_rendering
+from wbfm.utils.external.utils_matplotlib import paired_boxplot_from_dataframes
+from wbfm.utils.external.utils_jupyter import check_plotly_rendering
 from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
@@ -624,7 +625,9 @@ class TriggeredAverageIndices:
         """
         Calculates a p value using a paired t-test on the pre- and post-stimulus time periods
 
-        Note that this is generally sensitive to ind_preceding (in addition to other arguments0
+        Note that this is generally sensitive to ind_preceding (in addition to other arguments)
+
+        See calc_p_value_using_ttest_triggered_average for a more general version
 
         Parameters
         ----------
@@ -961,6 +964,8 @@ class FullDatasetTriggeredAverages:
 
         mat = self.ind_class.calc_triggered_average_matrix(y)
         ax = self.ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("$\Delta R / R_{50}$")
         # ax.axhline(0, c='black', ls='--')
         # ax.plot(self.ind_class.ind_preceding, 0, "r>", markersize=10)
 
@@ -2572,3 +2577,27 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt
                                                         _ind_preceding=ind_preceding)
 
     return good_dataset_clusterer, (all_triggered_average_classes, df_triggered_good, dict_of_triggered_traces)
+
+
+def calc_p_value_using_ttest_triggered_average(df_triggered, gap=0):
+    """
+    Given a dataframe with a triggered event at index=0, calculate the p-value of the mean difference between before and
+    after the event
+
+    Parameters
+    ----------
+    df_triggered
+    gap
+
+    Returns
+    -------
+
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter(action='ignore', category=RuntimeWarning)
+        means_before = np.nanmean(df_triggered.loc[:-gap, :], axis=1)
+        means_after = np.nanmean(df_triggered.loc[gap:, :], axis=1)
+    p = scipy.stats.ttest_rel(means_before, means_after, nan_policy='omit').pvalue
+    effect_size = np.nanmean(means_after) - np.nanmean(means_before)
+
+    return dict(p_value=p, effect_size=effect_size, means_before=means_before, means_after=means_after)

@@ -30,7 +30,7 @@ from wbfm.utils.external.utils_pandas import correlate_return_cross_terms, save_
     fill_missing_indices_with_nan
 from wbfm.utils.external.utils_sklearn import middle_40_cv_split
 from wbfm.utils.external.utils_statsmodels import ols_groupby
-from wbfm.utils.general.utils_matplotlib import paired_boxplot_from_dataframes
+from wbfm.utils.external.utils_matplotlib import paired_boxplot_from_dataframes
 from wbfm.utils.projects.finished_project_data import ProjectData
 import statsmodels.api as sm
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
