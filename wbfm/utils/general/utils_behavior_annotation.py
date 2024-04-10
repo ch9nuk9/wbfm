@@ -1456,7 +1456,9 @@ def shade_triggered_average(ind_preceding, index_conversion=None,
     if True: #xlim is None:
         # Instead of the xlim, we want the length of the vector
         if ax is None:
-            x = plt.get_xdata()
+            # Get data from current figure
+            x = plt.gca().get_lines()[0].get_xdata()
+            # x = plt.get_xdata()
         else:
             x = ax.get_lines()[0].get_xdata()
         xlim = (0, len(x))

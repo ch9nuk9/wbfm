@@ -255,7 +255,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(trigger_mapping.keys())}')
         return trigger_mapping[trigger_type]
 
-    def get_df_triggered_from_trigger_type(self, trigger_type, return_individual_traces=False):
+    def get_df_triggered_from_trigger_type(self, trigger_type, return_individual_traces=False) -> pd.DataFrame:
         """
         Returns by default a precalculated dataframe of the form:
         - Columns: Neuron names combined with the dataset name (e.g. 2022-11-23_worm9_BAGL)
@@ -279,7 +279,13 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             df_mapping = {k: v[2] if v else None for k, v in df_mapping.items()}
         if trigger_type not in df_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(df_mapping.keys())}')
-        return df_mapping[trigger_type]
+        if not return_individual_traces:
+            return df_mapping[trigger_type]
+        else:
+            # Is a dictionary of dataframes
+            df_all = pd.concat(df_mapping[trigger_type]).T
+            df_all.columns = [f"{dataset_name}_{event_index}" for dataset_name, event_index in df_all.columns]
+            return df_all
 
     def get_title_from_trigger_type(self, trigger_type):
         title_mapping = {'raw_rev': 'Raw reversal triggered',
@@ -439,12 +445,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              show_title=False, show_x_ticks=True, color=None, is_mutant=False,
                                              z_score=False, fig_kwargs=None, legend=False, i_figure=3,
                                              apply_changes_even_if_no_trace=True, show_individual_lines=False,
+                                             return_individual_traces=False,
                                              DEBUG=False):
         if fig_kwargs is None:
             fig_kwargs = {}
         if color is None:
             color = self.get_color_from_data_type(trigger_type, is_mutant=is_mutant)
-        df_subset = self.get_traces_single_neuron(neuron_name, trigger_type, DEBUG)
+        df_subset = self.get_traces_single_neuron(neuron_name, trigger_type,
+                                                  return_individual_traces=return_individual_traces, DEBUG=DEBUG)
 
         if df_subset.shape[1] == 0:
             logging.debug(f"Neuron name {neuron_name} not found, skipping")
@@ -492,9 +500,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 except IndexError:
                     print(f"Index error for {neuron_name} and {trigger_type}; skipping shading")
 
-            if xlim is not None:
+            if xlim is not None and ax is not None:
                 ax.set_xlim(xlim)
-            if ylim is not None:
+            if ylim is not None and ax is not None:
                 ax.set_ylim(ylim)
             if round_y_ticks:
                 round_yticks(ax)
@@ -547,8 +555,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         return fig, ax
 
-    def get_traces_single_neuron(self, neuron_name, trigger_type, DEBUG=False):
-        df = self.get_df_triggered_from_trigger_type(trigger_type)
+    def get_traces_single_neuron(self, neuron_name, trigger_type, return_individual_traces=False, DEBUG=False):
+        df = self.get_df_triggered_from_trigger_type(trigger_type, return_individual_traces=return_individual_traces)
         # Get the full names of all the neurons with this name
         # Names will be like '2022-11-23_worm9_BAGL' and we are checking for 'BAGL'
         neuron_names = [n for n in list(df.columns) if neuron_name in n]

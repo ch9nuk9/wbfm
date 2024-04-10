@@ -99,7 +99,7 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         # ax.axvline(x=0, color='r', ls='--')
     else:
         ax.autoscale()
-    if xlim is not None:
+    if xlim is not None and ax is not None:
         ax.set_xlim(xlim)
     return ax, triggered_avg
 
