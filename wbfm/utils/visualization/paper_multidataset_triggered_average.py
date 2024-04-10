@@ -438,7 +438,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              xlim=None, ylim=None, min_lines=2, round_y_ticks=False,
                                              show_title=False, show_x_ticks=True, color=None, is_mutant=False,
                                              z_score=False, fig_kwargs=None, legend=False, i_figure=3,
-                                             apply_changes_even_if_no_trace=True,
+                                             apply_changes_even_if_no_trace=True, show_individual_lines=False,
                                              DEBUG=False):
         if fig_kwargs is None:
             fig_kwargs = {}
@@ -465,7 +465,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             if DEBUG:
                 print('df_subset', df_subset)
             ax, triggered_avg = plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines,
-                                                                             show_individual_lines=False,
+                                                                             show_individual_lines=show_individual_lines,
                                                                              is_second_plot=is_second_plot, ax=ax,
                                                                              color=color, label=neuron_name,
                                                                              show_horizontal_line=False)
