@@ -27,9 +27,11 @@ def get_project_parent_folder():
     return "/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects"
 
 
-def get_hierarchical_modeling_dir(gfp=False):
+def get_hierarchical_modeling_dir(gfp=False, immobilized=False):
     if gfp:
         return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp"
+    elif immobilized:
+        return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_immob"
     else:
         return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling"
 
