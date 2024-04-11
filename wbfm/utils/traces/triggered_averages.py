@@ -104,12 +104,41 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
     return ax, triggered_avg
 
 
-def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, ind_preceding=0,
+def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, ind_preceding=0, ind_delay=0,
                                                    dict_of_events_to_keep=None,
                                                    min_duration=0, max_duration=None, fixed_num_points_after_event=None,
                                                    DEBUG=False):
+    """
+    Calculates the indices of the triggered averages, and filters them based on a set of criteria
+
+    Specifically:
+    1. Minimum duration of the event
+    2. Maximum duration of the event
+    3. Whether the event is at the edge of the trace
+    4. Whether the event starts with a misannotation (Implying the transition wasn't real)
+    5. Whether the event is in the dict_of_events_to_keep
+
+    Parameters
+    ----------
+    binary_state
+    beh_vec
+    ind_preceding
+    ind_delay
+    dict_of_events_to_keep
+    min_duration
+    max_duration
+    fixed_num_points_after_event
+    DEBUG
+
+    Returns
+    -------
+
+    """
     all_starts, all_ends = get_contiguous_blocks_from_column(binary_state,
                                                              already_boolean=True, skip_boolean_check=True)
+    if ind_delay > 0:
+        # Some of the starts will now be after the ends, but they will be removed by the is_too_short check
+        all_starts = [i + ind_delay for i in all_starts]
     if fixed_num_points_after_event:
         # Add this offset to the ends, but make sure they don't go past the next start
         all_ends = []
@@ -136,7 +165,8 @@ def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, i
     if DEBUG:
         print(f"Names of validity checks: "
               f"[is_too_short, is_too_long, is_at_edge, starts_with_misannotation, not_in_dict]")
-    all_ind = build_ind_matrix_from_starts_and_ends(all_starts, all_ends, ind_preceding, validity_checks, DEBUG)
+    all_ind = build_ind_matrix_from_starts_and_ends(all_starts, all_ends,
+                                                    ind_preceding, validity_checks, DEBUG)
     return all_ind
 
 
@@ -178,6 +208,7 @@ class TriggeredAverageIndices:
 
     # Alternate way to define the start point of each time series
     ind_preceding: int = 10
+    ind_delay: int = 0  # Delay the start of the triggered average by this amount of volumes
     trigger_on_downshift: bool = False  # Trigger to the offset instead of the onset
 
     # Alternate ways to define the end point of each time series
@@ -295,6 +326,7 @@ class TriggeredAverageIndices:
                    beh_vec=self.behavioral_annotation.to_numpy(),
                    dict_of_events_to_keep=dict_of_events_to_keep,
                    ind_preceding=self.ind_preceding,
+                   ind_delay=self.ind_delay,
                    fixed_num_points_after_event=self.fixed_num_points_after_event,
                    DEBUG=DEBUG)
 
