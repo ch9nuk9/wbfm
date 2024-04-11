@@ -138,7 +138,8 @@ def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, i
                                                              already_boolean=True, skip_boolean_check=True)
     if ind_delay > 0:
         # Some of the starts will now be after the ends, but they will be removed by the is_too_short check
-        all_starts = [i + ind_delay for i in all_starts]
+        # Also: don't want to mess with an event at exactly 0
+        all_starts = [min(i + ind_delay, len(binary_state)-1) if i > 0 else i for i in all_starts]
     if fixed_num_points_after_event:
         # Add this offset to the ends, but make sure they don't go past the next start
         all_ends = []
