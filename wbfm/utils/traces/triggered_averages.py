@@ -269,6 +269,12 @@ class TriggeredAverageIndices:
             beh = self.behavioral_annotation_for_rectification
             self.dict_of_events_to_keep = {i: state in beh[i] for i in range(len(self.behavioral_annotation))}
 
+        if self.ind_delay > 0:
+            if self.to_nan_points_of_state_before_point:
+                logging.warning("ind_delay is set, but to_nan_points_of_state_before_point is also True. "
+                                "Currently the two are incompatible, and the latter will be ignored")
+                self.to_nan_points_of_state_before_point = False
+
         if self.num_events == 0:
             logging.warning(f"No instances of state {self.behavioral_state} found in behavioral annotation!!")
 
@@ -338,7 +344,7 @@ class TriggeredAverageIndices:
         return all_ind
 
     def calc_triggered_average_matrix(self, raw_trace: pd.Series, custom_ind: List[np.ndarray]=None,
-                                      nan_times_with_too_few=False, max_len=None,
+                                      nan_times_with_too_few=False, max_len=None, DEBUG=False,
                                       **ind_kwargs) -> Optional[pd.DataFrame]:
         """
         Uses triggered_average_indices to extract a matrix of traces at each index, with nan padding to equalize the
@@ -394,7 +400,7 @@ class TriggeredAverageIndices:
 
         # Postprocessing type 2: remove points
         if self.to_nan_points_of_state_before_point:
-            triggered_avg_matrix = self.nan_points_of_state_before_point(triggered_avg_matrix, all_ind)
+            triggered_avg_matrix = self.nan_points_of_state_before_point(triggered_avg_matrix, all_ind, DEBUG=DEBUG)
         if nan_times_with_too_few:
             num_lines_at_each_time = np.sum(~np.isnan(triggered_avg_matrix), axis=0)
             times_to_remove = num_lines_at_each_time < self.min_lines
@@ -438,17 +444,22 @@ class TriggeredAverageIndices:
             print(f"Invalid states: {invalid_states}")
         for i_trace in range(len(list_of_triggered_ind)):
             these_ind = list_of_triggered_ind[i_trace]
+            if DEBUG:
+                print(f"Trace {i_trace}: {these_ind}")
             for i_local, i_global in enumerate(these_ind):
                 if i_global < 0:
                     continue
                 if i_local >= self.ind_preceding:
+                    if DEBUG:
+                        print(f"Breaking at time {i_global} because of ind_preceding {self.ind_preceding}")
                     break
                 if beh_annotations[i_global] in invalid_states:
                     # Remove all points before this
                     for i_to_remove in range(i_local + 1):
                         triggered_average_mat[i_trace, i_to_remove] = np.nan
                         if DEBUG:
-                            print(f"Removing point {i_to_remove} from trace {i_trace}")
+                            print(f"Removing point {i_to_remove} from trace {i_trace} because "
+                                  f"of state {beh_annotations[i_global]} at time {i_global}")
         return triggered_average_mat
 
     def _get_invalid_states_for_prior_index_removal(self):
@@ -862,7 +873,7 @@ class FullDatasetTriggeredAverages:
     def df_left_right_combined(self):
         return combine_columns_with_suffix(self.df_traces)
 
-    def triggered_average_matrix_from_name(self, name):
+    def triggered_average_matrix_from_name(self, name, **kwargs):
         """
         Calculates the triggered average matrix (events are rows, time is columns) for a single neuron
 
@@ -874,7 +885,7 @@ class FullDatasetTriggeredAverages:
         -------
 
         """
-        return self.ind_class.calc_triggered_average_matrix(self.df_traces[name])
+        return self.ind_class.calc_triggered_average_matrix(self.df_traces[name], **kwargs)
 
     def dict_of_all_triggered_averages(self):
         """
@@ -984,7 +995,7 @@ class FullDatasetTriggeredAverages:
         plt.title(f"Trace with events for {neuron}")
         return ax
 
-    def ax_plot_func_for_grid_plot(self, t, y, ax, name, **kwargs):
+    def ax_plot_func_for_grid_plot(self, t, y, ax, name, DEBUG=False, **kwargs):
         """Same as ax_plot_func_for_grid_plot, but can be used directly"""
         if kwargs.get('is_second_plot', False):
             # Do not want two legend labels
@@ -995,7 +1006,7 @@ class FullDatasetTriggeredAverages:
             plot_kwargs = dict(label=name)
         plot_kwargs.update(kwargs)
 
-        mat = self.ind_class.calc_triggered_average_matrix(y)
+        mat = self.ind_class.calc_triggered_average_matrix(y, DEBUG=DEBUG)
         ax = self.ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("$\Delta R / R_{50}$")
@@ -2495,6 +2506,8 @@ def build_ind_matrix_from_starts_and_ends(all_starts: List[int], all_ends: List[
             print("***Keeping***")
         ind = np.arange(start - ind_preceding, end)
         all_ind.append(ind)
+    if DEBUG:
+        print(f"Final indices: {all_ind}")
     return all_ind
 
 
