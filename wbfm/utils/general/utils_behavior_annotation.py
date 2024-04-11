@@ -1897,6 +1897,7 @@ def plot_behavior_syncronized_discrete_states_from_traces(df_traces, neuron_grou
 
 
 def convert_discrete_state_df_to_counts(df, idx_list=None, normalize=True, target_len=100):
+    """Designed to be used with output from calculate_behavior_syncronized_discrete_states"""
     if idx_list is None:
         idx_list = ['low', 'rise', 'high', 'fall']
     df_counts = df.apply(lambda x: x.value_counts()).fillna(0)
@@ -1959,6 +1960,7 @@ def calculate_behavior_syncronized_discrete_states(df_traces, neuron_group, neur
 
 
 def plot_fractional_state_annotations(df_counts, neuron_group, neuron_plot):
+    """Designed to be used with output from convert_discrete_state_df_to_counts"""
     df_counts_melted = df_counts.T.reset_index().drop(columns='state')
     var_name = f'{neuron_plot}_state'
     df_counts_melted = pd.melt(df_counts_melted, id_vars='index', var_name=var_name,
