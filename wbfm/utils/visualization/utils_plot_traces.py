@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import defaultdict
 from pathlib import Path
 from typing import Union, Optional
 
@@ -415,8 +416,9 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
     return fig, lower_shading, upper_shading
 
 
-def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, bonferroni_factor=None,
-                           _format=None, permutations=None, show_only_stars=False, show_ns=True, DEBUG=False):
+def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, _all_x_labels=None, bonferroni_factor=None,
+                           _format=None, permutations=None, show_only_stars=False, show_ns=True,
+                           separate_boxplot_fig=False, DEBUG=False):
     """
     From: https://stackoverflow.com/questions/67505252/plotly-box-p-value-significant-annotation
 
@@ -443,8 +445,13 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
         In this case, array_columns should be the column numbers within a single label
     _format: dict
         format characteristics for the lines
+    _all_x_labels: list
+        list of all x_labels in the figure; only used when calculating x_labels via x_label='all'
     permutations: Optional[int]
         If not None, then do a non-parametric t-test using this many permutations
+    separate_boxplot_fig: bool
+        If True, then the figure contains separate boxplots for each color AND x_label, and searching for unique
+        x_labels will fail if only fig.data[0] is used
 
     Returns:
     -------
@@ -456,7 +463,24 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
 
     if x_label == 'all':
         # Get all x_labels and call recursively
-        all_x_labels = pd.Series(fig.data[0].x).unique()
+        if array_columns is not None:
+            raise ValueError("If x_label is 'all', array_columns should be None")
+        if separate_boxplot_fig:
+            all_x_labels_list = [fig.data[i].x for i in range(len(fig.data))]
+            all_x_labels = pd.Series(np.concatenate(all_x_labels_list)).unique()
+            # And we need to properly set the column indices
+            array_columns_dict = defaultdict(list)
+            for i, this_dat in enumerate(fig.data):
+                # Check that there really is only one x_label in this data
+                this_x_label = pd.Series(this_dat.x).unique()
+                if len(this_x_label) > 1:
+                    raise ValueError("The data contains multiple x_labels; use separate_boxplot_fig=False")
+                this_x_label = this_x_label[0]
+                array_columns_dict[this_x_label].append(i)
+                assert len(array_columns_dict[this_x_label]) <= 2, "Only two columns can be compared"
+        else:
+            all_x_labels = pd.Series(fig.data[0].x).unique()
+            array_columns_dict = {x_label: None for x_label in all_x_labels}
         if DEBUG:
             print(f"Detected x_labels: {all_x_labels}")
         for x_label in all_x_labels:
@@ -465,11 +489,15 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
                 continue
             if bonferroni_factor is None:
                 bonferroni_factor = len(all_x_labels)
-            fig = add_p_value_annotation(fig, array_columns, subplot=subplot, x_label=x_label, show_ns=show_ns,
-                                         _format=_format,
+            fig = add_p_value_annotation(fig, array_columns=[array_columns_dict[x_label]],
+                                         subplot=subplot, x_label=x_label, show_ns=show_ns,
+                                         _format=_format, _all_x_labels=all_x_labels,
                                          bonferroni_factor=bonferroni_factor, DEBUG=DEBUG, permutations=permutations,
                                          show_only_stars=show_only_stars)
         return fig
+
+    if bonferroni_factor is None:
+        bonferroni_factor = 1
 
     if array_columns is None:
         array_columns = [[0, 1]]
@@ -536,7 +564,10 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
 
             # In addition, the x values of the annotation should be the same as the x_label, not the raw column number
             # First we need to get which x value the label corresponds to
-            all_x_labels = pd.Series(x0).unique()  # This keeps the order, unlike np.unique()
+            if _all_x_labels is None:
+                all_x_labels = pd.Series(x0).unique()  # This keeps the order, unlike np.unique()
+            else:
+                all_x_labels = _all_x_labels
             x_label_ind = np.where(all_x_labels == x_label)[0][0]
             column_pair = [x_label_ind - 0.2, x_label_ind + 0.2]
 
