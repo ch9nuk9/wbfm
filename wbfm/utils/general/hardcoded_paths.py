@@ -158,7 +158,7 @@ def reverse_distribution_statistics():
     return duration_dict
 
 
-def names_of_neurons_to_id() -> pd.Series:
+def read_names_of_neurons_to_id() -> pd.Series:
     fname = "/lisc/scratch/neurobiology/zimmer/wbfm/id_resources/neurons_to_id.csv"
     if Path(fname).exists():
         df = pd.read_csv(fname, header=None)
