@@ -1,5 +1,8 @@
 # Example from: https://hackmd.io/@bluegenes/BJPrrj7WB
 # cluster_config.yml - cluster configuration
+# For the actual available resources, see the cluster documentation:
+# https://lisc.univie.ac.at/wiki/content/working_environment/services/computational_resources
+
 __default__:
     partition: basic
     time: 0-4:00:00
@@ -13,14 +16,14 @@ __default__:
 
 # Note: may need to push over to himem if the cluster is busy
 preprocessing:
-    time: 0-18:00:00
+    time: 1-12:00:00
     mem: 120G
-    cpus_per_task: 64
+    cpus_per_task: 40
 
 segmentation:
-    time: 0-18:00:00
+    time: 1-12:00:00
     mem: 256G
-    cpus_per_task: 64
+    cpus_per_task: 40
 
 match_frame_pairs:
     partition: gpu
@@ -30,8 +33,8 @@ match_frame_pairs:
     gres: shard:32
 
 build_frame_objects:
-    time: 0-6:00:00
-    cpus_per_task: 42
+    time: 0-12:00:00
+    cpus_per_task: 20
 
 postprocess_matches_to_tracklets:
     partition: gpu
@@ -40,8 +43,8 @@ postprocess_matches_to_tracklets:
     gres: shard:32
 
 combine_tracking_and_tracklets:
-    time: 0-8:00:00
-    cpus_per_task: 64
+    time: 0-18:00:00
+    cpus_per_task: 20
 
 tracking:
     partition: gpu
