@@ -32,7 +32,7 @@ import zarr
 from tqdm.auto import tqdm
 
 from wbfm.utils.traces.triggered_averages import plot_triggered_average_from_matrix_low_level
-from wbfm.utils.general.hardcoded_paths import names_of_neurons_to_id
+from wbfm.utils.general.hardcoded_paths import read_names_of_neurons_to_id
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
     get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns, \
     get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends
@@ -1571,7 +1571,7 @@ class ProjectData:
         neurons_to_id = vis_config.config.get('neurons_to_id', None)
         if neurons_to_id is None:
             # Try to load from the cluster, if mounted linux-style
-            neurons_to_id = names_of_neurons_to_id()
+            neurons_to_id = read_names_of_neurons_to_id()
         else:
             neurons_to_id = list(neurons_to_id)
         if neurons_to_id is None:
