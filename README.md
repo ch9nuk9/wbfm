@@ -186,8 +186,36 @@ python wbfm/gui/trace_explorer.py --project_path PATH-TO-YOUR-PROJECT
 
 # Summary of common problems
 
-### Changing folder names
-If you changed the name of your project, you must update it in the snakemake/config.yaml file under 'project_dir'
+### Jobs are PENDING for a long time on the cluster
+
+Sometimes the cluster is very busy, and we have single large jobs.
+This can cause jobs to be pending for a long time, which is not a fundamental problem but can cause delays.
+You can check the status of your jobs using the squeue command.
+Example:
+```commandline
+squeue -u <your_username>
+```
+
+If you have many jobs pending, you can change them to the himem partition, which is often empty.
+BUT you should check this! 
+You can look at the main login screen when you ssh to the cluster to see the status of the partitions.
+Alternatively you can use the sinfo command to see the status of the partitions.
+```commandline
+sinfo -p himem
+```
+
+If any nodes are idle, your jobs should immediately start running if you switch.
+To switch, you can use the following command:
+```commandline
+bash /path/to/this/code/wbfm/scripts/cluster/move_pending_slurm_jobs_to_himem_partition.sh
+```
+
+Currently this script is located here:
+```commandline
+/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/cluster/move_pending_slurm_jobs_to_himem_partition.sh
+```
+
+NOTE: this will change ALL pending jobs to the himem partition, so be careful if you are running other jobs.
 
 ### Raw data paths on Windows vs. cluster
 The method of creating the project will determine the style of filepaths that are saved in the project.
@@ -203,7 +231,7 @@ in the main project file: config.yaml
 
 ### Creating project from Windows
 
-In addition, if creating from a windows computer, you may need to use dos2unix to fix any files that you want to execute, specifically those referenced below:
+In addition, if creating from a windows computer, you may need to use dos2unix to fix any files that you want to execute, specifically:
 1. RUNME.sh
 
 ### Errors when running GUI
