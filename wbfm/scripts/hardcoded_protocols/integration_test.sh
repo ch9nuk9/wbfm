@@ -9,7 +9,7 @@ COMMAND=$CODE_DIR/"scripts/postprocessing/delete_analysis_files.py"
 # Loop through each subfolder in the parent project directory
 for f in "$PARENT_PROJECT_DIR"/*; do
     if [ -d "$f" ] && [ ! -L "$f" ]; then
-        echo "Checking folder: $f"
+        echo "Cleaning folder: $f"
         PROJECT_PATH=$f/"project_config.yaml"
         python $COMMAND with project_path=$PROJECT_PATH dryrun=False
     fi
