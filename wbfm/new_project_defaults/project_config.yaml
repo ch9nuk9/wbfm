@@ -32,6 +32,7 @@ dataset_params:
   num_slices: 22 # CHANGE ME; after removal of flyback (see preprocessing)
   # As of January 2022
   red_and_green_mirrored: False
+  segment_and_track_on_green_channel: False
 
 physical_units:
   zimmer_fluroscence_um_per_pixel_xy: 0.325

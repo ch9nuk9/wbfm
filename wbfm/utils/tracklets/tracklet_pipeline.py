@@ -56,7 +56,7 @@ def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
     all_frame_dict = project_data.raw_frames
 
     # Intermediate products: pairwise matches between frames
-    _, tracker_params, frame_pair_options = _unpack_config_frame2frame_matches(
+    _, tracker_params, frame_pair_options, _ = _unpack_config_frame2frame_matches(
         DEBUG, project_config, training_config)
     start_volume = tracker_params['start_volume']
     end_volume = start_volume + tracker_params['num_frames']
@@ -179,7 +179,9 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     metadata_fname = tracker_params['external_detections']
     tracker_params['external_detections'] = training_config.resolve_relative_path(metadata_fname)
 
-    return video_fname, tracker_params, frame_pair_options
+    track_on_green_channel = project_config.config['dataset_params']['segment_and_track_on_green_channel']
+
+    return video_fname, tracker_params, frame_pair_options, track_on_green_channel
 
 
 def _save_matches_and_frames(all_frame_dict: dict, all_frame_pairs: Union[dict, None],

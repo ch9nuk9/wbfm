@@ -31,15 +31,19 @@ def build_frames_and_adjacent_matches_using_config(project_config: ModularProjec
     project_config.logger.info(f"Producing tracklets")
 
     project_data = ProjectData.load_final_project_data_from_config(project_config)
-    video_data = project_data.red_data
     raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'),
                                                       prepend_subfolder=True)
     # if os.path.exists(raw_fname):
     #     raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
     # Intermediate products: pairwise matches between frames
-    video_fname, tracker_params, frame_pair_options = _unpack_config_frame2frame_matches(
+    video_fname, tracker_params, frame_pair_options, track_on_green_channel = _unpack_config_frame2frame_matches(
         DEBUG, project_config, training_config)
+    if track_on_green_channel:
+        video_data = project_data.green_data
+    else:
+        video_data = project_data.red_data
+
     all_frame_pairs, all_frame_dict = build_tracklets_full_video(video_data, video_fname, **tracker_params,
                                                                  use_superglue=use_superglue,
                                                                  frame_pair_options=frame_pair_options)
@@ -85,11 +89,14 @@ def build_frame_objects_using_config(project_config: ModularProjectConfig,
 
     """
     logging.info(f"Producing per-volume ReferenceFrame objects")
-    video_fname, tracker_params, _ = _unpack_config_frame2frame_matches(DEBUG, project_config, training_config)
+    video_fname, tracker_params, _, track_on_green_channel = _unpack_config_frame2frame_matches(DEBUG, project_config, training_config)
 
     project_data = ProjectData.load_final_project_data_from_config(project_config,
                                                                    to_load_frames=only_calculate_desynced)
-    video_data = project_data.red_data
+    if track_on_green_channel:
+        video_data = project_data.green_data
+    else:
+        video_data = project_data.red_data
 
     # Build frames, then match them
     if not only_calculate_desynced:
