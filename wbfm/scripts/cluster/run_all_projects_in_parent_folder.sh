@@ -34,19 +34,16 @@ done
 setup_cmd="conda activate /lisc/scratch/neurobiology/zimmer/.conda/envs/wbfm/"
 
 # Loop through the parent folder, then try to get the config file within each of these parent folders
-i_tmux=0
 for f in "$folder_of_projects"/*; do
     if [ -d "$f" ] && [ ! -L "$f" ]; then
         echo "Checking folder: $f"
 
         for f_config in "$f"/*; do
             if [ -f "$f_config" ] && [ "${f_config##*/}" = "project_config.yaml" ]; then
-                tmux_name="worm$i_tmux"
                 if [ "$is_dry_run" ]; then
                     # Run the snakemake dryrun
-                    echo "DRYRUN: Dispatching on config file: $f_config with tmux session: $tmux_name"
+                    echo "DRYRUN: Dispatching on config file: $f_config"
                 else
-                    echo "Opening tmux session: $tmux_name"
                     # Get the snakemake command and run it
                     snakemake_folder="$f/snakemake"
                     if [ "$is_snakemake_dry_run" ]; then
@@ -56,35 +53,15 @@ for f in "$folder_of_projects"/*; do
                        snakemake_cmd="$snakemake_folder/RUNME.sh -s $RULE"
                     fi
                     # Instead of tmux, use a controller sbatch job
-#                    full_cmd="$setup_cmd; cd $snakemake_folder; bash $snakemake_cmd"
-#                    sbatch --time 3-00:00:00 \
-#                        --cpus-per-task 1 \
-#                        --mem 1G \
-#                        --mail-type=ALL,TIME_LIMIT \
-#                        $full_cmd
+                    full_cmd="$setup_cmd; cd $snakemake_folder; bash $snakemake_cmd"
+                    sbatch --time 3-00:00:00 \
+                        --cpus-per-task 1 \
+                        --mem 1G \
+                        --mail-type=ALL,TIME_LIMIT \
+                        "$full_cmd"
 
-                    # Check if the session exists... don't see how to do a while loop here, because I'm using $?
-                    tmux has-session -t=$tmux_name 2>/dev/null
-                    if [ $? = 0 ]; then
-                      tmux_name="$tmux_name-1"
-                    fi
-                    tmux has-session -t=$tmux_name 2>/dev/null
-                    if [ $? = 0 ]; then
-                      tmux_name="$tmux_name-1"
-                    fi
-                    tmux has-session -t=$tmux_name 2>/dev/null
-                    if [ $? = 0 ]; then
-                      tmux_name="$tmux_name-1"
-                    fi
-
-                    tmux new-session -d -s $tmux_name
-                    tmux send-keys -t "$tmux_name" "$setup_cmd; cd $snakemake_folder; bash $snakemake_cmd" Enter
                 fi
-                i_tmux=$((i_tmux+1))
             fi
         done
     fi
 done
-
-echo "Running tmux sessions:"
-tmux ls
