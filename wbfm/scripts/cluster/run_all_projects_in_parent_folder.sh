@@ -13,6 +13,7 @@ function usage {
   echo "  -d: dry run of snakemake (default: false)"
   echo "  -s: snakemake rule to run (default: traces_and_behavior; other options: traces, behavior)"
   echo "  -h: display help (this message)"
+  exit 1
 }
 
 RULE="traces_and_behavior"
