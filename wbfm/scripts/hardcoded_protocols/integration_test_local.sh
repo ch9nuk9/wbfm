@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Clean and run the integration test, i.e. a shortened dataset
-PROJECT_DIR="/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/project_pytest"
+PROJECT_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/test_projects/pytest-raw"
 CODE_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
 
 # Clean
