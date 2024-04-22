@@ -460,7 +460,10 @@ class PreprocessingSettings:
     def get_single_volume(self, video_fname, i_time: int, num_slices=None):
         if num_slices is not None:
             raise NotImplementedError("Should set PreprocessingSettings.raw_number_of_planes")
-        raw_volume = get_single_volume(video_fname, i_time, self.raw_number_of_planes, dtype=self.initial_dtype)
+        if isinstance(video_fname, tifffile.TiffFile):
+            raw_volume = get_single_volume(video_fname, i_time, self.raw_number_of_planes, dtype=self.initial_dtype)
+        else:
+            raise NotImplementedError("Should use tifffile.TiffFile")
         return raw_volume
 
     def __repr__(self):
@@ -679,7 +682,17 @@ def preprocess_all_frames(num_slices: int, num_total_frames: int, p: Preprocessi
         max_workers = 1
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
-    with tifffile.TiffFile(video_fname) as vid_stream:
+    # with tifffile.TiffFile(video_fname) as vid_stream:
+    # Check for compatibility with new class
+    from imutils import MicroscopeDataReader  # Lukas' new class
+    if video_fname.endswith('.btf'):
+        # If it's a bigtiff, then there is no metadata, so we have to pass it in
+        video_opt = dict(as_raw_tiff=True, raw_tiff_num_slices=num_slices)
+    else:
+        # It should load whether it is ndtiff or ome-tiff
+        video_opt = dict(as_raw_tiff=False)
+
+    with MicroscopeDataReader(video_fname, **video_opt) as vid_stream:
         # Note: this saves alpha to disk
         p.calculate_alpha_from_data(vid_stream, which_channel=which_channel, num_volumes_to_load=10)
 

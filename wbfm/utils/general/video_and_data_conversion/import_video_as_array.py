@@ -2,6 +2,7 @@ import typing
 from pathlib import Path
 import numpy as np
 import tifffile
+from imutils import MicroscopeDataReader
 
 
 def get_video_from_ome_file_subset(video_fname,
@@ -40,7 +41,7 @@ def get_video_from_ome_file_subset(video_fname,
     return dat
 
 
-def get_single_volume(fname: typing.Union[str, Path], which_vol: int, num_slices: int, alpha: float = 1.0,
+def get_single_volume(fname: typing.Union[str, Path, tifffile.TiffFile, MicroscopeDataReader], which_vol: int, num_slices: int, alpha: float = 1.0,
                       dtype: str = 'uint8') -> np.ndarray:
     # Convert to page coordinates
     start_ind = num_slices * which_vol
@@ -50,6 +51,8 @@ def get_single_volume(fname: typing.Union[str, Path], which_vol: int, num_slices
     elif type(fname) == tifffile.TiffFile:
         dat = np.array([(alpha * (fname.pages[i].asarray())).astype(dtype) for i in key])
         # dat = (alpha*np.array(fname.pages[start_ind:start_ind+num_slices])).astype(dtype)
+    elif type(fname) == MicroscopeDataReader:
+        dat = fname.dask_array[key].compute().astype(dtype)  # Do I really need to computer here?
     else:
         raise ValueError("Must pass open tifffile or file path")
 
