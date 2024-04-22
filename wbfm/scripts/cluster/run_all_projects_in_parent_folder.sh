@@ -58,7 +58,7 @@ for f in "$folder_of_projects"/*; do
                     sbatch --time 5-00:00:00 \
                         --cpus-per-task 1 \
                         --mem 1G \
-                        --mail-type=FAIL,TIME_LIMIT \
+                        --mail-type=FAIL,TIME_LIMIT,END \
                         --wrap="$full_cmd"
 
                 fi
