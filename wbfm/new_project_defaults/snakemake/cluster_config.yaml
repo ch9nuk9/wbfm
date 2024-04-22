@@ -26,7 +26,7 @@ segmentation:
     cpus_per_task: 40
 
 match_frame_pairs:
-    partition: gpu
+    partition: basic,gpu
     gpus_per_node: 1
     time: 0-12:00:00
     mem: 128G
@@ -37,7 +37,7 @@ build_frame_objects:
     cpus_per_task: 20
 
 postprocess_matches_to_tracklets:
-    partition: gpu
+    partition: basic,gpu
     cpus_per_task: 1
     time: 0-2:00:00
     gres: shard:32
@@ -47,7 +47,7 @@ combine_tracking_and_tracklets:
     cpus_per_task: 20
 
 tracking:
-    partition: gpu
+    partition: basic,gpu
     gpus_per_node: 1
     cpus_per_task: 16
     gres: shard:32
@@ -55,45 +55,40 @@ tracking:
 # Behavior
 subtract_background:
     time: 0-08:00:00
-    partition: basic
     mem: 4G
     cpus_per_task: 8
 
 dlc_analyze_videos:
     time: 0-08:00:00
-    partition: gpu
+    partition: basic,gpu
     mem: 0
     cpus_per_task: 24
     gres: shard:32
 
 create_centerline:
     time: 0-08:00:00
-    partition: basic #not sure GPU is the best option here because there are only 4, so with more jobs they'll stall
-    #gpus_per_node: 1
     mem: 8G
     cpus_per_task: 4
 
 normalize_img:
     time: 0-08:00:00
-    partition: basic
     mem: 4G
     cpus_per_task: 8
 
 worm_unet:
     time: 0-08:00:00
-    partition: gpu
+    partition: basic,gpu
     mem: 0
     cpus_per_task: 24
     gres: shard:32
 
 coil_unet:
     time: 0-08:00:00
-    partition: gpu
+    partition: basic,gpu
     mem: 0
     cpus_per_task: 24
     gres: shard:32
 
 binarize:
     time: 0-08:00:00
-    partition: basic
     cpus_per_task: 8
