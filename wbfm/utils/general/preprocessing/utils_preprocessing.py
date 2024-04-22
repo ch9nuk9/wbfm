@@ -682,7 +682,6 @@ def preprocess_all_frames(num_slices: int, num_total_frames: int, p: Preprocessi
         max_workers = 1
     # Load data and preprocess
     frame_list = list(range(num_total_frames))
-    # with tifffile.TiffFile(video_fname) as vid_stream:
     # Check for compatibility with new class
     from imutils import MicroscopeDataReader  # Lukas' new class
     if video_fname.endswith('.btf'):
@@ -692,7 +691,9 @@ def preprocess_all_frames(num_slices: int, num_total_frames: int, p: Preprocessi
         # It should load whether it is ndtiff or ome-tiff
         video_opt = dict(as_raw_tiff=False)
 
-    with MicroscopeDataReader(video_fname, **video_opt) as vid_stream:
+    # LUKAS' reader (not working yet)
+    # with MicroscopeDataReader(video_fname, **video_opt) as vid_stream:
+    with tifffile.TiffFile(video_fname) as vid_stream:
         # Note: this saves alpha to disk
         p.calculate_alpha_from_data(vid_stream, which_channel=which_channel, num_volumes_to_load=10)
 
