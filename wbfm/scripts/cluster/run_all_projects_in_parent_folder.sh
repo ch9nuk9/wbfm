@@ -55,11 +55,11 @@ for f in "$folder_of_projects"/*; do
                     fi
                     # Instead of tmux, use a controller sbatch job
                     full_cmd="$setup_cmd; cd $snakemake_folder; bash $snakemake_cmd"
-                    sbatch --time 3-00:00:00 \
+                    sbatch --time 5-00:00:00 \
                         --cpus-per-task 1 \
                         --mem 1G \
                         --mail-type=ALL,TIME_LIMIT \
-                        "$full_cmd"
+                        --wrap="$full_cmd"
 
                 fi
             fi
