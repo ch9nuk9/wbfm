@@ -38,7 +38,7 @@ dependencies:
   - pytorch-cuda=11.6
   - plotly
   - pip:
-    - tifffile
+    - tifffile==2023.7.10
     - tables
     - networkx
     - tensorflow
@@ -61,3 +61,4 @@ dependencies:
     - methodtools
     - kaleido
     - skan==0.9 # For behavior pipeline
+    - loguru  # For imutils
