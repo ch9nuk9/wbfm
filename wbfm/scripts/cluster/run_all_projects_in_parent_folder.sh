@@ -60,6 +60,7 @@ for f in "$folder_of_projects"/*; do
 #                    sbatch --time 3-00:00:00 \
 #                        --cpus-per-task 1 \
 #                        --mem 1G \
+#                        --mail-type=ALL,TIME_LIMIT \
 #                        $full_cmd
 
                     # Check if the session exists... don't see how to do a while loop here, because I'm using $?
