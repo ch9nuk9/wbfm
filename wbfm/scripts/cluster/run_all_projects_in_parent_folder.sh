@@ -30,6 +30,9 @@ do
     esac
 done
 
+# Shared setup for each command
+setup_cmd="conda activate /lisc/scratch/neurobiology/zimmer/.conda/envs/wbfm/"
+
 # Loop through the parent folder, then try to get the config file within each of these parent folders
 i_tmux=0
 for f in "$folder_of_projects"/*; do
@@ -45,7 +48,6 @@ for f in "$folder_of_projects"/*; do
                 else
                     echo "Opening tmux session: $tmux_name"
                     # Get the snakemake command and run it
-                    setup_cmd="conda activate /lisc/scratch/neurobiology/zimmer/.conda/envs/wbfm/"
                     snakemake_folder="$f/snakemake"
                     if [ "$is_snakemake_dry_run" ]; then
                        snakemake_cmd="$snakemake_folder/RUNME.sh -n -s $RULE"
@@ -53,6 +55,13 @@ for f in "$folder_of_projects"/*; do
                     else
                        snakemake_cmd="$snakemake_folder/RUNME.sh -s $RULE"
                     fi
+                    # Instead of tmux, use a controller sbatch job
+#                    full_cmd="$setup_cmd; cd $snakemake_folder; bash $snakemake_cmd"
+#                    sbatch --time 3-00:00:00 \
+#                        --cpus-per-task 1 \
+#                        --mem 1G \
+#                        $full_cmd
+
                     # Check if the session exists... don't see how to do a while loop here, because I'm using $?
                     tmux has-session -t=$tmux_name 2>/dev/null
                     if [ $? = 0 ]; then
