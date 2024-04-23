@@ -48,7 +48,7 @@ def plotly_paper_color_discrete_map():
                  # Skip orange... don't like it!
                  'immob': base_cmap[2], 'Active in Immob': base_cmap[2], 'Manifold in Immob': base_cmap[2],
                  'Immobilized (GCaMP)': base_cmap[2], 'Immobilized': base_cmap[2],
-                 'gfp': base_cmap[7],  # Gray
+                 'gfp': base_cmap[7], 'Reversal State': base_cmap[7],  # Gray
                  'Freely Moving (GFP)': base_cmap[7],
                  'Freely Moving (GFP, residual)': base_cmap[7],
                  'global': base_cmap[3],
@@ -72,7 +72,7 @@ def plotly_paper_color_discrete_map():
 
 def export_legend_for_paper(fname=None, frameon=True):
     cmap = plotly_paper_color_discrete_map()
-    labels = ['Freely Moving', 'Immobilized', 'gcy-31, gcy-35, gcy-9']
+    labels = ['Freely Moving', 'Reversal State', 'gcy-31, gcy-35, gcy-9']
     colors = [cmap[l] for l in labels]
     f = lambda m, c: plt.plot([], [], marker=m, color=c, ls="none")[0]
     handles = [f("s", colors[i]) for i in range(3)]
