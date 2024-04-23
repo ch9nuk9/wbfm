@@ -173,6 +173,30 @@ def round_yticks(ax, max_ticks=4, ndigits=1, disallow_negative=False, DEBUG=Fals
         print(f"Final ylim: {ax.get_ylim()}")
 
 
+def round_yticks_plotly(fig, max_ticks=4, ndigits=1, DEBUG=False, **kwargs):
+    # Get the yticks
+    full_fig = fig.full_figure_for_development(warn=False)
+    y_ticks_raw_range = full_fig.layout.yaxis.range
+    dtick_raw = full_fig.layout.yaxis.dtick
+
+    tick_spacing = np.max([round(dtick_raw, ndigits), 1 / 10 ** ndigits])
+    tick0 = round(y_ticks_raw_range[0], ndigits)
+
+    fig.update_layout(
+        yaxis=dict(
+            tickmode='linear',
+            tick0=tick0,
+            dtick=tick_spacing
+        )
+    )
+    if DEBUG:
+        print()
+        print(f"Raw ticks: {y_ticks_raw_range}")
+        print(f"Spacing: {tick_spacing}")
+        print(f"New ticks: {fig.layout.yaxis.range}")
+
+
+
 def export_legend(legend=None, fig=None, fname="legend.png", expand=None):
     """From https://stackoverflow.com/questions/4534480/get-legend-as-a-separate-picture-in-matplotlib"""
     if fig is None and legend is None:
