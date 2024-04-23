@@ -1,5 +1,6 @@
 import os
 
+import pandas as pd
 from wbfm.utils.general.hardcoded_paths import load_paper_datasets, get_hierarchical_modeling_dir
 from wbfm.utils.visualization.multiproject_wrappers import build_trace_time_series_from_multiple_projects, \
     build_behavior_time_series_from_multiple_projects, build_cross_dataset_eigenworms, \
@@ -70,6 +71,31 @@ def export_data_for_hierarchical_model(do_gfp=False, do_immobilized=False, skip_
     # Export
     fname = os.path.join(data_dir, 'data.h5')
     df_all.to_hdf(fname, key='df_with_missing')
+
+
+def export_data_for_oded_lab():
+    """
+    Uses the same data as export_data_for_hierarchical_model, but removes the manifold and pca columns
+
+    Returns
+    -------
+
+    """
+    # Load generated data
+    data_dir = get_hierarchical_modeling_dir()
+    fname = os.path.join(data_dir, 'data.h5')
+    df_all = pd.read_hdf(fname)
+
+    # Remove manifold and pca columns
+    cols_to_remove = [col for col in df_all.columns if 'manifold' in col or 'pca' in col]
+    cols_to_remove += ['vb02_curvature']
+    df_all.drop(columns=cols_to_remove, inplace=True)
+
+    # Export
+    fname = os.path.join(data_dir, 'data_oded_lab.h5')
+    df_all.to_hdf(fname, key='df_with_missing')
+
+    return df_all
 
 
 if __name__ == '__main__':
