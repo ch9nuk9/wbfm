@@ -635,6 +635,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             time.sleep(0.1)
         # Some of the saving steps use threads, so wait for them to finish
         with self.dat.tracklet_annotator.saving_lock:
+            # Set any None values to True; this means nothing was done
+            all_flags = {k: v if v is not None else True for k, v in all_flags.items()}
             if not all(all_flags.values()):
                 self.logger.error("Failed to save at least one step to disk!")
                 self.logger.error(f"'False' means failed step: {all_flags}")
