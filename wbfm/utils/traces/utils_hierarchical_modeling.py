@@ -87,9 +87,14 @@ def export_data_for_oded_lab():
     df_all = pd.read_hdf(fname)
 
     # Remove manifold and pca columns
-    cols_to_remove = [col for col in df_all.columns if 'manifold' in col or 'pca' in col]
-    cols_to_remove += ['vb02_curvature']
+    cols_to_remove = [col for col in df_all.columns if 'manifold' in col or 'pca' in col or 'neuron' in col or "'" in col or 'eigenworm' in col or '/' in col]
+    cols_to_remove += ['vb02_curvature', 'AVABL']
     df_all.drop(columns=cols_to_remove, inplace=True)
+    df_all = pd.DataFrame(df_all)
+
+    # Remove columns with too few values
+    threshold = 4000  # More than 2 datasets
+    df_all = df_all.dropna(thresh=threshold, axis=1)
 
     # Export
     fname = os.path.join(data_dir, 'data_oded_lab.h5')
