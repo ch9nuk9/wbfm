@@ -126,12 +126,49 @@ def build_histogram_from_counts(all_dat, pixel_sz=0.1):
     return video_histogram
 
 
-def round_yticks(ax, max_ticks=4, ndigits=1):
+def round_yticks(ax, max_ticks=4, ndigits=1, disallow_negative=True, DEBUG=False):
+    """
+    Made to coordinate the width of different plots to be displayed vertically
+
+    Note: doesn't play nice with negative numbers, which will be wider than positive (if allowed), or weird and missing
+    if not allowed
+
+    Parameters
+    ----------
+    ax
+    max_ticks
+    ndigits
+    DEBUG
+
+    Returns
+    -------
+
+    """
     # First reduce number of ticks, then round them
     ax.yaxis.set_major_locator(plt.MaxNLocator(max_ticks))
     y_ticks_raw = ax.get_yticks()
+    if disallow_negative:
+        y_ticks_raw = y_ticks_raw[y_ticks_raw >= 0]
     tick_spacing = np.max([round((y_ticks_raw[1] - y_ticks_raw[0]), ndigits), 1 / 10 ** ndigits])
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
+    if tick_spacing == (y_ticks_raw[1] - y_ticks_raw[0]):
+        # Already rounded
+        if DEBUG:
+            print("Already rounded")
+    else:
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
+        # Make sure that the ylim is large enough to show all ticks
+        ylim = ax.get_ylim()
+        eps = tick_spacing / 5
+        if ylim[0] > np.min(y_ticks_raw):
+            ax.set_ylim(bottom=np.min(ax.get_yticks()) - eps)
+        if ylim[1] < np.max(y_ticks_raw):
+            ax.set_ylim(top=np.max(ax.get_yticks()) + eps)
+    if DEBUG:
+        print()
+        print(f"Raw ticks: {y_ticks_raw}")
+        print(f"Spacing: {tick_spacing}")
+        print(f"New ticks: {ax.get_yticks()}")
+        print(f"Final ylim: {ax.get_ylim()}")
 
 
 def export_legend(legend=None, fig=None, fname="legend.png", expand=None):
