@@ -442,7 +442,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     def plot_triggered_average_single_neuron(self, neuron_name, trigger_type, output_folder=None,
                                              fig=None, ax=None, title=None, include_neuron_in_title=False,
                                              xlim=None, ylim=None, min_lines=2, round_y_ticks=False,
-                                             show_title=False, show_x_ticks=True, show_y_ticks=True, show_y_label=True, color=None, is_mutant=False,
+                                             show_title=False, show_x_ticks=True, show_y_ticks=True,
+                                             show_y_label=True, show_x_label=True, color=None, is_mutant=False,
                                              z_score=False, fig_kwargs=None, legend=False, i_figure=3,
                                              apply_changes_even_if_no_trace=True, show_individual_lines=False,
                                              return_individual_traces=False,
@@ -528,6 +529,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             else:
                 ax.set_xticks([])
                 height_factor_addition = 0
+            if not show_x_label:
+                ax.set_xlabel('')
+                height_factor_addition -= 0.04
             # These things affect the width
             width_factor_addition = 0
             if not show_y_ticks:

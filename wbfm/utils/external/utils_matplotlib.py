@@ -126,7 +126,7 @@ def build_histogram_from_counts(all_dat, pixel_sz=0.1):
     return video_histogram
 
 
-def round_yticks(ax, max_ticks=4, ndigits=1, disallow_negative=True, DEBUG=False):
+def round_yticks(ax, max_ticks=4, ndigits=1, disallow_negative=False, DEBUG=False):
     """
     Made to coordinate the width of different plots to be displayed vertically
 
@@ -149,6 +149,8 @@ def round_yticks(ax, max_ticks=4, ndigits=1, disallow_negative=True, DEBUG=False
     y_ticks_raw = ax.get_yticks()
     if disallow_negative:
         y_ticks_raw = y_ticks_raw[y_ticks_raw >= 0]
+        ax.set_yticks(y_ticks_raw)
+        raise NotImplementedError("Disallowed negative numbers")
     tick_spacing = np.max([round((y_ticks_raw[1] - y_ticks_raw[0]), ndigits), 1 / 10 ** ndigits])
     if tick_spacing == (y_ticks_raw[1] - y_ticks_raw[0]):
         # Already rounded
