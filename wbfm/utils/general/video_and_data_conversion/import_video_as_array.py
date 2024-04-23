@@ -52,8 +52,8 @@ def get_single_volume(fname: typing.Union[str, Path, tifffile.TiffFile, Microsco
         dat = np.array([(alpha * (fname.pages[i].asarray())).astype(dtype) for i in key])
         # dat = (alpha*np.array(fname.pages[start_ind:start_ind+num_slices])).astype(dtype)
     elif type(fname) == MicroscopeDataReader:
-        # This should already be the correct shape, so we use start_ind directly
-        dat = fname.dask_array[start_ind].compute().astype(dtype)  # Do I really need to compute here?
+        # This should already be the correct shape, so we use which_vol directly
+        dat = fname.dask_array[:, which_vol, :, ...].compute().astype(dtype)  # Do I really need to compute here?
     else:
         raise ValueError("Must pass open tifffile or file path")
 
