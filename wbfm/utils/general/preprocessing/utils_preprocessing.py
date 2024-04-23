@@ -460,7 +460,8 @@ class PreprocessingSettings:
     def get_single_volume(self, video_fname, i_time: int, num_slices=None):
         if num_slices is not None:
             raise NotImplementedError("Should set PreprocessingSettings.raw_number_of_planes")
-        if isinstance(video_fname, tifffile.TiffFile):
+        from imutils import MicroscopeDataReader
+        if isinstance(video_fname, tifffile.TiffFile) or isinstance(video_fname, MicroscopeDataReader):
             raw_volume = get_single_volume(video_fname, i_time, self.raw_number_of_planes, dtype=self.initial_dtype)
         else:
             raise NotImplementedError("Should use tifffile.TiffFile")
