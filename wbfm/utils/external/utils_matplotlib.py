@@ -175,6 +175,7 @@ def round_yticks(ax, max_ticks=4, ndigits=1, disallow_negative=False, DEBUG=Fals
 
 def round_yticks_plotly(fig, max_ticks=4, ndigits=1, DEBUG=False, **kwargs):
     # Get the yticks
+    # See: https://stackoverflow.com/questions/62030735/how-to-obtain-generated-x-axis-and-y-axis-range-in-plotly-plot
     full_fig = fig.full_figure_for_development(warn=False)
     y_ticks_raw_range = full_fig.layout.yaxis.range
     dtick_raw = full_fig.layout.yaxis.dtick
