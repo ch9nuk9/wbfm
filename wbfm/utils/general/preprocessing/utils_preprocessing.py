@@ -692,8 +692,8 @@ def preprocess_all_frames(num_slices: int, num_total_frames: int, p: Preprocessi
         video_opt = dict(as_raw_tiff=False)
 
     # LUKAS' reader (not working yet)
-    # with MicroscopeDataReader(video_fname, **video_opt) as vid_stream:
-    with tifffile.TiffFile(video_fname) as vid_stream:
+    with MicroscopeDataReader(video_fname, **video_opt) as vid_stream:
+    # with tifffile.TiffFile(video_fname) as vid_stream:
         # Note: this saves alpha to disk
         p.calculate_alpha_from_data(vid_stream, which_channel=which_channel, num_volumes_to_load=10)
 
