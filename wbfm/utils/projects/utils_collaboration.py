@@ -20,7 +20,7 @@ def export_data_for_oded_lab():
     df_all = pd.read_hdf(fname)
 
     # Remove manifold and pca columns
-    cols_to_remove = [col for col in df_all.columns if 'manifold' in col or 'pca' in col or 'neuron' in col or "'" in col or 'eigenworm' in col or '/' in col]
+    cols_to_remove = [col for col in df_all.columns if 'manifold' in col or 'pca' in col or "'" in col or 'eigenworm' in col or '/' in col]
     cols_to_remove += ['vb02_curvature', 'AVABL']
     df_all.drop(columns=cols_to_remove, inplace=True)
     df_all = pd.DataFrame(df_all)
@@ -74,3 +74,7 @@ def calculate_bundle_net_export(project_data, output_dir=None):
         df_curvature.to_csv(curvature_fname)
 
     return df_traces, df_beh
+
+
+if __name__ == "__main__":
+    export_data_for_oded_lab()
