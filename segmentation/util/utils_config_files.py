@@ -8,8 +8,8 @@ from segmentation.util.utils_paths import get_output_fnames
 
 def _unpack_config_file(preprocessing_cfg, segment_cfg, project_cfg, DEBUG):
     # Initializing variables
-    start_volume = project_cfg.config['dataset_params']['start_volume']
-    num_frames = project_cfg.config['dataset_params']['num_frames']
+    start_volume = project_cfg.start_volume
+    num_frames = project_cfg.num_frames
     if DEBUG:
         num_frames = 1
     frame_list = list(range(start_volume, start_volume + num_frames))
