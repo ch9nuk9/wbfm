@@ -6,7 +6,7 @@ from skimage import filters
 from skimage.measure import regionprops
 from skimage.draw import rectangle
 import pickle
-import zarr
+import dask.array as da
 from tqdm.auto import tqdm
 
 
@@ -67,12 +67,10 @@ def bbox2ind(bbox):
 
 
 ## Optional main traces function
-def calculate_bounding_boxes_from_fnames_and_save(video_fname, bbox_fname, num_frames=None):
+def calculate_bounding_boxes_from_cfg_and_save(cfg, bbox_fname, red_not_green=True):
 
-    if num_frames is None:
-        video_4d = zarr.open(video_fname)
-    else:
-        video_4d = zarr.open(video_fname)[:num_frames]
+    dat = cfg.open_raw_data(red_not_green=red_not_green)
+    video_4d = da.squeeze(dat.dask_array)
     all_bboxes = calculate_bounding_boxes_full_video(video_4d)
 
     try:

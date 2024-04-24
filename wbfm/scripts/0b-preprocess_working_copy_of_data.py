@@ -4,7 +4,7 @@
 import os
 from pathlib import Path
 import sacred
-from wbfm.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames_and_save, \
+from wbfm.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_cfg_and_save, \
     generate_legacy_bbox_fname
 from sacred import Experiment
 from sacred import SETTINGS
@@ -109,9 +109,8 @@ def main(_config, _run):
         preprocessing_settings.save_all_warp_matrices()
 
         # Also saving bounding boxes for future segmentation (speeds up and dramatically reduces false positives)
-        video_fname = red_output_fname
         Path(bbox_fname).parent.mkdir(parents=True, exist_ok=True)
-        calculate_bounding_boxes_from_fnames_and_save(video_fname, bbox_fname, num_frames)
+        calculate_bounding_boxes_from_cfg_and_save(cfg, bbox_fname, red_not_green=True)
 
         bbox_fname = preprocessing_cfg.unresolve_absolute_path(bbox_fname)
         preprocessing_cfg.config['bounding_boxes_fname'] = bbox_fname

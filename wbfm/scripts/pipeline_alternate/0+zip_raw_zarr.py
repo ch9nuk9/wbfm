@@ -9,8 +9,6 @@ from pathlib import Path
 # Experiment tracking
 import sacred
 
-from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
-from wbfm.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_fnames_and_save
 from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
