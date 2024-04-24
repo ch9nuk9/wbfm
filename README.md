@@ -223,8 +223,8 @@ Thus, if you create and run the project on different operating systems, you will
 
 Specifically be aware of these variables:
 ```yaml
-red_bigtiff_fname
-green_bigtiff_fname
+red__fname
+green_fname
 ```
 
 in the main project file: config.yaml

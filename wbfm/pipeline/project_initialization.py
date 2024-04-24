@@ -56,8 +56,8 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
         raise FileNotFoundError("Must pass either a) bigtiff data file directly, or "
                                 "b) proper parent folder with bigtiffs or ndtiffs in it.")
     else:
-        _config['red_bigtiff_fname'] = red_fname
-        _config['green_bigtiff_fname'] = green_fname
+        _config['red_fname'] = red_fname
+        _config['green_fname'] = green_fname
 
     # Build the full project name using the date the data was taken
     basename = Path(red_fname).name.split('_')[0]
@@ -79,9 +79,11 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
 
 
 def _check_if_search_succeeded(_config, green_fname, red_fname):
-    if green_fname is None and _config.get('green_bigtiff_fname', None) is None:
+    if green_fname is None and _config.get('green_bigtiff_fname', None) is None \
+            and _config.get('green_fname', None) is None:
         search_failed = True
-    elif red_fname is None and _config.get('red_bigtiff_fname', None) is None:
+    elif red_fname is None and _config.get('red_bigtiff_fname', None) is None \
+            and _config.get('red_fname', None) is None:
         search_failed = True
     else:
         search_failed = False
@@ -89,7 +91,8 @@ def _check_if_search_succeeded(_config, green_fname, red_fname):
 
 
 def calculate_number_of_volumes_from_tiff_file(num_raw_slices, red_bigtiff_fname):
-    logging.info("Detecting number of total frames in the video, may take ~30 seconds")
+    logging.warning("Detecting number of total frames in the video, may take ~30 seconds."
+                    " Note: this should not be needed for ndtiff videos, only bigtiffs (deprecated).")
     try:
         full_video = Image.open(red_bigtiff_fname)
         num_2d_frames = full_video.n_frames

@@ -129,3 +129,9 @@ class IncompleteConfigFileError(Exception):
         else:
             self.message = "Missing config file"
         super().__init__(self.message)
+
+
+class TiffFormatError(Exception):
+    def __init__(self, message=""):
+        self.message = "Error with format of raw tiff file: " + message
+        super().__init__(self.message)

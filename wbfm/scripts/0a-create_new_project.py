@@ -17,11 +17,8 @@ ex.add_config(os.path.join(path, 'project_config.yaml'))
 
 
 @ex.config
-def cfg(red_bigtiff_fname, green_bigtiff_fname, parent_data_folder):
+def cfg(red_fname, green_fname, parent_data_folder):
     pass
-    # if not DEBUG:
-    #     assert osp.exists(red_bigtiff_fname)
-    #     assert osp.exists(green_bigtiff_fname)
 
 
 @ex.automain

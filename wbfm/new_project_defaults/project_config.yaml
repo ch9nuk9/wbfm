@@ -14,8 +14,8 @@ project_path: null # For reference afterwards
 parent_data_folder: null
 
 behavior_fname: null
-red_bigtiff_fname: null
-green_bigtiff_fname: null
+red_fname: null
+green_fname: null
 
 red_background_fname: null
 green_background_fname: null

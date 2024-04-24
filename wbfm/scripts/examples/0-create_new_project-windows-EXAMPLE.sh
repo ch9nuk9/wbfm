@@ -15,7 +15,7 @@ GREEN_PATH="Z:/shared_projects/wbfm/dat/ZIM2051/2021-03-04_16-07-57_worm3_ZIM205
 
 # Actually run
 COMMAND="scripts/0a-create_new_project.py"
-python $COMMAND with project_dir=$PROJECT_DIR red_bigtiff_fname=$RED_PATH green_bigtiff_fname=$GREEN_PATH experimenter=$EXPERIMENTER
+python $COMMAND with project_dir=$PROJECT_DIR red_fname=$RED_PATH green_fname=$GREEN_PATH experimenter="$EXPERIMENTER"
 
 # Alternative: can just give the overall data path
 #PARENT_DATA_FOLDER="Z:/scratch/neurobiology/zimmer/ulises/wbfm/20220729/20220729_12ms/data/ZIM2156_worm12"
