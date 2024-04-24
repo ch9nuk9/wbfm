@@ -10,9 +10,10 @@ from typing import Dict, Tuple, Optional, List
 import numpy as np
 import pandas as pd
 import pprint
+from imutils import MicroscopeDataReader
 
 from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
-from wbfm.utils.general.custom_errors import NoBehaviorDataError
+from wbfm.utils.general.custom_errors import NoBehaviorDataError, TiffFormatError
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
 from wbfm.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
     get_sequential_filename, get_location_of_new_project_defaults
@@ -407,6 +408,47 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                     green_btf_fname = self._extract_btf_from_folder(subfolder)
 
         return red_btf_fname, green_btf_fname
+
+    def open_raw_data(self, red_not_green=True) -> MicroscopeDataReader:
+        """
+        Open the raw data file, which used to be a .btf file but is now an ndtiff folder
+
+        Parameters
+        ----------
+        red_not_green - if True, opens the red file, else the green file
+
+        Returns
+        -------
+
+        """
+        # First check btf style
+        is_btf = True
+        if red_not_green:
+            fname = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
+            if fname is None:
+                fname = self.resolve_mounted_path_in_current_os('red_fname')
+                is_btf = False
+        else:
+            fname = self.resolve_mounted_path_in_current_os('green_bigtiff_fname')
+            if fname is None:
+                fname = self.resolve_mounted_path_in_current_os('green_fname')
+                is_btf = False
+
+        if fname is None:
+            raise FileNotFoundError("Could not find raw data file")
+
+        # Open using the new DataReader
+        if is_btf:
+            z_slices = self.config['dataset_params'].get('num_slices', None)
+            if z_slices is None:
+                raise TiffFormatError("Could not find number of z slices in config file; "
+                                      "Required if using .btf files")
+            dat = MicroscopeDataReader(fname, as_raw_tiff=True, raw_tiff_num_slices=z_slices)
+        else:
+            # Has metadata already
+            dat = MicroscopeDataReader(fname, as_raw_tiff=False)
+
+        return dat
 
     def get_red_and_green_grid_alignment_bigtiffs(self) -> Tuple[List[str], List[str]]:
         """
