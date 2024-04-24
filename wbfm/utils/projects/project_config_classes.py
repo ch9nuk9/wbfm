@@ -4,9 +4,12 @@ import logging
 import os
 import pickle
 import shutil
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple, Optional, List
+
+import dask.array as da
 import numpy as np
 import pandas as pd
 import pprint
@@ -48,6 +51,8 @@ class ConfigFileWithProjectContext:
         else:
             self.project_dir = str(Path(self.self_path).parent)
         self.config = load_config(self.self_path)
+        # Convert to default dict, for backwards compatibility with deprecated keys
+        self.config = defaultdict(lambda: defaultdict(lambda: None), self.config)
 
     @property
     def logger(self):
@@ -409,9 +414,13 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return red_btf_fname, green_btf_fname
 
-    def open_raw_data(self, red_not_green=True) -> MicroscopeDataReader:
+    def open_raw_data(self, red_not_green=True, actually_open=True) -> \
+            Tuple[Optional[MicroscopeDataReader], bool]:
         """
         Open the raw data file, which used to be a .btf file but is now an ndtiff folder
+
+        Note: this returns a MicroscopeDataReader object, and the user should call .dask_array to get the data
+            BUT: this is 6d, not 4d
 
         Parameters
         ----------
@@ -439,16 +448,38 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         # Open using the new DataReader
         if is_btf:
-            z_slices = self.config['dataset_params'].get('num_slices', None)
+            z_slices = self.num_slices
             if z_slices is None:
                 raise TiffFormatError("Could not find number of z slices in config file; "
                                       "Required if using .btf files")
-            dat = MicroscopeDataReader(fname, as_raw_tiff=True, raw_tiff_num_slices=z_slices)
+            if actually_open:
+                dat = MicroscopeDataReader(fname, as_raw_tiff=True, raw_tiff_num_slices=z_slices)
+            else:
+                dat = None
         else:
             # Has metadata already
-            dat = MicroscopeDataReader(fname, as_raw_tiff=False)
+            if actually_open:
+                dat = MicroscopeDataReader(fname, as_raw_tiff=False)
+            else:
+                dat = None
 
-        return dat
+        return dat, is_btf
+
+    @property
+    def num_slices(self):
+        # Checks for either the old or new key
+        num_slices = self.config['dataset_params'].get('num_slices', None)
+        if num_slices is None:
+            num_slices = self.config['deprecated_dataset_params'].get('num_slices', None)
+        return num_slices
+
+    @property
+    def num_frames(self):
+        # Checks for either the old or new key
+        num_frames = self.config['dataset_params'].get('num_frames', None)
+        if num_frames is None:
+            num_frames = self.config['deprecated_dataset_params'].get('num_frames', None)
+        return num_frames
 
     def get_red_and_green_grid_alignment_bigtiffs(self) -> Tuple[List[str], List[str]]:
         """

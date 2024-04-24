@@ -12,7 +12,7 @@ from wbfm.utils.external.monkeypatch_json import using_monkeypatch
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 
 from wbfm.pipeline.project_initialization import write_data_subset_using_config, zip_zarr_using_config, \
-    calculate_number_of_volumes_from_tiff_file
+    calculate_number_of_volumes_from_tiff_file, calculate_total_number_of_frames_from_bigtiff
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_filenames import generate_output_data_names
 from wbfm.utils.projects.utils_project import safe_cd
@@ -53,17 +53,11 @@ def main(_config, _run):
     cfg: ModularProjectConfig = _config['cfg']
     cfg.config['project_dir'] = _config['project_dir']
     cfg.config['project_path'] = _config['project_path']
-    num_frames = cfg.config['dataset_params']['num_frames']
-    if num_frames is None:
-        # Check the number of total frames in the video, and update the parameter
-        # Note: requires correct value of num_slices
-        num_raw_slices = cfg.config['dataset_params']['num_slices']
-        red_bigtiff_fname = cfg.config['red_bigtiff_fname']
-        num_volumes = calculate_number_of_volumes_from_tiff_file(num_raw_slices, red_bigtiff_fname)
-        num_frames = int(num_volumes)
-        cfg.logger.debug(f"Calculated number of frames: {num_frames}")
-        cfg.config['dataset_params']['num_frames'] = num_frames
-        cfg.update_self_on_disk()
+
+    # Open the raw data using the config file directly
+    raw_data, is_btf = cfg.open_raw_data(red_not_green=True, actually_open=False)
+    if is_btf:
+        calculate_total_number_of_frames_from_bigtiff(cfg)
 
     logger = cfg.logger
     project_dir = _config['project_dir']
