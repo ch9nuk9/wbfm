@@ -265,8 +265,6 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     i_template = tracks_cfg.config['final_3d_tracks']['template_time_point']
     num_templates = tracks_cfg.config['leifer_params'].get('num_random_templates', None)
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
-    if DEBUG:
-        project_data.project_config.config['dataset_params']['num_frames'] = 3
     physical_unit_conversion = PhysicalUnitConversion.load_from_config(project_cfg)
     if use_zimmer_template:
         custom_template = project_data.get_centroids_as_numpy(i_template)

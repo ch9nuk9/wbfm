@@ -10,7 +10,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.neuron_matching.utils_matching import calc_nearest_neighbor_matches
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
+from wbfm.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
 from wbfm.utils.tracklets.training_data_from_tracklets import build_subset_df_from_tracklets
 
 
@@ -106,11 +106,10 @@ def _unpack_configs_for_traces(project_cfg, track_cfg):
     return max_dist
 
 
-def _unpack_configs_for_extraction(project_cfg, traces_cfg):
+def _unpack_configs_for_extraction(project_cfg: ModularProjectConfig, traces_cfg):
     # Settings
-    params_start_volume = project_cfg.config['dataset_params']['start_volume']
-    num_frames = project_cfg.config['dataset_params']['num_frames']
-
+    params_start_volume = project_cfg.start_volume
+    num_frames = project_cfg.get_num_frames_robust()
     frame_list = list(range(params_start_volume, num_frames + params_start_volume))
 
     coords = ['z', 'x', 'y']
