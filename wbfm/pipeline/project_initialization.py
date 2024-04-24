@@ -43,21 +43,29 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     green_fname, red_fname = \
         _config.get('green_bigtiff_fname', None), _config.get('red_bigtiff_fname', None)
     # First try for the new format: ndtiff
+    is_btf = False
     if parent_data_folder is not None:
         green_fname, red_fname = get_ndtiff_fnames_from_parent_folder(parent_data_folder)
         search_failed = _check_if_search_succeeded(_config, green_fname, red_fname)
 
         if search_failed:
             green_fname, red_fname = get_both_bigtiff_fnames_from_parent_folder(parent_data_folder)
+            is_btf = True
     search_failed = _check_if_search_succeeded(_config, green_fname, red_fname)
 
     if search_failed:
-        logging.warning(f"Failed to find bigtiff files in folder {parent_data_folder}")
+        logging.warning(f"Failed to find raw files in folder {parent_data_folder}")
         raise FileNotFoundError("Must pass either a) bigtiff data file directly, or "
                                 "b) proper parent folder with bigtiffs or ndtiffs in it.")
     else:
-        _config['red_fname'] = red_fname
-        _config['green_fname'] = green_fname
+        if is_btf:
+            logging.warning("Found bigtiff files, which are deprecated."
+                            " Attempting to continue, but may not work ")
+            _config['green_bigtiff_fname'] = green_fname
+            _config['red_bigtiff_fname'] = red_fname
+        else:
+            _config['red_fname'] = red_fname
+            _config['green_fname'] = green_fname
 
     # Build the full project name using the date the data was taken
     basename = Path(red_fname).name.split('_')[0]
