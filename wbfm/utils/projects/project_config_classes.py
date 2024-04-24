@@ -414,8 +414,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return red_btf_fname, green_btf_fname
 
-    def open_raw_data(self, red_not_green=True, actually_open=True) -> \
-            Tuple[Optional[MicroscopeDataReader], bool]:
+    def open_raw_data(self, red_not_green=True, actually_open=True) -> Optional[MicroscopeDataReader]:
         """
         Open the raw data file, which used to be a .btf file but is now an ndtiff folder
 
@@ -431,18 +430,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         """
         # First check btf style
-        is_btf = True
-        if red_not_green:
-            fname = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
-            if fname is None:
-                fname = self.resolve_mounted_path_in_current_os('red_fname')
-                is_btf = False
-        else:
-            fname = self.resolve_mounted_path_in_current_os('green_bigtiff_fname')
-            if fname is None:
-                fname = self.resolve_mounted_path_in_current_os('green_fname')
-                is_btf = False
-
+        fname, is_btf = self.get_raw_data_fname(red_not_green)
         if fname is None:
             raise FileNotFoundError("Could not find raw data file")
 
@@ -463,7 +451,21 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             else:
                 dat = None
 
-        return dat, is_btf
+        return dat
+
+    def get_raw_data_fname(self, red_not_green) -> Tuple[Optional[str], bool]:
+        is_btf = True
+        if red_not_green:
+            fname = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
+            if fname is None:
+                fname = self.resolve_mounted_path_in_current_os('red_fname')
+                is_btf = False
+        else:
+            fname = self.resolve_mounted_path_in_current_os('green_bigtiff_fname')
+            if fname is None:
+                fname = self.resolve_mounted_path_in_current_os('green_fname')
+                is_btf = False
+        return fname, is_btf
 
     @property
     def num_slices(self):
@@ -805,6 +807,7 @@ def _update_config_value(file_key, cfg_to_update, old_name0, new_name0=None, new
         else:
             cfg_to_update[old_name0] = new_value
     return cfg_to_update
+
 
 def make_project_like(project_path: str, target_directory: str,
                       steps_to_keep: list = None,

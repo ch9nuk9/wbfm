@@ -55,7 +55,7 @@ def main(_config, _run):
     cfg.config['project_path'] = _config['project_path']
 
     # Open the raw data using the config file directly
-    raw_data, is_btf = cfg.open_raw_data(red_not_green=True, actually_open=False)
+    _, is_btf = cfg.get_raw_data_fname(red_not_green=True)
     if is_btf:
         calculate_total_number_of_frames_from_bigtiff(cfg)
 

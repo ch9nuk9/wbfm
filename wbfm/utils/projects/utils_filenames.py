@@ -307,9 +307,9 @@ def generate_output_data_names(cfg):
     -------
 
     """
-    fname = cfg.resolve_mounted_path_in_current_os('red_bigtiff_fname')
+    fname = cfg.get_raw_data_fname(red_not_green=True)
     out_fname_red = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.stem}_preprocessed.zarr")))
-    fname = cfg.resolve_mounted_path_in_current_os('green_bigtiff_fname')
+    fname = cfg.get_raw_data_fname(red_not_green=False)
     out_fname_green = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.stem}_preprocessed.zarr")))
     return out_fname_red, out_fname_green
 
@@ -339,6 +339,7 @@ def get_bigtiff_fname_from_folder(folder_fname, channel_to_check=0):
 
 
 def get_both_bigtiff_fnames_from_parent_folder(parent_data_folder):
+    logging.warning("Use of bigtiff is deprecated; use ndtiff instead")
     green_bigtiff_fname, red_bigtiff_fname = None, None
     for subfolder in Path(parent_data_folder).iterdir():
         if subfolder.is_file():
