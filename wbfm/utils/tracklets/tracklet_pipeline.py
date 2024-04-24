@@ -161,14 +161,14 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     if 'num_frames' in training_config.config['tracker_params']:
         tracker_params['num_frames'] = training_config.config['tracker_params']['num_frames']
     else:
-        tracker_params['num_frames'] = project_config.config['dataset_params']['num_frames']
+        tracker_params['num_frames'] = project_config.get_num_slices_robust()
     if DEBUG:
         tracker_params['num_frames'] = 5
     if 'start_volume' in training_config.config['tracker_params']:
         tracker_params['start_volume'] = training_config.config['tracker_params']['start_volume']
     else:
         logging.warning("Using deprecated dataset parameter for start volume")
-        tracker_params['start_volume'] = project_config.config['deprecated_dataset_params']['start_volume']
+        tracker_params['start_volume'] = project_config.start_volume
 
     frame_pair_options = FramePairOptions.load_from_config_file(project_config, training_config)
     frame_pair_options.apply_tanh_to_confidence = False

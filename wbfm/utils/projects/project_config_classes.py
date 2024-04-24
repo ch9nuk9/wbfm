@@ -505,7 +505,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         num_slices = self.num_slices
         if num_slices is None:
             dat = self.open_raw_data_as_4d_dask()
-            num_slices = dat.dask_array.shape[0]
+            num_slices = dat.dask_array.shape[1]
         return num_slices
 
     @property
@@ -515,6 +515,20 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         if num_frames is None:
             num_frames = self.config['deprecated_dataset_params'].get('num_frames', None)
         return num_frames
+
+    def get_num_frames_robust(self):
+        """
+        Tries to read from the config file, but if that fails then read the raw data file
+
+        Returns
+        -------
+
+        """
+        num_slices = self.num_frames
+        if num_slices is None:
+            dat = self.open_raw_data_as_4d_dask()
+            num_slices = dat.dask_array.shape[0]
+        return num_slices
 
     def get_red_and_green_grid_alignment_bigtiffs(self) -> Tuple[List[str], List[str]]:
         """
