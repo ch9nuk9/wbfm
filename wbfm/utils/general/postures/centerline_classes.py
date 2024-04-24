@@ -1810,22 +1810,24 @@ class WormFullVideoPosture:
         # Try 1: read from config file
         behavior_fname = project_config.config.get('behavior_bigtiff_fname', None)
         if behavior_fname is None:
-            behavior_fname = project_config.config.get('behavior_fname', None)
-        if behavior_fname is None:
             # Try 2: look in the parent folder of the red raw data
             project_config.logger.debug("behavior_fname not found; searching")
             raw_behavior_subfolder, flag = project_config.get_behavior_raw_parent_folder_from_red_fname()
             if not flag:
-                project_config.logger.warning("behavior_fname search failed; "
-                                              "All calculations with curvature (kymograph) will fail")
                 raw_behavior_subfolder = None
         else:
             raw_behavior_subfolder = Path(behavior_fname).parent
+
+        # Check if it is ndtiff, meaning the folder was saved directly
+        if behavior_fname is None and raw_behavior_subfolder is None:
+            raw_behavior_subfolder = project_config.config.get('behavior_fname', None)
 
         # Try to read files from the behavior subfolder
         if raw_behavior_subfolder is not None:
             all_files = WormFullVideoPosture._check_ulises_pipeline_files_in_subfolder(raw_behavior_subfolder)
         else:
+            project_config.logger.warning("behavior_fname search failed; "
+                                          "All calculations with curvature (kymograph) will fail")
             all_files = dict()
 
         # In newer projects, the behavior output files will be local, not mixed with the raw data
