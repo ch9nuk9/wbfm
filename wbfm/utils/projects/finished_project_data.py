@@ -443,7 +443,7 @@ class ProjectData:
     @cached_property
     def num_frames(self) -> int:
         """Note that this is cached so that a user can overwrite the number of frames"""
-        return self.project_config.num_frames
+        return self.project_config.get_num_frames_robust()
 
     def custom_frame_indices(self) -> list:
         """For overriding the normal iterator over frames, for skipping problems etc."""
