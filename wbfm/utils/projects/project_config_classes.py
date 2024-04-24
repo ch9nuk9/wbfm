@@ -479,6 +479,14 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return fname, is_btf
 
     @property
+    def start_volume(self):
+        # Checks for either the old or new key
+        num_slices = self.config['dataset_params'].get('start_volume', 0)
+        if num_slices is None:
+            num_slices = self.config['deprecated_dataset_params'].get('start_volume', 0)
+        return num_slices
+
+    @property
     def num_slices(self):
         # Checks for either the old or new key
         num_slices = self.config['dataset_params'].get('num_slices', None)
