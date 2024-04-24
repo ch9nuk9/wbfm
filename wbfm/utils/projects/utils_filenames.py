@@ -352,3 +352,28 @@ def get_both_bigtiff_fnames_from_parent_folder(parent_data_folder):
         logging.warning(f"Did not find one of: {(green_bigtiff_fname, red_bigtiff_fname)}")
 
     return green_bigtiff_fname, red_bigtiff_fname
+
+
+def get_ndtiff_fnames_from_parent_folder(parent_data_folder):
+    """Like get_both_bigtiff_fnames_from_parent_folder, but for ndtiffs, which reference the full folder"""
+    green_ndtiff_fname, red_ndtiff_fname = None, None
+    for subfolder in Path(parent_data_folder).iterdir():
+        if subfolder.is_file():
+            continue
+        if is_folder_ndtiff_format(subfolder):
+            if subfolder.name.endswith('_Ch0'):
+                red_ndtiff_fname = str(subfolder)
+            elif subfolder.name.endswith('_Ch1'):
+                green_ndtiff_fname = str(subfolder)
+
+    if green_ndtiff_fname is None or red_ndtiff_fname is None:
+        logging.warning(f"Did not find one of: {(green_ndtiff_fname, red_ndtiff_fname)}")
+
+    return green_ndtiff_fname, red_ndtiff_fname
+
+
+def is_folder_ndtiff_format(folder):
+    if 'NDTiff.index' in [f.name for f in Path(folder).iterdir()]:
+        return True
+    else:
+        return False

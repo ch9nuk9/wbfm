@@ -14,7 +14,8 @@ from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSe
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 from wbfm.utils.projects.utils_filenames import get_sequential_filename, resolve_mounted_path_in_current_os, \
-    add_name_suffix, get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder
+    add_name_suffix, get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder, \
+    get_ndtiff_fnames_from_parent_folder
 from wbfm.utils.projects.utils_project import get_project_name, safe_cd, update_project_config_path, \
     update_snakemake_config_path
 
@@ -39,27 +40,27 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
 
     # If the user just passed the parent raw data folder, then convert that into green and red
     parent_data_folder = _config.get('parent_data_folder', None)
-    green_bigtiff_fname, red_bigtiff_fname = \
+    green_fname, red_fname = \
         _config.get('green_bigtiff_fname', None), _config.get('red_bigtiff_fname', None)
+    # First try for the new format: ndtiff
     if parent_data_folder is not None:
-        green_bigtiff_fname, red_bigtiff_fname = get_both_bigtiff_fnames_from_parent_folder(parent_data_folder)
+        green_fname, red_fname = get_ndtiff_fnames_from_parent_folder(parent_data_folder)
+        search_failed = _check_if_search_succeeded(_config, green_fname, red_fname)
 
-    if green_bigtiff_fname is None and _config.get('green_bigtiff_fname', None) is None:
-        search_failed = True
-    elif red_bigtiff_fname is None and _config.get('red_bigtiff_fname', None) is None:
-        search_failed = True
-    else:
-        search_failed = False
+        if search_failed:
+            green_fname, red_fname = get_both_bigtiff_fnames_from_parent_folder(parent_data_folder)
+    search_failed = _check_if_search_succeeded(_config, green_fname, red_fname)
 
     if search_failed:
         logging.warning(f"Failed to find bigtiff files in folder {parent_data_folder}")
-        raise FileNotFoundError("Must pass either a) bigtiff data file directly, or b) proper parent folder")
+        raise FileNotFoundError("Must pass either a) bigtiff data file directly, or "
+                                "b) proper parent folder with bigtiffs or ndtiffs in it.")
     else:
-        _config['red_bigtiff_fname'] = red_bigtiff_fname
-        _config['green_bigtiff_fname'] = green_bigtiff_fname
+        _config['red_bigtiff_fname'] = red_fname
+        _config['green_bigtiff_fname'] = green_fname
 
     # Build the full project name using the date the data was taken
-    basename = Path(red_bigtiff_fname).name.split('_')[0]
+    basename = Path(red_fname).name.split('_')[0]
     parent_folder = _config['project_dir']
     rel_new_project_name = get_project_name(_config, basename)
     abs_new_project_name = osp.join(parent_folder, rel_new_project_name)
@@ -75,6 +76,16 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
 
     # Also update the snakemake file with the project directory
     update_snakemake_config_path(abs_new_project_name)
+
+
+def _check_if_search_succeeded(_config, green_fname, red_fname):
+    if green_fname is None and _config.get('green_bigtiff_fname', None) is None:
+        search_failed = True
+    elif red_fname is None and _config.get('red_bigtiff_fname', None) is None:
+        search_failed = True
+    else:
+        search_failed = False
+    return search_failed
 
 
 def calculate_number_of_volumes_from_tiff_file(num_raw_slices, red_bigtiff_fname):
