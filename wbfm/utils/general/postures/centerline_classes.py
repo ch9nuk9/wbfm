@@ -2127,10 +2127,7 @@ stimulus_annotation:        {self.has_stimulus_annotation}\n\
 def get_behavior_fluorescence_fps_conversion(project_config: ModularProjectConfig):
     # Enhancement: In new config files, there should be a way to read this directly
     preprocessing_cfg = project_config.get_preprocessing_config()
-    final_number_of_planes = project_config.num_slices
-    if final_number_of_planes is None:
-        # Read from data
-        final_number_of_planes = project_config.open_raw_data_as_4d_dask(red_not_green=True).shape[0]
+    final_number_of_planes = project_config.get_num_slices_robust()
     raw_number_of_planes = preprocessing_cfg.config.get('raw_number_of_planes', final_number_of_planes)
     # True for older datasets, i.e. I had to remove it in postprocessing
     was_flyback_saved = final_number_of_planes != raw_number_of_planes

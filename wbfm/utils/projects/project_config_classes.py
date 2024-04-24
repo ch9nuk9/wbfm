@@ -494,6 +494,20 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             num_slices = self.config['deprecated_dataset_params'].get('num_slices', None)
         return num_slices
 
+    def get_num_slices_robust(self):
+        """
+        Tries to read from the config file, but if that fails then read the raw data file
+
+        Returns
+        -------
+
+        """
+        num_slices = self.num_slices
+        if num_slices is None:
+            dat = self.open_raw_data_as_4d_dask()
+            num_slices = dat.dask_array.shape[0]
+        return num_slices
+
     @property
     def num_frames(self):
         # Checks for either the old or new key

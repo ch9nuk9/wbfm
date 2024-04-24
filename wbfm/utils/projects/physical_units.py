@@ -132,9 +132,9 @@ class PhysicalUnitConversion:
                 if DEBUG:
                     print(f"Using volumes_per_second: {opt['volumes_per_second']} from project config")
             # Additional dataset unit
-            opt_dataset = project_cfg.config['dataset_params']
-            if 'num_slices' in opt_dataset:
-                opt['num_z_slices'] = opt_dataset['num_slices']
+            num_slices = project_cfg.get_num_slices_robust()
+            if num_slices is not None:
+                opt['num_z_slices'] = num_slices
             else:
                 # This is a very old parameter, and should be in all projects
                 raise ValueError("num_slices not found in dataset_params")
