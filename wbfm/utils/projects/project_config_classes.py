@@ -505,7 +505,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         num_slices = self.num_slices
         if num_slices is None:
             dat = self.open_raw_data_as_4d_dask()
-            num_slices = dat.dask_array.shape[1]
+            num_slices = dat.shape[1]
         return num_slices
 
     @property
@@ -527,7 +527,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         num_slices = self.num_frames
         if num_slices is None:
             dat = self.open_raw_data_as_4d_dask()
-            num_slices = dat.dask_array.shape[0]
+            num_slices = dat.shape[0]
         return num_slices
 
     def get_red_and_green_grid_alignment_bigtiffs(self) -> Tuple[List[str], List[str]]:
