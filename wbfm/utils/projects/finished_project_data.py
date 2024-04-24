@@ -450,7 +450,8 @@ class ProjectData:
                 num_frames = self.red_data.shape[0]
         if num_frames is None:
             # Loads the raw data, which may be slow
-            return self.project_config.get_num_frames_robust()
+            num_frames = self.project_config.get_num_frames_robust()
+        return num_frames
 
     def custom_frame_indices(self) -> list:
         """For overriding the normal iterator over frames, for skipping problems etc."""
