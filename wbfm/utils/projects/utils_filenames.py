@@ -307,9 +307,9 @@ def generate_output_data_names(cfg):
     -------
 
     """
-    fname = cfg.get_raw_data_fname(red_not_green=True)
+    fname, is_btf = cfg.get_raw_data_fname(red_not_green=True)
     out_fname_red = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.stem}_preprocessed.zarr")))
-    fname = cfg.get_raw_data_fname(red_not_green=False)
+    fname, is_btf = cfg.get_raw_data_fname(red_not_green=False)
     out_fname_green = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.stem}_preprocessed.zarr")))
     return out_fname_red, out_fname_green
 

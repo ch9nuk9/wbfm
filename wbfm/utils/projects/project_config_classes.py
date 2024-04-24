@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import pprint
 from imutils import MicroscopeDataReader
+from methodtools import lru_cache
 
 from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
 from wbfm.utils.general.custom_errors import NoBehaviorDataError, TiffFormatError
@@ -414,6 +415,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return red_btf_fname, green_btf_fname
 
+    @lru_cache(maxsize=4)
     def open_raw_data(self, red_not_green=True, actually_open=True) -> Optional[MicroscopeDataReader]:
         """
         Open the raw data file, which used to be a .btf file but is now an ndtiff folder
@@ -452,6 +454,15 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                 dat = None
 
         return dat
+
+    def open_raw_data_as_4d_dask(self, red_not_green=True):
+        dat = self.open_raw_data(red_not_green)
+        if dat is None:
+            return None
+        dat_out = da.squeeze(dat.dask_array)
+        if dat_out.ndim != 4:
+            raise ValueError(f"Expected 4d data, got {dat_out.ndim}d data")
+        return dat_out
 
     def get_raw_data_fname(self, red_not_green) -> Tuple[Optional[str], bool]:
         is_btf = True

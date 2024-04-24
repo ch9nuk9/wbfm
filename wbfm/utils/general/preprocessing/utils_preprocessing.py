@@ -398,33 +398,17 @@ class PreprocessingSettings:
         # Save in this object
         self._camera_alignment_matrix = warp_mat
 
-    def calculate_warp_mat_from_btf_files(self, project_config):
-        # Will just take as many volumes as it can (this object doesn't know the number of frames present)
+    def calculate_warp_mat_from_btf_files(self, project_config: ModularProjectConfig):
+        # Directly read and subsample
+        red_dat = project_config.open_raw_data_as_4d_dask(red_not_green=True)
+        green_dat = project_config.open_raw_data_as_4d_dask(red_not_green=False)
+        num_frames = red_dat.shape[0]
 
-        red_btf_fname = project_config.config['red_bigtiff_fname']
-        green_btf_fname = project_config.config['green_bigtiff_fname']
-        num_frames = project_config.config['dataset_params']['num_frames']
+        tspan = np.arange(10, num_frames, 50, dtype=int)
 
-        tspan = np.arange(10, num_frames, 500, dtype=int)
-
-        red_vol_subset, green_vol_subset = [], []
-
-        with tifffile.TiffFile(red_btf_fname) as vid_stream:
-            for t in tspan:
-                try:
-                    red_vol_subset.append(self.get_single_volume(vid_stream, t))
-                except IndexError:
-                    break
-
-        with tifffile.TiffFile(green_btf_fname) as vid_stream:
-            for t in tspan:
-                try:
-                    green_vol_subset.append(self.get_single_volume(vid_stream, t))
-                except IndexError:
-                    break
-
-        red_vol_subset = np.array([np.max(dat, axis=0) for dat in red_vol_subset])
-        green_vol_subset = np.array([np.max(dat, axis=0) for dat in green_vol_subset])
+        # Max project across z
+        red_vol_subset = np.array(np.max(red_dat[tspan], axis=1))
+        green_vol_subset = np.array(np.max(green_dat[tspan], axis=1))
 
         if self.max_project_across_time:
             # Alignment is more stable for large misalignments if we max project across time as well as z

@@ -69,8 +69,7 @@ def bbox2ind(bbox):
 ## Optional main traces function
 def calculate_bounding_boxes_from_cfg_and_save(cfg, bbox_fname, red_not_green=True):
 
-    dat = cfg.open_raw_data(red_not_green=red_not_green)
-    video_4d = da.squeeze(dat.dask_array)
+    video_4d = cfg.open_raw_data_as_4d_dask(red_not_green=red_not_green)
     all_bboxes = calculate_bounding_boxes_full_video(video_4d)
 
     try:
