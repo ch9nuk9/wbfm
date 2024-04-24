@@ -43,8 +43,23 @@ def get_video_from_ome_file_subset(video_fname,
     return dat
 
 
-def get_single_volume(fname: typing.Union[str, Path, tifffile.TiffFile, MicroscopeDataReader], which_vol: int, num_slices: int, alpha: float = 1.0,
-                      dtype: str = 'uint8') -> np.ndarray:
+def get_single_volume(fname: typing.Union[str, Path, tifffile.TiffFile, MicroscopeDataReader], which_vol: int,
+                      num_slices: int, alpha: float = 1.0, dtype: str = 'uint8') -> np.ndarray:
+    """
+    Backwards compatible function that can read from a tifffile, a MicroscopeDataReader, or a dask array
+
+    Parameters
+    ----------
+    fname
+    which_vol
+    num_slices
+    alpha
+    dtype
+
+    Returns
+    -------
+
+    """
     # Convert to page coordinates
     start_ind = num_slices * which_vol
     key = range(start_ind, start_ind + num_slices)

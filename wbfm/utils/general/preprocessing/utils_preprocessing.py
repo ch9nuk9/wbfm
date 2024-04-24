@@ -444,11 +444,7 @@ class PreprocessingSettings:
     def get_single_volume(self, video_dat_4d, i_time: int, num_slices=None):
         if num_slices is not None:
             raise NotImplementedError("Should set PreprocessingSettings.raw_number_of_planes")
-        from imutils import MicroscopeDataReader
-        if isinstance(video_dat_4d, tifffile.TiffFile) or isinstance(video_dat_4d, MicroscopeDataReader):
-            raw_volume = get_single_volume(video_dat_4d, i_time, self.raw_number_of_planes, dtype=self.initial_dtype)
-        else:
-            raise NotImplementedError("Should use tifffile.TiffFile")
+        raw_volume = get_single_volume(video_dat_4d, i_time, self.raw_number_of_planes, dtype=self.initial_dtype)
         return raw_volume
 
     def __repr__(self):
@@ -613,11 +609,11 @@ def preprocess_all_frames_using_config(config: ModularProjectConfig,
         p = preprocessing_settings
 
     video_dat_4d = config.open_raw_data_as_4d_dask(red_not_green=(which_channel == 'red'))
-    return preprocess_all_frames(video_dat_4d, p, out_fname, DEBUG)
+    return preprocess_all_frames(video_dat_4d, p, which_channel, out_fname, DEBUG=DEBUG)
 
 
 def preprocess_all_frames(video_dat_4d: dask.array, p: PreprocessingSettings, which_channel: str, out_fname: str,
-                          DEBUG: bool) -> zarr.Array:
+                          DEBUG: bool = False) -> zarr.Array:
     """
     Preprocesses all frames using multithreading, saving directly to an output zarr file
 
