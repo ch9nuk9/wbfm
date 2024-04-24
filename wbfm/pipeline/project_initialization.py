@@ -212,12 +212,12 @@ def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_
             else:
                 video_fname = cfg.resolve_relative_path_from_config('preprocessed_green')
         video_fname = resolve_mounted_path_in_current_os(video_fname, verbose=0)
-    start_volume = cfg.config['dataset_params'].get('bigtiff_start_volume', None)
+    start_volume = cfg.config['deprecated_dataset_params'].get('bigtiff_start_volume', None)
     if start_volume is None:
-        logging.warning("Did not find bigtiff_start_volume; is this an old style project?")
-        logging.warning("Using start volume of 0. If this is fine, then no changes are needed")
         start_volume = 0
-        cfg.config['dataset_params']['bigtiff_start_volume'] = 0  # Will be written to disk later
+        cfg.config['deprecated_dataset_params']['bigtiff_start_volume'] = 0  # Will be written to disk later
+    else:
+        logging.warning("Found a start_volume, but this is deprecated. Attempting to continue, but may not work.")
     return out_fname, preprocessing_settings, project_dir, start_volume, verbose, video_fname
 
 
@@ -225,8 +225,8 @@ def crop_zarr_using_config(cfg: ModularProjectConfig):
 
     fields = ['preprocessed_red', 'preprocessed_green']
     to_crop = [cfg.config[f] for f in fields]
-    start_volume = cfg.config['dataset_params']['start_volume']
-    num_frames = cfg.config['dataset_params']['num_frames']
+    start_volume = cfg.config['deprecated_dataset_params']['start_volume']
+    num_frames = cfg.config['deprecated_dataset_params']['num_frames']
     end_volume = start_volume + num_frames
 
     new_fnames = []
@@ -242,8 +242,8 @@ def crop_zarr_using_config(cfg: ModularProjectConfig):
     # Also update config file
     for field, name in zip(fields, new_fnames):
         cfg.config[field] = str(name)
-    cfg.config['dataset_params']['start_volume'] = 0
-    cfg.config['dataset_params']['bigtiff_start_volume'] = start_volume
+    cfg.config['deprecated_dataset_params']['start_volume'] = 0
+    cfg.config['deprecated_dataset_params']['bigtiff_start_volume'] = start_volume
 
     cfg.update_self_on_disk()
 

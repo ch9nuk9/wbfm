@@ -727,7 +727,7 @@ def modify_config_files_for_training_data(project_config, segment_cfg, training_
     project_config.config['dataset_params']['num_frames'] = training_cfg.config['training_data_3d'][
         'num_training_frames']
     start_volume = training_cfg.config['training_data_3d']['which_frames'][0]
-    project_config.config['dataset_params']['start_volume'] = start_volume
+    project_config.config['deprecated_dataset_params']['start_volume'] = start_volume
 
 
 def translate_training_names_to_raw_names(df_training_data):

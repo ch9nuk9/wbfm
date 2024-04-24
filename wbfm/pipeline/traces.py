@@ -29,7 +29,8 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
 
     Get both red and green traces for each neuron
     """
-    max_dist, num_frames, params_start_volume = _unpack_configs_for_traces(project_cfg, track_cfg)
+    # TODO: Do not use num_frames, but use the proper metadata
+    max_dist = _unpack_configs_for_traces(project_cfg, track_cfg)
 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     final_tracks = project_data.final_tracks

@@ -100,10 +100,10 @@ def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
 def _unpack_configs_for_traces(project_cfg, track_cfg):
     # Settings
     max_dist = track_cfg.config['final_3d_tracks']['max_dist_to_segmentation']
-    params_start_volume = project_cfg.config['dataset_params']['start_volume']
-    num_frames = project_cfg.config['dataset_params']['num_frames']
+    # params_start_volume = project_cfg.config['deprecated_dataset_params']['start_volume']
+    # num_frames = project_cfg.config['deprecated_dataset_params']['num_frames']
 
-    return max_dist, num_frames, params_start_volume
+    return max_dist
 
 
 def _unpack_configs_for_extraction(project_cfg, traces_cfg):

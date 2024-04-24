@@ -716,12 +716,12 @@ def _preprocess_all_frames_unpack_config(config: dict, verbose, video_fname):
     sz = _get_video_options(config, video_fname)
     if verbose >= 1:
         print("Preprocessing data, this could take a while...")
-    start_volume = config['dataset_params'].get('bigtiff_start_volume', None)
+    start_volume = config['deprecated_dataset_params'].get('bigtiff_start_volume', None)
     if start_volume is None:
-        logging.warning("Did not find bigtiff_start_volume; is this an old style project?")
-        logging.warning("Using start volume of 0. If this is fine, then no changes are needed")
         start_volume = 0
-        config['dataset_params']['bigtiff_start_volume'] = 0  # Will be written to disk later
+        config['deprecated_dataset_params']['bigtiff_start_volume'] = 0  # Will be written to disk later
+    else:
+        logging.warning("Found deprecated 'bigtiff_start_volume' in config; attempting to use it")
     num_total_frames = start_volume + config['dataset_params']['num_frames']
     num_slices = config['dataset_params']['num_slices']
     return num_slices, num_total_frames, start_volume, sz
