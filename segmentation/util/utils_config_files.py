@@ -8,11 +8,8 @@ from segmentation.util.utils_paths import get_output_fnames
 
 def _unpack_config_file(preprocessing_cfg, segment_cfg, project_cfg, DEBUG):
     # Initializing variables
-    start_volume = project_cfg.start_volume
-    num_frames = project_cfg.num_frames
     if DEBUG:
         num_frames = 1
-    frame_list = list(range(start_volume, start_volume + num_frames))
     video_path = project_cfg.config['preprocessed_red']
     # Generate new filenames if they are not set
     mask_fname = segment_cfg.config['output_masks']
@@ -45,5 +42,5 @@ def _unpack_config_file(preprocessing_cfg, segment_cfg, project_cfg, DEBUG):
         else:
             project_cfg.logger.warning("Summing red and green channels for segmentation; does not affect metadata.")
 
-    return (frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path,
+    return (mask_fname, metadata_fname, stardist_model_name, verbose, video_path,
             zero_out_borders, all_bounding_boxes, sum_red_and_green_channels, segment_on_green_channel)

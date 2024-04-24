@@ -46,7 +46,7 @@ def segment_video_using_config_3d(preprocessing_cfg: ConfigFileWithProjectContex
 
     """
 
-    (frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, _,
+    (mask_fname, metadata_fname, stardist_model_name, verbose, video_path, _,
      all_bounding_boxes, sum_red_and_green_channels, segment_on_green_channel) = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
@@ -63,6 +63,8 @@ def segment_video_using_config_3d(preprocessing_cfg: ConfigFileWithProjectContex
             video_dat = da.from_zarr(video_dat) + da.from_zarr(green_dat)
         elif segment_on_green_channel:
             video_dat = green_dat
+    num_frames = video_dat.shape[0]
+    frame_list = list(range(num_frames))
 
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # For now don't worry about postprocessing the first volume
@@ -143,13 +145,15 @@ def segment_video_using_config_2d(preprocessing_cfg: ConfigFileWithProjectContex
     See segment2d.py for parameter documentation
     """
 
-    (frame_list, mask_fname, metadata_fname, num_frames, stardist_model_name, verbose, video_path, zero_out_borders,
+    (mask_fname, metadata_fname, stardist_model_name, verbose, video_path, zero_out_borders,
      all_bounding_boxes, sum_red_and_green_channels) = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Open the file
     project_dat = ProjectData.load_final_project_data_from_config(project_cfg)
     video_dat = project_dat.red_data
+    num_frames = video_dat.shape[0]
+    frame_list = list(range(num_frames))
 
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # Do first volume outside the parallelization loop to initialize keras and zarr
@@ -575,7 +579,7 @@ def resplit_masks_in_z_from_config(preprocessing_cfg: ConfigFileWithProjectConte
 
     """
 
-    (frame_list, mask_fname, metadata_fname, num_frames, _, verbose, video_path, zero_out_borders,
+    (mask_fname, metadata_fname, _, verbose, video_path, zero_out_borders,
      all_bounding_boxes, sum_red_and_green_channels) = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
@@ -588,6 +592,9 @@ def resplit_masks_in_z_from_config(preprocessing_cfg: ConfigFileWithProjectConte
     new_fname = str(add_name_suffix(mask_fname, '1'))
     masks_zarr = zarr.open_like(masks_old, path=new_fname)
     video_dat = zarr.open(video_path, mode='r')
+
+    num_frames = video_dat.shape[0]
+    frame_list = list(range(num_frames))
 
     if DEBUG:
         print(video_dat)

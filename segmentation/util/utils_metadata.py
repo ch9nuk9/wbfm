@@ -308,11 +308,13 @@ def recalculate_metadata_from_config(preprocessing_cfg, segment_cfg, project_cfg
 
     """
 
-    frame_list, mask_fname, metadata_fname, _, _, _, video_path, _, _, _ = _unpack_config_file(
+    mask_fname, metadata_fname, _, _, video_path, _, _, _ = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     masks_zarr = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())
     video_dat = zarr.open(video_path, synchronizer=zarr.ThreadSynchronizer())
+    frame_list = list(range(video_dat.shape[0]))
+
     logging.info(f"Read zarr from: {mask_fname} with size {masks_zarr.shape}")
     logging.info(f"Read video from: {video_path} with size {video_dat.shape}")
     logging.info(f"Using frame mapping from masks to video: {frame_list[:5]}...")
