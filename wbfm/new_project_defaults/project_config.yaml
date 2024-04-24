@@ -13,7 +13,7 @@ project_path: null # For reference afterwards
 ###################
 parent_data_folder: null
 
-behavior_bigtiff_fname: null
+behavior_fname: null
 red_bigtiff_fname: null
 green_bigtiff_fname: null
 

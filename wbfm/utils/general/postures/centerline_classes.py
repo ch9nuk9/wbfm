@@ -1810,6 +1810,8 @@ class WormFullVideoPosture:
         # Try 1: read from config file
         behavior_fname = project_config.config.get('behavior_bigtiff_fname', None)
         if behavior_fname is None:
+            behavior_fname = project_config.config.get('behavior_fname', None)
+        if behavior_fname is None:
             # Try 2: look in the parent folder of the red raw data
             project_config.logger.debug("behavior_fname not found; searching")
             raw_behavior_subfolder, flag = project_config.get_behavior_raw_parent_folder_from_red_fname()
