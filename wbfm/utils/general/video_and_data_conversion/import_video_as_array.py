@@ -1,5 +1,7 @@
 import typing
 from pathlib import Path
+
+import dask
 import numpy as np
 import tifffile
 from imutils import MicroscopeDataReader
@@ -54,6 +56,8 @@ def get_single_volume(fname: typing.Union[str, Path, tifffile.TiffFile, Microsco
     elif type(fname) == MicroscopeDataReader:
         # This should already be the correct shape, so we use which_vol directly
         dat = fname.dask_array[0, which_vol, 0, ...].compute().astype(dtype)
+    elif type(fname) == dask.array.Array:
+        dat = fname[which_vol, ...].compute().astype(dtype)
     else:
         raise ValueError("Must pass open tifffile or file path")
 

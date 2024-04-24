@@ -441,12 +441,12 @@ class PreprocessingSettings:
         with open(self.path_to_previous_warp_matrices, 'rb') as f:
             self.all_warp_matrices = pickle.load(f)
 
-    def get_single_volume(self, video_fname, i_time: int, num_slices=None):
+    def get_single_volume(self, video_dat_4d, i_time: int, num_slices=None):
         if num_slices is not None:
             raise NotImplementedError("Should set PreprocessingSettings.raw_number_of_planes")
         from imutils import MicroscopeDataReader
-        if isinstance(video_fname, tifffile.TiffFile) or isinstance(video_fname, MicroscopeDataReader):
-            raw_volume = get_single_volume(video_fname, i_time, self.raw_number_of_planes, dtype=self.initial_dtype)
+        if isinstance(video_dat_4d, tifffile.TiffFile) or isinstance(video_dat_4d, MicroscopeDataReader):
+            raw_volume = get_single_volume(video_dat_4d, i_time, self.raw_number_of_planes, dtype=self.initial_dtype)
         else:
             raise NotImplementedError("Should use tifffile.TiffFile")
         return raw_volume
@@ -580,7 +580,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     return single_volume_raw
 
 
-def preprocess_all_frames_using_config(config: ModularProjectConfig, video_fname: str,
+def preprocess_all_frames_using_config(config: ModularProjectConfig,
                                        preprocessing_settings: PreprocessingSettings = None, which_frames: list = None,
                                        which_channel: str = None, out_fname: str = None, verbose: int = 0,
                                        DEBUG: bool = False) -> zarr.Array:
@@ -596,7 +596,6 @@ def preprocess_all_frames_using_config(config: ModularProjectConfig, video_fname
     Parameters
     ----------
     config: config class loaded from yaml
-    video_fname: filename of input video
     preprocessing_settings: class with preprocessing settings
     which_frames: list of frames to analyze. Optional
     which_channel: red or green
@@ -613,15 +612,11 @@ def preprocess_all_frames_using_config(config: ModularProjectConfig, video_fname
     else:
         p = preprocessing_settings
 
-    num_slices, num_total_frames, bigtiff_start_volume, sz = _preprocess_all_frames_unpack_config(config.config,
-                                                                                                  verbose,
-                                                                                                  video_fname)
-    return preprocess_all_frames(num_slices, num_total_frames, p, bigtiff_start_volume, sz, video_fname, which_frames,
-                                 which_channel, out_fname, DEBUG)
+    video_dat_4d = config.open_raw_data_as_4d_dask(red_not_green=(which_channel == 'red'))
+    return preprocess_all_frames(video_dat_4d, p, out_fname, DEBUG)
 
 
-def preprocess_all_frames(num_slices: int, num_total_frames: int, p: PreprocessingSettings, start_volume: int,
-                          sz: Tuple, video_fname: str, which_frames: list, which_channel: str, out_fname: str,
+def preprocess_all_frames(video_dat_4d: dask.array, p: PreprocessingSettings, which_channel: str, out_fname: str,
                           DEBUG: bool) -> zarr.Array:
     """
     Preprocesses all frames using multithreading, saving directly to an output zarr file
@@ -629,31 +624,17 @@ def preprocess_all_frames(num_slices: int, num_total_frames: int, p: Preprocessi
     Parameters
     ----------
     DEBUG
-    num_slices
-    num_total_frames
     p
-    start_volume
-    sz
-    video_fname
-    which_frames
-    which_channel
+    which_channel - Needed to get the correct alpha and warp matrices
     out_fname
 
     Returns
     -------
 
     """
-    import tifffile
-    if DEBUG:
-        # Make a much shorter video
-        if which_frames is not None:
-            num_total_frames = which_frames[-1] + 1
-        else:
-            num_total_frames = 2
-        print(p)
 
-    chunk_sz = (1, num_slices,) + sz
-    total_sz = (num_total_frames,) + chunk_sz[1:]
+    chunk_sz = video_dat_4d.chunksize
+    total_sz = video_dat_4d.shape
     store = zarr.DirectoryStore(path=out_fname)
     if p.final_dtype == np.uint8:
         raise DeprecationWarning("uint16 should be saved directly")
@@ -666,32 +647,23 @@ def preprocess_all_frames(num_slices: int, num_total_frames: int, p: Preprocessi
     if p.do_deconvolution:
         max_workers = 1
     # Load data and preprocess
+    num_total_frames = video_dat_4d.shape[0]
     frame_list = list(range(num_total_frames))
-    # Check for compatibility with new class
-    from imutils import MicroscopeDataReader  # Lukas' new class
-    if video_fname.endswith('.btf'):
-        # If it's a bigtiff, then there is no metadata, so we have to pass it in
-        video_opt = dict(as_raw_tiff=True, raw_tiff_num_slices=num_slices)
-    else:
-        # It should load whether it is ndtiff or ome-tiff
-        video_opt = dict(as_raw_tiff=False)
 
-    # LUKAS' reader (not working yet)
-    with MicroscopeDataReader(video_fname, **video_opt) as vid_stream:
-    # with tifffile.TiffFile(video_fname) as vid_stream:
-        # Note: this saves alpha to disk
-        p.calculate_alpha_from_data(vid_stream, which_channel=which_channel, num_volumes_to_load=10)
+    # Note: this saves alpha to disk
+    p.calculate_alpha_from_data(video_dat_4d, which_channel=which_channel, num_volumes_to_load=10)
+    start_volume = 0
 
-        with tqdm(total=num_total_frames) as pbar:
-            def parallel_func(i):
-                preprocessed_dat[i, ...] = get_and_preprocess(i, p, start_volume, vid_stream,
-                                                              which_channel, read_lock)
+    with tqdm(total=num_total_frames) as pbar:
+        def parallel_func(i):
+            preprocessed_dat[i, ...] = get_and_preprocess(i, p, start_volume, video_dat_4d,
+                                                          which_channel, read_lock)
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = {executor.submit(parallel_func, i): i for i in frame_list}
-                for future in concurrent.futures.as_completed(futures):
-                    future.result()
-                    pbar.update(1)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(parallel_func, i): i for i in frame_list}
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+                pbar.update(1)
 
     return preprocessed_dat
 
@@ -729,7 +701,7 @@ def _get_video_options(config, video_fname):
     return sz
 
 
-def get_and_preprocess(i, p, start_volume, video_fname, which_channel, read_lock=None):
+def get_and_preprocess(i, p, start_volume, video_dat_4d, which_channel, read_lock=None):
     """
     See perform_preprocessing
 
@@ -740,7 +712,7 @@ def get_and_preprocess(i, p, start_volume, video_fname, which_channel, read_lock
     i: frame index (time)
     p: preprocessing class
     start_volume
-    video_fname
+    video_dat_4d
     which_channel
     read_lock
 
@@ -749,10 +721,10 @@ def get_and_preprocess(i, p, start_volume, video_fname, which_channel, read_lock
 
     """
     if read_lock is None:
-        single_volume_raw = p.get_single_volume(video_fname, i)
+        single_volume_raw = p.get_single_volume(video_dat_4d, i)
     else:
         with read_lock:
-            single_volume_raw = p.get_single_volume(video_fname, i)
+            single_volume_raw = p.get_single_volume(video_dat_4d, i)
     # Don't preprocess data that we didn't even segment!
     if i >= start_volume:
         return perform_preprocessing(single_volume_raw, p, i, which_channel=which_channel)

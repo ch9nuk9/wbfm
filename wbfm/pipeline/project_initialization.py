@@ -118,7 +118,6 @@ def calculate_number_of_volumes_from_tiff_file(num_raw_slices, red_bigtiff_fname
 
 def write_data_subset_using_config(cfg: ModularProjectConfig,
                                    out_fname: str = None,
-                                   video_fname: str = None,
                                    tiff_not_zarr: bool = False,
                                    pad_to_align_with_original: bool = False,
                                    save_fname_in_red_not_green: bool = None,
@@ -133,7 +132,6 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
     ----------
     cfg: config class
     out_fname: output filename. Should end in .zarr for zarr
-    video_fname: input filename. Should end in .btf
     tiff_not_zarr: flag for output format
     pad_to_align_with_original: flag for behavior if bigtiff_start_volume > 0, i.e. frames are removed at the beginning
     save_fname_in_red_not_green: where to save the out_fname in the config file
@@ -147,12 +145,11 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
 
     """
 
-    out_fname, preprocessing_settings, project_dir, bigtiff_start_volume, verbose, video_fname = _unpack_config_for_data_subset(
-        cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr, use_preprocessed_data,
-        video_fname)
+    out_fname, preprocessing_settings, project_dir, bigtiff_start_volume, verbose = _unpack_config_for_data_subset(
+        cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr, use_preprocessed_data)
 
     with safe_cd(project_dir):
-        preprocessed_dat = preprocess_all_frames_using_config(cfg, video_fname, preprocessing_settings, None,
+        preprocessed_dat = preprocess_all_frames_using_config(cfg, preprocessing_settings, None,
                                                               which_channel, out_fname, verbose, DEBUG)
 
     if not pad_to_align_with_original and bigtiff_start_volume > 0:
@@ -181,7 +178,7 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
 
 
 def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr,
-                                   use_preprocessed_data, video_fname):
+                                   use_preprocessed_data):
     verbose = cfg.config['verbose']
     project_dir = cfg.project_dir
     # preprocessing_fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
@@ -200,25 +197,13 @@ def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_
             out_fname = os.path.join(project_dir, "data_subset.zarr")
     else:
         out_fname = os.path.join(project_dir, out_fname)
-    if video_fname is None:
-        if save_fname_in_red_not_green:
-            if not use_preprocessed_data:
-                video_fname = cfg.config['red_bigtiff_fname']
-            else:
-                video_fname = cfg.resolve_relative_path_from_config('preprocessed_red')
-        else:
-            if not use_preprocessed_data:
-                video_fname = cfg.config['green_bigtiff_fname']
-            else:
-                video_fname = cfg.resolve_relative_path_from_config('preprocessed_green')
-        video_fname = resolve_mounted_path_in_current_os(video_fname, verbose=0)
     start_volume = cfg.config['deprecated_dataset_params'].get('bigtiff_start_volume', None)
     if start_volume is None:
         start_volume = 0
         cfg.config['deprecated_dataset_params']['bigtiff_start_volume'] = 0  # Will be written to disk later
     else:
         logging.warning("Found a start_volume, but this is deprecated. Attempting to continue, but may not work.")
-    return out_fname, preprocessing_settings, project_dir, start_volume, verbose, video_fname
+    return out_fname, preprocessing_settings, project_dir, start_volume, verbose
 
 
 def crop_zarr_using_config(cfg: ModularProjectConfig):
