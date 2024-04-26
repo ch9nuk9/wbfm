@@ -65,6 +65,7 @@ def segment_video_using_config_3d(preprocessing_cfg: ConfigFileWithProjectContex
             video_dat = green_dat
     num_frames = video_dat.shape[0]
     frame_list = list(range(num_frames))
+    logging.info(f"Found video of shape {video_dat.shape}")
 
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # For now don't worry about postprocessing the first volume
