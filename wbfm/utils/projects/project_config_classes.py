@@ -603,12 +603,16 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return behavior_fname, behavior_subfolder
 
     def get_behavior_raw_parent_folder_from_red_fname(self, verbose=0) -> Tuple[Optional[Path], bool]:
-        red_fname = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
+        red_fname, is_btf = self.get_raw_data_fname(red_not_green=True)
         if red_fname is None:
             if verbose >= 1:
                 print("Could not find red_bigtiff_fname, aborting")
             return None, False
-        main_data_folder = Path(red_fname).parents[1]
+        if is_btf:
+            main_data_folder = Path(red_fname).parents[1]
+        else:
+            main_data_folder = Path(red_fname).parents[0]
+
         if not main_data_folder.exists():
             if verbose >= 1:
                 print(f"Could not find main data folder {main_data_folder}, aborting")
