@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Clean and run the integration test, i.e. a shortened dataset
-DATA_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/example_data/freely_moving/ZIM2165_Gcamp7b_worm1"
+DATA_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/test_data/freely_moving/ZIM2165_Gcamp7b_worm1"
 PARENT_PROJECT_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/test_projects"
 CODE_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
 

@@ -2,7 +2,7 @@
 
 # Clean and run the integration test, i.e. a shortened dataset
 PARENT_PROJECT_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/test_projects"
-PARENT_DATA_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/example_data/"
+PARENT_DATA_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/test_data/"
 CODE_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
 
 # For each subfolder, remove any project folders
