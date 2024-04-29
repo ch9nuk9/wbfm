@@ -6,7 +6,7 @@ PARENT_DATA_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/test_data/"
 CODE_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
 
 # For each subfolder, remove any project folders
-SUBFOLDERS=["freely_moving" "immobilized"]
+SUBFOLDERS=("freely_moving" "immobilized")
 for f in "${SUBFOLDERS[@]}"; do
     PROJECT_PATH=$PARENT_PROJECT_DIR/$f
     if [ -d "$PROJECT_PATH" ]; then
