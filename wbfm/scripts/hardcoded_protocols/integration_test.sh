@@ -29,6 +29,10 @@ for f in "${SUBFOLDERS[@]}"; do
     bash $COMMAND -t "$DATA_DIR" -p "$PROJECT_PATH"
 done
 
+# Sleep, waiting for the projects to be created
+sleep 20
+echo "Projects should have been created... starting to run the integration test"
+
 # Run, again for each subfolder
 # Note that the actual step is different for the immobilized data
 COMMAND=$CODE_DIR/"scripts/cluster/run_all_projects_in_parent_folder.sh"
