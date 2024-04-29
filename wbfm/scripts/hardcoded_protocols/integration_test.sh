@@ -40,4 +40,4 @@ PROJECT_PATH=$PARENT_PROJECT_DIR/"freely_moving"
 bash $COMMAND -t "$PROJECT_PATH" -s traces_and_behavior
 # Immobilized
 PROJECT_PATH=$PARENT_PROJECT_DIR/"immobilized"
-bash $COMMAND -t "$PROJECT_PATH" -s behavior
+bash $COMMAND -t "$PROJECT_PATH" -s traces
