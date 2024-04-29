@@ -30,7 +30,6 @@ for f in "${SUBFOLDERS[@]}"; do
 done
 
 # Sleep, waiting for the projects to be created
-sleep 60
 echo "Projects should have been created... starting to run the integration test"
 
 # Run, again for each subfolder
