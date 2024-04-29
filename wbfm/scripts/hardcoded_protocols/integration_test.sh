@@ -10,8 +10,12 @@ SUBFOLDERS=("freely_moving" "immobilized")
 for f in "${SUBFOLDERS[@]}"; do
     PROJECT_PATH=$PARENT_PROJECT_DIR/$f
     if [ -d "$PROJECT_PATH" ]; then
-        echo "Removing existing project at $PROJECT_PATH"
-        rm -r "$PROJECT_PATH"
+        echo "Removing existing project in subfolder $PROJECT_PATH"
+        for SUBFOLDER in "$PROJECT_PATH"/*; do
+            if [ -d "$SUBFOLDER" ]; then
+                rm -r "$SUBFOLDER"
+            fi
+        done
     fi
 done
 
@@ -20,7 +24,7 @@ COMMAND=$CODE_DIR/"scripts/cluster/create_multiple_projects_from_data_parent_fol
 for f in "${SUBFOLDERS[@]}"; do
     DATA_DIR=$PARENT_DATA_DIR/$f
     PROJECT_PATH=$PARENT_PROJECT_DIR/$f
-    echo "Creating new project at $PROJECT_PATH"
+    echo "Creating new project in subfolder $PROJECT_PATH"
     # If there are multiple data folders, create a project for each
     bash $COMMAND -t "$DATA_DIR" -p "$PROJECT_PATH"
 done
