@@ -33,7 +33,7 @@ class ConfigFileWithProjectContext:
 
     Knows how to:
     1. update itself on disk
-    2. save new data inside the relevant project
+    2. save new data inside the relevant project using pickle or pandas
     3. change filepaths between relative and absolute
     """
 
@@ -196,7 +196,13 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
     """
     Configuration file (loaded from .yaml) that knows the project it should be executed in
 
-    In principle this config file is associated with a subfolder (and single step) of a project
+    In principle this config file is associated with a subfolder and single step of a project
+
+    Light wrapper around ConfigFileWithProjectContext, with the added functionality of:
+    1. Saving in the correct subfolder
+    2. Resolving paths to the correct subfolder
+
+    Note that this subfolder does not need to be nested within the main project folder
     """
 
     subfolder: str = None
@@ -243,7 +249,11 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     Knows how to:
     1. find the individual config files of the substeps
     2. initialize the physical unit conversion class
-    3. and loading other options classes
+    3. loading other options classes
+    4. find the files used for the behavior pipeline
+    5. open the raw data (external to the project)
+
+    In principle, any usage of non-local files (raw data) should go through this class
 
     """
 
@@ -704,7 +714,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         else:
             raise ValueError(f"No background videos found in {behavior_raw_folder}/../background/")
 
-        return behavior_raw_folder, raw_data_subfolder, behavior_output_folder, background_img, background_video, btf_file
+        return behavior_raw_folder, raw_data_subfolder, behavior_output_folder, \
+            background_img, background_video, btf_file
 
 
 def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> SubfolderConfigFile:
