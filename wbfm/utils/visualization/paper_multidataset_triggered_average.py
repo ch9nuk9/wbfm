@@ -807,6 +807,8 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         """
         df_traces = self.get_df_from_data_type(trace_type)
+        if neuron_name not in df_traces:
+            raise ValueError(f"Neuron name {neuron_name} not found in traces")
 
         fig_opt = self.get_figure_opt()
         if color is None:
