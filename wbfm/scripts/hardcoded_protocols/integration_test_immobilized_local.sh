@@ -23,4 +23,4 @@ python "$COMMAND" $ARGS
 cd "$PROJECT_PATH"/snakemake || exit
 echo "Running the pipeline in project $PWD"
 
-bash RUNME.sh -c
+bash RUNME.sh -c -s traces
