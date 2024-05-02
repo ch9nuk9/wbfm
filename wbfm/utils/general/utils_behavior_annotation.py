@@ -541,8 +541,10 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
     shading
     include_reversal_turns
     include_collision
+    additional_shaded_states
     yref: str - either 'paper' or a specific axis label (default 'paper'). If 'paper', then shades all subplots
         See fig.add_shape on a plotly figure for more details
+    DEBUG
 
     Returns
     -------
@@ -598,15 +600,14 @@ def shade_using_behavior_plotly(beh_vector, fig, shape_opt=None, index_conversio
     """
     Plotly version of shade_using_behavior
 
+    See options_for_ethogram for more details on the kwargs
+
+
     Parameters
     ----------
     beh_vector
     fig
-    behaviors_to_ignore
-    cmap
     index_conversion
-    additional_shaded_states
-    DEBUG
 
     Returns
     -------

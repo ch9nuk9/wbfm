@@ -6,7 +6,6 @@ import pandas as pd
 import plotly.express as px
 from wbfm.utils.external.utils_matplotlib import export_legend
 
-from wbfm.utils.tracklets.postprocess_tracking import OutlierRemoval
 from wbfm.utils.utils_cache import cache_to_disk_class
 
 
@@ -217,6 +216,7 @@ class PaperDataCache:
                          func_save_to_disk=np.save,
                          func_load_from_disk=np.load)
     def calc_indices_to_remove_using_ppca(self):
+        from wbfm.utils.tracklets.postprocess_tracking import OutlierRemoval
         names = self.project_data.neuron_names
         coords = ['z', 'x', 'y']
         all_zxy = self.project_data.red_traces.loc[:, (slice(None), coords)].copy()
