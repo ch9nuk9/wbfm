@@ -6,7 +6,7 @@ PARENT_PROJECT_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/test_projects/immobil
 CODE_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
 
 # Remove project if it exists
-PROJECT_PATH=$PARENT_PROJECT_DIR/"pytest-raw"
+PROJECT_PATH=$PARENT_PROJECT_DIR/"pytest-2024-04-23"
 if [ -d "$PROJECT_PATH" ]; then
   echo "Removing existing project at $PROJECT_PATH"
   rm -r "$PROJECT_PATH"
