@@ -1,3 +1,4 @@
+import logging
 import os
 from collections import defaultdict
 from dataclasses import dataclass
@@ -24,6 +25,7 @@ from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 @dataclass
 class FramePairOptions:
+    """Options for matching neurons between two frames; See FramePair for the actual matching process"""
     # Flag and options for each method
     # First: default feature-embedding method
     embedding_matches_to_keep: float = 1.0
@@ -90,7 +92,16 @@ class FramePairOptions:
 
 @dataclass
 class FramePair:
-    """Information connecting neurons in two ReferenceFrame objects"""
+    """
+    Information connecting neurons in two ReferenceFrame objects
+
+    Also implements an ensemble of methods to match neurons between the two frames:
+    - Feature matching using opencv feature embedding
+    - Local affine matching using opencv (performance constrained by feature matching)
+    - Gaussian process matching (performance constrained by feature matching)
+    - Neural network matching (superglue and fDNC)
+
+    """
     options: FramePairOptions = None
 
     # Final output, with confidences
@@ -121,6 +132,8 @@ class FramePair:
     _pts0_preprocessed: np.ndarray = None
     _dat0: np.ndarray = None
     _dat1: np.ndarray = None
+
+    _already_warned = False  # To avoid spamming installation warnings
 
     @property
     def all_candidate_matches(self) -> list:
@@ -641,7 +654,11 @@ class FramePair:
         self._match_using_fdnc(self.options.fdnc_options)
 
     def _match_using_fdnc(self, prediction_options):
-        from fDNC.src.DNC_predict import predict_matches
+        try:
+            from fDNC.src.DNC_predict import predict_matches
+        except ImportError:
+            logging.warning("fDNC is not installed. Skipping prediction using this method")
+            self._already_warned = True
         # New: n0 may be rigidly prealigned
         n0, n1 = self.pts0_preprocessed, self.pts1.copy()
         template_pos = self.options.physical_unit_conversion.zimmer2leifer(np.array(n0))
