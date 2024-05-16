@@ -654,6 +654,9 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         """
         Requires the raw behavior folder and the behavior folder in the project
 
+        Raises a NoBehaviorDataError if the entire behavior folder cannot be found, which is expected for immobilized
+        recordings.
+
         Returns
         -------
 
@@ -679,7 +682,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         elif len(raw_data_subfolder) > 1:
             raise ValueError("There is more than one raw dataset")
         else:
-            raise ValueError("No raw data found")
+            raise NoBehaviorDataError("No raw data found")
 
         # See if the .btf file has already been produced... unfortunately this is a modification of the raw data folder
         # Assume that any .btf file is the correct one, IF it doesn't have 'AVG' in the name (refers to background subtraction)
