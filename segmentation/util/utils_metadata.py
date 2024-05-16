@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
 from wbfm.utils.general.postprocessing.utils_metadata import regionprops_one_volume_one_channel
-from wbfm.utils.projects.utils_filenames import pickle_load_binary
+from wbfm.utils.general.utils_filenames import pickle_load_binary
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 import numpy as np

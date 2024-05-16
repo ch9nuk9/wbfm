@@ -17,7 +17,7 @@ from scipy.optimize import curve_fit
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.general.utils_networkx import calc_bipartite_from_candidates
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.projects.utils_filenames import get_sequential_filename
+from wbfm.utils.general.utils_filenames import get_sequential_filename
 from wbfm.utils.tracklets.utils_tracklets import build_tracklets_dfs
 from scipy.signal import find_peaks
 from skimage.measure import regionprops

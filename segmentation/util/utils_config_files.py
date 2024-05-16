@@ -1,7 +1,7 @@
 import logging
 import pickle
 
-from wbfm.utils.projects.utils_filenames import pickle_load_binary
+from wbfm.utils.general.utils_filenames import pickle_load_binary
 
 from segmentation.util.utils_paths import get_output_fnames
 

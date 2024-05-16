@@ -6,9 +6,9 @@ from typing import Union
 import cv2
 import dask.array as da
 from skimage.measure import regionprops
-from wbfm.utils.general.custom_errors import NoMatchesError
+from wbfm.utils.external.custom_errors import NoMatchesError
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.projects.utils_filenames import add_name_suffix
+from wbfm.utils.general.utils_filenames import add_name_suffix
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from numcodecs import blosc
 
