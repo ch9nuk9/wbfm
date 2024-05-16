@@ -9,7 +9,7 @@ from sklearn.decomposition import TruncatedSVD
 from tqdm.auto import tqdm
 
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from wbfm.barlow_project.utils.model_image_classifier import NeuronEmbeddingModel
+from wbfm.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
 from wbfm.utils.nn_utils.superglue import SuperGlueModel, SuperGlueUnpacker
 from wbfm.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
 
