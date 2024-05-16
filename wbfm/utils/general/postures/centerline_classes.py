@@ -25,11 +25,11 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_p
     plot_dataframe_of_transitions, annotate_turns_from_reversal_ends
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
     remove_short_state_changes, get_dataframe_of_transitions, make_binary_vector_from_starts_and_ends
-from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
+from wbfm.utils.external.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
     MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
+from wbfm.utils.general.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
     assign_id_based_on_closest_onset_in_split_lists, calc_time_series_from_starts_and_ends
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df

@@ -1,6 +1,6 @@
 import logging
 import os
-from wbfm.utils.general.custom_errors import NoBehaviorDataError
+from wbfm.utils.external.custom_errors import NoBehaviorDataError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 

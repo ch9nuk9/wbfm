@@ -8,11 +8,11 @@ import zarr
 from tqdm.auto import tqdm
 
 from wbfm.gui.utils.utils_gui import change_viewer_time_point
-from wbfm.utils.general.custom_errors import MissingAnalysisError
+from wbfm.utils.external.custom_errors import MissingAnalysisError
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 import napari
 
-from wbfm.utils.projects.utils_filenames import get_sequential_filename
+from wbfm.utils.general.utils_filenames import get_sequential_filename
 from wbfm.utils.visualization.utils_array_format_conversion import napari_tracks_from_match_list, napari_labels_from_frames
 from wbfm.utils.visualization.napari_utils import napari_labels_from_traces_dataframe, NapariPropertyHeatMapper
 

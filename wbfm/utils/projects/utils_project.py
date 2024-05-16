@@ -1,4 +1,3 @@
-import glob
 import os
 import os.path as osp
 import pathlib
@@ -10,7 +9,7 @@ from os import path as osp
 from pathlib import Path
 from ruamel.yaml import YAML
 
-from wbfm.utils.projects.utils_filenames import get_location_of_new_project_defaults
+from wbfm.utils.general.utils_filenames import get_location_of_new_project_defaults
 
 
 #####################

@@ -1,7 +1,6 @@
 """
 """
 
-import os
 from pathlib import Path
 import sacred
 from wbfm.utils.general.preprocessing.bounding_boxes import calculate_bounding_boxes_from_cfg_and_save, \
@@ -12,9 +11,9 @@ from wbfm.utils.external.monkeypatch_json import using_monkeypatch
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 
 from wbfm.pipeline.project_initialization import write_data_subset_using_config, zip_zarr_using_config, \
-    calculate_number_of_volumes_from_tiff_file, calculate_total_number_of_frames_from_bigtiff
+    calculate_total_number_of_frames_from_bigtiff
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.projects.utils_filenames import generate_output_data_names
+from wbfm.utils.general.utils_filenames import generate_output_data_names
 from wbfm.utils.projects.utils_project import safe_cd
 import cgitb
 cgitb.enable(format='text')

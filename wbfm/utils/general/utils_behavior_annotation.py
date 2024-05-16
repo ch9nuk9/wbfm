@@ -19,7 +19,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends, \
     remove_short_state_changes, get_contiguous_blocks_from_two_columns, resample_categorical, \
     combine_columns_with_suffix
-from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError, NeedsAnnotatedNeuronError
+from wbfm.utils.external.custom_errors import InvalidBehaviorAnnotationsError, NeedsAnnotatedNeuronError
 import plotly.graph_objects as go
 
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df

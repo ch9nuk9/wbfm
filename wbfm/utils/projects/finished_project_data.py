@@ -15,7 +15,7 @@ from wbfm.utils.general.utils_paper import PaperDataCache, apply_figure_settings
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError, NoBehaviorAnnotationsError
+from wbfm.utils.external.custom_errors import NoMatchesError, NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.general.postprocessing.utils_imputation import impute_missing_values_in_dataframe
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
@@ -46,7 +46,7 @@ from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from wbfm.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
 from segmentation.util.utils_metadata import DetectedNeurons
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
-from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, \
+from wbfm.utils.general.utils_filenames import read_if_exists, pickle_load_binary, \
     load_file_according_to_precedence, pandas_read_any_filetype, get_sequential_filename
 from wbfm.utils.projects.utils_project import safe_cd
 # from functools import cached_property # Only from python>=3.8

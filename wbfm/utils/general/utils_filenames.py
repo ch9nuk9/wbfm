@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from pip._internal.commands.show import search_packages_info
 
-from wbfm.utils.general.custom_errors import UnknownValueError
+from wbfm.utils.external.custom_errors import UnknownValueError
 
 
 def check_exists(abs_path, allow_overwrite):

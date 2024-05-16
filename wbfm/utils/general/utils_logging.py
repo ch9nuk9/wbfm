@@ -2,7 +2,7 @@ import logging
 import sys
 from pathlib import Path
 
-from wbfm.utils.projects.utils_filenames import get_sequential_filename
+from wbfm.utils.general.utils_filenames import get_sequential_filename
 
 
 def setup_logger_object(log_filename, actually_set_up_file=True):

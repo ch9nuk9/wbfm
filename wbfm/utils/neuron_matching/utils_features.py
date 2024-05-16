@@ -12,7 +12,7 @@ from wbfm.utils.external.utils_cv2 import get_keypoints_from_3dseg
 ##
 ## First, extract features and match
 ##
-from wbfm.utils.general.custom_errors import NoMatchesError
+from wbfm.utils.external.custom_errors import NoMatchesError
 
 
 def convert_to_grayscale(im1):

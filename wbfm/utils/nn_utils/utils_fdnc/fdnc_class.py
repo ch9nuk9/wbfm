@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass
 
 import numpy as np
-from wbfm.utils.general.custom_errors import NoNeuronsError
+from wbfm.utils.external.custom_errors import NoNeuronsError
 from wbfm.utils.nn_utils.fdnc_predict import load_fdnc_template, load_fdnc_options
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion

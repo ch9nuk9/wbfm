@@ -12,7 +12,7 @@ from scipy.spatial.distance import squareform, pdist
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
-from wbfm.utils.projects.utils_filenames import read_if_exists, get_sequential_filename
+from wbfm.utils.general.utils_filenames import read_if_exists, get_sequential_filename
 from wbfm.utils.projects.utils_project import safe_cd
 
 

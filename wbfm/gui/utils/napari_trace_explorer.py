@@ -21,9 +21,9 @@ from matplotlib import pyplot as plt
 from napari._qt.qthreading import thread_worker
 from numpy.linalg import LinAlgError
 from tqdm.auto import tqdm
-from PyQt5.QtWidgets import QApplication, QProgressDialog, QListWidget
+from PyQt5.QtWidgets import QApplication, QProgressDialog
 from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
-from wbfm.utils.general.custom_errors import NoBehaviorAnnotationsError
+from wbfm.utils.external.custom_errors import NoBehaviorAnnotationsError
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step

@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 from sklearn.mixture import GaussianMixture
 
-from wbfm.utils.projects.utils_filenames import pickle_load_binary
+from wbfm.utils.general.utils_filenames import pickle_load_binary
 from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
 
 

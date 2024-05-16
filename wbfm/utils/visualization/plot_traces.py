@@ -14,7 +14,7 @@ from sklearn.decomposition import PCA
 from wbfm.utils.general.utils_paper import paper_trace_settings, paper_figure_page_settings, \
     apply_figure_settings, behavior_name_mapping
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, options_for_ethogram, shade_using_behavior
-from wbfm.utils.general.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
+from wbfm.utils.external.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.external.utils_matplotlib import get_twin_axis
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from wbfm.utils.external.utils_pandas import cast_int_or_nan

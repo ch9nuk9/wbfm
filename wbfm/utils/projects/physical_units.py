@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass
 import numpy as np
 
-from wbfm.utils.general.custom_errors import IncompleteConfigFileError
+from wbfm.utils.external.custom_errors import IncompleteConfigFileError
 
 
 @dataclass

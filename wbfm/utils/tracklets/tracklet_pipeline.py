@@ -1,7 +1,6 @@
 import logging
 import os
 import os.path as osp
-import pickle
 from collections import defaultdict
 from pathlib import Path
 from typing import Union
@@ -25,7 +24,7 @@ from wbfm.utils.tracklets.tracklet_class import TrackedWorm
 from wbfm.utils.tracklets.utils_tracklets import build_tracklets_dfs, \
     remove_tracklets_from_dictionary_without_database_match
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
-from wbfm.utils.projects.utils_filenames import pickle_load_binary
+from wbfm.utils.general.utils_filenames import pickle_load_binary
 from wbfm.utils.projects.utils_project import safe_cd
 
 ###

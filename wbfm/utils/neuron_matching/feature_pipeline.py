@@ -4,7 +4,7 @@ import numpy as np
 from segmentation.util.utils_metadata import DetectedNeurons
 from tqdm.auto import tqdm
 
-from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
+from wbfm.utils.external.custom_errors import NoMatchesError, NoNeuronsError
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair, calc_FramePair_from_Frames, \
     FramePairOptions

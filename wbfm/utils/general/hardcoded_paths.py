@@ -3,7 +3,7 @@ from typing import Union
 
 import pandas as pd
 
-from wbfm.utils.projects.utils_filenames import pickle_load_binary
+from wbfm.utils.general.utils_filenames import pickle_load_binary
 
 
 ##

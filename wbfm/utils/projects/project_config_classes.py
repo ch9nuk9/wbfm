@@ -17,9 +17,9 @@ from imutils import MicroscopeDataReader
 from methodtools import lru_cache
 
 from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
-from wbfm.utils.general.custom_errors import NoBehaviorDataError, TiffFormatError
+from wbfm.utils.external.custom_errors import NoBehaviorDataError, TiffFormatError
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
-from wbfm.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
+from wbfm.utils.general.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
     get_sequential_filename, get_location_of_new_project_defaults
 from wbfm.utils.projects.utils_project import load_config, edit_config, safe_cd, update_project_config_path, \
     update_snakemake_config_path

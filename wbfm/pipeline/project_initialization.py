@@ -13,8 +13,7 @@ from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSe
     preprocess_all_frames_using_config, background_subtract_single_channel
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
-from wbfm.utils.projects.utils_filenames import get_sequential_filename, resolve_mounted_path_in_current_os, \
-    add_name_suffix, get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder, \
+from wbfm.utils.general.utils_filenames import get_sequential_filename, add_name_suffix, get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder, \
     get_ndtiff_fnames_from_parent_folder
 from wbfm.utils.projects.utils_project import get_project_name, safe_cd, update_project_config_path, \
     update_snakemake_config_path
