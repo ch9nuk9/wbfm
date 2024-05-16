@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 from scipy.optimize import linear_sum_assignment
+from sklearn.decomposition import TruncatedSVD
 from tqdm.auto import tqdm
 
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
@@ -243,3 +244,34 @@ def _unpack_project_for_global_tracking(DEBUG, project_cfg):
         num_frames = 3
     all_frames = project_data.raw_frames
     return all_frames, num_frames, num_random_templates, project_data, t_template, tracking_cfg, use_multiple_templates
+
+
+def load_cluster_tracker_from_config(project_config, svd_components=50, ):
+    """Alternate method for tracking via pure clustering on the feature space"""
+    project_data = ProjectData.load_final_project_data_from_config(project_config, to_load_frames=True)
+
+    # Use old tracker just as a feature-space embedder
+    frames_old = project_data.raw_frames
+    unpacker = SuperGlueUnpacker(project_data, 10)
+    tracker_old = WormWithSuperGlueClassifier(superglue_unpacker=unpacker)
+
+    print("Embedding all neurons in feature space...")
+    X = []
+    linear_ind_to_local = []
+    offset = 0
+    for i in tqdm(range(project_data.num_frames)):
+        this_frame = frames_old[i]
+        this_frame_embedding = tracker_old.embed_target_frame(this_frame)
+        this_x = this_frame_embedding.squeeze().cpu().numpy().T
+        X.append(this_x)
+
+        linear_ind_to_local.append(offset + np.arange(this_x.shape[0]))
+        offset += this_x.shape[0]
+
+    X = np.vstack(X).astype(float)
+    alg = TruncatedSVD(n_components=svd_components)
+    X_svd = alg.fit_transform(X)
+
+    from barlow_track.utils.track_using_clusters import WormTsneTracker
+    obj = WormTsneTracker(X_svd, linear_ind_to_local, svd_components=svd_components)
+    return obj
