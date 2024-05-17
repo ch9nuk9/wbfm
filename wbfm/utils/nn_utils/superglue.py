@@ -628,6 +628,16 @@ class SuperGlueUnpacker:
         return new_data
 
 
+class AbstractNeuronImageFeaturesFromProject(Dataset):
+
+    def __init__(self, project_data: ProjectData, transform=None):
+        self.project_data = project_data
+
+    def __len__(self):
+        return len(self.project_data.num_frames)
+
+
+
 class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronImageFeaturesFromProject):
     """
     Returns pairs of volumes in superglue format, using the SuperGlueUnpacker class
@@ -701,15 +711,6 @@ class SequentialLoader:
     def __iter__(self):
         for dataloader in self.dataloaders:
             yield from dataloader
-
-
-class AbstractNeuronImageFeaturesFromProject(Dataset):
-
-    def __init__(self, project_data: ProjectData, transform=None):
-        self.project_data = project_data
-
-    def __len__(self):
-        return len(self.project_data.num_frames)
 
 
 class NeuronImageFeaturesDataModuleFromMultipleProjects(LightningDataModule):
