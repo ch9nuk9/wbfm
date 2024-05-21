@@ -24,7 +24,7 @@ from wbfm.utils.neuron_matching.utils_rigid_alignment import align_stack_to_midd
     cumulative_alignment_of_stack, apply_alignment_matrix_to_stack, calculate_alignment_matrix_two_stacks
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
 from wbfm.utils.general.utils_filenames import add_name_suffix
-from wbfm.utils.projects.utils_project import edit_config
+from wbfm.utils.external.utils_yaml import edit_config
 from wbfm.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume
 
 

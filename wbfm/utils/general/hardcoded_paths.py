@@ -4,6 +4,41 @@ from typing import Union
 import pandas as pd
 
 from wbfm.utils.general.utils_filenames import pickle_load_binary
+from wbfm.utils.external.utils_yaml import load_config
+
+
+##
+## Code for loading various neural networks and things needed for a new user
+##
+
+def load_all_hardcoded_paths():
+    """
+    Loads everything that might be needed for a new user
+
+    Fundamentally tries to read from a config file that is stored in the user's home directory. If that file does not
+    exist, it will then search for a environment variable that contains the path to the config file. If that does not
+    exist, it will then try to create the config file using defaults... but this will be empty and throw an error.
+    Specifically, the order is this:
+    1. Look in ~/.wbfm/config.yaml
+    2. Look in the environment variable WBFM_CONFIG_PATH, which should point to a .yaml
+    3. Create a default config file in ~/.wbfm/config.yaml, and raise IncompleteConfigFileError
+
+    """
+    # First, try to load from the config file
+    which_method_worked = None
+    try:
+        default_config_path = Path.home().joinpath('.wbfm/config.yaml')
+        config = load_config(default_config_path)
+        which_method_worked = "config.yaml"
+    except FileNotFoundError:
+        pass
+
+    # If that didn't work, try to load from the environment variable
+
+
+def get_paths_to_superglue_networks():
+    pass
+
 
 
 ##

@@ -12,7 +12,8 @@ from sacred import Experiment
 
 # main function
 from wbfm.utils.general.postprocessing.utils_imputation import impute_missing_values_using_config
-from wbfm.utils.projects.utils_project import load_config, safe_cd
+from wbfm.utils.projects.utils_project import safe_cd
+from wbfm.utils.external.utils_yaml import load_config
 
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)

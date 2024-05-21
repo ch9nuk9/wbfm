@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
 
-from wbfm.utils.projects.utils_project import load_config, safe_cd
+from wbfm.utils.projects.utils_project import safe_cd
+from wbfm.utils.external.utils_yaml import load_config
 
 
 def segment_local_data_subset(project_config, out_fname=None):
