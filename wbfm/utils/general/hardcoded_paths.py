@@ -52,6 +52,7 @@ def load_hardcoded_neural_network_paths() -> dict:
         try:
             config_dict_str = pkgutil.get_data('wbfm', 'utils/projects/wbfm_config.yaml')
             config = YAML().load(config_dict_str)
+            which_method_worked = "defaults imported from package"
         except FileNotFoundError as e:
             logging.debug("Could not find config file within package... is the code properly installed?")
             raise e  # If we are in the zimmer lab and this fails, it's a real error
