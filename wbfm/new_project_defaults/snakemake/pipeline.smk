@@ -36,6 +36,7 @@ except NoBehaviorDataError:
 # Additionally update the paths used for the behavior pipeline (note that this needs to be loaded even if behavior is not run)
 hardcoded_paths = load_hardcoded_neural_network_paths()
 config.update(hardcoded_paths["behavior_paths"])
+print(f"Loaded snakemake config file with parameters: {config}")
 
 
 def _run_helper(script_name, project_path):
@@ -362,7 +363,7 @@ rule dlc_analyze_videos:
         dlc_network_string = config["head_tail_dlc_name"], # Is this used?
         dlc_conda_env = config["dlc_conda_env_name"]
     output:
-        hdf5_file = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["dlc_network_string"]+".h5"
+        hdf5_file = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["head_tail_dlc_name"]+".h5"
     shell:
         """
         source /lisc/app/conda/miniconda3/bin/activate {params.dlc_conda_env}
@@ -372,7 +373,7 @@ rule dlc_analyze_videos:
 rule create_centerline:
     input:
         input_binary_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented_mask.btf",
-        hdf5_file = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["dlc_network_string"]+".h5"
+        hdf5_file = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["head_tail_dlc_name"]+".h5"
 
     params:
         output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
