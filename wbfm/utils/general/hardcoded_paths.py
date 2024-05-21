@@ -8,6 +8,7 @@ import pandas as pd
 from wbfm.utils.external.custom_errors import IncompleteConfigFileError
 from wbfm.utils.general.utils_filenames import pickle_load_binary
 from wbfm.utils.external.utils_yaml import load_config
+from ruamel.yaml import YAML
 
 
 ##
