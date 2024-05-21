@@ -8,9 +8,9 @@ import wandb
 
 from wbfm.utils.nn_utils.superglue import SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject, \
     SuperGlueModel, NeuronImageFeaturesDataModuleFromMultipleProjects
-from wbfm.utils.nn_utils.worm_with_classifier import PATH_TO_SUPERGLUE_MODEL
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_redo_steps import correct_tracks_dataframe_using_project
+from wbfm.utils.general.hardcoded_paths import load_hardcoded_neural_network_paths
 
 
 def main():
@@ -31,7 +31,12 @@ def main():
     # Explicitly setup to see if there are problems
     train_loader.setup()
     # Start from pretrained
-    model = SuperGlueModel.load_from_checkpoint(PATH_TO_SUPERGLUE_MODEL)
+    path_dict = load_hardcoded_neural_network_paths()
+    superglue_parent_folder = path_dict['tracking_paths']['model_parent_folder']
+    superglue_model_name = path_dict['tracking_paths']['global_tracking_model_name']
+    superglue_path = os.path.join(superglue_parent_folder, superglue_model_name)
+
+    model = SuperGlueModel.load_from_checkpoint(superglue_path)
     # model = SuperGlueModel(feature_dim=840, lr=1e-5)
     model.lr = 1e-5
     with wandb.init(project="superglue_training_multiple_projects_fixed_r2w4", entity="charlesfieseler") as run:

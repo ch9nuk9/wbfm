@@ -14,9 +14,9 @@ from wbfm.utils.external.utils_yaml import load_config
 ## Code for loading various neural networks and things needed for a new user
 ##
 
-def load_hardcoded_neural_network_paths():
+def load_hardcoded_neural_network_paths() -> dict:
     """
-    Loads everything that might be needed for a new user
+    Loads everything that might be needed for a new user. Note that the paths are not defined here, but rather in
 
     Fundamentally tries to read from a config file that is stored in the user's home directory. If that file does not
     exist, it will then search for a environment variable that contains the path to the config file. If that does not
@@ -24,7 +24,7 @@ def load_hardcoded_neural_network_paths():
     Specifically, the order is this:
     1. Look in ~/.wbfm/config.yaml
     2. Look in the environment variable WBFM_CONFIG_PATH, which should point to a .yaml
-    3. Load from the package, which has defaults that only work for the zimmer lab
+    3. Load from the package, which has defaults that only work for the zimmer lab (tries to check if this is the zimmer lab)
     4. Create a default config file in ~/.wbfm/config.yaml, and raise IncompleteConfigFileError
 
     """
@@ -46,13 +46,14 @@ def load_hardcoded_neural_network_paths():
         except (KeyError, FileNotFoundError):
             logging.debug("Could not find WBFM_CONFIG_PATH in environment variables; continuing search")
 
-    # If that didn't work, try to load from the zimmer-lab specific path
-    if which_method_worked is None:
+    # If that didn't work, load from the zimmer-lab defaults
+    if which_method_worked is None and is_zimmer_lab():
         try:
             config_dict_str = pkgutil.get_data('wbfm', 'utils/projects/wbfm_config.yaml')
             config = YAML().load(config_dict_str)
-        except FileNotFoundError:
-            logging.debug("Could not find config file at hardcoded path; continuing search")
+        except FileNotFoundError as e:
+            logging.debug("Could not find config file within package... is the code properly installed?")
+            raise e  # If we are in the zimmer lab and this fails, it's a real error
 
     # If that didn't work, try to create a default config file
     if which_method_worked is None:
@@ -75,10 +76,10 @@ def load_hardcoded_neural_network_paths():
 
     return config
 
-def get_paths_to_superglue_networks():
-    pass
 
-
+def is_zimmer_lab():
+    """Loose check to see if the code is running on the lisc cluster, from the zimmer lab"""
+    return Path('/lisc/scratch/neurobiology/zimmer').exists()
 
 ##
 # "Final" set of good datasets

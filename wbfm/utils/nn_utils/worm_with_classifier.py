@@ -12,21 +12,8 @@ from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from wbfm.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
 from wbfm.utils.nn_utils.superglue import SuperGlueModel, SuperGlueUnpacker
 from wbfm.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
+from wbfm.utils.general.hardcoded_paths import load_hardcoded_neural_network_paths
 
-model_dir = "/lisc/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/nn_checkpoints/"
-local_model_dir = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/nn_checkpoints/"
-PATH_TO_MODEL = os.path.join(model_dir, "superglue_neurons_4_datasets_adjacent_remove_nonmoving_05_11.ckpt")
-
-# Update: 4/20/2022 - multiple datasets
-PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_neurons_5_datasets_07_08_uint16.ckpt")
-PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir,
-                                                "superglue_neurons_5_datasets_adjacent_07_11_uint16.ckpt")
-
-LOCAL_PATH_TO_SUPERGLUE_MODEL = ""
-LOCAL_PATH_TO_SUPERGLUE_TRACKLET_MODEL = ""
-
-if not os.path.exists(PATH_TO_SUPERGLUE_MODEL):
-    logging.warning(f"Did not find default model at {PATH_TO_SUPERGLUE_MODEL}, is everything mounted correctly?")
 
 # TODO: also save hyperparameters (doesn't work in jupyter notebooks)
 HPARAMS = dict(num_classes=127)
@@ -51,10 +38,16 @@ class WormWithNeuronClassifier:
 
     def __post_init__(self):
         if self.path_to_model is None:
-            if os.path.exists(PATH_TO_MODEL):
-                self.path_to_model = PATH_TO_MODEL
+            # Load hardcoded path to model
+            path_dict = load_hardcoded_neural_network_paths()
+            superglue_parent_folder = path_dict['tracking_paths']['model_parent_folder']
+            superglue_model_name = path_dict['tracking_paths']['global_tracking_model_name']
+            superglue_path = os.path.join(superglue_parent_folder, superglue_model_name)
+
+            if os.path.exists(superglue_path):
+                self.path_to_model = superglue_path
             else:
-                raise FileNotFoundError(PATH_TO_MODEL)
+                raise FileNotFoundError(superglue_path)
 
         if self.hparams is None:
             self.hparams = HPARAMS
@@ -124,13 +117,16 @@ class WormWithSuperGlueClassifier:
 
     def __post_init__(self):
         if self.path_to_model is None:
-            if os.path.exists(PATH_TO_SUPERGLUE_MODEL):
-                self.path_to_model = PATH_TO_SUPERGLUE_MODEL
-            elif os.path.exists(LOCAL_PATH_TO_SUPERGLUE_MODEL):
-                self.path_to_model = LOCAL_PATH_TO_SUPERGLUE_MODEL
-                logging.warning("Did not find cluster path to model, using local path")
+            # Load hardcoded path to model
+            path_dict = load_hardcoded_neural_network_paths()
+            superglue_parent_folder = path_dict['tracking_paths']['model_parent_folder']
+            superglue_model_name = path_dict['tracking_paths']['global_tracking_model_name']
+            superglue_path = os.path.join(superglue_parent_folder, superglue_model_name)
+
+            if os.path.exists(superglue_path):
+                self.path_to_model = superglue_path
             else:
-                raise FileNotFoundError(PATH_TO_SUPERGLUE_MODEL)
+                raise FileNotFoundError(superglue_path)
         if self.model is None:
             self.model = SuperGlueModel.load_from_checkpoint(checkpoint_path=self.path_to_model)
         self.model.eval()
