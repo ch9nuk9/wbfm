@@ -68,8 +68,15 @@ class FramePairOptions:
     preprocess_using_global_rotation: bool = False
 
     def __post_init__(self):
-        from wbfm.utils.nn_utils.fdnc_predict import load_fdnc_options
-        default_options = load_fdnc_options()
+        # All of this is for the deprecated fdnc method... will be removed
+        try:
+            from wbfm.utils.nn_utils.fdnc_predict import load_fdnc_options
+            default_options = load_fdnc_options()
+        except ImportError:
+            if not self._already_warned:
+                logging.warning("fDNC is not installed. Skipping prediction using this method")
+                self._already_warned = True
+            default_options = {}
 
         if self.fdnc_options is None:
             self.fdnc_options = {}
