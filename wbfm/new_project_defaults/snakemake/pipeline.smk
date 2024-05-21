@@ -15,8 +15,8 @@ project_dir = os.path.dirname(snakemake.workflow.workflow.basedir)
 logging.info("Detected project folder: ", project_dir)
 project_cfg = os.path.join(project_dir, "project_config.yaml")
 
-if not snakemake.__version__ == "7.32.0":
-    logging.warning("Note: this pipeline is only tested on snakemake version 7.32.0")
+if not snakemake.__version__.startswith("7.32"):
+    logging.warning(f"Note: this pipeline is only tested on snakemake version 7.32.X, but found {snakemake.__version__}")
 
 # Load the folders needed for the behavioral part of the pipeline
 try:
