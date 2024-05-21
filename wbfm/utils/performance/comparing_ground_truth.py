@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-from fDNC.src.DNC_predict import filter_matches
+from wbfm.utils.neuron_matching.utils_matching import filter_matches
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 import seaborn as sns

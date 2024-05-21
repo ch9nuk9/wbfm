@@ -143,3 +143,7 @@ def calc_bipartite_from_positions(xyz0: np.ndarray, xyz1: np.ndarray,
 
     # Return matches twice to fit old function signature
     return matches, conf, np.array(raw_matches)
+
+
+def filter_matches(matches, threshold):
+    return [m for m in matches if m[2] > threshold]
