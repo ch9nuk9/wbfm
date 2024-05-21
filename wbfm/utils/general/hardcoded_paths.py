@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Union
-
+import pkgutil
 import pandas as pd
 
 from wbfm.utils.external.custom_errors import IncompleteConfigFileError
