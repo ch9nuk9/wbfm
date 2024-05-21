@@ -2,6 +2,7 @@ import logging
 import os
 from wbfm.utils.external.custom_errors import NoBehaviorDataError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+import snakemake
 
 
 configfile: "snakemake_config.yaml"
@@ -9,14 +10,21 @@ configfile: "snakemake_config.yaml"
 # Determine the project folder (the parent of the folder containing the Snakefile)
 # NOTE: this is an undocumented feature, and may not work for other versions (this is 7.32)
 project_dir = os.path.dirname(snakemake.workflow.workflow.basedir)
-print("Detected project folder: ", project_dir)
+logging.info("Detected project folder: ", project_dir)
 project_cfg = os.path.join(project_dir, "project_config.yaml")
+
+if not snakemake.__version__ == "7.32.0":
+    logging.warning("Note: this pipeline is only tested on snakemake version 7.32.0")
 
 # Load the folders needed for the behavioral part of the pipeline
 try:
     cfg = ModularProjectConfig(project_dir)
     raw_data_dir, raw_data_subfolder, output_behavior_dir, background_img, background_video, behavior_btf = \
         cfg.get_folders_for_behavior_pipeline()
+
+    # Additionally update the paths used for the behavior pipeline
+    hardcoded_paths = load_hardcoded_neural_network_paths()
+    config.update(hardcoded_paths["behavior_paths"])
 except NoBehaviorDataError:
     # Note: these strings can't be empty, otherwise snakemake can have weird issues
     logging.warning("No behavior data found, behavior will not run. Only 'traces' can be processed.")
@@ -255,8 +263,7 @@ rule worm_unet:
     input:
         input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
     params:
-        weights_path = config["worm_unet_weights"],
-        #network_name = config["worm_unet_network_name"]# '5358068_1'
+        weights_path = config["main_unet_model"],
     output:
         worm_unet_prediction = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented.btf")
     run:
@@ -293,8 +300,7 @@ rule coil_unet:
         binary_input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask.btf",
         raw_input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
     params:
-        weights_path= config["coil_unet_weights"]
-        #network_name="5910044_0"
+        weights_path= config["coiled_shape_unet_model"]
     output:
         coil_unet_prediction = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented.btf")
     run:
@@ -350,9 +356,9 @@ rule dlc_analyze_videos:
     input:
         input_avi = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.avi"
     params:
-        dlc_model_configfile_path = config["dlc_model_configfile_path"],
-        dlc_network_string = config["dlc_network_string"], # Is this used?
-        dlc_conda_env = config["dlc_conda_env"]
+        dlc_model_configfile_path = config["head_tail_dlc_project"],
+        dlc_network_string = config["head_tail_dlc_name"], # Is this used?
+        dlc_conda_env = config["dlc_conda_env_name"]
     output:
         hdf5_file = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["dlc_network_string"]+".h5"
     shell:
