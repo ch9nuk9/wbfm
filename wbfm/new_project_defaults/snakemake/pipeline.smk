@@ -4,6 +4,8 @@ from wbfm.utils.external.custom_errors import NoBehaviorDataError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 import snakemake
 
+from wbfm.utils.general.hardcoded_paths import load_hardcoded_neural_network_paths
+
 
 configfile: "snakemake_config.yaml"
 
@@ -21,10 +23,6 @@ try:
     cfg = ModularProjectConfig(project_dir)
     raw_data_dir, raw_data_subfolder, output_behavior_dir, background_img, background_video, behavior_btf = \
         cfg.get_folders_for_behavior_pipeline()
-
-    # Additionally update the paths used for the behavior pipeline
-    hardcoded_paths = load_hardcoded_neural_network_paths()
-    config.update(hardcoded_paths["behavior_paths"])
 except NoBehaviorDataError:
     # Note: these strings can't be empty, otherwise snakemake can have weird issues
     logging.warning("No behavior data found, behavior will not run. Only 'traces' can be processed.")
@@ -34,6 +32,10 @@ except NoBehaviorDataError:
     background_video = "NOTFOUND"
     behavior_btf = "NOTFOUND"
     raw_data_subfolder = "NOTFOUND"
+
+# Additionally update the paths used for the behavior pipeline (note that this needs to be loaded even if behavior is not run)
+hardcoded_paths = load_hardcoded_neural_network_paths()
+config.update(hardcoded_paths["behavior_paths"])
 
 
 def _run_helper(script_name, project_path):
