@@ -6,7 +6,7 @@
 #SBATCH --qos=medium             # Time limit hrs:min:sec
 #SBATCH --output=log_gpu_step-%j.out    # Standard output and error log
 #SBATCH --time=8:00:00
-#SBATCH --mem=200G
+#SBATCH --mem=128G
 #SBATCH --cpus-per-task=8
 #SBATCH --gpus-per-node=1
 #SBATCH --gres=gpu:1
