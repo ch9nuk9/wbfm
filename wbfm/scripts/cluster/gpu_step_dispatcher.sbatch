@@ -26,7 +26,7 @@ do
 done
 
 # Unpack the flag into an actual command
-CMD_DIR="/lisc/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/scripts"
+CMD_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts"
 
 declare -A CMD_DICT
 declare -A CMD_DICT
