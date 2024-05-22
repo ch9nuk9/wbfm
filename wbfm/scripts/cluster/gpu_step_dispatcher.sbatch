@@ -45,7 +45,7 @@ CMD_DICT["4-alt"]="alternate/4c-extract_full_traces.py"
 CMD_DICT["4+barlow_track"]="postprocessing/4+track_using_barlow.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
-FULL_CMD="python $CMD with project_path=$project_path"
+FULL_CMD="$CMD with project_path=$project_path"
 
 if [ "$step_reference" = "4+barlow_track" ]; then
   FULL_CMD="$FULL_CMD model_fname=/lisc/scratch/neurobiology/zimmer/wbfm/TrainedBarlow/barlow_ZIM2165_Gcamp7b_worm1-2022_11_28_from_search/trial_0/resnet50.pth"
