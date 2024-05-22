@@ -52,12 +52,12 @@ if [ "$step_reference" = "4+barlow_track" ]; then
 fi
 
 echo "Running step $step_reference using full command:"
-echo $FULL_CMD
+echo "$FULL_CMD"
 
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $FULL_CMD"
 else
-  python $CMD with project_path="$project_path"
+  python "$FULL_CMD"
 fi
 
 date
