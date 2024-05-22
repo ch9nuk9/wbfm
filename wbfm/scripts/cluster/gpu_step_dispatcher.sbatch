@@ -26,7 +26,7 @@ do
 done
 
 # Unpack the flag into an actual command
-CMD_DIR="/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/scripts"
+CMD_DIR="/lisc/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/scripts"
 
 declare -A CMD_DICT
 declare -A CMD_DICT
@@ -48,7 +48,7 @@ CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
 FULL_CMD="python $CMD with project_path=$project_path"
 
 if [ "$step_reference" = "4+barlow_track" ]; then
-  FULL_CMD="$FULL_CMD model_fname=/scratch/neurobiology/zimmer/wbfm/TrainedBarlow/barlow_ZIM2165_Gcamp7b_worm1-2022_11_28_from_search/trial_0/resnet50.pth"
+  FULL_CMD="$FULL_CMD model_fname=/lisc/scratch/neurobiology/zimmer/wbfm/TrainedBarlow/barlow_ZIM2165_Gcamp7b_worm1-2022_11_28_from_search/trial_0/resnet50.pth"
 fi
 
 echo "Running step $step_reference using full command:"
