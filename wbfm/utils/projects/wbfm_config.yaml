@@ -32,4 +32,4 @@ behavior_paths:
     head_tail_dlc_name: DLC_resnet50_wbfm_nose_tailJan4shuffle1_1030000
     dlc_conda_env_name: /lisc/scratch/neurobiology/zimmer/.conda/envs/deeplabcut_imutils
     # PCA model (used for curvature analysis)
-    pca_model: /lisc/scratch/neurobiology/zimmer/centerline_pipeline/code/curvature/curvature/models/1738_20230403_eigenworm_PCA_bodypart_30_to_80.pkl
+    pca_model: /lisc/scratch/neurobiology/zimmer/wbfm/code/centerline_behavior_annotation/centerline_behavior_annotation/curvature/models/1738_20230403_eigenworm_PCA_bodypart_30_to_80.pkl
