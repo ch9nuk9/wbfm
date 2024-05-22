@@ -46,7 +46,7 @@ def get_stardist_model(model_name: str = 'students_and_lukas_3d_zarr',
             # First, try to load the model using the wbfm installed config file
             path_dict = load_hardcoded_neural_network_paths()
             folder = path_dict['segmentation_paths']['model_parent_folder']
-            _model_name = path_dict['segmentation_paths']['stardist_model_name']
+            _model_name = path_dict['segmentation_paths']['model_name']
             if _model_name != model_name:
                 logging.warning(f'Model name from config file ({_model_name}) does not match the requested '
                                 f'model name ({model_name})! Using requested model name.')
