@@ -6,8 +6,8 @@
 #SBATCH --qos=medium             # Time limit hrs:min:sec
 #SBATCH --output=log_gpu_step-%j.out    # Standard output and error log
 #SBATCH --time=8:00:00
-#SBATCH --mem=16G
-#SBATCH --cpus-per-task=16
+#SBATCH --mem=64G
+#SBATCH --cpus-per-task=8
 #SBATCH --gpus-per-node=1
 #SBATCH --gres=gpu:1
 #SBATCH --partition=basic  # The basic partition has computers with single GPUs, instead of multiple
