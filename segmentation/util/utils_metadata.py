@@ -85,7 +85,7 @@ def OLD_get_metadata_dictionary(masks, original_vol):
 
 def get_metadata_dictionary(masks, original_vol, name_mode='neuron'):
 
-    props_to_save = ['area', 'weighted_centroid', 'intensity_image', 'label']
+    props_to_save = ['area', 'weighted_centroid', 'intensity_image', 'label', 'bbox']
     props = regionprops_one_volume_one_channel(masks, original_vol, props_to_save, name_mode=name_mode)
 
     # Convert back to old (Niklas) style
@@ -98,7 +98,7 @@ def get_metadata_dictionary(masks, original_vol, name_mode='neuron'):
         dict_of_rows[idx].append(v)
 
     # NOTE: deprecates "all_values"
-    new_names = ['neuron_volume', 'centroids', 'total_brightness', 'label']
+    new_names = ['neuron_volume', 'centroids', 'total_brightness', 'label', 'bbox']
     df_metadata = pd.DataFrame.from_dict(dict_of_rows, orient='index', columns=new_names)
 
     return df_metadata
@@ -131,6 +131,14 @@ class DetectedNeurons:
 
     @property
     def segmentation_metadata(self):
+        """
+        Main data structure for metadata, saved according to an old standard:
+        dict of dataframes, with columns as renamed versions of regionprops output
+
+        Returns
+        -------
+
+        """
         assert Path(self.detection_fname).exists(), f"{self.detection_fname} doesn't exist!"
         if self._segmentation_metadata is None:
                 # Note: dict of dataframes
@@ -308,7 +316,7 @@ def recalculate_metadata_from_config(preprocessing_cfg, segment_cfg, project_cfg
 
     """
 
-    mask_fname, metadata_fname, _, _, video_path, _, _, _ = _unpack_config_file(
+    mask_fname, metadata_fname, _, _, video_path, _, _, _, _ = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     masks_zarr = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())
