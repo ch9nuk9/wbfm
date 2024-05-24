@@ -1,13 +1,16 @@
 """
 StarDist functions for segmentation
 """
+import logging
+
 import numpy as np
-import skimage
 import stardist.models
 from skimage.segmentation import find_boundaries
 from stardist.models import StarDist3D, StarDist2D
 import os
 from csbdeep.utils import Path, normalize
+from wbfm.utils.external.custom_errors import IncompleteConfigFileError
+from wbfm.utils.general.hardcoded_paths import load_hardcoded_neural_network_paths
 
 
 def get_stardist_model(model_name: str = 'students_and_lukas_3d_zarr',
@@ -36,8 +39,23 @@ def get_stardist_model(model_name: str = 'students_and_lukas_3d_zarr',
 
     if verbose >= 1:
         print(f'Getting Stardist model: {model_name}')
+
     # all self-trained StarDist models reside in that folder. 'nt' for windows, when working locally
     if folder is None:
+        try:
+            # First, try to load the model using the wbfm installed config file
+            path_dict = load_hardcoded_neural_network_paths()
+            folder = path_dict['segmentation_paths']['model_parent_folder']
+            _model_name = path_dict['segmentation_paths']['model_name']
+            if _model_name != model_name:
+                logging.warning(f'Model name from config file ({_model_name}) does not match the requested '
+                                f'model name ({model_name})! Using requested model name.')
+        except IncompleteConfigFileError:
+            pass
+
+    # Deprecated: use hardcoded paths
+    if folder is None:
+        logging.warning("Using hardcoded paths for stardist models! This is deprecated and should be avoided!")
         if os.name == 'nt':
             # folder = Path(r'P:/neurobiology/zimmer/wbfm/TrainedStardist')
             folder = Path(r'Z:/neurobiology/zimmer/wbfm/TrainedStardist')
