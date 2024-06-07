@@ -5,6 +5,8 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import zarr
+
+from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.neuron_matching.utils_matching import calc_bipartite_from_positions
 from wbfm.utils.projects.finished_project_data import ProjectData
 from skimage.measure import regionprops
@@ -218,3 +220,54 @@ def correct_tracks_dataframe_using_project(project_data: ProjectData, overwrite:
     else:
         print("No updates needed")
     return df
+
+
+def add_metadata_to_df_raw_ind(df_raw_ind, segmentation_metadata: DetectedNeurons):
+    """
+    Given a dataframe with only the raw_ind_in_list, add metadata to it
+
+    Expect that df_raw_ind has a multiindex column, with the top level as neuron names and the
+
+    Final column names should be:
+        brightness_red 	likelihood 	raw_neuron_ind_in_list 	raw_segmentation_id 	volume 	x 	y 	z 	raw_tracklet_id
+
+    Parameters
+    ----------
+    df_raw_ind
+    segmentation_metadata
+
+    Returns
+    -------
+
+    """
+    # Each column will be the same length as df_raw_ind
+    def make_new_col():
+        col = np.zeros(df_raw_ind.shape[0])
+        col[:] = np.nan
+        return col
+    new_df_values = defaultdict(make_new_col)
+    neuron_names = get_names_from_df(df_raw_ind)
+
+    # For faster indexing
+    df_as_numpy = np.array(df_raw_ind)
+
+    for i_col, name in enumerate(tqdm(neuron_names)):
+        for t in tqdm(range(df_as_numpy.shape[0]), leave=False):
+            raw_ind = cast_int_or_nan(df_as_numpy[t, i_col])
+            if np.isnan(raw_ind):
+                continue
+            try:
+                mask_ind = segmentation_metadata.i_in_array_to_mask_index(t, raw_ind)
+            except IndexError as e:
+                # logging.warning(e)
+                print(f"Index error for neuron {name} at t={t}, raw_ind={raw_ind}, "
+                      f"with detected number of objects {len(segmentation_metadata.segmentation_metadata[t])}")
+                continue
+            row_data, column_names = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t)
+            for val, col_name in zip(row_data, column_names):
+                key = (name, col_name)
+                new_df_values[key][t] = val
+
+    # Now, convert to a dataframe
+    new_df = pd.DataFrame(new_df_values)
+    return new_df

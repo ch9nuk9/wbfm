@@ -2,6 +2,7 @@ import os
 from collections import defaultdict
 
 import numpy as np
+from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
 from wbfm.utils.general.postprocessing.utils_metadata import region_props_all_volumes, \
@@ -21,6 +22,7 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
                                                traces_cfg: SubfolderConfigFile,
                                                project_cfg: ModularProjectConfig,
                                                allow_only_global_tracker: bool = False,
+                                               match_using_indices: bool = False,
                                                DEBUG: bool = False) -> None:
     """
     Connect the 3d traces to previously segmented masks
@@ -28,6 +30,21 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
     NOTE: This assumes that the global tracks may be non-trivially different, e.g. from a different tracking algorithm
 
     Get both red and green traces for each neuron
+
+
+    Parameters
+    ----------
+    segment_cfg
+    track_cfg
+    traces_cfg
+    project_cfg
+    allow_only_global_tracker
+    match_using_indices - If True (default=False), match using indices instead of xyz coordinates
+    DEBUG
+
+    Returns
+    -------
+
     """
     max_dist, params_start_volume, num_frames = _unpack_configs_for_traces(project_cfg, track_cfg)
 
@@ -46,25 +63,29 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
     final_neuron_names = get_names_from_df(final_tracks)
     for name in final_neuron_names:
         assert 'tracklet' not in name, f"Improper name found: {name}"
-    coords = ['z', 'x', 'y']
-
-    def _get_zxy_from_pandas(t):
-        all_zxy = np.zeros((len(final_neuron_names), 3))
-        for i, name in enumerate(final_neuron_names):
-            all_zxy[i, :] = np.asarray(final_tracks[name][coords].loc[t])
-        return all_zxy
 
     # Main loop: Match segmentations to tracks
     # Also: get connected red brightness and mask
     # Initialize multi-index dataframe for data
+    all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
     # TODO: Why is this one frame too short?
     frame_list = list(range(params_start_volume, num_frames + params_start_volume - 1))
-    all_matches = defaultdict(list)  # key = i_vol; val = Nx3-element list
-    project_cfg.logger.info("Matching segmentation and tracked positions...")
-    if DEBUG:
-        frame_list = frame_list[:2]  # Shorten (to avoid break)
-    match_segmentation_and_tracks(_get_zxy_from_pandas, all_matches, frame_list, max_dist,
-                                  project_data, DEBUG=DEBUG)
+
+    if not match_using_indices:
+        coords = ['z', 'x', 'y']
+        def _get_zxy_from_pandas(t):
+            all_zxy = np.zeros((len(final_neuron_names), 3))
+            for i, name in enumerate(final_neuron_names):
+                all_zxy[i, :] = np.asarray(final_tracks[name][coords].loc[t])
+            return all_zxy
+
+        project_cfg.logger.info("Matching segmentation and tracked positions...")
+        if DEBUG:
+            frame_list = frame_list[:2]  # Shorten (to avoid break)
+        match_segmentation_and_tracks(_get_zxy_from_pandas, all_matches, frame_list, max_dist,
+                                      project_data, DEBUG=DEBUG)
+    else:
+        raise NotImplementedError("Matching using indices is not yet implemented")
 
     relative_fname = traces_cfg.config['all_matches']
     project_cfg.pickle_data_in_local_project(all_matches, relative_fname)

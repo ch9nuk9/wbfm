@@ -68,7 +68,7 @@ def combine_global_and_tracklet_coverings(global2tracklet: Dict[str, List[str]],
                                           keep_only_tracklets_in_final_tracks: bool,
                                           verbose=0):
     """
-    Combines coverings of all tracklets and DLC-tracked neurons
+    Combines coverings of all tracklets and globally-tracked neurons
 
     If there is a tracklet covering for a time point, then it overwrites the global track.
     If keep_only_tracklets_in_final_tracks is false, then points without a tracklet are filled by the global
