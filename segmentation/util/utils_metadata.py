@@ -204,16 +204,33 @@ class DetectedNeurons:
 
     def get_all_metadata_for_single_time(self, mask_ind, t, likelihood=1.0):
         # Correct null value is None
-        column_names = ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list', 'raw_segmentation_id',
-                        'brightness_red', 'volume']
-        # Note: column_names = ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list', 'raw_segmentation_id',
-        #                     'brightness_red', 'volume']
         ind_in_list = self.mask_index_to_i_in_array(t, mask_ind)
+        column_names = self._column_names
         if ind_in_list is None:
             return None, column_names
         zxy = self.mask_index_to_zxy(t, mask_ind)
         red = float(self.get_all_brightnesses(t).iat[ind_in_list])
         vol = int(self.get_all_volumes(t).iat[ind_in_list])
+        row_data = [zxy[0], zxy[1], zxy[2], likelihood, ind_in_list, mask_ind, red, vol]
+        return row_data, column_names
+
+    @property
+    def _column_names(self):
+        return ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list', 'raw_segmentation_id',
+                'brightness_red', 'volume']
+
+    def get_all_neuron_metadata_for_single_time(self, t, likelihood=1.0):
+        """
+        Returns all metadata for all neurons at a single time
+        """
+        all_metadata = self._segmentation_metadata[t].copy()
+        column_names = self._column_names
+        # Reformat using the new column names
+        zxy = all_metadata['centroids'].to_numpy()
+        red = all_metadata['total_brightness'].to_numpy()
+        vol = all_metadata['neuron_volume'].to_numpy()
+        mask_ind = all_metadata['label']
+        ind_in_list = [self.mask_index_to_i_in_array(t, i) for i in mask_ind]
         row_data = [zxy[0], zxy[1], zxy[2], likelihood, ind_in_list, mask_ind, red, vol]
         return row_data, column_names
 
@@ -263,7 +280,7 @@ class DetectedNeurons:
         return self.segmentation_metadata[i_time].iloc[i_index].name
 
     def mask_index_to_i_in_array(self, i_time, mask_index):
-        # Inverse of seg_array_to_mask_index
+        # Inverse of i_in_array_to_mask_index
         # Return index of seg array given the mask index, IF found
         these_indices = list(self.segmentation_metadata[i_time].index)
         if mask_index in these_indices:
@@ -272,7 +289,7 @@ class DetectedNeurons:
             return None
 
     def mask_index_to_zxy(self, i_time, mask_index):
-        # See mask_index_to_seg_array
+        # See mask_index_to_i_in_array
         # Return position given the mask index
         seg_index = self.mask_index_to_i_in_array(i_time, mask_index)
         return np.array(self.segmentation_metadata[i_time].iloc[seg_index]['centroids'])
