@@ -141,8 +141,15 @@ class DetectedNeurons:
         """
         assert Path(self.detection_fname).exists(), f"{self.detection_fname} doesn't exist!"
         if self._segmentation_metadata is None:
-                # Note: dict of dataframes
-            self._segmentation_metadata = pickle_load_binary(self.detection_fname)
+            # Note: dict of dataframes
+            try:
+                self._segmentation_metadata = pickle_load_binary(self.detection_fname)
+            except EOFError:
+                backup_fname = Path(self.detection_fname).with_name("backup_metadata.pickle")
+                self._segmentation_metadata = pickle_load_binary(backup_fname)
+                logging.error(f"Could not load {self.detection_fname}, likely corrupted. "
+                              f"Loaded backup at {backup_fname}, but it may be out of sync")
+                self.detection_fname = str(backup_fname)
         return self._segmentation_metadata
 
     @property
