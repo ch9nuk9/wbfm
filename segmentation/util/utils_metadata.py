@@ -226,12 +226,13 @@ class DetectedNeurons:
         all_metadata = self._segmentation_metadata[t].copy()
         column_names = self._column_names
         # Reformat using the new column names
-        zxy = all_metadata['centroids'].to_numpy()
+        zxy = np.array(all_metadata['centroids'].values.tolist())
         red = all_metadata['total_brightness'].to_numpy()
         vol = all_metadata['neuron_volume'].to_numpy()
         mask_ind = all_metadata['label']
         ind_in_list = [self.mask_index_to_i_in_array(t, i) for i in mask_ind]
-        row_data = [zxy[0], zxy[1], zxy[2], likelihood, ind_in_list, mask_ind, red, vol]
+        likelihood_vec = [likelihood] * len(mask_ind)
+        row_data = [zxy[:, 0], zxy[:, 1], zxy[:, 2], likelihood_vec, ind_in_list, mask_ind, red, vol]
         return row_data, column_names
 
     def overwrite_original_detection_file(self):
