@@ -222,7 +222,8 @@ def correct_tracks_dataframe_using_project(project_data: ProjectData, overwrite:
     return df
 
 
-def add_metadata_to_df_raw_ind(df_raw_ind, segmentation_metadata: DetectedNeurons):
+def add_metadata_to_df_raw_ind(df_raw_ind, segmentation_metadata: DetectedNeurons,
+                               raise_error=True):
     """
     Given a dataframe with only the raw_ind_in_list, add metadata to it
 
@@ -257,9 +258,10 @@ def add_metadata_to_df_raw_ind(df_raw_ind, segmentation_metadata: DetectedNeuron
             try:
                 mask_ind = segmentation_metadata.i_in_array_to_mask_index(t, raw_ind)
             except IndexError as e:
-                # logging.warning(e)
                 print(f"Index error for neuron {neuron_name} at t={t}, raw_ind={raw_ind}, "
                       f"with detected number of objects {len(segmentation_metadata.segmentation_metadata[t])}")
+                if raise_error:
+                    raise e
                 continue
             row_data, column_names = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t)
             for val, col_name in zip(row_data, column_names):
