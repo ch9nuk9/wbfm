@@ -21,7 +21,7 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score, silhouette_samples
 from tqdm.auto import tqdm
 
-from wbfm.utils.general.custom_errors import NeedsAnnotatedNeuronError
+from wbfm.utils.external.custom_errors import NeedsAnnotatedNeuronError
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior, shade_triggered_average
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \

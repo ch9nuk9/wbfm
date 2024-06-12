@@ -13,9 +13,9 @@ project_path: null # For reference afterwards
 ###################
 parent_data_folder: null
 
-behavior_bigtiff_fname: null
-red_bigtiff_fname: null
-green_bigtiff_fname: null
+behavior_fname: null
+red_fname: null
+green_fname: null
 
 red_background_fname: null
 green_background_fname: null
@@ -24,15 +24,17 @@ preprocessed_red: null
 preprocessed_green: null
 
 dataset_params:
+  # As of January 2022
+  red_and_green_mirrored: False
+  segment_and_track_on_green_channel: False
+
+deprecated_dataset_params:
   # In time
   start_volume: 0 # SHOULD BE 0 (except special visualizations)
   bigtiff_start_volume: 0 # CHANGE ME
   num_frames: null # CHANGE ME
   # In z
   num_slices: 22 # CHANGE ME; after removal of flyback (see preprocessing)
-  # As of January 2022
-  red_and_green_mirrored: False
-  segment_and_track_on_green_channel: False
 
 physical_units:
   zimmer_fluroscence_um_per_pixel_xy: 0.325

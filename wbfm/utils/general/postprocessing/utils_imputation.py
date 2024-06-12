@@ -7,7 +7,7 @@ from sklearn.linear_model import BayesianRidge
 from tqdm.auto import tqdm
 
 from wbfm.utils.general.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
-from wbfm.utils.projects.utils_filenames import read_if_exists, get_sequential_filename
+from wbfm.utils.general.utils_filenames import read_if_exists, get_sequential_filename
 # Note: following must be present, even if pycharm cleans it
 # from sklearn.experimental import enable_iterative_imputer
 # from sklearn.impute import IterativeImputer

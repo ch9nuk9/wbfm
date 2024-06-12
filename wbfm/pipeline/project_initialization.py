@@ -13,8 +13,8 @@ from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSe
     preprocess_all_frames_using_config, background_subtract_single_channel
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
-from wbfm.utils.projects.utils_filenames import get_sequential_filename, resolve_mounted_path_in_current_os, \
-    add_name_suffix, get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder
+from wbfm.utils.general.utils_filenames import get_sequential_filename, add_name_suffix, get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder, \
+    get_ndtiff_fnames_from_parent_folder
 from wbfm.utils.projects.utils_project import get_project_name, safe_cd, update_project_config_path, \
     update_snakemake_config_path
 
@@ -39,27 +39,35 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
 
     # If the user just passed the parent raw data folder, then convert that into green and red
     parent_data_folder = _config.get('parent_data_folder', None)
-    green_bigtiff_fname, red_bigtiff_fname = \
+    green_fname, red_fname = \
         _config.get('green_bigtiff_fname', None), _config.get('red_bigtiff_fname', None)
+    # First try for the new format: ndtiff
+    is_btf = False
     if parent_data_folder is not None:
-        green_bigtiff_fname, red_bigtiff_fname = get_both_bigtiff_fnames_from_parent_folder(parent_data_folder)
+        green_fname, red_fname = get_ndtiff_fnames_from_parent_folder(parent_data_folder)
+        search_failed = _check_if_search_succeeded(_config, green_fname, red_fname)
 
-    if green_bigtiff_fname is None and _config.get('green_bigtiff_fname', None) is None:
-        search_failed = True
-    elif red_bigtiff_fname is None and _config.get('red_bigtiff_fname', None) is None:
-        search_failed = True
-    else:
-        search_failed = False
+        if search_failed:
+            green_fname, red_fname = get_both_bigtiff_fnames_from_parent_folder(parent_data_folder)
+            is_btf = True
+    search_failed = _check_if_search_succeeded(_config, green_fname, red_fname)
 
     if search_failed:
-        logging.warning(f"Failed to find bigtiff files in folder {parent_data_folder}")
-        raise FileNotFoundError("Must pass either a) bigtiff data file directly, or b) proper parent folder")
+        logging.warning(f"Failed to find raw files in folder {parent_data_folder}")
+        raise FileNotFoundError("Must pass either a) bigtiff data file directly, or "
+                                "b) proper parent folder with bigtiffs or ndtiffs in it.")
     else:
-        _config['red_bigtiff_fname'] = red_bigtiff_fname
-        _config['green_bigtiff_fname'] = green_bigtiff_fname
+        if is_btf:
+            logging.warning("Found bigtiff files, which are deprecated."
+                            " Attempting to continue, but may not work ")
+            _config['green_bigtiff_fname'] = green_fname
+            _config['red_bigtiff_fname'] = red_fname
+        else:
+            _config['red_fname'] = red_fname
+            _config['green_fname'] = green_fname
 
     # Build the full project name using the date the data was taken
-    basename = Path(red_bigtiff_fname).name.split('_')[0]
+    basename = Path(red_fname).name.split('_')[0]
     parent_folder = _config['project_dir']
     rel_new_project_name = get_project_name(_config, basename)
     abs_new_project_name = osp.join(parent_folder, rel_new_project_name)
@@ -77,8 +85,21 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     update_snakemake_config_path(abs_new_project_name)
 
 
+def _check_if_search_succeeded(_config, green_fname, red_fname):
+    if green_fname is None and _config.get('green_bigtiff_fname', None) is None \
+            and _config.get('green_fname', None) is None:
+        search_failed = True
+    elif red_fname is None and _config.get('red_bigtiff_fname', None) is None \
+            and _config.get('red_fname', None) is None:
+        search_failed = True
+    else:
+        search_failed = False
+    return search_failed
+
+
 def calculate_number_of_volumes_from_tiff_file(num_raw_slices, red_bigtiff_fname):
-    logging.info("Detecting number of total frames in the video, may take ~30 seconds")
+    logging.warning("Detecting number of total frames in the video, may take ~30 seconds."
+                    " Note: this should not be needed for ndtiff videos, only bigtiffs (deprecated).")
     try:
         full_video = Image.open(red_bigtiff_fname)
         num_2d_frames = full_video.n_frames
@@ -96,7 +117,6 @@ def calculate_number_of_volumes_from_tiff_file(num_raw_slices, red_bigtiff_fname
 
 def write_data_subset_using_config(cfg: ModularProjectConfig,
                                    out_fname: str = None,
-                                   video_fname: str = None,
                                    tiff_not_zarr: bool = False,
                                    pad_to_align_with_original: bool = False,
                                    save_fname_in_red_not_green: bool = None,
@@ -111,7 +131,6 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
     ----------
     cfg: config class
     out_fname: output filename. Should end in .zarr for zarr
-    video_fname: input filename. Should end in .btf
     tiff_not_zarr: flag for output format
     pad_to_align_with_original: flag for behavior if bigtiff_start_volume > 0, i.e. frames are removed at the beginning
     save_fname_in_red_not_green: where to save the out_fname in the config file
@@ -125,12 +144,11 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
 
     """
 
-    out_fname, preprocessing_settings, project_dir, bigtiff_start_volume, verbose, video_fname = _unpack_config_for_data_subset(
-        cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr, use_preprocessed_data,
-        video_fname)
+    out_fname, preprocessing_settings, project_dir, bigtiff_start_volume, verbose = _unpack_config_for_data_subset(
+        cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr, use_preprocessed_data)
 
     with safe_cd(project_dir):
-        preprocessed_dat = preprocess_all_frames_using_config(cfg, video_fname, preprocessing_settings, None,
+        preprocessed_dat = preprocess_all_frames_using_config(cfg, preprocessing_settings, None,
                                                               which_channel, out_fname, verbose, DEBUG)
 
     if not pad_to_align_with_original and bigtiff_start_volume > 0:
@@ -159,7 +177,7 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
 
 
 def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr,
-                                   use_preprocessed_data, video_fname):
+                                   use_preprocessed_data):
     verbose = cfg.config['verbose']
     project_dir = cfg.project_dir
     # preprocessing_fname = os.path.join('1-segmentation', 'preprocessing_config.yaml')
@@ -178,33 +196,21 @@ def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_
             out_fname = os.path.join(project_dir, "data_subset.zarr")
     else:
         out_fname = os.path.join(project_dir, out_fname)
-    if video_fname is None:
-        if save_fname_in_red_not_green:
-            if not use_preprocessed_data:
-                video_fname = cfg.config['red_bigtiff_fname']
-            else:
-                video_fname = cfg.resolve_relative_path_from_config('preprocessed_red')
-        else:
-            if not use_preprocessed_data:
-                video_fname = cfg.config['green_bigtiff_fname']
-            else:
-                video_fname = cfg.resolve_relative_path_from_config('preprocessed_green')
-        video_fname = resolve_mounted_path_in_current_os(video_fname, verbose=0)
-    start_volume = cfg.config['dataset_params'].get('bigtiff_start_volume', None)
+    start_volume = cfg.config['deprecated_dataset_params'].get('bigtiff_start_volume', None)
     if start_volume is None:
-        logging.warning("Did not find bigtiff_start_volume; is this an old style project?")
-        logging.warning("Using start volume of 0. If this is fine, then no changes are needed")
         start_volume = 0
-        cfg.config['dataset_params']['bigtiff_start_volume'] = 0  # Will be written to disk later
-    return out_fname, preprocessing_settings, project_dir, start_volume, verbose, video_fname
+        cfg.config['deprecated_dataset_params']['bigtiff_start_volume'] = 0  # Will be written to disk later
+    else:
+        logging.warning("Found a start_volume, but this is deprecated. Attempting to continue, but may not work.")
+    return out_fname, preprocessing_settings, project_dir, start_volume, verbose
 
 
 def crop_zarr_using_config(cfg: ModularProjectConfig):
 
     fields = ['preprocessed_red', 'preprocessed_green']
     to_crop = [cfg.config[f] for f in fields]
-    start_volume = cfg.config['dataset_params']['start_volume']
-    num_frames = cfg.config['dataset_params']['num_frames']
+    start_volume = cfg.config['deprecated_dataset_params']['start_volume']
+    num_frames = cfg.config['deprecated_dataset_params']['num_frames']
     end_volume = start_volume + num_frames
 
     new_fnames = []
@@ -220,8 +226,8 @@ def crop_zarr_using_config(cfg: ModularProjectConfig):
     # Also update config file
     for field, name in zip(fields, new_fnames):
         cfg.config[field] = str(name)
-    cfg.config['dataset_params']['start_volume'] = 0
-    cfg.config['dataset_params']['bigtiff_start_volume'] = start_volume
+    cfg.config['deprecated_dataset_params']['start_volume'] = 0
+    cfg.config['deprecated_dataset_params']['bigtiff_start_volume'] = start_volume
 
     cfg.update_self_on_disk()
 
@@ -267,3 +273,18 @@ def subtract_background_using_config(cfg: ModularProjectConfig, do_preprocessing
     cfg.config['preprocessed_green'] = str(green_fname_subtracted)
 
     zip_zarr_using_config(cfg)
+
+
+def calculate_total_number_of_frames_from_bigtiff(cfg):
+    cfg.logger.warning("Deprecated function: calculate_total_number_of_frames_from_bigtiff")
+    num_frames = cfg.num_frames
+    if num_frames is None:
+        # Check the number of total frames in the video, and update the parameter
+        # Note: requires correct value of num_slices
+        num_raw_slices = cfg.num_slices
+        red_bigtiff_fname = cfg.config['red_bigtiff_fname']
+        num_volumes = calculate_number_of_volumes_from_tiff_file(num_raw_slices, red_bigtiff_fname)
+        num_frames = int(num_volumes)
+        cfg.logger.debug(f"Calculated number of frames: {num_frames}")
+        cfg.config['deprecated_dataset_params']['num_frames'] = num_frames
+        cfg.update_self_on_disk()

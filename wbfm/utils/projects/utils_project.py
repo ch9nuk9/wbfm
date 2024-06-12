@@ -1,4 +1,3 @@
-import glob
 import os
 import os.path as osp
 import pathlib
@@ -8,9 +7,9 @@ from contextlib import contextmanager
 from datetime import datetime
 from os import path as osp
 from pathlib import Path
-from ruamel.yaml import YAML
 
-from wbfm.utils.projects.utils_filenames import get_location_of_new_project_defaults
+from wbfm.utils.external.utils_yaml import edit_config, load_config
+from wbfm.utils.general.utils_filenames import get_location_of_new_project_defaults
 
 
 #####################
@@ -33,47 +32,6 @@ def get_project_name(_config: dict, basename=None) -> str:
 
     return project_name
 
-
-#####################
-# config utils
-#####################
-
-
-def edit_config(config_fname: typing.Union[str, pathlib.Path], edits: dict, DEBUG: bool = False) -> dict:
-    """Generic overwriting, based on DLC. Will create new file if one isn't found"""
-
-    if DEBUG:
-        print(f"Editing config file at: {config_fname}")
-    if Path(config_fname).exists():
-        cfg = load_config(config_fname)
-    else:
-        cfg = {}
-        print(f"Config file not found, creating new one")
-
-    if DEBUG:
-        print(f"Initial config: {cfg}")
-        print(f"Edits: {edits}")
-
-    for k, v in edits.items():
-        cfg[k] = v
-
-    with open(config_fname, "w") as f:
-        YAML().dump(cfg, f)
-
-    return cfg
-
-
-def load_config(config_fname: typing.Union[str, pathlib.Path]) -> dict:
-    if not osp.exists(config_fname):
-        # Try to append "project_config.yaml" to the end
-        config_fname = osp.join(config_fname, 'project_config.yaml')
-        if not osp.exists(config_fname):
-            raise FileNotFoundError(f"{config_fname} not found!")
-
-    with open(config_fname, 'r') as f:
-        cfg = YAML().load(f)
-
-    return cfg
 
 #####################
 # Synchronizing config files

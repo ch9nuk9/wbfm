@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from pip._internal.commands.show import search_packages_info
 
-from wbfm.utils.general.custom_errors import UnknownValueError
+from wbfm.utils.external.custom_errors import UnknownValueError
 
 
 def check_exists(abs_path, allow_overwrite):
@@ -307,9 +307,9 @@ def generate_output_data_names(cfg):
     -------
 
     """
-    fname = cfg.resolve_mounted_path_in_current_os('red_bigtiff_fname')
+    fname, is_btf = cfg.get_raw_data_fname(red_not_green=True)
     out_fname_red = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.stem}_preprocessed.zarr")))
-    fname = cfg.resolve_mounted_path_in_current_os('green_bigtiff_fname')
+    fname, is_btf = cfg.get_raw_data_fname(red_not_green=False)
     out_fname_green = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.stem}_preprocessed.zarr")))
     return out_fname_red, out_fname_green
 
@@ -339,6 +339,7 @@ def get_bigtiff_fname_from_folder(folder_fname, channel_to_check=0):
 
 
 def get_both_bigtiff_fnames_from_parent_folder(parent_data_folder):
+    logging.warning("Use of bigtiff is deprecated; use ndtiff instead")
     green_bigtiff_fname, red_bigtiff_fname = None, None
     for subfolder in Path(parent_data_folder).iterdir():
         if subfolder.is_file():
@@ -352,3 +353,28 @@ def get_both_bigtiff_fnames_from_parent_folder(parent_data_folder):
         logging.warning(f"Did not find one of: {(green_bigtiff_fname, red_bigtiff_fname)}")
 
     return green_bigtiff_fname, red_bigtiff_fname
+
+
+def get_ndtiff_fnames_from_parent_folder(parent_data_folder):
+    """Like get_both_bigtiff_fnames_from_parent_folder, but for ndtiffs, which reference the full folder"""
+    green_ndtiff_fname, red_ndtiff_fname = None, None
+    for subfolder in Path(parent_data_folder).iterdir():
+        if subfolder.is_file():
+            continue
+        if is_folder_ndtiff_format(subfolder):
+            if subfolder.name.endswith('_Ch0'):
+                red_ndtiff_fname = str(subfolder)
+            elif subfolder.name.endswith('_Ch1'):
+                green_ndtiff_fname = str(subfolder)
+
+    if green_ndtiff_fname is None or red_ndtiff_fname is None:
+        logging.warning(f"Did not find one of: {(green_ndtiff_fname, red_ndtiff_fname)}")
+
+    return green_ndtiff_fname, red_ndtiff_fname
+
+
+def is_folder_ndtiff_format(folder):
+    if 'NDTiff.index' in [f.name for f in Path(folder).iterdir()]:
+        return True
+    else:
+        return False

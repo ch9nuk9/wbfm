@@ -1,7 +1,6 @@
 import logging
 import os
 import os.path as osp
-import pickle
 from collections import defaultdict
 from pathlib import Path
 from typing import Union
@@ -12,8 +11,7 @@ import pandas as pd
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair, FramePairOptions
 from wbfm.utils.nn_utils.superglue import SuperGlueUnpacker
-from wbfm.utils.nn_utils.worm_with_classifier import PATH_TO_SUPERGLUE_TRACKLET_MODEL, \
-    WormWithSuperGlueClassifier, LOCAL_PATH_TO_SUPERGLUE_TRACKLET_MODEL
+from wbfm.utils.nn_utils.worm_with_classifier import WormWithSuperGlueClassifier
 from segmentation.util.utils_metadata import DetectedNeurons
 
 from wbfm.utils.neuron_matching.feature_pipeline import match_all_adjacent_frames
@@ -25,8 +23,9 @@ from wbfm.utils.tracklets.tracklet_class import TrackedWorm
 from wbfm.utils.tracklets.utils_tracklets import build_tracklets_dfs, \
     remove_tracklets_from_dictionary_without_database_match
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
-from wbfm.utils.projects.utils_filenames import pickle_load_binary
+from wbfm.utils.general.utils_filenames import pickle_load_binary
 from wbfm.utils.projects.utils_project import safe_cd
+from wbfm.utils.general.hardcoded_paths import load_hardcoded_neural_network_paths
 
 ###
 ### For use with produces tracklets (step 2 of traces)
@@ -73,13 +72,16 @@ def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
 
 def build_frame_pairs_using_superglue(all_frame_dict, frame_pair_options, project_data,
                                       match_using_additional_methods=True):
-    if os.path.exists(PATH_TO_SUPERGLUE_TRACKLET_MODEL):
-        path_to_model = PATH_TO_SUPERGLUE_TRACKLET_MODEL
-    elif os.path.exists(LOCAL_PATH_TO_SUPERGLUE_TRACKLET_MODEL):
-        path_to_model = LOCAL_PATH_TO_SUPERGLUE_TRACKLET_MODEL
-        logging.warning("Did not find cluster path to model, using local path")
+    # Load hardcoded path to model
+    path_dict = load_hardcoded_neural_network_paths()
+    superglue_parent_folder = path_dict['tracking_paths']['model_parent_folder']
+    superglue_model_name = path_dict['tracking_paths']['tracklet_model_name']
+    superglue_path = os.path.join(superglue_parent_folder, superglue_model_name)
+
+    if os.path.exists(superglue_path):
+        path_to_model = superglue_path
     else:
-        raise FileNotFoundError(PATH_TO_SUPERGLUE_TRACKLET_MODEL)
+        raise FileNotFoundError(superglue_path)
 
     superglue_unpacker = SuperGlueUnpacker(project_data=project_data)
     tracker = WormWithSuperGlueClassifier(superglue_unpacker=superglue_unpacker, path_to_model=path_to_model)
@@ -161,13 +163,14 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     if 'num_frames' in training_config.config['tracker_params']:
         tracker_params['num_frames'] = training_config.config['tracker_params']['num_frames']
     else:
-        tracker_params['num_frames'] = project_config.config['dataset_params']['num_frames']
+        tracker_params['num_frames'] = project_config.get_num_frames_robust()
     if DEBUG:
         tracker_params['num_frames'] = 5
     if 'start_volume' in training_config.config['tracker_params']:
         tracker_params['start_volume'] = training_config.config['tracker_params']['start_volume']
     else:
-        tracker_params['start_volume'] = project_config.config['dataset_params']['start_volume']
+        logging.warning("Using deprecated dataset parameter for start volume")
+        tracker_params['start_volume'] = project_config.start_volume
 
     frame_pair_options = FramePairOptions.load_from_config_file(project_config, training_config)
     frame_pair_options.apply_tanh_to_confidence = False

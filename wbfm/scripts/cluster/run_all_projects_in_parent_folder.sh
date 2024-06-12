@@ -54,7 +54,8 @@ for f in "$folder_of_projects"/*; do
                        snakemake_cmd="$snakemake_folder/RUNME.sh -s $RULE"
                     fi
                     # Instead of tmux, use a controller sbatch job
-                    full_cmd="$setup_cmd; cd $snakemake_folder; bash $snakemake_cmd"
+                    cd "$snakemake_folder" || exit  # Move in order to create the snakemake log all together
+                    full_cmd="$setup_cmd; bash $snakemake_cmd"
                     sbatch --time 5-00:00:00 \
                         --cpus-per-task 1 \
                         --mem 1G \

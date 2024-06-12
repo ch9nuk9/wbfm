@@ -1,0 +1,35 @@
+# Yaml file that contains paths to all pretrained models and datasets
+# Must be updated to reflect the actual paths on your system, e.g. for a new user
+# Note that not all paths are needed if only some functionality is used
+
+# REQUIRED FOR PIPELINE
+
+# Segmentation networks
+segmentation_paths:
+    # Path to the pretrained model for the segmentation network
+    # See documentation for StarDist3D in the StarDist package for more information on loading and training
+    model_parent_folder: /lisc/scratch/neurobiology/zimmer/wbfm/TrainedStardist
+    model_name: students_and_lukas_3d_zarr
+
+# Tracking networks
+tracking_paths:
+    # Path to the pretrained model for the tracking network
+    # See documentation for SuperGlue in the Superglue package for more information on loading and training
+    model_parent_folder: /lisc/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/nn_checkpoints/
+    global_tracking_model_name: superglue_neurons_5_datasets_adjacent_07_11_uint16.ckpt
+    tracklet_model_name: superglue_neurons_5_datasets_07_08_uint16.ckpt
+
+
+# OPTIONAL
+
+# Behavior pipeline networks and PCA model (not needed if only analyzing traces)
+behavior_paths:
+    # Unets
+    main_unet_model: /lisc/scratch/neurobiology/zimmer/centerline_pipeline/neural_networks/unet_worm.hdf5
+    coiled_shape_unet_model: /lisc/scratch/neurobiology/zimmer/centerline_pipeline/neural_networks/unet_worm_coil.hdf5
+    # DLC
+    head_tail_dlc_project: /lisc/scratch/neurobiology/zimmer/centerline_pipeline/neural_networks/deeplabcut_projects/wbfm_nose_tail-ulises-2023-01-04/config.yaml
+    head_tail_dlc_name: DLC_resnet50_wbfm_nose_tailJan4shuffle1_1030000
+    dlc_conda_env_name: /lisc/scratch/neurobiology/zimmer/.conda/envs/deeplabcut_imutils
+    # PCA model (used for curvature analysis)
+    pca_model: /lisc/scratch/neurobiology/zimmer/wbfm/code/centerline_behavior_annotation/centerline_behavior_annotation/curvature/models/1738_20230403_eigenworm_PCA_bodypart_30_to_80.pkl

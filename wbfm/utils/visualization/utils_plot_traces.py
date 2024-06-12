@@ -502,7 +502,7 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
     if bonferroni_factor is None:
         bonferroni_factor = 1
 
-    if array_columns is None:
+    if array_columns is None or array_columns == [None]:
         array_columns = [[0, 1]]
 
     # Specify in what y_range to plot for each pair of columns

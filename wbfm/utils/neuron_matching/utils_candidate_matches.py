@@ -9,14 +9,13 @@ from tqdm.auto import tqdm
 from wbfm.utils.general.utils_networkx import calc_bipartite_matches_using_networkx, build_digraph_from_matches, \
     unpack_node_name, is_one_neuron_per_frame
 from wbfm.utils.neuron_matching.utils_matching import calc_bipartite_from_positions
+from scipy.sparse import coo_matrix
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+
 
 ##
 ## Convinience function
 ##
-from scipy.sparse import coo_matrix
-
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-
 
 def calc_all_bipartite_matches(candidates, min_edge_weight=0.5):
     """
@@ -288,7 +287,7 @@ def combine_dataframes_using_mode(all_dfs, column='raw_neuron_ind_in_list', i_ba
         df_argmode = df_id_mode == df_ids
 
         # Update this neuron with the voted-on index
-        new_df_one_neuron = new_df[neuron_name]
+        new_df_one_neuron = new_df[neuron_name].copy()  # Copy to prevent warnings
         for df, tmp_name in zip(dfs_containing_this_neuron[1:], df_tmp_names[1:]):
             col_mask = df_argmode[tmp_name]
 

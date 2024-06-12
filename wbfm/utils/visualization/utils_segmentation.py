@@ -12,11 +12,11 @@ from skimage.measure import regionprops
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.general.custom_errors import NoMatchesError
+from wbfm.utils.external.custom_errors import NoMatchesError
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
-from wbfm.utils.projects.utils_filenames import pickle_load_binary
+from wbfm.utils.general.utils_filenames import pickle_load_binary
 from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.tracklets.training_data_from_tracklets import build_subset_df_from_tracklets, \
     get_or_recalculate_which_frames, _unpack_config_training_data_conversion

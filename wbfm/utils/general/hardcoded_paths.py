@@ -1,10 +1,87 @@
+import logging
+import os
 from pathlib import Path
 from typing import Union
-
+import pkgutil
 import pandas as pd
 
-from wbfm.utils.projects.utils_filenames import pickle_load_binary
+from wbfm.utils.external.custom_errors import IncompleteConfigFileError
+from wbfm.utils.general.utils_filenames import pickle_load_binary
+from wbfm.utils.external.utils_yaml import load_config
+from ruamel.yaml import YAML
 
+
+##
+## Code for loading various neural networks and things needed for a new user
+##
+
+def load_hardcoded_neural_network_paths() -> dict:
+    """
+    Loads everything that might be needed for a new user. Note that the paths are not defined here, but rather in
+
+    Fundamentally tries to read from a config file that is stored in the user's home directory. If that file does not
+    exist, it will then search for a environment variable that contains the path to the config file. If that does not
+    exist, it will then try to create the config file using defaults... but this will be empty and throw an error.
+    Specifically, the order is this:
+    1. Look in ~/.wbfm/config.yaml
+    2. Look in the environment variable WBFM_CONFIG_PATH, which should point to a .yaml
+    3. Load from the package, which has defaults that only work for the zimmer lab (tries to check if this is the zimmer lab)
+    4. Create a default config file in ~/.wbfm/config.yaml, and raise IncompleteConfigFileError
+
+    """
+    # First, try to load from the config file
+    which_method_worked = None
+    default_config_path = Path.home().joinpath('.wbfm/config.yaml')
+    try:
+        config = load_config(default_config_path)
+        which_method_worked = default_config_path
+    except FileNotFoundError:
+        logging.debug(f"Could not find config file at {default_config_path}; continuing search")
+
+    # If that didn't work, try to load from the environment variable
+    if which_method_worked is None:
+        try:
+            config_path = Path(os.environ['WBFM_CONFIG_PATH'])
+            config = load_config(config_path)
+            which_method_worked = "WBFM_CONFIG_PATH"
+        except (KeyError, FileNotFoundError):
+            logging.debug("Could not find WBFM_CONFIG_PATH in environment variables; continuing search")
+
+    # If that didn't work, load from the zimmer-lab defaults
+    if which_method_worked is None and is_zimmer_lab():
+        try:
+            config_dict_str = pkgutil.get_data('wbfm', 'utils/projects/wbfm_config.yaml')
+            config = YAML().load(config_dict_str)
+            which_method_worked = "defaults imported from package"
+        except FileNotFoundError as e:
+            logging.debug("Could not find config file within package... is the code properly installed?")
+            raise e  # If we are in the zimmer lab and this fails, it's a real error
+
+    # If that didn't work, try to create a default config file
+    if which_method_worked is None:
+        try:
+            config_dict_str = pkgutil.get_data('wbfm', 'utils/projects/wbfm_config.yaml')
+            # Create folder if needed, then make sure this is a valid yaml file
+            default_config_path.parent.mkdir(parents=True, exist_ok=True)
+            config_dict = YAML().load(config_dict_str)
+            with open(default_config_path, "w") as f:
+                YAML().dump(config_dict, f)
+            which_method_worked = "new intialization"
+            raise IncompleteConfigFileError(f"Created new config file at: {default_config_path}. "
+                                            f"Please fill this out with the correct paths. ")
+        except PermissionError:
+            raise IncompleteConfigFileError(f"Could not create a default config file at {default_config_path}. "
+                                            f"Please make sure you have permissions there, or create one manually. "
+                                            f"Note: either way, this config file will have to be filled out manually.")
+
+    logging.debug(f"Loaded config file from {which_method_worked}")
+
+    return config
+
+
+def is_zimmer_lab():
+    """Loose check to see if the code is running on the lisc cluster, from the zimmer lab"""
+    return Path('/lisc/scratch/neurobiology/zimmer').exists()
 
 ##
 # "Final" set of good datasets

@@ -75,7 +75,8 @@ echo "$FULL_CMD"
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $FULL_CMD"
 else
-  python "$CMD" with project_path="$project_path"
+  # shellcheck disable=SC2086
+  python $FULL_CMD
 fi
 
 date

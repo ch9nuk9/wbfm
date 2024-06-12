@@ -10,7 +10,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.neuron_matching.utils_matching import calc_nearest_neighbor_matches
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
+from wbfm.utils.projects.project_config_classes import SubfolderConfigFile, ModularProjectConfig
 from wbfm.utils.tracklets.training_data_from_tracklets import build_subset_df_from_tracklets
 
 
@@ -100,17 +100,16 @@ def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
 def _unpack_configs_for_traces(project_cfg, track_cfg):
     # Settings
     max_dist = track_cfg.config['final_3d_tracks']['max_dist_to_segmentation']
-    params_start_volume = project_cfg.config['dataset_params']['start_volume']
-    num_frames = project_cfg.config['dataset_params']['num_frames']
+    params_start_volume = project_cfg.start_volume
+    num_frames = project_cfg.get_num_frames_robust()
 
-    return max_dist, num_frames, params_start_volume
+    return max_dist, params_start_volume, num_frames
 
 
-def _unpack_configs_for_extraction(project_cfg, traces_cfg):
+def _unpack_configs_for_extraction(project_cfg: ModularProjectConfig, traces_cfg):
     # Settings
-    params_start_volume = project_cfg.config['dataset_params']['start_volume']
-    num_frames = project_cfg.config['dataset_params']['num_frames']
-
+    params_start_volume = project_cfg.start_volume
+    num_frames = project_cfg.get_num_frames_robust()
     frame_list = list(range(params_start_volume, num_frames + params_start_volume))
 
     coords = ['z', 'x', 'y']

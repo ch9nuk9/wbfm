@@ -4,20 +4,26 @@ import logging
 import os
 import pickle
 import shutil
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple, Optional, List
+
+import dask.array as da
 import numpy as np
 import pandas as pd
 import pprint
+from imutils import MicroscopeDataReader
+from methodtools import lru_cache
 
 from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
-from wbfm.utils.general.custom_errors import NoBehaviorDataError
+from wbfm.utils.external.custom_errors import NoBehaviorDataError, TiffFormatError
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
-from wbfm.utils.projects.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
+from wbfm.utils.general.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
     get_sequential_filename, get_location_of_new_project_defaults
-from wbfm.utils.projects.utils_project import load_config, edit_config, safe_cd, update_project_config_path, \
+from wbfm.utils.projects.utils_project import safe_cd, update_project_config_path, \
     update_snakemake_config_path
+from wbfm.utils.external.utils_yaml import edit_config, load_config
 from wbfm.utils.general.hardcoded_paths import default_raw_data_config
 
 
@@ -28,7 +34,7 @@ class ConfigFileWithProjectContext:
 
     Knows how to:
     1. update itself on disk
-    2. save new data inside the relevant project
+    2. save new data inside the relevant project using pickle or pandas
     3. change filepaths between relative and absolute
     """
 
@@ -47,6 +53,14 @@ class ConfigFileWithProjectContext:
         else:
             self.project_dir = str(Path(self.self_path).parent)
         self.config = load_config(self.self_path)
+        # Convert to default dict, for backwards compatibility with deprecated keys
+        if self.config is None:
+            if not Path(self.self_path).exists():
+                raise FileNotFoundError(f"Could not find config file {self.self_path}")
+            else:
+                raise ValueError(f"Found empty file at {self.self_path}; probably yaml crashed and deleted the file. "
+                                 f"There is no way to recover the data, so the file must be recreated manually.")
+        self.config = defaultdict(lambda: defaultdict(lambda: None), self.config)
 
     @property
     def logger(self):
@@ -183,7 +197,13 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
     """
     Configuration file (loaded from .yaml) that knows the project it should be executed in
 
-    In principle this config file is associated with a subfolder (and single step) of a project
+    In principle this config file is associated with a subfolder and single step of a project
+
+    Light wrapper around ConfigFileWithProjectContext, with the added functionality of:
+    1. Saving in the correct subfolder
+    2. Resolving paths to the correct subfolder
+
+    Note that this subfolder does not need to be nested within the main project folder
     """
 
     subfolder: str = None
@@ -230,7 +250,11 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     Knows how to:
     1. find the individual config files of the substeps
     2. initialize the physical unit conversion class
-    3. and loading other options classes
+    3. loading other options classes
+    4. find the files used for the behavior pipeline
+    5. open the raw data (external to the project)
+
+    In principle, any usage of non-local files (raw data) should go through this class
 
     """
 
@@ -408,6 +432,121 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return red_btf_fname, green_btf_fname
 
+    @lru_cache(maxsize=4)
+    def open_raw_data(self, red_not_green=True, actually_open=True) -> Optional[MicroscopeDataReader]:
+        """
+        Open the raw data file, which used to be a .btf file but is now an ndtiff folder
+
+        Note: this returns a MicroscopeDataReader object, and the user should call .dask_array to get the data
+            BUT: this is 6d, not 4d
+
+        Parameters
+        ----------
+        red_not_green - if True, opens the red file, else the green file
+
+        Returns
+        -------
+
+        """
+        # First check btf style
+        fname, is_btf = self.get_raw_data_fname(red_not_green)
+        if fname is None:
+            raise FileNotFoundError("Could not find raw data file")
+
+        # Open using the new DataReader
+        if is_btf:
+            z_slices = self.num_slices
+            if z_slices is None:
+                raise TiffFormatError("Could not find number of z slices in config file; "
+                                      "Required if using .btf files")
+            if actually_open:
+                dat = MicroscopeDataReader(fname, as_raw_tiff=True, raw_tiff_num_slices=z_slices)
+            else:
+                dat = None
+        else:
+            # Has metadata already
+            if actually_open:
+                dat = MicroscopeDataReader(fname, as_raw_tiff=False)
+            else:
+                dat = None
+
+        return dat
+
+    def open_raw_data_as_4d_dask(self, red_not_green=True):
+        dat = self.open_raw_data(red_not_green)
+        if dat is None:
+            return None
+        dat_out = da.squeeze(dat.dask_array)
+        if dat_out.ndim != 4:
+            raise ValueError(f"Expected 4d data, got {dat_out.ndim}d data")
+        return dat_out
+
+    def get_raw_data_fname(self, red_not_green) -> Tuple[Optional[str], bool]:
+        is_btf = True
+        if red_not_green:
+            fname = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
+            if fname is None:
+                fname = self.resolve_mounted_path_in_current_os('red_fname')
+                is_btf = False
+        else:
+            fname = self.resolve_mounted_path_in_current_os('green_bigtiff_fname')
+            if fname is None:
+                fname = self.resolve_mounted_path_in_current_os('green_fname')
+                is_btf = False
+        return fname, is_btf
+
+    @property
+    def start_volume(self):
+        # Checks for either the old or new key
+        num_slices = self.config['dataset_params'].get('start_volume', 0)
+        if num_slices is None:
+            num_slices = self.config['deprecated_dataset_params'].get('start_volume', 0)
+        return num_slices
+
+    @property
+    def num_slices(self):
+        # Checks for either the old or new key
+        num_slices = self.config['dataset_params'].get('num_slices', None)
+        if num_slices is None:
+            num_slices = self.config['deprecated_dataset_params'].get('num_slices', None)
+        return num_slices
+
+    def get_num_slices_robust(self):
+        """
+        Tries to read from the config file, but if that fails then read the raw data file
+
+        Returns
+        -------
+
+        """
+        num_slices = self.num_slices
+        if num_slices is None:
+            dat = self.open_raw_data_as_4d_dask()
+            num_slices = dat.shape[1]
+        return num_slices
+
+    @property
+    def num_frames(self):
+        # Checks for either the old or new key
+        num_frames = self.config['dataset_params'].get('num_frames', None)
+        if num_frames is None:
+            num_frames = self.config['deprecated_dataset_params'].get('num_frames', None)
+        return num_frames
+
+    def get_num_frames_robust(self):
+        """
+        Tries to read from the config file, but if that fails then read the raw data file
+
+        Returns
+        -------
+
+        """
+        num_slices = self.num_frames
+        if num_slices is None:
+            dat = self.open_raw_data_as_4d_dask()
+            num_slices = dat.shape[0]
+        return num_slices
+
     def get_red_and_green_grid_alignment_bigtiffs(self) -> Tuple[List[str], List[str]]:
         """
         Find bigtiffs for the grid pattern, for alignment. Expects 5 files, all with the pattern:
@@ -481,12 +620,16 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return behavior_fname, behavior_subfolder
 
     def get_behavior_raw_parent_folder_from_red_fname(self, verbose=0) -> Tuple[Optional[Path], bool]:
-        red_fname = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
+        red_fname, is_btf = self.get_raw_data_fname(red_not_green=True)
         if red_fname is None:
             if verbose >= 1:
                 print("Could not find red_bigtiff_fname, aborting")
             return None, False
-        main_data_folder = Path(red_fname).parents[1]
+        if is_btf:
+            main_data_folder = Path(red_fname).parents[1]
+        else:
+            main_data_folder = Path(red_fname).parents[0]
+
         if not main_data_folder.exists():
             if verbose >= 1:
                 print(f"Could not find main data folder {main_data_folder}, aborting")
@@ -511,6 +654,9 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     def get_folders_for_behavior_pipeline(self):
         """
         Requires the raw behavior folder and the behavior folder in the project
+
+        Raises a NoBehaviorDataError if the entire behavior folder cannot be found, which is expected for immobilized
+        recordings.
 
         Returns
         -------
@@ -537,7 +683,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         elif len(raw_data_subfolder) > 1:
             raise ValueError("There is more than one raw dataset")
         else:
-            raise ValueError("No raw data found")
+            raise NoBehaviorDataError("No raw data found")
 
         # See if the .btf file has already been produced... unfortunately this is a modification of the raw data folder
         # Assume that any .btf file is the correct one, IF it doesn't have 'AVG' in the name (refers to background subtraction)
@@ -572,7 +718,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         else:
             raise ValueError(f"No background videos found in {behavior_raw_folder}/../background/")
 
-        return behavior_raw_folder, raw_data_subfolder, behavior_output_folder, background_img, background_video, btf_file
+        return behavior_raw_folder, raw_data_subfolder, behavior_output_folder, \
+            background_img, background_video, btf_file
 
 
 def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> SubfolderConfigFile:
@@ -732,6 +879,7 @@ def _update_config_value(file_key, cfg_to_update, old_name0, new_name0=None, new
         else:
             cfg_to_update[old_name0] = new_value
     return cfg_to_update
+
 
 def make_project_like(project_path: str, target_directory: str,
                       steps_to_keep: list = None,

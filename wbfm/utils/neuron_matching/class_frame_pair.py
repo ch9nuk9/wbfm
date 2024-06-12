@@ -1,3 +1,4 @@
+import logging
 import os
 from collections import defaultdict
 from dataclasses import dataclass
@@ -11,7 +12,7 @@ from napari.utils.transforms import Affine
 from segmentation.util.utils_metadata import DetectedNeurons
 from wbfm.utils.external.utils_cv2 import cast_matches_as_array
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from wbfm.utils.general.custom_errors import NoMatchesError, AnalysisOutOfOrderError
+from wbfm.utils.external.custom_errors import NoMatchesError, AnalysisOutOfOrderError
 from wbfm.utils.neuron_matching.utils_affine import calc_matches_using_affine_propagation
 from wbfm.utils.neuron_matching.utils_features import match_known_features, build_features_and_match_2volumes
 from wbfm.utils.neuron_matching.utils_gaussian_process import calc_matches_using_gaussian_process
@@ -24,6 +25,7 @@ from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 @dataclass
 class FramePairOptions:
+    """Options for matching neurons between two frames; See FramePair for the actual matching process"""
     # Flag and options for each method
     # First: default feature-embedding method
     embedding_matches_to_keep: float = 1.0
@@ -66,8 +68,15 @@ class FramePairOptions:
     preprocess_using_global_rotation: bool = False
 
     def __post_init__(self):
-        from wbfm.utils.nn_utils.fdnc_predict import load_fdnc_options
-        default_options = load_fdnc_options()
+        # All of this is for the deprecated fdnc method... will be removed
+        try:
+            from wbfm.utils.nn_utils.fdnc_predict import load_fdnc_options
+            default_options = load_fdnc_options()
+        except ImportError:
+            if not self._already_warned:
+                logging.warning("fDNC is not installed. Skipping prediction using this method")
+                self._already_warned = True
+            default_options = {}
 
         if self.fdnc_options is None:
             self.fdnc_options = {}
@@ -90,7 +99,16 @@ class FramePairOptions:
 
 @dataclass
 class FramePair:
-    """Information connecting neurons in two ReferenceFrame objects"""
+    """
+    Information connecting neurons in two ReferenceFrame objects
+
+    Also implements an ensemble of methods to match neurons between the two frames:
+    - Feature matching using opencv feature embedding
+    - Local affine matching using opencv (performance constrained by feature matching)
+    - Gaussian process matching (performance constrained by feature matching)
+    - Neural network matching (superglue and fDNC)
+
+    """
     options: FramePairOptions = None
 
     # Final output, with confidences
@@ -121,6 +139,8 @@ class FramePair:
     _pts0_preprocessed: np.ndarray = None
     _dat0: np.ndarray = None
     _dat1: np.ndarray = None
+
+    _already_warned = False  # To avoid spamming installation warnings
 
     @property
     def all_candidate_matches(self) -> list:
@@ -641,7 +661,11 @@ class FramePair:
         self._match_using_fdnc(self.options.fdnc_options)
 
     def _match_using_fdnc(self, prediction_options):
-        from fDNC.src.DNC_predict import predict_matches
+        try:
+            from fDNC.src.DNC_predict import predict_matches
+        except ImportError:
+            logging.warning("fDNC is not installed. Skipping prediction using this method")
+            self._already_warned = True
         # New: n0 may be rigidly prealigned
         n0, n1 = self.pts0_preprocessed, self.pts1.copy()
         template_pos = self.options.physical_unit_conversion.zimmer2leifer(np.array(n0))

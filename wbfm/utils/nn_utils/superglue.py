@@ -43,12 +43,15 @@
 import logging
 from copy import deepcopy
 from dataclasses import dataclass
+from typing import List, Optional
 
 import numpy as np
 import torch
-from pytorch_lightning import LightningModule
+from pytorch_lightning import LightningModule, LightningDataModule
+from pytorch_lightning.utilities.types import TRAIN_DATALOADERS
 from scipy.optimize import linear_sum_assignment
 from torch import nn, optim
+from torch.utils.data import DataLoader, Dataset, random_split
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_itertools import random_combination
@@ -56,7 +59,6 @@ from wbfm.utils.external.utils_pandas import df_to_matches, accuracy_of_matches
 from wbfm.utils.general.distance_functions import dist2conf
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from wbfm.barlow_project.utils.data_loading import AbstractNeuronImageFeaturesFromProject
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 
@@ -626,6 +628,16 @@ class SuperGlueUnpacker:
         return new_data
 
 
+class AbstractNeuronImageFeaturesFromProject(Dataset):
+
+    def __init__(self, project_data: ProjectData, transform=None):
+        self.project_data = project_data
+
+    def __len__(self):
+        return len(self.project_data.num_frames)
+
+
+
 class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronImageFeaturesFromProject):
     """
     Returns pairs of volumes in superglue format, using the SuperGlueUnpacker class
@@ -681,3 +693,133 @@ class SuperGlueFullVolumeNeuronImageFeaturesDatasetFromProject(AbstractNeuronIma
 
     def __len__(self):
         return len(self._items)
+
+
+class SequentialLoader:
+    """
+    Dataloader wrapper around multiple dataloaders, that returns data from them in sequence
+
+    From: https://github.com/PyTorchLightning/pytorch-lightning/issues/12650
+    """
+
+    def __init__(self, *dataloaders: DataLoader):
+        self.dataloaders = dataloaders
+
+    def __len__(self):
+        return sum(len(d) for d in self.dataloaders)
+
+    def __iter__(self):
+        for dataloader in self.dataloaders:
+            yield from dataloader
+
+
+class NeuronImageFeaturesDataModuleFromMultipleProjects(LightningDataModule):
+    """Return neurons and their labels, e.g. for a classifier"""
+    def __init__(self, batch_size=64, all_project_data: List[ProjectData] = None, num_neurons=None, num_frames=None,
+                 train_fraction=0.8, val_fraction=0.1, base_dataset_class=AbstractNeuronImageFeaturesFromProject,
+                 assume_all_neurons_correct=False, dataset_kwargs=None):
+        super().__init__()
+        if dataset_kwargs is None:
+            dataset_kwargs = {}
+        self.batch_size = batch_size
+        self.all_project_data = all_project_data
+        self.train_fraction = train_fraction
+        self.val_fraction = val_fraction
+        self.base_dataset_class = base_dataset_class
+        self.dataset_kwargs = dataset_kwargs
+        self.assume_all_neurons_correct = assume_all_neurons_correct
+
+    def setup(self, stage: Optional[str] = None):
+        # Split each individually
+        self.train_dataset = []
+        self.val_dataset = []
+        self.test_dataset = []
+        self.alldata = []
+        for project_data in self.all_project_data:
+            alldata = self.base_dataset_class(project_data, **self.dataset_kwargs)
+
+            train_fraction = int(len(alldata) * self.train_fraction)
+            val_fraction = int(len(alldata) * self.val_fraction)
+            splits = [train_fraction, val_fraction, len(alldata) - train_fraction - val_fraction]
+            trainset, valset, testset = random_split(alldata, splits)
+
+            # assign to use in dataloaders
+            self.train_dataset.append(trainset)
+            self.val_dataset.append(valset)
+            self.test_dataset.append(testset)
+
+            self.alldata.append(alldata)
+
+    def train_dataloader(self) -> TRAIN_DATALOADERS:
+        dataloaders = (
+            DataLoader(
+                dataset=dataset,
+                batch_size=self.batch_size
+            )
+            for dataset in self.train_dataset
+        )
+        return SequentialLoader(*dataloaders)
+
+    def val_dataloader(self) -> TRAIN_DATALOADERS:
+        dataloaders = (
+            DataLoader(
+                dataset=dataset,
+                batch_size=self.batch_size
+            )
+            for dataset in self.val_dataset
+        )
+        return SequentialLoader(*dataloaders)
+
+    def test_dataloader(self) -> TRAIN_DATALOADERS:
+        dataloaders = (
+            DataLoader(
+                dataset=dataset,
+                batch_size=self.batch_size
+            )
+            for dataset in self.test_dataset
+        )
+        return SequentialLoader(*dataloaders)
+
+
+class NeuronImageFeaturesDataModuleFromProject(LightningDataModule):
+    """Return neurons and their labels, e.g. for a classifier"""
+    def __init__(self, batch_size=64, project_data: ProjectData = None, num_neurons=None, num_frames=None,
+                 train_fraction=0.8, val_fraction=0.1, base_dataset_class=AbstractNeuronImageFeaturesFromProject,
+                 assume_all_neurons_correct=False, dataset_kwargs=None):
+        super().__init__()
+        if dataset_kwargs is None:
+            dataset_kwargs = {}
+        self.batch_size = batch_size
+        self.project_data = project_data
+        self.num_neurons = num_neurons
+        self.num_frames = num_frames
+        self.train_fraction = train_fraction
+        self.val_fraction = val_fraction
+        self.base_dataset_class = base_dataset_class
+        self.dataset_kwargs = dataset_kwargs
+        self.assume_all_neurons_correct = assume_all_neurons_correct
+
+    def setup(self, stage: Optional[str] = None):
+        # transform and split
+        alldata = self.base_dataset_class(self.project_data, **self.dataset_kwargs)
+
+        train_fraction = int(len(alldata) * self.train_fraction)
+        val_fraction = int(len(alldata) * self.val_fraction)
+        splits = [train_fraction, val_fraction, len(alldata) - train_fraction - val_fraction]
+        trainset, valset, testset = random_split(alldata, splits)
+
+        # assign to use in dataloaders
+        self.train_dataset = trainset
+        self.val_dataset = valset
+        self.test_dataset = testset
+
+        self.alldata = alldata
+
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset, batch_size=self.batch_size)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_dataset, batch_size=self.batch_size)
+
+    def test_dataloader(self):
+        return DataLoader(self.test_dataset, batch_size=self.batch_size)

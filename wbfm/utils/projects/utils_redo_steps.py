@@ -5,6 +5,8 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import zarr
+
+from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.neuron_matching.utils_matching import calc_bipartite_from_positions
 from wbfm.utils.projects.finished_project_data import ProjectData
 from skimage.measure import regionprops
@@ -12,7 +14,7 @@ from tqdm.auto import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.projects.utils_filenames import add_name_suffix
+from wbfm.utils.general.utils_filenames import add_name_suffix
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
@@ -218,3 +220,54 @@ def correct_tracks_dataframe_using_project(project_data: ProjectData, overwrite:
     else:
         print("No updates needed")
     return df
+
+
+def add_metadata_to_df_raw_ind(df_raw_ind, segmentation_metadata: DetectedNeurons,
+                               raise_error=True):
+    """
+    Given a dataframe with only the raw_ind_in_list, add metadata to it
+
+    Expect that df_raw_ind has a multiindex column, with the top level as neuron names and the
+
+    Final column names should be:
+        brightness_red 	likelihood 	raw_neuron_ind_in_list 	raw_segmentation_id 	volume 	x 	y 	z 	raw_tracklet_id
+
+    Parameters
+    ----------
+    df_raw_ind
+    segmentation_metadata
+
+    Returns
+    -------
+
+    """
+    # Each column will be the same length as df_raw_ind
+    def make_new_col():
+        col = np.zeros(df_raw_ind.shape[0])
+        col[:] = np.nan
+        return col
+    new_df_values = defaultdict(make_new_col)
+
+    # Iterate over each column (slightly slow but better than messing with column names and indices)
+    for neuron_name in df_raw_ind.columns:
+        this_col = df_raw_ind[neuron_name]
+        for t in tqdm(range(len(this_col)), leave=False):
+            raw_ind = cast_int_or_nan(this_col.iat[t])
+            if np.isnan(raw_ind):
+                continue
+            try:
+                mask_ind = segmentation_metadata.i_in_array_to_mask_index(t, raw_ind)
+            except IndexError as e:
+                print(f"Index error for neuron {neuron_name} at t={t}, raw_ind={raw_ind}, "
+                      f"with detected number of objects {len(segmentation_metadata.segmentation_metadata[t])}")
+                if raise_error:
+                    raise e
+                continue
+            row_data, column_names = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t)
+            for val, col_name in zip(row_data, column_names):
+                key = (neuron_name[0], col_name)
+                new_df_values[key][t] = val
+
+    # Now, convert to a dataframe
+    new_df = pd.DataFrame(new_df_values)
+    return new_df

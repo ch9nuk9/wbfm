@@ -12,12 +12,14 @@
 #   bash create_multiple_projects_from_data_parent_folder.sh -t /scratch/neurobiology/zimmer/wbfm/data -p /scratch/neurobiology/zimmer/wbfm/projects
 
 # Get all user flags
-while getopts t:p:n: flag
+run_in_background="True"
+while getopts t:p:n:b flag
 do
     case "${flag}" in
         t) DATA_PARENT_FOLDER=${OPTARG};;
         p) PROJECT_PARENT_FOLDER=${OPTARG};;
         n) is_dry_run=${OPTARG};;
+        b) run_in_background=${OPTARG};;
         *) raise error "Unknown flag"
     esac
 done
@@ -34,11 +36,18 @@ for f in "$DATA_PARENT_FOLDER"/*; do
         num_jobs=$((num_jobs+1))
         EXPERIMENTER=$(cd "$f" && pwd)
         EXPERIMENTER=$(basename "$EXPERIMENTER")
+        ARGS="project_dir=$PROJECT_PARENT_FOLDER experimenter=$EXPERIMENTER parent_data_folder=$f"
         if [ "$is_dry_run" ]; then
             echo "DRYRUN: Dispatching on folder: $f with EXPERIMENTER: $EXPERIMENTER"
         else
             echo "Dispatching on folder: $f with EXPERIMENTER: $EXPERIMENTER"
-            python $COMMAND with project_dir="$PROJECT_PARENT_FOLDER" experimenter="$EXPERIMENTER" parent_data_folder="$f" &
+            if [ "$run_in_background" == "True" ]; then
+                # shellcheck disable=SC2086
+                python $COMMAND with $ARGS &
+            else
+                # shellcheck disable=SC2086
+                python $COMMAND with $ARGS
+            fi
         fi
     fi
 done

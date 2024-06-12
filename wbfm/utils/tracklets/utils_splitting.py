@@ -1,9 +1,7 @@
 import numpy as np
-import ruptures as rpt
 from matplotlib import pyplot as plt
-from ruptures.exceptions import BadSegmentationParameters
 
-from wbfm.utils.general.custom_errors import AnalysisOutOfOrderError
+from wbfm.utils.external.custom_errors import AnalysisOutOfOrderError
 
 
 class TrackletSplitter:
@@ -33,6 +31,7 @@ class TrackletSplitter:
         return self._means_to_subtract
 
     def get_split_points_using_feature_jumps(self, df_working_copy, original_name, jump=1):
+        from ruptures.exceptions import BadSegmentationParameters
         _ = self.get_means_to_subtract(df_working_copy)
         tracklet = df_working_copy[original_name]
         signal = self.get_signal_from_tracklet(tracklet)
@@ -49,6 +48,7 @@ class TrackletSplitter:
         return split_list
 
     def plot_split_points_and_tracklet(self, df, original_name, split_list):
+        import ruptures as rpt
         tracklet = df[original_name]
         signal = self.get_signal_from_tracklet(tracklet)
         # Convert to local times
@@ -80,6 +80,7 @@ def get_signal_from_tracklet(tracklet, features, means_to_subtract=None):
 
 
 def split_signal(signal, penalty, jump):
+    import ruptures as rpt
     # Note: the timing is quadratic (I think) in the jump parameter;
     model = "l2"  # "l2", "rbf"
     algo = rpt.Pelt(model=model, min_size=3, jump=jump).fit(signal)

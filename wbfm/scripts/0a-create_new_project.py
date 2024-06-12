@@ -4,7 +4,7 @@ import sacred
 from sacred import Experiment
 from sacred import SETTINGS
 import cgitb
-from wbfm.utils.projects.utils_filenames import get_location_of_new_project_defaults
+from wbfm.utils.general.utils_filenames import get_location_of_new_project_defaults
 
 cgitb.enable(format='text')
 from wbfm.pipeline.project_initialization import build_project_structure_from_config
@@ -17,11 +17,8 @@ ex.add_config(os.path.join(path, 'project_config.yaml'))
 
 
 @ex.config
-def cfg(red_bigtiff_fname, green_bigtiff_fname, parent_data_folder):
+def cfg(red_fname, green_fname, parent_data_folder):
     pass
-    # if not DEBUG:
-    #     assert osp.exists(red_bigtiff_fname)
-    #     assert osp.exists(green_bigtiff_fname)
 
 
 @ex.automain

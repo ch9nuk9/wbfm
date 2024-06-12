@@ -11,12 +11,11 @@ from scipy import signal
 from scipy.signal import detrend
 from sklearn.decomposition import PCA
 
-from wbfm.gui.utils.utils_gui import NeuronNameEditor
 from wbfm.utils.general.utils_paper import PaperDataCache, apply_figure_settings
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError, NoBehaviorAnnotationsError
+from wbfm.utils.external.custom_errors import NoMatchesError, NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.general.postprocessing.utils_imputation import impute_missing_values_in_dataframe
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
@@ -47,7 +46,7 @@ from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from wbfm.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
 from segmentation.util.utils_metadata import DetectedNeurons
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
-from wbfm.utils.projects.utils_filenames import read_if_exists, pickle_load_binary, \
+from wbfm.utils.general.utils_filenames import read_if_exists, pickle_load_binary, \
     load_file_according_to_precedence, pandas_read_any_filetype, get_sequential_filename
 from wbfm.utils.projects.utils_project import safe_cd
 # from functools import cached_property # Only from python>=3.8
@@ -443,7 +442,15 @@ class ProjectData:
     @cached_property
     def num_frames(self) -> int:
         """Note that this is cached so that a user can overwrite the number of frames"""
-        return self.project_config.config['dataset_params']['num_frames']
+        num_frames = self.project_config.num_frames
+        if num_frames is None:
+            # Then try calculate from the processed data, not the raw
+            if self.red_data is not None:
+                num_frames = self.red_data.shape[0]
+        if num_frames is None:
+            # Loads the raw data, which may be slow
+            num_frames = self.project_config.get_num_frames_robust()
+        return num_frames
 
     def custom_frame_indices(self) -> list:
         """For overriding the normal iterator over frames, for skipping problems etc."""
@@ -1508,6 +1515,7 @@ class ProjectData:
         # Manual annotations take precedence by default
         excel_fname = self.get_default_manual_annotation_fname()
         possible_fnames = dict(excel=excel_fname,
+                               csv_old=Path(excel_fname).with_suffix('.csv'),
                                csv=Path(excel_fname).with_name(self.shortened_name).with_suffix('.csv'),
                                h5=Path(excel_fname).with_name(self.shortened_name).with_suffix('.h5'))
         possible_fnames = {k: str(v) for k, v in possible_fnames.items()}
@@ -1523,7 +1531,7 @@ class ProjectData:
         excel_fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.xlsx", prepend_subfolder=True)
         return excel_fname
 
-    def build_neuron_editor_gui(self) -> Optional[NeuronNameEditor]:
+    def build_neuron_editor_gui(self):
         """
         Initialize a QT table interface for editing neurons
 
@@ -1579,6 +1587,7 @@ class ProjectData:
 
         # Actually build the class
         try:
+            from wbfm.gui.utils.utils_gui import NeuronNameEditor
             manual_neuron_name_editor = NeuronNameEditor(neurons_to_id=neurons_to_id)
             manual_neuron_name_editor.import_dataframe(df, fname)
         except (PermissionError, tables.exceptions.HDF5ExtError):

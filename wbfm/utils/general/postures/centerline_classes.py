@@ -25,11 +25,11 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_p
     plot_dataframe_of_transitions, annotate_turns_from_reversal_ends
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
     remove_short_state_changes, get_dataframe_of_transitions, make_binary_vector_from_starts_and_ends
-from wbfm.utils.general.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
+from wbfm.utils.external.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
     MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.projects.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
+from wbfm.utils.general.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
     assign_id_based_on_closest_onset_in_split_lists, calc_time_series_from_starts_and_ends
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
@@ -1800,7 +1800,7 @@ class WormFullVideoPosture:
         # Use the project data class to check for tracking failures
         invalid_idx = project_data.estimate_tracking_failures_from_project()
 
-        bigtiff_start_volume = project_config.config['dataset_params'].get('bigtiff_start_volume', 0)
+        bigtiff_start_volume = project_config.config['deprecated_dataset_params'].get('bigtiff_start_volume', 0)
         opt = dict(bigtiff_start_volume=bigtiff_start_volume,
                    num_volumes=project_data.num_frames,
                    project_config=project_config,
@@ -1814,16 +1814,20 @@ class WormFullVideoPosture:
             project_config.logger.debug("behavior_fname not found; searching")
             raw_behavior_subfolder, flag = project_config.get_behavior_raw_parent_folder_from_red_fname()
             if not flag:
-                project_config.logger.warning("behavior_fname search failed; "
-                                              "All calculations with curvature (kymograph) will fail")
                 raw_behavior_subfolder = None
         else:
             raw_behavior_subfolder = Path(behavior_fname).parent
+
+        # Check if it is ndtiff, meaning the folder was saved directly
+        if behavior_fname is None and raw_behavior_subfolder is None:
+            raw_behavior_subfolder = project_config.config.get('behavior_fname', None)
 
         # Try to read files from the behavior subfolder
         if raw_behavior_subfolder is not None:
             all_files = WormFullVideoPosture._check_ulises_pipeline_files_in_subfolder(raw_behavior_subfolder)
         else:
+            project_config.logger.warning("behavior_fname search failed; "
+                                          "All calculations with curvature (kymograph) will fail")
             all_files = dict()
 
         # In newer projects, the behavior output files will be local, not mixed with the raw data
@@ -2120,10 +2124,10 @@ stimulus_annotation:        {self.has_stimulus_annotation}\n\
 \n"
 
 
-def get_behavior_fluorescence_fps_conversion(project_config):
+def get_behavior_fluorescence_fps_conversion(project_config: ModularProjectConfig):
     # Enhancement: In new config files, there should be a way to read this directly
     preprocessing_cfg = project_config.get_preprocessing_config()
-    final_number_of_planes = project_config.config['dataset_params']['num_slices']
+    final_number_of_planes = project_config.get_num_slices_robust()
     raw_number_of_planes = preprocessing_cfg.config.get('raw_number_of_planes', final_number_of_planes)
     # True for older datasets, i.e. I had to remove it in postprocessing
     was_flyback_saved = final_number_of_planes != raw_number_of_planes

@@ -7,12 +7,12 @@ import numpy as np
 import pandas as pd
 
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.general.custom_errors import NoMatchesError, NoNeuronsError
+from wbfm.utils.external.custom_errors import NoMatchesError, NoNeuronsError
 from wbfm.utils.general.utils_networkx import calc_bipartite_from_candidates
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.general.postprocessing.postprocessing_utils import matches_between_tracks, \
     remove_outliers_to_combine_tracks
-from wbfm.utils.projects.utils_filenames import get_sequential_filename
+from wbfm.utils.general.utils_filenames import get_sequential_filename
 from wbfm.utils.projects.utils_project import safe_cd
 from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches, predict_label
 from tqdm.auto import tqdm
@@ -265,8 +265,6 @@ def _unpack_for_fdnc(project_cfg, tracks_cfg, DEBUG):
     i_template = tracks_cfg.config['final_3d_tracks']['template_time_point']
     num_templates = tracks_cfg.config['leifer_params'].get('num_random_templates', None)
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
-    if DEBUG:
-        project_data.project_config.config['dataset_params']['num_frames'] = 3
     physical_unit_conversion = PhysicalUnitConversion.load_from_config(project_cfg)
     if use_zimmer_template:
         custom_template = project_data.get_centroids_as_numpy(i_template)

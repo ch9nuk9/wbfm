@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 from deeplabcut.utils import auxiliaryfunctions
 
+import wbfm.utils.external.utils_yaml
+
 
 def wb_tracker2dlc_format(path_config_file):
     """
@@ -140,12 +142,12 @@ def csv_annotations2config_names(path_config_file,
     names = list(df.columns.get_level_values(1))
     # Remove repetitions
     updates = {"bodyparts": [names[i] for i in range(0, len(names), num_dims)]}
-    auxiliaryfunctions.edit_config(path_config_file, updates)
+    wbfm.utils.external.utils_yaml.edit_config(path_config_file, updates)
 
     # Add a skeleton (fully connected)
     if to_add_skeleton:
         edge_iter = itertools.combinations(names, 2)
         updates = {"skeleton": [list(e) for e in edge_iter]}
-        auxiliaryfunctions.edit_config(path_config_file, updates)
+        wbfm.utils.external.utils_yaml.edit_config(path_config_file, updates)
 
     print("Finished! Check the snakemake_config.yaml file to make sure the bodyparts are properly written")

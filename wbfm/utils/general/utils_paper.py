@@ -6,7 +6,6 @@ import pandas as pd
 import plotly.express as px
 from wbfm.utils.external.utils_matplotlib import export_legend
 
-from wbfm.utils.tracklets.postprocess_tracking import OutlierRemoval
 from wbfm.utils.utils_cache import cache_to_disk_class
 
 
@@ -48,7 +47,7 @@ def plotly_paper_color_discrete_map():
                  # Skip orange... don't like it!
                  'immob': base_cmap[2], 'Active in Immob': base_cmap[2], 'Manifold in Immob': base_cmap[2],
                  'Immobilized (GCaMP)': base_cmap[2], 'Immobilized': base_cmap[2],
-                 'gfp': base_cmap[7],  # Gray
+                 'gfp': base_cmap[7], 'Reversal State': base_cmap[7],  # Gray
                  'Freely Moving (GFP)': base_cmap[7],
                  'Freely Moving (GFP, residual)': base_cmap[7],
                  'global': base_cmap[3],
@@ -59,7 +58,7 @@ def plotly_paper_color_discrete_map():
                  'mutant': base_cmap[6], 'Freely Moving (gcy-31, gcy-35, gcy-9)': base_cmap[6],
                  'gcy-31, gcy-35, gcy-9': base_cmap[6],  # Pink
                  # Colors for hierarchy
-                 'No oscillations': base_cmap[7],  # Same as gfp
+                 'No oscillations': base_cmap[7], 'No Behavior or Hierarchy': base_cmap[7],  # Same as gfp
                  'Hierarchy only': base_cmap[0],  # Same as raw
                  'Behavior only': base_cmap[1],  # Similar to raw, but brighter (teal)
                  'Hierarchical Behavior': base_cmap[3],  # New: orange
@@ -72,7 +71,7 @@ def plotly_paper_color_discrete_map():
 
 def export_legend_for_paper(fname=None, frameon=True):
     cmap = plotly_paper_color_discrete_map()
-    labels = ['Freely Moving', 'Immobilized', 'gcy-31, gcy-35, gcy-9']
+    labels = ['Freely Moving', 'Reversal State', 'gcy-31, gcy-35, gcy-9']
     colors = [cmap[l] for l in labels]
     f = lambda m, c: plt.plot([], [], marker=m, color=c, ls="none")[0]
     handles = [f("s", colors[i]) for i in range(3)]
@@ -217,6 +216,7 @@ class PaperDataCache:
                          func_save_to_disk=np.save,
                          func_load_from_disk=np.load)
     def calc_indices_to_remove_using_ppca(self):
+        from wbfm.utils.tracklets.postprocess_tracking import OutlierRemoval
         names = self.project_data.neuron_names
         coords = ['z', 'x', 'y']
         all_zxy = self.project_data.red_traces.loc[:, (slice(None), coords)].copy()

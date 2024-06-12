@@ -5,27 +5,15 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 from scipy.optimize import linear_sum_assignment
+from sklearn.decomposition import TruncatedSVD
 from tqdm.auto import tqdm
 
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
-from wbfm.barlow_project.utils.model_image_classifier import NeuronEmbeddingModel
+from wbfm.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
 from wbfm.utils.nn_utils.superglue import SuperGlueModel, SuperGlueUnpacker
 from wbfm.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
+from wbfm.utils.general.hardcoded_paths import load_hardcoded_neural_network_paths
 
-model_dir = "/lisc/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/nn_checkpoints/"
-local_model_dir = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/nn_checkpoints/"
-PATH_TO_MODEL = os.path.join(model_dir, "superglue_neurons_4_datasets_adjacent_remove_nonmoving_05_11.ckpt")
-
-# Update: 4/20/2022 - multiple datasets
-PATH_TO_SUPERGLUE_MODEL = os.path.join(model_dir, "superglue_neurons_5_datasets_07_08_uint16.ckpt")
-PATH_TO_SUPERGLUE_TRACKLET_MODEL = os.path.join(model_dir,
-                                                "superglue_neurons_5_datasets_adjacent_07_11_uint16.ckpt")
-
-LOCAL_PATH_TO_SUPERGLUE_MODEL = ""
-LOCAL_PATH_TO_SUPERGLUE_TRACKLET_MODEL = ""
-
-if not os.path.exists(PATH_TO_SUPERGLUE_MODEL):
-    logging.warning(f"Did not find default model at {PATH_TO_SUPERGLUE_MODEL}, is everything mounted correctly?")
 
 # TODO: also save hyperparameters (doesn't work in jupyter notebooks)
 HPARAMS = dict(num_classes=127)
@@ -50,10 +38,16 @@ class WormWithNeuronClassifier:
 
     def __post_init__(self):
         if self.path_to_model is None:
-            if os.path.exists(PATH_TO_MODEL):
-                self.path_to_model = PATH_TO_MODEL
+            # Load hardcoded path to model
+            path_dict = load_hardcoded_neural_network_paths()
+            superglue_parent_folder = path_dict['tracking_paths']['model_parent_folder']
+            superglue_model_name = path_dict['tracking_paths']['global_tracking_model_name']
+            superglue_path = os.path.join(superglue_parent_folder, superglue_model_name)
+
+            if os.path.exists(superglue_path):
+                self.path_to_model = superglue_path
             else:
-                raise FileNotFoundError(PATH_TO_MODEL)
+                raise FileNotFoundError(superglue_path)
 
         if self.hparams is None:
             self.hparams = HPARAMS
@@ -123,13 +117,16 @@ class WormWithSuperGlueClassifier:
 
     def __post_init__(self):
         if self.path_to_model is None:
-            if os.path.exists(PATH_TO_SUPERGLUE_MODEL):
-                self.path_to_model = PATH_TO_SUPERGLUE_MODEL
-            elif os.path.exists(LOCAL_PATH_TO_SUPERGLUE_MODEL):
-                self.path_to_model = LOCAL_PATH_TO_SUPERGLUE_MODEL
-                logging.warning("Did not find cluster path to model, using local path")
+            # Load hardcoded path to model
+            path_dict = load_hardcoded_neural_network_paths()
+            superglue_parent_folder = path_dict['tracking_paths']['model_parent_folder']
+            superglue_model_name = path_dict['tracking_paths']['global_tracking_model_name']
+            superglue_path = os.path.join(superglue_parent_folder, superglue_model_name)
+
+            if os.path.exists(superglue_path):
+                self.path_to_model = superglue_path
             else:
-                raise FileNotFoundError(PATH_TO_SUPERGLUE_MODEL)
+                raise FileNotFoundError(superglue_path)
         if self.model is None:
             self.model = SuperGlueModel.load_from_checkpoint(checkpoint_path=self.path_to_model)
         self.model.eval()
@@ -238,8 +235,39 @@ def _unpack_project_for_global_tracking(DEBUG, project_cfg):
     t_template = tracking_cfg.config['final_3d_tracks']['template_time_point']
     use_multiple_templates = tracking_cfg.config['leifer_params']['use_multiple_templates']
     num_random_templates = tracking_cfg.config['leifer_params']['num_random_templates']
-    num_frames = project_data.num_frames
+    num_frames = project_data.project_config.get_num_frames_robust()
     if DEBUG:
         num_frames = 3
     all_frames = project_data.raw_frames
     return all_frames, num_frames, num_random_templates, project_data, t_template, tracking_cfg, use_multiple_templates
+
+
+def load_cluster_tracker_from_config(project_config, svd_components=50, ):
+    """Alternate method for tracking via pure clustering on the feature space"""
+    project_data = ProjectData.load_final_project_data_from_config(project_config, to_load_frames=True)
+
+    # Use old tracker just as a feature-space embedder
+    frames_old = project_data.raw_frames
+    unpacker = SuperGlueUnpacker(project_data, 10)
+    tracker_old = WormWithSuperGlueClassifier(superglue_unpacker=unpacker)
+
+    print("Embedding all neurons in feature space...")
+    X = []
+    linear_ind_to_local = []
+    offset = 0
+    for i in tqdm(range(project_data.num_frames)):
+        this_frame = frames_old[i]
+        this_frame_embedding = tracker_old.embed_target_frame(this_frame)
+        this_x = this_frame_embedding.squeeze().cpu().numpy().T
+        X.append(this_x)
+
+        linear_ind_to_local.append(offset + np.arange(this_x.shape[0]))
+        offset += this_x.shape[0]
+
+    X = np.vstack(X).astype(float)
+    alg = TruncatedSVD(n_components=svd_components)
+    X_svd = alg.fit_transform(X)
+
+    from barlow_track.utils.track_using_clusters import WormTsneTracker
+    obj = WormTsneTracker(X_svd, linear_ind_to_local, svd_components=svd_components)
+    return obj

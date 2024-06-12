@@ -5,7 +5,7 @@ from pathlib import Path
 import sacred
 from sacred import Experiment
 
-from wbfm.utils.projects.utils_project import load_config
+from wbfm.utils.external.utils_yaml import load_config
 from wbfm.pipeline.traces import reindex_segmentation_using_config
 
 # Initialize sacred experiment

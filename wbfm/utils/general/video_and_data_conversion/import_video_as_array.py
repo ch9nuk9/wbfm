@@ -1,5 +1,7 @@
 import typing
 from pathlib import Path
+
+import dask
 import numpy as np
 import tifffile
 from imutils import MicroscopeDataReader
@@ -41,8 +43,23 @@ def get_video_from_ome_file_subset(video_fname,
     return dat
 
 
-def get_single_volume(fname: typing.Union[str, Path, tifffile.TiffFile, MicroscopeDataReader], which_vol: int, num_slices: int, alpha: float = 1.0,
-                      dtype: str = 'uint8') -> np.ndarray:
+def get_single_volume(fname: typing.Union[str, Path, tifffile.TiffFile, MicroscopeDataReader], which_vol: int,
+                      num_slices: int, alpha: float = 1.0, dtype: str = 'uint8') -> np.ndarray:
+    """
+    Backwards compatible function that can read from a tifffile, a MicroscopeDataReader, or a dask array
+
+    Parameters
+    ----------
+    fname
+    which_vol
+    num_slices
+    alpha
+    dtype
+
+    Returns
+    -------
+
+    """
     # Convert to page coordinates
     start_ind = num_slices * which_vol
     key = range(start_ind, start_ind + num_slices)
@@ -54,6 +71,8 @@ def get_single_volume(fname: typing.Union[str, Path, tifffile.TiffFile, Microsco
     elif type(fname) == MicroscopeDataReader:
         # This should already be the correct shape, so we use which_vol directly
         dat = fname.dask_array[0, which_vol, 0, ...].compute().astype(dtype)
+    elif type(fname) == dask.array.Array:
+        dat = fname[which_vol, ...].compute().astype(dtype)
     else:
         raise ValueError("Must pass open tifffile or file path")
 

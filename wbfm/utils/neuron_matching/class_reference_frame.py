@@ -3,11 +3,10 @@ from dataclasses import dataclass
 from typing import Union
 import cv2
 import numpy as np
-import zarr
 from tqdm.auto import tqdm
 from wbfm.utils.external.utils_cv2 import get_keypoints_from_3dseg
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from wbfm.utils.general.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError, \
+from wbfm.utils.external.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError, \
     AnalysisOutOfOrderError, DeprecationError, NoNeuronsError
 from wbfm.utils.neuron_matching.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
     build_feature_tree, build_neuron_tree, build_f2n_map, detect_only_keypoints

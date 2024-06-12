@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
-from wbfm.utils.general.custom_errors import InvalidBehaviorAnnotationsError
+from wbfm.utils.external.custom_errors import InvalidBehaviorAnnotationsError
 
 
 class TestBehaviorCodes(unittest.TestCase):

@@ -12,7 +12,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
 from wbfm.utils.general.utils_paper import apply_figure_settings
-from wbfm.utils.projects.utils_filenames import get_sequential_filename
+from wbfm.utils.general.utils_filenames import get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes

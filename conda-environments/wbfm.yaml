@@ -21,7 +21,7 @@ dependencies:
   - torchaudio
   - cudatoolkit=10.0.130
   - cudnn=7.6.5
-  - opencv=3.4
+  - opencv=4.5
   - matplotlib
   - torchvision
   - scikit-learn
@@ -32,9 +32,9 @@ dependencies:
   - snakemake
   - napari[all]
   - pytorch=1.13.0
-  - torchvision=0.2.2
-  - torchaudio=0.13.0
-  - torchmetrics=0.10.3
+  - torchvision
+  - torchaudio
+  - torchmetrics
   - pytorch-cuda=11.6
   - plotly
   - pip:
@@ -52,7 +52,7 @@ dependencies:
     - pytest
     - ruptures
     - backports.cached_property
-    - pytorch-lightning==1.5.6
+    - pytorch-lightning
     - wandb
     - seaborn
     - hdbscan
@@ -62,3 +62,4 @@ dependencies:
     - kaleido
     - skan==0.9 # For behavior pipeline
     - loguru  # For imutils
+    - ndtiff

@@ -6,15 +6,13 @@
 #SBATCH --qos=medium             # Time limit hrs:min:sec
 #SBATCH --output=log_gpu_step-%j.out    # Standard output and error log
 #SBATCH --time=8:00:00
-#SBATCH --mem=16G
-#SBATCH --cpus-per-task=16
+#SBATCH --mem=200G
+#SBATCH --cpus-per-task=8
 #SBATCH --gpus-per-node=1
-#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --partition=basic  # The basic partition has computers with single GPUs, instead of multiple
 
 pwd; hostname; date
-
-# Necessary because the default home directory is not writable from the cluster
-#export HOME="/scratch/neurobiology/zimmer/Charles"
 
 # Get all user flags
 while getopts t:n:s: flag
@@ -28,7 +26,7 @@ do
 done
 
 # Unpack the flag into an actual command
-CMD_DIR="/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/scripts"
+CMD_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts"
 
 declare -A CMD_DICT
 declare -A CMD_DICT
@@ -43,16 +41,24 @@ CMD_DICT["3-alt"]="alternate/3-track_using_clustering.py"
 CMD_DICT["4"]="4-make_final_traces.py"
 CMD_DICT["4-alt"]="alternate/4c-extract_full_traces.py"
 
+# Requires additional path to model, currently hardcoded
+CMD_DICT["4+barlow_track"]="postprocessing/4+track_using_barlow.py"
+
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
-FULL_CMD="python $CMD with project_path=$project_path"
+FULL_CMD="$CMD with project_path=$project_path"
+
+if [ "$step_reference" = "4+barlow_track" ]; then
+  FULL_CMD="$FULL_CMD model_fname=/lisc/scratch/neurobiology/zimmer/wbfm/TrainedBarlow/barlow_ZIM2165_Gcamp7b_worm1-2022_11_28_from_search/trial_0/resnet50.pth"
+fi
 
 echo "Running step $step_reference using full command:"
-echo $FULL_CMD
+echo "$FULL_CMD"
 
 if [ "$is_dry_run" ]; then
   echo "Dry run with command: $FULL_CMD"
 else
-  python $CMD with project_path="$project_path"
+  # shellcheck disable=SC2086
+  python $FULL_CMD
 fi
 
 date

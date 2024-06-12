@@ -10,7 +10,6 @@ from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 from wbfm.utils.neuron_matching.long_range_matching import _unpack_for_track_tracklet_matching, \
     extend_tracks_using_global_tracking, greedy_matching_using_node_class, \
     combine_tracklets_using_matching, _save_graphs_and_combined_tracks
-from wbfm.barlow_project.utils.track_using_clusters import WormTsneTracker
 
 from wbfm.utils.neuron_matching.utils_candidate_matches import rename_columns_using_matching, \
     combine_dataframes_using_bipartite_matching
@@ -307,27 +306,3 @@ def _split_tracklets_and_reinitialize_worm(_initialize_worm, df_global_tracks, d
     worm_obj = worm_obj2
     df_tracklets = df_tracklets_split.astype(pd.SparseDtype("float", np.nan))
     return df_tracklets, df_tracklets_split, worm_obj
-
-
-def track_using_clusters_using_config(project_config: ModularProjectConfig, DEBUG=False):
-    """
-    Uses tsne + hdbscan clusters on neuron feature space as a tracker
-
-    Parameters
-    ----------
-    project_config
-
-    Returns
-    -------
-
-    """
-
-    tracking_config = project_config.get_tracking_config()
-
-    # Track
-    tracker = WormTsneTracker.load_from_config(project_config)
-    df_combined, all_raw_dfs = tracker.track_using_overlapping_windows()
-
-    # Save
-    fname = "3-tracking/postprocessing/df_cluster_tracker.h5"
-    tracking_config.save_data_in_local_project(fname, df_combined, also_save_csv=True)

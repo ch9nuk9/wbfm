@@ -3,7 +3,7 @@ import os.path as osp
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from wbfm.utils.general.custom_errors import AnalysisOutOfOrderError
+from wbfm.utils.external.custom_errors import AnalysisOutOfOrderError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_project import safe_cd
 

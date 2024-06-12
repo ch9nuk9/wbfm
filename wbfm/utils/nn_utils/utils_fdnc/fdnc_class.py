@@ -1,9 +1,8 @@
+import logging
 from dataclasses import dataclass
 
 import numpy as np
-from fDNC.src.DNC_predict import predict_matches, filter_matches
-
-from wbfm.utils.general.custom_errors import NoNeuronsError
+from wbfm.utils.external.custom_errors import NoNeuronsError
 from wbfm.utils.nn_utils.fdnc_predict import load_fdnc_template, load_fdnc_options
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
@@ -16,6 +15,8 @@ class fDNCTracker:
     physical_unit_conversion: PhysicalUnitConversion
 
     template: np.ndarray = None
+
+    _already_warned = False  # To avoid spamming installation warnings
 
     @staticmethod
     def load_from_project_data(project_data: ProjectData,
@@ -60,10 +61,14 @@ class fDNCTracker:
 
     def predict_matches_from_points(self, pts):
         try:
+            from fDNC.src.DNC_predict import predict_matches, filter_matches
             matches, _ = predict_matches(test_pos=pts, template_pos=self.template, **self.prediction_options)
             matches = filter_matches(matches, self.match_confidence_threshold)
         except NoNeuronsError:
             matches = []
+        except ImportError:
+            logging.warning("fDNC is not installed. Skipping prediction using this method")
+            self._already_warned = True
 
         return matches
 

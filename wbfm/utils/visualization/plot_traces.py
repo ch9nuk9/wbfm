@@ -14,7 +14,7 @@ from sklearn.decomposition import PCA
 from wbfm.utils.general.utils_paper import paper_trace_settings, paper_figure_page_settings, \
     apply_figure_settings, behavior_name_mapping
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, options_for_ethogram, shade_using_behavior
-from wbfm.utils.general.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
+from wbfm.utils.external.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.external.utils_matplotlib import get_twin_axis
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from wbfm.utils.external.utils_pandas import cast_int_or_nan
@@ -1200,7 +1200,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
 
 def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, trace_opt=None,
                                       include_speed_subplot=True,
-                                      output_folder=None, **kwargs):
+                                      output_folder=None, base_width=0.5, **kwargs):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but saves each subplot separately for more control
 
@@ -1235,7 +1235,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     fig1.add_trace(heatmap, **heatmap_opt)
     fig1.update_layout(showlegend=False, autosize=False, #**plotly_opt,
                        coloraxis=dict(colorscale="jet"))
-    apply_figure_settings(fig1, width_factor=1, height_factor=0.1, plotly_not_matplotlib=True)
+    apply_figure_settings(fig1, width_factor=base_width, height_factor=0.3, plotly_not_matplotlib=True)
     # Remove ticks
     fig1.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig1.update_yaxes(dict(showticklabels=False, showgrid=True), title="Neurons",
@@ -1271,7 +1271,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
         for _i in range(num_before_adding_shapes, len(fig2.layout.shapes)):
             fig2.layout.shapes[_i]['yref'] = 'paper'
     fig2.update_layout(showlegend=False, autosize=False)#, **plotly_opt)
-    apply_figure_settings(fig2, width_factor=0.8, height_factor=0.2, plotly_not_matplotlib=True)
+    apply_figure_settings(fig2, width_factor=base_width*0.8, height_factor=0.2, plotly_not_matplotlib=True)
     # Remove ticks
     fig2.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig2.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)

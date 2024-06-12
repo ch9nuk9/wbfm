@@ -1,10 +1,9 @@
 import argparse
 import os
-import pickle
 import pandas as pd
 
 from wbfm.gui.utils.utils_dash import dashboard_from_two_dataframes
-from wbfm.utils.projects.utils_filenames import pickle_load_binary
+from wbfm.utils.general.utils_filenames import pickle_load_binary
 
 
 def main(folder_name: str, port: int = None, allow_public_access: bool = False, DEBUG: bool = False,
