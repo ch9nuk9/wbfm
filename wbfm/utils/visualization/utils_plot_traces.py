@@ -642,13 +642,14 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
             significance_stars = '***'
 
         # Get the y value to plot the annotation
+        y_range_of_plot = np.max(y_range[index])
         if height_mode == 'all_same':
-            annotation_y_shift = -np.max(y0) * 0.5  # Shift annotation down by this amount
+            annotation_y_shift = -y_range_of_plot * 0.1  # Shift annotation down by this amount
             y0_annotation = y_range[index][0] + annotation_y_shift
             y1_annotation = y_range[index][1] + annotation_y_shift
             y_ref = "y" + subplot_str + " domain"
         elif height_mode == 'top_of_data':
-            annotation_y_shift = np.max(y0) * 0.1  # Shift annotation down by this amount
+            annotation_y_shift = y_range_of_plot * 0.1  # Shift annotation down by this amount
             y0_annotation = np.max(y0) + annotation_y_shift
             y1_annotation = np.max(y1) + annotation_y_shift
             y_ref = "y"
