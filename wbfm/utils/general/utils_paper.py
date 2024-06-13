@@ -43,10 +43,11 @@ def plotly_paper_color_discrete_map():
 
     """
     base_cmap = px.colors.qualitative.D3
-    cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0], 'Other neurons active in FM only': base_cmap[0],
+    cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0], 'Active in Freely Moving only': base_cmap[0],
                  'Freely Moving (GCaMP)': base_cmap[0], 'Freely Moving': base_cmap[0], 'Wild Type': base_cmap[0],
                  # Skip orange... don't like it!
                  'immob': base_cmap[2], 'Active in Immob': base_cmap[2], 'Manifold in Immob': base_cmap[2],
+                 'Intrinsic (shared with immobilized)': base_cmap[2],
                  'Immobilized (GCaMP)': base_cmap[2], 'Immobilized': base_cmap[2],
                  'gfp': base_cmap[7], 'Reversal State': base_cmap[7],  # Gray
                  'Freely Moving (GFP)': base_cmap[7],
@@ -55,7 +56,7 @@ def plotly_paper_color_discrete_map():
                  'residual': base_cmap[4],
                  'Freely Moving (GCaMP, residual)': base_cmap[4],
                  'O2 or CO2 sensing': base_cmap[5],  # Brown
-                 'Not IDed': base_cmap[7],  # Same as gfp; shouldn't ever be on same plot
+                 'Not IDed': base_cmap[7], 'Undetermined': base_cmap[7],  # Same as gfp; shouldn't ever be on same plot
                  'mutant': base_cmap[6], 'Freely Moving (gcy-31, gcy-35, gcy-9)': base_cmap[6],
                  'gcy-31, gcy-35, gcy-9': base_cmap[6], 'Mutant': base_cmap[6],  # Pink
                  # Colors for hierarchy
