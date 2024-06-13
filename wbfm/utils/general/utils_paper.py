@@ -389,7 +389,7 @@ class PaperDataCache:
                     os.remove(fname)
 
 
-def plot_box_multi_axis(df, x_columns_list, y_column):
+def plot_box_multi_axis(df, x_columns_list, y_column, color_names=None):
     """
     Plots a box plot with multiple x labels
 
@@ -401,14 +401,15 @@ def plot_box_multi_axis(df, x_columns_list, y_column):
     # Sample data
     x = [list(df[col]) for col in x_columns_list]
     y = list(df[y_column])
-    color_names = np.unique(x[0])
+    if color_names is None:
+        color_names = np.unique(x[0])
 
     for c in color_names:
-        y = [y[i] for i in range(len(x[0])) if x[0][i] == c]
+        this_y = [y[i] for i in range(len(x[0])) if x[0][i] == c]
         # Need to keep both x columns
         x0 = [x[0][i] for i in range(len(x[0])) if x[0][i] == c]
         x1 = [x[1][i] for i in range(len(x[0])) if x[0][i] == c]
-        fig.add_trace(go.Box(x=[x0, x1], y=y, name=c))
+        fig.add_trace(go.Box(x=[x0, x1], y=this_y, name=c))
 
     # Mapping between x labels (categories) and colors
     cmap = plotly_paper_color_discrete_map()
