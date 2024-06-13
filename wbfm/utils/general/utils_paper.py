@@ -389,7 +389,7 @@ class PaperDataCache:
                     os.remove(fname)
 
 
-def plot_box_multi_axis(df, x_columns_list, y_column, color_names=None):
+def plot_box_multi_axis(df, x_columns_list, y_column, color_names=None, DEBUG=False):
     """
     Plots a box plot with multiple x labels
 
@@ -405,10 +405,17 @@ def plot_box_multi_axis(df, x_columns_list, y_column, color_names=None):
         color_names = np.unique(x[0])
 
     for c in color_names:
-        this_y = [y[i] for i in range(len(x[0])) if x[0][i] == c]
+        num_total_pts = len(x[0])
+        this_y = [y[i] for i in range(num_total_pts) if x[0][i] == c]
         # Need to keep both x columns
-        x0 = [x[0][i] for i in range(len(x[0])) if x[0][i] == c]
-        x1 = [x[1][i] for i in range(len(x[0])) if x[0][i] == c]
+        x0 = [c] * len(this_y)
+        x1 = [x[1][i] for i in range(num_total_pts) if x[0][i] == c]
+        if DEBUG:
+            print(f"Color: {c}, len: {len(this_y)}")
+            print(f"X0: {x0}")
+            print(f"X1: {x1}")
+            print(f"Y: {this_y}")
+
         fig.add_trace(go.Box(x=[x0, x1], y=this_y, name=c))
 
     # Mapping between x labels (categories) and colors

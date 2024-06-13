@@ -525,7 +525,12 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
         bonferroni_factor = 1
 
     if array_columns is None or array_columns == [None]:
-        array_columns = [[0, 1]]
+        if has_multicategory_index:
+            # Then we need to compare the same column, indexed by the outer x label
+            i = np.where(_category_x_labels == x_label)[0][0]
+            array_columns = [[i, i]]
+        else:
+            array_columns = [[0, 1]]
 
     # Specify in what y_range to plot for each pair of columns
     default_text_format = dict(interline=0.07, text_height=1.07, color='black')
@@ -588,6 +593,9 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
             else:
                 y0 = y0[np.where(x0 == inner_x_label_pair[0])[0]]
                 y1 = y1[np.where(x1 == inner_x_label_pair[1])[0]]
+            if DEBUG:
+                print(f"y0: {y0[:5]}")
+                print(f"y1: {y1[:5]}")
             # if DEBUG:
             #     print(f"y0: {y0}")
             #     print(f"y1: {y1}")
@@ -684,7 +692,7 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
                                 yref=y_ref
                                 ))
         if DEBUG:
-            print(f"p-value: {pvalue}")
+            print(f"p-value: {pvalue} for x_label {x_label}")
             print(f"Adding annotation at x={column_pair[0]} and {column_pair[1]}")
             print(f"Adding annotation at y={y0_annotation} and {y1_annotation}")
             # err
