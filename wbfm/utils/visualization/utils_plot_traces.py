@@ -416,10 +416,12 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
     return fig, lower_shading, upper_shading
 
 
-def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, _all_x_labels=None,
+def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, inner_x_label_pair=None,
+                           _category_x_labels=None,
                            bonferroni_factor=None, height_mode='all_same',
                            _format=None, permutations=None, show_only_stars=False, show_ns=True,
-                           separate_boxplot_fig=False, DEBUG=False):
+                           separate_boxplot_fig=False, has_multicategory_index=False,
+                           DEBUG=False):
     """
     From: https://stackoverflow.com/questions/67505252/plotly-box-p-value-significant-annotation
 
@@ -444,6 +446,8 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
     x_label: None or str or 'all'
         if the boxplot has been separated by color, this specifies which color (x-axis label) to add the notation to
         In this case, array_columns should be the column numbers within a single label
+    inner_x_label_pair: None or str
+        if the x_label is multi-dimensional, this specifies the x_label to use for the p value comparison
     height_mode: str
         'all_same' (default) or 'top_of_data' (calculates the top data point and adds the annotation there)
     _format: dict
@@ -455,6 +459,11 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
     separate_boxplot_fig: bool
         If True, then the figure contains separate boxplots for each color AND x_label, and searching for unique
         x_labels will fail if only fig.data[0] is used
+    has_multicategory_index: bool
+        If the figure is generated using multiple categories (see https://plotly.com/python/categorical-axes/#multicategorical-axes)
+        then this splits the 2d index into two separate lists, used in different ways:
+            i=0 is used for looping
+            i=1 is used for indexing the y values and calculating the p value
 
     Returns:
     -------
@@ -468,9 +477,10 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
         # Get all x_labels and call recursively
         if array_columns is not None:
             raise ValueError("If x_label is 'all', array_columns should be None")
+        inner_x_label_pair = None
         if separate_boxplot_fig:
             all_x_labels_list = [fig.data[i].x for i in range(len(fig.data))]
-            all_x_labels = pd.Series(np.concatenate(all_x_labels_list)).unique()
+            category_x_labels = pd.Series(np.concatenate(all_x_labels_list)).unique()
             # And we need to properly set the column indices
             array_columns_dict = defaultdict(list)
             for i, this_dat in enumerate(fig.data):
@@ -482,21 +492,33 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
                 array_columns_dict[this_x_label].append(i)
                 assert len(array_columns_dict[this_x_label]) <= 2, "Only two columns can be compared"
         else:
-            all_x_labels = pd.Series(fig.data[0].x).unique()
-            array_columns_dict = {x_label: None for x_label in all_x_labels}
+            x_vec = np.array(fig.data[0].x)
+            if x_vec.ndim >= 2:
+                if not has_multicategory_index:
+                    raise ValueError("If x label is multi-dimensional, then has_multicategory_index should be passed")
+                # Get the inner (upper) x label
+                inner_x_label_pair = pd.Series(x_vec[1, :]).unique()
+                assert len(inner_x_label_pair) == 2, "Only two columns can be compared"
+                # Get the outer labels, which will be different for each data entry list
+                all_outer_labels = [pd.Series(d.x[0]).unique() for d in fig.data]
+                category_x_labels = pd.Series(np.squeeze(np.array(all_outer_labels))).unique()
+            else:
+                category_x_labels = pd.Series(x_vec).unique()
+            array_columns_dict = {x_label: None for x_label in category_x_labels}
         if DEBUG:
-            print(f"Detected x_labels: {all_x_labels}")
-        for x_label in all_x_labels:
+            print(f"Detected x_labels: {category_x_labels}")
+        for x_label in category_x_labels:
             if x_label == 'all':
                 logging.warning("x_label is 'all', which is a reserved keyword. Skipping")
                 continue
             if bonferroni_factor is None:
-                bonferroni_factor = len(all_x_labels)
+                bonferroni_factor = len(category_x_labels)
             fig = add_p_value_annotation(fig, array_columns=[array_columns_dict[x_label]],
                                          subplot=subplot, x_label=x_label, show_ns=show_ns,
-                                         _format=_format, _all_x_labels=all_x_labels, height_mode=height_mode,
+                                         _format=_format, _category_x_labels=category_x_labels, height_mode=height_mode,
                                          bonferroni_factor=bonferroni_factor, DEBUG=DEBUG, permutations=permutations,
-                                         show_only_stars=show_only_stars)
+                                         show_only_stars=show_only_stars, inner_x_label_pair=inner_x_label_pair,
+                                         has_multicategory_index=has_multicategory_index)
         return fig
 
     if bonferroni_factor is None:
@@ -546,30 +568,44 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
         # Mare sure it is selecting the data and subplot you want
         # print('0:', fig_dict['data'][data_pair[0]]['name'], fig_dict['data'][data_pair[0]]['xaxis'])
         # print('1:', fig_dict['data'][data_pair[1]]['name'], fig_dict['data'][data_pair[1]]['xaxis'])
-        y0 = fig_dict['data'][data_pair[0]]['y']
-        y1 = fig_dict['data'][data_pair[1]]['y']
+        y0 = np.array(fig_dict['data'][data_pair[0]]['y'])
+        y1 = np.array(fig_dict['data'][data_pair[1]]['y'])
 
         if x_label is not None:
             # Then the x data also contains categories, and we should take a subset of y0 and y1 to match
-            x0 = fig_dict['data'][data_pair[0]]['x']
-            x1 = fig_dict['data'][data_pair[1]]['x']
+            x0 = np.array(fig_dict['data'][data_pair[0]]['x'])
+            x1 = np.array(fig_dict['data'][data_pair[1]]['x'])
 
-            y0 = y0[np.where(x0 == x_label)[0]]
-            y1 = y1[np.where(x1 == x_label)[0]]
+            if x0.ndim >= 2:
+                if not has_multicategory_index:
+                    raise ValueError("If x label is multi-dimensional, then has_multicategory_index should be passed")
+                x0 = x0[1, :]
+                x1 = x1[1, :]
+
+            if inner_x_label_pair is None:
+                y0 = y0[np.where(x0 == x_label)[0]]
+                y1 = y1[np.where(x1 == x_label)[0]]
+            else:
+                y0 = y0[np.where(x0 == inner_x_label_pair[0])[0]]
+                y1 = y1[np.where(x1 == inner_x_label_pair[1])[0]]
+            # if DEBUG:
+            #     print(f"y0: {y0}")
+            #     print(f"y1: {y1}")
             # if len(y1) == 0:
             #     # Then the figure is organized per-color, and we can use the direct index
             #     y1 = fig_dict['data'][data_pair[1]]['y']
-            # if DEBUG:
-            #     print(y0)
-            #     print(y1)
 
             # In addition, the x values of the annotation should be the same as the x_label, not the raw column number
             # First we need to get which x value the label corresponds to
-            if _all_x_labels is None:
-                all_x_labels = pd.Series(x0).unique()  # This keeps the order, unlike np.unique()
+            if _category_x_labels is None:
+                category_x_labels = pd.Series(x0).unique()  # This keeps the order, unlike np.unique()
             else:
-                all_x_labels = _all_x_labels
-            x_label_ind = np.where(all_x_labels == x_label)[0][0]
+                category_x_labels = _category_x_labels
+            x_label_ind = np.where(category_x_labels == x_label)[0][0]
+            if has_multicategory_index:
+                # Then each inner index will actually have its own x value, i.e. the outer index spans 2 columns
+                # i.e. 0 should map to 0.5, and 1 should map to 2.5
+                x_label_ind = x_label_ind * 2 + 0.5
             column_pair = [x_label_ind - 0.2, x_label_ind + 0.2]
 
         # Drop any nan values
@@ -584,7 +620,7 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
         pvalue = stats.ttest_ind(y0, y1, equal_var=False, random_state=4242, permutations=permutations)[1] * bonferroni_factor
         if DEBUG:
             print(f"p-value: {pvalue}")
-            print(f"Data: {y0}, {y1}")
+            # print(f"Data: {y0}, {y1}")
             # err
         if pvalue >= 0.05:
             if not show_ns:
@@ -599,12 +635,12 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
 
         # Get the y value to plot the annotation
         if height_mode == 'all_same':
-            annotation_y_shift = -0.12  # Shift annotation down by this amount
+            annotation_y_shift = -np.max(y0) * 0.5  # Shift annotation down by this amount
             y0_annotation = y_range[index][0] + annotation_y_shift
             y1_annotation = y_range[index][1] + annotation_y_shift
             y_ref = "y" + subplot_str + " domain"
         elif height_mode == 'top_of_data':
-            annotation_y_shift = 0.04
+            annotation_y_shift = np.max(y0) * 0.1  # Shift annotation down by this amount
             y0_annotation = np.max(y0) + annotation_y_shift
             y1_annotation = np.max(y1) + annotation_y_shift
             y_ref = "y"
