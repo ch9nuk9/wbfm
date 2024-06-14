@@ -18,7 +18,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends, \
     remove_short_state_changes, get_contiguous_blocks_from_two_columns, resample_categorical, \
-    combine_columns_with_suffix
+    combine_columns_with_suffix, extend_short_states
 from wbfm.utils.external.custom_errors import InvalidBehaviorAnnotationsError, NeedsAnnotatedNeuronError
 import plotly.graph_objects as go
 
@@ -528,7 +528,8 @@ class BehaviorCodes(Flag):
 
 
 def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, include_collision=False,
-                         additional_shaded_states: Optional[List['BehaviorCodes']]=None,
+                         additional_shaded_states: Optional[List['BehaviorCodes']] = None,
+                         to_extend_short_states=False,
                          yref='paper', DEBUG=False, **kwargs):
     """
     Returns a list of dictionaries that can be passed to plotly to draw an ethogram
@@ -574,6 +575,8 @@ def options_for_ethogram(beh_vec, shading=False, include_reversal_turns=False, i
                 print(f'No color for behavior {behavior_code}')
             continue
         starts, ends = get_contiguous_blocks_from_column(binary_behavior, already_boolean=True)
+        if to_extend_short_states and behavior_code not in (BehaviorCodes.NOT_ANNOTATED, BehaviorCodes.UNKNOWN):
+            starts, ends = extend_short_states(starts, ends, len(binary_behavior), state_length_minimum=10)
         color = cmap_func(behavior_code)
         if DEBUG:
             print(f'Behavior {behavior_code} is {color}')
