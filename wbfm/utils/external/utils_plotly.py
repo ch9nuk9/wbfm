@@ -1,3 +1,4 @@
+import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 
@@ -52,12 +53,12 @@ def add_trendline_annotation(fig):
     r2 = trendline.rsquared
     pvalue = trendline.pvalues[1]
 
-    # Get a reasonable position (top right) for the annotation
-    x = fig.layout.xaxis.range[1]
-    y = fig.layout.yaxis.range[1]
+    # Get a reasonable position (top right) for the annotation using the x and y max data points
+    x = np.nanmin(fig.data[0].x)
+    y = np.nanmax(fig.data[0].y)
 
     # Add the annotation
-    annotation_text = f'Slope: {slope:.2f}<br>R²: {r2:.2f}<br>p-value: {pvalue:.3f}'
+    annotation_text = f'Slope: {slope:.2f}<br>R²: {r2:.2f}<br>p-value: {pvalue:.2e}'
     fig.add_annotation(
         x=x, y=y,
         text=annotation_text,
