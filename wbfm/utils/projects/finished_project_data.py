@@ -1514,10 +1514,14 @@ class ProjectData:
         """
         # Manual annotations take precedence by default
         excel_fname = self.get_default_manual_annotation_fname()
-        possible_fnames = dict(excel=excel_fname,
-                               csv_old=Path(excel_fname).with_suffix('.csv'),
-                               csv=Path(excel_fname).with_name(self.shortened_name).with_suffix('.csv'),
-                               h5=Path(excel_fname).with_name(self.shortened_name).with_suffix('.h5'))
+        if excel_fname == '':
+            self.df_manual_tracking_fname = ''
+            return None
+        else:
+            possible_fnames = dict(excel=excel_fname,
+                                   csv_old=Path(excel_fname).with_suffix('.csv'),
+                                   csv=Path(excel_fname).with_name(self.shortened_name).with_suffix('.csv'),
+                                   h5=Path(excel_fname).with_name(self.shortened_name).with_suffix('.h5'))
         possible_fnames = {k: str(v) for k, v in possible_fnames.items()}
         # fname_precedence = ['excel', 'csv', 'h5']  # This precedence is used because humans may have added things
         fname_precedence = ['newest']

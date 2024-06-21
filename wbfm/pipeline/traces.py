@@ -27,7 +27,8 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
     """
     Connect the 3d traces to previously segmented masks
 
-    NOTE: This assumes that the global tracks may be non-trivially different, e.g. from a different tracking algorithm
+    NOTE: This assumes that the positions of the global tracks may be non-trivially different
+    e.g. from a different tracking algorithm
 
     Get both red and green traces for each neuron
 
