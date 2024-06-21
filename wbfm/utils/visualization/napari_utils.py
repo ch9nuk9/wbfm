@@ -74,7 +74,9 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, label_using_c
         properties['custom_label'].extend(label_vec_gt)
 
         # Get the index from the dataframe, or try to convert the column name into a label
-        if 'i_reindexed_segmentation' in df[n]:
+        if label_using_column_name:
+            label_vec = [name2int_neuron_and_tracklet(n) for _ in range(t_vec.shape[0])]
+        elif 'i_reindexed_segmentation' in df[n]:
             # For old style
             label_vec = list(map(int, df[n]['i_reindexed_segmentation']))
         elif 'label' in df[n]:
@@ -85,6 +87,7 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, label_using_c
             label_vec = [i for i in df[n]['raw_neuron_ind_in_list']]
         else:
             label_vec = [name2int_neuron_and_tracklet(n) for _ in range(t_vec.shape[0])]
+            # raise ValueError("Could not find a label column in the dataframe, and label_using_column_name is False")
         properties['automatic_label'].extend(label_vec)
 
         # This should synchronize with any label fields
