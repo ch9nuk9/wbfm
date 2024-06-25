@@ -224,7 +224,7 @@ class NapariLayerInitializer:
 
         if 'Intermediate global IDs' in which_layers and project_data.intermediate_global_tracks is not None:
             df = project_data.intermediate_global_tracks
-            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
+            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio, label_using_column_name=True)
             options['name'] = 'Intermediate global IDs'
             options['text']['color'] = 'green'
             options['visible'] = force_all_visible
