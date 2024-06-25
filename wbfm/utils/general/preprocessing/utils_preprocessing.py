@@ -190,7 +190,6 @@ class PreprocessingSettings:
         for subfolder in folder_for_background.iterdir():
 
             n = subfolder.name
-            print(n)
             if 'BH' in n:
                 # This is a behavior folder, which is not what we want
                 continue
