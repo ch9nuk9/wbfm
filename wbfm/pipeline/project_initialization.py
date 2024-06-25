@@ -57,6 +57,12 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
         raise FileNotFoundError("Must pass either a) bigtiff data file directly, or "
                                 "b) proper parent folder with bigtiffs or ndtiffs in it.")
     else:
+        # Convert to absolute paths if not already
+        if not osp.isabs(green_fname):
+            green_fname = osp.join(parent_data_folder, green_fname)
+        if not osp.isabs(red_fname):
+            red_fname = osp.join(parent_data_folder, red_fname)
+
         if is_btf:
             logging.warning("Found bigtiff files, which are deprecated."
                             " Attempting to continue, but may not work ")
