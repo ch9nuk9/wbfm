@@ -18,7 +18,7 @@ See [GUI README](wbfm/gui/README.md)
 
 If you just want to run the code (most people), then you can use the pre-installed environments installed on the cluster, which can be activated using:
 ```
-conda activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
+conda activate /lisc/scratch/neurobiology/zimmer/.conda/envs/wbfm/
 ```
 
 For more detail, see:
@@ -55,7 +55,7 @@ In principle "/path/to/projects/folder" should be empty, but this is not necessa
 
 As of September 2023, this is the proper path to this code on the cluster:
 ```commandline
-ls /scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/cluster
+ls/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/cluster
 ```
 
 For running projects, you will most likely want to run them all simultaneously instead of one-by-one.

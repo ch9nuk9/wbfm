@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # This script is an example of how to use the 7z command to zip a file
-# In general the files to zip will be in the /scratch directory, and the output_zip_path
-# will be in the /archive directory. This is because the /scratch directory is
+# In general the files to zip will be in the/lisc/scratch directory, and the output_zip_path
+# will be in the /archive directory. This is because the/lisc/scratch directory is
 # temporary storage, and the /archive directory is permanent storage.
 #
 # Example usage:

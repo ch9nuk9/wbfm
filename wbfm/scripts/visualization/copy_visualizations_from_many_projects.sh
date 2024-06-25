@@ -14,7 +14,7 @@
 #   ./copy_visualizations_from_many_projects.sh -s source_folder -t visualization/target.png -d destination_folder
 #
 # Example:
-#   bash copy_visualizations_from_many_projects.sh -s /scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar -t 4-traces/summary_trace_plot_kymograph.png -d /scratch/neurobiology/zimmer/Charles/multiproject_visualizations/gcamp_kymograph
+#   bash copy_visualizations_from_many_projects.sh -s/lisc/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar -t 4-traces/summary_trace_plot_kymograph.png -d/lisc/scratch/neurobiology/zimmer/Charles/multiproject_visualizations/gcamp_kymograph
 #
 # Note that the target does not need to be in a subfolder called "visualization"
 
