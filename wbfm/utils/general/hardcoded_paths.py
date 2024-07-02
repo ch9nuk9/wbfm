@@ -363,6 +363,6 @@ def neurons_with_confident_ids():
                     'URAVL', 'URAVR', 'URYVL', 'URYVR', 'URADL', 'URADR', 'URYDL', 'URYDR',
                     'RIVR', 'RIVL', 'SMDVL', 'SMDVR', 'SMDDR', 'SMDDL',
                     'ALA', 'RIS', 'AQR', 'RMDVL', 'RMDVR', 'URXL', 'URXR',
-                    'VB02', 'VB03', 'DB01', 'VA01',
+                    'VB02', 'VB03', 'DB01', 'DB02', 'VA01', 'VA02', 'DA01',
                     'RIBL', 'RIBR', 'RMEL', 'RMER', 'RMED', 'RMEV', 'RID', 'AVBL', 'AVBR']
     return neuron_names
