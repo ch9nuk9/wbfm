@@ -1,5 +1,48 @@
 # GUIs for whole body fluorescence microscopy
 
+## Installation
+
+Note: these instructions do not assume any knowledge of python or conda.
+
+
+### Preparation: Terminal setup
+
+If you are on linux or mac, a terminal is included. 
+On Windows I suggest anaconda prompt (this comes with an anaconda installation) or git bash
+
+Either way, you should begin by installing anaconda if you don't already have it:
+https://www.anaconda.com/products/individual
+
+### Step 1
+In the folder conda-environments, there is a specific environment for this purpose: "gui_only.yaml"
+
+If you are in a terminal, you can use this to create the proper conda environment. 
+NOTE: you must clone this repository first, and cd to it (i.e. replace the path below with yours):
+
+```commandline
+cd /PATH/TO/YOUR/CODE/wbfm/conda-environments
+
+conda env create -f gui_only.yaml --name gui_only
+```
+
+Note: this will take a while, maybe 5 minutes.
+
+### Step 2
+
+Activate the environment. This means that later package installations and commands you run can see all the packages you just installed!
+
+```commandline
+conda activate gui_only
+```
+
+### Step 3
+After the overall packages are installed, the zimmer group private packages need to be installed:
+
+1. git clone wbfm, segmentation, and imutils (from https://github.com/Zimmer-lab)
+2. cd to the main folder of each repository, and run ```pip install -e .```
+   1. Note: you will run ```pip``` three times (once per folder), and it is very fast
+
+
 ## Summary of GUIs
 
 All guis are in the folder: /TOP/FOLDER/wbfm/gui/example.py
@@ -51,44 +94,6 @@ This command works with 4 assumptions:
 
 Instructions to satisfy these assumptions are in the next sections.
 
-## Installation
-
-### Preparation: Terminal setup
-
-If you are on linux or mac, a terminal is included. 
-On Windows I suggest anaconda prompt (this comes with an anaconda installation) or git bash
-
-Either way, you should begin by installing anaconda if you don't already have it:
-https://www.anaconda.com/products/individual
-
-### Step 1
-In the folder conda-environments, there is a specific environment for this purpose: "gui_only.yaml"
-
-If you are in a terminal, you can use this to create the proper conda environment. 
-NOTE: you must clone this repository first, and cd to it (i.e. replace the path below with yours):
-
-```commandline
-cd /PATH/TO/YOUR/CODE/wbfm/conda-environments
-
-conda env create -f gui_only.yaml --name gui_only
-```
-
-Note: this will take a while, maybe 5 minutes.
-
-### Step 2
-
-Activate the environment. This means that later package installations and commands you run can see all the packages you just installed!
-
-```commandline
-conda activate gui_only
-```
-
-### Step 3
-After the overall packages are installed, the zimmer group private packages need to be installed:
-
-1. git clone wbfm and segmentation (from https://github.com/Zimmer-lab)
-2. cd to the main folder of each repository, and run ```pip install -e .```
-   1. Note: you will run ```pip``` twice (once per folder), and it is very fast
 
 ## Project initialization
 
