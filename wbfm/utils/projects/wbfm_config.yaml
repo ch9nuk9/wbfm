@@ -16,8 +16,8 @@ tracking_paths:
     # Path to the pretrained model for the tracking network
     # See documentation for SuperGlue in the Superglue package for more information on loading and training
     model_parent_folder: /lisc/scratch/neurobiology/zimmer/fieseler/github_repos/dlc_for_wbfm/wbfm/nn_checkpoints/
-    global_tracking_model_name: superglue_neurons_5_datasets_adjacent_07_11_uint16.ckpt
-    tracklet_model_name: superglue_neurons_5_datasets_07_08_uint16.ckpt
+    global_tracking_model_name: superglue_neurons_5_datasets_07_08_uint16.ckpt
+    tracklet_model_name: superglue_neurons_5_datasets_adjacent_07_11_uint16.ckpt
 
 
 # OPTIONAL

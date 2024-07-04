@@ -25,7 +25,7 @@ Note: there are pre-installed environments living on the cluster, at:
 
 They can be activated using:
 ```commandline
-conda activate /scratch/zimmer/.conda/envs/wbfm
+conda activate/lisc/scratch/zimmer/.conda/envs/wbfm
 ```
 
 #### Installing new environments

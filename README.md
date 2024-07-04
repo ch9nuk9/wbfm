@@ -5,7 +5,7 @@ This repository contains python code for analyzing raw volumetric images in two 
 The segmentation portion of the algorithm is in a [sibling repository](https://github.com/Zimmer-lab/segmentation), but all main pipeline steps and GUIs are in this one.
 
 
-# Installation
+# Installation for running
 
 This project is designed to be installed with Anaconda, and requires two external local packages to be installed.
 However, there are different use cases, some of which have easier installation steps.
