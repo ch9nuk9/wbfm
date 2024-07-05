@@ -8,6 +8,8 @@ The segmentation portion of the algorithm is in a [sibling repository](https://g
 # Installation for running
 
 This project is designed to be installed with Anaconda, and requires two external local packages to be installed.
+However, there are different use cases, some of which have easier installation steps.
+Please check all sections below to determine which is best for you.
 
 ## If you just want to run the GUI
 
@@ -21,8 +23,10 @@ If you just want to run the code (most people), then you can use the pre-install
 conda activate /lisc/scratch/neurobiology/zimmer/.conda/envs/wbfm/
 ```
 
-For more detail, see:
-[detailed installation instructions](docs/installation_instructions.md)
+## Local installation
+
+In principle this is rare, and only for developers or if you want to run the full pipeline on your local machine.
+See: [detailed installation instructions](docs/installation_instructions.md)
 
 # Running the pipeline
 
@@ -30,9 +34,11 @@ For more detail, see:
 
 See expected folder structure [here](docs/data_folder_organization.md).
 
-1. Red channel (tracking) in a single bigtiff file
-2. Green channel (signal) in a single bigtiff file
+1. Red channel (tracking) as an ndtiff
+2. Green channel (signal) as an ndtiff file
 3. 1 conda environment (see above for installation instructions, or use pre-installed versions on the cluster)
+
+Note that bigtiff for the raw data may work, but is deprecated.
 
 ## Full pipeline
 
@@ -55,7 +61,7 @@ In principle "/path/to/projects/folder" should be empty, but this is not necessa
 
 As of September 2023, this is the proper path to this code on the cluster:
 ```commandline
-ls/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/cluster
+ls /lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/cluster
 ```
 
 For running projects, you will most likely want to run them all simultaneously instead of one-by-one.

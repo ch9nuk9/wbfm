@@ -35,3 +35,5 @@ dependencies:
     - backports.cached_property
     - methodtools
     - seaborn
+    - loguru
+    - ndtiff
