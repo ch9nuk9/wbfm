@@ -195,7 +195,7 @@ def sample_posterior_predictive(neuron_name, trace, is_gfp=False):
                 build_final_likelihood
             intercept, sigma = build_baseline_priors(**dim_opt)
             sigmoid_term = build_sigmoid_term(x)
-            curvature_term = build_curvature_term(curvature, **dim_opt)
+            curvature_term = build_curvature_term(curvature, curvature_terms_to_use=curvature_terms, **dim_opt)
 
             mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
             likelihood = build_final_likelihood(mu, sigma, y)

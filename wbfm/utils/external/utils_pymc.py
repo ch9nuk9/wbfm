@@ -10,6 +10,7 @@ import arviz as az
 import cloudpickle
 from matplotlib import pyplot as plt
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
@@ -66,7 +67,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     with pm.Model(coords=coords) as nonhierarchical_model:
         # Curvature, but no sigmoid
         intercept, sigma = build_baseline_priors()#**dim_opt)
-        curvature_term = build_curvature_term(curvature, **dim_opt)
+        curvature_term = build_curvature_term(curvature, curvature_terms_to_use=curvature_terms_to_use, **dim_opt)
 
         mu = pm.Deterministic('mu', intercept + curvature_term)
         likelihood = build_final_likelihood(mu, sigma, y)
@@ -84,7 +85,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         # Curvature multiplied by sigmoid
         intercept, sigma = build_baseline_priors()#**dim_opt)
         sigmoid_term = build_sigmoid_term_pca(pca_modes, **dim_opt)
-        curvature_term = build_curvature_term(curvature, **dim_opt)
+        curvature_term = build_curvature_term(curvature, curvature_terms_to_use=curvature_terms_to_use, **dim_opt)
 
         mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
         likelihood = build_final_likelihood(mu, sigma, y)
@@ -211,7 +212,10 @@ def build_sigmoid_term_pca(x_pca_modes, force_positive_slope=True, dims=None, da
     return sigmoid_term
 
 
-def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
+def build_curvature_term(curvature, curvature_terms_to_use=None, dims=None, dataset_name_idx=None):
+    if curvature_terms_to_use is None:
+        assert curvature.shape[1] == 4, f"Default curvature terms are for 4 eigenworms, found {curvature.shape[1]}"
+        curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
     # Alternative: sample directly from the phase shift and amplitude, then convert into coefficients
     # This assumes that eigenworms 1 and 2 are approximately a sine and cosine wave, and puts it into polar coordinates
     phase_shift = pm.Uniform('phase_shift', lower=-np.pi, upper=np.pi, transform=pm.distributions.transforms.circular)
@@ -228,11 +232,15 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     eigenworm1_coefficient = pm.Deterministic('eigenworm1_coefficient', amplitude * pm.math.cos(phase_shift))
     eigenworm2_coefficient = pm.Deterministic('eigenworm2_coefficient', -amplitude * pm.math.sin(phase_shift))
     # The rest are not part of the sine/cosine pair, but we aren't sure how many there are
-    curvature_cols = get_names_from_df(curvature)
     additional_column_dict = {}
-    if len(curvature_cols) > 2:
-        for col_name in curvature_cols:
-            coef_name = f'{col_name}_coefficient'
+    if len(curvature_terms_to_use) > 2:
+        for col_name in curvature_terms_to_use[2:]:
+            # If the column name is like "eigenworm3", the coefficient name is "eigenworm4_coefficient"
+            # Because we want to start at 1, not 0
+            if col_name.startswith('eigenworm'):
+                coef_name = f'eigenworm{int(col_name[-1])+1}_coefficient'
+            else:
+                coef_name = f'{col_name}_coefficient'
             additional_column_dict[coef_name] = pm.Normal(coef_name, mu=0, sigma=0.5, dims=None)
     # eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5, dims=None)
     # eigenworm4_coefficient = pm.Normal('eigenworm4_coefficient', mu=0, sigma=0.5, dims=None)
