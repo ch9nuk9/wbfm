@@ -123,7 +123,9 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
             trace = pm.sample(**opt,
                               chains=4, return_inferencedata=True, idata_kwargs={"log_likelihood": True})
             if sample_posterior:
-                var_names = base_names_to_sample.intersection(set(list(trace.posterior.keys())))
+                posterior_keys = set(list(trace.posterior.keys()))
+                print(f"Sampling posterior predictive for {name}: {posterior_keys}")
+                var_names = base_names_to_sample.intersection(posterior_keys)
                 trace.extend(pm.sample_posterior_predictive(trace, random_seed=rng, progressbar=False,
                                                             var_names=var_names))
 
