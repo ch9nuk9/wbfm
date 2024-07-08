@@ -745,7 +745,7 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
                 print(f"Plotting {name}, x={df['local_time'].values}, y={df[name].values}")
             line_dict = go.Scatter(x=df['local_time'], y=df[name], name=name,
                                    legendgroup=name, showlegend=(i_dataset == 0),
-                                   line_color=cmap[i_trace])
+                                   line_color=cmap[i_trace % len(cmap)])
             fig.add_trace(line_dict, **opt)
         # Update the axes
         fig.update_yaxes(title_text="dR/R", **opt)
