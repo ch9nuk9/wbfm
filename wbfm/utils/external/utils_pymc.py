@@ -225,23 +225,29 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     # There is a positive and negative solution, so choose the positive one for the first term
     eigenworm1_coefficient = pm.Deterministic('eigenworm1_coefficient', amplitude * pm.math.cos(phase_shift))
     eigenworm2_coefficient = pm.Deterministic('eigenworm2_coefficient', -amplitude * pm.math.sin(phase_shift))
-    # This one is not part of the sine/cosine pair
-    eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5, dims=None)
-    eigenworm4_coefficient = pm.Normal('eigenworm4_coefficient', mu=0, sigma=0.5, dims=None)
+    # The rest are not part of the sine/cosine pair, but we aren't sure how many there are
+    curvature_cols = get_names_from_df(curvature)
+    additional_column_dict = {}
+    if len(curvature_cols) > 2:
+        for col_name in curvature_cols:
+            coef_name = f'{col_name}_coefficient'
+            additional_column_dict[coef_name] = pm.Normal(coef_name, mu=0, sigma=0.5, dims=None)
+    # eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5, dims=None)
+    # eigenworm4_coefficient = pm.Normal('eigenworm4_coefficient', mu=0, sigma=0.5, dims=None)
 
     if dims is None:
-        coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack([eigenworm1_coefficient,
-                                                                               eigenworm2_coefficient,
-                                                                               eigenworm3_coefficient,
-                                                                               eigenworm4_coefficient]))
+        all_cols = [eigenworm1_coefficient, eigenworm2_coefficient]#, eigenworm3_coefficient, eigenworm4_coefficient]
+        all_cols.extend(list(additional_column_dict.values()))  # Don't need to worry about the order
+        coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack())
         curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
     else:
-        # Multiply them separately
+        # Multiply them separately, but do not subindex by dataset for other terms
         curvature_term = pm.Deterministic('curvature_term',
                                           eigenworm1_coefficient[dataset_name_idx] * curvature[:, 0] +
                                           eigenworm2_coefficient[dataset_name_idx] * curvature[:, 1] +
-                                          eigenworm3_coefficient * curvature[:, 2] +
-                                          eigenworm4_coefficient * curvature[:, 3])
+                                          np.sum([coef * curvature[:, i+2] for i, coef
+                                                  in enumerate(additional_column_dict.values())])
+                                          )
     return curvature_term
 
 
