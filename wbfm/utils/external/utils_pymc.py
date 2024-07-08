@@ -13,7 +13,7 @@ from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
 
 def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
-                        sample_posterior=True, DEBUG=False) -> Tuple[pd.DataFrame, Dict, Dict]:
+                        sample_posterior=True, use_additional_behaviors=False, DEBUG=False) -> Tuple[pd.DataFrame, Dict, Dict]:
     """
     Fit multiple models to the same data, to be used for model comparison
 
@@ -28,9 +28,13 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     """
     rng = 424242
     curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
+    if use_additional_behaviors:
+        curvature_terms_to_use.extend(['dorsal_only_body_curvature', 'dorsal_only_head_curvature',
+                                      'ventral_only_body_curvature', 'ventral_only_head_curvature'])
     # First pack into a single dataframe to drop nan, then unpack
     try:
-        df_model = get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name=dataset_name)
+        df_model = get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name=dataset_name,
+                                                   curvature_terms=curvature_terms_to_use)
     except KeyError:
         print(f"Skipping {neuron_name} because there is no valid data")
         return None, None, None
@@ -241,11 +245,14 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     return curvature_term
 
 
-def get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name='all', additional_columns=None):
+def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
+                                    dataset_name='all', additional_columns=None):
     if dataset_name != 'all':
         _Xy = Xy[Xy['dataset_name'] == dataset_name]
     else:
         _Xy = Xy
+    if curvature_terms is None:
+        curvature_terms = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
     # First, extract data, z-score, and drop na values
     # Allow gating based on the global component
     x = _Xy[f'{neuron_name}_manifold']
@@ -259,7 +266,7 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name='all', additio
     y = _Xy[f'{neuron_name}'] - _Xy[f'{neuron_name}_manifold']
     y = (y - y.mean()) / y.std()  # z-score
     # Interesting covariate
-    curvature = _Xy[['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']]
+    curvature = _Xy[curvature_terms]
     curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
     # State
     fwd = _Xy['fwd'].astype(str)
