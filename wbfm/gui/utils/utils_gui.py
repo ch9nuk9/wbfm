@@ -273,8 +273,7 @@ def on_close(self, event, widget, callbacks):
         widget,
         "Warning",
         "Automatically saving data... Are you certain you want to quit? \n"
-        "Note: you ADDITIONALLY need to press ctrl-c in the terminal to fully quit the program, "
-        "but please wait for the message: 'Saving successful!'",
+        "Regardless, please do NOT kill the terminal until you see the message: 'Saving successful!'",
         QMessageBox.Yes | QMessageBox.No,
     )
     # To be used for auto-saving
@@ -283,6 +282,8 @@ def on_close(self, event, widget, callbacks):
 
     if choice == QMessageBox.Yes:
         event.accept()
+        # Call the main quit function
+        widget.main_window.quit()
     else:
         event.ignore()
 

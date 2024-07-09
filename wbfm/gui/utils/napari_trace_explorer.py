@@ -642,10 +642,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 self.logger.error(f"'False' means failed step: {all_flags}")
                 self.logger.error("Please try again, or ctrl-c to fully quit (if this was expected)")
             else:
-                self.logger.info("")
                 self.logger.info("================================================================")
                 self.logger.info("Saving successful!")
-                self.logger.info("You may now fully quit (ctrl-c in this terminal)")
                 self.logger.info("================================================================")
             progress.setValue(len(all_flags))
 
@@ -1229,7 +1227,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def init_universal_subplot(self):
         # Note: this causes a hang when the main window is closed, even though I'm trying to set the parent
-        # ... workaround: ctrl-c necessary after closing
         # self.mpl_widget = PlotQWidget(self.viewer.window._qt_window.centralWidget())
         self.mpl_widget = PlotQWidget()
         self.static_ax = self.mpl_widget.canvas.fig.subplots()
@@ -1998,9 +1995,7 @@ def napari_trace_explorer_from_config(project_path: str, app=None,
 
     # Note: don't use this in jupyter
     napari.run()
-    if started_new_app:
-        app.exec_()
-    ui.logger.info("Quitting")
+    logging.info("Successfully quit napari application")
     sys.exit()
 
 
@@ -2009,7 +2004,7 @@ def napari_trace_explorer(project_data: ProjectData,
                           viewer: napari.Viewer = None,
                           to_print_fps: bool = False, **kwargs):
     """Current function for building the explorer (1/11/2022)"""
-    print("Starting GUI setup")
+    logging.debug("Starting GUI setup")
     # Make sure ctrl-c works
     # https://python.tutorialink.com/what-is-the-correct-way-to-make-my-pyqt-application-quit-when-killed-from-the-console-ctrl-c/
     signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -2027,10 +2022,10 @@ def napari_trace_explorer(project_data: ProjectData,
     ui.show()
     change_viewer_time_point(viewer, t_target=10)
 
-    ui.logger.info("Finished GUI setup. If nothing is showing, trying quitting and running again")
     if to_print_fps:
         add_fps_printer(viewer)
 
+    ui.logger.info("Finished GUI setup. If nothing is showing, trying quitting and running again")
     return ui, viewer
 
 
