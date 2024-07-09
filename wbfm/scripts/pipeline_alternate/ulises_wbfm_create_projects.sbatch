@@ -27,12 +27,12 @@ echo "This job in the array has:"
 echo "- SLURM_JOB_ID=${SLURM_JOB_ID}"
 echo "- SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}"
 
-cd /scratch/neurobiology/zimmer/ulises/wbfm/20221123/data/
+cd/lisc/scratch/neurobiology/zimmer/ulises/wbfm/20221123/data/
 
 PARENT_DATA_FOLDER=$(find $PWD -maxdepth 1 -mindepth 1 -type d -wholename "*worm*" | head -n $SLURM_ARRAY_TASK_ID | tail -n 1)
 
 
-source /apps/conda/miniconda3/bin/activate /scratch/neurobiology/zimmer/.conda/envs/wbfm/
+source /apps/conda/miniconda3/bin/activate/lisc/scratch/neurobiology/zimmer/.conda/envs/wbfm/
 echo "Environment loaded?"
 # you can run it with dryrun=false first if you want to check what will be deleted
 

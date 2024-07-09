@@ -10,10 +10,11 @@ import arviz as az
 import cloudpickle
 from matplotlib import pyplot as plt
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
+from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
-                        sample_posterior=True, DEBUG=False) -> Tuple[pd.DataFrame, Dict, Dict]:
+                        sample_posterior=True, use_additional_behaviors=True, DEBUG=False) -> Tuple[pd.DataFrame, Dict, Dict]:
     """
     Fit multiple models to the same data, to be used for model comparison
 
@@ -28,9 +29,14 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     """
     rng = 424242
     curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
+    if use_additional_behaviors:
+        curvature_terms_to_use.extend([#'dorsal_only_body_curvature', 'dorsal_only_head_curvature',
+                                      #'ventral_only_body_curvature', 'ventral_only_head_curvature',
+                                       'speed', 'self_collision'])
     # First pack into a single dataframe to drop nan, then unpack
     try:
-        df_model = get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name=dataset_name)
+        df_model = get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name=dataset_name,
+                                                   curvature_terms=curvature_terms_to_use)
     except KeyError:
         print(f"Skipping {neuron_name} because there is no valid data")
         return None, None, None
@@ -62,7 +68,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     with pm.Model(coords=coords) as nonhierarchical_model:
         # Curvature, but no sigmoid
         intercept, sigma = build_baseline_priors()#**dim_opt)
-        curvature_term = build_curvature_term(curvature, **dim_opt)
+        curvature_term = build_curvature_term(curvature, curvature_terms_to_use=curvature_terms_to_use, **dim_opt)
 
         mu = pm.Deterministic('mu', intercept + curvature_term)
         likelihood = build_final_likelihood(mu, sigma, y)
@@ -80,7 +86,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         # Curvature multiplied by sigmoid
         intercept, sigma = build_baseline_priors()#**dim_opt)
         sigmoid_term = build_sigmoid_term_pca(pca_modes, **dim_opt)
-        curvature_term = build_curvature_term(curvature, **dim_opt)
+        curvature_term = build_curvature_term(curvature, curvature_terms_to_use=curvature_terms_to_use, **dim_opt)
 
         mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
         likelihood = build_final_likelihood(mu, sigma, y)
@@ -119,7 +125,9 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
             trace = pm.sample(**opt,
                               chains=4, return_inferencedata=True, idata_kwargs={"log_likelihood": True})
             if sample_posterior:
-                var_names = base_names_to_sample.intersection(set(list(trace.posterior.keys())))
+                posterior_keys = set(list(trace.posterior.keys()))
+                print(f"Sampling posterior predictive for {name}: {posterior_keys}")
+                var_names = base_names_to_sample.intersection(posterior_keys)
                 trace.extend(pm.sample_posterior_predictive(trace, random_seed=rng, progressbar=False,
                                                             var_names=var_names))
 
@@ -205,7 +213,10 @@ def build_sigmoid_term_pca(x_pca_modes, force_positive_slope=True, dims=None, da
     return sigmoid_term
 
 
-def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
+def build_curvature_term(curvature, curvature_terms_to_use=None, dims=None, dataset_name_idx=None):
+    if curvature_terms_to_use is None:
+        assert curvature.shape[1] == 4, f"Default curvature terms are for 4 eigenworms, found {curvature.shape[1]}"
+        curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
     # Alternative: sample directly from the phase shift and amplitude, then convert into coefficients
     # This assumes that eigenworms 1 and 2 are approximately a sine and cosine wave, and puts it into polar coordinates
     phase_shift = pm.Uniform('phase_shift', lower=-np.pi, upper=np.pi, transform=pm.distributions.transforms.circular)
@@ -221,31 +232,45 @@ def build_curvature_term(curvature, dims=None, dataset_name_idx=None):
     # There is a positive and negative solution, so choose the positive one for the first term
     eigenworm1_coefficient = pm.Deterministic('eigenworm1_coefficient', amplitude * pm.math.cos(phase_shift))
     eigenworm2_coefficient = pm.Deterministic('eigenworm2_coefficient', -amplitude * pm.math.sin(phase_shift))
-    # This one is not part of the sine/cosine pair
-    eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5, dims=None)
-    eigenworm4_coefficient = pm.Normal('eigenworm4_coefficient', mu=0, sigma=0.5, dims=None)
+    # The rest are not part of the sine/cosine pair, but we aren't sure how many there are
+    additional_column_dict = {}
+    if len(curvature_terms_to_use) > 2:
+        for col_name in curvature_terms_to_use[2:]:
+            # None of these terms are modulated per dataset
+            # If the column name is like "eigenworm3", the coefficient name is "eigenworm4_coefficient"
+            # Because we want to start at 1, not 0
+            if col_name.startswith('eigenworm'):
+                coef_name = f'eigenworm{int(col_name[-1])+1}_coefficient'
+            else:
+                coef_name = f'{col_name}_coefficient'
+            additional_column_dict[coef_name] = pm.Normal(coef_name, mu=0, sigma=0.5, dims=None)
+    # eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5, dims=None)
+    # eigenworm4_coefficient = pm.Normal('eigenworm4_coefficient', mu=0, sigma=0.5, dims=None)
 
     if dims is None:
-        coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack([eigenworm1_coefficient,
-                                                                               eigenworm2_coefficient,
-                                                                               eigenworm3_coefficient,
-                                                                               eigenworm4_coefficient]))
+        all_cols = [eigenworm1_coefficient, eigenworm2_coefficient]#, eigenworm3_coefficient, eigenworm4_coefficient]
+        all_cols.extend(list(additional_column_dict.values()))  # Don't need to worry about the order
+        coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack())
         curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
     else:
-        # Multiply them separately
+        # Multiply them separately, but do not subindex by dataset for other terms
         curvature_term = pm.Deterministic('curvature_term',
                                           eigenworm1_coefficient[dataset_name_idx] * curvature[:, 0] +
                                           eigenworm2_coefficient[dataset_name_idx] * curvature[:, 1] +
-                                          eigenworm3_coefficient * curvature[:, 2] +
-                                          eigenworm4_coefficient * curvature[:, 3])
+                                          np.sum([coef * curvature[:, i+2] for i, coef
+                                                  in enumerate(additional_column_dict.values())])
+                                          )
     return curvature_term
 
 
-def get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name='all', additional_columns=None):
+def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
+                                    dataset_name='all', additional_columns=None):
     if dataset_name != 'all':
         _Xy = Xy[Xy['dataset_name'] == dataset_name]
     else:
         _Xy = Xy
+    if curvature_terms is None:
+        curvature_terms = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
     # First, extract data, z-score, and drop na values
     # Allow gating based on the global component
     x = _Xy[f'{neuron_name}_manifold']
@@ -259,7 +284,7 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name='all', additio
     y = _Xy[f'{neuron_name}'] - _Xy[f'{neuron_name}_manifold']
     y = (y - y.mean()) / y.std()  # z-score
     # Interesting covariate
-    curvature = _Xy[['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']]
+    curvature = _Xy[curvature_terms]
     curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
     # State
     fwd = _Xy['fwd'].astype(str)

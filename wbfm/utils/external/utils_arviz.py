@@ -177,10 +177,11 @@ def sample_posterior_predictive(neuron_name, trace, is_gfp=False):
         Xy = pd.read_hdf(data_fname)
         # Rebuild the model, which is required to build the posterior predictive
         from wbfm.utils.external.utils_pymc import get_dataframe_for_single_neuron
-        df_model = get_dataframe_for_single_neuron(Xy, neuron_name)
+        curvature_terms = ['eigenworm0', 'eigenworm1', 'eigenworm2']
+        df_model = get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=curvature_terms)
         x = df_model['x'].values
         y = df_model['y'].values
-        curvature = df_model[['eigenworm0', 'eigenworm1', 'eigenworm2']].values
+        curvature = df_model[curvature_terms].values
 
         dataset_name_idx, dataset_name_values = df_model.dataset_name.factorize()
         coords = {'dataset_name': dataset_name_values}
@@ -194,7 +195,7 @@ def sample_posterior_predictive(neuron_name, trace, is_gfp=False):
                 build_final_likelihood
             intercept, sigma = build_baseline_priors(**dim_opt)
             sigmoid_term = build_sigmoid_term(x)
-            curvature_term = build_curvature_term(curvature, **dim_opt)
+            curvature_term = build_curvature_term(curvature, curvature_terms_to_use=curvature_terms, **dim_opt)
 
             mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
             likelihood = build_final_likelihood(mu, sigma, y)

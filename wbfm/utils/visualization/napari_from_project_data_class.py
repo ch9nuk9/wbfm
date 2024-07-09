@@ -127,11 +127,13 @@ class NapariLayerInitializer:
                              to_remove_flyback=False, check_if_layers_exist=False,
                              dask_for_segmentation=True, force_all_visible=False,
                              gt_neuron_name_dict=None, heatmap_kwargs=None,
-                             error_if_missing_layers=True):
+                             error_if_missing_layers=True, layer_opt=None):
         if heatmap_kwargs is None:
             heatmap_kwargs = {}
         if viewer is None:
             viewer = napari.Viewer(ndisplay=3)
+        if layer_opt is None:
+            layer_opt = {}
 
         basic_valid_layers = ['Red data', 'Green data', 'Raw segmentation',
                               'Colored segmentation', 'Neuron IDs', 'Manual IDs', 'Intermediate global IDs']
@@ -224,7 +226,7 @@ class NapariLayerInitializer:
 
         if 'Intermediate global IDs' in which_layers and project_data.intermediate_global_tracks is not None:
             df = project_data.intermediate_global_tracks
-            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
+            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio, label_using_column_name=True)
             options['name'] = 'Intermediate global IDs'
             options['text']['color'] = 'green'
             options['visible'] = force_all_visible
@@ -264,8 +266,10 @@ class NapariLayerInitializer:
 
             prop_dict = getattr(heat_mapper, method_name)(**heatmap_kwargs)
             # Note: this layer must be visible for the prop_dict to work correctly
-            _layer = viewer.add_labels(seg, name=layer_name, scale=(z_to_xy_ratio, 1.0, 1.0),
-                                       opacity=0.4, visible=True, rendering='translucent')
+            _layer_opt = dict(name=layer_name, scale=(z_to_xy_ratio, 1.0, 1.0),
+                              opacity=0.4, visible=True, rendering='translucent')
+            _layer_opt.update(layer_opt)
+            _layer = viewer.add_labels(seg, **_layer_opt)
             _layer.blending = 'translucent_no_depth'
             _layer.color = prop_dict
             _layer.color_mode = 'direct'

@@ -1959,7 +1959,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         val_to_plot = val_to_plot * np.abs(val_to_plot)
         heatmap_kwargs = dict(val_to_plot=val_to_plot, t=self.t, scale_to_minus_1_and_1=True)
         self.logger.debug(f'Calculated correlation values: {val_to_plot}')
-        self.dat.add_layers_to_viewer(self.viewer, which_layers=which_layers, heatmap_kwargs=heatmap_kwargs)
+        self.dat.add_layers_to_viewer(self.viewer, which_layers=which_layers, heatmap_kwargs=heatmap_kwargs,
+                                      layer_opt=dict(opacity=1.0))
+        # Move manual_ids to top, so they are not obscured
+        i_manual_id_layer = self.viewer.layers.index(self.manual_id_layer)
+        # Reorder function needs the layer index, not the name
+        self.viewer.layers.move(i_manual_id_layer, -1)
 
 
 def napari_trace_explorer_from_config(project_path: str, app=None,

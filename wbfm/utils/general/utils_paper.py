@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from wbfm.utils.external.utils_matplotlib import export_legend
 
 from wbfm.utils.utils_cache import cache_to_disk_class
@@ -42,10 +43,11 @@ def plotly_paper_color_discrete_map():
 
     """
     base_cmap = px.colors.qualitative.D3
-    cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0], 'Other neurons active in FM only': base_cmap[0],
-                 'Freely Moving (GCaMP)': base_cmap[0], 'Freely Moving': base_cmap[0],
+    cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0], 'Active in Freely Moving only': base_cmap[0],
+                 'Freely Moving (GCaMP)': base_cmap[0], 'Freely Moving': base_cmap[0], 'Wild Type': base_cmap[0],
                  # Skip orange... don't like it!
                  'immob': base_cmap[2], 'Active in Immob': base_cmap[2], 'Manifold in Immob': base_cmap[2],
+                 'Intrinsic (shared with immobilized)': base_cmap[2],
                  'Immobilized (GCaMP)': base_cmap[2], 'Immobilized': base_cmap[2],
                  'gfp': base_cmap[7], 'Reversal State': base_cmap[7],  # Gray
                  'Freely Moving (GFP)': base_cmap[7],
@@ -54,9 +56,9 @@ def plotly_paper_color_discrete_map():
                  'residual': base_cmap[4],
                  'Freely Moving (GCaMP, residual)': base_cmap[4],
                  'O2 or CO2 sensing': base_cmap[5],  # Brown
-                 'Not IDed': base_cmap[7],  # Same as gfp; shouldn't ever be on same plot
+                 'Not IDed': base_cmap[7], 'Undetermined': base_cmap[7],  # Same as gfp; shouldn't ever be on same plot
                  'mutant': base_cmap[6], 'Freely Moving (gcy-31, gcy-35, gcy-9)': base_cmap[6],
-                 'gcy-31, gcy-35, gcy-9': base_cmap[6],  # Pink
+                 'gcy-31, gcy-35, gcy-9': base_cmap[6], 'Mutant': base_cmap[6], 'gcy-31; -35; -9': base_cmap[6],  # Pink
                  # Colors for hierarchy
                  'No oscillations': base_cmap[7], 'No Behavior or Hierarchy': base_cmap[7],  # Same as gfp
                  'Hierarchy only': base_cmap[0],  # Same as raw
@@ -387,3 +389,41 @@ class PaperDataCache:
                 if not dry_run:
                     os.remove(fname)
 
+
+def plot_box_multi_axis(df, x_columns_list, y_column, color_names=None, DEBUG=False):
+    """
+    Plots a box plot with multiple x labels
+
+    https://plotly.com/python/categorical-axes/#multicategorical-axes
+    """
+    # Create boxplot using graph objects directly
+    fig = go.Figure()
+
+    # Sample data
+    x = [list(df[col]) for col in x_columns_list]
+    y = list(df[y_column])
+    if color_names is None:
+        color_names = np.unique(x[0])
+
+    for c in color_names:
+        num_total_pts = len(x[0])
+        this_y = [y[i] for i in range(num_total_pts) if x[0][i] == c]
+        # Need to keep both x columns
+        x0 = [c] * len(this_y)
+        x1 = [x[1][i] for i in range(num_total_pts) if x[0][i] == c]
+        if DEBUG:
+            print(f"Color: {c}, len: {len(this_y)}")
+            print(f"X0: {x0}")
+            print(f"X1: {x1}")
+            print(f"Y: {this_y}")
+
+        fig.add_trace(go.Box(x=[x0, x1], y=this_y, name=c))
+
+    # Mapping between x labels (categories) and colors
+    cmap = plotly_paper_color_discrete_map()
+
+    # Update the colormap based on the mapping
+    for trace in fig.data:
+        if trace.name in cmap:
+            trace.marker.color = cmap[trace.name]
+    return fig

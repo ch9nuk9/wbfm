@@ -183,13 +183,17 @@ class PreprocessingSettings:
             logging.info(f"Already has background at {self.background_fname_red}")
             if not force_search:
                 return
-        logging.info("Attempting to find new background files")
 
         folder_for_background = cfg.get_folder_with_background()
+        logging.info(f"Attempting to find new background files in parent folder {folder_for_background}")
 
         for subfolder in folder_for_background.iterdir():
 
             n = subfolder.name
+            if 'BH' in n:
+                # This is a behavior folder, which is not what we want
+                continue
+
             subfolder_is_ch0 = ('background' in n and '_Ch0' in n) or ('background-channel-0' in n)
             subfolder_is_ch1 = ('background' in n and '_Ch1' in n) or ('background-channel-1' in n)
 

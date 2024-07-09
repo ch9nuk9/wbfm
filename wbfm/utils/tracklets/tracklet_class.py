@@ -487,7 +487,7 @@ class TrackedWorm:
         new_tracklets = []
         for name_in_df in tqdm(neurons_in_global_df, total=num_neurons):
             new_neuron = self.initialize_new_neuron(initialization_frame=t, name=name_in_df)
-            i_neuron_ind = int(df_global_tracks.loc[[t], (name_in_df, 'raw_neuron_ind_in_list')])
+            i_neuron_ind = int(df_global_tracks.loc[t, (name_in_df, 'raw_neuron_ind_in_list')])
             # Add a tracklet if exists, otherwise create a length-1 tracklet to keep everything consistent
             _, tracklet_name = self.detections.get_tracklet_from_neuron_and_time(i_neuron_ind, t)
 

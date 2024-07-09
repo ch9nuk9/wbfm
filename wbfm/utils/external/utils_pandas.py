@@ -305,6 +305,39 @@ def get_contiguous_blocks_from_column(column_or_series: pd.Series, already_boole
     return block_starts, block_ends
 
 
+def extend_short_states(starts, ends, max_len, state_length_minimum=10, DEBUG=False):
+    """
+    Given a binary Series and the contiguous blocks of True values, extend short blocks by a certain amount
+
+    Parameters
+    ----------
+    starts
+    ends
+    state_length_minimum
+    DEBUG
+
+    Returns
+    -------
+
+    """
+    new_ends = []
+    for i, (start, end) in enumerate(zip(starts, ends)):
+        current_duration = end - start
+        if current_duration < state_length_minimum:
+            if DEBUG:
+                print("Extending state")
+            # Check to make sure the states we're extending into are allowed, i.e. not the edge or True
+            new_end = min(max_len, end + state_length_minimum)
+            if i < len(ends) - 1:
+                if new_end > starts[i + 1]:
+                    new_end = starts[i + 1] - 1
+                    if DEBUG:
+                        print("Clipping to next start")
+            new_ends.append(new_end)
+        else:
+            new_ends.append(end)
+    return starts, new_ends
+
 def get_relative_onset_times_from_two_binary_vectors(column: pd.Series, sub_column: pd.Series):
     """
     Assumes the two columns are binary, and that sub_column has events which are contained within the events of column

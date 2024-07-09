@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='wbfm',
-      version='1.2.0',
+      version='1.3.0',
       description='Whole Brain Freely Moving neuron tracking and analysis',
       url='https://github.com/Zimmer-lab/wbfm',
       author='Charles Fieseler',
