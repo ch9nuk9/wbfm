@@ -425,6 +425,8 @@ class TrackletAndSegmentationAnnotator:
 
     saving_lock: threading.Lock = threading.Lock()
 
+    _tracklets_updated: bool = False
+
     # New: for interactive segmentation splitting and merging
     candidate_mask: np.ndarray = None
     time_of_candidate: int = None
@@ -781,7 +783,7 @@ class TrackletAndSegmentationAnnotator:
             self.logger.debug(f"Tracklet was in the to-remove list, but was removed")
             self.manual_global2tracklet_removals[neuron_name].remove(tracklet_name)
             state_changed = self._add_tracklet_to_global2tracklet_dict(tracklet_name, neuron_name)
-
+        self.update_tracklets_updated_flag(state_changed)
         return state_changed
 
     def _remove_tracklet_from_global2tracklet_dict(self, tracklet_name, neuron_name) -> bool:
@@ -791,6 +793,7 @@ class TrackletAndSegmentationAnnotator:
         else:
             self.logger.debug("Tried to remove tracklet, but is not added")
             state_changed = False
+        self.update_tracklets_updated_flag(state_changed)
         return state_changed
 
     def _add_tracklet_to_global2tracklet_dict(self, tracklet_name, neuron_name) -> bool:
@@ -800,6 +803,7 @@ class TrackletAndSegmentationAnnotator:
         else:
             self.logger.debug("Tried to add tracklet, but is already added")
             state_changed = False
+        self.update_tracklets_updated_flag(state_changed)
         return state_changed
 
     def remove_tracklet_from_neuron(self, tracklet_name, neuron_name=None) -> bool:
@@ -847,7 +851,7 @@ class TrackletAndSegmentationAnnotator:
             self._remove_tracklet_from_global2tracklet_dict(tracklet_name, neuron_name)
             # The state is always changed here, because the tracklet was in the to-add list
             state_changed = True
-
+        self.update_tracklets_updated_flag(state_changed)
         return state_changed
 
     def remove_tracklet_from_all_matches(self, tracklet_name=None):
@@ -958,7 +962,20 @@ class TrackletAndSegmentationAnnotator:
         t.start()
         return None  # Doesn't know the status of the saving
 
+    def update_tracklets_updated_flag(self, state_changed):
+        """Determines whether saving code for tracklets should be run"""
+        if state_changed:
+            self._tracklets_updated = True
+
+    @property
+    def segmentation_updated(self):
+        return len(self.t_buffer_masks) > 0
+
     def save_manual_matches_to_disk(self):
+        if not self._tracklets_updated:
+            self.logger.info("No tracklet changes to save")
+            return None
+
         with self.saving_lock:
             self.logger.warning("Saving tracklet dataframe, DO NOT QUIT")
             self.logger.info("Note: the GUI might still respond, but you can't split or save any tracklets")

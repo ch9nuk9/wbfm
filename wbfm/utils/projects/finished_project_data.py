@@ -1322,13 +1322,16 @@ class ProjectData:
         See: modify_segmentation_using_manual_correction
 
         """
-        self.logger.info(f"Updating masks at t = {self.tracklet_annotator.t_buffer_masks}")
-        for t in self.tracklet_annotator.t_buffer_masks:
-            self.raw_segmentation[t, ...] = self.tracklet_annotator.buffer_masks[t, ...]
 
-        if len(self.tracklet_annotator.t_buffer_masks) > 0:
+        if self.tracklet_annotator.segmentation_updated:
+            self.logger.info(f"Updating masks at t = {self.tracklet_annotator.t_buffer_masks}")
+            self.logger.warning(f"Invalidates raw_frames and raw_matches; if tracking is needed, re-run all steps after"
+                                f" segmentation")
+            for t in self.tracklet_annotator.t_buffer_masks:
+                self.raw_segmentation[t, ...] = self.tracklet_annotator.buffer_masks[t, ...]
             return True
         else:
+            self.logger.info("No segmentation changes to save")
             return None
 
     def shade_axis_using_behavior(self, ax=None, plotly_fig=None, **kwargs):
