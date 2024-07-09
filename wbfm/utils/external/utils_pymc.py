@@ -30,8 +30,8 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     rng = 424242
     curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
     if use_additional_behaviors:
-        curvature_terms_to_use.extend(['dorsal_only_body_curvature', 'dorsal_only_head_curvature',
-                                      'ventral_only_body_curvature', 'ventral_only_head_curvature',
+        curvature_terms_to_use.extend([#'dorsal_only_body_curvature', 'dorsal_only_head_curvature',
+                                      #'ventral_only_body_curvature', 'ventral_only_head_curvature',
                                        'speed', 'self_collision'])
     # First pack into a single dataframe to drop nan, then unpack
     try:
@@ -236,6 +236,7 @@ def build_curvature_term(curvature, curvature_terms_to_use=None, dims=None, data
     additional_column_dict = {}
     if len(curvature_terms_to_use) > 2:
         for col_name in curvature_terms_to_use[2:]:
+            # None of these terms are modulated per dataset
             # If the column name is like "eigenworm3", the coefficient name is "eigenworm4_coefficient"
             # Because we want to start at 1, not 0
             if col_name.startswith('eigenworm'):
