@@ -14,7 +14,7 @@ from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
-                        sample_posterior=True, use_additional_behaviors=False, DEBUG=False) -> Tuple[pd.DataFrame, Dict, Dict]:
+                        sample_posterior=True, use_additional_behaviors=True, DEBUG=False) -> Tuple[pd.DataFrame, Dict, Dict]:
     """
     Fit multiple models to the same data, to be used for model comparison
 
