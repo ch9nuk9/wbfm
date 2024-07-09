@@ -1961,14 +1961,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.logger.debug(f'Calculated correlation values: {val_to_plot}')
         self.dat.add_layers_to_viewer(self.viewer, which_layers=which_layers, heatmap_kwargs=heatmap_kwargs,
                                       layer_opt=dict(opacity=1.0))
-        try:
-            # Move manual_ids to top, so they are not obscured
-            i_manual_id_layer = self.viewer.layers.index(self.manual_id_layer)
-            # Reorder function needs the layer index, not the name
-            self.viewer.layers.move(i_manual_id_layer, 0)
-        except:
-            self.logger.warning("Failed to move manual_id_layer to the top")
-            pass
+        # Move manual_ids to top, so they are not obscured
+        i_manual_id_layer = self.viewer.layers.index(self.manual_id_layer)
+        # Reorder function needs the layer index, not the name
+        self.viewer.layers.move(i_manual_id_layer, -1)
 
 
 def napari_trace_explorer_from_config(project_path: str, app=None,
