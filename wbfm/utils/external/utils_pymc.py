@@ -114,7 +114,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
                   'null': null_model,
                   'nonhierarchical': nonhierarchical_model}
     all_traces = {}
-    base_names_to_sample = {'y', 'sigmoid_term', 'curvature_term', 'phase_shift', 'sigmoid_slope'}
+    # base_names_to_sample = {'y', 'sigmoid_term', 'curvature_term', 'phase_shift', 'sigmoid_slope'}
     for name, model in all_models.items():
         with model:
             opt = dict(draws=1000, tune=1000, random_seed=rng, target_accept=0.96)
@@ -125,11 +125,14 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
             trace = pm.sample(**opt,
                               chains=4, return_inferencedata=True, idata_kwargs={"log_likelihood": True})
             if sample_posterior:
-                posterior_keys = set(list(trace.posterior.keys()))
+                posterior_keys = list(trace.posterior.keys())
+                # var_names = base_names_to_sample.intersection(posterior_keys)
+                # Keep only those that have 'term' in it, because those are the time series
+                posterior_keys = [key for key in posterior_keys if 'term' in key]
+                posterior_keys.extend(['y', 'mu'])
                 print(f"Sampling posterior predictive for {name}: {posterior_keys}")
-                var_names = base_names_to_sample.intersection(posterior_keys)
                 trace.extend(pm.sample_posterior_predictive(trace, random_seed=rng, progressbar=False,
-                                                            var_names=var_names))
+                                                            var_names=posterior_keys))
 
             all_traces[name] = trace
 
@@ -372,6 +375,25 @@ def save_all_model_outputs(dataset_name, neuron_name, df_compare, all_traces, al
     plt.savefig(os.path.join(output_dir, f'{output_fname_base}_model_comparison.png'))
     plt.close()
     print(f"Saved all objects for {neuron_name} in {output_dir}")
+
+
+def package_df_for_plot(df):
+    # TODO: FIX
+    # Build properly index dfs for each
+    df_loo = df.pivot(columns='model_type', index='neuron_name', values='elpd_loo')
+    df_se = df.pivot(columns='model_type', index='neuron_name', values='se')
+    df_loo_scaled = df_loo / df_se
+
+    x = (df_loo_scaled['hierarchical_pca'] - df_loo_scaled['nonhierarchical']).clip(lower=0)
+    y = (df_loo_scaled['nonhierarchical'] - df_loo_scaled['null']).clip(lower=0)
+    text_labels = pd.Series(list(x.index), index=x.index)
+    no_label_idx = np.logical_and(x < 5, y < 8)  # Displays some blue-only text
+    # no_label_idx = y < 8
+    # text_labels[no_label_idx] = ''
+
+    df_to_plot = pd.DataFrame({'Hierarchy Score': x, 'Behavior Score': y, 'text': text_labels, 'neuron_name': x.index})
+    # df_to_plot = df_to_plot[df_to_plot.index.isin(neurons_with_confident_ids())]
+    return df_to_plot
 
 
 if __name__ == '__main__':
