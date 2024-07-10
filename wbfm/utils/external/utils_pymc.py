@@ -250,7 +250,7 @@ def build_curvature_term(curvature, curvature_terms_to_use=None, dims=None, data
     if dims is None:
         all_cols = [eigenworm1_coefficient, eigenworm2_coefficient]#, eigenworm3_coefficient, eigenworm4_coefficient]
         all_cols.extend(list(additional_column_dict.values()))  # Don't need to worry about the order
-        coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack())
+        coefficients_vec = pm.Deterministic('coefficients_vec', pm.math.stack(all_cols))
         curvature_term = pm.Deterministic('curvature_term', pm.math.dot(curvature, coefficients_vec))
     else:
         # Multiply them separately, but do not subindex by dataset for other terms
