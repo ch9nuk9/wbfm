@@ -1,5 +1,4 @@
 import os
-import pickle
 from pathlib import Path
 from typing import Tuple, Dict
 
@@ -10,7 +9,6 @@ import arviz as az
 import cloudpickle
 from matplotlib import pyplot as plt
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 
 
 def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
@@ -375,25 +373,6 @@ def save_all_model_outputs(dataset_name, neuron_name, df_compare, all_traces, al
     plt.savefig(os.path.join(output_dir, f'{output_fname_base}_model_comparison.png'))
     plt.close()
     print(f"Saved all objects for {neuron_name} in {output_dir}")
-
-
-def package_df_for_plot(df):
-    # TODO: FIX
-    # Build properly index dfs for each
-    df_loo = df.pivot(columns='model_type', index='neuron_name', values='elpd_loo')
-    df_se = df.pivot(columns='model_type', index='neuron_name', values='se')
-    df_loo_scaled = df_loo / df_se
-
-    x = (df_loo_scaled['hierarchical_pca'] - df_loo_scaled['nonhierarchical']).clip(lower=0)
-    y = (df_loo_scaled['nonhierarchical'] - df_loo_scaled['null']).clip(lower=0)
-    text_labels = pd.Series(list(x.index), index=x.index)
-    no_label_idx = np.logical_and(x < 5, y < 8)  # Displays some blue-only text
-    # no_label_idx = y < 8
-    # text_labels[no_label_idx] = ''
-
-    df_to_plot = pd.DataFrame({'Hierarchy Score': x, 'Behavior Score': y, 'text': text_labels, 'neuron_name': x.index})
-    # df_to_plot = df_to_plot[df_to_plot.index.isin(neurons_with_confident_ids())]
-    return df_to_plot
 
 
 if __name__ == '__main__':

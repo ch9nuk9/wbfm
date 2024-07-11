@@ -427,3 +427,52 @@ def plot_box_multi_axis(df, x_columns_list, y_column, color_names=None, DEBUG=Fa
         if trace.name in cmap:
             trace.marker.color = cmap[trace.name]
     return fig
+
+
+def package_bayesian_df_for_plot(df, relative_improvement=True):
+    # The scores should be calculated from the diff column, and the se of that, i.e. dse
+    # However, the order of the models may be different, and thus the subtraction may not be what I want
+    # So I could recalculate the loo for the pairs of models I actually want to compare
+    # ... but I don't have the loo_dictionary, so I'll just set things to 0 if they aren't higher than the less complex models
+    df_diff = df.pivot(columns='model_type', index='neuron_name', values='elpd_diff').copy()  # .reset_index()
+    df_diff = df_diff / df.pivot(columns='model_type', index='neuron_name', values='dse')
+    if relative_improvement:
+        # Here each score is 'offset', such that the best model is 0, and the others are worse by the relevant amount
+        # For example, if hierarchical_pca is rank 0 (should be), then the column 'nonhierarchical' is the improvement
+        df_diff['Hierarchy Score'] = df_diff['nonhierarchical']  # Check for order issues later
+    else:
+        # Alternative: just take the comparison between the hierarchical_pca and the null
+        df_diff['Hierarchy Score'] = df_diff['null']
+
+    # But the behavior score is the difference between the null and the nonhierarchical, which we don't directly have
+    # Note that if the nonhierarchical is the best, this is still correct because that column is 0, and the null column
+    # is exactly what we want
+    df_diff['Behavior Score'] = df_diff['null'] - df_diff['nonhierarchical']
+
+    # If any neurons have 'hierarchical_pca' with a rank < 0, then the hierarchy score is 0
+    # This is because the hierarchical_pca model should always be the best unless there is overfitting
+    idx_hierarchy = df['model_type'] == 'hierarchical_pca'
+    rank_of_hierarchy_models = df.loc[idx_hierarchy, 'rank']
+    idx_of_non_first_hierarchy_models = df[idx_hierarchy].loc[rank_of_hierarchy_models > 0, 'neuron_name']
+    df_diff.loc[idx_of_non_first_hierarchy_models, 'Hierarchy Score'] = 0
+
+    # If any neurons have 'null' with a rank = 0, then both scores are 0
+    # This is because the null model should always be the worst
+    idx_null = df['model_type'] == 'null'
+    rank_of_null_models = df.loc[idx_null, 'rank']
+    idx_of_first_null_models = df[idx_null].loc[rank_of_null_models == 0, 'neuron_name']
+    df_diff.loc[idx_of_first_null_models, 'Behavior Score'] = 0  # The hierarchy is already set to 0
+
+    x, y = df_diff['Hierarchy Score'], df_diff['Behavior Score']
+    text_labels = pd.Series(list(x.index), index=x.index)
+    no_label_idx = np.logical_and(x < 5, y < 8)  # Displays some blue-only text
+    # no_label_idx = y < 8
+    # text_labels[no_label_idx] = ''
+
+    df_to_plot = df_diff.copy()
+    df_to_plot['text'] = text_labels
+    df_to_plot['neuron_name'] = df_to_plot.index
+    # df_to_plot = pd.DataFrame({'Hierarchy Score': x, 'Behavior Score': y,
+    #                            'text': text_labels, 'neuron_name': x.index})
+    # df_to_plot = df_to_plot[df_to_plot.index.isin(neurons_with_confident_ids())]
+    return df_to_plot
