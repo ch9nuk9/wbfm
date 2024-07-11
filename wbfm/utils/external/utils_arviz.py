@@ -10,7 +10,7 @@ import arviz as az
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
 
-def plot_ts(idata, y='y', y_hat='y', num_samples=100):
+def plot_ts(idata, y='y', y_hat='y', num_samples=100, title='', to_show=True):
     """
     My implementation of the plot_ts function from ArviZ, which doesn't work for me.
 
@@ -24,6 +24,10 @@ def plot_ts(idata, y='y', y_hat='y', num_samples=100):
     -------
 
     """
+    if isinstance(idata, dict):
+        for key in idata:
+            plot_ts(idata[key], y=y, y_hat=y_hat, num_samples=num_samples, title=key, to_show=to_show)
+        return
 
     # Build everything in a big dataframe, which will be used to plot everything
     y_obs = idata.observed_data.y
@@ -61,7 +65,10 @@ def plot_ts(idata, y='y', y_hat='y', num_samples=100):
     fig.add_trace(go.Scatter(x=df.index, y=df['observed'], mode='lines', name='observed',
                              line=dict(color='black', width=2)))
 
-    fig.show()
+    fig.update_layout(title=title)
+
+    if to_show:
+        fig.show()
     return fig
 
 
