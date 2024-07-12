@@ -798,6 +798,7 @@ class ProjectData:
                             remove_tail_neurons: bool = True,
                             always_keep_manual_ids: bool = True,
                             use_paper_options: bool = False,
+                            only_keep_confident_ids: bool = False,
                             verbose=0,
                             **kwargs):
         """
@@ -845,15 +846,20 @@ class ProjectData:
             if residual_mode is None:
                 channel_mode = kwargs.get('channel_mode', 'dr_over_r_50')
                 if channel_mode == 'green':
-                    return self.calc_paper_traces_green()
+                    df = self.calc_paper_traces_green()
                 elif channel_mode == 'red':
-                    return self.calc_paper_traces_red()
+                    df = self.calc_paper_traces_red()
                 else:
-                    return self.calc_paper_traces()
+                    df = self.calc_paper_traces()
             elif residual_mode == 'pca':
-                return self.calc_paper_traces_residual()
+                df = self.calc_paper_traces_residual()
             elif residual_mode == 'pca_global':
-                return self.calc_paper_traces_global()
+                df = self.calc_paper_traces_global()
+            # Most postprocessing is not done on these traces
+            if only_keep_confident_ids:
+                confident_ids = neurons_with_confident_ids()
+                df = df[[col for col in df.columns if col in confident_ids]]
+            return df
 
         opt = dict(
             channel_mode='dr_over_r_50',
@@ -985,6 +991,10 @@ class ProjectData:
         if rename_neurons_using_manual_ids:
             mapping = self.neuron_name_to_manual_id_mapping(confidence_threshold=manual_id_confidence_threshold)
             df = df.rename(columns=mapping)
+
+            if only_keep_confident_ids:
+                confident_ids = neurons_with_confident_ids()
+                df = df[[col for col in df.columns if col in confident_ids]]
 
         # Optional: set the index to be physical units
         if self.use_physical_time:
