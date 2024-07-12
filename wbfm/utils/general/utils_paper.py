@@ -188,7 +188,7 @@ def apply_figure_settings(fig=None, width_factor=1, height_factor=1, plotly_not_
         plt.tight_layout()
 
 
-def behavior_name_mapping():
+def behavior_name_mapping(shorten=False):
     name_mapping = dict(
         signed_middle_body_speed='Speed',
         dorsal_only_head_curvature='Dorsal head curvature',
@@ -199,7 +199,15 @@ def behavior_name_mapping():
         REV='Backward crawling',
         VENTRAL_TURN='Ventral turning',
         DORSAL_TURN='Dorsal turning',
+        rev='Reversal',
+        dorsal_turn='Dorsal turn',
+        ventral_turn='Ventral turn',
+        self_collision='Self-collision',
+        head_cast='Head cast',
+        slowing='Slowing',
     )
+    if shorten:
+        name_mapping = {k: v.replace(' curvature', '') for k, v in name_mapping.items()}
     return name_mapping
 
 
