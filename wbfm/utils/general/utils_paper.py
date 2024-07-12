@@ -437,7 +437,8 @@ def plot_box_multi_axis(df, x_columns_list, y_column, color_names=None, DEBUG=Fa
     return fig
 
 
-def package_bayesian_df_for_plot(df, relative_improvement=True):
+def package_bayesian_df_for_plot(df, relative_improvement=True, df_normalization=None,
+                                 min_num_datapoints=0):
     # The scores should be calculated from the diff column, and the se of that, i.e. dse
     # However, the order of the models may be different, and thus the subtraction may not be what I want
     # So I could recalculate the loo for the pairs of models I actually want to compare
@@ -452,6 +453,19 @@ def package_bayesian_df_for_plot(df, relative_improvement=True):
         # Alternative: just take the comparison between the hierarchical_pca and the null
         df_diff['Hierarchy Score'] = df_diff['null']
 
+    # Alternative: take the actual log likelihood, normalized by the number of data points
+    if df_normalization is not None:
+        df_elpd = df.pivot(columns='model_type', index='neuron_name', values='elpd_loo').copy().dropna()
+        df_elpd = df_elpd.divide(df_normalization.count(), axis=0).dropna()
+        # Add suffix to make it obvious these are processed columns
+        df_elpd.columns = [f"{col}_normalized" for col in df_elpd.columns]
+        df_diff = pd.concat([df_diff, df_elpd], axis=1)
+        if min_num_datapoints > 0:
+            has_enough_datapoints = df_normalization.count() > min_num_datapoints
+            # This has more rows than df_diff, so we need to filter
+            has_enough_datapoints = has_enough_datapoints.loc[df_diff.index]
+            df_diff = df_diff.loc[has_enough_datapoints, :]
+
     # But the behavior score is the difference between the null and the nonhierarchical, which we don't directly have
     # Note that if the nonhierarchical is the best, this is still correct because that column is 0, and the null column
     # is exactly what we want
@@ -462,6 +476,8 @@ def package_bayesian_df_for_plot(df, relative_improvement=True):
     idx_hierarchy = df['model_type'] == 'hierarchical_pca'
     rank_of_hierarchy_models = df.loc[idx_hierarchy, 'rank']
     idx_of_non_first_hierarchy_models = df[idx_hierarchy].loc[rank_of_hierarchy_models > 0, 'neuron_name']
+    # We may have dropped some rows from df_diff, so ensure the index is still valid
+    idx_of_non_first_hierarchy_models = idx_of_non_first_hierarchy_models[idx_of_non_first_hierarchy_models.isin(df_diff.index)]
     df_diff.loc[idx_of_non_first_hierarchy_models, 'Hierarchy Score'] = 0
 
     # If any neurons have 'null' with a rank = 0, then both scores are 0
@@ -469,6 +485,8 @@ def package_bayesian_df_for_plot(df, relative_improvement=True):
     idx_null = df['model_type'] == 'null'
     rank_of_null_models = df.loc[idx_null, 'rank']
     idx_of_first_null_models = df[idx_null].loc[rank_of_null_models == 0, 'neuron_name']
+    # We may have dropped some rows from df_diff, so ensure the index is still valid
+    idx_of_first_null_models = idx_of_first_null_models[idx_of_first_null_models.isin(df_diff.index)]
     df_diff.loc[idx_of_first_null_models, 'Behavior Score'] = 0  # The hierarchy is already set to 0
 
     x, y = df_diff['Hierarchy Score'], df_diff['Behavior Score']
