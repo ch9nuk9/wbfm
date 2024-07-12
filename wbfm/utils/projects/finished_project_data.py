@@ -31,7 +31,7 @@ import zarr
 from tqdm.auto import tqdm
 
 from wbfm.utils.traces.triggered_averages import plot_triggered_average_from_matrix_low_level
-from wbfm.utils.general.hardcoded_paths import read_names_of_neurons_to_id
+from wbfm.utils.general.hardcoded_paths import read_names_of_neurons_to_id, neurons_with_confident_ids
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
     get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns, \
     get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends
