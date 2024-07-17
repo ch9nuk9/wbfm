@@ -10,7 +10,7 @@ import arviz as az
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
 
-def plot_ts(idata, y='y', y_hat='y', num_samples=100, title='', to_show=True):
+def plot_ts(idata, y='y', y_hat='y', num_samples=100, title='', confidence_interval=0.68, to_show=True):
     """
     My implementation of the plot_ts function from ArviZ, which doesn't work for me.
 
@@ -19,6 +19,11 @@ def plot_ts(idata, y='y', y_hat='y', num_samples=100, title='', to_show=True):
     Parameters
     ----------
     idata
+    y
+    y_hat
+    num_samples
+    title
+    confidence_interval - float, between 0 and 1; default is equal to the standard deviation of a gaussian
 
     Returns
     -------
@@ -54,10 +59,12 @@ def plot_ts(idata, y='y', y_hat='y', num_samples=100, title='', to_show=True):
     # Average of the samples
     fig.add_trace(go.Scatter(x=df.index, y=df.iloc[:, :-1].mean(axis=1), mode='lines', name='y_hat',
                              line=dict(color='gray', width=2)))
-    # 95% CI
-    fig.add_trace(go.Scatter(x=df.index, y=df.iloc[:, :-1].quantile(0.025, axis=1), mode='lines', name='y_hat',
+    # Confidence interval
+    lower_bound = df.iloc[:, :-1].quantile(0.5 - confidence_interval / 2, axis=1)
+    upper_bound = df.iloc[:, :-1].quantile(0.5 + confidence_interval / 2, axis=1)
+    fig.add_trace(go.Scatter(x=df.index, y=lower_bound, mode='lines', name='y_hat',
                              line=dict(color='gray', width=1), showlegend=False))
-    fig.add_trace(go.Scatter(x=df.index, y=df.iloc[:, :-1].quantile(0.975, axis=1), mode='lines', name='y_hat',
+    fig.add_trace(go.Scatter(x=df.index, y=upper_bound, mode='lines', name='y_hat',
                              line=dict(color='gray', width=1), fill='tonexty',
                              showlegend=False))
 
