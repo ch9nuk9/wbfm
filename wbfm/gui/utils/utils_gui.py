@@ -299,6 +299,8 @@ class NeuronNameEditor(QWidget):
 
     Has additional information on the right side, including:
     - A list of all neurons with the same Manual Annotation (duplicates)
+    - A list of which neurons are "targeted" for manual annotation, which updates as neurons are named
+    - A list of neurons that have been manually annotated, but are not on the "targeted" list
 
     """
 
@@ -329,9 +331,10 @@ class NeuronNameEditor(QWidget):
         initial_height = int(screen.height() * fraction_of_screen_height)
         self.resize(initial_width, initial_height)
 
-        # The titles should be small
-        layout.setRowStretch(0, 1)  # Row 0 gets 1 unit of space
-        layout.setRowStretch(1, 9)  # Row 1 gets 9 units of space
+        # The titles (top) and buttons (bottom) should be small
+        layout.setRowStretch(0, 1)
+        layout.setRowStretch(1, 8)
+        layout.setRowStretch(2, 1)
 
         # The first column should be the largest
         layout.setColumnStretch(0, 7)
@@ -344,6 +347,11 @@ class NeuronNameEditor(QWidget):
         self.notIdedList = QListWidget()
         self.customIdedList = QListWidget()
 
+        # Set up buttons
+        self.swapLRButton = QPushButton("Swap L/R")
+        self.swapLRButton.clicked.connect(self.swap_left_right_annotations)
+
+        # Set up each column in proper location
         layout.addWidget(QLabel("Editable table of neuron names"), 0, 0)
         layout.addWidget(self.tableView, 1, 0, 2, 1)
         layout.addWidget(QLabel("Duplicated IDs (please fix!)"), 0, 1)
@@ -352,6 +360,8 @@ class NeuronNameEditor(QWidget):
         layout.addWidget(self.notIdedList, 1, 2, 2, 1)
         layout.addWidget(QLabel("Custom (non-list) IDs"), 0, 3)
         layout.addWidget(self.customIdedList, 1, 3, 2, 1)
+
+        layout.addWidget(self.swapLRButton, 3, 0)
 
         self.setLayout(layout)
 
@@ -367,9 +377,7 @@ class NeuronNameEditor(QWidget):
 
         # When data is changed, update the duplicates list and the stored dataframe
         self.model.dataChanged.connect(self.update_dataframe_range_from_table)
-        self.model.dataChanged.connect(self.update_duplicates_list)
-        self.model.dataChanged.connect(self.update_not_ided_list)
-        self.model.dataChanged.connect(self.update_custom_ided_list)
+        self.model.dataChanged.connect(self.update_all_widgets)
 
         # Set custom delegate to prevent editing of first column
         non_editable_delegate = NonEditableDelegate()
@@ -525,15 +533,18 @@ class NeuronNameEditor(QWidget):
         # Set up data table
         self.df = df
         self.update_table_from_dataframe()
-        self.update_duplicates_list()
-        self.update_not_ided_list()
-        self.update_custom_ided_list()
+        self.update_all_widgets()
         self.df_datatypes = df.dtypes
         self._set_column_edit_flags()
 
         # Set up filename, which will be used to save the dataframe
         self.filename = filename
         self.save_df_to_disk(also_save_h5=True)  # Save initial version as .h5
+
+    def update_all_widgets(self):
+        self.update_duplicates_list()
+        self.update_not_ided_list()
+        self.update_custom_ided_list()
 
     def save_df_to_disk(self, also_save_h5=True):
         """
@@ -625,6 +636,31 @@ class NeuronNameEditor(QWidget):
 
         # Update widget
         self.customIdedList.addItems(custom_ids)
+
+    def swap_left_right_annotations(self):
+        """
+        Swap the ID'ed neurons that are left/right
+
+        Specifically, swap all suffixes that are 'L' and 'R' AND are in a neuron that has more than 3 characters
+        """
+        df = self.df
+        id_col = self.manual_id_column_name
+        for i, row in df.iterrows():
+            starting_id = row[id_col]
+            did_swap = False
+            if len(starting_id) > 3:
+                if starting_id.endswith('L'):
+                    df.at[i, id_col] = starting_id[:-1] + 'R'
+                    did_swap = True
+                elif starting_id.endswith('R'):
+                    df.at[i, id_col] = starting_id[:-1] + 'L'
+                    did_swap = True
+                if did_swap:
+                    logging.info(f"Swapping {starting_id} to {df.at[i, id_col]}")
+
+        # Update the GUI elements
+        self.update_table_from_dataframe()
+        self.update_all_widgets()
 
 
 if __name__ == '__main__':
