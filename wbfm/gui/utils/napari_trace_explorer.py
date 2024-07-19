@@ -7,7 +7,7 @@ import warnings
 import logging
 import sys
 from functools import partial
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import napari
 import numpy as np
@@ -171,6 +171,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.manualNeuronNameEditor = self.dat.build_neuron_editor_gui()
         if self.manualNeuronNameEditor is not None:
             self.manualNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
+            self.manualNeuronNameEditor.multiple_annotations_updated.connect(self.update_neuron_id_strings_in_layer)
             self.manualNeuronNameEditor.show()
 
         self.logger.debug("Finished main UI setup")
@@ -1332,19 +1333,33 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     #     else:
     #         self.neuron_id_layer.text = {'string': '{custom_label}'}
 
-    def update_neuron_id_strings_in_layer(self, original_name, old_name, new_name):
+    def update_neuron_id_strings_in_layer(self, original_name: Union[list, str], old_name, new_name: Union[list, str],
+                                          actually_update_gui=True):
         """
         Modify the layer properties to change the displayed name of a neuron (across all time)
 
         Parameters
         ----------
+        original_name
         old_name
         new_name
+        actually_update_gui
 
         Returns
         -------
 
         """
+
+        if isinstance(original_name, list):
+            # Assume this is a multi-neuron change, and update the dataframe first before the gui
+            assert len(original_name) == len(new_name), "Must have the same number of old and new names"
+            for o, n in zip(original_name, new_name):
+                self.update_neuron_id_strings_in_layer(o, old_name, n, actually_update_gui=False)
+            if actually_update_gui:
+                worker = self.refresh_manual_id_layer()
+                worker.start()
+            return
+
         # Because the old name may have been blank, we need to use the automatic labels for indexing
         original_name_series = self.manual_id_layer.properties['automatic_label']
         original_name_series = pd.Series([int2name_neuron(n) for n in original_name_series])
@@ -1354,10 +1369,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         # We need to change the features dataframe, not the properties dict
         self.manual_id_layer.features.loc[rows_to_change, 'custom_label'] = new_name
-        # Unfortunately, this updates the entire text layer including all strings, so it takes a while
-        # Therefore do a new thread
-        worker = self.refresh_manual_id_layer()
-        worker.start()
+
+        if actually_update_gui:
+            # Unfortunately, this updates the entire text layer including all strings, so it takes a while
+            # Therefore do a new thread
+            worker = self.refresh_manual_id_layer()
+            worker.start()
 
         # Change focus to the same row, but one column over
         # self.manualNeuronNameEditor.jump_focus_to_neuron(original_name, column_offset=1)

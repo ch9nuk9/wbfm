@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Union
 
 import napari
 import numpy as np
@@ -305,6 +306,7 @@ class NeuronNameEditor(QWidget):
     """
 
     annotation_updated = pyqtSignal(str, str, str)
+    multiple_annotations_updated = pyqtSignal(list, list, list)
 
     def __init__(self, neurons_to_id=None, DEBUG=False):
         super().__init__()
@@ -645,6 +647,11 @@ class NeuronNameEditor(QWidget):
         """
         df = self.df
         id_col = self.manual_id_column_name
+        # For updating the GUI
+        all_original_names = []
+        all_old_names = []
+        all_new_names = []
+
         for i, row in df.iterrows():
             starting_id = row[id_col]
             did_swap = False
@@ -657,10 +664,16 @@ class NeuronNameEditor(QWidget):
                     did_swap = True
                 if did_swap:
                     logging.info(f"Swapping {starting_id} to {df.at[i, id_col]}")
+                    all_original_names.append(row["Neuron ID"])
+                    all_old_names.append(starting_id)
+                    all_new_names.append(df.at[i, id_col])
 
-        # Update the GUI elements
+        # Update these GUI elements
         self.update_table_from_dataframe()
         self.update_all_widgets()
+
+        # Update parent GUI elements, if any
+        self.multiple_annotations_updated.emit(all_original_names, all_old_names, all_new_names)
 
 
 if __name__ == '__main__':
