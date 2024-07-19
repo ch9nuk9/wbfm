@@ -723,7 +723,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         else:
             background_parent_folder = background_parent_folder[0]
             try:
-                MicroscopeDataReader(background_parent_folder, as_raw_tiff=False)
+                MicroscopeDataReader(background_parent_folder, as_raw_tiff=False, verbose=0)
                 background_video = background_parent_folder
             except FileNotFoundError:
                 logging.info(f"Tried to read background using MicroscopeDataReader, but failed: "
