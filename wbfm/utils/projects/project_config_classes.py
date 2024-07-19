@@ -620,6 +620,31 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return behavior_fname, behavior_subfolder
 
     def get_behavior_raw_parent_folder_from_red_fname(self, verbose=0) -> Tuple[Optional[Path], bool]:
+        """
+        This searches for the behavior folder in the parent folder of the red file
+        The assumed structure is:
+        - main_data_folder
+            - behavior_subfolder
+                - video_files
+            - red_subfolder
+                - ...
+            - green_subfolder
+                - ...
+
+        However, there are two options for the red_fname from get_raw_data_fname:
+        1. ndtiff, meaning red_fname = red_subfolder
+        2. btf, meaning red_fname = inside red_subfolder
+        Thus, the function must check for both cases, taking the parent folder in the first case and the grandparent in
+        the second, and then searching for the behavior subfolder
+
+        Parameters
+        ----------
+        verbose
+
+        Returns
+        -------
+
+        """
         red_fname, is_btf = self.get_raw_data_fname(red_not_green=True)
         if red_fname is None:
             if verbose >= 1:
@@ -666,7 +691,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         behavior_raw_folder, flag = self.get_behavior_raw_parent_folder_from_red_fname()
         if not flag:
             raise NoBehaviorDataError()
-        behavior_raw_folder = str(behavior_raw_folder.parent)
+        behavior_parent_folder = str(behavior_raw_folder.parent)
+        multiday_parent_folder = str(Path(behavior_parent_folder).parent)
 
         # Second
         beh_cfg = self.get_behavior_config()
@@ -675,50 +701,54 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         if not Path(behavior_output_folder).exists():
             update_path_to_behavior_in_config(self)
 
-        # Find the specific folders to use
-        raw_data_subfolder = glob.glob(f"{behavior_raw_folder}/*Ch0-BH/")
-        print("Found raw data subfolder(s): ", raw_data_subfolder)
-        if len(raw_data_subfolder) == 1:
-            raw_data_subfolder = raw_data_subfolder[0]
-        elif len(raw_data_subfolder) > 1:
-            raise ValueError("There is more than one raw dataset")
-        else:
-            raise NoBehaviorDataError("No raw data found")
-
         # See if the .btf file has already been produced... unfortunately this is a modification of the raw data folder
         # Assume that any .btf file is the correct one, IF it doesn't have 'AVG' in the name (refers to background subtraction)
-        btf_file = [f for f in os.listdir(raw_data_subfolder) if f.endswith(".btf") and 'AVG' not in f]
+        btf_file = [f for f in os.listdir(behavior_raw_folder) if f.endswith(".btf") and 'AVG' not in f]
         if len(btf_file) == 1:
             btf_file = btf_file[0]
             print(".btf file already produced: ", btf_file)
-            btf_file = os.path.join(raw_data_subfolder, btf_file)
+            btf_file = os.path.join(behavior_raw_folder, btf_file)
         elif len(btf_file) > 1:
-            raise ValueError(f"There is more than one .btf file in {raw_data_subfolder}")
+            raise ValueError(f"There is more than one .btf file in {behavior_raw_folder}")
         else:
             # Then it will need to be produced
-            btf_file = os.path.join(raw_data_subfolder, 'raw_stack.btf')
+            btf_file = os.path.join(behavior_raw_folder, 'raw_stack.btf')
             print("WARNING: No .btf file found, will produce it in the raw data folder ", btf_file)
 
         # Look for background image
-        background_video = glob.glob(f"{behavior_raw_folder}/../background/*background*BH*/*background*")
-        # Remove any with AVG in the name
-        background_video = [f for f in background_video if 'AVG' not in f]
-        background_video = [f for f in background_video if 'metadata' not in f]
-        if len(background_video) == 1:
-            background_video = background_video[0]
-            background_video = str(Path(background_video).resolve())  # This is needed because the path is relative
-            print("This is the background video: ", background_video)
+        background_parent_folder = glob.glob(f"{multiday_parent_folder}/background/*background*BH*")
+        # First, try to just load with the ndtiff reader
+        if len(background_parent_folder) != 1:
+            raise ValueError(f"Found no or more than one background folder: {background_parent_folder}")
+        else:
+            background_parent_folder = background_parent_folder[0]
+            try:
+                MicroscopeDataReader(background_parent_folder, as_raw_tiff=False)
+                background_video = background_parent_folder
+            except FileNotFoundError:
+                logging.info(f"Tried to read background using MicroscopeDataReader, but failed: "
+                             f"{background_parent_folder}... falling back to glob")
+
+                # Otherwise, try to find specific files
+                background_videos = glob.glob(f"{background_parent_folder}/*background*")
+                # Remove any with AVG in the name
+                background_video = [f for f in background_video if 'AVG' not in f]
+                background_video = [f for f in background_video if 'metadata' not in f]
+                if len(background_video) == 1:
+                    background_video = background_video[0]
+                    background_video = str(Path(background_video).resolve())  # This is needed because the path is relative
+                    print("This is the background video: ", background_video)
+
+                elif len(background_video) > 1:
+                    raise ValueError(f"There is more than one background video: {background_video}")
+                else:
+                    raise ValueError(f"No background videos found in {multiday_parent_folder}/background/")
 
             # Name of the background image is the same, but with 'AVG' prepended
             background_img = os.path.join(behavior_output_folder, 'AVG' + os.path.basename(background_video))
             background_img = str(Path(background_img).with_suffix('.tif'))
 
-        elif len(background_video) > 1:
-            raise ValueError(f"There is more than one background video: {background_video}")
-        else:
-            raise ValueError(f"No background videos found in {behavior_raw_folder}/../background/")
-
-        return behavior_raw_folder, raw_data_subfolder, behavior_output_folder, \
+        return behavior_parent_folder, behavior_raw_folder, behavior_output_folder, \
             background_img, background_video, btf_file
 
 

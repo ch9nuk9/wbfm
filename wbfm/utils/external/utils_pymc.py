@@ -89,6 +89,37 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
         likelihood = build_final_likelihood(mu, sigma, y)
 
+    coords.update({'time': np.arange(len(y))})
+    with pm.Model(coords=coords) as hierarchical_pca_model_with_drift:
+        # Curvature multiplied by sigmoid
+        intercept, sigma = build_baseline_priors()#**dim_opt)
+        sigmoid_term = build_sigmoid_term_pca(pca_modes, **dim_opt)
+        curvature_term = build_curvature_term(curvature, curvature_terms_to_use=curvature_terms_to_use, **dim_opt)
+        # num_points = len(y)
+
+        sigma_alpha = pm.Exponential("sigma_alpha", 100.0)
+
+        drift_term = pm.GaussianRandomWalk(
+            "alpha", sigma=sigma_alpha, init_dist=pm.Normal.dist(0, 1), dims="time"
+        )
+        # drift_term = build_drift_term(**dim_opt)
+
+        # Works if the drift term is gp.latent (VERY SLOW) or a random walk
+        mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term + drift_term)
+        likelihood = build_final_likelihood(mu, sigma, y)
+    #
+    #     # Works if the gp is .marginal
+    #     eta = 2.0
+    #     lengthscale = 500
+    #     cov = eta ** 2 * pm.gp.cov.ExpQuad(1, lengthscale)
+    #     mu_func = lambda X: intercept + sigmoid_term[X] * curvature_term[X]
+    #     # Add white noise to stabilise
+    #     cov += pm.gp.cov.WhiteNoise(1e-6)
+    #     # Actual gp, then make it a function
+    #     gp = pm.gp.Marginal(cov_func=cov, mean_func=mu_func)
+    #
+    #     likelihood = gp.marginal_likelihood('y', X=np.arange(num_points), y=y, noise=sigma)
+
     # New: just have rectification with given fwd/rev, not using a sigmoid term
     # fwd_idx, fwd_values = df_model.fwd.factorize()
     # coords = {'fwd': fwd_values}
@@ -108,7 +139,11 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     #               'hierarchical': hierarchical_model,
     #               'rectified': rectified_model,
     #               'hierarchical_pca': hierarchical_pca_model}
-    all_models = {'hierarchical_pca': hierarchical_pca_model,
+    # all_models = {'hierarchical_pca': hierarchical_pca_model,
+    #               'null': null_model,
+    #               'nonhierarchical': nonhierarchical_model}
+    all_models = {'hierarchical_pca_model_with_drift': hierarchical_pca_model_with_drift,
+                  'hierarchical_pca': hierarchical_pca_model,
                   'null': null_model,
                   'nonhierarchical': nonhierarchical_model}
     all_traces = {}
@@ -267,6 +302,34 @@ def build_curvature_term(curvature, curvature_terms_to_use=None, dims=None, data
                                                   in enumerate(additional_column_dict.values())])
                                           )
     return curvature_term
+
+
+def build_drift_term_gp(n, lengthscale=None, dims=None, dataset_name_idx=None):
+    # Drift term (gaussian process)
+    if lengthscale is None:
+        lengthscale = n / 3.0
+    eta = 2.0
+    cov = eta ** 2 * pm.gp.cov.ExpQuad(1, lengthscale)
+    # Add white noise to stabilise
+    cov += pm.gp.cov.WhiteNoise(1e-6)
+    # Actual gp, then make it a function
+    gp = pm.gp.Latent(cov_func=cov)  # VERY slow
+    X = np.linspace(0, n, n)[:, None]  # The inputs to the GP must be arranged as a column vector
+    drift_term = gp.prior("f", X=X)
+
+    return drift_term
+
+
+def build_drift_term(dims=None, dataset_name_idx=None):
+    # Drift term (random walk); needs 'time' in the dims
+    # std of random walk
+    sigma_alpha = pm.Exponential("sigma_alpha", 1.0)
+
+    drift_term = pm.GaussianRandomWalk(
+        "alpha", sigma=sigma_alpha, init_dist=pm.Normal.dist(0, 1), dims="time"
+    )
+
+    return drift_term
 
 
 def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
