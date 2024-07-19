@@ -655,7 +655,7 @@ class NeuronNameEditor(QWidget):
         for i, row in df.iterrows():
             starting_id = row[id_col]
             did_swap = False
-            if len(starting_id) > 3:
+            if isinstance(starting_id, str) and len(starting_id) > 3:
                 if starting_id.endswith('L'):
                     df.at[i, id_col] = starting_id[:-1] + 'R'
                     did_swap = True
@@ -664,9 +664,9 @@ class NeuronNameEditor(QWidget):
                     did_swap = True
                 if did_swap:
                     logging.info(f"Swapping {starting_id} to {df.at[i, id_col]}")
-                    all_original_names.append(row["Neuron ID"])
-                    all_old_names.append(starting_id)
-                    all_new_names.append(df.at[i, id_col])
+                    all_original_names.append(str(row["Neuron ID"]))
+                    all_old_names.append(str(starting_id))
+                    all_new_names.append(str(df.at[i, id_col]))
 
         # Update these GUI elements
         self.update_table_from_dataframe()

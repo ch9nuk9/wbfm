@@ -1360,6 +1360,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 worker.start()
             return
 
+        self.logger.info(f"Changing neuron name: {original_name} to {new_name}")
         # Because the old name may have been blank, we need to use the automatic labels for indexing
         original_name_series = self.manual_id_layer.properties['automatic_label']
         original_name_series = pd.Series([int2name_neuron(n) for n in original_name_series])
