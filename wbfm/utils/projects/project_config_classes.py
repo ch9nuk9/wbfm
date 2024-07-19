@@ -730,7 +730,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                              f"{background_parent_folder}... falling back to glob")
 
                 # Otherwise, try to find specific files
-                background_videos = glob.glob(f"{background_parent_folder}/*background*")
+                background_video = glob.glob(f"{background_parent_folder}/*background*")
                 # Remove any with AVG in the name
                 background_video = [f for f in background_video if 'AVG' not in f]
                 background_video = [f for f in background_video if 'metadata' not in f]
