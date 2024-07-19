@@ -148,13 +148,18 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
 def build_baseline_priors(dims=None, dataset_name_idx=None):
     if dims is None:
         intercept = pm.Normal('intercept', mu=0, sigma=1)
+        sigma = pm.HalfCauchy("sigma", beta=0.02)
+
     else:
         # Include hyperprior
         hyper_intercept = pm.Normal('hyper_intercept', mu=0, sigma=1)
         hyper_intercept_sigma = pm.Exponential('hyper_intercept_sigma', lam=1)
         zscore_intercept = pm.Normal('zscore_intercept', mu=0, sigma=1, dims=dims)
         intercept = pm.Deterministic('intercept', hyper_intercept + zscore_intercept*hyper_intercept_sigma)[dataset_name_idx]
-    sigma = pm.HalfCauchy("sigma", beta=0.02)
+
+        # Also vary sigma per dataset; simpler because we don't have to zscore it
+        sigma = pm.HalfCauchy("sigma", beta=0.02, dims=dims)[dataset_name_idx]
+
     return intercept, sigma
 
 
