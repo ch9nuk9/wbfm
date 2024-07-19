@@ -97,7 +97,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         curvature_term = build_curvature_term(curvature, curvature_terms_to_use=curvature_terms_to_use, **dim_opt)
         # num_points = len(y)
 
-        sigma_alpha = pm.Exponential("sigma_alpha", 100.0)
+        sigma_alpha = pm.Exponential("sigma_alpha", len(y)/2.0)
 
         drift_term = pm.GaussianRandomWalk(
             "alpha", sigma=sigma_alpha, init_dist=pm.Normal.dist(0, 1), dims="time"
