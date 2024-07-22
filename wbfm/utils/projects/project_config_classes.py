@@ -677,7 +677,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             print(f"Found behavior subfolder: {behavior_subfolder}")
         return behavior_subfolder, flag
 
-    def get_folders_for_behavior_pipeline(self):
+    def get_folders_for_behavior_pipeline(self, crash_if_no_background=True):
         """
         Requires the raw behavior folder and the behavior folder in the project
 
@@ -721,7 +721,12 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         background_parent_folder = glob.glob(f"{multiday_parent_folder}/background/*background*BH*")
         # First, try to just load with the ndtiff reader
         if len(background_parent_folder) != 1:
-            raise RawDataFormatError(f"Found no or more than one background folder: {background_parent_folder}")
+            msg = f"Found no or more than one background folder(s): {background_parent_folder}"
+            if crash_if_no_background:
+                raise RawDataFormatError(msg)
+            else:
+                self.logger.warning(msg)
+                background_parent_folder = None
         else:
             background_parent_folder = background_parent_folder[0]
             try:
@@ -742,13 +747,26 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                     print("This is the background video: ", background_video)
 
                 elif len(background_video) > 1:
-                    raise RawDataFormatError(f"There is more than one background video: {background_video}")
+                    msg = f"There is more than one background video: {background_video}"
+                    if crash_if_no_background:
+                        raise RawDataFormatError(msg)
+                    else:
+                        self.logger.warning(msg)
+                        background_video = None
                 else:
-                    raise RawDataFormatError(f"No background videos found in {multiday_parent_folder}/background/")
+                    msg = f"No background videos found in {multiday_parent_folder}/background/"
+                    if crash_if_no_background:
+                        raise RawDataFormatError(msg)
+                    else:
+                        self.logger.warning(msg)
+                        background_video = None
 
             # Name of the background image is the same, but with 'AVG' prepended
-            background_img = os.path.join(behavior_output_folder, 'AVG' + os.path.basename(background_video))
-            background_img = str(Path(background_img).with_suffix('.tif'))
+            if background_video is None:
+                background_img = None
+            else:
+                background_img = os.path.join(behavior_output_folder, 'AVG' + os.path.basename(background_video))
+                background_img = str(Path(background_img).with_suffix('.tif'))
 
         return behavior_parent_folder, behavior_raw_folder, behavior_output_folder, \
             background_img, background_video, btf_file
