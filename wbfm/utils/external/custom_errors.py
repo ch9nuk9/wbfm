@@ -135,3 +135,9 @@ class TiffFormatError(Exception):
     def __init__(self, message=""):
         self.message = "Error with format of raw tiff file: " + message
         super().__init__(self.message)
+
+
+class RawDataFormatError(Exception):
+    def __init__(self, message=""):
+        self.message = "Incorrectly formatted raw data; " + message
+        super().__init__(self.message)

@@ -25,6 +25,7 @@ from wbfm.utils.projects.utils_project import safe_cd, update_project_config_pat
     update_snakemake_config_path
 from wbfm.utils.external.utils_yaml import edit_config, load_config
 from wbfm.utils.general.hardcoded_paths import default_raw_data_config
+from wbfm.utils.external.custom_errors import RawDataFormatError
 
 
 @dataclass
@@ -682,6 +683,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         Raises a NoBehaviorDataError if the entire behavior folder cannot be found, which is expected for immobilized
         recordings.
+        Raises a RawDataFormatError if the raw data is not in the expected format
 
         Returns
         -------
@@ -706,26 +708,26 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         btf_file = [f for f in os.listdir(behavior_raw_folder) if f.endswith(".btf") and 'AVG' not in f]
         if len(btf_file) == 1:
             btf_file = btf_file[0]
-            print(".btf file already produced: ", btf_file)
+            self.logger.info(".btf file already produced: ", btf_file)
             btf_file = os.path.join(behavior_raw_folder, btf_file)
         elif len(btf_file) > 1:
-            raise ValueError(f"There is more than one .btf file in {behavior_raw_folder}")
+            raise RawDataFormatError(f"There is more than one .btf file in {behavior_raw_folder}")
         else:
             # Then it will need to be produced
             btf_file = os.path.join(behavior_raw_folder, 'raw_stack.btf')
-            print("WARNING: No .btf file found, will produce it in the raw data folder ", btf_file)
+            self.logger.warning("No .btf file found, will produce it in the raw data folder ", btf_file)
 
         # Look for background image
         background_parent_folder = glob.glob(f"{multiday_parent_folder}/background/*background*BH*")
         # First, try to just load with the ndtiff reader
         if len(background_parent_folder) != 1:
-            raise ValueError(f"Found no or more than one background folder: {background_parent_folder}")
+            raise RawDataFormatError(f"Found no or more than one background folder: {background_parent_folder}")
         else:
             background_parent_folder = background_parent_folder[0]
             try:
                 MicroscopeDataReader(background_parent_folder, as_raw_tiff=False, verbose=0)
                 background_video = background_parent_folder
-            except FileNotFoundError:
+            except RawDataFormatError:
                 logging.info(f"Tried to read background using MicroscopeDataReader, but failed: "
                              f"{background_parent_folder}... falling back to glob")
 
@@ -740,9 +742,9 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                     print("This is the background video: ", background_video)
 
                 elif len(background_video) > 1:
-                    raise ValueError(f"There is more than one background video: {background_video}")
+                    raise RawDataFormatError(f"There is more than one background video: {background_video}")
                 else:
-                    raise ValueError(f"No background videos found in {multiday_parent_folder}/background/")
+                    raise RawDataFormatError(f"No background videos found in {multiday_parent_folder}/background/")
 
             # Name of the background image is the same, but with 'AVG' prepended
             background_img = os.path.join(behavior_output_folder, 'AVG' + os.path.basename(background_video))
