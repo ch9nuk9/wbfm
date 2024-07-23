@@ -97,10 +97,10 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
         curvature_term = build_curvature_term(curvature, curvature_terms_to_use=curvature_terms_to_use, **dim_opt)
         # num_points = len(y)
 
-        sigma_alpha = pm.Exponential("sigma_alpha", len(y)/2.0)
+        # sigma_alpha = pm.Exponential("sigma_alpha", len(y)/2.0)
 
         drift_term = pm.GaussianRandomWalk(
-            "alpha", sigma=sigma_alpha, init_dist=pm.Normal.dist(0, 1), dims="time"
+            "alpha", sigma=0.01, init_dist=pm.Normal.dist(0, 1), dims="time"
         )
         # drift_term = build_drift_term(**dim_opt)
 
@@ -139,13 +139,13 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     #               'hierarchical': hierarchical_model,
     #               'rectified': rectified_model,
     #               'hierarchical_pca': hierarchical_pca_model}
-    # all_models = {'hierarchical_pca': hierarchical_pca_model,
-    #               'null': null_model,
-    #               'nonhierarchical': nonhierarchical_model}
-    all_models = {'hierarchical_pca_model_with_drift': hierarchical_pca_model_with_drift,
-                  'hierarchical_pca': hierarchical_pca_model,
+    all_models = {'hierarchical_pca': hierarchical_pca_model,
                   'null': null_model,
                   'nonhierarchical': nonhierarchical_model}
+    # all_models = {'hierarchical_pca_model_with_drift': hierarchical_pca_model_with_drift,
+    #               'hierarchical_pca': hierarchical_pca_model,
+    #               'null': null_model,
+    #               'nonhierarchical': nonhierarchical_model}
     all_traces = {}
     # base_names_to_sample = {'y', 'sigmoid_term', 'curvature_term', 'phase_shift', 'sigmoid_slope'}
     for name, model in all_models.items():
