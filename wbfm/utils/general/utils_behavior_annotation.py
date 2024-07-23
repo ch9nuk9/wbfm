@@ -1389,8 +1389,11 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
     ax - axis to plot on
     behaviors_to_ignore - list of behaviors to ignore. See BehaviorCodes for valid codes
     cmap - colormap to use. See BehaviorCodes for default
+    additional_shaded_states - list of additional states to shade
+    alpha - transparency of the shading
     index_conversion - function to convert indices from the beh_vector to the plot indices
     DEBUG
+    kwargs - Ignored
 
     Returns
     -------

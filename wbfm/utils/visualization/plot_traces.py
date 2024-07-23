@@ -60,6 +60,8 @@ def make_grid_plot_from_project(project_data: ProjectData,
 
     See project_data.calculate_traces for details on the arguments, and TracePlotter for even more detail
 
+    See make_grid_plot_from_dataframe for a lower-level function that doesn't require a project object
+
     Design of this function:
         Build a dataframe of traces.
             With channel_mode=all, plots for multiple dataframes
@@ -82,7 +84,7 @@ def make_grid_plot_from_project(project_data: ProjectData,
     min_nonnan: minimum tracking performance to include
     df_traces: traces dataframe that replaces all trace calculation options
     postprocessing_func: Callable that must accept the output of calculate_traces, and give the same type of output
-    to_save: to export png
+    to_save: to export png within the project 4-traces folder; the name is based on the channel_mode and calculation_mode
     savename_suffix: for saving
     kwargs: passed to make_grid_plot_from_callables
 
@@ -324,8 +326,12 @@ def factory_correlate_trace_to_behavior_variable(project_data,
         model.fit(df.T)
         y = np.squeeze(model.components_)
     else:
-        assert behavioral_correlation_shading in valid_behavioral_shadings, \
-            f"Must pass None or one of: {valid_behavioral_shadings}"
+        # Try to calculate via an alias
+        try:
+            y = project_data.worm_posture_class.calc_behavior_from_alias(behavioral_correlation_shading)
+        except NotImplementedError:
+            assert behavioral_correlation_shading in valid_behavioral_shadings, \
+                f"Must pass None or one of: {valid_behavioral_shadings}"
 
     if y is None:
         return None

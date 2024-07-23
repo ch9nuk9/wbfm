@@ -844,7 +844,7 @@ class WormFullVideoPosture:
             y1 = self.calc_behavior_from_alias('interpolated_ventral_midbody_curvature', **kwargs)
             y0 = self.calc_behavior_from_alias('interpolated_dorsal_midbody_curvature', **kwargs)
             y = y1 + y0
-        elif 'eigenworm' in behavior_alias:
+        elif isinstance(behavior_alias, str) and 'eigenworm' in behavior_alias:
             # Eigenworms 0-4 are possible, calculated on curvature
             # i.e. the full string should be 'eigenworm0', 'eigenworm1', etc.
             # First get the number
