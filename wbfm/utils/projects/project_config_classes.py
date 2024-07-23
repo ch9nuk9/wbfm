@@ -715,7 +715,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         else:
             # Then it will need to be produced
             btf_file = os.path.join(behavior_raw_folder, 'raw_stack.btf')
-            self.logger.warning("No .btf file found, will produce it in the raw data folder ", btf_file)
+            self.logger.warning(f"No .btf file found, will produce it in the raw data folder: {btf_file}")
 
         # Look for background image
         background_parent_folder = glob.glob(f"{multiday_parent_folder}/background/*background*BH*")
