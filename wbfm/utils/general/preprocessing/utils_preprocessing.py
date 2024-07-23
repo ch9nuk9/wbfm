@@ -541,7 +541,10 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
             if s.to_save_warp_matrices:
                 s.all_warp_matrices[which_frame] = warp_matrices_dict
         else:
-            assert len(s.all_warp_matrices) > 0
+            assert len(s.all_warp_matrices) > 0, ("No warp matrices found, but to_use_previous_warp_matrices is True... "
+                                                  "Possibly the red channel was not processed first, or the code crashed"
+                                                  " before saving the matrices. Try deleting any preprocessed data in "
+                                                  "the dat folder and rerunning preprocessing")
             warp_matrices_dict = s.all_warp_matrices[which_frame]
             if len(warp_matrices_dict) > 0:
                 single_volume_raw = cumulative_alignment_of_stack(single_volume_raw, warp_matrices_dict)
