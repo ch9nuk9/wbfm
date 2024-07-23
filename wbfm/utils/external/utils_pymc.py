@@ -368,7 +368,7 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
     return df_model
 
 
-def main(neuron_name, do_gfp=False, dataset_name='all', skip_if_exists=True):
+def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True):
     """
     Runs for hardcoded data location for a single neuron
 
@@ -382,6 +382,8 @@ def main(neuron_name, do_gfp=False, dataset_name='all', skip_if_exists=True):
     -------
 
     """
+    if neuron_name is None:
+        neuron_name = 'VB02'
     print(f"Running all 3 bayesian models for {neuron_name} with do_gfp={do_gfp}")
 
     data_dir = get_hierarchical_modeling_dir(do_gfp)
