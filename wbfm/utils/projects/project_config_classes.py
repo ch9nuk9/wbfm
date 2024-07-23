@@ -695,6 +695,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             raise NoBehaviorDataError()
         behavior_parent_folder = str(behavior_raw_folder.parent)
         multiday_parent_folder = str(Path(behavior_parent_folder).parent)
+        behavior_raw_folder = str(behavior_raw_folder)
 
         # Second
         beh_cfg = self.get_behavior_config()
