@@ -194,19 +194,6 @@ rule extract_full_traces:
 
 # Start snakemake
 
-# TODO: this modifies the raw data folder... which is consistent with the fluorescence unfortunately
-rule ometiff2bigtiff:
-    output:
-        btf_file = behavior_btf
-    run:
-        from imutils.src import imutils_parser_main
-
-        imutils_parser_main.main([
-            "ometiff2bigtiff",
-            '-path', str(raw_data_subfolder),
-            '-output_filename', str(output.btf_file),
-        ])
-
 rule z_project_background:
     input:
         background_video = background_video
@@ -226,7 +213,7 @@ rule z_project_background:
 
 rule subtract_background:
     input:
-        raw_img  = behavior_btf,
+        ndtiff_subfolder  = raw_data_subfolder,
         background_img = background_img
     params:
         do_inverse = config["do_inverse"]
@@ -237,7 +224,7 @@ rule subtract_background:
 
         imutils_parser_main.main([
             "stack_subtract_background",
-            '-i', str(input.raw_img),
+            '-i', str(input.ndtiff_subfolder),
             '-o', str(output.background_subtracted_img),
             '-bg', str(input.background_img),
             '-invert', str(params.do_inverse),
