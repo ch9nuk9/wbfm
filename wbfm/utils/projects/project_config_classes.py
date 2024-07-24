@@ -685,6 +685,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         recordings.
         Raises a RawDataFormatError if the raw data is not in the expected format
 
+        Note that background_video is a file if it is a .btf, and a folder if it is ndtiff
+
         Returns
         -------
 
@@ -734,11 +736,11 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                 # Same reading style as stack_z_projection
                 _ = MicroscopeDataReader(background_parent_folder, as_raw_tiff=True, raw_tiff_num_slices=1)
                 background_video = background_parent_folder
-            except (RawDataFormatError, TypeError):
+            except TypeError:
                 try:
                     _ = MicroscopeDataReader(background_parent_folder, as_raw_tiff=False)
                     background_video = background_parent_folder
-                except (RawDataFormatError, TypeError):
+                except TypeError:
                     logging.info(f"Tried to read background using MicroscopeDataReader, but failed: "
                                  f"{background_parent_folder}... falling back to glob")
                     background_video = self._find_individual_background_files(background_parent_folder,
