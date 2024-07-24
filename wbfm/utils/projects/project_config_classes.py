@@ -735,33 +735,14 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                 _ = MicroscopeDataReader(background_parent_folder, as_raw_tiff=True, raw_tiff_num_slices=1)
                 background_video = background_parent_folder
             except (RawDataFormatError, TypeError):
-                logging.info(f"Tried to read background using MicroscopeDataReader, but failed: "
-                             f"{background_parent_folder}... falling back to glob")
-
-                # Otherwise, try to find specific files
-                background_video = glob.glob(f"{background_parent_folder}/*background*")
-                # Remove any with AVG in the name
-                background_video = [f for f in background_video if 'AVG' not in f]
-                background_video = [f for f in background_video if 'metadata' not in f]
-                if len(background_video) == 1:
-                    background_video = background_video[0]
-                    background_video = str(Path(background_video).resolve())  # This is needed because the path is relative
-                    print("This is the background video: ", background_video)
-
-                elif len(background_video) > 1:
-                    msg = f"There is more than one background video: {background_video}"
-                    if crash_if_no_background:
-                        raise RawDataFormatError(msg)
-                    else:
-                        self.logger.warning(msg)
-                        background_video = None
-                else:
-                    msg = f"No background videos found in {multiday_parent_folder}/background/"
-                    if crash_if_no_background:
-                        raise RawDataFormatError(msg)
-                    else:
-                        self.logger.warning(msg)
-                        background_video = None
+                try:
+                    _ = MicroscopeDataReader(background_parent_folder, as_raw_tiff=False)
+                    background_video = background_parent_folder
+                except (RawDataFormatError, TypeError):
+                    logging.info(f"Tried to read background using MicroscopeDataReader, but failed: "
+                                 f"{background_parent_folder}... falling back to glob")
+                    background_video = self._find_individual_background_files(background_parent_folder,
+                                                                              crash_if_no_background)
 
             # Name of the background image is the same, but with 'AVG' prepended
             if background_video is None:
@@ -772,6 +753,33 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return behavior_parent_folder, behavior_raw_folder, behavior_output_folder, \
             background_img, background_video, btf_file
+
+    def _find_individual_background_files(self, background_parent_folder, crash_if_no_background):
+        # Otherwise, try to find specific files
+        background_video = glob.glob(f"{background_parent_folder}/*background*")
+        # Remove any with AVG in the name
+        background_video = [f for f in background_video if 'AVG' not in f]
+        background_video = [f for f in background_video if 'metadata' not in f]
+        if len(background_video) == 1:
+            background_video = background_video[0]
+            background_video = str(Path(background_video).resolve())  # This is needed because the path is relative
+            print("This is the background video: ", background_video)
+
+        elif len(background_video) > 1:
+            msg = f"There is more than one background video: {background_video}"
+            if crash_if_no_background:
+                raise RawDataFormatError(msg)
+            else:
+                self.logger.warning(msg)
+                background_video = None
+        else:
+            msg = f"No background videos found in {background_parent_folder}/"
+            if crash_if_no_background:
+                raise RawDataFormatError(msg)
+            else:
+                self.logger.warning(msg)
+                background_video = None
+        return background_video
 
 
 def update_path_to_segmentation_in_config(cfg: ModularProjectConfig) -> SubfolderConfigFile:
