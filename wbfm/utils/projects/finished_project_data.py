@@ -843,19 +843,9 @@ class ProjectData:
         # Loads data from cache
         # There are currently 3 cached versions of the data, depending on the residual option
         if use_paper_options:
-            if residual_mode is None:
-                channel_mode = kwargs.get('channel_mode', 'dr_over_r_50')
-                if channel_mode == 'green':
-                    df = self.calc_paper_traces_green()
-                elif channel_mode == 'red':
-                    df = self.calc_paper_traces_red()
-                else:
-                    df = self.calc_paper_traces()
-            elif residual_mode == 'pca':
-                df = self.calc_paper_traces_residual()
-            elif residual_mode == 'pca_global':
-                df = self.calc_paper_traces_global()
-            # Most postprocessing is not done on these traces
+            channel_mode = kwargs.get('channel_mode', 'dr_over_r_50')
+            df = self.calc_paper_traces(channel_mode=channel_mode, residual_mode=residual_mode)
+            # Most postprocessing is not done on these traces, but this is allowed
             if only_keep_confident_ids:
                 confident_ids = neurons_with_confident_ids()
                 df = df[[col for col in df.columns if col in confident_ids]]
@@ -1005,20 +995,8 @@ class ProjectData:
     def calc_indices_to_remove_using_ppca(self):
         return self.data_cacher.calc_indices_to_remove_using_ppca()
 
-    def calc_paper_traces(self):
-        return self.data_cacher.calc_paper_traces()
-
-    def calc_paper_traces_red(self):
-        return self.data_cacher.calc_paper_traces_red()
-
-    def calc_paper_traces_green(self):
-        return self.data_cacher.calc_paper_traces_green()
-
-    def calc_paper_traces_residual(self):
-        return self.data_cacher.calc_paper_traces_residual()
-
-    def calc_paper_traces_global(self):
-        return self.data_cacher.calc_paper_traces_global()
+    def calc_paper_traces(self, channel_mode='dr_over_r_50', residual_mode=None, **kwargs):
+        return self.data_cacher.paper_trace_dispatcher(channel_mode=channel_mode, residual_mode=residual_mode, **kwargs)
 
     @lru_cache(maxsize=16)
     def calc_raw_traces(self, neuron_names: tuple, **opt: dict):

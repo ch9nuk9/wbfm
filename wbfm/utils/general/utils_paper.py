@@ -242,6 +242,36 @@ class PaperDataCache:
             return None
         return os.path.join(self.cache_dir, 'invalid_indices.npy')
 
+    def paper_trace_dispatcher(self, channel_mode='dr_over_r_50', residual_mode=None, **kwargs):
+        """
+        Dispatches the calculation of traces based on the arguments. Currently, **kwargs are ignored
+
+        Parameters
+        ----------
+        channel_mode
+        residual_mode
+        kwargs
+
+        Returns
+        -------
+
+        """
+        if residual_mode is None:
+            if channel_mode == 'dr_over_r_50':
+                return self.calc_paper_traces()
+            elif channel_mode == 'red':
+                return self.calc_paper_traces_red()
+            elif channel_mode == 'green':
+                return self.calc_paper_traces_green()
+            else:
+                raise ValueError(f"Unknown channel mode: {channel_mode}")
+        elif residual_mode == 'pca':
+            return self.calc_paper_traces_residual()
+        elif residual_mode == 'pca_global':
+            return self.calc_paper_traces_global()
+        else:
+            raise ValueError(f"Unknown channel mode: {channel_mode}")
+
     @cache_to_disk_class('paper_traces_cache_fname',
                          func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
                          func_load_from_disk=pd.read_hdf)
