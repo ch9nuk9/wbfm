@@ -242,7 +242,8 @@ class PaperDataCache:
             return None
         return os.path.join(self.cache_dir, 'invalid_indices.npy')
 
-    def paper_trace_dispatcher(self, channel_mode='dr_over_r_50', residual_mode=None, **kwargs):
+    def paper_trace_dispatcher(self, channel_mode='dr_over_r_50', residual_mode=None, interpolate_nan=True,
+                               **kwargs):
         """
         Dispatches the calculation of traces based on the arguments. Currently, **kwargs are ignored
 
@@ -256,21 +257,24 @@ class PaperDataCache:
         -------
 
         """
-        if residual_mode is None:
-            if channel_mode == 'dr_over_r_50':
-                return self.calc_paper_traces()
-            elif channel_mode == 'red':
-                return self.calc_paper_traces_red()
-            elif channel_mode == 'green':
-                return self.calc_paper_traces_green()
+        if interpolate_nan:
+            if residual_mode is None:
+                if channel_mode == 'dr_over_r_50':
+                    return self.calc_paper_traces()
+                elif channel_mode == 'red':
+                    return self.calc_paper_traces_red()
+                elif channel_mode == 'green':
+                    return self.calc_paper_traces_green()
+                else:
+                    raise ValueError(f"Unknown channel mode: {channel_mode}")
+            elif residual_mode == 'pca':
+                return self.calc_paper_traces_residual()
+            elif residual_mode == 'pca_global':
+                return self.calc_paper_traces_global()
             else:
-                raise ValueError(f"Unknown channel mode: {channel_mode}")
-        elif residual_mode == 'pca':
-            return self.calc_paper_traces_residual()
-        elif residual_mode == 'pca_global':
-            return self.calc_paper_traces_global()
+                raise ValueError(f"Unknown residual mode: {residual_mode}")
         else:
-            raise ValueError(f"Unknown channel mode: {channel_mode}")
+            return self.calc_paper_traces_no_interpolation()
 
     @cache_to_disk_class('paper_traces_cache_fname',
                          func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
@@ -296,6 +300,34 @@ class PaperDataCache:
         if self.cache_dir is None:
             return None
         return os.path.join(self.cache_dir, 'paper_traces.h5')
+
+    @cache_to_disk_class('paper_traces_no_interpolation_cache_fname',
+                         func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
+                         func_load_from_disk=pd.read_hdf)
+    def calc_paper_traces_no_interpolation(self):
+        """
+        Changes two options: interpolate_nan=False and nan_using_ppca_manifold=False
+
+        Thus, is not suitable for pca/cca analysis, but can be used with Bayesian analysis
+
+        Returns
+        -------
+
+        """
+        opt = paper_trace_settings()
+        opt['interpolate_nan'] = False
+        opt['nan_using_ppca_manifold'] = False
+        assert not opt.get('use_paper_traces', False), \
+            "paper_trace_settings should have use_paper_traces=False (recursion error)"
+        df = self.project_data.calc_default_traces(**opt)
+        if df is None:
+            raise ValueError(f"Paper traces for project {self.project_data.project_dir} is None")
+        return df
+
+    def paper_traces_no_interpolation_cache_fname(self):
+        if self.cache_dir is None:
+            return None
+        return os.path.join(self.cache_dir, 'paper_traces_no_interpolation.h5')
 
     @cache_to_disk_class('paper_traces_cache_fname_red',
                          func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
