@@ -5,7 +5,10 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from tqdm.auto import tqdm
+
 from wbfm.utils.external.utils_matplotlib import export_legend
+from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 
 from wbfm.utils.utils_cache import cache_to_disk_class
 
@@ -564,3 +567,15 @@ def package_bayesian_df_for_plot(df, relative_improvement=True, df_normalization
     #                            'text': text_labels, 'neuron_name': x.index})
     # df_to_plot = df_to_plot[df_to_plot.index.isin(neurons_with_confident_ids())]
     return df_to_plot
+
+
+if __name__ == '__main__':
+    # Generate the paper plots for the main paper projects
+    all_projects_gcamp = load_paper_datasets(genotype=['gcamp', 'hannah_O2_fm'])
+    all_projects_gfp = load_paper_datasets(genotype=['gfp', 'hannah_O2_fm'])
+    all_projects_immob = load_paper_datasets(genotype=['immob'])
+
+    for project_dict in [all_projects_immob, all_projects_gcamp, all_projects_gfp]:
+        for project_name, project_data in tqdm(project_dict.items()):
+            # For now, only calculate the non-interpolated traces, because the other ones are too slow
+            project_data.calc_default_traces(use_paper_options=True, interpolate_nan=False)
