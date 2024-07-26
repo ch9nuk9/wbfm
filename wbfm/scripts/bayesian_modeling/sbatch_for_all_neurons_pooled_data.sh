@@ -118,7 +118,31 @@ else
   LOG_DIR="/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/logs"
 fi
 
+# I don't have access to the SLURM_ARRAY_TASK_ID variable, so I'm going to use the following workaround
+# Create a temporary file to actually dispatch
+# Create a temporary SLURM script
+SLURM_SCRIPT=$(mktemp /tmp/slurm_script.XXXXXX)
+
+# Write the SLURM script to handle array jobs
+cat << EOF > $SLURM_SCRIPT
+#!/bin/bash
+#SBATCH --array=0-$(($NUM_TASKS-1))
+#SBATCH --time=1-00:00:00
+#SBATCH --mem=32G
+#SBATCH --cpus-per-task=6
+
+my_list=(${my_list[@]})
+task_string=\${my_list[\$SLURM_ARRAY_TASK_ID]}
+python $CMD --neuron_name \$task_string --do_gfp $do_gfp > $LOG_DIR/log_\$task_string.txt
+EOF
+
+# Submit the SLURM script
+sbatch $SLURM_SCRIPT
+
+# Clean up the temporary SLURM script
+rm $SLURM_SCRIPT
+
 # Dispatch an array job, with the index referring to the neuron
-num_jobs=${#neuron_list[@]}
-echo "Dispatching $num_jobs jobs"
-sbatch --array=0-$((num_jobs-1)) --time=1-00:00:00 --mem=32G --cpus-per-task=6 --wrap="python $CMD --neuron_name ${neuron_list[\$SLURM_ARRAY_TASK_ID]} --do_gfp $do_gfp > $LOG_DIR/log_${neuron_list[\$SLURM_ARRAY_TASK_ID]}.txt"
+#num_jobs=${#neuron_list[@]}
+#echo "Dispatching $num_jobs jobs"
+#sbatch --array=0-$((num_jobs-1)) --time=1-00:00:00 --mem=32G --cpus-per-task=6 --wrap="python $CMD --neuron_name ${neuron_list[\$SLURM_ARRAY_TASK_ID]} --do_gfp $do_gfp > $LOG_DIR/log_${neuron_list[\$SLURM_ARRAY_TASK_ID]}.txt"
