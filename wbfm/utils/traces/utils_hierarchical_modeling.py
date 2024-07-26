@@ -15,10 +15,11 @@ def export_data_for_hierarchical_model(do_gfp=False, do_immobilized=False, skip_
 
     """
     # Check if file exists
-    data_dir = get_hierarchical_modeling_dir(do_gfp, do_immobilized)
-    fname = os.path.join(data_dir, 'data.h5')
-    if skip_if_exists and os.path.exists(fname):
-        print(f"File {fname} already exists, skipping")
+    data_dir = get_hierarchical_modeling_dir(gfp=do_gfp, immobilized=do_immobilized)
+    output_fname = os.path.join(data_dir, 'data.h5')
+    print(f"Exporting data to {output_fname} with options do_gfp={do_gfp}, do_immobilized={do_immobilized}")
+    if skip_if_exists and os.path.exists(output_fname):
+        print(f"File {output_fname} already exists, skipping")
         return
 
     # Load projects
@@ -69,8 +70,8 @@ def export_data_for_hierarchical_model(do_gfp=False, do_immobilized=False, skip_
     df_all = df_all.merge(df_all_pca, on=['dataset_name', 'local_time'], how='inner')
 
     # Export
-    fname = os.path.join(data_dir, 'data.h5')
-    df_all.to_hdf(fname, key='df_with_missing')
+    df_all.to_hdf(output_fname, key='df_with_missing')
+    print(f"Exported to {output_fname}")
 
 
 if __name__ == '__main__':
