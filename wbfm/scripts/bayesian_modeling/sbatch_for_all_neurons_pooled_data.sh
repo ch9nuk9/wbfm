@@ -123,6 +123,8 @@ fi
 # Create a temporary SLURM script
 SLURM_SCRIPT=$(mktemp /tmp/slurm_script.XXXXXX)
 
+NUM_TASKS=${#neuron_list[@]}
+
 # Write the SLURM script to handle array jobs
 cat << EOF > $SLURM_SCRIPT
 #!/bin/bash
