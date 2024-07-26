@@ -31,7 +31,6 @@ neuron_list=(
 'ALA'
 'RMEV'
 'RMDVR'
-'ABVR'
 'URYDL'
 'RMER'
 'URADL'

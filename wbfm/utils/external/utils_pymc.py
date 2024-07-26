@@ -372,7 +372,7 @@ def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True
     """
     Runs for hardcoded data location for a single neuron
 
-    Saves all the information in the same directory as the data, with a subfolder per neuron
+    Saves all the information in the same directory as the data, in the 'output' subdirectory
 
     Commonly used with:
         dataset_name = 'all' to run the neuron for all datasets at once
@@ -389,6 +389,7 @@ def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True
     data_dir = get_hierarchical_modeling_dir(do_gfp)
     fname = os.path.join(data_dir, 'data.h5')
     Xy = pd.read_hdf(fname)
+    print(f"Loaded data from {fname}")
 
     if dataset_name == 'loop':
         # Loop over all datasets

@@ -31,7 +31,6 @@ neuron_list=(
 'ALA'
 'RMEV'
 'RMDVR'
-'ABVR'
 'URYDL'
 'RMER'
 'URADL'
@@ -119,11 +118,7 @@ else
   LOG_DIR="/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/logs"
 fi
 
-for neuron in "${neuron_list[@]}"
-do
-  echo "Dispatching model for neuron $neuron"
-  log_fname="log_$neuron.txt"
-  sbatch --time=1-10:00:00 --mem=32G --cpus-per-task=6 --job-name=bayesian_"$neuron" --wrap="python $CMD --neuron_name $neuron --do_gfp $do_gfp > $LOG_DIR/$log_fname"
-#  break
-  sleep 0.1
-done
+# Dispatch an array job, with the index referring to the neuron
+num_jobs=${#neuron_list[@]}
+echo "Dispatching $num_jobs jobs"
+sbatch --array=0-$((num_jobs-1)) --time=1-00:00:00 --mem=32G --cpus-per-task=6 --wrap="python $CMD --neuron_name ${neuron_list[\$SLURM_ARRAY_TASK_ID]} --do_gfp $do_gfp > $LOG_DIR/log_${neuron_list[\$SLURM_ARRAY_TASK_ID]}.txt"
