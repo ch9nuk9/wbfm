@@ -131,8 +131,10 @@ cat << EOF > $SLURM_SCRIPT
 #SBATCH --mem=32G
 #SBATCH --cpus-per-task=6
 
-my_list=(${my_list[@]})
+# Reproduce the list for the subfile
+my_list=(${neuron_list[@]})
 task_string=\${my_list[\$SLURM_ARRAY_TASK_ID]}
+echo "Running model for neuron: \$task_string"
 python $CMD --neuron_name \$task_string --do_gfp $do_gfp > $LOG_DIR/log_\$task_string.txt
 EOF
 
