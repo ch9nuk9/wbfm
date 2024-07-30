@@ -28,9 +28,10 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     rng = 424242
     curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
     if use_additional_behaviors:
-        curvature_terms_to_use.extend([#'dorsal_only_body_curvature', 'dorsal_only_head_curvature',
-                                      #'ventral_only_body_curvature', 'ventral_only_head_curvature',
-                                       'speed', 'self_collision'])
+        curvature_terms_to_use[:2].extend(['dorsal_only_body_curvature', 'dorsal_only_head_curvature',
+                                           'ventral_only_body_curvature', 'ventral_only_head_curvature',
+                                           #'speed',
+                                           'self_collision'])
     # First pack into a single dataframe to drop nan, then unpack
     try:
         df_model = get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name=dataset_name,

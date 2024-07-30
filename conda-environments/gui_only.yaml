@@ -14,24 +14,20 @@ dependencies:
   - opencv
   - scikit-image
   - lmfit
+  - pyqt5
+  - pyqt5-tools
+  - zarr
+  - matplotlib
+  - scikit-learn
+  - napari
+  - openpyxl
   - pip:
     - tables
     - statsmodels
     - ppca
-    - scikit-learn
-    - openpyxl
-    - matplotlib
     - sacred
-    - zarr
-    - open3d
     - ruamel.yaml
     - networkx
-    - pyqt5
-    - pyqt5-tools
-    - napari[all]
-    - easydict
-    - pytest
-    - ruptures
     - backports.cached_property
     - methodtools
     - seaborn
