@@ -510,18 +510,17 @@ class TrackletAndSegmentationAnnotator:
         if self._combined_global2tracklet_dict is None:
             self._combined_global2tracklet_dict = deepcopy(self.global2tracklet)
             self.check_tracklets_are_not_multi_assigned()
-        self.logger.info(f"Setting up interactivity for the annotator; currently: {self.df_tracklet_obj.interactive_mode}")
         if not self.df_tracklet_obj.interactive_mode:
             self.df_tracklet_obj.setup_interactivity()
 
     @cached_property
     def df_tracklet_obj(self) -> DetectedTrackletsAndNeurons:
-        self.logger.info("Loading tracklet object for annotator")
+        self.logger.debug("Loading tracklet object for annotator")
         return self._df_tracklet_obj_promise()
 
     @cached_property
     def global2tracklet(self) -> Dict[str, List[str]]:
-        self.logger.info("Loading global2tracklet for annotator")
+        self.logger.debug("Loading global2tracklet for annotator")
         return self._global2tracklet_promise()
 
     def check_tracklets_are_not_multi_assigned(self):
