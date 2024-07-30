@@ -31,6 +31,7 @@ from wbfm.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_t
     zoom_using_viewer, add_fps_printer, on_close, NeuronNameEditor
 from wbfm.utils.external.utils_pandas import build_tracks_from_dataframe
 from wbfm.utils.projects.finished_project_data import ProjectData
+import time
 
 cgitb.enable(format='text')
 
