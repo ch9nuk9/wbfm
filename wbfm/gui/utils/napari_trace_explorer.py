@@ -138,8 +138,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeTraceTrackletDropdown.currentIndexChanged.connect(self.change_trace_tracklet_mode)
         self.vbox1.addWidget(self.changeTraceTrackletDropdown)
 
-        self.changeInteractivityCheckbox = QtWidgets.QCheckBox("Turn on interactivity? "
-                                                               "NOTE: only Raw_segmentation layer is interactive")
+        if self.load_tracklets:
+            self.changeInteractivityCheckbox = QtWidgets.QCheckBox("Turn on interactivity? "
+                                                                   "NOTE: only Raw_segmentation layer is interactive")
+        else:
+            self.changeInteractivityCheckbox = QtWidgets.QCheckBox("Tracklet interactivity is NOT enabled")
+            self.changeInteractivityCheckbox.setEnabled(False)
         self.changeInteractivityCheckbox.stateChanged.connect(self.update_interactivity)
         self.vbox1.addWidget(self.changeInteractivityCheckbox)
 
@@ -1999,18 +2003,19 @@ def napari_trace_explorer_from_config(project_path: str, app=None,
 
     # Build object that has all the data
     initialization_kwargs = dict(use_custom_padded_dataframe=False,
-                                 force_tracklets_to_be_sparse=force_tracklets_to_be_sparse)
+                                 force_tracklets_to_be_sparse=force_tracklets_to_be_sparse,
+                                 set_up_tracklet_interactivity=load_tracklets)
     project_data = ProjectData.load_final_project_data_from_config(project_path,
                                                                    to_load_tracklets=load_tracklets,
-                                                                   # to_load_interactivity=True,
+                                                                   to_load_interactivity=load_tracklets,
                                                                    to_load_segmentation_metadata=True,
-                                                                   to_load_frames=True,
+                                                                   to_load_frames=False,  # This is used for ground truth comparison, which requires tracklets
                                                                    initialization_kwargs=initialization_kwargs)
     if DEBUG:
         logging.debug(project_data)
     # If I don't set this to false, need to debug custom dataframe here
     project_data.use_custom_padded_dataframe = False
-    project_data.load_interactive_properties()
+    # project_data.load_interactive_properties()
     ui, viewer = napari_trace_explorer(project_data, app=app, load_tracklets=load_tracklets, start_time=start_time,
                                        **kwargs)
 

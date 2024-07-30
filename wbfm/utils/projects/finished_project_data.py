@@ -122,6 +122,7 @@ class ProjectData:
     global2tracklet_fname: str = None
     df_all_tracklets_fname: str = None
     force_tracklets_to_be_sparse: bool = False
+    set_up_tracklet_interactivity: bool = True
 
     _custom_frame_indices: list = None
 
@@ -247,9 +248,8 @@ class ProjectData:
         finished_neurons = self.finished_neuron_names()
         return df_gt, finished_neurons
 
-    @cached_property
-    def global2tracklet(self) -> dict:
-        """Dictionary of matches between neuron names (str) and tracklets (str)"""
+    def _build_global2tracklet(self) -> dict:
+        """Builds the global2tracklet object"""
         tracking_cfg = self.project_config.get_tracking_config()
 
         # Manual annotations take precedence by default
@@ -265,6 +265,11 @@ class ProjectData:
         if global2tracklet is not None:
             global2tracklet = fix_global2tracklet_full_dict(self.df_all_tracklets, global2tracklet)
         return global2tracklet
+
+    @cached_property
+    def global2tracklet(self) -> dict:
+        """Dictionary of matches between neuron names (str) and tracklets (str)"""
+        return self._build_global2tracklet()
 
     @cached_property
     def raw_frames(self) -> List[ReferenceFrame]:
@@ -320,6 +325,7 @@ class ProjectData:
     def df_all_tracklets(self) -> pd.DataFrame:
         """Sparse Dataframe of all tracklets"""
         # TODO: Should this just use _load_df_tracklets?
+        err
 
         df_all_tracklets, fname = self._load_df_tracklets()
         self.df_all_tracklets_fname = fname
@@ -376,27 +382,34 @@ class ProjectData:
         # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
 
         obj = TrackletAndSegmentationAnnotator(
-            self.tracklets_and_neurons_class,
-            self.global2tracklet,
+            self._build_tracklets_and_neurons_class,  # This is the function, not the property
+            self._build_global2tracklet,  # This is the function, not the property
             segmentation_metadata=self.segmentation_metadata,
             tracking_cfg=tracking_cfg,
             training_cfg=training_cfg,
             z_to_xy_ratio=self.physical_unit_conversion.z_to_xy_ratio,
             buffer_masks=zarr.zeros_like(self.raw_segmentation),
+            to_setup_interactivity=self.set_up_tracklet_interactivity,
             logger=self.logger,
             verbose=self.verbose,
         )
 
-        obj.initialize_gt_model_mismatches(self)
+        if self.set_up_tracklet_interactivity:
+            # Requires tracklets to be loaded
+            obj.initialize_gt_model_mismatches(self)
         return obj
 
-    @cached_property
-    def tracklets_and_neurons_class(self) -> DetectedTrackletsAndNeurons:
+    def _build_tracklets_and_neurons_class(self) -> DetectedTrackletsAndNeurons:
         """Class that connects tracklets with raw neuron segmentation"""
         _ = self.df_all_tracklets  # Make sure it is loaded
         return DetectedTrackletsAndNeurons(self.df_all_tracklets, self.segmentation_metadata,
                                            dataframe_output_filename=self.df_all_tracklets_fname,
                                            use_custom_padded_dataframe=self.use_custom_padded_dataframe)
+
+    @cached_property
+    def tracklets_and_neurons_class(self) -> DetectedTrackletsAndNeurons:
+        """Class that connects tracklets with raw neuron segmentation"""
+        return self._build_tracklets_and_neurons_class()
 
     @cached_property
     def worm_posture_class(self) -> WormFullVideoPosture:
@@ -427,6 +440,7 @@ class ProjectData:
 
     def load_interactive_properties(self):
         """Helper function for loading cached properties"""
+        self.set_up_tracklet_interactivity = True
         _ = self.tracklet_annotator
 
     def load_frame_related_properties(self):

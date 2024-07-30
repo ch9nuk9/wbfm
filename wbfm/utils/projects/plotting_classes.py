@@ -395,8 +395,8 @@ class TracePlotter:
 
 @dataclass
 class TrackletAndSegmentationAnnotator:
-    df_tracklet_obj: DetectedTrackletsAndNeurons
-    global2tracklet: Dict[str, List[str]]  # The original (unmodified) dict mapping global names to tracklet names
+    _df_tracklet_obj_promise: callable  # This is a promise to get the df_tracklet_obj, which might not be loaded
+    _global2tracklet_promise: callable
     segmentation_metadata: DetectedNeurons
 
     # Same as global2tracklet, but updated with all manual changes
@@ -447,27 +447,18 @@ class TrackletAndSegmentationAnnotator:
     last_clicked_position: list = None
     z_to_xy_ratio: float = 1.0
 
+    to_setup_interactivity: bool = True
     is_currently_interactive: bool = True
 
     logger: logging.Logger = None
 
     def __post_init__(self):
-        # Keep track of all tracklet changes made with this gui
-        if self.manual_global2tracklet_names is None:
-            self.manual_global2tracklet_names = defaultdict(list)
-        if self.manual_global2tracklet_removals is None:
-            self.manual_global2tracklet_removals = defaultdict(list)
-        # Keep track of all segmentation changes
-        if self.t_buffer_masks is None:
-            self.t_buffer_masks = []
-        # Final object to save, combining all manual changes
-        if self._combined_global2tracklet_dict is None:
-            self._combined_global2tracklet_dict = deepcopy(self.global2tracklet)
-            self.check_tracklets_are_not_multi_assigned()
+        if self.to_setup_interactivity:
+            self.setup_interactivity()
+        else:
+            self.logger.warning("Not setting up interactivity for the annotator")
 
-        if not self.df_tracklet_obj.interactive_mode:
-            self.df_tracklet_obj.setup_interactivity()
-
+        # Load the metadata files
         match_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_global2tracklet_fname')
         self.output_match_fname = get_sequential_filename(match_fname, verbose=1)
         df_fname = self.tracking_cfg.resolve_relative_path_from_config('manual_correction_tracklets_df_fname')
@@ -504,6 +495,30 @@ class TrackletAndSegmentationAnnotator:
         self.logger.debug(
             f"Output files for annotator: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
 
+    def setup_interactivity(self):
+        # Keep track of all tracklet changes made with this gui
+        if self.manual_global2tracklet_names is None:
+            self.manual_global2tracklet_names = defaultdict(list)
+        if self.manual_global2tracklet_removals is None:
+            self.manual_global2tracklet_removals = defaultdict(list)
+        # Keep track of all segmentation changes
+        if self.t_buffer_masks is None:
+            self.t_buffer_masks = []
+        # Final object to save, combining all manual changes
+        if self._combined_global2tracklet_dict is None:
+            self._combined_global2tracklet_dict = deepcopy(self.global2tracklet)
+            self.check_tracklets_are_not_multi_assigned()
+        if not self.df_tracklet_obj.interactive_mode:
+            self.df_tracklet_obj.setup_interactivity()
+
+    @cached_property
+    def df_tracklet_obj(self) -> DetectedTrackletsAndNeurons:
+        return self._df_tracklet_obj_promise()
+
+    @cached_property
+    def global2tracklet(self) -> Dict[str, List[str]]:
+        return self._global2tracklet_promise()
+
     def check_tracklets_are_not_multi_assigned(self):
         # Check to make sure all tracklets have 1 or 0 neuron assignments
         all_assigned_tracklets = set()
@@ -515,6 +530,7 @@ class TrackletAndSegmentationAnnotator:
             all_assigned_tracklets.update(tracklet_name_list)
 
     def initialize_gt_model_mismatches(self, project_data):
+        """Used to visualize mismatches between the ground truth and the model, if ground truth exists"""
         from wbfm.utils.projects.finished_project_data import calc_all_mismatches_between_ground_truth_and_pairs
         try:
             self.gt_mismatches = calc_all_mismatches_between_ground_truth_and_pairs(project_data, minimum_confidence=0.7)
