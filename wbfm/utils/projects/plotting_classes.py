@@ -453,7 +453,17 @@ class TrackletAndSegmentationAnnotator:
     logger: logging.Logger = None
 
     def __post_init__(self):
+        # Keep track of all tracklet changes made with this gui
+        if self.manual_global2tracklet_names is None:
+            self.manual_global2tracklet_names = defaultdict(list)
+        if self.manual_global2tracklet_removals is None:
+            self.manual_global2tracklet_removals = defaultdict(list)
+        # Keep track of all segmentation changes
+        if self.t_buffer_masks is None:
+            self.t_buffer_masks = []
+
         if self.to_setup_interactivity:
+            self.logger.info("Setting up interactivity for the annotator, may take a minute")
             self.setup_interactivity()
         else:
             self.logger.warning("Not setting up interactivity for the annotator")
@@ -496,27 +506,22 @@ class TrackletAndSegmentationAnnotator:
             f"Output files for annotator: {match_fname}, {df_fname}, {splits_names_fname}, {splits_times_fname}")
 
     def setup_interactivity(self):
-        # Keep track of all tracklet changes made with this gui
-        if self.manual_global2tracklet_names is None:
-            self.manual_global2tracklet_names = defaultdict(list)
-        if self.manual_global2tracklet_removals is None:
-            self.manual_global2tracklet_removals = defaultdict(list)
-        # Keep track of all segmentation changes
-        if self.t_buffer_masks is None:
-            self.t_buffer_masks = []
         # Final object to save, combining all manual changes
         if self._combined_global2tracklet_dict is None:
             self._combined_global2tracklet_dict = deepcopy(self.global2tracklet)
             self.check_tracklets_are_not_multi_assigned()
+        self.logger.info(f"Setting up interactivity for the annotator; currently: {self.df_tracklet_obj.interactive_mode}")
         if not self.df_tracklet_obj.interactive_mode:
             self.df_tracklet_obj.setup_interactivity()
 
     @cached_property
     def df_tracklet_obj(self) -> DetectedTrackletsAndNeurons:
+        self.logger.info("Loading tracklet object for annotator")
         return self._df_tracklet_obj_promise()
 
     @cached_property
     def global2tracklet(self) -> Dict[str, List[str]]:
+        self.logger.info("Loading global2tracklet for annotator")
         return self._global2tracklet_promise()
 
     def check_tracklets_are_not_multi_assigned(self):

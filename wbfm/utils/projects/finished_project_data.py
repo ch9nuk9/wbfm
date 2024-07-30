@@ -381,8 +381,8 @@ class ProjectData:
         # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
 
         obj = TrackletAndSegmentationAnnotator(
-            self._build_tracklets_and_neurons_class,  # This is the function, not the property
-            self._build_global2tracklet,  # This is the function, not the property
+            lambda: self.tracklets_and_neurons_class,  # This is the function, not the property
+            lambda: self.global2tracklet,  # This is the function, not the property
             segmentation_metadata=self.segmentation_metadata,
             tracking_cfg=tracking_cfg,
             training_cfg=training_cfg,
