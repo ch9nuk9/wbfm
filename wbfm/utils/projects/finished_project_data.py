@@ -325,7 +325,6 @@ class ProjectData:
     def df_all_tracklets(self) -> pd.DataFrame:
         """Sparse Dataframe of all tracklets"""
         # TODO: Should this just use _load_df_tracklets?
-        err
 
         df_all_tracklets, fname = self._load_df_tracklets()
         self.df_all_tracklets_fname = fname
