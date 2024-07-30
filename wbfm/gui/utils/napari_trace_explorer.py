@@ -2009,7 +2009,7 @@ def napari_trace_explorer_from_config(project_path: str, app=None,
                                                                    to_load_tracklets=load_tracklets,
                                                                    to_load_interactivity=load_tracklets,
                                                                    to_load_segmentation_metadata=True,
-                                                                   to_load_frames=False,  # This is used for ground truth comparison, which requires tracklets
+                                                                   to_load_frames=load_tracklets,  # This is used for ground truth comparison, which requires tracklets
                                                                    initialization_kwargs=initialization_kwargs)
     if DEBUG:
         logging.debug(project_data)
