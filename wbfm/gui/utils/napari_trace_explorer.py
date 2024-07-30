@@ -1989,6 +1989,7 @@ def napari_trace_explorer_from_config(project_path: str, app=None,
     os.environ["NAPARI_ASYNC"] = "1"
     # os.environ["NAPARI_PERFMON"] = "1"
     # os.environ["NAPARI_OCTREE"] = "1" # No effect in tests; seems to only matter in 2d
+    start_time = time.time()
     if app is None:
         started_new_app = True
         app = QApplication([])
@@ -2009,7 +2010,8 @@ def napari_trace_explorer_from_config(project_path: str, app=None,
     # If I don't set this to false, need to debug custom dataframe here
     project_data.use_custom_padded_dataframe = False
     project_data.load_interactive_properties()
-    ui, viewer = napari_trace_explorer(project_data, app=app, load_tracklets=load_tracklets, **kwargs)
+    ui, viewer = napari_trace_explorer(project_data, app=app, load_tracklets=load_tracklets, start_time=start_time,
+                                       **kwargs)
 
     # Note: don't use this in jupyter
     napari.run()
@@ -2020,7 +2022,7 @@ def napari_trace_explorer_from_config(project_path: str, app=None,
 def napari_trace_explorer(project_data: ProjectData,
                           app: QApplication = None,
                           viewer: napari.Viewer = None,
-                          to_print_fps: bool = False, **kwargs):
+                          to_print_fps: bool = False, start_time=None, **kwargs):
     """Current function for building the explorer (1/11/2022)"""
     logging.debug("Starting GUI setup")
     # Make sure ctrl-c works
@@ -2044,6 +2046,8 @@ def napari_trace_explorer(project_data: ProjectData,
         add_fps_printer(viewer)
 
     ui.logger.info("Finished GUI setup. If nothing is showing, trying quitting and running again")
+    if start_time is not None:
+        ui.logger.info(f"Time to initialize: {time.time() - start_time:.2f} s")
     return ui, viewer
 
 
