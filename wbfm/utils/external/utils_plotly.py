@@ -71,3 +71,67 @@ def add_trendline_annotation(fig):
     )
 
     return fig
+
+
+def plotly_plot_mean_and_shading(df, x, y, color, line_name='Mean', add_individual_lines=False,
+                                 cmap=None, fig=None):
+    """
+    Plot the mean of a y column for each x value, and shade the standard deviation
+
+    Note that this requires the identical x values for each group
+
+    Parameters
+    ----------
+    df
+    x
+    y
+
+    Returns
+    -------
+
+    """
+
+    # Calculate mean and std dev for each x value
+    grouped = df.groupby(x)
+    mean_y = grouped[y].mean()
+    std_y = grouped[y].std()
+
+    if fig is None:
+        fig = go.Figure()
+
+    if add_individual_lines:
+        for group in df[color].unique():
+            df_subset = df[df[color] == group]
+            fig.add_trace(go.Scatter(
+                x=df_subset[x], y=df_subset[y], mode='lines', name=f'Group {group}', line=dict(width=1)
+            ))
+
+    # Add the mean line
+    opt = dict()
+    if cmap is not None:
+        opt['line'] = dict(color=cmap[line_name])
+    fig.add_trace(go.Scatter(
+        x=mean_y.index, y=mean_y, mode='lines', name=line_name, **opt
+    ))
+
+    # Shade the standard deviation area
+    opt = dict()
+    if cmap is not None:
+        hex_color = cmap[line_name]
+        # Convert hex to rgba
+        opt['fillcolor'] = f"rgba{tuple(int(hex_color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)) + (0.2,)}"
+    else:
+        opt['fillcolor'] = 'rgba(0,100,80,0.2)'
+
+    fig.add_trace(go.Scatter(
+        x=np.concatenate([mean_y.index, mean_y.index[::-1]]),
+        y=np.concatenate([mean_y + std_y, (mean_y - std_y)[::-1]]),
+        fill='toself',
+        line=dict(color='rgba(255,255,255,0)'),
+        hoverinfo="skip",
+        showlegend=False,
+        **opt
+    ))
+
+    return fig
+
