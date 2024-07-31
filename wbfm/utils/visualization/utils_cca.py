@@ -639,7 +639,7 @@ def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_u
     all_weights = defaultdict(dict)
     trace_opt = kwargs.copy()
 
-    for name, p in all_projects.items():
+    for name, p in tqdm(all_projects.items()):
         trace_weights = p.calc_pca_modes(return_pca_weights=True, **trace_opt)
         all_weights[name] = trace_weights.T.loc[which_mode, :]
 
