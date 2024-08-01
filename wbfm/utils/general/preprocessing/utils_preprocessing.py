@@ -636,9 +636,11 @@ def preprocess_all_frames(video_dat_4d: dask.array, p: PreprocessingSettings, wh
 
     """
 
-    chunk_sz = video_dat_4d.chunksize
     total_sz = video_dat_4d.shape
+    chunk_sz = (1,) + total_sz[1:]
     store = zarr.DirectoryStore(path=out_fname)
+    logging.info(f"Preprocessing all frames and saving to {out_fname}, with settings: "
+                 f"total_sz={total_sz}, chunk_sz={chunk_sz}")
     if p.final_dtype == np.uint8:
         raise DeprecationWarning("uint16 should be saved directly")
     preprocessed_dat = zarr.zeros(total_sz, chunks=chunk_sz, dtype=p.initial_dtype,
