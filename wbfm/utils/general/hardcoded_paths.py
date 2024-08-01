@@ -380,7 +380,7 @@ def _role_of_neurons():
         ],
     'Interneuron': [
             'AIA', 'AIB', 'AIZ', 'AVA', 'AVE', 'AVB', 'AVD', 'AVG', 'RIM',
-            'RIB', 'RIC', 'RIA', 'RIG', 'RIF', 'RIS', 'AIM', 'DVA', 'HSN', 'PVQ'
+            'RIB', 'RIC', 'RIA', 'RIG', 'RIF', 'RIS', 'AIM', 'DVA', 'HSN', 'PVQ', 'RID'
         ],
     'Motor': [
             'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'VD1-VD13', 'VA1-VA12', 'VB1-VB11',
@@ -391,10 +391,10 @@ def _role_of_neurons():
             'RID', 'RIM'
         ],
     'Forward': [
-        'AVB', 'RIB', 'DB1-7', 'VB1-11', 'RME', 'RMEV', 'RMED'
+        'AVB', 'RIB', 'DB1-DB7', 'VB1-VB11', 'RME', 'RMEV', 'RMED'
         ],
     'Reverse': [
-        'AVA', 'AIB', 'RIM', 'DA1-9', 'VA1-12'
+        'AVA', 'AIB', 'RIM', 'DA1-DA9', 'VA1-VA12'
     ]
     # 'Pharyngeal': [
     #         'M1', 'M2', 'M3', 'M4', 'M5', 'I1', 'I2', 'I3', 'I4', 'I5', 'I6',
@@ -403,13 +403,20 @@ def _role_of_neurons():
     }
     return c_elegans_neurons
 
-def role_of_neuron_dict(include_fwd_rev=False):
+def role_of_neuron_dict(only_fwd_rev=False, include_modulatory=False):
     # Build a dictionary with the role of each neuron, from names to roles
     # Use the high level info in _role_of_neurons
     role_dict = defaultdict(list)
     for role, info in _role_of_neurons().items():
-        if role in ['Forward', 'Reverse'] and not include_fwd_rev:
+
+        if role in ['Forward', 'Reverse']:
+            if not only_fwd_rev:
+                continue
+        elif only_fwd_rev:
             continue
+        if role == 'Modulatory' and not include_modulatory:
+            continue
+
         for neuron in info:
             keys = [neuron]
             if '-' in neuron:
