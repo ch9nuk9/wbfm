@@ -4,14 +4,16 @@ import pandas as pd
 
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
+from wbfm.utils.general.utils_dirs import get_hierarchical_modeling_dir
 
 
 def main():
     # Import traces (gcamp and immob)
-    parent_folder = r'C:\Users\Charlie\Documents\traces_dataframes'
-    fname = 'gcamp/data.h5'
+    parent_folder = get_hierarchical_modeling_dir()
+    fname = 'data.h5'
     df_gcamp = pd.read_hdf(os.path.join(parent_folder, fname))
-    fname = 'immob/data.h5'
+    parent_folder = get_hierarchical_modeling_dir(immobilized=True)
+    fname = 'data.h5'
     df_immob = pd.read_hdf(os.path.join(parent_folder, fname))
 
     # Get the columns we want: variance explained by the manifold in %
