@@ -3,10 +3,13 @@ import plotly.express as px
 import pandas as pd
 from scipy import stats
 import numpy as np
+from tqdm.auto import tqdm
 
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
-from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
+from wbfm.utils.general.hardcoded_paths import (get_hierarchical_modeling_dir, role_of_neuron_dict,
+                                                neurons_with_confident_ids)
+
 
 
 def main(combine_left_right=True):
@@ -69,7 +72,7 @@ def main(combine_left_right=True):
     neuron_counts_immob = df[df['dataset_type'] == 'immob']['neuron_combined'].value_counts()
     enough_gcamp = neuron_counts_gcamp[neuron_counts_gcamp >= min_neurons].index
     enough_immob = neuron_counts_immob[neuron_counts_immob >= min_neurons].index
-    enough_neurons = enough_gcamp.intersection(enough_immob)
+    enough_neurons = enough_gcamp.intersection(enough_immob).intersection(neurons_with_confident_ids())
     df = df[df['neuron_combined'].isin(enough_neurons)]
 
     # Sort by mean variance explained in immob (not gcamp) per neuron
@@ -104,12 +107,12 @@ def main(combine_left_right=True):
     # for each neuron
     p_values = {}
     effect_sizes = {}
-    permutations = 1000
-    for neuron in enough_neurons:
+    permutations = 10000
+    for neuron in tqdm(enough_neurons):
         df_neuron = df[df['neuron_combined'] == neuron]
         immob = df_neuron[df_neuron['dataset_type'] == 'immob']['variance_explained']
         gcamp = df_neuron[df_neuron['dataset_type'] == 'gcamp']['variance_explained']
-        p_value = stats.ttest_ind(immob, gcamp, equal_var=False, random_state=4242, permutations=permutations)[1]
+        p_value = stats.ttest_ind(immob, gcamp, equal_var=False, random_state=4242)[1]# permutations=permutations)[1]
         effect_size = immob.median() - gcamp.median()
         p_values[neuron] = p_value
         effect_sizes[neuron] = effect_size
@@ -122,16 +125,30 @@ def main(combine_left_right=True):
     bonferroni_factor = len(enough_neurons)
     df_combined['significant'] = (df_combined['p_value'] * bonferroni_factor) < 0.05
     df_combined['minus_log_p'] = -np.log10(df_combined['p_value'] + 1e-6)
-    df_combined['marker_size'] = 10
+    df_combined['neuron_name'] = df_combined.index
+    df_combined['role'] = df_combined['neuron_name'].map(role_of_neuron_dict())
+    df_combined['fwd_rev'] = df_combined['neuron_name'].map(lambda x: role_of_neuron_dict(only_fwd_rev=True).get(x, ''))
+    # Concatenate columns
+    df_combined['combined_role'] = df_combined['role'] + ', ' + df_combined['fwd_rev']
+    mapping = {'Interneuron, Forward': 'red',
+               'Interneuron, Reverse': 'blue',
+               'Motor, Forward': 'lightpurple',
+               'Motor, Reverse': 'lightpurple',
+               'Sensory, ': 'gray', 'Interneuron, ': 'lightgray', 'Motor, ': 'lightgray'}
     print(df_combined)
-    fig = px.scatter(df_combined, x='effect_size', y='minus_log_p', color='significant',
-                     color_discrete_map={True: 'red', False: 'black'}, hover_name=df_combined.index,
+    fig = px.scatter(df_combined, x='effect_size', y='minus_log_p',
+                     # symbol='role', color='fwd_rev',
+                     color='combined_role',
+                     color_discrete_map=mapping,
+                     hover_name=df_combined.index,
                      title='Effect sizes and p values of the difference in variance explained between immob and gcamp')
 
-    apply_figure_settings(fig, width_factor=0.3, height_factor=0.3)
+    apply_figure_settings(fig, width_factor=1.0, height_factor=1.0)
+    # apply_figure_settings(fig, width_factor=0.3, height_factor=0.3)
 
     fig.update_traces(marker=dict(size=12))
     fig.show(renderer='browser')
+
 
 if __name__ == '__main__':
     main(combine_left_right=False)

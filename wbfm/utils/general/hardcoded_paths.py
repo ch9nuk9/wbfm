@@ -385,16 +385,16 @@ def _role_of_neurons():
     'Motor': [
             'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'VD1-VD13', 'VA1-VA12', 'VB1-VB11',
             'AS1-AS11', 'VC1-VC6', 'SAB', 'DVB', 'PDA', 'SIA', 'SMDD', 'SMDV',
-            'PDB', 'PVC', 'SMB', 'SIB', 'RMF', 'RMDD', 'RMDV', 'RMEV', 'RMED', 'RME', 'RIV', 'RIM'
+            'PDB', 'PVC', 'SMB', 'SIB', 'RMF', 'RMDD', 'RMDV', 'RMEV', 'RMED', 'RME', 'RIV'
         ],
     'Modulatory': [
             'RID', 'RIM'
         ],
     'Forward': [
-        'AVB', 'RIB', 'DB1-DB7', 'VB1-VB11', 'RME', 'RMEV', 'RMED'
+        'AVB', 'RIB', 'DB1-DB7', 'VB1-VB11', 'RME', 'RMEV', 'RMED', 'RID'
         ],
     'Reverse': [
-        'AVA', 'AIB', 'RIM', 'DA1-DA9', 'VA1-VA12'
+        'AVA', 'AIB', 'RIM', 'DA1-DA9', 'VA1-VA12', 'AVE'
     ]
     # 'Pharyngeal': [
     #         'M1', 'M2', 'M3', 'M4', 'M5', 'I1', 'I2', 'I3', 'I4', 'I5', 'I6',
@@ -435,6 +435,6 @@ def role_of_neuron_dict(only_fwd_rev=False, include_modulatory=False):
                 role_dict[k].append(role)
     # Combine all roles, if multiple, into a single string
     for k, v in role_dict.items():
-        role_dict[k] = ', '.join(v)
+        role_dict[k] = ', '.join(v) if len(v) > 1 else v[0]
 
     return role_dict
