@@ -4,7 +4,7 @@ import pandas as pd
 
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
-from wbfm.utils.general.utils_dirs import get_hierarchical_modeling_dir
+from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
 
 def main():
