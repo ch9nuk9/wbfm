@@ -1,13 +1,15 @@
 import os
 import plotly.express as px
 import pandas as pd
+from scipy import stats
+import numpy as np
 
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
 
-def main():
+def main(combine_left_right=True):
     # Import traces (gcamp and immob)
     parent_folder = get_hierarchical_modeling_dir()
     fname = 'data.h5'
@@ -56,7 +58,10 @@ def main():
     def _neuron_pair_name(neuron_name):
         return neuron_name[:-1] if (neuron_name[-1] in ['L', 'R'] and len(neuron_name) > 3) else neuron_name
 
-    df['neuron_combined'] = df['neuron'].apply(_neuron_pair_name)
+    if combine_left_right:
+        df['neuron_combined'] = df['neuron'].apply(_neuron_pair_name)
+    else:
+        df['neuron_combined'] = df['neuron']
     df.dropna(inplace=True)
     # Only include neurons with more than the mininum neurons in both immob and gcamp
     min_neurons = 3
@@ -90,11 +95,43 @@ def main():
                  title='Variance explained by the manifold')
     # Add t-test annotation
     # add_p_value_annotation(fig, x_label='all', show_only_stars=True, show_ns=False)
-
     # apply_figure_settings(fig)
+    #
 
-    fig.show()
+    # fig.show(renderer='browser')
 
+    # Calculate the p values and effect sizes of the difference in variance explained between immob and gcamp
+    # for each neuron
+    p_values = {}
+    effect_sizes = {}
+    permutations = 1000
+    for neuron in enough_neurons:
+        df_neuron = df[df['neuron_combined'] == neuron]
+        immob = df_neuron[df_neuron['dataset_type'] == 'immob']['variance_explained']
+        gcamp = df_neuron[df_neuron['dataset_type'] == 'gcamp']['variance_explained']
+        p_value = stats.ttest_ind(immob, gcamp, equal_var=False, random_state=4242, permutations=permutations)[1]
+        effect_size = immob.median() - gcamp.median()
+        p_values[neuron] = p_value
+        effect_sizes[neuron] = effect_size
+
+    # Second plot: volcano plot of p values and effect sizes
+    df_p_values = pd.DataFrame.from_dict(p_values, orient='index', columns=['p_value'])
+    df_effect_sizes = pd.DataFrame.from_dict(effect_sizes, orient='index', columns=['effect_size'])
+    df_combined = df_p_values.join(df_effect_sizes)
+
+    bonferroni_factor = len(enough_neurons)
+    df_combined['significant'] = (df_combined['p_value'] * bonferroni_factor) < 0.05
+    df_combined['minus_log_p'] = -np.log10(df_combined['p_value'] + 1e-6)
+    df_combined['marker_size'] = 10
+    print(df_combined)
+    fig = px.scatter(df_combined, x='effect_size', y='minus_log_p', color='significant',
+                     color_discrete_map={True: 'red', False: 'black'}, hover_name=df_combined.index,
+                     title='Effect sizes and p values of the difference in variance explained between immob and gcamp')
+
+    apply_figure_settings(fig, width_factor=0.3, height_factor=0.3)
+
+    fig.update_traces(marker=dict(size=12))
+    fig.show(renderer='browser')
 
 if __name__ == '__main__':
-    main()
+    main(combine_left_right=False)
