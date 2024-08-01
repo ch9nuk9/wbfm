@@ -367,3 +367,51 @@ def neurons_with_confident_ids():
                     'VB02', 'VB03', 'DB01', 'DB02', 'VA01', 'VA02', 'DA01',
                     'RIBL', 'RIBR', 'RMEL', 'RMER', 'RMED', 'RMEV', 'RID', 'AVBL', 'AVBR']
     return neuron_names
+
+
+def _role_of_neurons():
+    """Dictionary with role of all neurons... lol chatgpt was mostly right"""
+    c_elegans_neurons = {
+    'Sensory': [
+            'ASI', 'AWA', 'AWB', 'AWC', 'ASH', 'ASJ', 'ASG', 'ASK', 'ADF', 'PDE',
+            'IL2', 'OLQD', 'OLQV', 'CEP', 'ADE', 'PVD', 'FLP', 'PHA', 'PHB', 'URX', 'BAG',
+            'ALA', 'AQR', 'SDQ', 'PQR', 'AUA', 'URB', 'SAA'
+        ],
+    'Interneuron': [
+            'AIA', 'AIB', 'AIZ', 'AVA', 'AVE', 'AVB', 'AVD', 'AVG', 'RIM',
+            'RIB', 'RIC', 'RIA', 'RIG', 'RIF', 'RIM', 'RIS', 'AIM', 'DVA', 'HSN', 'PVQ'
+        ],
+    'Motor': [
+            'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'VD1-VD13', 'VA1-VA12', 'VB1-VB11',
+            'AS1-AS11', 'VC1-VC6', 'SAB', 'DVB', 'PDA', 'SIA', 'SMDD', 'SMDV',
+            'PDB', 'PVC', 'SMB', 'SIB', 'RMF', 'RMDD', 'RMDV', 'RMEV', 'RMED', 'RME', 'RIV',
+        ],
+    'Pharyngeal': [
+            'M1', 'M2', 'M3', 'M4', 'M5', 'I1', 'I2', 'I3', 'I4', 'I5', 'I6',
+            'MC', 'NSM', 'MI', 'RAP', 'RIC', 'RID', 'SIA', 'SIB', 'SMB'
+        ]
+    }
+    return c_elegans_neurons
+
+def role_of_neuron_dict():
+    # Build a dictionary with the role of each neuron, from names to roles
+    # Use the high level info in _role_of_neurons
+    role_dict = {}
+    for role, info in _role_of_neurons().items():
+        for neuron in info:
+            keys = [neuron]
+            if '-' in neuron:
+                keys = []
+                # Then this is a range of neurons, and it should be expanded
+                # e.g. 'DA1-DA9' should be expanded to 'DA1', 'DA2', ..., 'DA9'
+                first_id, last_id = neuron.split('-')
+                base_name = first_id[:2]  # The base is always 2 characters
+                i_end = int(last_id[2:])
+                for i in range(1, i_end + 1):
+                    keys.append(base_name + str(i))
+            elif neuron not in list_of_unilateral_neurons():
+                keys.append(neuron + 'L')
+                keys.append(neuron + 'R')
+            for k in keys:
+                role_dict[k] = role
+    return role_dict
