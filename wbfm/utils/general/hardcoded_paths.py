@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Union
 import pkgutil
 import pandas as pd
+from collections import defaultdict
 
 from wbfm.utils.external.custom_errors import IncompleteConfigFileError
 from wbfm.utils.general.utils_filenames import pickle_load_binary
@@ -374,30 +375,41 @@ def _role_of_neurons():
     c_elegans_neurons = {
     'Sensory': [
             'ASI', 'AWA', 'AWB', 'AWC', 'ASH', 'ASJ', 'ASG', 'ASK', 'ADF', 'PDE',
-            'IL2', 'OLQD', 'OLQV', 'CEP', 'ADE', 'PVD', 'FLP', 'PHA', 'PHB', 'URX', 'BAG',
-            'ALA', 'AQR', 'SDQ', 'PQR', 'AUA', 'URB', 'SAA'
+            'IL2L', 'IL2R', 'IL2', 'IL1L', 'IL1R', 'IL1', 'OLQD', 'OLQV', 'CEP', 'ADE', 'PVD', 'FLP', 'PHA', 'PHB', 'URX', 'BAG',
+            'ALA', 'AQR', 'SDQ', 'PQR', 'AUA', 'URB', 'SAA', 'URYD', 'URYV', 'URAD', 'URAV'
         ],
     'Interneuron': [
             'AIA', 'AIB', 'AIZ', 'AVA', 'AVE', 'AVB', 'AVD', 'AVG', 'RIM',
-            'RIB', 'RIC', 'RIA', 'RIG', 'RIF', 'RIM', 'RIS', 'AIM', 'DVA', 'HSN', 'PVQ'
+            'RIB', 'RIC', 'RIA', 'RIG', 'RIF', 'RIS', 'AIM', 'DVA', 'HSN', 'PVQ'
         ],
     'Motor': [
             'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'VD1-VD13', 'VA1-VA12', 'VB1-VB11',
             'AS1-AS11', 'VC1-VC6', 'SAB', 'DVB', 'PDA', 'SIA', 'SMDD', 'SMDV',
-            'PDB', 'PVC', 'SMB', 'SIB', 'RMF', 'RMDD', 'RMDV', 'RMEV', 'RMED', 'RME', 'RIV',
+            'PDB', 'PVC', 'SMB', 'SIB', 'RMF', 'RMDD', 'RMDV', 'RMEV', 'RMED', 'RME', 'RIV', 'RIM'
         ],
-    'Pharyngeal': [
-            'M1', 'M2', 'M3', 'M4', 'M5', 'I1', 'I2', 'I3', 'I4', 'I5', 'I6',
-            'MC', 'NSM', 'MI', 'RAP', 'RIC', 'RID', 'SIA', 'SIB', 'SMB'
-        ]
+    'Modulatory': [
+            'RID', 'RIM'
+        ],
+    'Forward': [
+        'AVB', 'RIB', 'DB1-7', 'VB1-11', 'RME', 'RMEV', 'RMED'
+        ],
+    'Reverse': [
+        'AVA', 'AIB', 'RIM', 'DA1-9', 'VA1-12'
+    ]
+    # 'Pharyngeal': [
+    #         'M1', 'M2', 'M3', 'M4', 'M5', 'I1', 'I2', 'I3', 'I4', 'I5', 'I6',
+    #         'MC', 'NSM', 'MI', 'RAP', 'RIC', 'RID', 'SIA', 'SIB', 'SMB'
+    #     ]
     }
     return c_elegans_neurons
 
-def role_of_neuron_dict():
+def role_of_neuron_dict(include_fwd_rev=False):
     # Build a dictionary with the role of each neuron, from names to roles
     # Use the high level info in _role_of_neurons
-    role_dict = {}
+    role_dict = defaultdict(list)
     for role, info in _role_of_neurons().items():
+        if role in ['Forward', 'Reverse'] and not include_fwd_rev:
+            continue
         for neuron in info:
             keys = [neuron]
             if '-' in neuron:
@@ -408,10 +420,14 @@ def role_of_neuron_dict():
                 base_name = first_id[:2]  # The base is always 2 characters
                 i_end = int(last_id[2:])
                 for i in range(1, i_end + 1):
-                    keys.append(base_name + str(i))
+                    keys.append(f"{base_name}{i:02d}")
             elif neuron not in list_of_unilateral_neurons():
                 keys.append(neuron + 'L')
                 keys.append(neuron + 'R')
             for k in keys:
-                role_dict[k] = role
+                role_dict[k].append(role)
+    # Combine all roles, if multiple, into a single string
+    for k, v in role_dict.items():
+        role_dict[k] = ', '.join(v)
+
     return role_dict
