@@ -711,7 +711,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         btf_file = [f for f in os.listdir(behavior_raw_folder) if f.endswith(".btf") and 'AVG' not in f]
         if len(btf_file) == 1:
             btf_file = btf_file[0]
-            self.logger.info(".btf file already produced: ", btf_file)
+            self.logger.info(f".btf file already produced: {btf_file}")
             btf_file = os.path.join(behavior_raw_folder, btf_file)
         elif len(btf_file) > 1:
             raise RawDataFormatError(f"There is more than one .btf file in {behavior_raw_folder}")
