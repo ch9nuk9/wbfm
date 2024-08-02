@@ -740,7 +740,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                 try:
                     _ = MicroscopeDataReader(background_parent_folder, as_raw_tiff=False)
                     background_video = background_parent_folder
-                except TypeError:
+                except (TypeError, FileNotFoundError):
                     logging.info(f"Tried to read background using MicroscopeDataReader, but failed: "
                                  f"{background_parent_folder}... falling back to glob")
                     background_video = self._find_individual_background_files(background_parent_folder,
