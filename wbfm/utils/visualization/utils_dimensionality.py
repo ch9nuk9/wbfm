@@ -96,9 +96,9 @@ def main(combine_left_right=True):
     df = df.sort_values(by='diff_var_explained', ascending=True).reset_index()
 
     fig = px.box(df, x=neuron_row_name, y='variance_explained', color='dataset_type', #points='all',
-                 color_discrete_map=plotly_paper_color_discrete_map(),
-                 title='Variance explained by the manifold')
-    apply_figure_settings(fig, width_factor=1.0, height_factor=0.2)
+                 color_discrete_map=plotly_paper_color_discrete_map())
+                 #title='Variance explained by the manifold')
+    apply_figure_settings(fig, width_factor=1.0, height_factor=0.25)
     fig.update_yaxes(title='Variance explained by PC1')
     fig.update_xaxes(title='Neuron')
 
