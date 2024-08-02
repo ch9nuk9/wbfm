@@ -45,7 +45,7 @@ def main(combine_left_right=True):
         # Make a small df from this series
         _df = pd.DataFrame(ratio, columns=['variance_explained'])
         _df['neuron'] = neuron
-        _df['dataset_type'] = 'gcamp'
+        _df['dataset_type'] = 'Freely Moving'
         all_dfs.append(_df)
         # Immob
         var_raw = df_immob_grouped[neuron].var()
@@ -54,7 +54,7 @@ def main(combine_left_right=True):
         # Make a small df from this series
         _df = pd.DataFrame(ratio, columns=['variance_explained'])
         _df['neuron'] = neuron
-        _df['dataset_type'] = 'immob'
+        _df['dataset_type'] = 'Immobilized'
         all_dfs.append(_df)
 
     # Create a dataframe and plot via plotly
@@ -69,15 +69,16 @@ def main(combine_left_right=True):
     df.dropna(inplace=True)
     # Only include neurons with more than the mininum neurons in both immob and gcamp
     min_neurons = 3
-    neuron_counts_gcamp = df[df['dataset_type'] == 'gcamp'][neuron_row_name].value_counts()
-    neuron_counts_immob = df[df['dataset_type'] == 'immob'][neuron_row_name].value_counts()
+    neuron_counts_gcamp = df[df['dataset_type'] == 'Freely Moving'][neuron_row_name].value_counts()
+    neuron_counts_immob = df[df['dataset_type'] == 'Immobilized'][neuron_row_name].value_counts()
     enough_gcamp = neuron_counts_gcamp[neuron_counts_gcamp >= min_neurons].index
     enough_immob = neuron_counts_immob[neuron_counts_immob >= min_neurons].index
-    enough_neurons = enough_gcamp.intersection(enough_immob).intersection(neurons_with_confident_ids())
+    enough_neurons = enough_gcamp.intersection(enough_immob).intersection(
+        neurons_with_confident_ids(combine_left_right))
     df = df[df[neuron_row_name].isin(enough_neurons)]
 
     # Sort by mean variance explained in immob (not gcamp) per neuron
-    # df_grouped = df[df['dataset_type'] == 'immob'].groupby('neuron_combined')
+    # df_grouped = df[df['dataset_type'] == 'Immobilized'].groupby('neuron_combined')
     # mean_var_explained = df_grouped['variance_explained'].mean()
     # # copy mean_var_explained to all rows of the same neuron, including gcamp
     # df = df.set_index('neuron_combined')
@@ -85,19 +86,21 @@ def main(combine_left_right=True):
     # df = df.sort_values(by='mean_var_explained', ascending=True).reset_index()
 
     # Sort by difference in variance explained between immob and gcamp
-    df_grouped = df[df['dataset_type'] == 'gcamp'].groupby('neuron_combined')
+    df_grouped = df[df['dataset_type'] == 'Freely Moving'].groupby(neuron_row_name)
     mean_var_explained_gcamp = df_grouped['variance_explained'].median()
-    df_grouped = df[df['dataset_type'] == 'immob'].groupby('neuron_combined')
+    df_grouped = df[df['dataset_type'] == 'Immobilized'].groupby(neuron_row_name)
     mean_var_explained_immob = df_grouped['variance_explained'].median()
     diff_var_explained = mean_var_explained_immob - mean_var_explained_gcamp
-    df = df.set_index('neuron_combined')
+    df = df.set_index(neuron_row_name)
     df['diff_var_explained'] = diff_var_explained
     df = df.sort_values(by='diff_var_explained', ascending=True).reset_index()
 
-    fig = px.box(df, x='neuron_combined', y='variance_explained', color='dataset_type', #points='all',
+    fig = px.box(df, x=neuron_row_name, y='variance_explained', color='dataset_type', #points='all',
                  color_discrete_map=plotly_paper_color_discrete_map(),
                  title='Variance explained by the manifold')
-    apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
+    apply_figure_settings(fig, width_factor=1.0, height_factor=0.2)
+    fig.update_yaxes(title='Variance explained by PC1')
+    fig.update_xaxes(title='Neuron')
 
     fname = os.path.join(output_folder, f'variance_explained_boxplot-LRcombined{combine_left_right}.svg')
     fig.write_image(fname)
@@ -112,9 +115,9 @@ def main(combine_left_right=True):
     effect_sizes = {}
     permutations = 100000
     for neuron in tqdm(enough_neurons):
-        df_neuron = df[df[row_name] == neuron]
-        immob = df_neuron[df_neuron['dataset_type'] == 'immob']['variance_explained']
-        gcamp = df_neuron[df_neuron['dataset_type'] == 'gcamp']['variance_explained']
+        df_neuron = df[df[neuron_row_name] == neuron]
+        immob = df_neuron[df_neuron['dataset_type'] == 'Immobilized']['variance_explained']
+        gcamp = df_neuron[df_neuron['dataset_type'] == 'Freely Moving']['variance_explained']
         p_value = stats.ttest_ind(immob, gcamp, equal_var=False, random_state=4242, permutations=permutations)[1]
         # p_value = stats.ttest_ind(immob, gcamp, equal_var=False, random_state=4242)[1]# permutations=permutations)[1]
         effect_size = immob.median() - gcamp.median()
@@ -128,9 +131,9 @@ def main(combine_left_right=True):
 
     bonferroni_factor = len(enough_neurons)
     df_combined['median_immob'] = df_combined.index.map(
-        lambda x: df[(df['neuron_combined'] == x) & (df['dataset_type'] == 'immob')]['variance_explained'].median())
+        lambda x: df[(df['neuron_combined'] == x) & (df['dataset_type'] == 'Immobilized')]['variance_explained'].median())
     df_combined['median_gcamp'] = df_combined.index.map(
-        lambda x: df[(df['neuron_combined'] == x) & (df['dataset_type'] == 'gcamp')]['variance_explained'].median())
+        lambda x: df[(df['neuron_combined'] == x) & (df['dataset_type'] == 'Freely Moving')]['variance_explained'].median())
     df_combined['significant'] = (df_combined['p_value'] * bonferroni_factor) < 0.05
     df_combined['minus_log_p'] = -np.log10(df_combined['p_value'] + 1e-6)
     df_combined['neuron_name'] = df_combined.index
@@ -203,3 +206,4 @@ def main(combine_left_right=True):
 
 if __name__ == '__main__':
     main(combine_left_right=False)
+    main(combine_left_right=True)

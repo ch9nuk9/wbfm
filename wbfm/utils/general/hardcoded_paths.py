@@ -359,7 +359,7 @@ def default_raw_data_config():
             }
 
 
-def neurons_with_confident_ids():
+def neurons_with_confident_ids(combine_left_right=False):
     neuron_names = ['AVAL', 'AVAR', 'BAGL', 'BAGR', 'RIMR', 'RIML', 'AVEL', 'AVER',
                     #'URAVL', 'URAVR',
                     'URYVL', 'URYVR', 'URADL', 'URADR', 'URYDL', 'URYDR',
@@ -367,6 +367,8 @@ def neurons_with_confident_ids():
                     'ALA', 'RIS', 'AQR', 'RMDVL', 'RMDVR', 'URXL', 'URXR',
                     'VB02', 'VB03', 'DB01', 'DB02', 'VA01', 'VA02', 'DA01',
                     'RIBL', 'RIBR', 'RMEL', 'RMER', 'RMED', 'RMEV', 'RID', 'AVBL', 'AVBR']
+    if combine_left_right:
+        neuron_names = [n[:-1] if (n[-1] in ['L', 'R'] and len(n) > 3) else n for n in neuron_names ]
     return neuron_names
 
 
