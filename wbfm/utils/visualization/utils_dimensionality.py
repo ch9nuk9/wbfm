@@ -9,10 +9,13 @@ from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_c
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
 from wbfm.utils.general.hardcoded_paths import (get_hierarchical_modeling_dir, role_of_neuron_dict,
                                                 neurons_with_confident_ids)
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 
 
 def main(combine_left_right=True):
+    output_folder = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/intro/dimensionality'
+
     # Import traces (gcamp and immob)
     parent_folder = get_hierarchical_modeling_dir()
     fname = 'data.h5'
@@ -60,20 +63,18 @@ def main(combine_left_right=True):
     # New column for left/right combined neurons (remove 'L' or 'R' from the name, if it is the last character)
     def _neuron_pair_name(neuron_name):
         return neuron_name[:-1] if (neuron_name[-1] in ['L', 'R'] and len(neuron_name) > 3) else neuron_name
+    df['neuron_combined'] = df['neuron'].apply(_neuron_pair_name)
+    neuron_row_name = 'neuron_combined' if combine_left_right else 'neuron'
 
-    if combine_left_right:
-        df['neuron_combined'] = df['neuron'].apply(_neuron_pair_name)
-    else:
-        df['neuron_combined'] = df['neuron']
     df.dropna(inplace=True)
     # Only include neurons with more than the mininum neurons in both immob and gcamp
     min_neurons = 3
-    neuron_counts_gcamp = df[df['dataset_type'] == 'gcamp']['neuron_combined'].value_counts()
-    neuron_counts_immob = df[df['dataset_type'] == 'immob']['neuron_combined'].value_counts()
+    neuron_counts_gcamp = df[df['dataset_type'] == 'gcamp'][neuron_row_name].value_counts()
+    neuron_counts_immob = df[df['dataset_type'] == 'immob'][neuron_row_name].value_counts()
     enough_gcamp = neuron_counts_gcamp[neuron_counts_gcamp >= min_neurons].index
     enough_immob = neuron_counts_immob[neuron_counts_immob >= min_neurons].index
     enough_neurons = enough_gcamp.intersection(enough_immob).intersection(neurons_with_confident_ids())
-    df = df[df['neuron_combined'].isin(enough_neurons)]
+    df = df[df[neuron_row_name].isin(enough_neurons)]
 
     # Sort by mean variance explained in immob (not gcamp) per neuron
     # df_grouped = df[df['dataset_type'] == 'immob'].groupby('neuron_combined')
@@ -96,23 +97,26 @@ def main(combine_left_right=True):
     fig = px.box(df, x='neuron_combined', y='variance_explained', color='dataset_type', #points='all',
                  color_discrete_map=plotly_paper_color_discrete_map(),
                  title='Variance explained by the manifold')
-    # Add t-test annotation
-    # add_p_value_annotation(fig, x_label='all', show_only_stars=True, show_ns=False)
-    # apply_figure_settings(fig)
-    #
+    apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
 
-    # fig.show(renderer='browser')
+    fname = os.path.join(output_folder, f'variance_explained_boxplot-LRcombined{combine_left_right}.svg')
+    fig.write_image(fname)
+    fname = fname.replace('.svg', '.png')
+    fig.write_image(fname, scale=3)
+
+    fig.show(renderer='browser')
 
     # Calculate the p values and effect sizes of the difference in variance explained between immob and gcamp
     # for each neuron
     p_values = {}
     effect_sizes = {}
-    permutations = 10000
+    permutations = 100000
     for neuron in tqdm(enough_neurons):
-        df_neuron = df[df['neuron_combined'] == neuron]
+        df_neuron = df[df[row_name] == neuron]
         immob = df_neuron[df_neuron['dataset_type'] == 'immob']['variance_explained']
         gcamp = df_neuron[df_neuron['dataset_type'] == 'gcamp']['variance_explained']
-        p_value = stats.ttest_ind(immob, gcamp, equal_var=False, random_state=4242)[1]# permutations=permutations)[1]
+        p_value = stats.ttest_ind(immob, gcamp, equal_var=False, random_state=4242, permutations=permutations)[1]
+        # p_value = stats.ttest_ind(immob, gcamp, equal_var=False, random_state=4242)[1]# permutations=permutations)[1]
         effect_size = immob.median() - gcamp.median()
         p_values[neuron] = p_value
         effect_sizes[neuron] = effect_size
@@ -123,31 +127,78 @@ def main(combine_left_right=True):
     df_combined = df_p_values.join(df_effect_sizes)
 
     bonferroni_factor = len(enough_neurons)
+    df_combined['median_immob'] = df_combined.index.map(
+        lambda x: df[(df['neuron_combined'] == x) & (df['dataset_type'] == 'immob')]['variance_explained'].median())
+    df_combined['median_gcamp'] = df_combined.index.map(
+        lambda x: df[(df['neuron_combined'] == x) & (df['dataset_type'] == 'gcamp')]['variance_explained'].median())
     df_combined['significant'] = (df_combined['p_value'] * bonferroni_factor) < 0.05
     df_combined['minus_log_p'] = -np.log10(df_combined['p_value'] + 1e-6)
     df_combined['neuron_name'] = df_combined.index
     df_combined['role'] = df_combined['neuron_name'].map(role_of_neuron_dict())
     df_combined['fwd_rev'] = df_combined['neuron_name'].map(lambda x: role_of_neuron_dict(only_fwd_rev=True).get(x, ''))
     # Concatenate columns
-    df_combined['combined_role'] = df_combined['role'] + ', ' + df_combined['fwd_rev']
-    mapping = {'Interneuron, Forward': 'red',
-               'Interneuron, Reverse': 'blue',
-               'Motor, Forward': 'lightpurple',
-               'Motor, Reverse': 'lightpurple',
-               'Sensory, ': 'gray', 'Interneuron, ': 'lightgray', 'Motor, ': 'lightgray'}
+    new_col = df_combined['role'] + ', ' + df_combined['fwd_rev']
+    # Combine all motor roles
+    new_col = new_col.map(lambda x: x if 'Motor' not in x else 'Motor')
+    new_col = new_col.str.replace('Interneuron', 'Inter')
+    new_col = new_col.map(lambda x: x if x!='Inter, ' else 'Interneuron')
+    new_col = new_col.str.replace('Sensory, ', 'Sensory')
+    new_col = new_col.str.replace('Forward', 'fwd')
+    new_col = new_col.str.replace('Reverse', 'rev')
+    df_combined['combined_role'] = new_col
+    # Make consistent with behavioral colormap
+    cmap = BehaviorCodes.ethogram_cmap(include_collision=True, include_quiescence=True, include_reversal_turns=True)
+    mapping = {'Inter, fwd': cmap[BehaviorCodes.FWD],
+               'Inter, rev': cmap[BehaviorCodes.REV],
+               'Sensory': cmap[BehaviorCodes.SELF_COLLISION],
+               'Interneuron': cmap[BehaviorCodes.SELF_COLLISION],
+               'Motor': cmap[BehaviorCodes.VENTRAL_TURN]}
     print(df_combined)
+    print(df_combined.columns)
+    # Add a black line around the points
     fig = px.scatter(df_combined, x='effect_size', y='minus_log_p',
                      # symbol='role', color='fwd_rev',
                      color='combined_role',
                      color_discrete_map=mapping,
-                     hover_name=df_combined.index,
-                     title='Effect sizes and p values of the difference in variance explained between immob and gcamp')
+                     category_orders={'combined_role': ['Sensory', 'Interneuron', 'Motor', 'Inter, fwd', 'Inter, rev']},
+                     hover_name=df_combined.index)
+                     #title='Effect sizes and p values of the difference in variance explained between immob and gcamp')
 
-    apply_figure_settings(fig, width_factor=1.0, height_factor=1.0)
-    # apply_figure_settings(fig, width_factor=0.3, height_factor=0.3)
+    # Add significance line (horizontal at -log10(0.05))
+    # Don't change the x axis range though
+    # x_min, x_max = fig.full_figure_for_development().layout.xaxis.range
+    x_min, x_max = -0.51, 0.51
+    fig.add_shape(type='line', x0=x_min, y0=-np.log10(0.05), x1=x_max, y1=-np.log10(0.05),
+                  line=dict(color='black', width=1, dash='dash'))
 
-    fig.update_traces(marker=dict(size=12))
+    fig.update_xaxes(title='Change in dimensionality <br> in freely moving')
+    fig.update_yaxes(title='-log10(p value)')
+    fig.update_layout(legend_title='Neuron role')
+    # apply_figure_settings(fig, width_factor=1.0, height_factor=1.0)
+    apply_figure_settings(fig, width_factor=0.5, height_factor=0.3)
+    fig.update_traces(marker=dict(size=12, line=dict(width=0.5, color='Black')))#, opacity=0.7)
+
+    # Save
+    output_folder = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/intro/dimensionality'
+    fname = os.path.join(output_folder, f'variance_explained_difference-LRcombined{combine_left_right}.svg')
+    fig.write_image(fname)
+    fname = fname.replace('.svg', '.png')
+    fig.write_image(fname, scale=3)
+
     fig.show(renderer='browser')
+
+    # Additional plot: scatter plot of immob vs gcamp variance explained
+    # fig = px.scatter(df_combined, x='median_immob', y='median_gcamp', color='combined_role',
+    #                  #text='neuron_name',
+    #                  size='minus_log_p',
+    #                  color_discrete_map=mapping,
+    #                  title='Variance explained by the manifold')
+    # # fig.update_traces(textposition='top center')
+    # apply_figure_settings(fig, width_factor=0.5, height_factor=0.3)
+    # # Add y=x line
+    # fig.add_shape(type='line', x0=0, y0=0, x1=1, y1=1, line=dict(color='black', width=1))
+    #
+    # fig.show(renderer='browser')
 
 
 if __name__ == '__main__':

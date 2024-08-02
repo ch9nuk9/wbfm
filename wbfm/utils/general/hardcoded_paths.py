@@ -376,10 +376,10 @@ def _role_of_neurons():
     'Sensory': [
             'ASI', 'AWA', 'AWB', 'AWC', 'ASH', 'ASJ', 'ASG', 'ASK', 'ADF', 'PDE',
             'IL2L', 'IL2R', 'IL2', 'IL1L', 'IL1R', 'IL1', 'OLQD', 'OLQV', 'CEP', 'ADE', 'PVD', 'FLP', 'PHA', 'PHB', 'URX', 'BAG',
-            'ALA', 'AQR', 'SDQ', 'PQR', 'AUA', 'URB', 'SAA', 'URYD', 'URYV', 'URAD', 'URAV'
+            'AQR', 'SDQ', 'PQR', 'AUA', 'URB', 'SAA', 'URYD', 'URYV', 'URAD', 'URAV'
         ],
     'Interneuron': [
-            'AIA', 'AIB', 'AIZ', 'AVA', 'AVE', 'AVB', 'AVD', 'AVG', 'RIM',
+            'AIA', 'AIB', 'AIZ', 'AVA', 'AVE', 'AVB', 'AVD', 'AVG', 'RIM', 'ALA',
             'RIB', 'RIC', 'RIA', 'RIG', 'RIF', 'RIS', 'AIM', 'DVA', 'HSN', 'PVQ', 'RID'
         ],
     'Motor': [
@@ -395,7 +395,10 @@ def _role_of_neurons():
         ],
     'Reverse': [
         'AVA', 'AIB', 'RIM', 'DA1-DA9', 'VA1-VA12', 'AVE'
-    ]
+        ],
+    # 'Turning': [
+    #     'SMDV', 'SMDD', 'RIV'
+    #     ]
     # 'Pharyngeal': [
     #         'M1', 'M2', 'M3', 'M4', 'M5', 'I1', 'I2', 'I3', 'I4', 'I5', 'I6',
     #         'MC', 'NSM', 'MI', 'RAP', 'RIC', 'RID', 'SIA', 'SIB', 'SMB'
