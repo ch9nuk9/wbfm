@@ -31,7 +31,7 @@ except (NoBehaviorDataError, RawDataFormatError):
     background_img = "NOTFOUND3"
     background_video = "NOTFOUND4"
     behavior_btf = "NOTFOUND5"
-    raw_data_subfolder = "NOTFOUND5"
+    raw_data_subfolder = "NOTFOUND6"
 
 # Additionally update the paths used for the behavior pipeline (note that this needs to be loaded even if behavior is not run)
 hardcoded_paths = load_hardcoded_neural_network_paths()
@@ -213,7 +213,7 @@ rule z_project_background:
 
 rule subtract_background:
     input:
-        ndtiff_subfolder  = raw_data_subfolder,
+        ndtiff_subfolder = behavior_btf if os.path.exists(behavior_btf) else raw_data_subfolder,
         background_img = background_img
     params:
         do_inverse = config["do_inverse"]

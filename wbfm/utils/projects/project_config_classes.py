@@ -711,7 +711,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         btf_file = [f for f in os.listdir(behavior_raw_folder) if f.endswith(".btf") and 'AVG' not in f]
         if len(btf_file) == 1:
             btf_file = btf_file[0]
-            self.logger.info(".btf file already produced: ", btf_file)
+            self.logger.info(f".btf file already produced: {btf_file}")
             btf_file = os.path.join(behavior_raw_folder, btf_file)
         elif len(btf_file) > 1:
             raise RawDataFormatError(f"There is more than one .btf file in {behavior_raw_folder}")
@@ -740,7 +740,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                 try:
                     _ = MicroscopeDataReader(background_parent_folder, as_raw_tiff=False)
                     background_video = background_parent_folder
-                except TypeError:
+                except (TypeError, FileNotFoundError):
                     logging.info(f"Tried to read background using MicroscopeDataReader, but failed: "
                                  f"{background_parent_folder}... falling back to glob")
                     background_video = self._find_individual_background_files(background_parent_folder,
