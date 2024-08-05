@@ -857,11 +857,16 @@ class ProjectData:
         # There are currently 3 cached versions of the data, depending on the residual option
         if use_paper_options:
             channel_mode = kwargs.get('channel_mode', 'dr_over_r_50')
-            df = self.calc_paper_traces(channel_mode=channel_mode, residual_mode=residual_mode)
-            # Most postprocessing is not done on these traces, but this is allowed
+            df = self.calc_paper_traces(channel_mode=channel_mode, residual_mode=residual_mode,
+                                        interpolate_nan=True)
+            # Most postprocessing is not done on these traces, but these are allowed
             if only_keep_confident_ids:
                 confident_ids = neurons_with_confident_ids()
                 df = df[[col for col in df.columns if col in confident_ids]]
+            if remove_tail_neurons:
+                tail_names = self.tail_neuron_names()
+                tail_names = [n for n in tail_names if n in get_names_from_df(df)]
+                df = df.drop(columns=tail_names)
             return df
 
         opt = dict(
