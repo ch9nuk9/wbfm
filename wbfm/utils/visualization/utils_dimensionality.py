@@ -178,7 +178,7 @@ def main(combine_left_right=True):
     fig.update_yaxes(title='-log10(p value)')
     fig.update_layout(legend_title='Neuron role')
     # apply_figure_settings(fig, width_factor=1.0, height_factor=1.0)
-    apply_figure_settings(fig, width_factor=0.5, height_factor=0.3)
+    apply_figure_settings(fig, width_factor=0.45, height_factor=0.25)
     fig.update_traces(marker=dict(size=12, line=dict(width=0.5, color='Black')))#, opacity=0.7)
 
     # Save
