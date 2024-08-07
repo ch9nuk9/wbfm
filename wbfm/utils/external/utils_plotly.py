@@ -74,7 +74,8 @@ def add_trendline_annotation(fig):
 
 
 def plotly_plot_mean_and_shading(df, x, y, color, line_name='Mean', add_individual_lines=False,
-                                 cmap=None, x_intersection_annotation=None, fig=None):
+                                 cmap=None, x_intersection_annotation=None, annotation_kwargs=None,
+                                 annotation_position='left', fig=None):
     """
     Plot the mean of a y column for each x value, and shade the standard deviation
 
@@ -90,6 +91,8 @@ def plotly_plot_mean_and_shading(df, x, y, color, line_name='Mean', add_individu
     -------
 
     """
+    if annotation_kwargs is None:
+        annotation_kwargs = dict()
 
     # Calculate mean and std dev for each x value
     grouped = df.groupby(x)
@@ -148,10 +151,12 @@ def plotly_plot_mean_and_shading(df, x, y, color, line_name='Mean', add_individu
                       )
 
         # Add text annotation at the intersection point
+        x = 0.5*x_intersection_annotation if annotation_position == 'left' else 1.5*x_intersection_annotation
         fig.add_annotation(
-            x=0.5*x_intersection_annotation, y=1.1*y_value_at_x,
+            x=x, y=1.1*y_value_at_x,
             text=f"y={y_value_at_x:.2f}",
             showarrow=False,
+            **annotation_kwargs
             # showarrow=True,
             # arrowhead=2,
             # ax=-40, ay=-10  # Position the text relative to the point
