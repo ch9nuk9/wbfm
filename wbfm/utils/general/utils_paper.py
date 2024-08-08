@@ -46,7 +46,7 @@ def plotly_paper_color_discrete_map():
 
     """
     base_cmap = px.colors.qualitative.D3
-    pca_cmap = px.colors.qualitative.Plotly
+    pca_cmap = px.colors.qualitative.Safe
     cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0], 'Active in Freely Moving only': base_cmap[0],
                  'Freely Moving (GCaMP)': base_cmap[0], 'Freely Moving': base_cmap[0], 'Wild Type': base_cmap[0],
                  # Skip orange... don't like it!
@@ -69,9 +69,9 @@ def plotly_paper_color_discrete_map():
                  'Behavior only': base_cmap[1],  # Similar to raw, but brighter (teal)
                  'Hierarchical Behavior': base_cmap[3],  # New: orange
                  # PCA and CCA, which are a different colormap
-                 'PCA': pca_cmap[0],
-                 'CCA': pca_cmap[1], 'Continuous': pca_cmap[1],
-                 'CCA Discrete': pca_cmap[3], 'CCA\n Discrete': pca_cmap[3], 'Discrete': pca_cmap[3],
+                 'PCA': pca_cmap[4],
+                 'CCA': pca_cmap[3], 'Continuous': pca_cmap[3],
+                 'CCA Discrete': pca_cmap[5], 'CCA\n Discrete': pca_cmap[5], 'Discrete': pca_cmap[5],
                  }
     # Add alternative names
     for k, v in data_type_name_mapping().items():

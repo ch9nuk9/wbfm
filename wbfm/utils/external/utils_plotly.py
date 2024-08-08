@@ -75,7 +75,7 @@ def add_trendline_annotation(fig):
 
 def plotly_plot_mean_and_shading(df, x, y, color, line_name='Mean', add_individual_lines=False,
                                  cmap=None, x_intersection_annotation=None, annotation_kwargs=None,
-                                 annotation_position='left', fig=None):
+                                 annotation_position='left', fig=None, **kwargs):
     """
     Plot the mean of a y column for each x value, and shade the standard deviation
 
@@ -106,7 +106,7 @@ def plotly_plot_mean_and_shading(df, x, y, color, line_name='Mean', add_individu
         for group in df[color].unique():
             df_subset = df[df[color] == group]
             fig.add_trace(go.Scatter(
-                x=df_subset[x], y=df_subset[y], mode='lines', name=f'Group {group}', line=dict(width=1)
+                x=df_subset[x], y=df_subset[y], mode='lines', name=f'Group {group}', line=dict(width=1), **kwargs
             ))
 
     # Add the mean line
