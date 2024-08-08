@@ -428,15 +428,20 @@ class CCAPlotter:
 
         # Transparent background
         if use_paper_options:
-            apply_figure_settings(fig, width_factor=1/3, height_factor=1/4, plotly_not_matplotlib=True)
+            apply_figure_settings(fig, width_factor=0.45, height_factor=1/4, plotly_not_matplotlib=True)
 
         # Get base string to use for modes
         if use_pca:
-            base_axis_title = 'PCA mode {}'
+            base_axis_title = 'Neuronal component {}<br>(PCA)'
+            # base_axis_title = 'PCA mode {}'
         elif binary_behaviors:
-            base_axis_title = 'CCA mode {} (discrete)'
+            # base_axis_title = 'CCA mode {} (discrete)'
+            base_axis_title = 'Discrete Behavioral and<br>Neuronal component {} (CCA)'
         else:
-            base_axis_title = 'CCA mode {} (continuous)'
+            # base_axis_title = 'CCA mode {} (continuous)'
+            base_axis_title = 'Behavioral and<br>Neuronal component {} (CCA)'
+        # Get a shorter version
+        # simple_base_axis_title = f"{base_axis_title.split('(')[1][:-1]} {{}}"
 
         # For paper
         if plot_3d:
@@ -447,11 +452,12 @@ class CCAPlotter:
             # There is a bug with plotly moving the x axis title to the top when labels are turned off
             # https://github.com/plotly/plotly.js/issues/6552
             # Instead, make the labels transparent
-            fig.update_xaxes(showticklabels=True, tickfont=dict(color="rgba(0,0,0,0)"))
+            fig.update_xaxes(showticklabels=True, tickfont=dict(color="rgba(0,0,0,0)", size=1))
 
+            opt = dict(showline=True, linecolor='black')#, font=dict(color='black', size=10))
             fig.update_layout(
-                xaxis=dict(showline=True, linecolor='black', title=base_axis_title.format(1), side='bottom'),
-                yaxis=dict(showline=True, linecolor='black', title=base_axis_title.format(2), side='left')
+                xaxis=dict(title=base_axis_title.format(1), side='bottom', **opt),
+                yaxis=dict(title=base_axis_title.format(2), side='left', **opt),
             )
 
         if output_folder is not None:
