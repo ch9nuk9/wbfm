@@ -28,7 +28,8 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     rng = 424242
     curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
     if use_additional_behaviors:
-        curvature_terms_to_use[:2].extend(['dorsal_only_body_curvature', 'dorsal_only_head_curvature',
+        curvature_terms_to_use = curvature_terms_to_use[:2]
+        curvature_terms_to_use.extend(['dorsal_only_body_curvature', 'dorsal_only_head_curvature',
                                            'ventral_only_body_curvature', 'ventral_only_head_curvature',
                                            #'speed',
                                            'self_collision'])
@@ -255,10 +256,13 @@ def build_sigmoid_term_pca(x_pca_modes, force_positive_slope=True, dims=None, da
     return sigmoid_term
 
 
-def build_curvature_term(curvature, curvature_terms_to_use=None, dims=None, dataset_name_idx=None):
+def build_curvature_term(curvature, curvature_terms_to_use=None, dims=None, dataset_name_idx=None,
+                         DEBUG=False):
     if curvature_terms_to_use is None:
         assert curvature.shape[1] == 4, f"Default curvature terms are for 4 eigenworms, found {curvature.shape[1]}"
         curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
+    if DEBUG:
+        print(f"Using curvature terms {curvature_terms_to_use}")
     # Alternative: sample directly from the phase shift and amplitude, then convert into coefficients
     # This assumes that eigenworms 1 and 2 are approximately a sine and cosine wave, and puts it into polar coordinates
     phase_shift = pm.Uniform('phase_shift', lower=-np.pi, upper=np.pi, transform=pm.distributions.transforms.circular)
@@ -285,6 +289,8 @@ def build_curvature_term(curvature, curvature_terms_to_use=None, dims=None, data
                 coef_name = f'eigenworm{int(col_name[-1])+1}_coefficient'
             else:
                 coef_name = f'{col_name}_coefficient'
+            if DEBUG:
+                print(f"Adding {coef_name} to the model")
             additional_column_dict[coef_name] = pm.Normal(coef_name, mu=0, sigma=0.5, dims=None)
     # eigenworm3_coefficient = pm.Normal('eigenworm3_coefficient', mu=0, sigma=0.5, dims=None)
     # eigenworm4_coefficient = pm.Normal('eigenworm4_coefficient', mu=0, sigma=0.5, dims=None)
