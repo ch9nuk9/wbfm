@@ -129,9 +129,10 @@ NUM_TASKS=${#neuron_list[@]}
 cat << EOF > $SLURM_SCRIPT
 #!/bin/bash
 #SBATCH --array=0-$(($NUM_TASKS-1))
-#SBATCH --time=1-00:00:00
+#SBATCH --time=0-06:00:00
 #SBATCH --mem=32G
 #SBATCH --cpus-per-task=6
+#SBATCH --partition=short,basic
 
 # Reproduce the list for the subfile
 my_list=(${neuron_list[@]})
