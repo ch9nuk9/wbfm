@@ -53,6 +53,7 @@ class CCAPlotter:
                    use_physical_time=True, rename_neurons_using_manual_ids=True)
         if self.trace_kwargs is not None:
             opt.update(self.trace_kwargs)
+        self.trace_kwargs = opt  # Complete options, including user modifications
 
         df_traces = self.project_data.calc_default_traces(**opt)
         self._df_traces = df_traces
@@ -270,7 +271,7 @@ class CCAPlotter:
 
     def calc_pca_mode(self, i_mode, return_pca_weights=False) -> pd.DataFrame:
         X_r = np.array(self.project_data.calc_pca_modes(n_components=i_mode + 1, multiply_by_variance=True,
-                                                        return_pca_weights=return_pca_weights))
+                                                        return_pca_weights=return_pca_weights, **self.trace_kwargs))
         df = pd.DataFrame({f'PCA mode {i_mode + 1}': X_r[:, i_mode] / X_r[:, i_mode].max()})
         return df
 
