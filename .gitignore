@@ -47,6 +47,9 @@ wbfm/notebooks/**/*.ipynb
 wbfm/notebooks/*.ipynb
 
 *.json
+*.json.gz
+*.lock
+/**/Dockerfile
 /wbfm/scratch/
 /docs/*.dtmp
 /docs/*.bkp
