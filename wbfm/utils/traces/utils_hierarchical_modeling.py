@@ -37,7 +37,9 @@ def export_data_for_hierarchical_model(do_gfp=False, do_immobilized=False, skip_
 
     if not do_immobilized:
         behavior_names = ['vb02_curvature', 'fwd', 'speed', 'ventral_only_head_curvature', 'dorsal_only_head_curvature',
-                          'ventral_only_body_curvature', 'dorsal_only_body_curvature', 'self_collision']
+                          'ventral_only_body_curvature', 'dorsal_only_body_curvature', 'self_collision',
+                          'head_signed_curvature', 'summed_curvature',
+                          'worm_nose_peak_frequency', 'worm_head_peak_frequency', 'worm_body_peak_frequency']
         df_all_behavior = build_behavior_time_series_from_multiple_projects(all_projects, behavior_names=behavior_names)
         df_all_behavior.sort_values(['dataset_name', 'local_time'], inplace=True)
         df_all_behavior['fwd'] = df_all_behavior['fwd'].astype(int)
