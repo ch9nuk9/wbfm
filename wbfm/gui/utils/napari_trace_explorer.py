@@ -1854,7 +1854,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                          min_confidence=min_confidence,
                          bleach_correct=bleach_correct,
                          residual_mode=residual_mode,
-                         interpolate_nan=interpolate_nan)
+                         interpolate_nan=interpolate_nan,
+                         remove_tail_neurons=False)
         return trace_opt
 
     @property
