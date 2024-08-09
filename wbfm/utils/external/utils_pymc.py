@@ -341,6 +341,9 @@ def build_drift_term(dims=None, dataset_name_idx=None):
 
 def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
                                     dataset_name='all', additional_columns=None):
+    print(f"Found data columns: {Xy.columns} and datasets: {Xy['dataset_name'].unique()}")
+    print(f"Attempting to load curvature terms {curvature_terms} and additional columns {additional_columns}")
+
     if dataset_name != 'all':
         _Xy = Xy[Xy['dataset_name'] == dataset_name]
     else:
@@ -372,6 +375,7 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
         all_dfs.append(_Xy[additional_columns])
     df_model = pd.concat(all_dfs, axis=1)
     df_model = df_model.dropna()
+    print(f"Loaded {df_model.shape[0]} samples for {neuron_name} in {dataset_name}")
     return df_model
 
 
