@@ -24,16 +24,8 @@ notebooks/Scratch/
 *.npy
 *.npz
 wbfm/utils/neuron_matching/opencv_samples/
-old/example-feature-workflow/feature_alignment/feature_alignment-Charlie-2021-01-06/
-old/example-feature-workflow/feature_alignment/feature_alignment-Charlie-2021-01-22/
-old/example-feature-workflow/feature_alignment/feature_alignment-Charlie-2021-02-19/CollectedData_feature_tracker_sequential7.csv
-old/example-feature-workflow/feature_alignment/feature_alignment-Charlie-2021-02-19/
-wbfm/utils/neuron_matching/probreg_examples/filterreg_deformable.py
-old/example-feature-workflow/feature_alignment/CollectedData_feature_tracker.csv
-old/example-feature-workflow/feature_alignment/CollectedData_feature_tracker.h5
-old/example-feature-workflow/feature_alignment/embedding.emb
+old/*
 .idea/
-old/example-feature-workflow/feature_alignment/Extract_traces.ipynb
 /wbfm/experiments/
 wbfm/new_project_defaults/snakemake/.snakemake/
 *.out.*
@@ -47,7 +39,7 @@ wbfm/new_project_defaults/snakemake/.snakemake/
 *.zarr/
 /wbfm/notebooks/alternative_ideas//dask-worker-space/
 *.pth
-/wbfm/notebooks/debugging/*.ipynb
+wbfm/notebooks/*.ipynb
 
 *.json
 /wbfm/scratch/
