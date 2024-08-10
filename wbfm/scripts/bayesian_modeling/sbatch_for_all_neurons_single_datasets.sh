@@ -57,7 +57,7 @@ echo "Running model for neuron: \$neuron"
 
 echo "Running model for neuron $neuron"
 log_fname="log_single_dataset_$neuron.txt"
-python $CMD --neuron_name "$neuron" --dataset_name "loop" --do_gfp "$do_gfp" > "$LOG_DIR/$log_fname"
+python $CMD --neuron_name "$neuron" --dataset_name "loop" --do_gfp "$do_gfp" > "$LOG_DIR/\$log_fname"
 EOF
 
 # Submit the SLURM script

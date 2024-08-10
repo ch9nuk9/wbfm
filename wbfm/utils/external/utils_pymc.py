@@ -405,6 +405,7 @@ def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True
     if dataset_name == 'loop':
         # Loop over all datasets
         for dataset_name in Xy['dataset_name'].unique():
+            print(f"Running {neuron_name} for {dataset_name}")
             if dataset_name == 'loop':
                 # Recursion error
                 continue
