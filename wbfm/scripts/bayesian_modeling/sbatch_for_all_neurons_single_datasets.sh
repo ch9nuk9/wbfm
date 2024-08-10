@@ -26,11 +26,10 @@ do
   neuron_list+=("neuron_$(printf "%03d" "$i")")
 done
 
-# Now loop through the list of neurons and run the model
-# But parallelize so that 20 are running at a time
+# Now loop through the list of neurons and run the model (one sbatch job per neuron)
 # Note that many combinations of dataset and neuron will be empty, and will be skipped
 
-CMD="/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/utils/external/utils_pymc.py"
+CMD="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/utils/external/utils_pymc.py"
 # Changes if running on gfp
 if [ "$do_gfp" == "True" ]; then
   LOG_DIR="/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp/logs"
@@ -67,14 +66,3 @@ sbatch $SLURM_SCRIPT
 # Clean up the temporary SLURM script
 rm $SLURM_SCRIPT
 
-#for neuron in "${neuron_list[@]}"
-#do
-#  echo "Running model for neuron $neuron"
-#  log_fname="log_single_dataset_$neuron.txt"
-#  python $CMD --neuron_name "$neuron" --dataset_name "loop" --do_gfp "$do_gfp" > "$LOG_DIR/$log_fname" &
-#  # DEBUG: just break after one run
-#  sleep 1
-#  while [ "$(jobs | wc -l)" -ge 20 ]; do
-#    sleep 10
-#  done
-#done
