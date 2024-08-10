@@ -21,7 +21,7 @@ fi
 # These are neurons that are numbered (not ided), e.g. neuron_001, neuron_100, etc.
 # So we define them using a loop
 neuron_list=()
-for i in {1..100}
+for i in {1..200}
 do
   neuron_list+=("neuron_$(printf "%03d" "$i")")
 done
@@ -38,14 +38,43 @@ else
   LOG_DIR="/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/logs"
 fi
 
-for neuron in "${neuron_list[@]}"
-do
-  echo "Running model for neuron $neuron"
-  log_fname="log_single_dataset_$neuron.txt"
-  python $CMD --neuron_name "$neuron" --dataset_name "loop" --do_gfp "$do_gfp" > "$LOG_DIR/$log_fname" &
-  # DEBUG: just break after one run
-  sleep 1
-  while [ "$(jobs | wc -l)" -ge 20 ]; do
-    sleep 10
-  done
-done
+# Create an sbatch job per neuron name, which will loop over datasets
+# Create a temporary file to actually dispatch
+SLURM_SCRIPT=$(mktemp /tmp/slurm_script.XXXXXX)
+NUM_TASKS=${#neuron_list[@]}
+
+cat << EOF > $SLURM_SCRIPT
+#!/bin/bash
+#SBATCH --array=0-$(($NUM_TASKS-1))
+#SBATCH --time=0-06:00:00
+#SBATCH --mem=32G
+#SBATCH --cpus-per-task=6
+#SBATCH --partition=short,basic
+
+# Reproduce the list for the subfile
+my_list=(${neuron_list[@]})
+neuron=\${my_list[\$SLURM_ARRAY_TASK_ID]}
+echo "Running model for neuron: \$neuron"
+
+echo "Running model for neuron $neuron"
+log_fname="log_single_dataset_$neuron.txt"
+python $CMD --neuron_name "$neuron" --dataset_name "loop" --do_gfp "$do_gfp" > "$LOG_DIR/$log_fname"
+EOF
+
+# Submit the SLURM script
+sbatch $SLURM_SCRIPT
+
+# Clean up the temporary SLURM script
+rm $SLURM_SCRIPT
+
+#for neuron in "${neuron_list[@]}"
+#do
+#  echo "Running model for neuron $neuron"
+#  log_fname="log_single_dataset_$neuron.txt"
+#  python $CMD --neuron_name "$neuron" --dataset_name "loop" --do_gfp "$do_gfp" > "$LOG_DIR/$log_fname" &
+#  # DEBUG: just break after one run
+#  sleep 1
+#  while [ "$(jobs | wc -l)" -ge 20 ]; do
+#    sleep 10
+#  done
+#done
