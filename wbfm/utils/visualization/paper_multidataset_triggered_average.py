@@ -685,11 +685,11 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
     @property
     def df_traces_residual(self):
-        return self.project.calc_paper_traces_residual()
+        return self.project.calc_paper_traces(residual_mode='pca')
 
     @property
     def df_traces_global(self):
-        return self.project.calc_paper_traces_global()
+        return self.project.calc_paper_traces(residual_mode='pca_global')
 
     def get_df_from_data_type(self, data_type):
         if data_type == 'raw':
