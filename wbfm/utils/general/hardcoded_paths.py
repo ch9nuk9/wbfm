@@ -171,9 +171,6 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
         # Second folder, which extends above dictionary
         folder_path = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-12-12_immob'
         good_projects.update(load_all_projects_in_folder(folder_path, **kwargs))
-        # Remove one messed up project... could remove without loading, but this is easier
-        problem_project = '2022-12-13_10-14_ZIM2165_immob_worm6-2022-12-13'
-        good_projects.pop(problem_project)
     elif genotype == 'hannah_O2_fm':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/freely_moving_wt'
         good_projects = load_all_projects_in_folder(folder_path, **kwargs)
