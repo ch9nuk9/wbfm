@@ -377,10 +377,11 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
         x = np.arange(xmax)
     # Main line and shading together
     # Options for all lines
+    i_line = 0 if not is_second_plot else 1
     cmap = px.colors.qualitative.Plotly
     opt = dict(
         x=x,
-        line=dict(color=cmap[0 if not is_second_plot else 1]),  # Need to specify the color so that the shading fill has the same color
+        line=dict(color=cmap[i_line]),  # Need to specify the color so that the shading fill has the same color
     )
 
     if fig is None:
@@ -388,7 +389,7 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
         is_second_plot = False
 
     main_line = go.Scatter(
-        name=f'Measurement{0 if not is_second_plot else 1}',
+        name=f'Measurement_{i_line}',
         y=mean_vals,
         mode='lines',
         **opt
@@ -409,7 +410,7 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
         # marker=dict(color="#444"),
         fillcolor=fillcolor,
         # opacity=0.2,  # Set in the fillcolor string
-        stackgroup='shading', # So the shading doesn't stop on the middle line
+        stackgroup=f'shading_{i_line}', # So the shading doesn't stop on the middle line
         mode='none'  # override default markers+lines, so the shading doesn't have borders
     )
     opt_shading.update(opt)
