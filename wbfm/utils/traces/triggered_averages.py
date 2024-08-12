@@ -33,13 +33,14 @@ from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average
-from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
+from wbfm.utils.visualization.utils_plot_traces import plot_with_shading, plot_with_shading_plotly
 
 
 def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines=0,
                                                  show_individual_lines=False, is_second_plot=False, ax=None, xlim=None,
                                                  show_horizontal_line=True, show_vertical_line=True,
-                                                 z_score=False, show_shading=True, **kwargs):
+                                                 z_score=False, show_shading=True, use_plotly=False, DEBUG=False,
+                                                 **kwargs):
     """
     Plot a triggered average from a matrix of traces
 
@@ -66,41 +67,57 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         TriggeredAverageIndices.prep_triggered_average_for_plotting(triggered_avg_matrix, min_lines=min_lines,
                                                                     z_score=z_score)
 
+    if DEBUG:
+        print(f"triggered_avg: {triggered_avg.iloc[:5]}")
+
+    # Get values that may be used for informational lines
+    if isinstance(triggered_avg, pd.Series):
+        x_for_vertical_line = 0  # Assume the series has been properly indexed
+    else:
+        x_for_vertical_line = ind_preceding
+
     if not is_valid:
         logging.warning("Found invalid neuron (empty triggered average)")
         return ax, None
-    # Plot
-    if show_shading:
-        ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_lower_std, xmax, ax=ax, **kwargs,
-                                                             std_vals_upper=triggered_upper_std)#, x=x_vals)
-    else:
-        # ax.plot(x_vals[:xmax], triggered_avg[:xmax], **kwargs)
-        ax.plot(triggered_avg[:xmax], **kwargs)
-    if show_individual_lines:
-        for i, trace in triggered_avg_matrix.iterrows():
-            # ax.plot(x_vals[:xmax], trace[:xmax], 'black', alpha=3.0 / (triggered_avg_matrix.shape[0] + 10.0))
-            ax.plot(trace.loc[:xmax], 'black', alpha=3.0 / (triggered_avg_matrix.shape[0] + 10.0))
-    if not is_second_plot:
-        ax.set_ylabel("Activity")
-        # Set y limits because sometimes individual traces are very large
+
+    if not use_plotly:
+
+        # Plot
         if show_shading:
-            ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
+            ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_lower_std, xmax, ax=ax, **kwargs,
+                                                                 std_vals_upper=triggered_upper_std)#, x=x_vals)
         else:
-            ax.set_ylim(np.nanmin(triggered_avg), np.nanmax(triggered_avg))
-        # Reference points
-        if show_horizontal_line:
-            ax.axhline(raw_trace_mean, c='black', ls='--')
-        if isinstance(triggered_avg, pd.Series):
-            x_for_vertical_line = 0  # Assume the series has been properly indexed
+            ax.plot(triggered_avg[:xmax], **kwargs)
+        if show_individual_lines:
+            for i, trace in triggered_avg_matrix.iterrows():
+                # ax.plot(x_vals[:xmax], trace[:xmax], 'black', alpha=3.0 / (triggered_avg_matrix.shape[0] + 10.0))
+                ax.plot(trace.loc[:xmax], 'black', alpha=3.0 / (triggered_avg_matrix.shape[0] + 10.0))
+        if not is_second_plot:
+            ax.set_ylabel("Activity")
+            # Set y limits because sometimes individual traces are very large
+            if show_shading:
+                ax.set_ylim(np.nanmin(lower_shading), np.nanmax(upper_shading))
+            else:
+                ax.set_ylim(np.nanmin(triggered_avg), np.nanmax(triggered_avg))
+            # Reference points
+            if show_horizontal_line:
+                ax.axhline(raw_trace_mean, c='black', ls='--')
+            if show_vertical_line:
+                ax.axvline(x=x_for_vertical_line, color='r', ls='--')
         else:
-            x_for_vertical_line = ind_preceding
-        if show_vertical_line:
-            ax.axvline(x=x_for_vertical_line, color='r', ls='--')
-        # ax.axvline(x=0, color='r', ls='--')
+            ax.autoscale()
+        if xlim is not None and ax is not None:
+            ax.set_xlim(xlim)
     else:
-        ax.autoscale()
-    if xlim is not None and ax is not None:
-        ax.set_xlim(xlim)
+        fig = kwargs.get('fig', None)
+        kwargs.pop('fig', None)
+        fig, _, _ = plot_with_shading_plotly(triggered_avg, triggered_lower_std, std_vals_upper=triggered_upper_std,
+                                             fig=fig, is_second_plot=(fig is not None), **kwargs)
+        if show_vertical_line:
+            fig.add_shape(type="line", x0=x_for_vertical_line, x1=x_for_vertical_line,
+                          y0=0, y1=1, line=dict(color="Red", dash="dash"))
+        ax = fig
+
     return ax, triggered_avg
 
 

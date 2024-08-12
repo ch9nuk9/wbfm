@@ -446,7 +446,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              show_y_label=True, show_x_label=True, color=None, is_mutant=False,
                                              z_score=False, fig_kwargs=None, legend=False, i_figure=3,
                                              apply_changes_even_if_no_trace=True, show_individual_lines=False,
-                                             return_individual_traces=False,
+                                             return_individual_traces=False, use_plotly=False,
                                              DEBUG=False):
         if fig_kwargs is None:
             fig_kwargs = {}
@@ -460,39 +460,40 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             triggered_avg = None
         else:
             # Plot the triggered average for each neuron
-            if ax is None:
-                fig_opt_trigger = self.get_fig_opt(**fig_kwargs)
-                fig, ax = plt.subplots(**fig_opt_trigger)
-                is_second_plot = False
+            is_second_plot = False
+            if not use_plotly:
+                if ax is None:
+                    fig_opt_trigger = self.get_fig_opt(**fig_kwargs)
+                    fig, ax = plt.subplots(**fig_opt_trigger)
+                else:
+                    is_second_plot = True
             else:
-                is_second_plot = True
+                ax = None
+                is_second_plot = fig is not None
+
             if z_score:
                 df_subset = (df_subset - df_subset.mean()) / df_subset.std()
             df_subset = df_subset.T
 
             min_lines = min(min_lines, df_subset.shape[1])
             if DEBUG:
-                print('df_subset', df_subset)
+                print('df_subset.index', df_subset.index)
             ax, triggered_avg = plot_triggered_average_from_matrix_low_level(df_subset, 0, min_lines,
                                                                              show_individual_lines=show_individual_lines,
-                                                                             is_second_plot=is_second_plot, ax=ax,
+                                                                             is_second_plot=is_second_plot,
+                                                                             ax=ax, fig=fig,
                                                                              color=color, label=neuron_name,
-                                                                             show_horizontal_line=False)
+                                                                             show_horizontal_line=False,
+                                                                             use_plotly=use_plotly, DEBUG=DEBUG)
+            if use_plotly:
+                fig = ax
+                ax = None
             if triggered_avg is None:
                 logging.debug(f"Triggered average for {neuron_name} not valid, skipping")
 
         # Apply additional settings, even if the above failed
         if apply_changes_even_if_no_trace or triggered_avg is not None:
-            if 'rectified_rev' in trigger_type:
-                behavior_shading_type = 'both'
-            elif 'rectified_fwd' in trigger_type:
-                behavior_shading_type = None
-            elif 'rev' in trigger_type:
-                behavior_shading_type = 'rev'
-            elif 'fwd' in trigger_type:
-                behavior_shading_type = 'fwd'
-            else:
-                behavior_shading_type = None
+            behavior_shading_type = self._get_shading_from_trigger_name(trigger_type)
             if behavior_shading_type is not None:
                 index_conversion = df_subset.columns
                 try:
@@ -505,45 +506,55 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 ax.set_xlim(xlim)
             if ylim is not None and ax is not None:
                 ax.set_ylim(ylim)
-            if round_y_ticks:
+            if round_y_ticks and ax is not None:
                 round_yticks(ax)
-            if z_score:
-                plt.ylabel("Amplitude (z-scored)")
-            else:
-                plt.ylabel("$\Delta R / R_{50}$")
-            if show_title:
-                if title is None:
-                    title = self.get_title_from_trigger_type(trigger_type)
-                    plt.title(f"{neuron_name} (n={df_subset.shape[1]}) {title}")
-                else:
-                    if include_neuron_in_title:
-                        plt.title(f"{neuron_name} {title}")
-                    else:
-                        plt.title(title)
-            else:
-                plt.title("")
-            proj = self.all_projects[list(self.all_projects.keys())[0]]
-            if show_x_ticks:
-                plt.xlabel(proj.x_label_for_plots)
-                height_factor_addition = 0.04
-            else:
-                ax.set_xticks([])
-                height_factor_addition = 0
-            if not show_x_label:
-                ax.set_xlabel('')
-                height_factor_addition -= 0.04
-            # These things affect the width
-            width_factor_addition = 0
-            if not show_y_ticks:
-                ax.set_yticks([])
-                width_factor_addition -= 0.04
-            if not show_y_label:
-                ax.set_ylabel('')
-                width_factor_addition -= 0.04
 
+            # Defaults are opposite for each package
             if legend:
-                plt.legend()
-            plt.tight_layout()
+                if not use_plotly:
+                    plt.legend()
+            elif use_plotly:
+                fig.update_layout(showlegend=False)
+
+            # Update title and ticks
+            width_factor_addition, height_factor_addition = 0, 0
+
+            if not use_plotly:
+                if z_score:
+                    plt.ylabel("Amplitude (z-scored)")
+                else:
+                    plt.ylabel("$\Delta R / R_{50}$")
+                if show_title:
+                    if title is None:
+                        title = self.get_title_from_trigger_type(trigger_type)
+                        plt.title(f"{neuron_name} (n={df_subset.shape[1]}) {title}")
+                    else:
+                        if include_neuron_in_title:
+                            plt.title(f"{neuron_name} {title}")
+                        else:
+                            plt.title(title)
+                else:
+                    plt.title("")
+
+                proj = self.all_projects[list(self.all_projects.keys())[0]]
+                if show_x_ticks:
+                    plt.xlabel(proj.x_label_for_plots)
+                    height_factor_addition = 0.04
+                else:
+                    ax.set_xticks([])
+                    height_factor_addition = 0
+                if not show_x_label:
+                    ax.set_xlabel('')
+                    height_factor_addition -= 0.04
+                # These things affect the width
+                if not show_y_ticks:
+                    ax.set_yticks([])
+                    width_factor_addition -= 0.04
+                if not show_y_label:
+                    ax.set_ylabel('')
+                    width_factor_addition -= 0.04
+
+                plt.tight_layout()
 
             if output_folder is not None:
                 if i_figure == 0:  # Big
@@ -561,7 +572,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                        height_factor=0.1 + height_factor_addition)
                 else:
                     raise NotImplementedError(f"i_figure={i_figure} not implemented")
-                apply_figure_settings(fig, plotly_not_matplotlib=False, **fig_opt)
+                apply_figure_settings(fig, plotly_not_matplotlib=use_plotly, **fig_opt)
+
+                # if use_plotly:
+                #     fig.show()
 
                 title = self.get_title_from_trigger_type(trigger_type)
                 fname = title.replace(" ", "_").replace(",", "").lower()
@@ -570,6 +584,19 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 plt.savefig(fname.replace(".png", ".svg"))
 
         return fig, ax
+
+    def _get_shading_from_trigger_name(self, trigger_type):
+        if 'rectified_rev' in trigger_type:
+            behavior_shading_type = 'both'
+        elif 'rectified_fwd' in trigger_type:
+            behavior_shading_type = None
+        elif 'rev' in trigger_type:
+            behavior_shading_type = 'rev'
+        elif 'fwd' in trigger_type:
+            behavior_shading_type = 'fwd'
+        else:
+            behavior_shading_type = None
+        return behavior_shading_type
 
     def get_traces_single_neuron(self, neuron_name, trigger_type, return_individual_traces=False, DEBUG=False):
         df = self.get_df_triggered_from_trigger_type(trigger_type, return_individual_traces=return_individual_traces)

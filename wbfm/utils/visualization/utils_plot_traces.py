@@ -14,7 +14,9 @@ from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan, get_
 from wbfm.utils.general.utils_paper import paper_trace_settings, apply_figure_settings, plotly_paper_color_discrete_map
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.external.utils_plotly import hex2rgba
 import plotly.graph_objects as go
+import plotly.express as px
 
 
 def build_trace_factory(base_trace_fname, trace_mode, smoothing_func=lambda x: x, background_per_pixel=0):
@@ -338,7 +340,8 @@ def plot_with_shading(mean_vals, std_vals, xmax=None, x=None,
     return ax, lower_shading, upper_shading
 
 
-def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_upper=None, **kwargs):
+def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_upper=None, is_second_plot=False,
+                             **kwargs):
     """
     Plot with shading, but for plotly. See plot_with_shading for matplotlib version
 
@@ -366,33 +369,48 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
         upper_shading = mean_vals + std_vals
         lower_shading = mean_vals - std_vals
 
-    if xmax is None:
-        xmax = len(mean_vals)
-    x = np.arange(xmax)
+    if isinstance(mean_vals, pd.Series):
+        x = list(mean_vals.index)
+    else:
+        if xmax is None:
+            xmax = len(mean_vals)
+        x = np.arange(xmax)
     # Main line and shading together
     # Options for all lines
+    cmap = px.colors.qualitative.Plotly
     opt = dict(
-        mode='lines',
         x=x,
-        line=dict(color='rgb(31, 119, 180)'),
+        line=dict(color=cmap[0 if not is_second_plot else 1]),  # Need to specify the color so that the shading fill has the same color
     )
 
     if fig is None:
         fig = go.Figure()
+        is_second_plot = False
 
     main_line = go.Scatter(
-        name='Measurement',
+        name=f'Measurement{0 if not is_second_plot else 1}',
         y=mean_vals,
+        mode='lines',
         **opt
     )
     # Options for only the shading lines
-    fillcolor = main_line['line']['color'].replace('rgb', 'rgba').replace(')', ', 0.5)')
+    color = main_line['line']['color']
+    alpha = 0.2
+    if 'rgb' in color:
+        fillcolor = color.replace('rgb', 'rgba').replace(')', f', {alpha})')
+    elif '#' in color:
+        fillcolor = hex2rgba(color, alpha=alpha)
+    else:
+        raise ValueError(f"Unknown color format: {color}")
+
     opt_shading = dict(
-        line=dict(width=0),
+        # line=dict(width=0),
         showlegend=False,
-        marker=dict(color="#444"),
+        # marker=dict(color="#444"),
         fillcolor=fillcolor,
-        opacity=0.2,
+        # opacity=0.2,  # Set in the fillcolor string
+        stackgroup='shading', # So the shading doesn't stop on the middle line
+        mode='none'  # override default markers+lines, so the shading doesn't have borders
     )
     opt_shading.update(opt)
 
