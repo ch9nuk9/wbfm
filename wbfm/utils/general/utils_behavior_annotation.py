@@ -264,8 +264,11 @@ class BehaviorCodes(Flag):
 
         if additional_shaded_states is not None:
             # Add states and colors using the matplotlib colormap
-            for i, state in enumerate(additional_shaded_states):
-                cmap_dict[state] = base_cmap(i)
+            num_added = 0
+            for state in additional_shaded_states:
+                if state not in cmap_dict:
+                    cmap_dict[state] = base_cmap(num_added)
+                    num_added += 1
 
         for state, color in cmap_dict.items():
             if state in query_state:
@@ -1416,8 +1419,16 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
     all_behaviors = [BehaviorCodes.REV]  # Default
     # Insert new states at the front, so they are shaded first
     if additional_shaded_states is not None:
-        all_behaviors = additional_shaded_states + all_behaviors
+        if BehaviorCodes.REV in additional_shaded_states:
+            # This means there is a user-defined order for REV, e.g. plotted behind everything else
+            all_behaviors = additional_shaded_states
+        else:
+            all_behaviors = additional_shaded_states + all_behaviors
+        # Make sure these are not removed in the next step
+        behaviors_to_ignore = tuple(set(behaviors_to_ignore) - set(additional_shaded_states))
     all_behaviors = pd.Series(all_behaviors)
+    if DEBUG:
+        print("behavior list before removals: ", all_behaviors, ' behaviors to ignore: ', behaviors_to_ignore)
 
     # Remove behaviors to ignore
     if behaviors_to_ignore is not None:
@@ -1427,6 +1438,7 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
         all_behaviors = all_behaviors[all_behaviors != b]
     if DEBUG:
         print("all_behaviors: ", all_behaviors)
+        print(f"Cmap: {[cmap(b) for b in all_behaviors]}")
 
     # Loop through the remaining behaviors, and use the binary vector to shade per behavior
     beh_vector = pd.Series(beh_vector)
@@ -1437,7 +1449,6 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
             if DEBUG:
                 print(f'No color for behavior {b}')
             continue
-        # err
         # Get the start and end indices of the binary vector
         starts, ends = get_contiguous_blocks_from_column(binary_vec, already_boolean=True)
         if DEBUG and len(starts) == 0:

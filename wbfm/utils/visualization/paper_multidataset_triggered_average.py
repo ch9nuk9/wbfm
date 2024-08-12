@@ -792,7 +792,8 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         plt.savefig(fname.replace(".png", ".svg"))
 
     def plot_single_trace(self, neuron_name, trace_type='raw', color_type=None, title=False, legend=False, round_y_ticks=False,
-                          xlabels=True, ax=None, color=None, output_foldername=None, **kwargs):
+                          xlabels=True, ax=None, color=None, output_foldername=None, shading_kwargs=None,
+                          **kwargs):
         """
         Plot the three traces (raw, global, residual) on the same plot.
         If output_foldername is not None, save the plot in that folder.
@@ -806,6 +807,8 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         -------
 
         """
+        if shading_kwargs is None:
+            shading_kwargs = {}
         df_traces = self.get_df_from_data_type(trace_type)
         if neuron_name not in df_traces:
             raise ValueError(f"Neuron name {neuron_name} not found in traces")
@@ -837,7 +840,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             ax.set_xticks([])
             height_factor = 0.1
         ax.set_xlim(kwargs.get('xlim', self.xlim))
-        self.project.shade_axis_using_behavior(ax)
+        self.project.shade_axis_using_behavior(ax, **shading_kwargs)
         if round_y_ticks:
             round_yticks(ax)
 
