@@ -766,11 +766,11 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         apply_figure_settings(fig, width_factor=0.25, height_factor=0.3, plotly_not_matplotlib=False)
 
         if output_foldername:
-            self._save_fig(neuron_name, output_foldername)
+            self._save_fig(neuron_name, output_foldername, trigger_type='combined')
 
         return fig, axes
 
-    def _save_fig(self, neuron_name, output_foldername, trigger_type='combined'):
+    def _save_fig(self, neuron_name, output_foldername, trigger_type):
         """
         Save the figure to the output foldername.
 
