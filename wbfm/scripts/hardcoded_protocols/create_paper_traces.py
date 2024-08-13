@@ -22,6 +22,7 @@ def main():
     all_project_paths = all_paths_gcamp.copy()
     all_project_paths.update(all_paths_gfp)
     all_project_paths.update(all_paths_immob)
+    logging.info(f"Found {len(all_project_paths)} projects to process")
 
     # Set up the executor
     executor = AutoExecutor(folder="/tmp/submitit_runs", cluster='slurm')
