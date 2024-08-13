@@ -68,4 +68,4 @@ def main(run_locally=False, DEBUG=False):
 
 
 if __name__ == "__main__":
-    main(run_locally=False, DEBUG=False)
+    main(run_locally=True, DEBUG=False)
