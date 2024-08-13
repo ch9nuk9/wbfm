@@ -200,7 +200,8 @@ class NapariLayerInitializer:
             df = project_data.red_traces
             if gt_neuron_name_dict is None:
                 gt_neuron_name_dict = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0,
-                                                                                    remove_unnamed_neurons=True)
+                                                                                    remove_unnamed_neurons=True,
+                                                                                    remove_duplicates=False)
 
             options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
                                                           neuron_name_dict=gt_neuron_name_dict,

@@ -1369,7 +1369,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 worker.start()
             return
 
-        self.logger.info(f"Changing neuron name: {original_name} to {new_name}")
+        self.logger.info(f"Changing neuron name {old_name} to {new_name} (original name: {original_name})")
         # Because the old name may have been blank, we need to use the automatic labels for indexing
         original_name_series = self.manual_id_layer.properties['automatic_label']
         original_name_series = pd.Series([int2name_neuron(n) for n in original_name_series])
@@ -1391,6 +1391,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     @thread_worker
     def refresh_manual_id_layer(self):
+        # This decorator makes the function return a worker, even though pycharm doesn't know it
         self.manual_id_layer.refresh_text()
 
     def add_tracking_outliers_to_plot(self):
