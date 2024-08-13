@@ -137,7 +137,8 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
     if isinstance(genotype, list):
         good_projects = {}
         for this_genotype in genotype:
-            good_projects.update(load_paper_datasets(this_genotype, require_behavior=require_behavior, **kwargs))
+            good_projects.update(load_paper_datasets(this_genotype, require_behavior=require_behavior,
+                                                     only_load_paths=only_load_paths, **kwargs))
         return good_projects
 
     # Build a dictionary of all
