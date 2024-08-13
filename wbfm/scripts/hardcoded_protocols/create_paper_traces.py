@@ -8,7 +8,6 @@ from submitit import AutoExecutor, LocalJob, DebugJob
 
 def load_project_and_create_traces(project_path):
     p = ProjectData.load_final_project_data_from_config(project_path)
-    p.logger.info(f"Building paper traces for {project_path}")
     output = p.calc_all_paper_traces()
     return output
 
@@ -44,10 +43,11 @@ def main():
                 jobs.remove(job)
 
         # Schedule new jobs
-        for path in all_project_paths.items():
+        for name, project_path in all_project_paths.items():
             # Make a new folder in the parent folder
             # Add the baseline parameters, and save in this folder
-            job = executor.submit(load_project_and_create_traces, path)
+            print(f"Submitting job to build paper traces for {name}")
+            job = executor.submit(load_project_and_create_traces, project_path)
             jobs.append(job)
             time.sleep(1)
 
