@@ -718,20 +718,15 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         else:
             # Then it will need to be produced
             btf_file = os.path.join(behavior_raw_folder, 'raw_stack.btf')
-            self.logger.warning(f"No .btf file found, will produce it in the raw data folder: {btf_file}")
+            self.logger.warning(f"No .btf file found, will produce it in the raw data folder: {btf_file},"
+                                f"UNLESS you have updated to NDTIFF. In that case, don't worry")
 
         # Look for background image
-        background_parent_folder = glob.glob(f"{multiday_parent_folder}/background/*background*BH*")
+
+        background_parent_folder = self._get_background_parent_folder(multiday_parent_folder,
+                                                                      crash_if_no_background=crash_if_no_background)
         # First, try to just load with the ndtiff reader
-        if len(background_parent_folder) != 1:
-            msg = f"Found no or more than one background folder(s): {background_parent_folder}"
-            if crash_if_no_background:
-                raise RawDataFormatError(msg)
-            else:
-                self.logger.warning(msg)
-                background_parent_folder = None
-        else:
-            background_parent_folder = background_parent_folder[0]
+        if background_parent_folder is not None:
             try:
                 # Same reading style as stack_z_projection
                 _ = MicroscopeDataReader(background_parent_folder, as_raw_tiff=True, raw_tiff_num_slices=1)
@@ -752,9 +747,34 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             else:
                 background_img = os.path.join(behavior_output_folder, 'AVG' + os.path.basename(background_video))
                 background_img = str(Path(background_img).with_suffix('.tif'))
+        else:
+            background_video, background_img = None, None
 
         return behavior_parent_folder, behavior_raw_folder, behavior_output_folder, \
             background_img, background_video, btf_file
+
+    def _get_background_parent_folder(self, multiday_parent_folder, suffix='BH', crash_if_no_background=False) -> (
+            Optional)[str]:
+        # First, get intermediate folder: anything with 'background'
+        background_parent_folder = glob.glob(f"{multiday_parent_folder}/*background*")
+        if len(background_parent_folder) != 1:
+            msg = f"Found no or more than one background folder(s): {background_parent_folder}"
+            if crash_if_no_background:
+                raise RawDataFormatError(msg)
+            else:
+                self.logger.warning(msg)
+                return None
+        specific_background_parent_folder = glob.glob(f"{background_parent_folder}/*background*{suffix}*")
+        if len(specific_background_parent_folder) != 1:
+            msg = f"Found no or more than one specific background folder(s) for datatype {suffix}: {specific_background_parent_folder}"
+            if crash_if_no_background:
+                raise RawDataFormatError(msg)
+            else:
+                self.logger.warning(msg)
+                return None
+        else:
+            specific_background_parent_folder = specific_background_parent_folder[0]
+        return specific_background_parent_folder
 
     def _find_individual_background_files(self, background_parent_folder, crash_if_no_background):
         # Otherwise, try to find specific files
