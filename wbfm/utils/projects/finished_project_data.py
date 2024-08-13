@@ -1990,9 +1990,6 @@ class ProjectData:
         x = self.x_for_plots
         return [x[0], x[-1]]
 
-    def __call__(self, project_path: Union[str, Path], **kwargs):
-        return self.load_final_project_data_from_config(project_path, **kwargs)
-
     def __repr__(self):
         return f"=======================================\n\
 Project data for directory:\n\
