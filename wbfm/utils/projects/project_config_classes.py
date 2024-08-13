@@ -718,11 +718,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         else:
             # Then it will need to be produced
             btf_file = os.path.join(behavior_raw_folder, 'raw_stack.btf')
-            self.logger.warning(f"No .btf file found, will produce it in the raw data folder: {btf_file},"
+            self.logger.warning(f"No .btf file found, will produce it in the raw data folder: {btf_file}, "
                                 f"UNLESS you have updated to NDTIFF. In that case, don't worry")
 
         # Look for background image
-
         background_parent_folder = self._get_background_parent_folder(multiday_parent_folder,
                                                                       crash_if_no_background=crash_if_no_background)
         # First, try to just load with the ndtiff reader
@@ -753,8 +752,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return behavior_parent_folder, behavior_raw_folder, behavior_output_folder, \
             background_img, background_video, btf_file
 
-    def _get_background_parent_folder(self, multiday_parent_folder, suffix='BH', crash_if_no_background=False) -> (
-            Optional)[str]:
+    def _get_background_parent_folder(self, multiday_parent_folder, suffix='BH', crash_if_no_background=True) -> \
+            Optional[str]:
         # First, get intermediate folder: anything with 'background'
         background_parent_folder = glob.glob(f"{multiday_parent_folder}/*background*")
         if len(background_parent_folder) != 1:
@@ -764,9 +763,12 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             else:
                 self.logger.warning(msg)
                 return None
+        # Second, actual background folder
+        background_parent_folder = background_parent_folder[0]
         specific_background_parent_folder = glob.glob(f"{background_parent_folder}/*background*{suffix}*")
         if len(specific_background_parent_folder) != 1:
-            msg = f"Found no or more than one specific background folder(s) for datatype {suffix}: {specific_background_parent_folder}"
+            msg = (f"Found no or more than one specific background folder(s) for channel {suffix}: "
+                   f"{specific_background_parent_folder}")
             if crash_if_no_background:
                 raise RawDataFormatError(msg)
             else:
