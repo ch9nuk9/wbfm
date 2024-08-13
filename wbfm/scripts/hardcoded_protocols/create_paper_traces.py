@@ -12,7 +12,7 @@ def load_project_and_create_traces(project_path):
     return {'result': output}
 
 
-def main():
+def main(run_locally=False, DEBUG=False):
     # Load all paths to datasets used in the paper
     all_paths_gcamp = load_paper_datasets(['gcamp', 'hannah_O2_fm'], only_load_paths=True)
     all_paths_gfp = load_paper_datasets(['gfp'], only_load_paths=True)
@@ -21,21 +21,36 @@ def main():
     all_project_paths = all_paths_gcamp.copy()
     all_project_paths.update(all_paths_gfp)
     all_project_paths.update(all_paths_immob)
+    if DEBUG:
+        # Just one project
+        k = list(all_project_paths.keys())[0]
+        all_project_paths = {k: all_project_paths[k]}
     logging.info(f"Found {len(all_project_paths)} projects to process")
 
     # Set up the executor
-    executor = AutoExecutor(folder="/tmp/submitit_runs", cluster='slurm')
-    executor.update_parameters(slurm_time=f"0-04:00:00")
-    executor.update_parameters(cpus_per_task=16)
-    executor.update_parameters(slurm_mem="128G")
-    executor.update_parameters(slurm_partition="basic,gpu")
-    executor.update_parameters(slurm_job_name="create_paper_traces")
+    if run_locally:
+        executor = AutoExecutor(folder="/tmp/submitit_runs", cluster='debug')
+    else:
+        executor = AutoExecutor(folder="/tmp/submitit_runs", cluster='slurm')
+        executor.update_parameters(slurm_time=f"0-04:00:00")
+        executor.update_parameters(cpus_per_task=16)
+        executor.update_parameters(slurm_mem="128G")
+        executor.update_parameters(slurm_partition="basic,gpu")
+        executor.update_parameters(slurm_job_name="create_paper_traces")
+    executor.update_parameters(timeout_min=60)
 
+    # Schedule jobs
     jobs = []
+    for name, project_path in all_project_paths.items():
+        # Make a new folder in the parent folder
+        # Add the baseline parameters, and save in this folder
+        print(f"Submitting job to build paper traces for {name}")
+        job = executor.submit(load_project_and_create_traces, project_path)
+        jobs.append(job)
+        time.sleep(1)
     num_total_jobs = len(all_project_paths)
-    num_submitted = 0
     # Run until all the jobs have finished and our budget is used up.
-    while jobs or num_submitted < num_total_jobs:
+    while jobs:
         for job in jobs[:]:
             # Poll if any jobs completed
             # Local and debug jobs don't run until .result() is called.
@@ -44,20 +59,12 @@ def main():
                 result = job.result()
                 jobs.remove(job)
 
-        # Schedule new jobs
-        for name, project_path in all_project_paths.items():
-            # Make a new folder in the parent folder
-            # Add the baseline parameters, and save in this folder
-            print(f"Submitting job to build paper traces for {name}")
-            job = executor.submit(load_project_and_create_traces, project_path)
-            jobs.append(job)
-            num_submitted += 1
-            time.sleep(1)
-
         # Sleep for a bit before checking the jobs again to avoid overloading the cluster.
         # If you have a large number of jobs, consider adding a sleep statement in the job polling loop aswell.
-        time.sleep(5*60)
+        if not DEBUG:
+            time.sleep(5*60)
+        print(f"Remaining jobs: {len(jobs)}/{num_total_jobs}")
 
 
 if __name__ == "__main__":
-    main()
+    main(run_locally=True, DEBUG=True)
