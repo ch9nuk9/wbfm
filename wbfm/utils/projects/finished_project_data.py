@@ -1016,7 +1016,7 @@ class ProjectData:
     def calc_paper_traces(self, channel_mode='dr_over_r_50', residual_mode=None, **kwargs):
         return self.data_cacher.paper_trace_dispatcher(channel_mode=channel_mode, residual_mode=residual_mode, **kwargs)
 
-    def _calc_all_paper_traces(self):
+    def calc_all_paper_traces(self):
         # Primarily for caching
         df_traces = self.calc_paper_traces()
         df_res = self.calc_paper_traces(residual_mode='pca')
