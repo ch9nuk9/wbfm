@@ -461,7 +461,7 @@ class PaperDataCache:
         if delete_invalid_indices:
             possible_fnames.append(self.invalid_indices_cache_fname())
         for fname in possible_fnames:
-            if os.path.exists(fname):
+            if fname is not None and os.path.exists(fname):
                 if verbose >= 1:
                     print(f"Deleting {fname}")
                 if not dry_run:
