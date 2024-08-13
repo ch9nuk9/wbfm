@@ -1020,7 +1020,7 @@ class ProjectData:
         # Primarily for caching
         df_traces = self.calc_paper_traces()
         df_res = self.calc_paper_traces(residual_mode='pca')
-        df_global = self.calc_paper_traces_global(residual_mode='pca_global')
+        df_global = self.calc_paper_traces(residual_mode='pca_global')
         return df_traces, df_res, df_global
 
     @lru_cache(maxsize=16)
