@@ -657,7 +657,7 @@ class ProjectData:
         calculation_mode - integration (raw sum of pixels), volume, mean, z, likelihood (from the tracks dataframe)
         neuron_name - example: 'neuron_001'
         remove_outliers - try to remove spiking outliers
-        filter_mode - try to filter; not currently working
+        filter_mode - try to filter
         min_confidence - if confidence below this, plot a gap
         residual_mode - for compatibility; intentionally unused here
 

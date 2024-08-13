@@ -284,7 +284,7 @@ def fast_slow_decomposition(y, fast_window=0, slow_window=9):
 
 def filter_trace_using_mode(y, filter_mode="no_filtering"):
     if filter_mode == "rolling_mean":
-        y = filter_rolling_mean(y, window=5)
+        y = filter_rolling_mean(y, window=3)
     elif filter_mode == "strong_rolling_mean":
         y = filter_gaussian_moving_average(y, std=5)
     elif filter_mode == "linear_interpolation":
