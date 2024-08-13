@@ -64,7 +64,8 @@ def main(run_locally=False, DEBUG=False):
         if not DEBUG:
             time.sleep(5*60)
         print(f"Remaining jobs: {len(jobs)}/{num_total_jobs}")
+    print("All jobs finished")
 
 
 if __name__ == "__main__":
-    main(run_locally=True, DEBUG=True)
+    main(run_locally=False, DEBUG=False)

@@ -946,8 +946,9 @@ class ProjectData:
 
         # Optional: fill all gaps (required for some steps)
         if residual_mode is not None and residual_mode != 'none':
-            interpolate_nan = True
-            self.logger.warning("Residual mode only works if nan are interpolated, enforcing that setting")
+            if not interpolate_nan:
+                interpolate_nan = True
+                self.logger.warning("Residual mode only works if nan are interpolated, enforcing that setting")
         if interpolate_nan:
             df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
             for i in range(5):
