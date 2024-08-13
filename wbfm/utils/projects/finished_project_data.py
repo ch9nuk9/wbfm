@@ -2210,7 +2210,7 @@ def load_all_projects_from_list(list_of_project_folders: List[Union[str, Path]],
             if not only_load_paths:
                 all_projects_dict[proj.shortened_name] = proj
             else:
-                all_projects_dict[Path(proj).stem] = proj
+                all_projects_dict[Path(proj).parent.stem] = proj
 
     return all_projects_dict
 
