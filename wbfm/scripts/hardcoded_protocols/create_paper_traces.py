@@ -9,7 +9,7 @@ from submitit import AutoExecutor, LocalJob, DebugJob
 def load_project_and_create_traces(project_path):
     p = ProjectData.load_final_project_data_from_config(project_path)
     output = p.calc_all_paper_traces()
-    return output
+    return {'result': output}
 
 
 def main():
