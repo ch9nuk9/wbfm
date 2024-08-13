@@ -32,8 +32,10 @@ def main():
     executor.update_parameters(slurm_job_name="create_paper_traces")
 
     jobs = []
+    num_total_jobs = len(all_project_paths)
+    num_submitted = 0
     # Run until all the jobs have finished and our budget is used up.
-    while jobs:
+    while jobs or num_submitted < num_total_jobs:
         for job in jobs[:]:
             # Poll if any jobs completed
             # Local and debug jobs don't run until .result() is called.
@@ -49,6 +51,7 @@ def main():
             print(f"Submitting job to build paper traces for {name}")
             job = executor.submit(load_project_and_create_traces, project_path)
             jobs.append(job)
+            num_submitted += 1
             time.sleep(1)
 
         # Sleep for a bit before checking the jobs again to avoid overloading the cluster.
