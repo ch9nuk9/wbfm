@@ -172,11 +172,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             callbacks=[self.save_everything_to_disk]
         )
 
+        # Set detailed titles
+        self.viewer.title = f"Trace Explorer for project: {self.dat.project_dir}"
+
         # Open a new window with manual neuron name editing, if you have permissions in the project
         self.manualNeuronNameEditor = self.dat.build_neuron_editor_gui()
         if self.manualNeuronNameEditor is not None:
             self.manualNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
             self.manualNeuronNameEditor.multiple_annotations_updated.connect(self.update_neuron_id_strings_in_layer)
+            self.manualNeuronNameEditor.setWindowTitle(f"Neuron Name Editor for project: {self.dat.project_dir}")
             self.manualNeuronNameEditor.show()
 
         self.logger.debug("Finished main UI setup")
