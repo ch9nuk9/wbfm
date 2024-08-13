@@ -555,7 +555,13 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                     width_factor_addition -= 0.04
 
                 plt.tight_layout()
+            else:
 
+                fig.update_yaxes(title="$\Delta R / R_{50}$")
+                if show_x_label:
+                    fig.update_xaxes(title="Time (s)")
+
+            # Final saving
             if output_folder is not None:
                 if i_figure == 0:  # Big
                     fig_opt = dict(width_factor=1.0 + width_factor_addition,
@@ -574,14 +580,16 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                     raise NotImplementedError(f"i_figure={i_figure} not implemented")
                 apply_figure_settings(fig, plotly_not_matplotlib=use_plotly, **fig_opt)
 
-                # if use_plotly:
-                #     fig.show()
-
                 title = self.get_title_from_trigger_type(trigger_type)
                 fname = title.replace(" ", "_").replace(",", "").lower()
                 fname = os.path.join(output_folder, f'{neuron_name}-{fname}.png')
-                plt.savefig(fname, transparent=True)
-                plt.savefig(fname.replace(".png", ".svg"))
+
+                if not use_plotly:
+                    plt.savefig(fname, transparent=True)
+                    plt.savefig(fname.replace(".png", ".svg"))
+                else:
+                    fig.write_image(fname.replace(".png", ".svg"))
+                    fig.write_image(fname, scale=7)
 
         return fig, ax
 
