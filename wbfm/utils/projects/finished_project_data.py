@@ -1016,6 +1016,13 @@ class ProjectData:
     def calc_paper_traces(self, channel_mode='dr_over_r_50', residual_mode=None, **kwargs):
         return self.data_cacher.paper_trace_dispatcher(channel_mode=channel_mode, residual_mode=residual_mode, **kwargs)
 
+    def _calc_all_paper_traces(self):
+        # Primarily for caching
+        df_traces = self.calc_paper_traces()
+        df_res = self.calc_paper_traces(residual_mode='pca')
+        df_global = self.calc_paper_traces_global(residual_mode='pca_global')
+        return df_traces, df_res, df_global
+
     @lru_cache(maxsize=16)
     def calc_raw_traces(self, neuron_names: tuple, **opt: dict):
         """
@@ -1982,6 +1989,9 @@ class ProjectData:
         """
         x = self.x_for_plots
         return [x[0], x[-1]]
+
+    def __call__(self, project_path: Union[str, Path], **kwargs):
+        return self.load_final_project_data_from_config(project_path, **kwargs)
 
     def __repr__(self):
         return f"=======================================\n\
