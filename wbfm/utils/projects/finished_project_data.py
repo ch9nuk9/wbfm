@@ -2175,7 +2175,8 @@ def load_all_projects_in_folder(folder_name: str, **kwargs) -> Dict[str, Project
     return all_projects
 
 
-def load_all_projects_from_list(list_of_project_folders: List[Union[str, Path]], **kwargs) -> Dict[str, ProjectData]:
+def load_all_projects_from_list(list_of_project_folders: List[Union[str, Path]], only_load_paths=False,
+                                **kwargs) -> Dict[str, Union[ProjectData]]:
     """
     Loads all projects from a list.
 
@@ -2190,13 +2191,15 @@ def load_all_projects_from_list(list_of_project_folders: List[Union[str, Path]],
             return None
         for file in Path(_folder).iterdir():
             if "project_config.yaml" in file.name and not file.name.startswith('.'):
-                proj = ProjectData.load_final_project_data_from_config(file, **kwargs)
-                return proj
+                if not only_load_paths:
+                    return ProjectData.load_final_project_data_from_config(file, **kwargs)
+                else:
+                    return file
         return None
 
     for folder in tqdm(list_of_project_folders, leave=False):
         proj = check_folder_and_load(folder)
-        if proj is not None:
+        if proj is not None and not only_load_paths:
             all_projects_dict[proj.shortened_name] = proj
 
     return all_projects_dict

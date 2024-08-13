@@ -114,7 +114,8 @@ def get_hierarchical_modeling_dir(gfp=False, immobilized=False):
         return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling"
 
 
-def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=False, **kwargs) -> dict:
+def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=False, only_load_paths=False,
+                        **kwargs) -> dict:
     """
 
     As of Dec 2022, these are the datasets we will use, with this condition:
@@ -150,7 +151,7 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
         }
         list_of_all_projects = _resolve_project_from_worm_id(folder_and_id_dict)
 
-        good_projects = load_all_projects_from_list(list_of_all_projects, **kwargs)
+        good_projects = load_all_projects_from_list(list_of_all_projects, only_load_paths=only_load_paths, **kwargs)
     elif genotype == 'gcamp_good':
         # Determined by looking at the data and deciding which ones are good
         folder_and_id_dict = {
@@ -160,35 +161,35 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
             "2022-12-10_spacer_7b_2per_agar": [2, 5, 7, 8]
         }
         list_of_all_projects = _resolve_project_from_worm_id(folder_and_id_dict)
-        good_projects = load_all_projects_from_list(list_of_all_projects, **kwargs)
+        good_projects = load_all_projects_from_list(list_of_all_projects, only_load_paths=only_load_paths, **kwargs)
     elif genotype == 'gfp':
         folder_path = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-12-10_spacer_7b_2per_agar_GFP'
-        good_projects = load_all_projects_in_folder(folder_path, **kwargs)
+        good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
     elif genotype == 'immob':
         folder_path = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-11-03_immob_adj_settings_2'
         require_behavior = False  # No annotation of behavior here
-        good_projects = load_all_projects_in_folder(folder_path, **kwargs)
+        good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
         # Second folder, which extends above dictionary
         folder_path = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-12-12_immob'
-        good_projects.update(load_all_projects_in_folder(folder_path, **kwargs))
+        good_projects.update(load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs))
     elif genotype == 'hannah_O2_fm':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/freely_moving_wt'
-        good_projects = load_all_projects_in_folder(folder_path, **kwargs)
+        good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/IM_to_FM_freely_moving'
-        good_projects.update(load_all_projects_in_folder(folder_path, **kwargs))
+        good_projects.update(load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs))
     elif genotype == 'hannah_O2_immob':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/immobilized_wt'
-        good_projects = load_all_projects_in_folder(folder_path, **kwargs)
+        good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
     elif genotype == 'hannah_O2_fm_mutant':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/freely_moving_mutant'
-        good_projects = load_all_projects_in_folder(folder_path, **kwargs)
+        good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
     elif genotype == 'hannah_O2_immob_mutant':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/immobilized_mutant'
-        good_projects = load_all_projects_in_folder(folder_path, **kwargs)
+        good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
     else:
         raise NotImplementedError
 
-    if require_behavior:
+    if require_behavior and not only_load_paths:
         print("Filtering out projects without behavior")
         good_projects_filtered = {k: p for k, p in good_projects.items() if p.worm_posture_class.has_beh_annotation}
         if len(good_projects_filtered) < len(good_projects):
@@ -197,8 +198,9 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
         good_projects_filtered = good_projects
 
     # Change setting to use physical time for all
-    for project in good_projects_filtered.values():
-        project.use_physical_time = True
+    if not only_load_paths:
+        for project in good_projects_filtered.values():
+            project.use_physical_time = True
 
     print(f"Loaded {len(good_projects_filtered)} projects")
 
