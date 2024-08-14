@@ -1,3 +1,4 @@
+import argparse
 import logging
 import time
 
@@ -68,4 +69,9 @@ def main(run_locally=False, DEBUG=False):
 
 
 if __name__ == "__main__":
-    main(run_locally=True, DEBUG=False)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--run_locally', action='store_true', help='Run the jobs locally')
+    parser.add_argument('--DEBUG', action='store_true', help='Run the jobs locally')
+    args = parser.parse_args()
+
+    main(run_locally=args.run_locally, DEBUG=args.DEBUG)
