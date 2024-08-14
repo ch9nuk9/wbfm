@@ -950,7 +950,11 @@ class ProjectData:
                 interpolate_nan = True
                 self.logger.warning("Residual mode only works if nan are interpolated, enforcing that setting")
         if interpolate_nan:
-            df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
+            if self._trace_plotter.filter_mode == 'no_filtering':
+                df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
+            else:
+                df_filtered = df
+
             for i in range(5):
                 # Sometimes svd randomly doesn't converge; try again
                 try:
