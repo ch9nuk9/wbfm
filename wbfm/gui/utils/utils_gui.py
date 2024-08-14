@@ -391,7 +391,7 @@ class NeuronNameEditor(QWidget):
 
     def set_up_dummy_data(self):
         # Dummy data
-        column_names = ["Neuron ID", self.manual_id_column_name, "Metadata"]
+        column_names = [self.original_id_column_name, self.manual_id_column_name, "Metadata"]
         data = [
             ["neuron_001", "VB02", "Metadata 1"],
             ["neuron_002", "VB02", "Metadata 2"],
@@ -447,7 +447,7 @@ class NeuronNameEditor(QWidget):
             column_idx = list(self.df.columns).index(column_name)
         if column_offset != 0:
             column_idx += column_offset
-        row_index = self.df.index[self.df["Neuron ID"] == neuron_name].tolist()[0]
+        row_index = self.df.index[self.df[self.original_id_column_name] == neuron_name].tolist()[0]
         # print(f"Selecting row: {row_index} with original name {neuron_name}")
         selection_model = self.tableView.selectionModel()
         cell_index = self.model.index(row_index, column_idx)
@@ -501,7 +501,7 @@ class NeuronNameEditor(QWidget):
         # Also emit a signal if this is the "ID1" column
         # print(f"Updating dataframe cell: {row}, {col} to {string_data}")
         if emit_signal and col == self.manual_id_column_idx:
-            original_name = str(self.df.at[row, "Neuron ID"])
+            original_name = str(self.df.at[row, self.original_id_column_name])
             old_name = str(self.df.at[row, self.manual_id_column_name])
             new_name = string_data
             if old_name != new_name:
@@ -523,6 +523,10 @@ class NeuronNameEditor(QWidget):
     @property
     def manual_id_column_name(self):
         return "ID1"
+
+    @property
+    def original_id_column_name(self):
+        return "Neuron ID"
 
     def update_dataframe_range_from_table(self, top_left, bottom_right):
         for row in range(top_left.row(), bottom_right.row() + 1):
@@ -560,7 +564,8 @@ class NeuronNameEditor(QWidget):
             return False
         df = self.df.copy()
         # Do not save 'ID1' column values that are the same as the original name
-        df['ID1'] = df['ID1'].where(df['ID1'] != df['Neuron ID'], '')
+        id_col = self.manual_id_column_name
+        df[id_col] = df[id_col].where(df[id_col] != df[self.original_id_column_name], '')
 
         # Save
         if also_save_h5:
@@ -599,7 +604,7 @@ class NeuronNameEditor(QWidget):
 
         for name in duplicate_names:
             # Get the original name as well
-            original_name_list = df[df[self.manual_id_column_name] == name]["Neuron ID"]
+            original_name_list = df[df[self.manual_id_column_name] == name][self.original_id_column_name]
             str_to_add = f"{name} ({', '.join(original_name_list)})"
             self.duplicatesList.addItem(str_to_add)
 
@@ -639,6 +644,15 @@ class NeuronNameEditor(QWidget):
         # Update widget
         self.customIdedList.addItems(custom_ids)
 
+    def original2custom(self):
+        """
+        Mapping between original names and custom ids, as currently annotated
+        """
+        df = self.df
+        id_col = self.manual_id_column_name
+
+        pass
+
     def swap_left_right_annotations(self):
         """
         Swap the ID'ed neurons that are left/right
@@ -664,7 +678,7 @@ class NeuronNameEditor(QWidget):
                     did_swap = True
                 if did_swap:
                     logging.info(f"Swapping {starting_id} to {df.at[i, id_col]}")
-                    all_original_names.append(str(row["Neuron ID"]))
+                    all_original_names.append(str(row[self.original_id_column_name]))
                     all_old_names.append(str(starting_id))
                     all_new_names.append(str(df.at[i, id_col]))
 
