@@ -203,7 +203,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Change trace filtering (dropdown)
         self.changeTraceFilteringDropdown = QtWidgets.QComboBox()
         self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation',
-                                                    'strong_rolling_mean', 'bilateral'])
+                                                    'strong_rolling_mean', 'gaussian_moving_average', 'bilateral'])
         self.changeTraceFilteringDropdown.setCurrentText('rolling_mean')
         self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Trace filtering:", self.changeTraceFilteringDropdown)
@@ -1328,31 +1328,13 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         -------
 
         """
-        mode = self.ppcaOutlierOverlayCheckbox.currentText()
-        if mode == 'show':
+        if self.ppcaOutlierOverlayCheckbox.isChecked():
             self.logger.debug("Adding tracking outliers")
             self.add_tracking_outliers_to_plot()
         else:
-            # Remove from the plot for all other strings
             self.logger.debug("Removing tracking outliers")
             self.remove_tracking_outliers_from_plot()
         self.draw_subplot()
-
-    # def switch_neuron_id_strings(self):
-    #     """
-    #     Changes the Neuron ID layer to display either automatic or manually determined names
-    #
-    #     These correspond to two different fields produced on layer initialization
-    #
-    #     Returns
-    #     -------
-    #
-    #     """
-    #     if not self.changeNeuronIdLayer.isChecked():
-    #         # This is the default; see napari_labels_from_traces_dataframe
-    #         self.neuron_id_layer.text = {'string': '{automatic_label}'}
-    #     else:
-    #         self.neuron_id_layer.text = {'string': '{custom_label}'}
 
     def update_neuron_id_strings_in_layer(self, original_name: Union[list, str], old_name, new_name: Union[list, str],
                                           actually_update_gui=True):
