@@ -45,7 +45,9 @@ def main(run_locally=False, DEBUG=False):
     else:
         # Can't use /tmp/submitit_runs because the cluster can't access it
         # https://github.com/facebookincubator/submitit/blob/main/docs/tips.md
-        executor = AutoExecutor(folder=os.getcwd(), cluster='slurm')
+        log_dir = os.path.join(os.getcwd(), 'log')
+        os.makedirs(log_dir, exist_ok=True)
+        executor = AutoExecutor(folder=log_dir, cluster='slurm')
         executor.update_parameters(slurm_time=f"0-04:00:00")
         executor.update_parameters(cpus_per_task=16)
         executor.update_parameters(slurm_mem="128G")
