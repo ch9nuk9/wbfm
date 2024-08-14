@@ -18,7 +18,7 @@ from wbfm.utils.external.utils_matplotlib import round_yticks
 
 from wbfm.utils.external.utils_pandas import split_flattened_index
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
-from wbfm.utils.general.utils_paper import apply_figure_settings
+from wbfm.utils.general.utils_paper import apply_figure_settings, paper_trace_settings
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_list_of_projects, \
     ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level, calc_p_value_using_ttest_triggered_average
@@ -61,9 +61,8 @@ class PaperColoredTracePlotter:
         return color_mapping[trigger_type]
 
     def get_trace_opt(self, **kwargs):
-        trace_opt = dict(interpolate_nan=True, channel_mode='dr_over_r_20', remove_outliers=True,
-                         rename_neurons_using_manual_ids=True, manual_id_confidence_threshold=0,
-                         min_nonnan=0.8, use_physical_time=True)
+        trace_opt = paper_trace_settings()
+        trace_opt['use_paper_options'] = True
         trace_opt.update(kwargs)
         return trace_opt
 
