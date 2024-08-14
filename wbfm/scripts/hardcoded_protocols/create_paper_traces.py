@@ -1,6 +1,8 @@
 import argparse
 import logging
+import sys
 import time
+import traceback
 
 from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -8,8 +10,16 @@ from submitit import AutoExecutor, LocalJob, DebugJob
 
 
 def load_project_and_create_traces(project_path):
-    p = ProjectData.load_final_project_data_from_config(project_path)
-    output = p.calc_all_paper_traces()
+    # Try to properly log; see https://github.com/facebookresearch/hydra/issues/2664
+    try:
+        p = ProjectData.load_final_project_data_from_config(project_path)
+        output = p.calc_all_paper_traces()
+    except BaseException as e:
+        traceback.print_exc(file=sys.stderr)
+        raise e
+    finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
     return {'result': output}
 
 
@@ -65,9 +75,8 @@ def main(run_locally=False, DEBUG=False):
 
         # Sleep for a bit before checking the jobs again to avoid overloading the cluster.
         # If you have a large number of jobs, consider adding a sleep statement in the job polling loop aswell.
-        if not DEBUG:
-            time.sleep(5*60)
         print(f"Remaining jobs: {len(jobs)}/{num_total_jobs}")
+        time.sleep(5*60)
     print("All jobs finished")
 
 
