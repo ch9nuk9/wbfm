@@ -1324,7 +1324,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         -------
 
         """
-        mode = self.changeTraceTrackletDropdown.currentText()
+        mode = self.changePpcaOutlierDropdown.currentText()
         if mode == 'show':
             self.logger.debug("Adding tracking outliers")
             self.add_tracking_outliers_to_plot()
@@ -1332,7 +1332,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # Remove from the plot for all other strings
             self.logger.debug("Removing tracking outliers")
             self.remove_tracking_outliers_from_plot()
-        self.draw_subplot()
+        # Update is needed because the trace might changed
+        self.update_trace_subplot()
+        # self.draw_subplot()
 
     # def switch_neuron_id_strings(self):
     #     """
