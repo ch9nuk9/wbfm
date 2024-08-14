@@ -236,7 +236,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Display ppca outlier candidates (dropdown)
         self.changePpcaOutlierDropdown = QtWidgets.QComboBox()
         self.changePpcaOutlierDropdown.addItems(['none', 'show', 'remove'])
-        self.changePpcaOutlierDropdown.stateChanged.connect(self.add_or_remove_tracking_outliers)
+        self.changePpcaOutlierDropdown.setCurrentText('none')
+        self.changePpcaOutlierDropdown.currentIndexChanged.connect(self.add_or_remove_tracking_outliers)
         self.formlayout3.addRow("PPCA tracking outlier mode", self.changePpcaOutlierDropdown)
         # Change behavior shading (dropdown)
         # Note: QListWidget allows multiple selection, but the display is very large... so use QComboBox instead
@@ -1863,7 +1864,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         filter_mode = self.changeTraceFilteringDropdown.currentText()
         residual_mode = self.changeResidualModeDropdown.currentText()
         interpolate_nan = self.changeInterpolationModeDropdown.isChecked()
-        ppca_mode = self.changePPCAModeDropdown.currentText() == 'remove'
+        ppca_mode = self.changePpcaOutlierDropdown.currentText() == 'remove'
         if residual_mode != 'none':
             interpolate_nan = True
         trace_opt = dict(channel_mode=channel, calculation_mode=calc_mode,
