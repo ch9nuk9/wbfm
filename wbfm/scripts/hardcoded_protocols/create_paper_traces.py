@@ -48,6 +48,8 @@ def main(run_locally=False, DEBUG=False):
         print(f"Submitting job to build paper traces for {name}")
         job = executor.submit(load_project_and_create_traces, project_path)
         jobs.append(job)
+        if DEBUG:
+            break
         time.sleep(1)
     num_total_jobs = len(all_project_paths)
     # Run until all the jobs have finished and our budget is used up.
@@ -58,6 +60,7 @@ def main(run_locally=False, DEBUG=False):
             if job.done() or type(job) in [LocalJob, DebugJob]:
                 # The log file isn't being produced, so print the stdout instead
                 result = job.result()
+                print(f"Job {job} finished with result shape: {result['result'][0].shape}")
                 jobs.remove(job)
 
         # Sleep for a bit before checking the jobs again to avoid overloading the cluster.
