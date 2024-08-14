@@ -190,7 +190,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 self.dataset_clusterer_dict['residual_collision'] = out[0]
                 self.intermediates_dict['residual_collision'] = out[1]
 
-            except TypeError:
+            except TypeError as e:
                 print("Hilbert triggered averages failed; this may be because the data is immobilized")
                 print("Only 'global' triggered averages will be available")
 

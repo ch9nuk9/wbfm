@@ -2600,7 +2600,7 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt
                                                                                       **kwargs)
             all_triggered_average_classes[name] = triggered_averages_class
         except NoBehaviorAnnotationsError:
-            print(f"Skipping {name} because it has no behavior annotations")
+            print(f"Skipping {p.project_dir} for behavior {trigger_opt_default['state']} because it has no or incomplete behavior annotations")
 
     # Combine all triggered averages dataframes, renaming to contain dataset information
     df_triggered_good = pd.concat(
