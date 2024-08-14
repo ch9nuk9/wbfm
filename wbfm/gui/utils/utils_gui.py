@@ -644,7 +644,7 @@ class NeuronNameEditor(QWidget):
         # Update widget
         self.customIdedList.addItems(custom_ids)
 
-    def original2custom(self):
+    def original2custom(self, remove_empty=False):
         """
         Mapping between original names and custom ids, as currently annotated
         """
@@ -654,7 +654,7 @@ class NeuronNameEditor(QWidget):
 
         # Create dictionary from these two columns
         mapping = dict(zip(df[orig_col], df[id_col]))
-        mapping = {str(k): str(v) for k, v in mapping.items()}
+        mapping = {str(k): str(v) for k, v in mapping.items() if not (remove_empty and v == '')}
         return mapping
 
     def swap_left_right_annotations(self):

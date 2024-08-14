@@ -233,11 +233,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.changeNeuronIdLayer.setChecked(False)
         # self.changeNeuronIdLayer.stateChanged.connect(self.switch_neuron_id_strings)
         # self.formlayout3.addRow("Display manual IDs?", self.changeNeuronIdLayer)
-        # Display ppca outlier candidates (checkbox)
-        self.changeOutlierOverlayCheckBox = QtWidgets.QCheckBox()
-        self.changeOutlierOverlayCheckBox.setChecked(False)
-        self.changeOutlierOverlayCheckBox.stateChanged.connect(self.add_or_remove_tracking_outliers)
-        self.formlayout3.addRow("Display tracking outliers?", self.changeOutlierOverlayCheckBox)
+        # Display ppca outlier candidates (dropdown)
+        self.changePpcaOutlierDropdown = QtWidgets.QComboBox()
+        self.changePpcaOutlierDropdown.addItems(['none', 'show', 'remove'])
+        self.changePpcaOutlierDropdown.stateChanged.connect(self.add_or_remove_tracking_outliers)
+        self.formlayout3.addRow("PPCA tracking outlier mode", self.changePpcaOutlierDropdown)
         # Change behavior shading (dropdown)
         # Note: QListWidget allows multiple selection, but the display is very large... so use QComboBox instead
         # Note also that most updates don't change the shading, so this has to fully rebuild the plot
@@ -1323,10 +1323,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         -------
 
         """
-        if self.changeOutlierOverlayCheckBox.isChecked():
+        mode = self.changeTraceTrackletDropdown.currentText()
+        if mode == 'show':
             self.logger.debug("Adding tracking outliers")
             self.add_tracking_outliers_to_plot()
         else:
+            # Remove from the plot for all other strings
             self.logger.debug("Removing tracking outliers")
             self.remove_tracking_outliers_from_plot()
         self.draw_subplot()
@@ -1574,8 +1576,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         neuron_name = self.changeNeuronDropdown.currentText()
         # Convert to custom IDs, if they exist
         if self.manualNeuronNameEditor is not None:
-            mapping = self.manualNeuronNameEditor.original2custom()
-            print(mapping)
+            mapping = self.manualNeuronNameEditor.original2custom(remove_empty=True)
             ref_name = mapping.get(ref_name, ref_name)
             neuron_name = mapping.get(neuron_name, neuron_name)
 
@@ -1862,6 +1863,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         filter_mode = self.changeTraceFilteringDropdown.currentText()
         residual_mode = self.changeResidualModeDropdown.currentText()
         interpolate_nan = self.changeInterpolationModeDropdown.isChecked()
+        ppca_mode = self.changePPCAModeDropdown.currentText() == 'remove'
         if residual_mode != 'none':
             interpolate_nan = True
         trace_opt = dict(channel_mode=channel, calculation_mode=calc_mode,
@@ -1871,6 +1873,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                          bleach_correct=bleach_correct,
                          residual_mode=residual_mode,
                          interpolate_nan=interpolate_nan,
+                         nan_using_ppca_manifold=ppca_mode,
                          remove_tail_neurons=False)
         return trace_opt
 
