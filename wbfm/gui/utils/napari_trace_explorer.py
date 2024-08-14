@@ -1569,7 +1569,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def remove_reference_line(self):
         # self.reference_line.set_data([], [])
-        self.reference_line.set_visible(False)
+        if self.reference_line is not None:
+            self.reference_line.set_visible(False)
 
     def get_subplot_title(self):
         ref_name = self.changeReferenceTrace.currentText()
