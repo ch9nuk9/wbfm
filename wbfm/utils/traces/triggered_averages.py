@@ -21,7 +21,7 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score, silhouette_samples
 from tqdm.auto import tqdm
 
-from wbfm.utils.external.custom_errors import NeedsAnnotatedNeuronError
+from wbfm.utils.external.custom_errors import NeedsAnnotatedNeuronError, NoBehaviorAnnotationsError
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior, shade_triggered_average
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
@@ -2595,9 +2595,12 @@ def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt
         kwargs.pop('trigger_opt')
 
     for name, p in tqdm(all_projects.items()):
-        triggered_averages_class = FullDatasetTriggeredAverages.load_from_project(p, trigger_opt=trigger_opt_default,
-                                                                                  **kwargs)
-        all_triggered_average_classes[name] = triggered_averages_class
+        try:
+            triggered_averages_class = FullDatasetTriggeredAverages.load_from_project(p, trigger_opt=trigger_opt_default,
+                                                                                      **kwargs)
+            all_triggered_average_classes[name] = triggered_averages_class
+        except NoBehaviorAnnotationsError:
+            print(f"Skipping {name} because it has no behavior annotations")
 
     # Combine all triggered averages dataframes, renaming to contain dataset information
     df_triggered_good = pd.concat(

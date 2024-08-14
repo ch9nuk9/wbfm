@@ -304,6 +304,8 @@ class WormFullVideoPosture:
     @lru_cache(maxsize=8)
     def hilbert_phase(self, fluorescence_fps=False, mod_2pi=True, **kwargs) -> pd.DataFrame:
         df = self._raw_hilbert_phase
+        if df is None:
+            raise NoBehaviorAnnotationsError("(hilbert_phase)")
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         if mod_2pi:
             df = (df % (2 * math.pi))
@@ -318,7 +320,8 @@ class WormFullVideoPosture:
 
     @cached_property
     def _raw_hilbert_phase(self):
-        return read_if_exists(self.filename_hilbert_phase, reader=pd.read_csv, header=None)
+        return read_if_exists(self.filename_hilbert_phase, reader=pd.read_csv, header=None,
+                              raise_warning=True)
 
     @lru_cache(maxsize=8)
     def hilbert_frequency(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
@@ -328,7 +331,8 @@ class WormFullVideoPosture:
 
     @cached_property
     def _raw_hilbert_frequency(self):
-        return read_if_exists(self.filename_hilbert_frequency, reader=pd.read_csv, header=None)
+        return read_if_exists(self.filename_hilbert_frequency, reader=pd.read_csv, header=None,
+                              raise_warning=True)
 
     @lru_cache(maxsize=8)
     def hilbert_carrier(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
@@ -338,7 +342,8 @@ class WormFullVideoPosture:
 
     @cached_property
     def _raw_hilbert_carrier(self):
-        return read_if_exists(self.filename_hilbert_carrier, reader=pd.read_csv, header=None)
+        return read_if_exists(self.filename_hilbert_carrier, reader=pd.read_csv, header=None,
+                              raise_warning=True)
 
     # @lru_cache(maxsize=8)
     def _self_collision(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:

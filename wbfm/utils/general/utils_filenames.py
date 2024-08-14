@@ -117,18 +117,24 @@ def pandas_read_any_filetype(filename, **kwargs):
         return None
 
 
-def read_if_exists(filename: str, reader=pandas_read_any_filetype, **kwargs):
+def read_if_exists(filename: str, reader=pandas_read_any_filetype, raise_warning=False, **kwargs):
     if filename is None:
-        return None
+        output = None
     elif os.path.exists(filename):
         try:
-            return reader(filename, **kwargs)
+            output = reader(filename, **kwargs)
         except UnicodeDecodeError:
             logging.warning(f"Encountered unicode error; aborting read of {filename}")
-            return None
+            output = None
     else:
-        logging.debug(f"Did not find file {filename}")
-        return None
+        output = None
+    msg = f"Did not find file {filename}"
+    if raise_warning:
+        logging.warning(msg)
+        print(msg)
+    else:
+        logging.debug(msg)
+    return output
 
 
 def pickle_load_binary(fname, verbose=0):
