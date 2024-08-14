@@ -1567,6 +1567,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         integration_or_not = self.changeTraceCalculationDropdown.currentText()
         traces_or_tracklets = self.changeTraceTrackletDropdown.currentText()
         neuron_name = self.changeNeuronDropdown.currentText()
+        # Convert to custom IDs, if they exist
+        if self.manualNeuronNameEditor is not None:
+            mapping = self.manualNeuronNameEditor.original2custom()
+            ref_name = mapping.get('ref_name', ref_name)
+            neuron_name = mapping.get('neuron_name', neuron_name)
+
         if traces_or_tracklets == 'tracklets':
             title = f"Tracklets for {neuron_name}"
         else:

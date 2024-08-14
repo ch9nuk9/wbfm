@@ -650,8 +650,12 @@ class NeuronNameEditor(QWidget):
         """
         df = self.df
         id_col = self.manual_id_column_name
+        orig_col = self.original_id_column_name
 
-        pass
+        # Create dictionary from these two columns
+        mapping = dict(zip(df[orig_col], df[id_col]))
+        mapping = {str(k): str(v) for k, v in mapping.items()}
+        return mapping
 
     def swap_left_right_annotations(self):
         """
