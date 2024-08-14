@@ -364,8 +364,12 @@ def neurons_with_confident_ids(combine_left_right=False):
                     #'URAVL', 'URAVR',
                     'URYVL', 'URYVR', 'URADL', 'URADR', 'URYDL', 'URYDR',
                     'RIVR', 'RIVL', 'SMDVL', 'SMDVR', 'SMDDR', 'SMDDL',
+                    'SIAVL', 'SIAVR', 'SAAVL', 'SAAVR', 'SIADL', 'SIADR', 'RIAL', 'RIAR',
+                    'RMDDL', 'RMDDR', 'RMDVL', 'RMDVR', 'AVFL', 'AVFR', 'AWBL', 'AWBR',
+                    'AWAL', 'AWAR',
+                    'IL1LL', 'IL1LR', 'IL2LL', 'IL2LR', #'OLQDL', 'OLQDR', 'OLQVL', 'OLQVR',
                     'ALA', 'RIS', 'AQR', 'RMDVL', 'RMDVR', 'URXL', 'URXR',
-                    'VB02', 'VB03', 'DB01', 'DB02', 'VA01', 'VA02', 'DA01',
+                    'VB01', 'VB02', 'VB03', 'DB01', 'DB02', 'VA01', 'VA02', 'DA01', 'DD01',
                     'RIBL', 'RIBR', 'RMEL', 'RMER', 'RMED', 'RMEV', 'RID', 'AVBL', 'AVBR']
     if combine_left_right:
         neuron_names = [n[:-1] if (n[-1] in ['L', 'R'] and len(n) > 3) else n for n in neuron_names ]
