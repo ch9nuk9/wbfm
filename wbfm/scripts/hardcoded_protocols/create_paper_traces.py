@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import sys
 import time
 import traceback
@@ -42,7 +43,9 @@ def main(run_locally=False, DEBUG=False):
     if run_locally:
         executor = AutoExecutor(folder="/tmp/submitit_runs", cluster='debug')
     else:
-        executor = AutoExecutor(folder="/tmp/submitit_runs", cluster='slurm')
+        # Can't use /tmp/submitit_runs because the cluster can't access it
+        # https://github.com/facebookincubator/submitit/blob/main/docs/tips.md
+        executor = AutoExecutor(folder=os.getcwd(), cluster='slurm')
         executor.update_parameters(slurm_time=f"0-04:00:00")
         executor.update_parameters(cpus_per_task=16)
         executor.update_parameters(slurm_mem="128G")
