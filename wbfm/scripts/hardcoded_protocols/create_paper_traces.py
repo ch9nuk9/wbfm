@@ -81,7 +81,8 @@ def main(run_locally=False, DEBUG=False):
         # Sleep for a bit before checking the jobs again to avoid overloading the cluster.
         # If you have a large number of jobs, consider adding a sleep statement in the job polling loop aswell.
         print(f"Remaining jobs: {len(jobs)}/{num_total_jobs}")
-        time.sleep(5*60)
+        if len(jobs) > 0:
+            time.sleep(5*60)
     print("All jobs finished")
 
 
