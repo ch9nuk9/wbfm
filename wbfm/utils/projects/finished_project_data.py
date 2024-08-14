@@ -958,7 +958,7 @@ class ProjectData:
                 for i in range(5):
                     # Sometimes svd randomly doesn't converge; try again
                     try:
-                        df = impute_missing_values_in_dataframe(df_filtered, d=int(0.9*df.shape[1]))  # Removes larger holes
+                        df = impute_missing_values_in_dataframe(df, d=int(0.9*df.shape[1]))  # Removes larger holes
                         break
                     except np.linalg.LinAlgError:
                         if i == 0:
