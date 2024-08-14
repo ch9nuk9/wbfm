@@ -145,10 +145,17 @@ fi
 SLURM_SCRIPT=$(mktemp /tmp/slurm_script.XXXXXX)
 NUM_TASKS=${#neuron_list[@]}
 
+# gfp datasets are much faster to run
+if [ "$do_gfp" == "True" ]; then
+  NUM_HOURS=6
+else
+  NUM_HOURS=18
+fi
+
 cat << EOF > $SLURM_SCRIPT
 #!/bin/bash
 #SBATCH --array=0-$(($NUM_TASKS-1))
-#SBATCH --time=0-06:00:00
+#SBATCH --time=0-0$NUM_HOURS:00:00
 #SBATCH --mem=32G
 #SBATCH --cpus-per-task=6
 #SBATCH --partition=short,basic
