@@ -223,6 +223,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeBleachCorrectionCheckBox.setChecked(True)
         self.changeBleachCorrectionCheckBox.stateChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Do bleach correction?", self.changeBleachCorrectionCheckBox)
+        # Interpolate nan or not
+        self.changeInterpolationModeDropdown = QtWidgets.QCheckBox()
+        self.changeInterpolationModeDropdown.setChecked(False)
+        self.changeInterpolationModeDropdown.stateChanged.connect(self.update_trace_subplot)
+        self.formlayout3.addRow("Interpolate nan?", self.changeInterpolationModeDropdown)
         # Changing display in Neuron ID layer
         # self.changeNeuronIdLayer = QtWidgets.QCheckBox()
         # self.changeNeuronIdLayer.setChecked(False)
@@ -1570,8 +1575,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Convert to custom IDs, if they exist
         if self.manualNeuronNameEditor is not None:
             mapping = self.manualNeuronNameEditor.original2custom()
-            ref_name = mapping.get('ref_name', ref_name)
-            neuron_name = mapping.get('neuron_name', neuron_name)
+            print(mapping)
+            ref_name = mapping.get(ref_name, ref_name)
+            neuron_name = mapping.get(neuron_name, neuron_name)
 
         if traces_or_tracklets == 'tracklets':
             title = f"Tracklets for {neuron_name}"
@@ -1855,10 +1861,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         bleach_correct = self.changeBleachCorrectionCheckBox.isChecked()
         filter_mode = self.changeTraceFilteringDropdown.currentText()
         residual_mode = self.changeResidualModeDropdown.currentText()
+        interpolate_nan = self.changeInterpolationModeDropdown.isChecked()
         if residual_mode != 'none':
             interpolate_nan = True
-        else:
-            interpolate_nan = False
         trace_opt = dict(channel_mode=channel, calculation_mode=calc_mode,
                          remove_outliers=remove_outliers_activity,
                          filter_mode=filter_mode,
