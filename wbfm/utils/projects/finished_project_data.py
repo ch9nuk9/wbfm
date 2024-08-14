@@ -812,6 +812,7 @@ class ProjectData:
                             always_keep_manual_ids: bool = True,
                             use_paper_options: bool = False,
                             only_keep_confident_ids: bool = False,
+                            interpolate_nan_with_ppca: bool = False,
                             verbose=0,
                             **kwargs):
         """
@@ -951,19 +952,18 @@ class ProjectData:
                 self.logger.warning("Residual mode only works if nan are interpolated, enforcing that setting")
         if interpolate_nan:
             if self._trace_plotter.filter_mode == 'no_filtering':
-                df_filtered = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
-            else:
-                df_filtered = df
+                df = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
 
-            for i in range(5):
-                # Sometimes svd randomly doesn't converge; try again
-                try:
-                    df = impute_missing_values_in_dataframe(df_filtered, d=int(0.9*df.shape[1]))  # Removes larger holes
-                    break
-                except np.linalg.LinAlgError:
-                    if i == 0:
-                        self.logger.warning("SVD did not converge, trying again")
-                    continue
+            if interpolate_nan_with_ppca:
+                for i in range(5):
+                    # Sometimes svd randomly doesn't converge; try again
+                    try:
+                        df = impute_missing_values_in_dataframe(df_filtered, d=int(0.9*df.shape[1]))  # Removes larger holes
+                        break
+                    except np.linalg.LinAlgError:
+                        if i == 0:
+                            self.logger.warning("SVD did not converge, trying again")
+                        continue
             # Finally, really make sure there are no nan
             df = fill_nan_in_dataframe(df, do_filtering=False)
 
