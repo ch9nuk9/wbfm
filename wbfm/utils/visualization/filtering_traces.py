@@ -288,7 +288,7 @@ def filter_trace_using_mode(y, filter_mode="no_filtering"):
     elif filter_mode == "strong_rolling_mean":
         y = filter_rolling_mean(y, window=5)
     elif filter_mode == "gaussian_moving_average":
-        y = filter_gaussian_moving_average(y, std=1)
+        y = filter_gaussian_moving_average(y, std=1, window=5)  # Large window will fill too many nan values
     elif filter_mode == "linear_interpolation":
         y = filter_linear_interpolation(y, window=15)
     elif filter_mode == "3d_pca":
