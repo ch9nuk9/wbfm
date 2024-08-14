@@ -951,8 +951,8 @@ class ProjectData:
                 interpolate_nan = True
                 self.logger.warning("Residual mode only works if nan are interpolated, enforcing that setting")
         if interpolate_nan:
-            if self._trace_plotter.filter_mode == 'no_filtering':
-                df = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
+            # if self._trace_plotter.filter_mode == 'no_filtering':
+            #     df = df.rolling(window=3, center=True, min_periods=2).mean()  # Removes size-1 holes
 
             if interpolate_nan_with_ppca:
                 for i in range(5):

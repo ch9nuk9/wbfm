@@ -254,7 +254,7 @@ def fill_nan_in_dataframe(df, do_filtering=True):
     if do_filtering:
         df = filter_rolling_mean(df.copy(), window=3)
     df = df.copy().interpolate()
-    df.fillna(df.mean(), inplace=True)
+    df.fillna(df.mean(), inplace=True)  # Should only be edges
     return df
 
 
@@ -288,7 +288,7 @@ def filter_trace_using_mode(y, filter_mode="no_filtering"):
     elif filter_mode == "strong_rolling_mean":
         y = filter_rolling_mean(y, window=5)
     elif filter_mode == "gaussian_moving_average":
-        y = filter_gaussian_moving_average(y, std=3)
+        y = filter_gaussian_moving_average(y, std=1)
     elif filter_mode == "linear_interpolation":
         y = filter_linear_interpolation(y, window=15)
     elif filter_mode == "3d_pca":
