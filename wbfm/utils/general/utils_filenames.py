@@ -128,12 +128,13 @@ def read_if_exists(filename: str, reader=pandas_read_any_filetype, raise_warning
             output = None
     else:
         output = None
-    msg = f"Did not find file {filename}"
-    if raise_warning:
-        logging.warning(msg)
-        print(msg)
-    else:
-        logging.debug(msg)
+    if output is None:
+        msg = f"Did not find file {filename}"
+        if raise_warning:
+            logging.warning(msg)
+            print(msg)
+        else:
+            logging.debug(msg)
     return output
 
 
