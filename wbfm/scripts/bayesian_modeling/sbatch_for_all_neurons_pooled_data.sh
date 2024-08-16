@@ -156,7 +156,7 @@ cat << EOF > $SLURM_SCRIPT
 #!/bin/bash
 #SBATCH --array=0-$(($NUM_TASKS-1))
 #SBATCH --time=0-0$NUM_HOURS:00:00
-#SBATCH --mem=32G
+#SBATCH --mem=64G
 #SBATCH --cpus-per-task=6
 #SBATCH --partition=short,basic
 
