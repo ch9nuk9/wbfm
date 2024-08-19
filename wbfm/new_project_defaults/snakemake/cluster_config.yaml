@@ -4,8 +4,8 @@
 # https://lisc.univie.ac.at/wiki/content/working_environment/services/computational_resources
 
 __default__:
-    partition: basic
-    time: 0-4:00:00
+    partition: basic,gpu
+    time: 0-6:00:00
     nodes: 1
     cpus_per_task: 16
     mem: 128G
@@ -57,6 +57,10 @@ subtract_background:
     mem: 4G
     cpus_per_task: 8
 
+tiff2avi:
+    time: 0-18:00:00
+    cpus_per_task: 2
+
 dlc_analyze_videos:
     time: 0-08:00:00
     partition: basic,gpu
@@ -65,12 +69,12 @@ dlc_analyze_videos:
     gres: shard:32
 
 create_centerline:
-    time: 0-08:00:00
+    time: 0-06:00:00
     mem: 8G
     cpus_per_task: 4
 
 normalize_img:
-    time: 0-08:00:00
+    time: 0-06:00:00
     mem: 4G
     cpus_per_task: 8
 
@@ -89,5 +93,5 @@ coil_unet:
     gres: shard:32
 
 binarize:
-    time: 0-08:00:00
+    time: 0-06:00:00
     cpus_per_task: 8
