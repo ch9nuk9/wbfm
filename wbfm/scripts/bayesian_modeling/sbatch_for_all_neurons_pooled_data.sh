@@ -6,18 +6,18 @@
 function show_help {
   echo "Usage: $0 [-g] [-r] [-h] <gfp>"
   echo "  -g: Use GFP data"
-  echo "  -r: Use raw data"
+  echo "  -r: Trace mode; should be one of 'None', 'pca_global', 'pca_global_1'"
   echo "  -h: Show this help message"
 }
 
 # Get all user flags
 use_gfp="false"
 use_raw_trace="false"
-while getopts gr flag
+while getopts gr: flag
 do
     case "${flag}" in
         g) use_gfp="true";;
-        r) use_raw_trace="true";;
+        r) trace_mode=${OPTARG};;
         h) show_help
            exit 0;;
         *) raise error "Unknown flag"
@@ -161,8 +161,8 @@ else
   NUM_HOURS=18
 fi
 
-if [ "$use_raw_trace" == "true" ]; then
-  CMD="$CMD --use_raw_trace"
+if [ "$trace_mode" ]; then
+  CMD="$CMD --use_raw_trace $trace_mode"
 fi
 
 # Actually run

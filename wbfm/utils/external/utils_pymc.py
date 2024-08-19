@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
 
-def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', use_raw_trace=False,
+def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', residual_mode='pca_global',
                         sample_posterior=True, use_additional_behaviors=False, DEBUG=False) -> Tuple[pd.DataFrame, Dict, Dict]:
     """
     Fit multiple models to the same data, to be used for model comparison
@@ -36,7 +36,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', use_ra
     # First pack into a single dataframe to drop nan, then unpack
     try:
         df_model = get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name=dataset_name,
-                                                   curvature_terms=curvature_terms_to_use, use_raw_trace=use_raw_trace)
+                                                   curvature_terms=curvature_terms_to_use, residual_mode=residual_mode)
     except KeyError:
         print(f"Skipping {neuron_name} because there is no valid data")
         return None, None, None
@@ -340,7 +340,7 @@ def build_drift_term(dims=None, dataset_name_idx=None):
 
 
 def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
-                                    dataset_name='all', additional_columns=None, use_raw_trace=False):
+                                    dataset_name='all', additional_columns=None, residual_mode='pca_global'):
     print(f"Found data columns: {Xy.columns} and datasets: {Xy['dataset_name'].unique()}")
     print(f"Attempting to load curvature terms {curvature_terms} and additional columns {additional_columns}")
 
@@ -359,11 +359,16 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
     x_pca0 = (x_pca0 - x_pca0.mean()) / x_pca0.std()  # z-score
     x_pca1 = _Xy[f'pca_1']
     x_pca1 = (x_pca1 - x_pca1.mean()) / x_pca1.std()  # z-score
-    if not use_raw_trace:
+    if residual_mode is 'pca_global':
         # Predict the residual
         y = _Xy[f'{neuron_name}'] - _Xy[f'{neuron_name}_manifold']
-    else:
+    if residual_mode is 'pca_global_1':
+        # Subtract only pc1
+        y = _Xy[f'{neuron_name}'] - _Xy[f'{neuron_name}_manifold1']
+    elif residual_mode is None:
         y = _Xy[f'{neuron_name}']
+    else:
+        raise ValueError(f"Unknown residual mode {residual_mode}; should be None, 'pca_global', or 'pca_global_1'")
     y = (y - y.mean()) / y.std()  # z-score
     # Interesting covariate
     curvature = _Xy[curvature_terms]
@@ -382,7 +387,7 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
     return df_model
 
 
-def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True, use_raw_trace=True):
+def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True, residual_mode='pca_global'):
     """
     Runs for hardcoded data location for a single neuron
 
@@ -398,7 +403,7 @@ def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True
     """
     if neuron_name is None:
         neuron_name = 'VB02'
-    print(f"Running all 3 bayesian models for {neuron_name} with do_gfp={do_gfp} and use_raw_trace={use_raw_trace}")
+    print(f"Running all 3 bayesian models for {neuron_name} with do_gfp={do_gfp} and residual_mode={residual_mode}")
 
     data_dir = get_hierarchical_modeling_dir(do_gfp)
     fname = os.path.join(data_dir, 'data.h5')
@@ -413,7 +418,7 @@ def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True
                 # Recursion error
                 continue
             main(neuron_name, do_gfp=do_gfp, dataset_name=dataset_name, skip_if_exists=skip_if_exists,
-                 use_raw_trace=use_raw_trace)
+                 residual_mode=residual_mode)
         return
 
     if dataset_name == 'all':
@@ -428,7 +433,7 @@ def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True
 
     # Fit models
     df_compare, all_traces, all_models = fit_multiple_models(Xy, neuron_name, dataset_name=dataset_name,
-                                                             use_raw_trace=use_raw_trace, DEBUG=False)
+                                                             residual_mode=residual_mode, DEBUG=False)
 
     if df_compare is None:
         print(f"Skipping {neuron_name} because there is no valid data")
@@ -469,10 +474,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--neuron_name', '-n', type=str)
     parser.add_argument('--dataset_name', type=str)
+    parser.add_argument('--residual_mode', type=str, default='pca_global')
     # Boolean
-    parser.add_argument('--use_raw_trace', action='store_true')
     parser.add_argument('--do_gfp', action='store_true')
 
     args = parser.parse_args()
 
-    main(neuron_name=args.neuron_name, do_gfp=args.do_gfp, use_raw_trace=args.use_raw_trace)
+    residual_mode = args.residual_mode
+    if residual_mode == 'None':
+        residual_mode = None
+
+    main(neuron_name=args.neuron_name, do_gfp=args.do_gfp, residual_mode=residual_mode)

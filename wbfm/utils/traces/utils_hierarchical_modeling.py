@@ -58,7 +58,7 @@ def export_data_for_hierarchical_model(do_gfp=False, do_immobilized=False, skip_
     # New
     df_all_manifold1 = build_trace_time_series_from_multiple_projects(all_projects,
                                                                       use_paper_options=True,
-                                                                      residual_mode='pca_global-1')
+                                                                      residual_mode='pca_global_1')
     df_all_manifold1.sort_values(['dataset_name', 'local_time'], inplace=True)
 
     # Align and export
