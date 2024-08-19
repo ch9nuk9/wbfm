@@ -398,7 +398,7 @@ def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True
     """
     if neuron_name is None:
         neuron_name = 'VB02'
-    print(f"Running all 3 bayesian models for {neuron_name} with do_gfp={do_gfp}")
+    print(f"Running all 3 bayesian models for {neuron_name} with do_gfp={do_gfp} and use_raw_trace={use_raw_trace}")
 
     data_dir = get_hierarchical_modeling_dir(do_gfp)
     fname = os.path.join(data_dir, 'data.h5')
@@ -475,4 +475,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    main(neuron_name=args.neuron_name, do_gfp=do_gfp, use_raw_trace=use_raw_trace)
+    main(neuron_name=args.neuron_name, do_gfp=args.do_gfp, use_raw_trace=args.use_raw_trace)
