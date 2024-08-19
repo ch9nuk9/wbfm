@@ -981,6 +981,10 @@ class ProjectData:
                 _, df = calculate_residual_subtract_pca(df, n_components=2)
             elif residual_mode == 'nmf':
                 df, _ = calculate_residual_subtract_nmf(df, n_components=2)
+            elif 'pca_global' in residual_mode:
+                # Then assume there is a number after pca, separate by an underscore
+                n_components = int(residual_mode.split('_')[-1])
+                _, df = calculate_residual_subtract_pca(df, n_components=n_components)
             else:
                 raise NotImplementedError(f"Unrecognized residual mode: {residual_mode}")
 
