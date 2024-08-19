@@ -279,6 +279,8 @@ class PaperDataCache:
                 return self.calc_paper_traces_residual()
             elif residual_mode == 'pca_global':
                 return self.calc_paper_traces_global()
+            elif residual_mode == 'pca_global_1':
+                return self.calc_paper_traces_global_1()
             else:
                 raise ValueError(f"Unknown residual mode: {residual_mode}")
         else:
@@ -428,10 +430,32 @@ class PaperDataCache:
             raise ValueError(f"Paper traces (global) for project {self.project_data.project_dir} is None")
         return df
 
+    @cache_to_disk_class('paper_traces_global_1_cache_fname',
+                         func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
+                         func_load_from_disk=pd.read_hdf)
+    def calc_paper_traces_global_1(self):
+        """
+        Like calc_paper_traces but for the global mode.
+        """
+        opt = paper_trace_settings()
+        opt['residual_mode'] = 'pca_global_1'
+        opt['interpolate_nan'] = True
+        assert not opt.get('use_paper_traces', False), \
+            "paper_trace_settings should have use_paper_traces=False (recursion error)"
+        df = self.project_data.calc_default_traces(**opt)
+        if df is None:
+            raise ValueError(f"Paper traces (global) for project {self.project_data.project_dir} is None")
+        return df
+
     def paper_traces_global_cache_fname(self):
         if self.cache_dir is None:
             return None
         return os.path.join(self.cache_dir, 'paper_traces_global.h5')
+
+    def paper_traces_global_1_cache_fname(self):
+        if self.cache_dir is None:
+            return None
+        return os.path.join(self.cache_dir, 'paper_traces_global_1.h5')
 
     @property
     def cache_dir(self):
