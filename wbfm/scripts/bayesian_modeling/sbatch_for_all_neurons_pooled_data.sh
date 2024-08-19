@@ -177,7 +177,7 @@ cat << EOF > $SLURM_SCRIPT
 # Reproduce the list for the subfile
 my_list=(${neuron_list[@]})
 task_string=\${my_list[\$SLURM_ARRAY_TASK_ID]}
-echo "Running model for neuron: \$task_string"
+echo "Running model for neuron: \$task_string with command: $CMD"
 python $CMD --neuron_name \$task_string > $LOG_DIR/log_\$task_string.txt
 EOF
 
