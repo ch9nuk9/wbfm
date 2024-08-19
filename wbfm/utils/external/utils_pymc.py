@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
 
-def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
+def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', use_raw_trace=False,
                         sample_posterior=True, use_additional_behaviors=False, DEBUG=False) -> Tuple[pd.DataFrame, Dict, Dict]:
     """
     Fit multiple models to the same data, to be used for model comparison
@@ -36,7 +36,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8',
     # First pack into a single dataframe to drop nan, then unpack
     try:
         df_model = get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name=dataset_name,
-                                                   curvature_terms=curvature_terms_to_use)
+                                                   curvature_terms=curvature_terms_to_use, use_raw_trace=use_raw_trace)
     except KeyError:
         print(f"Skipping {neuron_name} because there is no valid data")
         return None, None, None
@@ -340,7 +340,7 @@ def build_drift_term(dims=None, dataset_name_idx=None):
 
 
 def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
-                                    dataset_name='all', additional_columns=None):
+                                    dataset_name='all', additional_columns=None, use_raw_trace=False):
     print(f"Found data columns: {Xy.columns} and datasets: {Xy['dataset_name'].unique()}")
     print(f"Attempting to load curvature terms {curvature_terms} and additional columns {additional_columns}")
 
@@ -359,8 +359,11 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
     x_pca0 = (x_pca0 - x_pca0.mean()) / x_pca0.std()  # z-score
     x_pca1 = _Xy[f'pca_1']
     x_pca1 = (x_pca1 - x_pca1.mean()) / x_pca1.std()  # z-score
-    # Just predict the residual
-    y = _Xy[f'{neuron_name}'] - _Xy[f'{neuron_name}_manifold']
+    if not use_raw_trace:
+        # Predict the residual
+        y = _Xy[f'{neuron_name}'] - _Xy[f'{neuron_name}_manifold']
+    else:
+        y = _Xy[f'{neuron_name}']
     y = (y - y.mean()) / y.std()  # z-score
     # Interesting covariate
     curvature = _Xy[curvature_terms]
@@ -379,7 +382,7 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
     return df_model
 
 
-def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True):
+def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True, use_raw_trace=True):
     """
     Runs for hardcoded data location for a single neuron
 
@@ -409,7 +412,8 @@ def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True
             if dataset_name == 'loop':
                 # Recursion error
                 continue
-            main(neuron_name, do_gfp=do_gfp, dataset_name=dataset_name, skip_if_exists=skip_if_exists)
+            main(neuron_name, do_gfp=do_gfp, dataset_name=dataset_name, skip_if_exists=skip_if_exists,
+                 use_raw_trace=use_raw_trace)
         return
 
     if dataset_name == 'all':
@@ -423,7 +427,8 @@ def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True
         return
 
     # Fit models
-    df_compare, all_traces, all_models = fit_multiple_models(Xy, neuron_name, dataset_name=dataset_name)
+    df_compare, all_traces, all_models = fit_multiple_models(Xy, neuron_name, dataset_name=dataset_name,
+                                                             use_raw_trace=use_raw_trace, DEBUG=False)
 
     if df_compare is None:
         print(f"Skipping {neuron_name} because there is no valid data")
@@ -464,13 +469,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--neuron_name', '-n', type=str)
     parser.add_argument('--dataset_name', type=str)
-    parser.add_argument('--do_gfp', type=str)
+    # Boolean
+    parser.add_argument('--use_raw_trace', action='store_true')
+    parser.add_argument('--do_gfp', action='store_true')
+
     args = parser.parse_args()
 
-    # Parse do_gfp into a boolean
-    if args.do_gfp is None:
-        do_gfp = False
-    else:
-        do_gfp = args.do_gfp.lower() == 'true'
-
-    main(neuron_name=args.neuron_name, do_gfp=do_gfp)
+    main(neuron_name=args.neuron_name, do_gfp=do_gfp, use_raw_trace=use_raw_trace)

@@ -2,20 +2,27 @@
 
 # This script runs the Bayesian model for all neurons in the dataset
 
-# Get an argument for whether to run gfp or not
-if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 <gfp>"
-  exit 1
-fi
+# Function to display a help message
+function show_help {
+  echo "Usage: $0 [-g] [-r] [-h] <gfp>"
+  echo "  -g: Use GFP data"
+  echo "  -r: Use raw data"
+  echo "  -h: Show this help message"
+}
 
-# Set the gfp flag
-do_gfp=$1
-if [ "$do_gfp" != "True" ] && [ "$do_gfp" != "False" ]; then
-  echo "Invalid gfp flag: $do_gfp"
-  exit 1
-else
-  echo "Running model with gfp: $do_gfp"
-fi
+# Get all user flags
+use_gfp="false"
+use_raw_trace="false"
+while getopts gr flag
+do
+    case "${flag}" in
+        g) use_gfp="true";;
+        r) use_raw_trace="true";;
+        h) show_help
+           exit 0;;
+        *) raise error "Unknown flag"
+    esac
+done
 
 # First define the list of neurons
 neuron_list=(
@@ -134,7 +141,7 @@ neuron_list=(
 
 CMD="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/utils/external/utils_pymc.py"
 # Changes if running on gfp
-if [ "$do_gfp" == "True" ]; then
+if [ "$do_gfp" == "true" ]; then
   LOG_DIR="/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp/logs"
 else
   LOG_DIR="/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/logs"
@@ -145,13 +152,20 @@ fi
 SLURM_SCRIPT=$(mktemp /tmp/slurm_script.XXXXXX)
 NUM_TASKS=${#neuron_list[@]}
 
+# Set of option-specific variables
 # gfp datasets are much faster to run
-if [ "$do_gfp" == "True" ]; then
+if [ "$use_gfp" == "true" ]; then
+  CMD="$CMD --do_gfp"
   NUM_HOURS=6
 else
   NUM_HOURS=18
 fi
 
+if [ "$use_raw_trace" == "true" ]; then
+  CMD="$CMD --use_raw_trace"
+fi
+
+# Actually run
 cat << EOF > $SLURM_SCRIPT
 #!/bin/bash
 #SBATCH --array=0-$(($NUM_TASKS-1))
@@ -164,7 +178,7 @@ cat << EOF > $SLURM_SCRIPT
 my_list=(${neuron_list[@]})
 task_string=\${my_list[\$SLURM_ARRAY_TASK_ID]}
 echo "Running model for neuron: \$task_string"
-python $CMD --neuron_name \$task_string --do_gfp $do_gfp > $LOG_DIR/log_\$task_string.txt
+python $CMD --neuron_name \$task_string > $LOG_DIR/log_\$task_string.txt
 EOF
 
 # Submit the SLURM script
@@ -172,8 +186,3 @@ sbatch $SLURM_SCRIPT
 
 # Clean up the temporary SLURM script
 rm $SLURM_SCRIPT
-
-# Dispatch an array job, with the index referring to the neuron
-#num_jobs=${#neuron_list[@]}
-#echo "Dispatching $num_jobs jobs"
-#sbatch --array=0-$((num_jobs-1)) --time=1-00:00:00 --mem=32G --cpus-per-task=6 --wrap="python $CMD --neuron_name ${neuron_list[\$SLURM_ARRAY_TASK_ID]} --do_gfp $do_gfp > $LOG_DIR/log_${neuron_list[\$SLURM_ARRAY_TASK_ID]}.txt"
