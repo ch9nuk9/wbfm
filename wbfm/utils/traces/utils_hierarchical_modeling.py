@@ -86,6 +86,7 @@ def export_data_for_hierarchical_model(do_gfp=False, do_immobilized=False, skip_
 
 
 if __name__ == '__main__':
-    export_data_for_hierarchical_model()
+    # Do gfp first because it's faster, so sometimes I can start other pipelines more quickly
     export_data_for_hierarchical_model(do_gfp=True)
     export_data_for_hierarchical_model(do_immobilized=True)
+    export_data_for_hierarchical_model()
