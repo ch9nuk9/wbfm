@@ -348,13 +348,13 @@ rule dlc_analyze_videos:
     params:
         dlc_model_configfile_path = config["head_tail_dlc_project"],
         dlc_network_string = config["head_tail_dlc_name"], # Is this used?
-        dlc_conda_env = config["dlc_conda_env_name"]
+        dlc_conda_env = config["dlc_conda_env_name_only_dlc"]
     output:
         hdf5_file = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["head_tail_dlc_name"]+".h5"
     shell:
         """
         source /lisc/app/conda/miniconda3/bin/activate {params.dlc_conda_env}
-        python -c "from centerline_behavior_annotation.dlc_utils import cluster_analyze_videos; cluster_analyze_videos.main(['-path_config_file', '{params.dlc_model_configfile_path}', '-videofile_path', '{input.input_avi}'])"
+        python -c "import deeplabcut; deeplabcut.analyze_videos({params.dlc_model_configfile_path}, {input.input_avi}, videotype='avi', gputouse=0)"
         """
 
 rule create_centerline:
