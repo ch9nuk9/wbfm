@@ -17,7 +17,7 @@ while getopts gr: flag
 do
     case "${flag}" in
         g) use_gfp="true";;
-        r) trace_mode=${OPTARG};;
+        r) residual_mode=${OPTARG};;
         h) show_help
            exit 0;;
         *) raise error "Unknown flag"
@@ -161,8 +161,8 @@ else
   NUM_HOURS=18
 fi
 
-if [ "$trace_mode" ]; then
-  CMD="$CMD --use_raw_trace $trace_mode"
+if [ "$residual_mode" ]; then
+  CMD="$CMD --residual_mode $residual_mode"
 fi
 
 # Actually run
