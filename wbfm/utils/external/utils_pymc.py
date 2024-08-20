@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from typing import Tuple, Dict
@@ -409,6 +410,7 @@ def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True
     fname = os.path.join(data_dir, 'data.h5')
     if not os.path.exists(fname):
         # Try to read from backup
+        logging.warning(f"Could not find data file {fname}, trying backup")
         fname = os.path.join(data_dir, 'data_backup.h5')
     if not os.path.exists(fname):
         raise FileNotFoundError(f"Could not find data file {fname}")
