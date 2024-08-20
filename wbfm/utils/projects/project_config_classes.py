@@ -461,13 +461,14 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                 raise TiffFormatError("Could not find number of z slices in config file; "
                                       "Required if using .btf files")
             if actually_open:
-                dat = MicroscopeDataReader(fname, as_raw_tiff=True, raw_tiff_num_slices=z_slices)
+                dat = MicroscopeDataReader(fname, as_raw_tiff=True, raw_tiff_num_slices=z_slices,
+                                           verbose=0)
             else:
                 dat = None
         else:
             # Has metadata already
             if actually_open:
-                dat = MicroscopeDataReader(fname, as_raw_tiff=False)
+                dat = MicroscopeDataReader(fname, as_raw_tiff=False, verbose=0)
             else:
                 dat = None
 
