@@ -363,7 +363,7 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
     if residual_mode == 'pca_global':
         # Predict the residual
         y = _Xy[f'{neuron_name}'] - _Xy[f'{neuron_name}_manifold']
-    if residual_mode == 'pca_global_1':
+    elif residual_mode == 'pca_global_1':
         # Subtract only pc1
         y = _Xy[f'{neuron_name}'] - _Xy[f'{neuron_name}_manifold1']
     elif residual_mode is None:
