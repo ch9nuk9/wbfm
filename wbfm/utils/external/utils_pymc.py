@@ -407,6 +407,11 @@ def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True
 
     data_dir = get_hierarchical_modeling_dir(do_gfp)
     fname = os.path.join(data_dir, 'data.h5')
+    if not os.path.exists(fname):
+        # Try to read from backup
+        fname = os.path.join(data_dir, 'data_backup.h5')
+    if not os.path.exists(fname):
+        raise FileNotFoundError(f"Could not find data file {fname}")
     Xy = pd.read_hdf(fname)
     print(f"Loaded data from {fname}")
 
