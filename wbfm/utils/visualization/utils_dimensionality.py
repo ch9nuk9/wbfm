@@ -153,7 +153,7 @@ def main(combine_left_right=True):
     cmap = BehaviorCodes.ethogram_cmap(include_collision=True, include_quiescence=True, include_reversal_turns=True)
     mapping = {'Inter, fwd': cmap[BehaviorCodes.FWD],
                'Inter, rev': cmap[BehaviorCodes.REV],
-               'Sensory': cmap[BehaviorCodes.SELF_COLLISION],
+               'Sensory': cmap[BehaviorCodes.QUIESCENCE],
                'Interneuron': cmap[BehaviorCodes.SELF_COLLISION],
                'Motor': cmap[BehaviorCodes.VENTRAL_TURN]}
     print(df_combined)
@@ -187,6 +187,8 @@ def main(combine_left_right=True):
     fig.write_image(fname)
     fname = fname.replace('.svg', '.png')
     fig.write_image(fname, scale=3)
+    fname = fname.replace('.png', '.html')
+    fig.write_html(fname)
 
     fig.show(renderer='browser')
 
