@@ -31,5 +31,6 @@ behavior_paths:
     head_tail_dlc_project: /lisc/scratch/neurobiology/zimmer/centerline_pipeline/neural_networks/deeplabcut_projects/wbfm_nose_tail-ulises-2023-01-04/config.yaml
     head_tail_dlc_name: DLC_resnet50_wbfm_nose_tailJan4shuffle1_1030000
     dlc_conda_env_name: /lisc/scratch/neurobiology/zimmer/.conda/envs/deeplabcut_imutils
+    dlc_conda_env_name_only_dlc: deeplabcut-2.3.10
     # PCA model (used for curvature analysis)
     pca_model: /lisc/scratch/neurobiology/zimmer/wbfm/code/centerline_behavior_annotation/centerline_behavior_annotation/curvature/models/1738_20230403_eigenworm_PCA_bodypart_30_to_80.pkl
