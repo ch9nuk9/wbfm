@@ -144,7 +144,7 @@ def main(combine_left_right=True):
     # Combine all motor roles
     new_col = new_col.map(lambda x: x if 'Motor' not in x else 'Motor')
     new_col = new_col.str.replace('Interneuron', 'Inter')
-    new_col = new_col.map(lambda x: x if x!='Inter, ' else 'Interneuron')
+    new_col = new_col.map(lambda x: x if x != 'Inter, ' else 'Interneuron')
     new_col = new_col.str.replace('Sensory, ', 'Sensory')
     new_col = new_col.str.replace('Forward', 'fwd')
     new_col = new_col.str.replace('Reverse', 'rev')

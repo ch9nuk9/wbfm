@@ -391,7 +391,7 @@ def _role_of_neurons():
         ],
     'Motor': [
             'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'VD1-VD13', 'VA1-VA12', 'VB1-VB11',
-            'AS1-AS11', 'VC1-VC6', 'SAB', 'DVB', 'PDA', 'SIA', 'SMDD', 'SMDV',
+            'AS1-AS11', 'VC1-VC6', 'SAB', 'DVB', 'PDA', 'SIAD', 'SIAV', 'SMDD', 'SMDV',
             'PDB', 'PVC', 'SMB', 'SIB', 'RMF', 'RMDD', 'RMDV', 'RMEV', 'RMED', 'RME', 'RIV'
         ],
     'Modulatory': [
@@ -412,6 +412,7 @@ def _role_of_neurons():
     #     ]
     }
     return c_elegans_neurons
+
 
 def role_of_neuron_dict(only_fwd_rev=False, include_modulatory=False):
     # Build a dictionary with the role of each neuron, from names to roles
