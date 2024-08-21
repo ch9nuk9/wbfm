@@ -153,8 +153,8 @@ def main(combine_left_right=True):
     cmap = BehaviorCodes.ethogram_cmap(include_collision=True, include_quiescence=True, include_reversal_turns=True)
     mapping = {'Inter, fwd': cmap[BehaviorCodes.FWD],
                'Inter, rev': cmap[BehaviorCodes.REV],
-               'Sensory': cmap[BehaviorCodes.QUIESCENCE],
-               'Interneuron': cmap[BehaviorCodes.SELF_COLLISION],
+               'Sensory': cmap[BehaviorCodes.SELF_COLLISION],
+               'Interneuron': cmap[BehaviorCodes.QUIESCENCE],
                'Motor': cmap[BehaviorCodes.VENTRAL_TURN]}
     print(df_combined)
     print(df_combined.columns)

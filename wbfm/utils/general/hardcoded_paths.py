@@ -114,6 +114,19 @@ def get_hierarchical_modeling_dir(gfp=False, immobilized=False):
         return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling"
 
 
+def load_all_data_as_dataframe():
+    # Load each type of data, and then concatenate
+    fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
+    Xy_fm = pd.read_hdf(fname).assign(dataset_type='freely_moving')
+
+    fname = os.path.join(get_hierarchical_modeling_dir(immobilized=True), 'data.h5')
+    Xy_immob = pd.read_hdf(fname).assign(dataset_type='immobilized')
+
+    fname = os.path.join(get_hierarchical_modeling_dir(gfp=True), 'data.h5')
+    Xy_gfp = pd.read_hdf(fname).assign(dataset_type='gfp')
+
+    return pd.concat([Xy_fm, Xy_immob, Xy_gfp])
+
 def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=False, only_load_paths=False,
                         **kwargs) -> dict:
     """
@@ -365,7 +378,7 @@ def neurons_with_confident_ids(combine_left_right=False):
                     'URYVL', 'URYVR', 'URADL', 'URADR', 'URYDL', 'URYDR',
                     'RIVR', 'RIVL', 'SMDVL', 'SMDVR', 'SMDDR', 'SMDDL',
                     'SIAVL', 'SIAVR', 'SAAVL', 'SAAVR', 'SIADL', 'SIADR', 'RIAL', 'RIAR',
-                    'RMDDL', 'RMDDR', 'RMDVL', 'RMDVR', #'AVFL', 'AVFR',
+                    'RMDDL', 'RMDDR', #'AVFL', 'AVFR',
                     'AWBL', 'AWBR',
                     'AWAL', 'AWAR',
                     'IL1LL', 'IL1LR', 'IL2LL', 'IL2LR', #'OLQDL', 'OLQDR', 'OLQVL', 'OLQVR',
