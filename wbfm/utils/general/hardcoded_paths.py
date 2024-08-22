@@ -117,15 +117,16 @@ def get_hierarchical_modeling_dir(gfp=False, immobilized=False):
 def load_all_data_as_dataframe():
     # Load each type of data, and then concatenate
     fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
-    Xy_fm = pd.read_hdf(fname).assign(dataset_type='freely_moving')
+    Xy_fm = pd.read_hdf(fname).assign(dataset_type='wbfm')
 
     fname = os.path.join(get_hierarchical_modeling_dir(immobilized=True), 'data.h5')
-    Xy_immob = pd.read_hdf(fname).assign(dataset_type='immobilized')
+    Xy_immob = pd.read_hdf(fname).assign(dataset_type='immob')
 
     fname = os.path.join(get_hierarchical_modeling_dir(gfp=True), 'data.h5')
     Xy_gfp = pd.read_hdf(fname).assign(dataset_type='gfp')
 
     return pd.concat([Xy_fm, Xy_immob, Xy_gfp])
+
 
 def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=False, only_load_paths=False,
                         **kwargs) -> dict:
