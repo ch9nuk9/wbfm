@@ -37,7 +37,8 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading, plot_w
 
 
 def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_preceding, min_lines=0,
-                                                 show_individual_lines=False, is_second_plot=False, ax=None, xlim=None,
+                                                 show_individual_lines=False, is_second_plot=False,
+                                                 ax=None, xlim=None, fig=None,
                                                  show_horizontal_line=True, show_vertical_line=True,
                                                  z_score=False, show_shading=True, use_plotly=False, DEBUG=False,
                                                  **kwargs):
@@ -109,8 +110,8 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         if xlim is not None and ax is not None:
             ax.set_xlim(xlim)
     else:
-        fig = kwargs.get('fig', None)
-        kwargs.pop('fig', None)
+        # fig = kwargs.get('fig', None)
+        # kwargs.pop('fig', None)
         fig, _, _ = plot_with_shading_plotly(triggered_avg, triggered_lower_std, std_vals_upper=triggered_upper_std,
                                              fig=fig, is_second_plot=(fig is not None), **kwargs)
         if show_vertical_line:
