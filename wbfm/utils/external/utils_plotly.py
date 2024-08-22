@@ -1,3 +1,4 @@
+import networkx as nx
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
@@ -175,3 +176,50 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
 def hex2rgba(hex_color, alpha=0.2):
     fillcolor = f"rgba{tuple(int(hex_color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)) + (alpha,)}"
     return fillcolor
+
+
+def get_nonoverlapping_text_positions(x, y, text, fig, weight=100, k=None):
+    positions = np.array(list(zip(x, y)))
+    G = nx.Graph()
+
+    # Add nodes
+    fixed_nodes = []
+    for i, pos in enumerate(positions):
+        # if len(text[i]) == 0:
+        #     # Skip empty text
+        #     continue
+        G.add_node(f"text_{i}", pos=pos)
+        G.add_node(f"data_{i}", pos=pos)  # Will be fixed in place
+        fixed_nodes.append(f"data_{i}")
+
+    # Add edges based on distance (short distances mean a stronger repulsion)
+    for i in range(len(positions)):
+        G.add_edge(f"data_{i}", f"text_{i}", weight=weight)  # Try to keep the text near the data
+        # for j in range(i + 1, len(positions)):
+        #     dist = np.linalg.norm(positions[i] - positions[j])
+        #     G.add_edge(f"text_{i}", f"text_{j}", weight=1.0 / (dist + 1e-4))
+        # print(1.0 / (dist + 1e-4))
+
+    # Apply force-directed layout
+    new_positions = nx.spring_layout(G, pos=nx.get_node_attributes(G, 'pos'), fixed=fixed_nodes,
+                                     weight='weight',  k=k,)
+
+    # Update the plot with new text positions
+    adjusted_text_positions = np.array([new_positions[f"text_{i}"] for i in range(len(positions))])
+
+    # Create new scatter plot with adjusted text positions
+    if fig is None:
+        adjusted_scatter = go.Scatter(
+            x=x, y=y,
+            mode='markers',
+        )
+        fig = go.Figure(data=[adjusted_scatter])
+
+    for i, (t, (x_new, y_new)) in enumerate(zip(text, adjusted_text_positions)):
+        _x, _y = x[i], y[i]
+        if len(t) == 0:
+            continue
+        fig.add_annotation(x=_x, y=_y, ax=x_new, ay=y_new,  # arrowhead=2,
+                           text=t, xref="x", yref="y", axref="x", ayref="y", )
+
+    return fig
