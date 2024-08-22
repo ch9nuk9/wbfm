@@ -73,7 +73,7 @@ def add_trendline_annotation(fig):
     return fig
 
 
-def plotly_plot_mean_and_shading(df, x, y, color, line_name='Mean', add_individual_lines=False,
+def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_individual_lines=False,
                                  cmap=None, x_intersection_annotation=None, annotation_kwargs=None,
                                  annotation_position='left', fig=None, **kwargs):
     """
@@ -93,6 +93,15 @@ def plotly_plot_mean_and_shading(df, x, y, color, line_name='Mean', add_individu
     """
     if annotation_kwargs is None:
         annotation_kwargs = dict()
+
+    if color is not None and len(df[color].unique()) > 1:
+        # Assume we want to subset the dataframe by the color list
+        fig = None
+        for group in df[color].unique():
+            _df = df[df[color] == group]
+            fig = plotly_plot_mean_and_shading(_df, x, y, color=color, line_name=group,
+                                               add_individual_lines=False, cmap=cmap, fig=fig)
+        return fig
 
     # Calculate mean and std dev for each x value
     grouped = df.groupby(x)
