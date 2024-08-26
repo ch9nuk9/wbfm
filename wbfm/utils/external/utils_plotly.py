@@ -76,7 +76,7 @@ def add_trendline_annotation(fig):
 
 def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_individual_lines=False,
                                  cmap=None, x_intersection_annotation=None, annotation_kwargs=None,
-                                 annotation_position='left', fig=None, **kwargs):
+                                 annotation_position='left', fig=None, is_second_plot=False, **kwargs):
     """
     Plot the mean of a y column for each x value, and shade the standard deviation
 
@@ -107,7 +107,8 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
             fig = plotly_plot_mean_and_shading(_df, x, y, color=color, line_name=group,
                                                add_individual_lines=False, cmap=cmap, fig=fig,
                                                x_intersection_annotation=x_intersection_annotation,
-                                               annotation_position=annotation_position)
+                                               annotation_position=annotation_position, is_second_plot=is_second_plot)
+            is_second_plot = True
         return fig
 
     # Calculate mean and std dev for each x value
@@ -153,10 +154,11 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
     if x_intersection_annotation is not None:
         y_value_at_x = mean_y.loc[x_intersection_annotation]
         # Add vertical line at x=x_intersection_annotation
-        fig.add_shape(type="line",
-                      x0=x_intersection_annotation, y0=mean_y.min(), x1=x_intersection_annotation, y1=mean_y.max(),
-                      line=dict(color="Black", width=1, dash="dash"),
-                      )
+        if not is_second_plot:
+            fig.add_shape(type="line",
+                          x0=x_intersection_annotation, y0=mean_y.min(), x1=x_intersection_annotation, y1=mean_y.max(),
+                          line=dict(color="Black", width=1, dash="dash"),
+                          )
 
         # Add horizontal line at the intersection with mean_y
         fig.add_shape(type="line",

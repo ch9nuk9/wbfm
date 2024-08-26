@@ -522,9 +522,21 @@ class CCAPlotter:
         return corr_list
 
 
-def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, **kwargs):
+def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, melt=True, **kwargs):
     if r_squared_kwargs is None:
         r_squared_kwargs = {}
+
+    if r_squared_kwargs.get('n_components', None) is not None:
+        if isinstance(r_squared_kwargs['n_components'], list):
+            # Then do recursively
+            all_r_squared = {}
+            n_components_list = r_squared_kwargs['n_components'].copy()
+            for n_components in tqdm(n_components_list):
+                r_squared_kwargs['n_components'] = n_components
+                _, df_r_squared = calc_r_squared_for_all_projects(all_projects, r_squared_kwargs, melt, **kwargs)
+                all_r_squared[n_components] = df_r_squared
+            return pd.DataFrame(all_r_squared)
+
     all_cca_classes = {}
     all_r_squared = defaultdict(dict)
 
@@ -532,7 +544,7 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, **kwarg
                 'CCA': dict(use_pca=False),
                 'CCA Discrete': dict(use_pca=False, binary_behaviors=True)}
 
-    for name, p in tqdm(all_projects.items()):
+    for name, p in tqdm(all_projects.items(), leave=False):
         cca_plotter = CCAPlotter(p, **kwargs)
         all_cca_classes[name] = cca_plotter
         for opt_name, opt in opt_dict.items():
@@ -540,6 +552,9 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, **kwarg
             all_r_squared[name][opt_name] = cca_plotter.calc_r_squared(**opt)
 
     df_r_squared = pd.DataFrame(all_r_squared).T
+
+    if melt:
+        df_r_squared = df_r_squared.melt(var_name='Method', value_name='Variance Explained')
 
     return all_cca_classes, df_r_squared
 
