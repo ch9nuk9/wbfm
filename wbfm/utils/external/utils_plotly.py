@@ -98,10 +98,16 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
     if color is not None and len(df[color].unique()) > 1:
         # Assume we want to subset the dataframe by the color list
         fig = None
+        annotation_position = 'top left'
         for group in df[color].unique():
             _df = df[df[color] == group]
+            # Alternate annotation_position by default
+            annotation_position = 'bottom right' if annotation_position == 'top left' else 'top left'
+
             fig = plotly_plot_mean_and_shading(_df, x, y, color=color, line_name=group,
-                                               add_individual_lines=False, cmap=cmap, fig=fig)
+                                               add_individual_lines=False, cmap=cmap, fig=fig,
+                                               x_intersection_annotation=x_intersection_annotation,
+                                               annotation_position=annotation_position)
         return fig
 
     # Calculate mean and std dev for each x value
@@ -124,7 +130,7 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
     if cmap is not None:
         opt['line'] = dict(color=cmap[line_name])
     fig.add_trace(go.Scatter(
-        x=mean_y.index, y=mean_y, mode='lines', name=line_name, **opt
+        x=mean_y.index, y=mean_y, mode='lines', name=str(line_name), **opt
     ))
 
     # Shade the standard deviation area
@@ -159,9 +165,10 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
                       )
 
         # Add text annotation at the intersection point
-        x = 0.5*x_intersection_annotation if annotation_position == 'left' else 1.5*x_intersection_annotation
+        x = 0.5*x_intersection_annotation if 'left' in annotation_position else 1.5*x_intersection_annotation
+        y = 1.1*y_value_at_x if 'top' in annotation_position else 0.9*y_value_at_x
         fig.add_annotation(
-            x=x, y=1.1*y_value_at_x,
+            x=x, y=y,
             text=f"y={y_value_at_x:.2f}",
             showarrow=False,
             **annotation_kwargs
