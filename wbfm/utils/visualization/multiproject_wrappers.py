@@ -389,7 +389,10 @@ def build_dataframe_of_variance_explained(all_projects: Dict[str, ProjectData], 
     trace_kwargs['rename_neurons_using_manual_ids'] = trace_kwargs.get('rename_neurons_using_manual_ids', True)
 
     # Define the residual mode using the given number of components
-    residual_mode = f'pca_global_{n_components}'
+    if n_components == 2:
+        residual_mode = 'pca_global'
+    else:
+        residual_mode = f'pca_global_{n_components}'
     df_traces_global = build_trace_time_series_from_multiple_projects(all_projects, residual_mode=residual_mode,
                                                                       **trace_kwargs)
     df_traces = build_trace_time_series_from_multiple_projects(all_projects, **trace_kwargs)
