@@ -529,13 +529,14 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, melt=Tr
     if r_squared_kwargs.get('n_components', None) is not None:
         if isinstance(r_squared_kwargs['n_components'], list):
             # Then do recursively
-            all_r_squared = {}
+            all_r_squared = []
             n_components_list = r_squared_kwargs['n_components'].copy()
             for n_components in tqdm(n_components_list):
                 r_squared_kwargs['n_components'] = n_components
-                _, df_r_squared = calc_r_squared_for_all_projects(all_projects, r_squared_kwargs, melt, **kwargs)
-                all_r_squared[n_components] = df_r_squared
-            return pd.DataFrame(all_r_squared)
+                all_cca_classes, df_r_squared = calc_r_squared_for_all_projects(all_projects, r_squared_kwargs, melt, **kwargs)
+                df_r_squared['n_components'] = n_components
+                all_r_squared.append(df_r_squared)
+            return all_cca_classes, pd.concat(all_r_squared)
 
     all_cca_classes = {}
     all_r_squared = defaultdict(dict)
