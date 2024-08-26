@@ -360,7 +360,7 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
     x_pca0 = (x_pca0 - x_pca0.mean()) / x_pca0.std()  # z-score
     x_pca1 = _Xy[f'pca_1']
     x_pca1 = (x_pca1 - x_pca1.mean()) / x_pca1.std()  # z-score
-    if residual_mode == 'pca_global':
+    if residual_mode == 'pca_global' or residual_mode == 'pca_global_2':
         # Predict the residual
         y = _Xy[f'{neuron_name}'] - _Xy[f'{neuron_name}_manifold']
     elif residual_mode == 'pca_global_1':
