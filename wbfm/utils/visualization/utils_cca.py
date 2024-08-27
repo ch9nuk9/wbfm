@@ -158,8 +158,7 @@ class CCAPlotter:
 
         Parameters
         ----------
-        mode1
-        mode2
+        mode
         binary_behaviors
         kwargs
 

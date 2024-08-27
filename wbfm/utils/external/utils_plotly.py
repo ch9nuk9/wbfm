@@ -187,23 +187,28 @@ def hex2rgba(hex_color, alpha=0.2):
     return fillcolor
 
 
-def get_nonoverlapping_text_positions(x, y, text, fig, weight=100, k=None):
+def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, add_nodes_with_no_text=True):
     positions = np.array(list(zip(x, y)))
     G = nx.Graph()
 
     # Add nodes
     fixed_nodes = []
-    for i, pos in enumerate(positions):
-        # if len(text[i]) == 0:
-        #     # Skip empty text
+    text_index_mapping = dict()
+    for i, (pos, text) in enumerate(zip(positions, all_text)):
+        if len(text) == 0:
+            # Skip empty text
+            if not add_nodes_with_no_text:
+                continue
+        text_index_mapping[text] = i
         #     continue
-        G.add_node(f"text_{i}", pos=pos)
+        G.add_node(text, pos=pos)
         G.add_node(f"data_{i}", pos=pos)  # Will be fixed in place
+        G.add_edge(f"data_{i}", text, weight=weight)  # Try to keep the text near the data
         fixed_nodes.append(f"data_{i}")
 
-    # Add edges based on distance (short distances mean a stronger repulsion)
-    for i in range(len(positions)):
-        G.add_edge(f"data_{i}", f"text_{i}", weight=weight)  # Try to keep the text near the data
+    # Add edges independent of distance
+    # for i in range(len(positions)):
+    #     G.add_edge(f"data_{i}", f"text_{i}", weight=weight)  # Try to keep the text near the data
         # for j in range(i + 1, len(positions)):
         #     dist = np.linalg.norm(positions[i] - positions[j])
         #     G.add_edge(f"text_{i}", f"text_{j}", weight=1.0 / (dist + 1e-4))
@@ -214,7 +219,7 @@ def get_nonoverlapping_text_positions(x, y, text, fig, weight=100, k=None):
                                      weight='weight',  k=k,)
 
     # Update the plot with new text positions
-    adjusted_text_positions = np.array([new_positions[f"text_{i}"] for i in range(len(positions))])
+    # adjusted_text_positions = np.array([new_positions[k] for k in new_positions.keys() if k in all_text])
 
     # Create new scatter plot with adjusted text positions
     if fig is None:
@@ -224,10 +229,14 @@ def get_nonoverlapping_text_positions(x, y, text, fig, weight=100, k=None):
         )
         fig = go.Figure(data=[adjusted_scatter])
 
-    for i, (t, (x_new, y_new)) in enumerate(zip(text, adjusted_text_positions)):
-        _x, _y = x[i], y[i]
+    # for i, (t, (x_new, y_new)) in enumerate(zip(text, adjusted_text_positions)):
+    for t, i in text_index_mapping.items():
+        # i is the index in the original data list
         if len(t) == 0:
+            # Skip empty text
             continue
+        _x, _y = x[i], y[i]
+        x_new, y_new = new_positions[t]
         fig.add_annotation(x=_x, y=_y, ax=x_new, ay=y_new,  # arrowhead=2,
                            text=t, xref="x", yref="y", axref="x", ayref="y", )
 
