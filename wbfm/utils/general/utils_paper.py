@@ -219,6 +219,14 @@ def behavior_name_mapping(shorten=False):
     )
     if shorten:
         name_mapping = {k: v.replace(' curvature', '') for k, v in name_mapping.items()}
+        # name_mapping_short = dict(
+        #     rev='REV',
+        #     dorsal_turn='DT',
+        #     ventral_turn='VT',
+        #     self_collision='Touch',
+        #     head_cast='Cast',
+        #     slowing='Slow',
+        # )
     return name_mapping
 
 

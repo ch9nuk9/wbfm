@@ -76,7 +76,7 @@ def add_trendline_annotation(fig):
 
 def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_individual_lines=False,
                                  cmap=None, x_intersection_annotation=None, annotation_kwargs=None,
-                                 annotation_position='left', fig=None, is_second_plot=False, **kwargs):
+                                 annotation_position=None, fig=None, is_second_plot=False, **kwargs):
     """
     Plot the mean of a y column for each x value, and shade the standard deviation
 
@@ -94,11 +94,12 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
     """
     if annotation_kwargs is None:
         annotation_kwargs = dict()
+    if annotation_position is None:
+        annotation_position = 'top left'
 
     if color is not None and len(df[color].unique()) > 1:
         # Assume we want to subset the dataframe by the color list
         fig = None
-        annotation_position = 'top left'
         for group in df[color].unique():
             _df = df[df[color] == group]
             # Alternate annotation_position by default
@@ -173,6 +174,7 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
             x=x, y=y,
             text=f"y={y_value_at_x:.2f}",
             showarrow=False,
+            bgcolor=opt['fillcolor'],
             **annotation_kwargs
             # showarrow=True,
             # arrowhead=2,
@@ -187,7 +189,8 @@ def hex2rgba(hex_color, alpha=0.2):
     return fillcolor
 
 
-def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, add_nodes_with_no_text=True):
+def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, add_nodes_with_no_text=True,
+                                      x_range=None, y_range=None, **kwargs):
     positions = np.array(list(zip(x, y)))
     G = nx.Graph()
 
@@ -237,7 +240,11 @@ def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, a
             continue
         _x, _y = x[i], y[i]
         x_new, y_new = new_positions[t]
+        if x_range is not None:
+            x_new = max(x_range[0], min(x_range[1], x_new))
+        if y_range is not None:
+            y_new = max(y_range[0], min(y_range[1], y_new))
         fig.add_annotation(x=_x, y=_y, ax=x_new, ay=y_new,  # arrowhead=2,
-                           text=t, xref="x", yref="y", axref="x", ayref="y", )
+                           text=t, xref="x", yref="y", axref="x", ayref="y", font=dict(**kwargs))
 
     return fig
