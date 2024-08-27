@@ -453,6 +453,20 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
         fig = px.box(df, x="x", y="y", color="color")
         add_p_value_annotation(fig, x_label='all')
 
+    Example using precalculated p-values:
+        from scipy import stats
+        from statsmodels.stats.multitest import multipletests
+
+        func = lambda x: stats.ttest_1samp(x, 0)[1]
+        df_groupby = df_both.dropna().groupby(['neuron_name', 'dataset_type'])
+        df_pvalue = df_groupby['PC1 weight'].apply(func).to_frame()
+        df_pvalue.columns = ['p_value']
+
+        output = multipletests(df_pvalue.values.squeeze(), method='fdr_bh', alpha=0.05)
+        df_pvalue['p_value_corrected'] = output[1]
+
+        precalculated_p_values=df_significant_diff['p_value_corrected'].to_dict()
+
     Parameters:
     ----------
     fig: figure
