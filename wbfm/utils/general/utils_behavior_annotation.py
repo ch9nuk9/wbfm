@@ -1176,7 +1176,7 @@ def calc_slowing_from_speed(y, min_length):
 
 def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominence=0.0,
                                  signal_delta_threshold=0.15, high_assignment_threshold=0.4,
-                                 verbose=1, DEBUG=False):
+                                 verbose=1, DEBUG=False) -> pd.Series:
     """
     From a time series, calculates the "rise", "high", "fall", and "low" states
 
@@ -1668,26 +1668,39 @@ def approximate_turn_annotations_using_ids(project_cfg, min_length=4, post_rever
                                                           min_length=2*min_length, to_save=False, DEBUG=DEBUG)
 
     # Also need the traces, which should be the same as the traces used for the AVA rise/fall
-    opt = dict(interpolate_nan=True,
-               filter_mode='rolling_mean',
-               min_nonnan=0.9,
-               nan_tracking_failure_points=True,
-               rename_neurons_using_manual_ids=True,
-               channel_mode='dr_over_r_50')
+    opt = dict(use_paper_options=True)
     df_traces = project_data.calc_default_traces(**opt)
 
-    y_dorsal = combine_pair_of_ided_neurons(df_traces, base_name='SMDD')
-    y_ventral = combine_pair_of_ided_neurons(df_traces, base_name='SMDV')
+    y_turns = {}
+    for base_name in ['SMDD', 'SMDV', 'RIV']:
+        try:
+            y_turns[base_name] = combine_pair_of_ided_neurons(df_traces, base_name=base_name)
+        except NeedsAnnotatedNeuronError:
+            logging.warning(f"Could not find {base_name}; no turns can be annotated")
+    y_ventral = y_turns.get('SMDV', None)
+    if y_ventral is None:
+        y_ventral = y_turns.get('RIV', None)
+    y_dorsal = y_turns.get('SMDD', None)
+    if y_ventral is None and y_dorsal is None:
+        raise NeedsAnnotatedNeuronError("Could not find either SMDV, SMDD, or RIV; no turns can be annotated")
 
-    dorsal_vec = calculate_rise_high_fall_low(y_dorsal - y_dorsal.mean())
-    ventral_vec = calculate_rise_high_fall_low(y_ventral - y_ventral.mean())
+    if y_dorsal is not None:
+        dorsal_vec = calculate_rise_high_fall_low(y_dorsal - y_dorsal.mean())
+        # dorsal_rise_starts, dorsal_rise_ends = get_contiguous_blocks_from_column(dorsal_vec == 'rise', already_boolean=True)
+    else:
+        dorsal_vec = y_dorsal.copy()
+        dorsal_vec[:] = 'low'
 
-    dorsal_rise_starts, dorsal_rise_ends = get_contiguous_blocks_from_column(dorsal_vec == 'rise', already_boolean=True)
-    ventral_rise_starts, ventral_rise_ends = get_contiguous_blocks_from_column(ventral_vec == 'rise',
-                                                                               already_boolean=True)
-    if DEBUG:
-        print(f"Found {len(dorsal_rise_starts)} dorsal rise periods: {dorsal_rise_starts} to {dorsal_rise_ends}")
-        print(f"Found {len(ventral_rise_starts)} ventral rise periods: {ventral_rise_starts} to {ventral_rise_ends}")
+    if y_ventral is not None:
+        ventral_vec = calculate_rise_high_fall_low(y_ventral - y_ventral.mean())
+        # ventral_rise_starts, ventral_rise_ends = get_contiguous_blocks_from_column(ventral_vec == 'rise',
+        #                                                                            already_boolean=True)
+    else:
+        ventral_vec = y_ventral.copy()
+        ventral_vec[:] = 'low'
+    # if DEBUG:
+    #     print(f"Found {len(dorsal_rise_starts)} dorsal rise periods: {dorsal_rise_starts} to {dorsal_rise_ends}")
+    #     print(f"Found {len(ventral_rise_starts)} ventral rise periods: {ventral_rise_starts} to {ventral_rise_ends}")
 
     # Loop over ava falls, and try to assign them to dorsal or ventral
     # The one in a greater (longer) rise state is the one that wins
