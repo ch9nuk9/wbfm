@@ -1014,12 +1014,7 @@ def approximate_behavioral_annotation_using_pc1(project_cfg, trace_kwargs=None, 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
     # Calculate pca_modes of the project
-    opt = dict(interpolate_nan=True,
-               filter_mode='rolling_mean',
-               min_nonnan=0.9,
-               nan_tracking_failure_points=True,
-               #nan_using_ppca_manifold=True,
-               channel_mode='dr_over_r_50')
+    opt = dict(use_paper_options=True, interpolate_nan=True)
     if trace_kwargs is not None:
         opt.update(trace_kwargs)
     pca_modes = project_data.calc_pca_modes(n_components=2, flip_pc1_to_have_reversals_high=True,
@@ -1086,12 +1081,7 @@ def approximate_behavioral_annotation_using_ava(project_cfg, return_raw_rise_hig
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
     # Calculate pca_modes of the project
-    opt = dict(interpolate_nan=True,
-               filter_mode='rolling_mean',
-               min_nonnan=0.9,
-               nan_tracking_failure_points=True,
-               rename_neurons_using_manual_ids=True,
-               channel_mode='dr_over_r_50')
+    opt = dict(use_paper_options=True)
     if trace_kwargs is not None:
         opt.update(trace_kwargs)
 
