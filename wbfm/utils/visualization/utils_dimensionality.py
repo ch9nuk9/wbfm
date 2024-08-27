@@ -100,8 +100,8 @@ def main(combine_left_right=True):
                  color_discrete_map=plotly_paper_color_discrete_map())
                  #title='Variance explained by the manifold')
     apply_figure_settings(fig, width_factor=1.0, height_factor=0.25)
-    fig.update_yaxes(title='Variance explained by PC1')
-    fig.update_xaxes(title='Neuron')
+    fig.update_yaxes(title='Var. explained by PC1+2')
+    fig.update_xaxes(title='Neuron', tickfont_size=10)
 
     fname = os.path.join(output_folder, f'variance_explained_boxplot-LRcombined{combine_left_right}.svg')
     fig.write_image(fname)
@@ -151,6 +151,7 @@ def main(combine_left_right=True):
     new_col = new_col.str.replace('Interneuron', 'Inter')
     new_col = new_col.map(lambda x: x if x != 'Inter, ' else 'Interneuron')
     new_col = new_col.str.replace('Sensory, ', 'Sensory')
+    new_col = new_col.str.replace('SensorySensory', 'Sensory')
     new_col = new_col.str.replace('Forward', 'fwd')
     new_col = new_col.str.replace('Reverse', 'rev')
     df_combined['combined_role'] = new_col
