@@ -3,6 +3,7 @@ import plotly.express as px
 import pandas as pd
 from scipy import stats
 import numpy as np
+from statsmodels.stats.multitest import multipletests
 from tqdm.auto import tqdm
 
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
@@ -125,17 +126,21 @@ def main(combine_left_right=True):
         effect_sizes[neuron] = effect_size
 
     # Second plot: volcano plot of p values and effect sizes
-    df_p_values = pd.DataFrame.from_dict(p_values, orient='index', columns=['p_value'])
+    df_p_values = pd.DataFrame.from_dict(p_values, orient='index', columns=['p_value_raw'])
     df_effect_sizes = pd.DataFrame.from_dict(effect_sizes, orient='index', columns=['effect_size'])
     df_combined = df_p_values.join(df_effect_sizes)
 
-    bonferroni_factor = len(enough_neurons)
+    # Correct for multiple comparisons, same as other figures
+    alpha = 0.05
+    output = multipletests(df_combined['p_value_raw'].values.squeeze(), method='fdr_bh', alpha=alpha)
+    df_combined['p_value_corrected'] = output[1]
+    df_combined['significant'] = output[0]
+
     df_combined['median_immob'] = df_combined.index.map(
         lambda x: df[(df['neuron_combined'] == x) & (df['dataset_type'] == 'Immobilized')]['variance_explained'].median())
     df_combined['median_gcamp'] = df_combined.index.map(
         lambda x: df[(df['neuron_combined'] == x) & (df['dataset_type'] == 'Freely Moving')]['variance_explained'].median())
-    df_combined['significant'] = (df_combined['p_value'] * bonferroni_factor) < 0.05
-    df_combined['minus_log_p'] = -np.log10(df_combined['p_value'] + 1e-6)
+    df_combined['minus_log_p'] = -np.log10(df_combined['p_value_corrected'] + 1e-6)
     df_combined['neuron_name'] = df_combined.index
     df_combined['role'] = df_combined['neuron_name'].map(role_of_neuron_dict())
     df_combined['fwd_rev'] = df_combined['neuron_name'].map(lambda x: role_of_neuron_dict(only_fwd_rev=True).get(x, ''))
@@ -171,7 +176,7 @@ def main(combine_left_right=True):
     # Don't change the x axis range though
     # x_min, x_max = fig.full_figure_for_development().layout.xaxis.range
     x_min, x_max = -0.51, 0.51
-    fig.add_shape(type='line', x0=x_min, y0=-np.log10(0.05), x1=x_max, y1=-np.log10(0.05),
+    fig.add_shape(type='line', x0=x_min, y0=-np.log10(alpha), x1=x_max, y1=-np.log10(alpha),
                   line=dict(color='black', width=1, dash='dash'))
 
     fig.update_xaxes(title='Change in dimensionality <br> in freely moving')
