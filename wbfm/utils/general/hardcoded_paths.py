@@ -417,6 +417,12 @@ def _role_of_neurons():
     'Reverse': [
         'AVA', 'AIB', 'RIM', 'DA1-DA9', 'VA1-VA12', 'AVE'
         ],
+    'Dorsal': [
+        'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'SMDD', 'RMEV', 'SIAD'
+        ],
+    'Ventral': [
+        'VA1-VA9', 'VB1-VB7', 'VD1-VD6', 'SMDV', 'RMED', 'SIAV'
+        ],
     # 'Turning': [
     #     'SMDV', 'SMDD', 'RIV'
     #     ]
@@ -428,7 +434,7 @@ def _role_of_neurons():
     return c_elegans_neurons
 
 
-def role_of_neuron_dict(only_fwd_rev=False, include_modulatory=False):
+def role_of_neuron_dict(only_fwd_rev=False, include_modulatory=False, include_ventral_dorsal=False):
     # Build a dictionary with the role of each neuron, from names to roles
     # Use the high level info in _role_of_neurons
     role_dict = defaultdict(list)
@@ -438,6 +444,9 @@ def role_of_neuron_dict(only_fwd_rev=False, include_modulatory=False):
             if not only_fwd_rev:
                 continue
         elif only_fwd_rev:
+            continue
+
+        if role in ['Ventral', 'Dorsal'] and not include_ventral_dorsal:
             continue
         if role == 'Modulatory' and not include_modulatory:
             continue

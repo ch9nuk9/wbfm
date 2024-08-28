@@ -307,7 +307,7 @@ class BehaviorCodes(Flag):
         # cmap = px.colors.qualitative.Vivid_r.copy()
         # cmap = px.colors.qualitative.Dark2.copy()
         cmap = px.colors.qualitative.Dark2.copy()
-        cmap[3], cmap[5] = cmap[5], cmap[3]  # Switch brown and purple
+        cmap[3], cmap[5] = cmap[5], cmap[3]  # Switch pink and gold
         # Move gray to the front
         # cmap.insert(0, cmap.pop(7))
         return cmap
@@ -315,7 +315,7 @@ class BehaviorCodes(Flag):
     @classmethod
     def ethogram_cmap(cls, include_turns=True, include_reversal_turns=False, include_quiescence=False,
                       include_collision=False, additional_shaded_states=None,
-                      use_plotly_style_strings=True) -> Dict['BehaviorCodes', str]:
+                      use_plotly_style_strings=True, include_custom=False, include_stimulus=False) -> Dict['BehaviorCodes', str]:
         """
         Colormap for shading as a stand-alone ethogram
 
@@ -354,6 +354,7 @@ class BehaviorCodes(Flag):
                 }
         if include_turns:
             # Turns during FWD are differentiated, but not during REV
+            # Ventral is purple, dorsal is gold
             cmap[cls.VENTRAL_TURN] = base_cmap[2]
             cmap[cls.DORSAL_TURN] = base_cmap[3]
             cmap[cls.FWD | cls.VENTRAL_TURN] = base_cmap[2]
@@ -365,11 +366,13 @@ class BehaviorCodes(Flag):
             cmap[cls.REV | cls.VENTRAL_TURN] = base_cmap[4]
             cmap[cls.REV | cls.DORSAL_TURN] = base_cmap[5]
         if include_quiescence:
+            # Brown
             cmap[cls.QUIESCENCE] = base_cmap[6]
             cmap[cls.QUIESCENCE | cls.VENTRAL_TURN] = base_cmap[6]
             cmap[cls.QUIESCENCE | cls.DORSAL_TURN] = base_cmap[6]
             cmap[cls.PAUSE | cls.QUIESCENCE] = base_cmap[6]
         if include_collision:
+            # Gray
             cmap[cls.SELF_COLLISION] = base_cmap[7]
             cmap[cls.FWD | cls.SELF_COLLISION] = base_cmap[7]
             cmap[cls.FWD | cls.SELF_COLLISION | cls.DORSAL_TURN] = base_cmap[7]
@@ -377,10 +380,15 @@ class BehaviorCodes(Flag):
             cmap[cls.REV | cls.SELF_COLLISION] = base_cmap[7]
             cmap[cls.REV | cls.SELF_COLLISION | cls.DORSAL_TURN] = base_cmap[7]
             cmap[cls.REV | cls.SELF_COLLISION | cls.VENTRAL_TURN] = base_cmap[7]
+        if include_custom:
+            # Green
+            cmap[cls.CUSTOM] = base_cmap[4]
+        if include_stimulus:
+            # Pink (switched with gold)
+            cmap[cls.STIMULUS] = base_cmap[5]
         if additional_shaded_states is not None:
             # Add states and colors using the matplotlib colormap
             # Start at the first color that isn't in the cmap
-            i_color_offset = 0
             for i in range(10):
                 if base_cmap[i] not in cmap.values():
                     i_color_offset = i

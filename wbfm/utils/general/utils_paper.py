@@ -48,6 +48,10 @@ def plotly_paper_color_discrete_map():
     base_cmap = px.colors.qualitative.D3
     pca_cmap = px.colors.qualitative.Safe
     mode_cmap = px.colors.qualitative.Plotly
+    from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
+    beh_cmap = BehaviorCodes.ethogram_cmap(include_collision=True, include_quiescence=True, include_reversal_turns=True,
+                                           include_custom=True, include_stimulus=True)
+
     cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0], 'Active in Freely Moving only': base_cmap[0],
                  'Freely Moving (GCaMP)': base_cmap[0], 'Freely Moving': base_cmap[0], 'Wild Type': base_cmap[0],
                  # Skip orange... don't like it!
@@ -75,6 +79,14 @@ def plotly_paper_color_discrete_map():
                  'CCA Discrete': pca_cmap[5], 'CCA\n Discrete': pca_cmap[5], 'Discrete': pca_cmap[5],
                  # Individual modes, which are again different
                  1: mode_cmap[0], 2: mode_cmap[1], 3: mode_cmap[2], 4: mode_cmap[3], 5: mode_cmap[4],
+                 # Role types, which are connected to behavior
+                 'Inter, fwd': beh_cmap[BehaviorCodes.FWD],
+                 'Inter, rev': beh_cmap[BehaviorCodes.REV],
+                 'Sensory': beh_cmap[BehaviorCodes.SELF_COLLISION],
+                 'Interneuron': beh_cmap[BehaviorCodes.QUIESCENCE],
+                 'Motor': beh_cmap[BehaviorCodes.CUSTOM],
+                 'Motor, Ventral': beh_cmap[BehaviorCodes.VENTRAL_TURN],
+                 'Motor, Dorsal': beh_cmap[BehaviorCodes.DORSAL_TURN]
                  }
     # Add alternative names
     for k, v in data_type_name_mapping().items():

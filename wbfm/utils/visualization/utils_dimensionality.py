@@ -7,11 +7,9 @@ from statsmodels.stats.multitest import multipletests
 from tqdm.auto import tqdm
 
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
-from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
 from wbfm.utils.general.hardcoded_paths import (get_hierarchical_modeling_dir, role_of_neuron_dict,
                                                 neurons_with_confident_ids)
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
-
 
 
 def main(combine_left_right=True):
@@ -162,8 +160,8 @@ def main(combine_left_right=True):
                'Sensory': cmap[BehaviorCodes.SELF_COLLISION],
                'Interneuron': cmap[BehaviorCodes.QUIESCENCE],
                'Motor': cmap[BehaviorCodes.VENTRAL_TURN]}
-    print(df_combined)
-    print(df_combined.columns)
+    # print(df_combined)
+    # print(df_combined.columns)
     # Add a black line around the points
     fig = px.scatter(df_combined, x='effect_size', y='minus_log_p',
                      # symbol='role', color='fwd_rev',
