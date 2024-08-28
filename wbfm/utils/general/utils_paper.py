@@ -83,8 +83,8 @@ def plotly_paper_color_discrete_map():
                  'Inter, fwd': beh_cmap[BehaviorCodes.FWD],
                  'Inter, rev': beh_cmap[BehaviorCodes.REV],
                  'Sensory': beh_cmap[BehaviorCodes.SELF_COLLISION],
-                 'Interneuron': beh_cmap[BehaviorCodes.QUIESCENCE],
-                 'Motor': beh_cmap[BehaviorCodes.CUSTOM],
+                 'Interneuron': beh_cmap[BehaviorCodes.STIMULUS],
+                 'Motor': beh_cmap[BehaviorCodes.QUIESCENCE],
                  'Motor, Ventral': beh_cmap[BehaviorCodes.VENTRAL_TURN],
                  'Motor, Dorsal': beh_cmap[BehaviorCodes.DORSAL_TURN]
                  }

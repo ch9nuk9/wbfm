@@ -153,20 +153,11 @@ def main(combine_left_right=True):
     new_col = new_col.str.replace('Forward', 'fwd')
     new_col = new_col.str.replace('Reverse', 'rev')
     df_combined['combined_role'] = new_col
-    # Make consistent with behavioral colormap
-    cmap = BehaviorCodes.ethogram_cmap(include_collision=True, include_quiescence=True, include_reversal_turns=True)
-    mapping = {'Inter, fwd': cmap[BehaviorCodes.FWD],
-               'Inter, rev': cmap[BehaviorCodes.REV],
-               'Sensory': cmap[BehaviorCodes.SELF_COLLISION],
-               'Interneuron': cmap[BehaviorCodes.QUIESCENCE],
-               'Motor': cmap[BehaviorCodes.VENTRAL_TURN]}
-    # print(df_combined)
-    # print(df_combined.columns)
     # Add a black line around the points
     fig = px.scatter(df_combined, x='effect_size', y='minus_log_p',
                      # symbol='role', color='fwd_rev',
                      color='combined_role',
-                     color_discrete_map=mapping,
+                     color_discrete_map=plotly_paper_color_discrete_map(),
                      category_orders={'combined_role': ['Sensory', 'Interneuron', 'Motor', 'Inter, fwd', 'Inter, rev']},
                      hover_name=df_combined.index)
                      #title='Effect sizes and p values of the difference in variance explained between immob and gcamp')
