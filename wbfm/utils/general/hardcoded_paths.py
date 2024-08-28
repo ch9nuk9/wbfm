@@ -201,6 +201,9 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
     elif genotype == 'hannah_O2_immob_mutant':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/immobilized_mutant'
         good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
+    elif genotype == 'O2_hiscl':
+        folder_path = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/muscle_hiscl_o2_stimulation'
+        good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
     else:
         raise NotImplementedError
 
