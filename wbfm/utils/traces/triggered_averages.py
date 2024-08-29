@@ -231,8 +231,8 @@ class TriggeredAverageIndices:
     trigger_on_downshift: bool = False  # Trigger to the offset instead of the onset
 
     # Alternate ways to define the end point of each time series
-    allowed_succeeding_state: BehaviorCodes = None  # Also include time points where the state is followed this state
-    fixed_num_points_after_event: int = None  # If not None, then use this number of points after the event
+    allowed_succeeding_state: BehaviorCodes = None  # Allow continuation into this state
+    fixed_num_points_after_event: int = None  # If not None, then use this number of points after the event (regardless of the end of the state)
 
     # Options for randomly shuffling the events
     random_shuffle_offset: int = 0  # If not 0, then shuffle the events by up to this amount (randomly, but all the same offset)
