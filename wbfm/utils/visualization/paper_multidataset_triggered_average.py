@@ -705,7 +705,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                                                 color=color, **kwargs)
         return fig, ax
 
-    def plot_events_over_trace(self, neuron_name, trigger_type, output_foldername=None, **kwargs):
+    def plot_events_over_trace(self, neuron_name, trigger_type, dataset_name=None, output_foldername=None, **kwargs):
         """
         Plot the full trace with the event
 
@@ -713,13 +713,16 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         """
 
         these_intermediates = self.intermediates_dict[trigger_type][0]
-        for dataset_name, triggered_average_class in these_intermediates.items():
+        for _dataset, triggered_average_class in these_intermediates.items():
+            if dataset_name is not None and dataset_name != _dataset:
+                continue
+
             fig, ax = plt.subplots(dpi=100)
             try:
                 triggered_average_class.plot_events_over_trace(neuron_name, ax=ax, **kwargs)
                 if 'rev' in trigger_type:
-                    self.all_projects[dataset_name].shade_axis_using_behavior()
-                plt.title(f"{neuron_name} - {dataset_name}")
+                    self.all_projects[_dataset].shade_axis_using_behavior()
+                plt.title(f"{neuron_name} - {_dataset}")
                 plt.show()
             except KeyError:
                 # print(f"Neuron {neuron_name} not found in {name}; skipping")
