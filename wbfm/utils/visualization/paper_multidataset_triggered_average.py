@@ -294,6 +294,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         """
         Uses get_df_triggered_from_trigger_type, but processes the columns into a multiindex dataframe
 
+        Note: only tested if the triggered average has the same number of time points for each event
+
         Columns are in the form:
         - Level 0: Neuron name
         - Level 1: Dataset name
@@ -303,14 +305,16 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         Examples:
             # Plot all trials, all datasets, all time points
-            # .. can be useless if there are many datasets
+            # Do not use 'facet_row' if there are many datasets
             df = self.get_df_triggered_from_trigger_type_all_traces_as_df('raw_rev', melt_neuron='BAGL')
-            px.box(df, facet_row='dataset_name', y='value', color='after', points='all', x='trial_idx')
+            px.box(df, facet_row='dataset_name', y='value', color='before', points='all', x='trial_idx',
+                   category_orders={'before': ['True', 'False']})
 
             # Collapse time dimension using median
-            df_grouped = df_aqr.groupby(['dataset_name', 'trial_idx', 'after']).median().reset_index()
+            df_grouped = df_aqr.groupby(['dataset_name', 'trial_idx', 'before']).median().reset_index()
 
-            px.box(df_grouped, x='dataset_name', y='value', color='after', points='all')
+            px.box(df_grouped, x='dataset_name', y='value', color='before', points='all',
+                   category_orders={'before': ['True', 'False']})
 
         Returns
         -------
@@ -333,7 +337,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         if melt_neuron is not None:
             df = df[melt_neuron].melt(ignore_index=False).reset_index().copy()
-            df['after'] = df['index'] < 0  # Add a column for before/after the event
+            df['before'] = df['index'] < 0  # Add a column for before/after the event
 
         return df
 
@@ -713,6 +717,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             fig, ax = plt.subplots(dpi=100)
             try:
                 triggered_average_class.plot_events_over_trace(neuron_name, ax=ax, **kwargs)
+                if 'rev' in trigger_type:
+                    self.all_projects[dataset_name].shade_axis_using_behavior()
                 plt.title(f"{neuron_name} - {dataset_name}")
                 plt.show()
             except KeyError:
