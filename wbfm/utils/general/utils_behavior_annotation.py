@@ -1473,10 +1473,13 @@ def shade_triggered_average(ind_preceding, index_conversion=None,
         # Instead of the xlim, we want the length of the vector
         if ax is None:
             # Get data from current figure
-            x = plt.gca().get_lines()[0].get_xdata()
-            # x = plt.get_xdata()
+            lines = plt.gca().get_lines()
         else:
-            x = ax.get_lines()[0].get_xdata()
+            lines = ax.get_lines()
+        if len(lines) == 0:
+            # If there is more than one line, it should be fine
+            raise ValueError("No lines found in the axis, cannot shade")
+        x = lines[0].get_xdata()
         xlim = (0, len(x))
     # Shade using behavior either before or after the ind_preceding line
     if behavior_shading_type is not None:

@@ -493,7 +493,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         # Apply additional settings, even if the above failed
         if apply_changes_even_if_no_trace or triggered_avg is not None:
             behavior_shading_type = self._get_shading_from_trigger_name(trigger_type)
-            if behavior_shading_type is not None:
+            if behavior_shading_type is not None and not use_plotly:
                 index_conversion = df_subset.columns
                 try:
                     shade_triggered_average(ind_preceding=20, index_conversion=index_conversion,
