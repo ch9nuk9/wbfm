@@ -234,6 +234,9 @@ class TriggeredAverageIndices:
     allowed_succeeding_state: BehaviorCodes = None  # Also include time points where the state is followed this state
     fixed_num_points_after_event: int = None  # If not None, then use this number of points after the event
 
+    # Options for randomly shuffling the events
+    random_shuffle_offset: int = 0  # If not 0, then shuffle the events by up to this amount (randomly, but all the same offset)
+
     # Options for filtering the events
     min_duration: int = 0
     max_duration: int = None
@@ -297,7 +300,7 @@ class TriggeredAverageIndices:
             logging.warning(f"No instances of state {self.behavioral_state} found in behavioral annotation!!")
 
     @property
-    def binary_state(self):
+    def binary_state(self) -> pd.Series:
         if self.behavioral_annotation_is_continuous:
             binary_state = self.behavioral_annotation > self.behavioral_annotation_threshold
         else:
@@ -310,10 +313,16 @@ class TriggeredAverageIndices:
 
         if self.gap_size_to_remove is not None:
             binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
+
+        # Randomly shuffle the events
+        if self.random_shuffle_offset > 0:
+            _state = np.roll(binary_state, np.random.randint(0, self.random_shuffle_offset))
+            binary_state = pd.Series(_state, index=binary_state.index)
+
         return binary_state
 
     @property
-    def cleaned_binary_state(self):
+    def cleaned_binary_state(self) -> pd.Series:
         # I can make this cached, but then it has to be cleared if the binary_state changes
         if self.trace_len is not None:
             return self.binary_state.iloc[:self.trace_len]
@@ -432,13 +441,6 @@ class TriggeredAverageIndices:
         triggered_avg_matrix = pd.DataFrame(triggered_avg_matrix, columns=index)
 
         return triggered_avg_matrix
-
-    def calc_null_triggered_average_matrix(self, trace, **kwargs):
-        """Similar to calc_triggered_average_matrix, but jitters the indices"""
-        triggered_average_indices = self.triggered_average_indices()
-        ind_jitter = jitter_indices(triggered_average_indices, max_jitter=len(trace), max_len=len(trace))
-        mat_jitter = self.calc_triggered_average_matrix(trace, custom_ind=ind_jitter, **kwargs)
-        return mat_jitter
 
     def nan_points_of_state_before_point(self, triggered_average_mat, list_of_triggered_ind,
                                          DEBUG=False):

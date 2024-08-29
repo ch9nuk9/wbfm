@@ -469,7 +469,7 @@ def calc_surpyval_durations_and_censoring(all_starts, all_ends):
 
 def remove_short_state_changes(bool_column: pd.Series, min_length, only_replace_these_states=None,
                                replace_with_next_state=True, depth=0, remove_small_false_first=True,
-                               DEBUG=False):
+                               DEBUG=False) -> pd.Series:
     """
     Removes very small states from an integer series, assuming they are noise. Replaces the tiny states with the
     surrounding state index. If the before and after are not the same, chooses based on 'replace_with_preceding_state'
@@ -949,7 +949,7 @@ def make_binary_vector_from_starts_and_ends(starts, ends, original_vals, pad_nan
     return idx_boolean
 
 
-def extend_binary_vector(binary_state: pd.Series, alt_binary_state: pd.Series):
+def extend_binary_vector(binary_state: pd.Series, alt_binary_state: pd.Series) -> pd.Series:
     starts, ends = get_contiguous_blocks_from_column(binary_state, already_boolean=True)
     _, alt_ends = get_contiguous_blocks_from_column(alt_binary_state, already_boolean=True)
     for i in range(len(ends)):
