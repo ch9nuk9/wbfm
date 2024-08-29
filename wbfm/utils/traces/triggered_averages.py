@@ -154,6 +154,8 @@ def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, i
     -------
 
     """
+    if DEBUG:
+        print("Arguments: ", locals())
     all_starts, all_ends = get_contiguous_blocks_from_column(binary_state,
                                                              already_boolean=True, skip_boolean_check=True)
     if DEBUG:
