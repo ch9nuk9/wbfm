@@ -290,6 +290,53 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             df_all.columns = [f"{dataset_name}_{event_index}" for dataset_name, event_index in df_all.columns]
             return df_all
 
+    def get_df_triggered_from_trigger_type_all_traces_as_df(self, trigger_type, melt_neuron=None):
+        """
+        Uses get_df_triggered_from_trigger_type, but processes the columns into a multiindex dataframe
+
+        Columns are in the form:
+        - Level 0: Neuron name
+        - Level 1: Dataset name
+        - Level 2: Trial index
+
+        Rows are the time points
+
+        Examples:
+            # Plot all trials, all datasets, all time points
+            # .. can be useless if there are many datasets
+            df = self.get_df_triggered_from_trigger_type_all_traces_as_df('raw_rev', melt_neuron='BAGL')
+            px.box(df, facet_row='dataset_name', y='value', color='after', points='all', x='trial_idx')
+
+            # Collapse time dimension using median
+            df_grouped = df_aqr.groupby(['dataset_name', 'trial_idx', 'after']).median().reset_index()
+
+            px.box(df_grouped, x='dataset_name', y='value', color='after', points='all')
+
+        Returns
+        -------
+
+        """
+        df = self.get_df_triggered_from_trigger_type(trigger_type, return_individual_traces=True)
+        # Remove neurons with default names
+        df = df.drop(columns=df.columns[df.columns.str.contains('neuron')]).copy()
+
+        def split_func(name):
+            split_name = name.split('_')
+            dataset_name = '_'.join(split_name[:-2])
+            neuron_name = split_name[-2]
+            trial_idx = split_name[-1]
+            return dataset_name, neuron_name, trial_idx
+
+        idx = (split_func(c) for c in df.columns)
+        df.columns = pd.MultiIndex.from_tuples(idx, names=['dataset_name', 'neuron_name', 'trial_idx'])
+        df = df.swaplevel(i=0, j=1, axis=1)
+
+        if melt_neuron is not None:
+            df = df[melt_neuron].melt(ignore_index=False).reset_index().copy()
+            df['after'] = df['index'] < 0  # Add a column for before/after the event
+
+        return df
+
     def get_title_from_trigger_type(self, trigger_type):
         title_mapping = {'raw_rev': 'Raw reversal triggered',
                          'raw_fwd': 'Raw forward triggered',
