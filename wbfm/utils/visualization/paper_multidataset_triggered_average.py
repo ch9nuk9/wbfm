@@ -152,6 +152,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             proj.use_physical_time = True
 
         self.dataset_clusterer_dict = defaultdict(None)
+        # Per trigger type: Dict[str, FullDatasetTriggeredAverages], pd.DataFrame, Dict[str, pd.DataFrame]
         self.intermediates_dict = defaultdict(lambda: (None, None, None))
 
         if self.calculate_residual:

@@ -124,7 +124,8 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
 
 def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, ind_preceding=0, ind_delay=0,
                                                    dict_of_events_to_keep=None,
-                                                   min_duration=0, max_duration=None, fixed_num_points_after_event=None,
+                                                   min_duration=0, max_duration=None,
+                                                   fixed_num_points_after_event=None, max_num_points_after_event=None,
                                                    DEBUG=False):
     """
     Calculates the indices of the triggered averages, and filters them based on a set of criteria
@@ -146,6 +147,7 @@ def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, i
     min_duration
     max_duration
     fixed_num_points_after_event
+    max_num_points_after_event
     DEBUG
 
     Returns
@@ -154,11 +156,14 @@ def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, i
     """
     all_starts, all_ends = get_contiguous_blocks_from_column(binary_state,
                                                              already_boolean=True, skip_boolean_check=True)
+    if DEBUG:
+        print("Original starts: ", all_starts)
+        print("Original ends: ", all_ends)
     if ind_delay > 0:
         # Some of the starts will now be after the ends, but they will be removed by the is_too_short check
         # Also: don't want to mess with an event at exactly 0
         all_starts = [min(i + ind_delay, len(binary_state)-1) if i > 0 else i for i in all_starts]
-    if fixed_num_points_after_event:
+    if fixed_num_points_after_event is not None:
         # Add this offset to the ends, but make sure they don't go past the next start
         all_ends = []
         for i in range(len(all_starts)):
@@ -169,9 +174,17 @@ def calculate_and_filter_triggered_average_indices(binary_state, beh_vec=None, i
                 i_next_start = all_starts[i + 1]
             i_new_end = min(i_start + fixed_num_points_after_event, i_next_start - 1)
             all_ends.append(i_new_end)
+    if max_num_points_after_event is not None:
+        # If the next end is too far away, then cut it off
+        new_ends = []
+        for start, end in zip(all_starts, all_ends):
+            if end - start > max_num_points_after_event:
+                end = start + max_num_points_after_event
+            new_ends.append(end)
+        all_ends = new_ends
     if DEBUG:
-        print("All starts: ", all_starts)
-        print("All ends: ", all_ends)
+        print("All starts after fixed_num_points_after_event and max_num_points_after_event processing: ", all_starts)
+        print("All ends after fixed_num_points_after_event and max_num_points_after_event processing: ", all_ends)
     # Build all validity checks as a list of callables
     is_too_short = lambda start, end: end - start < min_duration
     is_too_long = lambda start, end: (max_duration is not None) and (end - start > max_duration)
@@ -233,6 +246,7 @@ class TriggeredAverageIndices:
     # Alternate ways to define the end point of each time series
     allowed_succeeding_state: BehaviorCodes = None  # Allow continuation into this state
     fixed_num_points_after_event: int = None  # If not None, then use this number of points after the event (regardless of the end of the state)
+    max_num_points_after_event: int = None  # If not None, then cut off the event if it is too long
 
     # Options for randomly shuffling the events
     random_shuffle_offset: int = 0  # If not 0, then shuffle the events by up to this amount (randomly, but all the same offset)
@@ -362,6 +376,7 @@ class TriggeredAverageIndices:
                    ind_preceding=self.ind_preceding,
                    ind_delay=self.ind_delay,
                    fixed_num_points_after_event=self.fixed_num_points_after_event,
+                   max_num_points_after_event=self.max_num_points_after_event,
                    DEBUG=DEBUG)
 
         if self.trigger_on_downshift:
