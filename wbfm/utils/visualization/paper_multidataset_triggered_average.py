@@ -8,21 +8,25 @@ import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
 import random
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Union
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from scipy.stats import stats
+from statsmodels.stats.multitest import multipletests
 from tqdm.auto import tqdm
 from wbfm.utils.external.utils_matplotlib import round_yticks
 
 from wbfm.utils.external.utils_pandas import split_flattened_index
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
-from wbfm.utils.general.utils_paper import apply_figure_settings, paper_trace_settings
+from wbfm.utils.general.utils_paper import apply_figure_settings, paper_trace_settings, plotly_paper_color_discrete_map, \
+    plot_box_multi_axis
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_list_of_projects, \
     ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level, calc_p_value_using_ttest_triggered_average
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
 
 
 @dataclass
@@ -883,3 +887,114 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         if output_foldername:
             self._save_fig(neuron_name, output_foldername, trigger_type=trace_type)
+
+
+def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
+                                               plotter_classes: List[PaperMultiDatasetTriggeredAverage],
+                                               is_mutant_vec: List[bool],
+                                               trigger_type: str, gap: int = 0, same_size_window: bool = False,
+                                               output_dir="/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing/o2_trigger_wt_and_mutant",
+                                               **kwargs):
+    """
+    Calculate the data for a t-test on the traces before and after the event.
+
+    Parameters
+    ----------
+    neuron_list
+    plotter_classes
+    trigger_type
+    gap
+    same_size_window
+    kwargs
+
+    Returns
+    -------
+
+    """
+    # Calculate the basic data for the t-test
+    all_boxplot_data_dfs = []
+    for neuron in neuron_list:
+        for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
+            means_before, means_after = obj.get_boxplot_before_and_after(neuron, trigger_type, gap=gap,
+                                                                         same_size_window=same_size_window)
+
+            df_before = pd.DataFrame(means_before, columns=['mean']).assign(before=True)
+            df_after = pd.DataFrame(means_after, columns=['mean']).assign(before=False)
+            df_both = pd.concat([df_before, df_after]).assign(neuron=neuron, is_mutant=is_mutant).assign(
+                trigger_type=trigger_type)
+            all_boxplot_data_dfs.append(df_both)
+    df_boxplot = pd.concat(all_boxplot_data_dfs)
+
+    # Add columns to allow them to be properly plotted, including p values
+    all_dfs = []
+    is_rev_triggered = 'rev' in trigger_type.lower()
+    for neuron_name in neuron_list:
+        df = _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=is_rev_triggered)
+        all_dfs.append(_calc_p_value(df))
+    df_p_values = pd.concat(all_dfs).reset_index(level=1)
+    df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(), method='fdr_bh', alpha=0.05)[1]
+
+    # Actually plot
+    all_figs = []
+    for neuron_name in neuron_list:
+        # Redo this because it is specific to each neuron
+        df = _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=is_rev_triggered)
+
+        fig = plot_box_multi_axis(df, x_columns_list=['is_mutant_str', 'before_str'], y_column='mean',
+                                  color_names=['Wild Type', 'gcy-31; -35; -9'], DEBUG=False)
+        add_p_value_annotation(fig, x_label='all', show_ns=True, show_only_stars=True, separate_boxplot_fig=False,
+                               precalculated_p_values=df_p_values['p_value_corrected'].to_dict(),
+                               height_mode='top_of_data', has_multicategory_index=True, DEBUG=False)
+
+        fig.update_xaxes(title='')
+        fig.update_yaxes(title=r'$\Delta R / R_{50}$')  # Already exists for the triggered averages themselves
+        fig.update_layout(showlegend=False)
+        # Modify offsetgroup to have only 2 types (rev and fwd), not one for each legend entry
+        apply_figure_settings(fig, height_factor=0.15, width_factor=0.35)
+        fig.show()
+        all_figs.append(fig)
+
+        if output_dir is not None:
+            fname = os.path.join(output_dir, f'{neuron_name}_triggered_average_boxplots.png')
+            fig.write_image(fname, scale=3)
+            fname = fname.replace('.png', '.svg')
+            fig.write_image(fname)
+
+    return all_figs, df_boxplot, df_p_values
+
+
+def _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=True):
+    # Make a new column with color information based on reversal
+    df = df_boxplot[df_boxplot['neuron'] == neuron_name].copy()
+
+    if is_rev_triggered:
+        before_str, after_str = 'Fwd', 'Rev'
+    else:
+        before_str, after_str = 'Rev', 'Fwd'
+
+    df['color'] = ''
+    df.loc[np.logical_and(df['before'], df['is_mutant']), 'color'] = f'{before_str}-Mutant'
+    df.loc[np.logical_and(~df['before'], df['is_mutant']), 'color'] = f'{after_str}-Mutant'
+    df.loc[np.logical_and(df['before'], ~df['is_mutant']), 'color'] = f'{before_str}-WT'
+    df.loc[np.logical_and(~df['before'], ~df['is_mutant']), 'color'] = f'{after_str}-WT'
+    df['is_mutant_str'] = 'gcy-31; -35; -9'
+    df.loc[~df['is_mutant'], 'is_mutant_str'] = 'Wild Type'
+
+    # Rename columns to the display names
+    df['Data Type'] = df['color']
+    df['dR/R50'] = df['mean']
+
+    if is_rev_triggered:
+        df['before_str'] = ['FWD' if val else 'REV' for val in df['before']]
+    else:
+        df['before_str'] = ['REV' if val else 'FWD' for val in df['before']]
+
+    return df
+
+
+def _calc_p_value(df):
+    func = lambda x: stats.ttest_1samp(x, 0)[1]
+    df_groupby = df.dropna().groupby(['neuron', 'trigger_type'])
+    df_pvalue = df_groupby['mean'].apply(func).to_frame()
+    df_pvalue.columns = ['p_value']
+    return df_pvalue
