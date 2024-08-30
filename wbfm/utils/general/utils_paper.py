@@ -1,3 +1,4 @@
+import logging
 import os
 
 import matplotlib.pyplot as plt
@@ -264,8 +265,12 @@ class PaperDataCache:
         z_to_xy_ratio = self.project_data.physical_unit_conversion.z_to_xy_ratio
         all_zxy.loc[:, (slice(None), 'z')] = z_to_xy_ratio * all_zxy.loc[:, (slice(None), 'z')]
         outlier_remover = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces=None, names=names, verbose=0)
-        outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=8)
-        to_remove = outlier_remover.total_matrix_to_remove
+        try:
+            outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=8)
+            to_remove = outlier_remover.total_matrix_to_remove
+        except ValueError as e:
+            logging.warning(f"PPCA failed with error: {e}, skipping outlier removal and saving empty array")
+            to_remove = np.array([])
         return to_remove
 
     def invalid_indices_cache_fname(self):

@@ -1394,6 +1394,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.remove_tracking_outliers_from_plot()
         # Note that this function should be cached
         outlier_matrix = self.dat.calc_indices_to_remove_using_ppca()
+        if len(outlier_matrix) == 0:
+            self.logger.debug("No tracking outliers found; ppca algorithm probably failed")
+            return
 
         # This is a matrix, so I need the index of this neuron name
         neuron_name = self.changeNeuronDropdown.currentText()
