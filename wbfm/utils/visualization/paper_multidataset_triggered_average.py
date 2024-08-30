@@ -997,6 +997,12 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     df_p_values = pd.concat(all_dfs).reset_index(level=1)
     df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(), method='fdr_bh', alpha=0.05)[1]
 
+    # Modify colors to use green for immobilized
+    cmap = plotly_paper_color_discrete_map()
+    if 'stimulus' in trigger_type:
+        # This is not the only case where is it immobilized, but it is the only one we are plotting
+        cmap['Wild Type'] = cmap['immob']
+
     # Actually plot
     all_figs = []
     for neuron_name in neuron_list:
@@ -1004,7 +1010,7 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         df = _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=is_rev_triggered)
 
         fig = plot_box_multi_axis(df, x_columns_list=['is_mutant_str', 'before_str'], y_column='mean',
-                                  color_names=['Wild Type', 'gcy-31;-35;-9'], DEBUG=False)
+                                  color_names=['Wild Type', 'gcy-31;-35;-9'], cmap=cmap, DEBUG=False)
         add_p_value_annotation(fig, x_label='all', show_ns=True, show_only_stars=True, separate_boxplot_fig=False,
                                precalculated_p_values=df_p_values['p_value_corrected'].to_dict(),
                                height_mode='top_of_data', has_multicategory_index=True, DEBUG=False)
@@ -1019,7 +1025,7 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         all_figs.append(fig)
 
         if output_dir is not None:
-            fname = os.path.join(output_dir, f'{neuron_name}_triggered_average_boxplots.png')
+            fname = os.path.join(output_dir, f'{neuron_name}-{trigger_type}_triggered_average_boxplots.png')
             fig.write_image(fname, scale=3)
             fname = fname.replace('.png', '.svg')
             fig.write_image(fname)
