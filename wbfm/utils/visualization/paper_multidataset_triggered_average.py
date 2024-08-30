@@ -600,10 +600,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 proj = self.all_projects[list(self.all_projects.keys())[0]]
                 if show_x_ticks:
                     plt.xlabel(proj.x_label_for_plots)
-                    height_factor_addition = 0.04
+                    height_factor_addition += 0.04
                 else:
                     ax.set_xticks([])
-                    height_factor_addition = 0
                 if not show_x_label:
                     ax.set_xlabel('')
                     height_factor_addition -= 0.04
@@ -615,7 +614,6 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                     ax.set_ylabel('')
                     width_factor_addition -= 0.04
 
-                plt.tight_layout()
             else:
 
                 fig.update_yaxes(title="$\Delta R / R_{50}$")
@@ -646,9 +644,11 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 fname = os.path.join(output_folder, f'{neuron_name}-{fname}.png')
 
                 if not use_plotly:
+                    plt.tight_layout()
                     plt.savefig(fname, transparent=True)
                     plt.savefig(fname.replace(".png", ".svg"))
                 else:
+                    fname = fname.replace(".png", "-plotly.png")
                     fig.write_image(fname.replace(".png", ".svg"))
                     fig.write_image(fname, scale=7)
 

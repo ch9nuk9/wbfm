@@ -14,7 +14,7 @@ from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan, get_
 from wbfm.utils.general.utils_paper import paper_trace_settings, apply_figure_settings, plotly_paper_color_discrete_map
 from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.external.utils_plotly import hex2rgba
+from wbfm.utils.external.utils_plotly import hex2rgba, float2rgba
 import plotly.graph_objects as go
 import plotly.express as px
 
@@ -378,10 +378,15 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
     # Main line and shading together
     # Options for all lines
     i_line = 0 if not is_second_plot else 1
-    cmap = px.colors.qualitative.Plotly
+    color = kwargs.get('color', None)
+    if color is None:
+        color = px.colors.qualitative.Plotly[i_line]
+    elif not isinstance(color, str):
+        # Then it is matplotlib format, and we need to convert it
+        color = float2rgba(color)
     opt = dict(
         x=x,
-        line=dict(color=cmap[i_line]),  # Need to specify the color so that the shading fill has the same color
+        line=dict(color=color),  # Need to specify the color so that the shading fill has the same color
     )
 
     if fig is None:
@@ -398,7 +403,13 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
     color = main_line['line']['color']
     alpha = 0.2
     if 'rgb' in color:
-        fillcolor = color.replace('rgb', 'rgba').replace(')', f', {alpha})')
+        if 'rgba' not in color:
+            fillcolor = color.replace('rgb', 'rgba').replace(')', f', {alpha})')
+        else:
+            # Reduce alpha
+            split_color = color.split(',')
+            split_color[-1] = f" {alpha})"
+            fillcolor = ','.join(split_color)
     elif '#' in color:
         fillcolor = hex2rgba(color, alpha=alpha)
     else:

@@ -189,6 +189,15 @@ def hex2rgba(hex_color, alpha=0.2):
     return fillcolor
 
 
+def float2rgba(float_color, alpha=0.2):
+    # Convert list of float values to string rgba color
+    if len(float_color) == 3:
+        float_color = float_color + [alpha]
+    fillcolor = f"rgba{tuple(int(255 * c) if i < 3 else c for i, c in enumerate(float_color))}"
+    # fillcolor = fillcolor.replace(' ', '')
+    return fillcolor
+
+
 def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, add_nodes_with_no_text=True,
                                       x_range=None, y_range=None, **kwargs):
     positions = np.array(list(zip(x, y)))
