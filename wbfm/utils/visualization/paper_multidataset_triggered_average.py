@@ -131,7 +131,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     intermediates_dict: Dict[str, tuple] = None
 
     trace_opt: Optional[dict] = None
-    trigger_opt: dict = field(default_factory=dict)
+    trigger_opt: dict = None
 
     # Optional trigger types
     calculate_stimulus: bool = False
@@ -146,6 +146,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         trace_base_opt['use_paper_options'] = True
         if self.trace_opt is not None:
             trace_base_opt.update(self.trace_opt)
+
+        if self.trigger_opt is None:
+            self.trigger_opt = dict(min_duration=4, gap_size_to_remove=4,
+                                    max_num_points_after_event=40, fixed_num_points_after_event=None)
 
         # Set each project to use physical time
         for proj in self.all_projects.values():
@@ -227,7 +231,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         # Raw reversal triggered and forward triggered
         for trigger_type, state in trigger_dict.items():
             try:
-                trigger_opt = dict(use_hilbert_phase=False, state=state, fixed_num_points_after_event=100)
+                trigger_opt = dict(use_hilbert_phase=False, state=state)
                 trigger_opt.update(self.trigger_opt)
                 out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                          trace_opt=trace_opt)
