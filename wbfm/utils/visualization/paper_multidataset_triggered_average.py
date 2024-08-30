@@ -510,7 +510,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              apply_changes_even_if_no_trace=True, show_individual_lines=False,
                                              return_individual_traces=False, use_plotly=False,
                                              width_factor_addition=0, height_factor_addition=0,
-                                             DEBUG=False):
+                                             to_show=True, DEBUG=False):
         if fig_kwargs is None:
             fig_kwargs = {}
         if color is None:
@@ -959,7 +959,7 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
                                                is_mutant_vec: List[bool],
                                                trigger_type: str, gap: int = 0, same_size_window: bool = False,
                                                output_dir="/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing/o2_trigger_wt_and_mutant",
-                                               DEBUG=False, **kwargs):
+                                               to_show=True, DEBUG=False, **kwargs):
     """
     Calculate the data for a t-test on the traces before and after the event.
 
@@ -1006,7 +1006,7 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         cmap['Wild Type'] = cmap['immob']
 
     # Actually plot
-    all_figs = []
+    all_figs = {}
     for neuron_name in neuron_list:
         # Redo this because it is specific to each neuron
         df = _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=is_rev_triggered)
@@ -1025,8 +1025,9 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         fig.update_layout(showlegend=False)
         # Modify offsetgroup to have only 2 types (rev and fwd), not one for each legend entry
         apply_figure_settings(fig, height_factor=0.15, width_factor=0.3)
-        fig.show()
-        all_figs.append(fig)
+        if to_show:
+            fig.show()
+        all_figs[neuron_name] = fig
 
         if output_dir is not None:
             fname = os.path.join(output_dir, f'{neuron_name}-{trigger_type}_triggered_average_boxplots.png')
@@ -1035,6 +1036,37 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
             fig.write_image(fname)
 
     return all_figs, df_boxplot, df_p_values
+
+
+def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str],
+                                                            plotter_classes: List[PaperMultiDatasetTriggeredAverage],
+                                                            is_mutant_vec: List[bool],
+                                                            trigger_type: str, output_dir="/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing/o2_trigger_wt_and_mutant",
+                                                            **kwargs):
+        """
+        Plot the triggered averages for a list of neurons.
+
+        Parameters
+        ----------
+        neuron_list
+        plotter_classes
+        trigger_type
+        output_dir
+        to_show
+        kwargs
+
+        Returns
+        -------
+
+        """
+        all_figs = {}
+        for neuron_name in neuron_list:
+            for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
+                fig, _ = obj.plot_triggered_average_single_neuron(neuron_name, trigger_type, is_mutant=is_mutant,
+                                                                output_folder=output_dir, **kwargs)
+                all_figs[neuron_name] = fig
+
+        return all_figs
 
 
 def _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=True):
