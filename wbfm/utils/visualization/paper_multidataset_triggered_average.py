@@ -1004,16 +1004,17 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         df = _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=is_rev_triggered)
 
         fig = plot_box_multi_axis(df, x_columns_list=['is_mutant_str', 'before_str'], y_column='mean',
-                                  color_names=['Wild Type', 'gcy-31; -35; -9'], DEBUG=False)
+                                  color_names=['Wild Type', 'gcy-31;-35;-9'], DEBUG=False)
         add_p_value_annotation(fig, x_label='all', show_ns=True, show_only_stars=True, separate_boxplot_fig=False,
                                precalculated_p_values=df_p_values['p_value_corrected'].to_dict(),
                                height_mode='top_of_data', has_multicategory_index=True, DEBUG=False)
 
         fig.update_xaxes(title='')
-        fig.update_yaxes(title=r'$\Delta R / R_{50}$')  # Already exists for the triggered averages themselves
+        # fig.update_yaxes(title=r'$\Delta R / R_{50}$')  # Already exists for the triggered averages themselves
+        fig.update_yaxes(title='')  # Already exists for the triggered averages themselves
         fig.update_layout(showlegend=False)
         # Modify offsetgroup to have only 2 types (rev and fwd), not one for each legend entry
-        apply_figure_settings(fig, height_factor=0.15, width_factor=0.35)
+        apply_figure_settings(fig, height_factor=0.15, width_factor=0.3)
         fig.show()
         all_figs.append(fig)
 
@@ -1040,7 +1041,7 @@ def _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=True):
     df.loc[np.logical_and(~df['before'], df['is_mutant']), 'color'] = f'{after_str}-Mutant'
     df.loc[np.logical_and(df['before'], ~df['is_mutant']), 'color'] = f'{before_str}-WT'
     df.loc[np.logical_and(~df['before'], ~df['is_mutant']), 'color'] = f'{after_str}-WT'
-    df['is_mutant_str'] = 'gcy-31; -35; -9'
+    df['is_mutant_str'] = 'gcy-31;-35;-9'
     df.loc[~df['is_mutant'], 'is_mutant_str'] = 'Wild Type'
 
     # Rename columns to the display names
