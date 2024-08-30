@@ -38,11 +38,14 @@ class PaperColoredTracePlotter:
     """
 
     @staticmethod
-    def get_color_from_data_type(trigger_type, is_mutant=False):
+    def get_color_from_data_type(trigger_type, is_mutant=False, is_hiscl=False):
         cmap = plt.get_cmap('tab10')
         if is_mutant:
             # Mutant color is unique (pink)
             return cmap(6)
+        if is_hiscl:
+            # Unique (darker green)
+            return plt.get_cmap('tab20b')(4)
         color_mapping = {'raw_rev': cmap(0),
                          'raw': cmap(0),
                          'raw_fwd': cmap(0),
@@ -506,6 +509,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              z_score=False, fig_kwargs=None, legend=False, i_figure=3,
                                              apply_changes_even_if_no_trace=True, show_individual_lines=False,
                                              return_individual_traces=False, use_plotly=False,
+                                             width_factor_addition=0, height_factor_addition=0,
                                              DEBUG=False):
         if fig_kwargs is None:
             fig_kwargs = {}
@@ -576,8 +580,6 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 fig.update_layout(showlegend=False)
 
             # Update title and ticks
-            width_factor_addition, height_factor_addition = 0, 0
-
             if not use_plotly:
                 if z_score:
                     plt.ylabel("Amplitude (z-scored)")
