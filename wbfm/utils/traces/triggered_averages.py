@@ -116,7 +116,7 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
                                              fig=fig, is_second_plot=(fig is not None), **kwargs)
         if show_vertical_line:
             fig.add_shape(type="line", x0=x_for_vertical_line, x1=x_for_vertical_line,
-                          y0=0, y1=1, line=dict(color="Red", dash="dash"))
+                          y0=0, y1=1, line=dict(color="Red", dash="dash"), yref='paper')
         ax = fig
 
     return ax, triggered_avg

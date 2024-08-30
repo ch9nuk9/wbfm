@@ -550,6 +550,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                                                              use_plotly=use_plotly, DEBUG=DEBUG)
             if use_plotly:
                 fig = ax
+                if ax is None:
+                    raise ValueError("ax is None for plotly")
                 ax = None
             if triggered_avg is None:
                 logging.debug(f"Triggered average for {neuron_name} not valid, skipping")
@@ -576,7 +578,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             if legend:
                 if not use_plotly:
                     plt.legend()
-            elif use_plotly:
+            elif use_plotly and fig is not None:
                 fig.update_layout(showlegend=False)
 
             # Update title and ticks
@@ -615,10 +617,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                     width_factor_addition -= 0.04
 
             else:
-
-                fig.update_yaxes(title="$\Delta R / R_{50}$")
-                if show_x_label:
-                    fig.update_xaxes(title="Time (s)")
+                if fig is not None:
+                    fig.update_yaxes(title="$\Delta R / R_{50}$")
+                    if show_x_label:
+                        fig.update_xaxes(title="Time (s)")
 
             # Final saving
             if output_folder is not None:
@@ -957,7 +959,7 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
                                                is_mutant_vec: List[bool],
                                                trigger_type: str, gap: int = 0, same_size_window: bool = False,
                                                output_dir="/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing/o2_trigger_wt_and_mutant",
-                                               **kwargs):
+                                               DEBUG=False, **kwargs):
     """
     Calculate the data for a t-test on the traces before and after the event.
 
@@ -1009,6 +1011,8 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         # Redo this because it is specific to each neuron
         df = _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=is_rev_triggered)
 
+        if DEBUG:
+            print(df)
         fig = plot_box_multi_axis(df, x_columns_list=['is_mutant_str', 'before_str'], y_column='mean',
                                   color_names=['Wild Type', 'gcy-31;-35;-9'], cmap=cmap, DEBUG=False)
         add_p_value_annotation(fig, x_label='all', show_ns=True, show_only_stars=True, separate_boxplot_fig=False,
