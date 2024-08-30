@@ -1061,10 +1061,12 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
         """
         all_figs = {}
         for neuron_name in neuron_list:
+            fig, ax = None, None
             for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
-                fig, _ = obj.plot_triggered_average_single_neuron(neuron_name, trigger_type, is_mutant=is_mutant,
-                                                                output_folder=output_dir, **kwargs)
-                all_figs[neuron_name] = fig
+                fig, ax = obj.plot_triggered_average_single_neuron(neuron_name, trigger_type, is_mutant=is_mutant,
+                                                                   fig=fig, ax=ax,
+                                                                   output_folder=output_dir, **kwargs)
+            all_figs[neuron_name] = fig
 
         return all_figs
 
