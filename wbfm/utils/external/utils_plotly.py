@@ -161,9 +161,9 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
     #     **opt
     # ))
     # First one, which doesn't show up
-    fig.add_trace(go.Scatter(x=mean_y.index, y=mean_y - std_y, **fill_opt))
+    fig.add_trace(go.Scatter(x=mean_y.index, y=mean_y + std_y, **fill_opt))
     # Second one, which does show up
-    fig.add_trace(go.Scatter(x=mean_y.index, y=mean_y + std_y, fill='tonexty', **fill_opt))
+    fig.add_trace(go.Scatter(x=mean_y.index, y=mean_y - std_y, fill='tonexty', **fill_opt))
 
     if x_intersection_annotation is not None:
         y_value_at_x = mean_y.loc[x_intersection_annotation]

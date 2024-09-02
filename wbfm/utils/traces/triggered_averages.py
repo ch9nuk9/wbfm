@@ -482,7 +482,7 @@ class TriggeredAverageIndices:
         for i_trace in range(len(list_of_triggered_ind)):
             these_ind = list_of_triggered_ind[i_trace]
             if DEBUG:
-                print(f"Trace {i_trace}: {these_ind}")
+                print(f"Trace {i_trace} indices: {these_ind}")
             for i_local, i_global in enumerate(these_ind):
                 if i_global < 0:
                     continue
@@ -1009,7 +1009,8 @@ class FullDatasetTriggeredAverages:
         else:
             raise NeedsAnnotatedNeuronError(neuron)
         ax = self.ax_plot_func_for_grid_plot(None, y, ax, neuron, **kwargs)
-        plt.title(f"Triggered average for {neuron}")
+        if not kwargs.get('use_plotly', False):
+            plt.title(f"Triggered average for {neuron}")
         return ax
 
     def plot_multi_neuron_triggered_average(self, neuron_list, ax=None, skip_if_not_present=True, **kwargs):
@@ -1045,10 +1046,14 @@ class FullDatasetTriggeredAverages:
 
         mat = self.ind_class.calc_triggered_average_matrix(y, DEBUG=DEBUG)
         ax = self.ind_class.plot_triggered_average_from_matrix(mat, ax, **plot_kwargs)
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("$\Delta R / R_{50}$")
-        # ax.axhline(0, c='black', ls='--')
-        # ax.plot(self.ind_class.ind_preceding, 0, "r>", markersize=10)
+        try:
+            ax.set_xlabel("Time (s)")
+            ax.set_ylabel("$\Delta R / R_{50}$")
+            # ax.axhline(0, c='black', ls='--')
+            # ax.plot(self.ind_class.ind_preceding, 0, "r>", markersize=10)
+        except AttributeError:
+            # Then it is plotly
+            pass
 
         return ax
 

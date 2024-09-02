@@ -416,15 +416,13 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
         raise ValueError(f"Unknown color format: {color}")
 
     opt_shading = dict(
-        # line=dict(width=0),
-        showlegend=False,
-        # marker=dict(color="#444"),
+        x=x,
+        mode='lines',
+        showlegend=True,
         fillcolor=fillcolor,
-        # opacity=0.2,  # Set in the fillcolor string
-        stackgroup=f'shading_{i_line}', # So the shading doesn't stop on the middle line
-        mode='none'  # override default markers+lines, so the shading doesn't have borders
+        line=dict(color='rgba(255,255,255,0)'),
     )
-    opt_shading.update(opt)
+    # opt_shading.update(opt)
 
     shading_lines = [
         go.Scatter(
