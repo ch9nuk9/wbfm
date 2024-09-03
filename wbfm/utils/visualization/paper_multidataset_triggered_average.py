@@ -750,7 +750,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
     def get_boxplot_before_and_after(self, neuron_name, trigger_type, gap=0, same_size_window=True,
                                      return_individual_traces=False):
-        """Preps data for a ttest or other comparison before and after the event"""
+        """
+        Preps data for a ttest or other comparison before and after the event, by calculating the median of the traces
+        (collapsing the time dimension, and leaving the trial dimension)
+        """
         df_subset = self.get_traces_single_neuron(neuron_name, trigger_type,
                                                   return_individual_traces=return_individual_traces)
         with warnings.catch_warnings():
