@@ -69,7 +69,7 @@ dlc_analyze_videos:
     gres: shard:32
 
 create_centerline:
-    time: 0-06:00:00
+    time: 0-12:00:00
     mem: 8G
     cpus_per_task: 4
 
