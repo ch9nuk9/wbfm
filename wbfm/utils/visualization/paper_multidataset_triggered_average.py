@@ -19,7 +19,7 @@ from statsmodels.stats.multitest import multipletests
 from tqdm.auto import tqdm
 from wbfm.utils.external.utils_matplotlib import round_yticks
 
-from wbfm.utils.external.utils_pandas import split_flattened_index
+from wbfm.utils.external.utils_pandas import split_flattened_index, combine_columns_with_suffix
 from wbfm.utils.external.utils_plotly import float2rgba
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
 from wbfm.utils.general.utils_paper import apply_figure_settings, paper_trace_settings, plotly_paper_color_discrete_map, \
@@ -748,9 +748,11 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         p_value_dict = calc_p_value_using_ttest_triggered_average(df_subset, gap)
         return p_value_dict
 
-    def get_boxplot_before_and_after(self, neuron_name, trigger_type, gap=0, same_size_window=True):
+    def get_boxplot_before_and_after(self, neuron_name, trigger_type, gap=0, same_size_window=True,
+                                     return_individual_traces=False):
         """Preps data for a ttest or other comparison before and after the event"""
-        df_subset = self.get_traces_single_neuron(neuron_name, trigger_type)
+        df_subset = self.get_traces_single_neuron(neuron_name, trigger_type,
+                                                  return_individual_traces=return_individual_traces)
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=RuntimeWarning)
             means_before = np.nanmedian(df_subset.loc[:-gap, :], axis=1)
@@ -933,6 +935,9 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             shading_kwargs = {}
         df_traces = self.get_df_from_data_type(trace_type)
         if neuron_name not in df_traces:
+            # Try to combine L/R
+            df_traces = combine_columns_with_suffix(df_traces)
+        if neuron_name not in df_traces:
             raise ValueError(f"Neuron name {neuron_name} not found in traces")
         if color is None:
             if color_type is None:
@@ -993,6 +998,8 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             #     round_yticks(ax)
             self.project.shade_axis_using_behavior(plotly_fig=fig, **shading_kwargs)
             fig.update_xaxes(range=self.xlim)
+            y = df_traces[neuron_name][self.xlim[0]:self.xlim[1]]
+            fig.update_yaxes(range=[y.min(), y.max()])
 
         width_factor = kwargs.get('width_factor', 0.25)
         apply_figure_settings(fig=fig, width_factor=width_factor, height_factor=height_factor,
@@ -1009,6 +1016,7 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
                                                is_mutant_vec: List[bool],
                                                trigger_type: str, gap: int = 0, same_size_window: bool = False,
                                                output_dir=None,
+                                               return_individual_traces=False,
                                                to_show=True, DEBUG=False, **kwargs):
     """
     Calculate the data for a t-test on the traces before and after the event.
@@ -1031,7 +1039,8 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     for neuron in neuron_list:
         for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
             means_before, means_after = obj.get_boxplot_before_and_after(neuron, trigger_type, gap=gap,
-                                                                         same_size_window=same_size_window)
+                                                                         same_size_window=same_size_window,
+                                                                         return_individual_traces=return_individual_traces)
 
             df_before = pd.DataFrame(means_before, columns=['mean']).assign(before=True)
             df_after = pd.DataFrame(means_after, columns=['mean']).assign(before=False)

@@ -302,6 +302,8 @@ def combine_plotly_figures(all_figs, show_legends: List[bool] = None, **kwargs):
             fig.add_annotation(annotation, row=1, col=i_col)
         for shape in old_fig.layout.shapes:
             fig.add_shape(shape, row=1, col=i_col)
+        fig.update_xaxes(old_fig.layout.xaxis, row=1, col=i_col)
+        fig.update_yaxes(old_fig.layout.yaxis, row=1, col=i_col)
 
     # Force the yref for shapes to be 'paper', which is turned off by default in subplots
     # https://community.plotly.com/t/drawing-vertical-line-on-histogram-in-subplot-but-yref-paper-is-not-working/31581/3
