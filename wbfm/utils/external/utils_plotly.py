@@ -272,7 +272,7 @@ def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, a
     return fig
 
 
-def combine_plotly_figures(all_figs, show_legends: List[bool] = None):
+def combine_plotly_figures(all_figs, show_legends: List[bool] = None, **kwargs):
     """
     Combine multiple plotly figures into a single figure, all on one row
 
@@ -290,7 +290,7 @@ def combine_plotly_figures(all_figs, show_legends: List[bool] = None):
     fig = make_subplots(
         rows=1, cols=len(all_figs),
         shared_yaxes=True,
-        horizontal_spacing=0.01
+        horizontal_spacing=0.01, **kwargs
     )
 
     for old_fig, i_col in zip(all_figs, range(1, len(all_figs) + 1)):

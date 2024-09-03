@@ -9,6 +9,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 import random
 from typing import Dict, Optional, List, Union
+import plotly.graph_objects as go
 
 import numpy as np
 import pandas as pd
@@ -19,6 +20,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.external.utils_matplotlib import round_yticks
 
 from wbfm.utils.external.utils_pandas import split_flattened_index
+from wbfm.utils.external.utils_plotly import float2rgba
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
 from wbfm.utils.general.utils_paper import apply_figure_settings, paper_trace_settings, plotly_paper_color_discrete_map, \
     plot_box_multi_axis
@@ -38,7 +40,7 @@ class PaperColoredTracePlotter:
     """
 
     @staticmethod
-    def get_color_from_data_type(trigger_type, is_mutant=False, is_hiscl=False):
+    def get_color_from_data_type(trigger_type, is_mutant=False, is_hiscl=False, plotly_style=False):
         cmap = plt.get_cmap('tab10')
         if is_mutant:
             # Mutant color is unique (pink)
@@ -65,7 +67,10 @@ class PaperColoredTracePlotter:
                          'mutant': cmap(6)}
         if trigger_type not in color_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(color_mapping.keys())}')
-        return color_mapping[trigger_type]
+        color = color_mapping[trigger_type]
+        if plotly_style:
+            color = float2rgba(color)
+        return color
 
     def get_trace_opt(self, **kwargs):
         trace_opt = paper_trace_settings()
@@ -873,7 +878,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         return fig, axes
 
-    def _save_fig(self, neuron_name, output_foldername, trigger_type):
+    def _save_fig(self, neuron_name, output_foldername, trigger_type, plotly_fig=None):
         """
         Save the figure to the output foldername.
 
@@ -891,20 +896,34 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             fname = os.path.join(output_foldername, f'{neuron_name}-combined_traces.png')
         else:
             fname = os.path.join(output_foldername, f'{neuron_name}-{trigger_type}.png')
-        plt.savefig(fname, transparent=True)
-        plt.savefig(fname.replace(".png", ".svg"))
+        if plotly_fig is None:
+            plt.savefig(fname, transparent=True)
+            plt.savefig(fname.replace(".png", ".svg"))
+        else:
+            plotly_fig.write_image(fname, scale=3)
+            plotly_fig.write_image(fname.replace(".png", ".svg"))
 
     def plot_single_trace(self, neuron_name, trace_type='raw', color_type=None, title=False, legend=False, round_y_ticks=False,
                           xlabels=True, ax=None, color=None, output_foldername=None, shading_kwargs=None,
-                          **kwargs):
+                          use_plotly=False, **kwargs):
         """
-        Plot the three traces (raw, global, residual) on the same plot.
+        Plot a single trace.
         If output_foldername is not None, save the plot in that folder.
 
         Parameters
         ----------
         neuron_name
+        trace_type
+        color_type
+        title
+        legend
+        round_y_ticks
+        xlabels
+        ax
+        color
         output_foldername
+        shading_kwargs
+        kwargs
 
         Returns
         -------
@@ -915,50 +934,81 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         df_traces = self.get_df_from_data_type(trace_type)
         if neuron_name not in df_traces:
             raise ValueError(f"Neuron name {neuron_name} not found in traces")
-
-        fig_opt = self.get_figure_opt()
         if color is None:
             if color_type is None:
                 color_type = trace_type
-            color = self.get_color_from_data_type(color_type)
-        if ax is None:
-            fig, ax = plt.subplots(**fig_opt)
+            color = self.get_color_from_data_type(color_type, plotly_style=use_plotly)
 
-        # Plot a single trace
-        ax.plot(df_traces[neuron_name],
-                color=color,
-                label=trace_type)
+        if not use_plotly:
+            fig_opt = self.get_figure_opt()
+            if ax is None:
+                fig, ax = plt.subplots(**fig_opt)
 
-        if title:
-            ax.set_title(neuron_name)
-        if legend:
-            ax.legend(frameon=False)
+            # Plot a single trace
+            ax.plot(df_traces[neuron_name],
+                    color=color,
+                    label=trace_type)
 
-        ax.set_ylabel(r"$\Delta R / R_{50}$")
+            if title:
+                ax.set_title(neuron_name)
+            if legend:
+                ax.legend(frameon=False)
+            ax.set_ylabel(r"$\Delta R / R_{50}$")
 
-        if xlabels:
-            ax.set_xlabel("Time (s)")
-            height_factor = 0.14
+            if xlabels:
+                ax.set_xlabel("Time (s)")
+                height_factor = 0.14
+            else:
+                ax.set_xticks([])
+                height_factor = 0.1
+            ax.set_xlim(kwargs.get('xlim', self.xlim))
+            if round_y_ticks:
+                round_yticks(ax)
+            self.project.shade_axis_using_behavior(ax, **shading_kwargs)
+            fig = None
+
         else:
-            ax.set_xticks([])
-            height_factor = 0.1
-        ax.set_xlim(kwargs.get('xlim', self.xlim))
-        self.project.shade_axis_using_behavior(ax, **shading_kwargs)
-        if round_y_ticks:
-            round_yticks(ax)
+            # Same, but plotly
+            if ax is not None:
+                fig = ax
+            else:
+                fig = go.Figure()
+
+            # Plot a single trace
+            fig.add_traces([go.Scatter(x=df_traces.index, y=df_traces[neuron_name],
+                                       mode='lines', line=dict(color=color),
+                                       name=trace_type)])
+
+            fig.update_layout(showlegend=legend, title=neuron_name if title else None)
+            fig.update_yaxes(title=r"$\Delta R / R_{50}$")
+
+            if xlabels:
+                fig.update_xaxes(title="Time (s)")
+                height_factor = 0.14
+            else:
+                # fig.update_xaxes(tick_labels=[])
+                height_factor = 0.1
+            # ax.set_xlim(kwargs.get('xlim', self.xlim))
+            # if round_y_ticks:
+            #     round_yticks(ax)
+            self.project.shade_axis_using_behavior(plotly_fig=fig, **shading_kwargs)
+            fig.update_xaxes(range=self.xlim)
 
         width_factor = kwargs.get('width_factor', 0.25)
-        apply_figure_settings(width_factor=width_factor, height_factor=height_factor, plotly_not_matplotlib=False)
+        apply_figure_settings(fig=fig, width_factor=width_factor, height_factor=height_factor,
+                              plotly_not_matplotlib=use_plotly)
 
         if output_foldername:
-            self._save_fig(neuron_name, output_foldername, trigger_type=trace_type)
+            self._save_fig(neuron_name, output_foldername, trigger_type=trace_type, plotly_fig=fig)
+
+        return fig, ax
 
 
 def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
                                                plotter_classes: List[PaperMultiDatasetTriggeredAverage],
                                                is_mutant_vec: List[bool],
                                                trigger_type: str, gap: int = 0, same_size_window: bool = False,
-                                               output_dir="/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing/o2_trigger_wt_and_mutant",
+                                               output_dir=None,
                                                to_show=True, DEBUG=False, **kwargs):
     """
     Calculate the data for a t-test on the traces before and after the event.
@@ -1039,10 +1089,11 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
 
 
 def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str],
-                                                            plotter_classes: List[PaperMultiDatasetTriggeredAverage],
-                                                            is_mutant_vec: List[bool],
-                                                            trigger_type: str, output_dir="/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing/o2_trigger_wt_and_mutant",
-                                                            **kwargs):
+                                                           plotter_classes: List[PaperMultiDatasetTriggeredAverage],
+                                                           is_mutant_vec: List[bool],
+                                                           trigger_type: str,
+                                                           output_dir=None,
+                                                           **kwargs):
         """
         Plot the triggered averages for a list of neurons.
 
