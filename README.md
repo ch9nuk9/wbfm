@@ -74,15 +74,13 @@ See [Summary of common problems](#summary-of-common-problems) for more details.
 
 ### Checklist of most important parameters to change or validate
 
-You should check two things: the correct files were found, and the correct metadata (video length) was detected.
+You should check that the correct files were found, and that the z-metadata is correct.
 
 1. project_config.yaml
-   1. bigtiff_start_volume
-   2. num_frames
-   3. num_slices (after flyback removal)
-      1. This must be the same as 'raw_number_of_planes' minus 'starting_plane' below
-      2. Note: This will be removed in a future release
-2. preprocessing_config.yaml
+   1. red_fname
+   2. green_fname
+   3. behavior_fname (optional)
+2. dat/preprocessing_config.yaml
    1. raw_number_of_planes (before any removal)
    2. starting_plane (set 1 to remove a single plane)
 3. segment_config.yaml
@@ -90,10 +88,6 @@ You should check two things: the correct files were found, and the correct metad
 
 For all other settings, the defaults should work well.
 
-#### *IMPORTANT*
-If you changed the name of your project after creation or you changed operating systems, you must
-update the 'project_dir' variable in the snakemake/config.yaml file.
-This variable should be matched to the operating system you are running on, for example starting with 'S:' for windows or '/' for linux (cluster).
 
 ### Running the rest of the workflow for single project
 
@@ -234,6 +228,19 @@ green_fname
 ```
 
 in the main project file: config.yaml
+
+### Moving location of raw data
+
+This will not affect a completed project, but will cause problems if you try to rerun the pipeline.
+This includes if you already ran the trace extraction steps, but then want to run the behavior analysis.
+Make sure the the paths to raw data are correct in the project_config.yaml file, specifically:
+```yaml
+parent_data_folder
+behavior_fname (optional)
+red_fname
+green_fname
+```
+
 
 ### Creating project from Windows
 
