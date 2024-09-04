@@ -758,15 +758,15 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                                   return_individual_traces=return_individual_traces)
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=RuntimeWarning)
-            means_before = np.nanmedian(df_subset.loc[:-gap, :], axis=1)
+            means_before = np.nanmedian(df_subset.loc[:-gap, :], axis=0)
             if same_size_window:
                 # Get last index based on size of means_before
                 len_before = len(means_before)
                 i_of_0 = df_subset.index.get_loc(0)
                 gap_idx = i_of_0 + gap + len_before
-                means_after = np.nanmedian(df_subset.iloc[i_of_0:gap_idx, :], axis=1)
+                means_after = np.nanmedian(df_subset.iloc[i_of_0:gap_idx, :], axis=0)
             else:
-                means_after = np.nanmedian(df_subset.loc[gap:, :], axis=1)
+                means_after = np.nanmedian(df_subset.loc[gap:, :], axis=0)
         return means_before, means_after
 
 
