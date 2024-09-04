@@ -298,6 +298,8 @@ class PaperDataCache:
             if residual_mode is None:
                 if channel_mode == 'dr_over_r_50':
                     return self.calc_paper_traces()
+                elif channel_mode == 'dr_over_r_20':
+                    return self.calc_paper_traces_r20()
                 elif channel_mode == 'red':
                     return self.calc_paper_traces_red()
                 elif channel_mode == 'green':
@@ -339,6 +341,32 @@ class PaperDataCache:
         if self.cache_dir is None:
             return None
         return os.path.join(self.cache_dir, 'paper_traces.h5')
+
+    @cache_to_disk_class('paper_traces_cache_fname_r20',
+                         func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
+                         func_load_from_disk=pd.read_hdf)
+    def calc_paper_traces_r20(self):
+        """
+        Uses calc_default_traces to calculate traces according to settings used for the paper.
+        See paper_trace_settings() for details
+
+        Returns
+        -------
+
+        """
+        opt = paper_trace_settings()
+        opt['channel_mode'] = 'dr_over_r_20'
+        assert not opt.get('use_paper_traces', False), \
+            "paper_trace_settings should have use_paper_traces=False (recursion error)"
+        df = self.project_data.calc_default_traces(**opt)
+        if df is None:
+            raise ValueError(f"Paper traces for project {self.project_data.project_dir} is None")
+        return df
+
+    def paper_traces_cache_fname_r20(self):
+        if self.cache_dir is None:
+            return None
+        return os.path.join(self.cache_dir, 'paper_traces_r20.h5')
 
     @cache_to_disk_class('paper_traces_no_interpolation_cache_fname',
                          func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
