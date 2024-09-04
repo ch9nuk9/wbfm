@@ -32,12 +32,19 @@ done
 # Sleep, waiting for the projects to be created
 echo "Projects should have been created... starting to run the integration test"
 
-# Run, again for each subfolder
-# Note that the actual step is different for the immobilized data
+# Modify snakemake slurm options to have very short jobs, then actually run
+SLURM_UPDATE_COMMAND=$CODE_DIR/"scripts/postprocessing/copy_config_file_to_multiple_projects.sh"
+NEW_CONFIG=$CODE_DIR/"alternative_project_defaults/short_video/cluster_config.yaml"
+
+# Command to actually run
 COMMAND=$CODE_DIR/"scripts/cluster/run_all_projects_in_parent_folder.sh"
+
 # Freely moving
 PROJECT_PATH=$PARENT_PROJECT_DIR/"freely_moving"
+bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
 bash $COMMAND -t "$PROJECT_PATH" -s traces_and_behavior
+
 # Immobilized
 PROJECT_PATH=$PARENT_PROJECT_DIR/"immobilized"
+bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
 bash $COMMAND -t "$PROJECT_PATH" -s traces
