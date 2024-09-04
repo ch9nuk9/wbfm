@@ -82,7 +82,6 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         return ax, None
 
     if not use_plotly:
-
         # Plot
         if show_shading:
             ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_lower_std, xmax, ax=ax, **kwargs,
@@ -117,6 +116,9 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         if show_vertical_line:
             fig.add_shape(type="line", x0=x_for_vertical_line, x1=x_for_vertical_line,
                           y0=0, y1=1, line=dict(color="Red", dash="dash"), yref='paper')
+        if show_individual_lines:
+            for i, trace in triggered_avg_matrix.iterrows():
+                fig.add_trace(px.line(trace.loc[:xmax], color_discrete_sequence=['black']).data[0])
         ax = fig
 
     return ax, triggered_avg
