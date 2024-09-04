@@ -118,7 +118,7 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
                           y0=0, y1=1, line=dict(color="Red", dash="dash"), yref='paper')
         if show_individual_lines:
             for i, trace in triggered_avg_matrix.iterrows():
-                fig.add_trace(px.line(trace.loc[:xmax], color_discrete_sequence=['black']).data[0])
+                fig.add_trace(px.line(trace.loc[:xmax], color_discrete_sequence=['gray']).data[0])
         ax = fig
 
     return ax, triggered_avg
