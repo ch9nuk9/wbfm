@@ -354,7 +354,7 @@ rule dlc_analyze_videos:
     shell:
         """
         source /lisc/app/conda/miniconda3/bin/activate {params.dlc_conda_env}
-        python -c "import deeplabcut; deeplabcut.analyze_videos({params.dlc_model_configfile_path}, {input.input_avi}, videotype='avi', gputouse=0)"
+        python -c "import deeplabcut; deeplabcut.analyze_videos('{params.dlc_model_configfile_path}', '{input.input_avi}', videotype='avi', gputouse=0)"
         """
 
 rule create_centerline:
