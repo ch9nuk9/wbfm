@@ -1164,8 +1164,9 @@ def _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=True):
 
 
 def _calc_p_value(df):
-    func = lambda x: stats.ttest_1samp(x, 0)[1]
+    # func = lambda x: stats.ttest_1samp(x, 0)[1]
+    func = lambda x: stats.ttest_rel(x[x['before']]['mean'], x[~x['before']]['mean'])[1]
     df_groupby = df.dropna().groupby(['neuron', 'trigger_type'])
-    df_pvalue = df_groupby['mean'].apply(func).to_frame()
+    df_pvalue = df_groupby.apply(func).to_frame()
     df_pvalue.columns = ['p_value']
     return df_pvalue
