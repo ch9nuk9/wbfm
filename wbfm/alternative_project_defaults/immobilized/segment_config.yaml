@@ -1,0 +1,35 @@
+
+###################
+# Parameters
+###################
+self_path: 1-segmentation/segment_config.yaml
+segmentation_type: 3d
+
+# Segmentation
+segmentation_params:
+  stardist_model_name: students_and_lukas_3d_zarr
+  zero_out_borders: false
+  full_erosion: false
+  sum_red_and_green_channels: false
+
+# Postprocessing (only for 2d segmentation type)
+postprocessing_params:
+  upper_length_threshold: 8 # Designed for a total z height of ~32 planes
+  lower_length_threshold: 3 # Designed for a total z height of ~32 planes
+  to_remove_border: false
+  border_width_to_remove: 0
+  to_remove_dim_slices: true
+  max_number_of_objects: 220 # Immobilized recordings that include the tail should be more like 220
+  also_split_using_centroids: true
+  min_separation: 4 # Designed for a total z height of ~32 planes
+
+###################
+# Output
+###################
+output_folder: 1-segmentation # Only used for initial writing
+output_masks: 1-segmentation/masks.zarr
+output_metadata: 1-segmentation/metadata.pickle
+
+# Printing
+verbose: 1
+DEBUG: false
