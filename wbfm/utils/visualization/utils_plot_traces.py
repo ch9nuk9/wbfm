@@ -832,6 +832,8 @@ def plot_triggered_averages(project_data_list, output_foldername=None,
 
 
 def convert_channel_mode_to_axis_label(channel_mode):
+    if isinstance(channel_mode, dict):
+        channel_mode = channel_mode.get('channel_mode', 'dr_over_r_50')
     if channel_mode == 'dr_over_r_20':
         return r"$\Delta R/R_{20}$"
     elif channel_mode == 'dr_over_r_50':

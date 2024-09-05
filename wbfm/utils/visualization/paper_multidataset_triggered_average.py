@@ -993,7 +993,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
                                        name=trace_type)])
 
             fig.update_layout(showlegend=legend, title=neuron_name if title else None)
-            fig.update_yaxes(title=r"$\Delta R / R_{50}$")
+            fig.update_yaxes(title=convert_channel_mode_to_axis_label(trace_options))
 
             if xlabels:
                 fig.update_xaxes(title="Time (s)")
