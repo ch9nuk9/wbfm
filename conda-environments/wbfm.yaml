@@ -10,6 +10,7 @@ channels:
   - pytorch
   - nvidia
   - bioconda
+  - nodefaults
 dependencies:
   - python=3.8
   - pip
