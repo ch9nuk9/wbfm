@@ -561,6 +561,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             if triggered_avg is None:
                 logging.debug(f"Triggered average for {neuron_name} not valid, skipping")
 
+        y_label = convert_channel_mode_to_axis_label(self.trace_opt)
+
         # Apply additional settings, even if the above failed
         if apply_changes_even_if_no_trace or triggered_avg is not None:
             behavior_shading_type = self._get_shading_from_trigger_name(trigger_type)
@@ -591,7 +593,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 if z_score:
                     plt.ylabel("Amplitude (z-scored)")
                 else:
-                    plt.ylabel("$\Delta R / R_{50}$")
+                    plt.ylabel(y_label)
                 if show_title:
                     if title is None:
                         title = self.get_title_from_trigger_type(trigger_type)
@@ -623,7 +625,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
             else:
                 if fig is not None:
-                    fig.update_yaxes(title="$\Delta R / R_{50}$")
+                    fig.update_yaxes(title=y_label)
                     if show_x_label:
                         fig.update_xaxes(title="Time (s)")
 
