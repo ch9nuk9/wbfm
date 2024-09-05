@@ -13,16 +13,18 @@ configfile: "snakemake_config.yaml"
 # NOTE: this is an undocumented feature, and may not work for other versions (this is 7.32)
 project_dir = os.path.dirname(snakemake.workflow.workflow.basedir)
 logging.info("Detected project folder: ", project_dir)
-project_cfg = os.path.join(project_dir, "project_config.yaml")
+project_cfg_fname = os.path.join(project_dir,"project_config.yaml")
 
 if not snakemake.__version__.startswith("7.32"):
     logging.warning(f"Note: this pipeline is only tested on snakemake version 7.32.X, but found {snakemake.__version__}")
 
 # Load the folders needed for the behavioral part of the pipeline
+project_config = ModularProjectConfig(project_cfg_fname)
+output_visualization_directory = project_config.get_visualization_config().absolute_subfolder
+
 try:
-    cfg = ModularProjectConfig(project_dir)
     raw_data_dir, raw_data_subfolder, output_behavior_dir, background_img, background_video, behavior_btf = \
-        cfg.get_folders_for_behavior_pipeline()
+        project_config.get_folders_for_behavior_pipeline()
 except (NoBehaviorDataError, RawDataFormatError):
     # Note: these strings can't be empty, otherwise snakemake can have weird issues
     logging.warning("No behavior data found, behavior will not run. Only 'traces' can be processed.")
@@ -63,6 +65,7 @@ def _cleanup_helper(output_path):
 rule traces_and_behavior:
     input:
         traces=os.path.join(project_dir, "4-traces/green_traces.h5"),
+        trace_summary=os.path.join(output_visualization_directory, "heatmap_with_behavior.mp4"),
         beh_figure=f"{output_behavior_dir}/behavioral_summary_figure.pdf",
         beh_hilbert=f"{output_behavior_dir}/hilbert_inst_amplitude.csv"
 
@@ -82,7 +85,7 @@ rule behavior:
 
 rule preprocessing:
     input:
-        cfg=project_cfg
+        cfg=project_cfg_fname
     output:
         os.path.join(project_dir, "dat/bounding_boxes.pickle")
     run:
@@ -93,7 +96,7 @@ rule preprocessing:
 #
 rule segmentation:
     input:
-        cfg=project_cfg,
+        cfg=project_cfg_fname,
         files=os.path.join(project_dir, "dat/bounding_boxes.pickle")
     output:
         metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle"),
@@ -108,7 +111,7 @@ rule segmentation:
 #
 rule build_frame_objects:
     input:
-        cfg=project_cfg,
+        cfg=project_cfg_fname,
         masks=os.path.join(project_dir, "1-segmentation/masks.zarr"),
         metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle")
     output:
@@ -120,7 +123,7 @@ rule build_frame_objects:
 
 rule match_frame_pairs:
     input:
-        cfg=project_cfg,
+        cfg=project_cfg_fname,
         masks=ancient(os.path.join(project_dir, "1-segmentation/masks.zarr")),
         metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle"),
         frames=os.path.join(project_dir, "2-training_data/raw/frame_dat.pickle")
@@ -133,7 +136,7 @@ rule match_frame_pairs:
 
 rule postprocess_matches_to_tracklets:
     input:
-        cfg=project_cfg,
+        cfg=project_cfg_fname,
         frames=os.path.join(project_dir, "2-training_data/raw/frame_dat.pickle"),
         matches=os.path.join(project_dir, "2-training_data/raw/match_dat.pickle")
     output:
@@ -148,7 +151,7 @@ rule postprocess_matches_to_tracklets:
 #
 rule tracking:
     input:
-        cfg=project_cfg,
+        cfg=project_cfg_fname,
         metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle"),
         frames=os.path.join(project_dir, "2-training_data/raw/frame_dat.pickle"),
     output:
@@ -159,7 +162,7 @@ rule tracking:
 
 rule combine_tracking_and_tracklets:
     input:
-        cfg=project_cfg,
+        cfg=project_cfg_fname,
         tracks_global=os.path.join(project_dir, "3-tracking/postprocessing/df_tracks_superglue.h5"),
         tracklets=os.path.join(project_dir, "2-training_data/all_tracklets.pickle"),
     output:
@@ -174,7 +177,7 @@ rule combine_tracking_and_tracklets:
 #
 rule extract_full_traces:
     input:
-        cfg=project_cfg,
+        cfg=project_cfg_fname,
         tracks_combined=os.path.join(project_dir, "3-tracking/postprocessing/combined_3d_tracks.h5"),
         metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle"),
     output:
@@ -627,3 +630,18 @@ rule make_behaviour_figure:
             '-i', str(params.output_path),
             '-r', str(raw_data_dir),
         ])
+
+
+##
+## Functions that use both traces and behavior (mostly summary videos/figures)
+##
+
+# Does not use behavior annotation, just the raw video
+rule make_heatmap_with_behavior_video:
+    input:
+        traces=os.path.join(project_dir, "4-traces/green_traces.h5"),
+        behavior_btf=behavior_btf,
+    output:
+        figure=os.path.join(output_visualization_directory, "heatmap_with_behavior.mp4")
+    run:
+        _run_helper("visualization.4+make_heatmap_with_behavior_video", project_cfg_fname)
