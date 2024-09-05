@@ -829,3 +829,12 @@ def plot_triggered_averages(project_data_list, output_foldername=None,
                 plt.savefig(fname)
                 fname = Path(fname).with_suffix('.svg')
                 plt.savefig(fname)
+
+
+def convert_channel_mode_to_axis_label(channel_mode):
+    if channel_mode == 'dr_over_r_20':
+        return r"$\Delta R/R_{20}$"
+    elif channel_mode == 'dr_over_r_50':
+        return r"$\Delta R/R_{50}$"
+    else:
+        raise ValueError(f"Unknown channel mode: {channel_mode}")

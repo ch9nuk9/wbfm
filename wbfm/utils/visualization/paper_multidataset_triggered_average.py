@@ -28,7 +28,7 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_list_of_projects, \
     ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level, calc_p_value_using_ttest_triggered_average
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
+from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation, convert_channel_mode_to_axis_label
 
 
 @dataclass
@@ -784,35 +784,18 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
     xlim: Optional[tuple] = (0, 150)
     ylim: Optional[tuple] = None
 
+    trace_options: Optional[dict] = None
+
     def __post_init__(self):
         self.project.use_physical_time = True
 
+        default_options = self.get_trace_opt()
+        if self.trace_options is not None:
+            default_options.update(self.trace_options)
+        self.trace_options = default_options
+
         # Load the cache
-        _ = self.df_traces
-        _ = self.df_traces_global
-        _ = self.df_traces_residual
-
-    @property
-    def df_traces(self):
-        return self.project.calc_paper_traces()
-
-    @property
-    def df_traces_residual(self):
-        return self.project.calc_paper_traces(residual_mode='pca')
-
-    @property
-    def df_traces_global(self):
-        return self.project.calc_paper_traces(residual_mode='pca_global')
-
-    def get_df_from_data_type(self, data_type):
-        if data_type == 'raw':
-            return self.df_traces
-        elif data_type == 'global':
-            return self.df_traces_global
-        elif data_type == 'residual':
-            return self.df_traces_residual
-        else:
-            raise ValueError(f"Invalid data type {data_type}; must be one of 'raw', 'global', 'residual'")
+        self.project.calc_all_paper_traces()
 
     def get_figure_opt(self):
         return dict(dpi=300, figsize=(10/3, 10/2), gridspec_kw={'wspace': 0.0, 'hspace': 0.0})
@@ -832,9 +815,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         -------
 
         """
-        df_traces = self.df_traces
-        df_traces_global = self.df_traces_global
-        df_traces_residual = self.df_traces_residual
+        df_traces, df_traces_global, df_traces_residual = self._load_triple_traces()
 
         fig_opt = self.get_figure_opt()
         fig, axes = plt.subplots(**fig_opt, nrows=3, ncols=1)
@@ -883,6 +864,12 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         return fig, axes
 
+    def _load_triple_traces(self):
+        df_traces, df_traces_r20, df_traces_global, df_traces_residual = self.project.calc_all_paper_traces()
+        if self.trace_options.get('channel_mode', 'dr_over_r_50') == 'dr_over_r_20':
+            df_traces = df_traces_r20
+        return df_traces, df_traces_global, df_traces_residual
+
     def _save_fig(self, neuron_name, output_foldername, trigger_type, plotly_fig=None):
         """
         Save the figure to the output foldername.
@@ -908,8 +895,17 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             plotly_fig.write_image(fname, scale=3)
             plotly_fig.write_image(fname.replace(".png", ".svg"))
 
-    def plot_single_trace(self, neuron_name, trace_type='raw', color_type=None, title=False, legend=False, round_y_ticks=False,
+    def get_trace_type_from_trace_options(self, trace_options):
+        name_mapping = {'raw': 'raw', 'pca_global': 'global', 'pca': 'residual'}
+        if trace_options is None:
+            trace_type = 'raw'
+        else:
+            trace_type = name_mapping[trace_options.get('residual_mode', 'raw')]
+        return trace_type
+
+    def plot_single_trace(self, neuron_name, color_type=None, title=False, legend=False, round_y_ticks=False,
                           xlabels=True, ax=None, color=None, output_foldername=None, shading_kwargs=None,
+                          trace_options=None,
                           use_plotly=False, **kwargs):
         """
         Plot a single trace.
@@ -936,7 +932,15 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         """
         if shading_kwargs is None:
             shading_kwargs = {}
-        df_traces = self.get_df_from_data_type(trace_type)
+
+        default_trace_options = self.trace_options.copy()
+        if trace_options is not None:
+            default_trace_options.update(trace_options)
+        trace_options = default_trace_options
+        trace_type = self.get_trace_type_from_trace_options(trace_options)
+
+        df_traces = self.project.calc_default_traces(**trace_options)
+
         if neuron_name not in df_traces:
             # Try to combine L/R
             df_traces = combine_columns_with_suffix(df_traces)
@@ -961,7 +965,8 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
                 ax.set_title(neuron_name)
             if legend:
                 ax.legend(frameon=False)
-            ax.set_ylabel(r"$\Delta R / R_{50}$")
+            label = convert_channel_mode_to_axis_label(trace_options.get('channel_mode', 'dr_over_r_50'))
+            ax.set_ylabel(label)
 
             if xlabels:
                 ax.set_xlabel("Time (s)")
@@ -1002,7 +1007,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             self.project.shade_axis_using_behavior(plotly_fig=fig, **shading_kwargs)
             fig.update_xaxes(range=self.xlim)
             y = df_traces[neuron_name][self.xlim[0]:self.xlim[1]]
-            fig.update_yaxes(range=[y.min(), y.max()])
+            fig.update_yaxes(range=[y.min()-0.1*y.min().abs(), y.max()+0.1*y.max().abs()])
 
         width_factor = kwargs.get('width_factor', 0.25)
         apply_figure_settings(fig=fig, width_factor=width_factor, height_factor=height_factor,
