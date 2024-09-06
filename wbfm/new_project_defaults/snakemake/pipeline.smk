@@ -639,9 +639,10 @@ rule make_behaviour_figure:
 # Does not use behavior annotation, just the raw video
 rule make_heatmap_with_behavior_video:
     input:
+        cfg=project_cfg_fname,
         traces=os.path.join(project_dir, "4-traces/green_traces.h5"),
         behavior_btf=behavior_btf,
     output:
         figure=os.path.join(output_visualization_directory, "heatmap_with_behavior.mp4")
     run:
-        _run_helper("visualization.4+make_heatmap_with_behavior_video", project_cfg_fname)
+        _run_helper("visualization.4+make_heatmap_with_behavior_video", str(input.cfg))
