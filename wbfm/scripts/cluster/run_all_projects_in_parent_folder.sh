@@ -55,13 +55,18 @@ for f in "$folder_of_projects"/*; do
                     fi
                     # Instead of tmux, use a controller sbatch job
                     cd "$snakemake_folder" || exit  # Move in order to create the snakemake log all together
+
+                    # Build the job name using the folder name and the target rule
+                    JOB_NAME="${f}_${RULE}"
+                    echo "Running job with name: $JOB_NAME"
+
                     full_cmd="$setup_cmd; bash $snakemake_cmd"
                     sbatch --time 5-00:00:00 \
                         --cpus-per-task 1 \
                         --mem 1G \
                         --mail-type=FAIL,TIME_LIMIT,END \
-                        --wrap="$full_cmd"
-
+                        --wrap="$full_cmd" \
+                        --job-name="$JOB_NAME"
                 fi
             fi
         done
