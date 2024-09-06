@@ -567,11 +567,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         # Apply additional settings, even if the above failed
         if apply_changes_even_if_no_trace or triggered_avg is not None:
             behavior_shading_type = self._get_shading_from_trigger_name(trigger_type)
+            if DEBUG:
+                print(f"Behavior shading type: {behavior_shading_type}")
             if behavior_shading_type is not None:
                 index_conversion = df_subset.columns
                 try:
                     add_behavior_shading_to_plot(ind_preceding=20, index_conversion=index_conversion,
-                                                 behavior_shading_type=behavior_shading_type, ax=ax,
+                                                 behavior_shading_type=behavior_shading_type,
+                                                 ax=ax if not use_plotly else fig,
                                                  use_plotly=use_plotly)
                 except IndexError:
                     print(f"Index error for {neuron_name} and {trigger_type}; skipping shading")
@@ -1063,9 +1066,8 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
 
     # Add columns to allow them to be properly plotted, including p values
     all_dfs = []
-    is_rev_triggered = 'rev' in trigger_type.lower()
     for neuron_name in neuron_list:
-        df = _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=is_rev_triggered)
+        df = _add_color_columns_to_df(df_boxplot, neuron_name, trigger_type=trigger_type)
         all_dfs.append(_calc_p_value(df))
     df_p_values = pd.concat(all_dfs).reset_index(level=1)
     df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(), method='fdr_bh', alpha=0.05)[1]
@@ -1143,14 +1145,17 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
         return all_figs
 
 
-def _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=True):
+def _add_color_columns_to_df(df_boxplot, neuron_name, trigger_type='rev'):
     # Make a new column with color information based on reversal
     df = df_boxplot[df_boxplot['neuron'] == neuron_name].copy()
 
-    if is_rev_triggered:
+    if 'rev' in trigger_type.lower():
         before_str, after_str = 'Fwd', 'Rev'
-    else:
+    elif 'fwd' in trigger_type.lower():
         before_str, after_str = 'Rev', 'Fwd'
+    else:
+        before_str, after_str = 'Before', 'After'
+    df['before_str'] = [before_str if val else after_str for val in df['before']]
 
     df['color'] = ''
     df.loc[np.logical_and(df['before'], df['is_mutant']), 'color'] = f'{before_str}-Mutant'
@@ -1163,11 +1168,6 @@ def _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=True):
     # Rename columns to the display names
     df['Data Type'] = df['color']
     df['dR/R50'] = df['mean']
-
-    if is_rev_triggered:
-        df['before_str'] = ['FWD' if val else 'REV' for val in df['before']]
-    else:
-        df['before_str'] = ['REV' if val else 'FWD' for val in df['before']]
 
     return df
 

@@ -1490,7 +1490,6 @@ def add_behavior_shading_to_plot(ind_preceding, index_conversion=None,
             if behavior_shading_type == 'fwd':
                 # If 'fwd' triggered, the shading should go BEFORE the line
                 beh_vec[:ind_preceding] = BehaviorCodes.REV
-                # beh_vec[:xlim[0] + ind_preceding] = BehaviorCodes.REV
             elif behavior_shading_type == 'rev':
                 # If 'rev' triggered, the shading should go AFTER the line
                 beh_vec[ind_preceding:] = BehaviorCodes.REV
@@ -1505,8 +1504,8 @@ def add_behavior_shading_to_plot(ind_preceding, index_conversion=None,
                 print(ind_preceding)
                 print(index_conversion)
                 # print(beh_vec)
-            # Shade
         else:
+            # NOTE: ind_preceding is not used
             assert ax is not None, "For plotly shading, ax (fig) must be provided"
             beh_vec = pd.Series(index=index_conversion, data=False)
             if behavior_shading_type == 'rev':
@@ -1518,6 +1517,7 @@ def add_behavior_shading_to_plot(ind_preceding, index_conversion=None,
             else:
                 raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
 
+        # Actual shading
         shade_using_behavior(beh_vec, ax=ax, index_conversion=index_conversion)
 
 
