@@ -575,7 +575,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                     add_behavior_shading_to_plot(ind_preceding=20, index_conversion=index_conversion,
                                                  behavior_shading_type=behavior_shading_type,
                                                  ax=ax if not use_plotly else fig,
-                                                 use_plotly=use_plotly)
+                                                 use_plotly=use_plotly, DEBUG=DEBUG)
                 except IndexError:
                     print(f"Index error for {neuron_name} and {trigger_type}; skipping shading")
 
@@ -1082,7 +1082,7 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     all_figs = {}
     for neuron_name in neuron_list:
         # Redo this because it is specific to each neuron
-        df = _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=is_rev_triggered)
+        df = _add_color_columns_to_df(df_boxplot, neuron_name, trigger_type=trigger_type)
 
         if DEBUG:
             print(df)
