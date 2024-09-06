@@ -1051,8 +1051,10 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     """
     # Calculate the basic data for the t-test
     all_boxplot_data_dfs = []
-    for neuron in neuron_list:
-        for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
+    # all_df_p_values = []
+    for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
+        all_boxplot_data_dfs_single_type = []
+        for neuron in neuron_list:
             means_before, means_after = obj.get_boxplot_before_and_after(neuron, trigger_type, gap=gap,
                                                                          same_size_window=same_size_window,
                                                                          return_individual_traces=return_individual_traces)
@@ -1061,16 +1063,29 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
             df_after = pd.DataFrame(means_after, columns=['mean']).assign(before=False)
             df_both = pd.concat([df_before, df_after]).assign(neuron=neuron, is_mutant=is_mutant).assign(
                 trigger_type=trigger_type)
-            all_boxplot_data_dfs.append(df_both)
+            all_boxplot_data_dfs_single_type.append(df_both)
+        # Process all neurons for this type, including multiple correction for p values
+        # Only multiple correct for one type (mutant or not), not both
+        df_boxplot_single_type = pd.concat(all_boxplot_data_dfs_single_type)
+        all_boxplot_data_dfs.append(df_boxplot_single_type)
+        # all_df_p_values.append(df_p_values_single_type)
+
+    # Combine
     df_boxplot = pd.concat(all_boxplot_data_dfs)
+    df_boxplot = _add_color_columns_to_df(df_boxplot, trigger_type=trigger_type)
+    df_p_values = _calc_p_value(df_boxplot, groupby_columns=['neuron', 'is_mutant_str'])  # .reset_index(level=1)
+    df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(),
+                                                     method='fdr_bh', alpha=0.05)[1]
 
     # Add columns to allow them to be properly plotted, including p values
-    all_dfs = []
-    for neuron_name in neuron_list:
-        df = _add_color_columns_to_df(df_boxplot, neuron_name, trigger_type=trigger_type)
-        all_dfs.append(_calc_p_value(df))
-    df_p_values = pd.concat(all_dfs).reset_index(level=1)
-    df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(), method='fdr_bh', alpha=0.05)[1]
+    # all_dfs = []
+    # for neuron_name in neuron_list:
+    #     df = _add_color_columns_to_df(df_boxplot, neuron_name, trigger_type=trigger_type)
+    #     all_dfs.append(_calc_p_value(df))
+    # df_p_values = pd.concat(all_dfs).reset_index(level=1)
+    # df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(), method='fdr_bh', alpha=0.05)[1]
+    if DEBUG:
+        print(df_p_values)
 
     # Modify colors to use green for immobilized
     cmap = plotly_paper_color_discrete_map()
@@ -1081,15 +1096,17 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     # Actually plot
     all_figs = {}
     for neuron_name in neuron_list:
-        # Redo this because it is specific to each neuron
-        df = _add_color_columns_to_df(df_boxplot, neuron_name, trigger_type=trigger_type)
+        # Take the subset of the data for this neuron
+        _df = df_boxplot[df_boxplot['neuron'] == neuron_name]
 
         if DEBUG:
-            print(df)
-        fig = plot_box_multi_axis(df, x_columns_list=['is_mutant_str', 'before_str'], y_column='mean',
+            print(_df)
+        fig = plot_box_multi_axis(_df, x_columns_list=['is_mutant_str', 'before_str'], y_column='mean',
                                   color_names=['Wild Type', 'gcy-31;-35;-9'], cmap=cmap, DEBUG=False)
+
+        precalculated_p_values = df_p_values.loc[neuron_name, 'p_value_corrected'].to_dict()
         add_p_value_annotation(fig, x_label='all', show_ns=True, show_only_stars=True, separate_boxplot_fig=False,
-                               precalculated_p_values=df_p_values['p_value_corrected'].to_dict(),
+                               precalculated_p_values=precalculated_p_values,
                                height_mode='top_of_data', has_multicategory_index=True, DEBUG=False)
 
         fig.update_xaxes(title='')
@@ -1145,9 +1162,12 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
         return all_figs
 
 
-def _add_color_columns_to_df(df_boxplot, neuron_name, trigger_type='rev'):
+def _add_color_columns_to_df(df_boxplot, neuron_name=None, trigger_type='rev'):
     # Make a new column with color information based on reversal
-    df = df_boxplot[df_boxplot['neuron'] == neuron_name].copy()
+    if neuron_name is not None:
+        df = df_boxplot[df_boxplot['neuron'] == neuron_name].copy()
+    else:
+        df = df_boxplot.copy()
 
     if 'rev' in trigger_type.lower():
         before_str, after_str = 'Fwd', 'Rev'
@@ -1172,10 +1192,12 @@ def _add_color_columns_to_df(df_boxplot, neuron_name, trigger_type='rev'):
     return df
 
 
-def _calc_p_value(df):
+def _calc_p_value(df, groupby_columns=None):
     # func = lambda x: stats.ttest_1samp(x, 0)[1]
+    if groupby_columns is None:
+        groupby_columns = ['neuron', 'trigger_type']
     func = lambda x: stats.ttest_rel(x[x['before']]['mean'], x[~x['before']]['mean'])[1]
-    df_groupby = df.dropna().groupby(['neuron', 'trigger_type'])
+    df_groupby = df.dropna().groupby(groupby_columns)
     df_pvalue = df_groupby.apply(func).to_frame()
     df_pvalue.columns = ['p_value']
     return df_pvalue

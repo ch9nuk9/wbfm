@@ -672,7 +672,7 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
         else:
             pvalue = precalculated_p_values[x_label]
         if DEBUG:
-            print(f"p-value: {pvalue}")
+            print(f"p-value: {pvalue} for x_label {x_label}")
         significance_stars = p_value_to_stars(pvalue)
 
         if not show_ns and significance_stars == 'ns':
