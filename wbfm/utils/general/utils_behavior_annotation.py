@@ -1467,44 +1467,57 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
             ax.axvspan(ax_start, ax_end, alpha=alpha, color=color, zorder=-10)
 
 
-def shade_triggered_average(ind_preceding, index_conversion=None,
-                            behavior_shading_type='fwd', ax=None, DEBUG=False):
-    if True: #xlim is None:
-        # Instead of the xlim, we want the length of the vector
-        if ax is None:
-            # Get data from current figure
-            lines = plt.gca().get_lines()
-        else:
-            lines = ax.get_lines()
-        if len(lines) == 0:
-            # If there is more than one line, it should be fine
-            raise ValueError("No lines found in the axis, cannot shade")
-        x = lines[0].get_xdata()
-        xlim = (0, len(x))
-    # Shade using behavior either before or after the ind_preceding line
-    if behavior_shading_type is not None:
-        # Initialize empty (FWD = no annotation)
-        beh_vec = np.array([BehaviorCodes.FWD for _ in range(xlim[1] - xlim[0])])
-        # beh_vec = np.array([BehaviorCodes.FWD for _ in range(int(np.ceil(xlim[1])))])
-        if behavior_shading_type == 'fwd':
-            # If 'fwd' triggered, the shading should go BEFORE the line
-            beh_vec[:ind_preceding] = BehaviorCodes.REV
-            # beh_vec[:xlim[0] + ind_preceding] = BehaviorCodes.REV
-        elif behavior_shading_type == 'rev':
-            # If 'rev' triggered, the shading should go AFTER the line
-            beh_vec[ind_preceding:] = BehaviorCodes.REV
-        elif behavior_shading_type == 'both':
-            # If 'both' triggered, the shading should go BEFORE and AFTER the line
-            beh_vec[:] = BehaviorCodes.REV
-        else:
-            raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
+def add_behavior_shading_to_plot(ind_preceding, index_conversion=None,
+                                 behavior_shading_type='fwd', ax=None, use_plotly=False, DEBUG=False):
+    if not use_plotly:
+        if True: #xlim is None:
+            # Instead of the xlim, we want the length of the vector
+            if ax is None:
+                # Get data from current figure
+                lines = plt.gca().get_lines()
+            else:
+                lines = ax.get_lines()
+            if len(lines) == 0:
+                # If there is more than one line, it should be fine
+                raise ValueError("No lines found in the axis, cannot shade")
+            x = lines[0].get_xdata()
+            xlim = (0, len(x))
+        # Shade using behavior either before or after the ind_preceding line
+        if behavior_shading_type is not None:
+            # Initialize empty (FWD = no annotation)
+            beh_vec = np.array([BehaviorCodes.FWD for _ in range(xlim[1] - xlim[0])])
+            # beh_vec = np.array([BehaviorCodes.FWD for _ in range(int(np.ceil(xlim[1])))])
+            if behavior_shading_type == 'fwd':
+                # If 'fwd' triggered, the shading should go BEFORE the line
+                beh_vec[:ind_preceding] = BehaviorCodes.REV
+                # beh_vec[:xlim[0] + ind_preceding] = BehaviorCodes.REV
+            elif behavior_shading_type == 'rev':
+                # If 'rev' triggered, the shading should go AFTER the line
+                beh_vec[ind_preceding:] = BehaviorCodes.REV
+            elif behavior_shading_type == 'both':
+                # If 'both' triggered, the shading should go BEFORE and AFTER the line
+                beh_vec[:] = BehaviorCodes.REV
+            else:
+                raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
 
-        if DEBUG:
-            print(behavior_shading_type)
-            print(ind_preceding)
-            print(index_conversion)
-            # print(beh_vec)
-        # Shade
+            if DEBUG:
+                print(behavior_shading_type)
+                print(ind_preceding)
+                print(index_conversion)
+                # print(beh_vec)
+            # Shade
+        else:
+            assert ax is not None, "For plotly shading, ax (fig) must be provided"
+            beh_vec = pd.Series(index=index_conversion, data=False)
+            if behavior_shading_type == 'rev':
+                beh_vec.loc[0:] = BehaviorCodes.REV
+                beh_vec.loc[:0] = BehaviorCodes.FWD
+            elif behavior_shading_type == 'fwd':
+                beh_vec.loc[0:] = BehaviorCodes.FWD
+                beh_vec.loc[:0] = BehaviorCodes.REV
+            else:
+                raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
+
         shade_using_behavior(beh_vec, ax=ax, index_conversion=index_conversion)
 
 

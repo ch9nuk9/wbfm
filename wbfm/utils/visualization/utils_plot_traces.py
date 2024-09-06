@@ -812,9 +812,9 @@ def plot_triggered_averages(project_data_list, output_foldername=None,
                     behavior_shading_type = 'rev'
                 else:
                     behavior_shading_type = 'fwd'
-                from wbfm.utils.general.utils_behavior_annotation import shade_triggered_average
-                shade_triggered_average(ind_class.ind_preceding, mat.columns, behavior_shading_type, ax,
-                                        DEBUG=False)
+                from wbfm.utils.general.utils_behavior_annotation import add_behavior_shading_to_plot
+                add_behavior_shading_to_plot(ind_class.ind_preceding, mat.columns, behavior_shading_type, ax,
+                                             DEBUG=False)
 
             apply_figure_settings(fig, width_factor=0.3, height_factor=0.15, plotly_not_matplotlib=False)
 

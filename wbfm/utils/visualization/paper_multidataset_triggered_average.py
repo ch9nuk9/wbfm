@@ -21,7 +21,8 @@ from wbfm.utils.external.utils_matplotlib import round_yticks
 
 from wbfm.utils.external.utils_pandas import split_flattened_index, combine_columns_with_suffix
 from wbfm.utils.external.utils_plotly import float2rgba
-from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, add_behavior_shading_to_plot, \
+    shade_using_behavior_plotly
 from wbfm.utils.general.utils_paper import apply_figure_settings, paper_trace_settings, plotly_paper_color_discrete_map, \
     plot_box_multi_axis
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -566,11 +567,12 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         # Apply additional settings, even if the above failed
         if apply_changes_even_if_no_trace or triggered_avg is not None:
             behavior_shading_type = self._get_shading_from_trigger_name(trigger_type)
-            if behavior_shading_type is not None and not use_plotly:
+            if behavior_shading_type is not None:
                 index_conversion = df_subset.columns
                 try:
-                    shade_triggered_average(ind_preceding=20, index_conversion=index_conversion,
-                                            behavior_shading_type=behavior_shading_type, ax=ax)
+                    add_behavior_shading_to_plot(ind_preceding=20, index_conversion=index_conversion,
+                                                 behavior_shading_type=behavior_shading_type, ax=ax,
+                                                 use_plotly=use_plotly)
                 except IndexError:
                     print(f"Index error for {neuron_name} and {trigger_type}; skipping shading")
 

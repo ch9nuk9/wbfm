@@ -22,7 +22,7 @@ from sklearn.metrics import silhouette_score, silhouette_samples
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.custom_errors import NeedsAnnotatedNeuronError, NoBehaviorAnnotationsError
-from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior, shade_triggered_average
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior, add_behavior_shading_to_plot
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
     calc_surpyval_durations_and_censoring, combine_columns_with_suffix, extend_binary_vector
@@ -1587,7 +1587,7 @@ class ClusteredTriggeredAverages:
             plt.xlabel("Time (seconds)")
             plt.tight_layout()
 
-            shade_triggered_average(ind_preceding, pseudo_mat.columns, behavior_shading_type, ax)
+            add_behavior_shading_to_plot(ind_preceding, pseudo_mat.columns, behavior_shading_type, ax)
 
             base_fname = f"cluster_{i_clust}.png"
             self._save_plot(base_fname, output_folder)
@@ -1691,7 +1691,7 @@ class ClusteredTriggeredAverages:
             plt.legend()
 
         index_conversion = pseudo_mat.columns  # Should always exist
-        shade_triggered_average(ind_preceding, index_conversion, behavior_shading_type, ax)
+        add_behavior_shading_to_plot(ind_preceding, index_conversion, behavior_shading_type, ax)
 
         self._save_plot(f"multiple_clusters_{i_clust_list}.png", output_folder)
 
