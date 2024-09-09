@@ -253,7 +253,7 @@ class TriggeredAverageIndices:
     max_num_points_after_event: int = None  # If not None, then cut off the event if it is too long
 
     # Options for randomly shuffling the events
-    random_shuffle_offset: int = 0  # If not 0, then shuffle the events by up to this amount (randomly, but all the same offset)
+    max_random_shuffle_offset: int = 0  # If not 0, then shuffle the events by up to this amount (randomly, but all the same offset)
 
     # Options for filtering the events
     min_duration: int = 0
@@ -333,11 +333,15 @@ class TriggeredAverageIndices:
             binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
 
         # Randomly shuffle the events
-        if self.random_shuffle_offset > 0:
-            _state = np.roll(binary_state, np.random.randint(0, self.random_shuffle_offset))
+        if self.max_random_shuffle_offset > 0:
+            _state = np.roll(binary_state, self.random_shuffle_offset)
             binary_state = pd.Series(_state, index=binary_state.index)
 
         return binary_state
+
+    @cached_property
+    def random_shuffle_offset(self) -> int:
+        return np.random.randint(0, self.max_random_shuffle_offset)
 
     @property
     def cleaned_binary_state(self) -> pd.Series:
