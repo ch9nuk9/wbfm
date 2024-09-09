@@ -362,7 +362,7 @@ class TriggeredAverageIndices:
         ----------
         dict_of_events_to_keep: Optional dict determining a subset of indices to keep. Key=state starts, value=0 or 1
             Example:
-            all_starts = [15, 66, 114, 130]
+            idx_onsets = [15, 66, 114, 130]
             dict_of_ind_to_keep = {15: 0, 66: 1, 114: 0}
 
             Note that not all starts need to be in dict_of_ind_to_keep; missing entries are dropped by default
