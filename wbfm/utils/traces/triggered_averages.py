@@ -590,7 +590,8 @@ class TriggeredAverageIndices:
         x_significant = np.where(np.logical_or(triggered_lower_std > raw_trace_mean, triggered_upper_std < raw_trace_mean))[0]
         return x_significant
 
-    def calc_p_value_using_zeta(self, trace, num_baseline_lines=100, DEBUG=False) -> float:
+    def calc_p_value_using_zeta(self, trace, num_baseline_lines=100, DEBUG=False) -> (
+            Tuple[float, Tuple[float, np.ndarray]]):
         """
         See utils_zeta_statistics. Following:
         https://elifesciences.org/articles/71969#
@@ -694,7 +695,7 @@ class TriggeredAverageIndices:
             plt.title(f"Distribution of maxima of null, with p value: {p}")
             plt.show()
 
-        return p
+        return p, (zeta_dat, zetas_baseline)
 
     def calc_null_distribution_of_triggered_lines(self, max_matrix_length, num_baseline_lines, trace,
                                                   triggered_average_indices):
@@ -983,7 +984,7 @@ class FullDatasetTriggeredAverages:
             if self.significance_calculation_method == 'zeta':
                 logging.warning("Zeta calculation is unstable for calcium imaging!")
                 trace = self.df_traces[name]
-                p = self.ind_class.calc_p_value_using_zeta(trace, num_baseline_lines, DEBUG=DEBUG)
+                p, _ = self.ind_class.calc_p_value_using_zeta(trace, num_baseline_lines, DEBUG=DEBUG)
                 all_p_values[name] = p
                 to_keep = p < 0.05
             elif self.significance_calculation_method == 'num_points':
