@@ -86,9 +86,9 @@ def calculate_zeta_cumsum(mat: np.ndarray, DEBUG=False):
 
 
 # @numba.jit(nopython=True)
-def calculate_p_value_from_zeta(zeta_dat, zetas_baseline):
+def calculate_p_value_from_zeta(zeta_dat: float, zetas_baseline: np.ndarray):
     """
-    Uses gumbel distribution
+    Uses gumbel distribution, because the zeta values are the max of the cumulative sum of the data
 
     Following:
     https://elifesciences.org/articles/71969#s4

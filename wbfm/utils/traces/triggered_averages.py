@@ -916,11 +916,17 @@ class FullDatasetTriggeredAverages:
         names.sort()
         return names
 
-    @property
+    @cached_property
     def df_left_right_combined(self):
         return combine_columns_with_suffix(self.df_traces)
 
-    def triggered_average_matrix_from_name(self, name, **kwargs):
+    def get_df(self, combine_left_right=False):
+        if combine_left_right:
+            return self.df_left_right_combined
+        else:
+            return self.df_traces
+
+    def triggered_average_matrix_from_name(self, name, combine_left_right=False, **kwargs):
         """
         Calculates the triggered average matrix (events are rows, time is columns) for a single neuron
 
@@ -932,7 +938,7 @@ class FullDatasetTriggeredAverages:
         -------
 
         """
-        return self.ind_class.calc_triggered_average_matrix(self.df_traces[name], **kwargs)
+        return self.ind_class.calc_triggered_average_matrix(self.get_df(combine_left_right)[name], **kwargs)
 
     def dict_of_all_triggered_averages(self):
         """
@@ -970,22 +976,28 @@ class FullDatasetTriggeredAverages:
         return df_triggered
 
     def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100,
-                                      ttest_gap=5, DEBUG=False):
+                                      ttest_gap=5, neuron_names=None, combine_left_right=False, DEBUG=False):
         if min_points_for_significance is not None:
             self.min_points_for_significance = min_points_for_significance
+
+        df_traces = self.get_df(combine_left_right=combine_left_right)
+
         names_to_keep = []
         all_p_values = {}
         all_effect_sizes = {}
-        for name in tqdm(self.neuron_names, leave=False):
+        if neuron_names is None:
+            neuron_names = self.neuron_names
+        for name in tqdm(neuron_names, leave=False):
             if DEBUG:
                 print("======================================")
                 print(name)
 
             if self.significance_calculation_method == 'zeta':
-                logging.warning("Zeta calculation is unstable for calcium imaging!")
-                trace = self.df_traces[name]
-                p, _ = self.ind_class.calc_p_value_using_zeta(trace, num_baseline_lines, DEBUG=DEBUG)
+                # logging.warning("Zeta calculation is unstable for calcium imaging!")
+                trace = df_traces[name]
+                p, (zeta_dat, zetas_baseline) = self.ind_class.calc_p_value_using_zeta(trace, num_baseline_lines, DEBUG=DEBUG)
                 all_p_values[name] = p
+                all_effect_sizes[name] = {'zeta_data': zeta_dat, 'zetas_baseline': zetas_baseline}
                 to_keep = p < 0.05
             elif self.significance_calculation_method == 'num_points':
                 # logging.warning("Number of points calculation is not statistically justified!")
@@ -994,7 +1006,7 @@ class FullDatasetTriggeredAverages:
                 all_p_values[name] = x_significant
                 to_keep = len(x_significant) > self.min_points_for_significance
             elif self.significance_calculation_method == 'ttest':
-                trace = self.df_traces[name]
+                trace = df_traces[name]
                 p, effect_size = self.ind_class.calc_p_value_using_ttest(trace, ttest_gap, DEBUG=DEBUG)
                 all_p_values[name] = p
                 all_effect_sizes[name] = effect_size
