@@ -8,7 +8,7 @@ import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
 import random
-from typing import Dict, Optional, List, Union
+from typing import Dict, Optional, List, Union, Tuple
 import plotly.graph_objects as go
 
 import numpy as np
@@ -27,7 +27,8 @@ from wbfm.utils.general.utils_paper import apply_figure_settings, paper_trace_se
     plot_box_multi_axis
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_list_of_projects, \
-    ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level, calc_p_value_using_ttest_triggered_average
+    ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level, \
+    calc_p_value_using_ttest_triggered_average, FullDatasetTriggeredAverages
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation, convert_channel_mode_to_axis_label
 
@@ -166,7 +167,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         self.dataset_clusterer_dict = defaultdict(None)
         # Per trigger type: Dict[str, FullDatasetTriggeredAverages], pd.DataFrame, Dict[str, pd.DataFrame]
-        self.intermediates_dict = defaultdict(lambda: (None, None, None))
+        self.intermediates_dict: Tuple[Dict[str, FullDatasetTriggeredAverages], pd.DataFrame, Dict[str, pd.DataFrame]] = (
+            defaultdict(lambda: (None, None, None)))
 
         if self.calculate_residual:
             try:
@@ -775,6 +777,30 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             else:
                 means_after = np.nanmedian(df_subset.loc[gap:, :], axis=0)
         return means_before, means_after
+
+    def calc_significance_using_mode(self, neuron_names, trigger_type, significance_calculation_method=None, **kwargs):
+        """
+        Calculates the significance of a neuron using different modes, as implemented in the TriggeredAverage class.
+
+        Returns dictionaries indexed by dataset name, then neuron name
+        """
+
+        # Get the triggered average objects (dict for all projects) for the trigger type
+        triggered_average_dict = self.intermediates_dict[trigger_type][0]
+
+        all_names_to_keep = {}
+        all_all_p_values = {}
+        all_all_effect_sizes = {}
+        for _dataset, triggered_average_class in tqdm(triggered_average_dict.items()):
+            if significance_calculation_method is not None:
+                triggered_average_class.significance_calculation_method = significance_calculation_method
+            names_to_keep, all_p_values, all_effect_sizes = (
+                triggered_average_class.which_neurons_are_significant(neuron_names=neuron_names, **kwargs))
+            all_names_to_keep[_dataset] = names_to_keep
+            all_all_p_values[_dataset] = all_p_values
+            all_all_effect_sizes[_dataset] = all_effect_sizes
+
+        return all_names_to_keep, all_all_p_values, all_all_effect_sizes
 
 
 @dataclass

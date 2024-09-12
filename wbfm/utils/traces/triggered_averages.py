@@ -997,7 +997,9 @@ class FullDatasetTriggeredAverages:
                 trace = df_traces[name]
                 p, (zeta_dat, zetas_baseline) = self.ind_class.calc_p_value_using_zeta(trace, num_baseline_lines, DEBUG=DEBUG)
                 all_p_values[name] = p
-                all_effect_sizes[name] = {'zeta_data': zeta_dat, 'zetas_baseline': zetas_baseline}
+                _df = pd.DataFrame(zetas_baseline, columns=['zeta_value']).assign(baseline=True, neuron_name=name)
+                _df2 = pd.DataFrame({'zeta_value': [zeta_dat], 'baseline': False, 'neuron_name': name})
+                all_effect_sizes[name] = pd.concat([_df, _df2])
                 to_keep = p < 0.05
             elif self.significance_calculation_method == 'num_points':
                 # logging.warning("Number of points calculation is not statistically justified!")
