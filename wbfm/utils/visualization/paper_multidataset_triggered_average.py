@@ -795,10 +795,11 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             if significance_calculation_method is not None:
                 triggered_average_class.significance_calculation_method = significance_calculation_method
             names_to_keep, all_p_values, all_effect_sizes = (
-                triggered_average_class.which_neurons_are_significant(neuron_names=neuron_names, **kwargs))
+                triggered_average_class.which_neurons_are_significant(neuron_names=neuron_names, verbose=0, **kwargs))
             all_names_to_keep[_dataset] = names_to_keep
             all_all_p_values[_dataset] = all_p_values
-            all_all_effect_sizes[_dataset] = all_effect_sizes
+            # This is already a dataframe, so making it a nested dictionary doesn't work well
+            all_all_effect_sizes[_dataset] = pd.concat(all_effect_sizes)
 
         return all_names_to_keep, all_all_p_values, all_all_effect_sizes
 

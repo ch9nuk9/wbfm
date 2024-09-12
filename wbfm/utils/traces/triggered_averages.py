@@ -976,7 +976,7 @@ class FullDatasetTriggeredAverages:
         return df_triggered
 
     def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100,
-                                      ttest_gap=5, neuron_names=None, combine_left_right=False, DEBUG=False):
+                                      ttest_gap=5, neuron_names=None, combine_left_right=False, verbose=1, DEBUG=False):
         if min_points_for_significance is not None:
             self.min_points_for_significance = min_points_for_significance
 
@@ -988,6 +988,8 @@ class FullDatasetTriggeredAverages:
         if neuron_names is None:
             neuron_names = self.neuron_names
         for name in tqdm(neuron_names, leave=False):
+            if name not in df_traces:
+                continue
             if DEBUG:
                 print("======================================")
                 print(name)
@@ -1020,7 +1022,7 @@ class FullDatasetTriggeredAverages:
             if to_keep:
                 names_to_keep.append(name)
 
-        if len(names_to_keep) == 0:
+        if len(names_to_keep) == 0 and verbose >= 1:
             logging.warning("Found no significant neurons, subsequent steps may not work")
 
         return names_to_keep, all_p_values, all_effect_sizes
