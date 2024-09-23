@@ -6,6 +6,8 @@ function usage {
     echo "  -t: target parent folder to search for projects"
     echo "  -c: new config file to copy to multiple projects; files will be updated based on EXACT name matches"
     echo "  -n: dry run (just print files that will be modified; default: false)"
+    echo "  -h: help (print this message and quit)"
+    echo "Example: $0 -t /path/to/projects -c /path/to/new_config.yaml"
     exit 1
 }
 
