@@ -146,20 +146,10 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
         opt['fillcolor'] = 'rgba(0,100,80,0.2)'
 
     # Add two lines in a unique group that will have shading between them
-    print('New style')
     fill_opt = dict(hoverinfo="skip", showlegend=False,
-                    # line=dict(color='rgba(255,255,255,0)'),
-                    line=dict(color='black'),
+                    line=dict(color='rgba(255,255,255,0)'),
                     **opt)
-    # fig.add_trace(go.Scatter(
-    #     x=np.concatenate([mean_y.index, mean_y.index[::-1]]),
-    #     y=np.concatenate([mean_y + std_y, (mean_y - std_y)[::-1]]),
-    #     fill='tonexty',
-    #     line=dict(color='rgba(255,255,255,0)'),
-    #     hoverinfo="skip",
-    #     showlegend=False,
-    #     **opt
-    # ))
+
     # First one, which doesn't show up
     fig.add_trace(go.Scatter(x=mean_y.index, y=mean_y + std_y, **fill_opt))
     # Second one, which does show up
