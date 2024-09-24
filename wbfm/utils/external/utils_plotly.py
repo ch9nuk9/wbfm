@@ -1,6 +1,5 @@
 from typing import List
 
-import networkx as nx
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
@@ -203,6 +202,7 @@ def float2rgba(float_color, alpha=0.2):
 
 def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, add_nodes_with_no_text=True,
                                       x_range=None, y_range=None, **kwargs):
+    import networkx as nx
     positions = np.array(list(zip(x, y)))
     G = nx.Graph()
 
