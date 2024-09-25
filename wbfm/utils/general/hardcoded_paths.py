@@ -114,6 +114,10 @@ def get_hierarchical_modeling_dir(gfp=False, immobilized=False):
         return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling"
 
 
+def get_triggered_average_modeling_dir():
+    return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/triggered_average_dataframes"
+
+
 def load_all_data_as_dataframe():
     # Load each type of data, and then concatenate
     fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
