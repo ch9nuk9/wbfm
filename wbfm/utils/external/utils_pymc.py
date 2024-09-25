@@ -480,8 +480,7 @@ def save_all_model_outputs(dataset_name, neuron_name, df_compare, all_traces, al
 ##
 
 def do_hierarchical_ttest(neuron_name, do_immob=False, do_mutant=False, do_downshift=False, do_hiscl=False,
-                          trigger_type='raw_rev',
-                          skip_if_exists=True):
+                          trigger_type='raw_rev', skip_if_exists=True):
     """
     Designed to be used with a dataframe generated via get_df_triggered_from_trigger_type_all_traces_as_df
 
@@ -592,7 +591,7 @@ def do_hierarchical_ttest(neuron_name, do_immob=False, do_mutant=False, do_downs
     # Sample from the model
     with hierarchical_model:
         # Sample from the posterior
-        trace = pm.sample(1000, return_inferencedata=True, target_accept=0.99, cores=10)
+        trace = pm.sample(1000, return_inferencedata=True, target_accept=0.999, cores=10)
 
     # Plot some diagnostics
     az.plot_posterior(
