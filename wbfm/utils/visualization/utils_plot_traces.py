@@ -393,8 +393,10 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
         fig = go.Figure()
         is_second_plot = False
 
+    name = kwargs.get('label', f'Measurement_{i_line}')
+
     main_line = go.Scatter(
-        name=f'Measurement_{i_line}',
+        name=name,
         y=mean_vals,
         mode='lines',
         **opt
@@ -418,7 +420,7 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
     opt_shading = dict(
         x=x,
         mode='lines',
-        showlegend=True,
+        showlegend=False,
         fillcolor=fillcolor,
         line=dict(color='rgba(255,255,255,0)'),
     )
@@ -834,6 +836,8 @@ def plot_triggered_averages(project_data_list, output_foldername=None,
 def convert_channel_mode_to_axis_label(channel_mode):
     if isinstance(channel_mode, dict):
         channel_mode = channel_mode.get('channel_mode', 'dr_over_r_50')
+    elif channel_mode is None:
+        return ''
     if channel_mode == 'dr_over_r_20':
         return r"$\Delta R/R_{20}$"
     elif channel_mode == 'dr_over_r_50':

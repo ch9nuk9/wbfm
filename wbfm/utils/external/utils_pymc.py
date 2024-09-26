@@ -602,7 +602,8 @@ def do_hierarchical_ttest(neuron_name, do_immob=False, do_mutant=False, do_downs
 
     # Save
     output_dir = get_triggered_average_modeling_dir()  # Same as the input
-    base_fname = f'{neuron_name}-immob{do_immob}-mutant{do_mutant}_hierarchical_ttest.png'
+    print(f"Saving all objects for {neuron_name} in {output_dir}")
+    base_fname = f'hierarchical_ttest-{neuron_name}-immob{do_immob}-mutant{do_mutant}.png'
     plt.savefig(os.path.join(output_dir, base_fname))
     plt.close()
 

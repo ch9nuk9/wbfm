@@ -202,6 +202,25 @@ def float2rgba(float_color, alpha=0.2):
 
 def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, add_nodes_with_no_text=True,
                                       x_range=None, y_range=None, **kwargs):
+    """
+
+    Parameters
+    ----------
+    x
+    y
+    all_text
+    fig
+    weight - weight of the edge between the data and the text (attraction)
+    k - optimal distance between nodes
+    add_nodes_with_no_text
+    x_range
+    y_range
+    kwargs
+
+    Returns
+    -------
+
+    """
     import networkx as nx
     positions = np.array(list(zip(x, y)))
     G = nx.Graph()
@@ -250,7 +269,7 @@ def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, a
         if len(t) == 0:
             # Skip empty text
             continue
-        _x, _y = x[i], y[i]
+        _x, _y = x.iat[i], y.iat[i]
         x_new, y_new = new_positions[t]
         if x_range is not None:
             x_new = max(x_range[0], min(x_range[1], x_new))

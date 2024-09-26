@@ -333,7 +333,6 @@ class CCAPlotter:
             ethogram_cmap_kwargs
         )
 
-
         if color_by_discrete_behavior:
             phase_plot_list = []
             # Loop over behaviorally-colored short segments and plot
