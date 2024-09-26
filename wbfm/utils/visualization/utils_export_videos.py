@@ -248,7 +248,8 @@ def save_video_of_heatmap_with_behavior(project_path: Union[str, Path], output_f
     output_video.release()
 
 
-def save_video_of_trace_overlay_with_behavior(project_path: Union[str, Path], t_segmentation=10, neurons=None,
+def save_video_of_trace_overlay_with_behavior(project_path: Union[str, Path], t_range=None,
+                                              t_segmentation=10, neurons=None,
                                               output_fname=None, DEBUG=False):
     """
     Save a video of a segmentation max projection colored by neuron activity (bottom half) with the behavior (on top)
@@ -291,13 +292,6 @@ def save_video_of_trace_overlay_with_behavior(project_path: Union[str, Path], t_
     pc1_weights = project_data.calc_pca_modes(n_components=1, return_pca_weights=True, use_paper_options=True)
     heatmap_data = df_traces.T.reindex(pc1_weights.sort_values(by=0, ascending=False).index)
 
-    # Get max projection of segmentation, which will be colored by neuron activity
-    if t_segmentation is not None:
-        raw_seg_at_time = np.max(project_data.segmentation[t_segmentation], axis=0).astype(np.uint8)
-        # Get bounding box for the segmentation
-        bbox = skimage.measure.regionprops((raw_seg_at_time > 0).astype(np.uint8))[0].bbox
-        # Crop the segmentation to the bounding box
-        raw_seg_at_time = raw_seg_at_time[bbox[0]:bbox[2], bbox[1]:bbox[3]]
 
     # Get the ids of the neurons in the segmentation
     df_raw_red = project_data.red_traces
@@ -306,15 +300,30 @@ def save_video_of_trace_overlay_with_behavior(project_path: Union[str, Path], t_
     neuron_seg_labels = [df_raw_red.loc[0, (neuron_id, 'label')].astype(int) for neuron_id in neuron_ids]
 
     # Make sure the neurons are found at that time point
+
+    # Get max projection of segmentation, which will be colored by neuron activity
     if t_segmentation is not None:
+        raw_seg_at_time = project_data.segmentation[t_segmentation]
+        # Add an offset to the labels we want, so that other neurons don't block them
+        raw_seg_at_time = np.where(np.isin(raw_seg_at_time, neuron_seg_labels), raw_seg_at_time + 1000, 0)
+        raw_seg_at_time = np.max(raw_seg_at_time, axis=0)
+        # Remove the offset and convert to uint8
+        raw_seg_at_time = np.where(raw_seg_at_time > 1000, raw_seg_at_time - 1000, 0).astype(np.uint8)
+        # Get bounding box for the segmentation
+        bbox = skimage.measure.regionprops((raw_seg_at_time > 0).astype(np.uint8))[0].bbox
+        # Crop the segmentation to the bounding box
+        raw_seg_at_time = raw_seg_at_time[bbox[0]:bbox[2], bbox[1]:bbox[3]]
+
         if not all(label in raw_seg_at_time for label in neuron_seg_labels):
             raise ValueError(f"Neurons {neurons} not found in the segmentation at time {t_segmentation}")
 
     # Get activity for each neuron, normalized across time and converted to 8-bit
     all_neuron_activity = np.array([df_traces[neuron].values/df_traces[neuron].abs().max() for neuron in neurons])
+    # Sigmoid to make the activity more visible
+    all_neuron_activity = (1 / (1 + np.exp(-10*all_neuron_activity)))
     all_neuron_activity = cv2.normalize(all_neuron_activity, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
     # New: change the range to be 128-255
-    all_neuron_activity = (all_neuron_activity/2 + 128).astype(np.uint8)
+    # all_neuron_activity = (all_neuron_activity/2 + 128).astype(np.uint8)
 
     # Get video properties
     fps = volumes_per_second
@@ -361,7 +370,11 @@ def save_video_of_trace_overlay_with_behavior(project_path: Union[str, Path], t_
     num_frames = heatmap_data.shape[1]
     # num_frames = 2
     subsample_rate = 1
-    for frame_idx in tqdm(range(0, num_frames, subsample_rate)):
+    if t_range is not None:
+        t0, t1 = t_range
+    else:
+        t0, t1 = 0, num_frames
+    for frame_idx in tqdm(range(t0, t1, subsample_rate)):
         # Get the video frame from dask array
         frame_idx_behavior = frame_idx * frames_per_volume
         grayscale_frame = normalize_to_grayscale(video_array[frame_idx_behavior].compute()).T
@@ -380,7 +393,15 @@ def save_video_of_trace_overlay_with_behavior(project_path: Union[str, Path], t_
         # Apply the LUT to the max projection of the segmentation
         if t_segmentation is None:
             # New: change segmentation
-            raw_seg_at_time = np.max(project_data.segmentation[frame_idx], axis=0).astype(np.uint8)
+            raw_seg_at_time = project_data.segmentation[frame_idx].astype(np.uint16)
+            # Add an offset to the labels we want, so that other neurons don't block them
+            target_pixels = (1000 * np.isin(raw_seg_at_time, neuron_seg_labels)).astype(np.uint16)
+            raw_seg_at_time += target_pixels
+            raw_seg_at_time = np.max(raw_seg_at_time, axis=0)
+            # Remove the offset and convert to uint8
+            raw_seg_at_time -= np.max(target_pixels, axis=0)
+            raw_seg_at_time = raw_seg_at_time.astype(np.uint8)
+            # raw_seg_at_time = np.max(project_data.segmentation[frame_idx], axis=0).astype(np.uint8)
 
         heatmap_data = cv2.LUT(raw_seg_at_time, neuron_lut)
         # Flip vertically
@@ -389,8 +410,13 @@ def save_video_of_trace_overlay_with_behavior(project_path: Union[str, Path], t_
             print(np.unique(heatmap_data))
         # Actually plot
         fig, ax = plt.subplots(figsize=(width / 100, height / 100), dpi=100)
-        heatmap = ax.imshow(heatmap_data, cmap='RdGy_r', interpolation='nearest', aspect='auto',
+        heatmap = ax.imshow(heatmap_data, cmap='RdBu_r',
+                            interpolation='nearest', aspect='auto',
                             extent=[0, width, 0, height], **plot_kwargs)
+        ax.set_yticks([])
+        ax.set_xticks([])
+        # Add colorbar
+        # cbar = fig.colorbar(heatmap, ax=ax)
         canvas = FigureCanvas(fig)
 
         # Render the updated figure to a numpy array
