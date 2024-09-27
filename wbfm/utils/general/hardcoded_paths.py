@@ -120,7 +120,7 @@ def get_hierarchical_modeling_dir(gfp=False, immobilized=False, o2_stimulus=Fals
             base_name += "_o2"
     else:
         if not suffix.startswith('_'):
-            suffix += '_'
+            base_name += '_'
         base_name += suffix
     return os.path.join(parent_folder, base_name)
 
