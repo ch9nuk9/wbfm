@@ -254,7 +254,11 @@ def save_video_of_trace_overlay_with_behavior(project_path: Union[str, Path], t_
     """
     Save a video of a segmentation max projection colored by neuron activity (bottom half) with the behavior (on top)
 
-    Units will not be correct unless the project_config.yaml exposure_time is set correctly
+    Example:
+    save_video_of_trace_overlay_with_behavior(project_data, t_segmentation=None, t_range=[930, 970],
+                                          neurons=['VB02', 'DB01', 'RMDDR', 'SIADR', 'SMDDR', 'SIAVR', 'RMED', 'RMEV', 'SMDVR'],
+                                          output_fname='/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/alternative_ideas/test.mp4',
+                                          DEBUG=False)
 
     Parameters
     ----------
