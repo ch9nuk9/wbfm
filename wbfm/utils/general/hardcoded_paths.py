@@ -105,13 +105,22 @@ def get_project_parent_folder():
     return "/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects"
 
 
-def get_hierarchical_modeling_dir(gfp=False, immobilized=False):
-    if gfp:
-        return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp"
-    elif immobilized:
-        return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_immob"
+def get_hierarchical_modeling_dir(gfp=False, immobilized=False, o2_stimulus=False, mutant=False,
+                                  suffix=None):
+    parent_folder = "/lisc/scratch/neurobiology/zimmer/fieseler/paper/"
+    base_name = "hierarchical_modeling"
+    if suffix is None:
+        if gfp:
+            base_name += "_gfp"
+        elif immobilized:
+            base_name += "_immob"
+        if mutant:
+            base_name += "_mutant"
+        if o2_stimulus:
+            base_name += "_o2"
     else:
-        return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling"
+        base_name += suffix
+    return os.path.join(parent_folder, base_name)
 
 
 def get_triggered_average_modeling_dir():
@@ -151,6 +160,10 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
 
     """
     from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, load_all_projects_in_folder
+
+    if isinstance(genotype, str) and genotype == '':
+        # Load default gcamp paper projects
+        genotype = ['gcamp', 'hannah_O2_fm']
 
     if isinstance(genotype, list):
         good_projects = {}
@@ -196,16 +209,16 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
         good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/IM_to_FM_freely_moving'
         good_projects.update(load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs))
-    elif genotype == 'hannah_O2_immob':
+    elif genotype == 'hannah_O2_immob' or genotype == 'immob_o2':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/immobilized_wt'
         good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
-    elif genotype == 'hannah_O2_fm_mutant':
+    elif genotype == 'hannah_O2_fm_mutant' or genotype == 'mutant':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/freely_moving_mutant'
         good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
-    elif genotype == 'hannah_O2_immob_mutant':
+    elif genotype == 'hannah_O2_immob_mutant' or genotype == 'immob_mutant_o2':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/immobilized_mutant'
         good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
-    elif genotype == 'O2_hiscl':
+    elif genotype == 'O2_hiscl' or genotype == 'immob_o2_hiscl':
         folder_path = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/muscle_hiscl_o2_stimulation'
         good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
     else:
