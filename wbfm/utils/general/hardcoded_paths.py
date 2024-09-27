@@ -131,16 +131,18 @@ def get_triggered_average_modeling_dir():
 
 def load_all_data_as_dataframe():
     # Load each type of data, and then concatenate
-    fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
-    Xy_fm = pd.read_hdf(fname).assign(dataset_type='wbfm')
-
-    fname = os.path.join(get_hierarchical_modeling_dir(immobilized=True), 'data.h5')
-    Xy_immob = pd.read_hdf(fname).assign(dataset_type='immob')
-
-    fname = os.path.join(get_hierarchical_modeling_dir(gfp=True), 'data.h5')
-    Xy_gfp = pd.read_hdf(fname).assign(dataset_type='gfp')
-
-    return pd.concat([Xy_fm, Xy_immob, Xy_gfp])
+    all_suffixes = ['gfp', 'immob', '', 'immob_mutant_o2', 'immob_o2', 'immob_o2_hiscl', 'mutant']
+    all_data = []
+    for suffix in all_suffixes:
+        folder_name = get_hierarchical_modeling_dir(suffix=suffix)
+        fname = os.path.join(folder_name, 'data.h5')
+        if suffix != '':
+            dataset_type = suffix
+        else:
+            dataset_type = 'gcamp'
+        Xy = pd.read_hdf(fname).assign(dataset_type=dataset_type)
+        all_data.append(Xy)
+    return pd.concat(all_data)
 
 
 def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=False, only_load_paths=False,
