@@ -118,7 +118,7 @@ def get_hierarchical_modeling_dir(gfp=False, immobilized=False, o2_stimulus=Fals
             base_name += "_mutant"
         if o2_stimulus:
             base_name += "_o2"
-    else:
+    elif suffix != '':
         if not suffix.startswith('_'):
             base_name += '_'
         base_name += suffix
