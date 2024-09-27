@@ -1,12 +1,14 @@
 import os
 
+from tqdm.auto import tqdm
+
 from wbfm.utils.general.hardcoded_paths import load_paper_datasets, get_hierarchical_modeling_dir
 from wbfm.utils.visualization.multiproject_wrappers import build_trace_time_series_from_multiple_projects, \
     build_behavior_time_series_from_multiple_projects, build_cross_dataset_eigenworms, \
     build_pca_time_series_from_multiple_projects
 
 
-def export_data_for_hierarchical_model(do_gfp=False, do_immobilized=False, skip_if_exists=True):
+def export_data_for_hierarchical_model(suffix='', skip_if_exists=True):
     """
     Loads the relevant projects, and exports both behavior and traces to a single .h5 file
 
@@ -15,21 +17,16 @@ def export_data_for_hierarchical_model(do_gfp=False, do_immobilized=False, skip_
 
     """
     # Check if file exists
-    data_dir = get_hierarchical_modeling_dir(gfp=do_gfp, immobilized=do_immobilized)
+    data_dir = get_hierarchical_modeling_dir(suffix=suffix)
     output_fname = os.path.join(data_dir, 'data.h5')
-    print(f"Exporting data to {output_fname} with options do_gfp={do_gfp}, do_immobilized={do_immobilized}")
+    print(f"Exporting data to {output_fname} with suffix {suffix}")
     if skip_if_exists and os.path.exists(output_fname):
         print(f"File {output_fname} already exists, skipping")
         return
 
-    # Load projects
-    if do_gfp:
-        project_code = 'gfp'
-    elif do_immobilized:
-        project_code = 'immob'
-    else:
-        project_code = ['gcamp', 'hannah_O2_fm']
-    all_projects = load_paper_datasets(project_code)
+    # Load projects from the suffix
+    all_projects = load_paper_datasets(suffix)
+    do_immobilized = 'immob' in suffix
 
     # Get individual data elements
     df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, use_paper_options=True)
@@ -87,6 +84,6 @@ def export_data_for_hierarchical_model(do_gfp=False, do_immobilized=False, skip_
 
 if __name__ == '__main__':
     # Do gfp first because it's faster, so sometimes I can start other pipelines more quickly
-    export_data_for_hierarchical_model(do_gfp=True)
-    export_data_for_hierarchical_model(do_immobilized=True)
-    export_data_for_hierarchical_model()
+    all_suffixes = ['gfp', 'immob', '', 'immob_mutant_o2', 'immob_o2', 'immob_o2_hiscl', 'mutant']
+    for suffix in tqdm(all_suffixes):
+        export_data_for_hierarchical_model(suffix=suffix)

@@ -757,25 +757,43 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         p_value_dict = calc_p_value_using_ttest_triggered_average(df_subset, gap)
         return p_value_dict
 
-    def get_boxplot_before_and_after(self, neuron_name, trigger_type, gap=0, same_size_window=True,
+    def get_boxplot_before_and_after(self, neuron_name, trigger_type,
+                                     summary_function=None,
+                                     gap=0, same_size_window=True,
                                      return_individual_traces=False):
         """
         Preps data for a ttest or other comparison before and after the event, by calculating the median of the traces
         (collapsing the time dimension, and leaving the trial dimension)
+
+        Parameters
+        ----------
+        neuron_name
+        trigger_type
+        summary_function - function to apply to the traces before and after the event; must accept the parameter axis=0
+            default is np.nanmedian
+        gap - time to skip around the event (both before and after)
+        same_size_window - if True, then the window before and after the event will be the same size
+        return_individual_traces - if True, then do not pool trials within individuals, but treat each trial independently
+
+        Returns
+        -------
+
         """
+        if summary_function is None:
+            summary_function = np.nanmedian
         df_subset = self.get_traces_single_neuron(neuron_name, trigger_type,
                                                   return_individual_traces=return_individual_traces)
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=RuntimeWarning)
-            means_before = np.nanmedian(df_subset.loc[:-gap, :], axis=0)
+            means_before = summary_function(df_subset.loc[:-gap, :], axis=0)
             if same_size_window:
                 # Get last index based on size of means_before
                 len_before = len(means_before)
                 i_of_0 = df_subset.index.get_loc(0)
                 gap_idx = i_of_0 + gap + len_before
-                means_after = np.nanmedian(df_subset.iloc[i_of_0:gap_idx, :], axis=0)
+                means_after = summary_function(df_subset.iloc[i_of_0:gap_idx, :], axis=0)
             else:
-                means_after = np.nanmedian(df_subset.loc[gap:, :], axis=0)
+                means_after = summary_function(df_subset.loc[gap:, :], axis=0)
         return means_before, means_after
 
     def calc_significance_using_mode(self, neuron_names, trigger_type, significance_calculation_method=None, **kwargs):
@@ -1058,7 +1076,7 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
                                                is_mutant_vec: List[bool],
                                                trigger_type: str, gap: int = 0, same_size_window: bool = False,
                                                output_dir=None,
-                                               return_individual_traces=False,
+                                               return_individual_traces=False, summary_function=None,
                                                to_show=True, DEBUG=False, **kwargs):
     """
     Calculate the data for a t-test on the traces before and after the event.
@@ -1083,6 +1101,7 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         all_boxplot_data_dfs_single_type = []
         for neuron in neuron_list:
             means_before, means_after = obj.get_boxplot_before_and_after(neuron, trigger_type, gap=gap,
+                                                                         summary_function=summary_function,
                                                                          same_size_window=same_size_window,
                                                                          return_individual_traces=return_individual_traces)
 
