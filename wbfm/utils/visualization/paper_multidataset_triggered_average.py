@@ -910,7 +910,9 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             for ax in axes:
                 round_yticks(ax)
 
-        apply_figure_settings(fig, width_factor=0.25, height_factor=0.3, plotly_not_matplotlib=False)
+        width_factor = kwargs.get('width_factor', 0.25)
+        height_factor = kwargs.get('height_factor', 0.3)
+        apply_figure_settings(fig, width_factor=width_factor, height_factor=height_factor, plotly_not_matplotlib=False)
 
         if output_foldername:
             self._save_fig(neuron_name, output_foldername, trigger_type='combined')
