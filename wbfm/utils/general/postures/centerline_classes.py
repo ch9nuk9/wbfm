@@ -869,8 +869,8 @@ class WormFullVideoPosture:
     # @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
                        include_collision=True, include_turns=True, include_head_cast=True, include_pause=True,
-                       include_slowing=False, include_stiumulus=True,
-                       use_pause_to_exclude_other_states=True, DEBUG=False) -> \
+                       include_slowing=False, include_stimulus=True, use_pause_to_exclude_other_states=True,
+                       DEBUG=False) -> \
             Optional[pd.Series]:
         """
         Main function for calculating the behavioral state vector. See BehaviorCodes for the possible states
@@ -918,7 +918,7 @@ class WormFullVideoPosture:
                 beh_funcs_to_add.append(self._turn_annotation)
             if include_head_cast:
                 beh_funcs_to_add.append(self._head_cast_annotation)
-            if include_stiumulus:
+            if include_stimulus:
                 beh_funcs_to_add.append(self._stimulus)
         num_warnings = 0
         if DEBUG:
@@ -1427,9 +1427,8 @@ class WormFullVideoPosture:
                 behavioral_annotation = self.calc_behavior_from_alias(behavior_name)
         # This one is always from the raw annotation
         if behavioral_annotation_for_rectification is None:
-            behavioral_annotation_for_rectification = self.beh_annotation(fluorescence_fps=True,
-                                                                          use_manual_annotation=use_manual_annotation,
-                                                                          reset_index=True)
+            behavioral_annotation_for_rectification = self.beh_annotation(fluorescence_fps=True, reset_index=True,
+                                                                          use_manual_annotation=use_manual_annotation)
         # Build the class
         opt = dict(behavioral_annotation=behavioral_annotation,
                    behavioral_annotation_for_rectification=behavioral_annotation_for_rectification,
@@ -2059,7 +2058,7 @@ class WormFullVideoPosture:
         if graph_kwargs is None:
             graph_kwargs = {}
         kwargs.setdefault('fluorescence_fps', True)
-        beh_vec = self.beh_annotation(include_slowing=True, include_turns=True, **kwargs)
+        beh_vec = self.beh_annotation(include_turns=True, include_slowing=True, **kwargs)
         beh_vec = BehaviorCodes.convert_to_simple_states_vector(beh_vec)
         beh_vec = beh_vec.apply(lambda x: x.name)
 
