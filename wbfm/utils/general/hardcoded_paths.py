@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Union
+from typing import Union, Tuple
 import pkgutil
 import pandas as pd
 from collections import defaultdict
@@ -496,3 +496,25 @@ def role_of_neuron_dict(only_fwd_rev=False, include_modulatory=False, include_ve
         role_dict[k] = ', '.join(v) if len(v) > 1 else v[0]
 
     return role_dict
+
+
+def get_triggered_average_dataframe_fname(trigger_type, do_downshift=False, do_hiscl=False, do_immob=False,
+                                          do_mutant=False) -> Tuple[str, str]:
+    fname = f'triggered_average_gcamp_plotter'
+    suffix = ''
+    if do_immob:
+        suffix += '_immob'
+    if do_mutant:
+        suffix += '_mutant'
+    if do_downshift:
+        suffix += '_downshift'
+    if do_hiscl:
+        suffix += '_hiscl'
+    suffix += f'-{trigger_type}.h5'
+    fname += suffix
+
+    data_dir = get_triggered_average_modeling_dir()
+    fname = os.path.join(data_dir, fname)
+    if not os.path.exists(fname):
+        raise FileNotFoundError(f"Could not find data file {fname}")
+    return fname, suffix

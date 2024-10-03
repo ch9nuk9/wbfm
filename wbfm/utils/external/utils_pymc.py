@@ -9,7 +9,8 @@ import pymc as pm
 import arviz as az
 import cloudpickle
 from matplotlib import pyplot as plt
-from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir, get_triggered_average_modeling_dir
+from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir, get_triggered_average_modeling_dir, \
+    get_triggered_average_dataframe_fname
 
 
 def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', residual_mode='pca_global',
@@ -490,20 +491,7 @@ def do_hierarchical_ttest(neuron_name, do_immob=False, do_mutant=False, do_downs
     """
 
     # Load the data
-    fname = f'triggered_average_gcamp_plotter'
-    if do_immob:
-        fname += '_immob'
-    if do_mutant:
-        fname += '_mutant'
-    if do_downshift:
-        fname += '_downshift'
-    if do_hiscl:
-        fname += '_hiscl'
-    fname += f'-{trigger_type}.h5'
-    data_dir = get_triggered_average_modeling_dir()
-    fname = os.path.join(data_dir, fname)
-    if not os.path.exists(fname):
-        raise FileNotFoundError(f"Could not find data file {fname}")
+    fname, _ = get_triggered_average_dataframe_fname(trigger_type, do_downshift, do_hiscl, do_immob, do_mutant)
 
     Xy = pd.read_hdf(fname)
 
