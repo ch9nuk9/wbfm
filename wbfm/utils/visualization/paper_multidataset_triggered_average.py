@@ -868,7 +868,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         -------
 
         """
-        df_traces, df_traces_global, df_traces_residual = self._load_triple_traces()
+        df_traces, df_traces_residual, df_traces_global = self._load_triple_traces()
 
         fig_opt = self.get_figure_opt()
         fig, axes = plt.subplots(**fig_opt, nrows=3, ncols=1)
@@ -920,10 +920,10 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         return fig, axes
 
     def _load_triple_traces(self):
-        df_traces, df_traces_r20, df_traces_global, df_traces_residual = self.project.calc_all_paper_traces()
+        df_traces, df_traces_r20, df_traces_residual, df_traces_global = self.project.calc_all_paper_traces()
         if self.trace_options.get('channel_mode', 'dr_over_r_50') == 'dr_over_r_20':
             df_traces = df_traces_r20
-        return df_traces, df_traces_global, df_traces_residual
+        return df_traces, df_traces_residual, df_traces_global
 
     def _save_fig(self, neuron_name, output_foldername, trigger_type, plotly_fig=None):
         """
