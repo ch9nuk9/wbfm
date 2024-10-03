@@ -499,17 +499,18 @@ def role_of_neuron_dict(only_fwd_rev=False, include_modulatory=False, include_ve
 
 
 def get_triggered_average_dataframe_fname(trigger_type, do_downshift=False, do_hiscl=False, do_immob=False,
-                                          do_mutant=False) -> Tuple[str, str]:
+                                          do_mutant=False, suffix=None) -> Tuple[str, str]:
     fname = f'triggered_average_gcamp_plotter'
-    suffix = ''
-    if do_immob:
-        suffix += '_immob'
-    if do_mutant:
-        suffix += '_mutant'
-    if do_downshift:
-        suffix += '_downshift'
-    if do_hiscl:
-        suffix += '_hiscl'
+    if suffix is None:
+        suffix = ''
+        if do_immob:
+            suffix += '_immob'
+        if do_mutant:
+            suffix += '_mutant'
+        if do_downshift:
+            suffix += '_downshift'
+        if do_hiscl:
+            suffix += '_hiscl'
     suffix += f'-{trigger_type}.h5'
     fname += suffix
 
@@ -518,3 +519,17 @@ def get_triggered_average_dataframe_fname(trigger_type, do_downshift=False, do_h
     if not os.path.exists(fname):
         raise FileNotFoundError(f"Could not find data file {fname}")
     return fname, suffix
+
+
+def get_all_trigger_suffixes():
+    all_datatype_suffixes = ['', '_immob', '_mutant',
+                             '_immob_downshift', '_immob_mutant', '_immob_mutant_downshift', '_immob_hiscl']
+    all_trigger_types = ['raw_rev', 'raw_fwd', 'stimulus']
+    all_trigger_suffixes = []
+    # Combine all in specific orders, related to how I exported them... messy
+    for suffix in all_datatype_suffixes:
+        for trigger_type in all_trigger_types:
+            if 'immob' not in suffix and 'stimulus' in trigger_type:
+                continue
+            all_trigger_suffixes.append(f"{suffix}-{trigger_type}")
+    return all_trigger_suffixes
