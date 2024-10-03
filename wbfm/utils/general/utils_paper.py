@@ -108,11 +108,17 @@ def export_legend_for_paper(fname=None, frameon=True):
         export_legend(legend=legend, fname=fname)
 
 
-def data_type_name_mapping():
-    return {'wbfm': 'Freely Moving (GCaMP)',
-            'gcamp': 'Freely Moving (GCaMP)',
-            'immob': 'Immobilized (GCaMP)',
-            'gfp': 'Freely Moving (GFP)'}
+def data_type_name_mapping(include_mutant=False):
+    mapping = {'wbfm': 'Freely Moving (GCaMP)',
+               'gcamp': 'Freely Moving (GCaMP)',
+               'immob': 'Immobilized (GCaMP)',
+               'gfp': 'Freely Moving (GFP)'}
+    if include_mutant:
+        mapping['mutant'] = 'Freely Moving (gcy-31;-35;-9)'
+        mapping['immob_mutant_o2'] = 'Immobilized with O2 stimulus (gcy-31;-35;-9)'
+        mapping['immob_o2'] = 'Immobilized with O2 stimulus (GCaMP)'
+        mapping['immob_o2_hiscl'] = 'Immobilized with O2 stimulus (HisCl)'
+    return
 
 
 # Basic settings based on the physical dimensions of the paper
