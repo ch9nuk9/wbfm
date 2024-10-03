@@ -66,7 +66,8 @@ class PaperColoredTracePlotter:
                          'kymo': 'black',
                          'stimulus': cmap(2),
                          'self_collision': cmap(0),
-                         'mutant': cmap(6)}
+                         'mutant': cmap(6),
+                         'immob': plotly_paper_color_discrete_map()['immob'],}
         if trigger_type not in color_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(color_mapping.keys())}')
         color = color_mapping[trigger_type]

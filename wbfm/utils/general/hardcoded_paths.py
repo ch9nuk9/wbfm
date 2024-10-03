@@ -529,7 +529,9 @@ def get_all_trigger_suffixes():
     # Combine all in specific orders, related to how I exported them... messy
     for suffix in all_datatype_suffixes:
         for trigger_type in all_trigger_types:
-            if 'immob' not in suffix and 'stimulus' in trigger_type:
-                continue
+            if 'immob' not in suffix:
+                # Stimulus should be swapped for self_collision
+                if 'stimulus' in trigger_type:
+                    trigger_type = 'self_collision'
             all_trigger_suffixes.append(f"{suffix}-{trigger_type}")
     return all_trigger_suffixes
