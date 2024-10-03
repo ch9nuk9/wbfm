@@ -118,7 +118,7 @@ def data_type_name_mapping(include_mutant=False):
         mapping['immob_mutant_o2'] = 'Immobilized with O2 stimulus (gcy-31;-35;-9)'
         mapping['immob_o2'] = 'Immobilized with O2 stimulus (GCaMP)'
         mapping['immob_o2_hiscl'] = 'Immobilized with O2 stimulus (HisCl)'
-    return
+    return mapping
 
 
 # Basic settings based on the physical dimensions of the paper
