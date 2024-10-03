@@ -1337,7 +1337,8 @@ def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html', o
 
 
 def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, to_show=False, keep_reversal_turns=False,
-                                                     crop_x_axis=True, apply_figure_size_settings=True, **kwargs):
+                                                     crop_x_axis=True, row_heights=None,
+                                                     apply_figure_size_settings=True, **kwargs):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of the neural traces
 
@@ -1360,14 +1361,17 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     num_modes_to_plot = len(behavior_alias_dict)
     kwargs['behavior_kwargs'] = dict(fluorescence_fps=False, reset_index=False)
     additional_shaded_states = []#[BehaviorCodes.SLOWING, BehaviorCodes.HEAD_CAST]
-    column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
+    column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, _row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
         project_data, num_modes_to_plot, use_behavior_traces=True, behavior_alias_dict=behavior_alias_dict,
         additional_shaded_states=additional_shaded_states, **kwargs)
 
     # One column with a heatmap, (short) ethogram, and kymograph
     rows = 1 + num_modes_to_plot + 2
     cols = 1
-    row_heights = row_heights[:rows]
+    if row_heights is None:
+        row_heights = _row_heights[:rows]
+    else:
+        row_heights = row_heights
 
     # Build figure
     ## Kymograph and ethogram (large image subplots)

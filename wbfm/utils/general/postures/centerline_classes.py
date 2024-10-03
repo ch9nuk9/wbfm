@@ -870,7 +870,7 @@ class WormFullVideoPosture:
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
                        include_collision=True, include_turns=True, include_head_cast=True, include_pause=True,
                        include_slowing=False, include_stimulus=True, use_pause_to_exclude_other_states=True,
-                       DEBUG=False) -> \
+                       simplify_states=False, DEBUG=False) -> \
             Optional[pd.Series]:
         """
         Main function for calculating the behavioral state vector. See BehaviorCodes for the possible states
@@ -955,6 +955,8 @@ class WormFullVideoPosture:
                                                 manual_annotation=use_manual_annotation)
         beh_vec.replace(np.nan, BehaviorCodes.UNKNOWN, inplace=True)
         BehaviorCodes.assert_all_are_valid(beh_vec)
+        if simplify_states:
+            beh_vec = beh_vec.apply(BehaviorCodes.convert_to_simple_states)
         return beh_vec
 
     def all_found_behaviors(self, convert_to_strings=False, **kwargs):
