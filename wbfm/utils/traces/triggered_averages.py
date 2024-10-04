@@ -3,6 +3,7 @@ import os
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import List, Tuple, Optional, Callable, Dict, Union
 import matplotlib
 import plotly.express as px
@@ -277,7 +278,7 @@ class TriggeredAverageIndices:
     def __post_init__(self):
         # Check the types of the behavioral annotation and state
         if not self.behavioral_annotation_is_continuous and\
-                not isinstance(self.behavioral_annotation.iat[0], BehaviorCodes):
+                not isinstance(self.behavioral_annotation.iat[0], Enum):
             # Attempt to cast using the 'custom' BehaviorCodes, but only if there is only one nontrivial behavior
             self.behavioral_annotation = pd.Series(self.behavioral_annotation)
             behavior_values = self.behavioral_annotation.unique()
