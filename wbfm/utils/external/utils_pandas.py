@@ -1266,3 +1266,23 @@ def calc_closest_index(index, idx_target, return_idx=True):
         return index[idx_closest]
     else:
         return idx_closest
+
+
+def reindex_with_new_diff(index, diff):
+    """
+    Given an index and a new difference, return a new index with the same length
+
+    Parameters
+    ----------
+    index
+    diff
+
+    Returns
+    -------
+
+    """
+    new_index = np.zeros_like(index)
+    new_index[0] = index[0]
+    for i in range(1, len(index)):
+        new_index[i] = new_index[i - 1] + diff
+    return new_index
