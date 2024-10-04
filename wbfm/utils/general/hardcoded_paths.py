@@ -165,9 +165,13 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
     """
     from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, load_all_projects_in_folder
 
-    if isinstance(genotype, str) and genotype == '':
-        # Load default gcamp paper projects
-        genotype = ['gcamp', 'hannah_O2_fm']
+    if isinstance(genotype, str):
+        if genotype == '':
+            # Load default gcamp paper projects
+            genotype = ['gcamp', 'hannah_O2_fm']
+        elif genotype == 'immob_o2':
+            # There are two different folders for this
+            genotype = ['hannah_O2_immob', 'itamar_O2_immob']
 
     if isinstance(genotype, list):
         good_projects = {}
@@ -213,8 +217,11 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
         good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/IM_to_FM_freely_moving'
         good_projects.update(load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs))
-    elif genotype == 'hannah_O2_immob' or genotype == 'immob_o2':
+    elif genotype == 'hannah_O2_immob':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/immobilized_wt'
+        good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
+    elif genotype == 'itamar_O2_immob':
+        folder_path = '/lisc/scratch/neurobiology/zimmer/ItamarLev/WBFM/WBFM_projects/immob_wbfm_o2'
         good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
     elif genotype == 'hannah_O2_fm_mutant' or genotype == 'mutant':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/freely_moving_mutant'
