@@ -1359,9 +1359,9 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     project_data.use_physical_time = True
     if discrete_behaviors:
-        behavior_alias_dict = {'Turns': ['DORSAL_TURN', 'VENTRAL_TURN'],
-                               'Other': ['SELF_COLLISION', 'HEAD_CAST'],
-                               'Rev': ['REV']}
+        behavior_alias_dict = {'Turns': ['dorsal_turn', 'ventral_turn'],
+                               'Other': ['self_collision', 'head_cast'],
+                               'Rev': ['rev']}
     else:
         behavior_alias_dict = {'Head curvature': ['dorsal_only_head_curvature', 'ventral_only_head_curvature'],
                                'Body curvature': ['ventral_only_body_curvature', 'dorsal_only_body_curvature']}
@@ -1458,16 +1458,16 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     # fig.update_annotations(yshift=-7)
 
     if not discrete_behaviors:
-        fig.update_layout(showlegend=False)
+        fig.update_layout(showlegend=False, overwrite=True)
     if apply_figure_size_settings:
         apply_figure_settings(fig, width_factor=0.45, height_factor=0.4, plotly_not_matplotlib=True)
 
     # Add zero line to the speed plot
     if not discrete_behaviors:
         fig.update_yaxes(dict(showticklabels=True, showgrid=True, griddash='dash', gridcolor='black'),
-                        range=[-0.22, 0.14],
+                         range=[-0.22, 0.14],
                          tickmode='array', tickvals=[-0.22, 0],
-                          row=5, overwrite=True)
+                         row=5, overwrite=True)
 
     # Get the colormaps and legends in the right places, and not overlapping
     fig.update_layout(

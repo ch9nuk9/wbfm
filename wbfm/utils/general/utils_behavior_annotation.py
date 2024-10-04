@@ -666,7 +666,7 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
                                                            names_to_plot: Union[str, List[str]],
                                                            to_shade=True, to_save=False, fname_suffix='',
                                                            trace_kwargs=None, combine_neuron_pairs=True,
-                                                           DEBUG=False, **kwargs):
+                                                           DEBUG=False, full_path_title=False, **kwargs):
     """
     Loads the traces and behaviors from each project, producing a stack of plotly figures that
 
@@ -741,7 +741,12 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
     cmap = px.colors.qualitative.D3
 
     # Initialize the plotly figure with subplots
-    subplot_titles = [f"placeholder" for dataset_name in all_dataset_names]
+    if full_path_title:
+        # Do not use the full path, because it is too long; take the last 3 folders
+        f = lambda path: '/'.join(Path(path).parts[-4:])
+        subplot_titles = [f(all_projects[n].project_dir) for n in all_dataset_names]
+    else:
+        subplot_titles = [f"placeholder" for dataset_name in all_dataset_names]
     fig = make_subplots(rows=n_datasets, cols=1, #row_heights=[500]*len(all_dataset_names),
                         vertical_spacing=0.01, subplot_titles=subplot_titles)
 
@@ -762,8 +767,9 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
         fig.update_yaxes(title_text="dR/R", **opt)
         # Remove x ticks
         fig.update_xaxes(showticklabels=False, **opt)
-        # Goofy way to update the subplot titles: https://stackoverflow.com/questions/65563922/how-to-change-subplot-title-after-creation-in-plotly
-        fig.layout.annotations[i_dataset].update(text=f"{dataset_name}")
+        if not full_path_title:
+            # Goofy way to update the subplot titles: https://stackoverflow.com/questions/65563922/how-to-change-subplot-title-after-creation-in-plotly
+            fig.layout.annotations[i_dataset].update(text=f"{dataset_name}")
         # Add shapes
         if to_shade:
             beh_vector = df['raw_annotations'].reset_index(drop=True)
