@@ -430,6 +430,13 @@ class TriggeredAverageIndices:
             max_len_subset = max(map(len, all_ind))
         else:
             max_len_subset = max_len
+
+        # Preprocessing type 1: change amplitudes
+        if self.mean_subtract or self.z_score:
+            raw_trace -= raw_trace.mean()
+        if self.z_score:
+            raw_trace /= raw_trace.std()
+
         # Pad with nan in case there are negative indices, but only the end
         trace = np.pad(raw_trace, max_len_subset, mode='constant', constant_values=(np.nan, np.nan))[max_len_subset:]
         triggered_avg_matrix = np.zeros((len(all_ind), max_len_subset))
@@ -441,10 +448,6 @@ class TriggeredAverageIndices:
             triggered_avg_matrix[i, np.arange(len(ind))] = trace[ind]
 
         # Postprocessing type 1: change amplitudes
-        if self.mean_subtract or self.z_score:
-            triggered_avg_matrix -= np.nanmean(triggered_avg_matrix, axis=1, keepdims=True)
-        if self.z_score:
-            triggered_avg_matrix /= np.nanstd(triggered_avg_matrix, axis=1, keepdims=True)
         if self.normalize_amplitude_at_onset:
             # Normalize to the amplitude at the index of the event
             triggered_avg_matrix = triggered_avg_matrix - triggered_avg_matrix[:, [self.ind_preceding]]
