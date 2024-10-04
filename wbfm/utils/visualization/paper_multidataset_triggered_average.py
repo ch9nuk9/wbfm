@@ -1185,7 +1185,7 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         if DEBUG:
             print(_df)
         fig = plot_box_multi_axis(_df, x_columns_list=['is_mutant_str', 'before_str'], y_column='mean',
-                                  color_names=['gcy-31;-35;-9', 'Wild Type'], cmap=cmap, DEBUG=False)
+                                  color_names=['Wild Type', 'gcy-31;-35;-9'], cmap=cmap, DEBUG=False)
 
         precalculated_p_values = df_p_values.loc[neuron_name, 'p_value_corrected'].to_dict()
         add_p_value_annotation(fig, x_label='all', show_ns=True, show_only_stars=True, separate_boxplot_fig=False,
@@ -1216,6 +1216,7 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
                                                            is_mutant_vec: List[bool],
                                                            trigger_type: str,
                                                            df_idx_range: pd.DataFrame = None,
+                                                           is_immobilized: bool = False,
                                                            output_dir=None,
                                                            **kwargs):
         """
@@ -1247,10 +1248,16 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
                 # Add a bar for the dynamic window for each type (mutant and not)
                 _cmap = plotly_paper_color_discrete_map()
                 for i, row in this_idx.iterrows():
-                    color = _cmap['Wild Type'] if not row['is_mutant'] else _cmap['gcy-31;-35;-9']
-                    y0 = 0.9 if i == 0 else 0.8
+                    y0 = 0.75
+                    if row['is_mutant']:
+                        color = _cmap['gcy-31;-35;-9']
+                        y0 = 0.95
+                    elif is_immobilized:
+                        color = _cmap['immob']
+                    else:
+                        color = _cmap['Wild Type']
                     fig.add_shape(type="rect", x0=row['start'], y0=y0, x1=row['end'], y1=y0,
-                                  line=dict(color=color, width=1), xref='x', yref='paper', layer='below')
+                                  line=dict(color=color, width=2), xref='x', yref='paper', layer='below')
 
             all_figs[neuron_name] = fig
 
