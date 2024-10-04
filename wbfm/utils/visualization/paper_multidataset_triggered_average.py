@@ -760,6 +760,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
     def get_boxplot_before_and_after(self, neuron_name, trigger_type,
                                      summary_function=None,
+                                     dynamic_window_center=False, dynamic_window_length=2,
                                      gap=0, same_size_window=True,
                                      return_individual_traces=False):
         """
@@ -773,6 +774,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         summary_function - function to apply to the traces before and after the event; must accept the parameter axis=0
             default is np.nanmedian
         gap - time to skip around the event (both before and after)
+        dynamic_window_center - if True, then the window of the 'after' values will be centered around the smoothed max value
+        dynamic_window_length - if dynamic_window_center is True, then this is the length of the window (half on each side)
+            Note: the center will be, at the max: len(trace) - (dynamic_window_length/2)
         same_size_window - if True, then the window before and after the event will be the same size
         return_individual_traces - if True, then do not pool trials within individuals, but treat each trial independently
 
@@ -793,6 +797,12 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 i_of_0 = df_subset.index.get_loc(0)
                 gap_idx = i_of_0 + gap + len_before
                 means_after = summary_function(df_subset.iloc[i_of_0:gap_idx, :], axis=0)
+            elif dynamic_window_center:
+                # Get the smoothed max value, removing the last half of the desired window length
+                smoothed_max = df_subset.loc[:-(dynamic_window_length/2)].rolling(window=5, center=True).mean().idxmax()
+                # Get the window around the smoothed max value
+                window_idx = int(smoothed_max) + np.arange(-dynamic_window_length/2, dynamic_window_length/2)
+                means_after = summary_function(df_subset.iloc[window_idx, :], axis=0)
             else:
                 means_after = summary_function(df_subset.loc[gap:, :], axis=0)
         return means_before, means_after
@@ -1077,9 +1087,9 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
                                                plotter_classes: List[PaperMultiDatasetTriggeredAverage],
                                                is_mutant_vec: List[bool],
-                                               trigger_type: str, gap: int = 0, same_size_window: bool = False,
+                                               trigger_type: str,
                                                output_dir=None,
-                                               return_individual_traces=False, summary_function=None,
+                                               ttest_kwargs=None,
                                                to_show=True, DEBUG=False, **kwargs):
     """
     Calculate the data for a t-test on the traces before and after the event.
@@ -1097,16 +1107,16 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     -------
 
     """
+    if ttest_kwargs is None:
+        ttest_kwargs = dict(return_individual_traces=False, summary_function=None,
+                            same_size_window=False, gap=0)
     # Calculate the basic data for the t-test
     all_boxplot_data_dfs = []
     # all_df_p_values = []
     for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
         all_boxplot_data_dfs_single_type = []
         for neuron in neuron_list:
-            means_before, means_after = obj.get_boxplot_before_and_after(neuron, trigger_type, gap=gap,
-                                                                         summary_function=summary_function,
-                                                                         same_size_window=same_size_window,
-                                                                         return_individual_traces=return_individual_traces)
+            means_before, means_after = obj.get_boxplot_before_and_after(neuron, trigger_type, **ttest_kwargs)
 
             df_before = pd.DataFrame(means_before, columns=['mean']).assign(before=True)
             df_after = pd.DataFrame(means_after, columns=['mean']).assign(before=False)
