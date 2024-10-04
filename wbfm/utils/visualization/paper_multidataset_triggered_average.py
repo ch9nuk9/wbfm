@@ -26,7 +26,7 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, add_beha
 from wbfm.utils.general.utils_paper import apply_figure_settings, paper_trace_settings, plotly_paper_color_discrete_map, \
     plot_box_multi_axis
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_list_of_projects, \
+from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_dict_of_projects, \
     ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level, \
     calc_p_value_using_ttest_triggered_average, FullDatasetTriggeredAverages
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
@@ -180,7 +180,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 trigger_opt.update(self.trigger_opt)
                 trace_opt = dict(residual_mode='pca')
                 trace_opt.update(trace_base_opt)
-                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                          trace_opt=trace_opt)
                 self.dataset_clusterer_dict['residual'] = out[0]
                 self.intermediates_dict['residual'] = out[1]
@@ -188,7 +188,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 # Residual rectified forward
                 trigger_opt['only_allow_events_during_state'] = BehaviorCodes.FWD
                 cluster_opt = {}
-                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
+                out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, cluster_opt=cluster_opt,
                                                                          trigger_opt=trigger_opt, trace_opt=trace_opt)
                 self.dataset_clusterer_dict['residual_rectified_fwd'] = out[0]
                 self.intermediates_dict['residual_rectified_fwd'] = out[1]
@@ -196,7 +196,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 # Residual rectified reverse
                 trigger_opt['only_allow_events_during_state'] = BehaviorCodes.REV
                 cluster_opt = {}
-                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
+                out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, cluster_opt=cluster_opt,
                                                                          trigger_opt=trigger_opt, trace_opt=trace_opt)
                 self.dataset_clusterer_dict['residual_rectified_rev'] = out[0]
                 self.intermediates_dict['residual_rectified_rev'] = out[1]
@@ -206,7 +206,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 trigger_opt.update(self.trigger_opt)
                 trace_opt = dict(residual_mode='pca')
                 trace_opt.update(trace_base_opt)
-                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                          trace_opt=trace_opt)
                 self.dataset_clusterer_dict['residual_collision'] = out[0]
                 self.intermediates_dict['residual_collision'] = out[1]
@@ -221,7 +221,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             trigger_opt.update(self.trigger_opt)
             trace_opt = dict(residual_mode='pca_global')
             trace_opt.update(trace_base_opt)
-            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+            out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                      trace_opt=trace_opt)
             self.dataset_clusterer_dict['global_rev'] = out[0]
             self.intermediates_dict['global_rev'] = out[1]
@@ -229,7 +229,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             # Slow forward triggered (global)
             trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.FWD)
             trigger_opt.update(self.trigger_opt)
-            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+            out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                      trace_opt=trace_opt)
             self.dataset_clusterer_dict['global_fwd'] = out[0]
             self.intermediates_dict['global_fwd'] = out[1]
@@ -245,7 +245,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             try:
                 trigger_opt = dict(use_hilbert_phase=False, state=state)
                 trigger_opt.update(self.trigger_opt)
-                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                          trace_opt=trace_opt)
                 self.dataset_clusterer_dict[trigger_type] = out[0]
                 self.intermediates_dict[trigger_type] = out[1]
@@ -256,7 +256,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         if self.calculate_stimulus:
             trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.STIMULUS)
             trigger_opt.update(self.trigger_opt)
-            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+            out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                      trace_opt=trace_opt)
             self.dataset_clusterer_dict['stimulus'] = out[0]
             self.intermediates_dict['stimulus'] = out[1]
@@ -264,7 +264,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         if self.calculate_self_collision:
             trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.SELF_COLLISION)
             trigger_opt.update(self.trigger_opt)
-            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+            out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                      trace_opt=trace_opt)
             self.dataset_clusterer_dict['self_collision'] = out[0]
             self.intermediates_dict['self_collision'] = out[1]

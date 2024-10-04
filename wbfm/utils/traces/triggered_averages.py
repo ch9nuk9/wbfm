@@ -2617,7 +2617,7 @@ def calc_time_series_from_starts_and_ends(all_starts, all_ends, num_pts, min_dur
     return state_trace
 
 
-def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt=None, **kwargs) \
+def clustered_triggered_averages_from_dict_of_projects(all_projects: dict, cluster_opt=None, **kwargs) \
         -> Tuple[ClusteredTriggeredAverages,
         Tuple[Dict[str, FullDatasetTriggeredAverages], pd.DataFrame, Dict[str, pd.DataFrame]]]:
     """
