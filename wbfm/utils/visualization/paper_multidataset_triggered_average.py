@@ -1202,30 +1202,20 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
             fig.show()
         all_figs[neuron_name] = fig
 
-        # If there is a dynamic time window used for the ttest, then add a bar as an annotation
-        if ttest_kwargs.get('dynamic_window_center', False):
-            this_idx = df_idx_range[df_idx_range['neuron'] == neuron_name]
-            # Add a bar for the dynamic window for each type (mutant and not)
-            cmap = plotly_paper_color_discrete_map()
-            for i, row in this_idx.iterrows():
-                color = cmap['Wild Type'] if not row['is_mutant'] else cmap['gcy-31;-35;-9']
-                y0 = 0.9 if i == 0 else 0.8
-                fig.add_shape(type="rect", x0=row['start'], y0=y0, x1=row['end'], y1=y0,
-                              line=dict(color=color, width=1), yref='paper')
-
         if output_dir is not None:
             fname = os.path.join(output_dir, f'{neuron_name}-{trigger_type}_triggered_average_boxplots.png')
             fig.write_image(fname, scale=3)
             fname = fname.replace('.png', '.svg')
             fig.write_image(fname)
 
-    return all_figs, df_boxplot, df_p_values
+    return all_figs, df_boxplot, df_p_values, df_idx_range
 
 
 def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str],
                                                            plotter_classes: List[PaperMultiDatasetTriggeredAverage],
                                                            is_mutant_vec: List[bool],
                                                            trigger_type: str,
+                                                           df_idx_range: pd.DataFrame = None,
                                                            output_dir=None,
                                                            **kwargs):
         """
@@ -1251,6 +1241,17 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
                 fig, ax = obj.plot_triggered_average_single_neuron(neuron_name, trigger_type, is_mutant=is_mutant,
                                                                    fig=fig, ax=ax,
                                                                    output_folder=output_dir, **kwargs)
+            if df_idx_range is not None:
+                # If there is a dynamic time window used for the ttest, then add a bar as an annotation
+                this_idx = df_idx_range[df_idx_range['neuron'] == neuron_name]
+                # Add a bar for the dynamic window for each type (mutant and not)
+                _cmap = plotly_paper_color_discrete_map()
+                for i, row in this_idx.iterrows():
+                    color = _cmap['Wild Type'] if not row['is_mutant'] else _cmap['gcy-31;-35;-9']
+                    y0 = 0.9 if i == 0 else 0.8
+                    fig.add_shape(type="rect", x0=row['start'], y0=y0, x1=row['end'], y1=y0,
+                                  line=dict(color=color, width=1), xref='x', yref='paper', layer='below')
+
             all_figs[neuron_name] = fig
 
         return all_figs

@@ -281,7 +281,8 @@ def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, a
     return fig
 
 
-def combine_plotly_figures(all_figs, show_legends: List[bool] = None, **kwargs):
+def combine_plotly_figures(all_figs, show_legends: List[bool] = None, force_yref_paper=True,
+                           **kwargs):
     """
     Combine multiple plotly figures into a single figure, all on one row
 
@@ -316,7 +317,8 @@ def combine_plotly_figures(all_figs, show_legends: List[bool] = None, **kwargs):
 
     # Force the yref for shapes to be 'paper', which is turned off by default in subplots
     # https://community.plotly.com/t/drawing-vertical-line-on-histogram-in-subplot-but-yref-paper-is-not-working/31581/3
-    for shape in fig.layout.shapes:
-        shape['yref'] = 'paper'
+    if force_yref_paper:
+        for shape in fig.layout.shapes:
+            shape['yref'] = 'paper'
 
     return fig
