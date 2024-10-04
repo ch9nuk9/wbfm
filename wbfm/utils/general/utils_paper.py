@@ -277,7 +277,7 @@ class PaperDataCache:
         all_zxy.loc[:, (slice(None), 'z')] = z_to_xy_ratio * all_zxy.loc[:, (slice(None), 'z')]
         outlier_remover = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces=None, names=names, verbose=0)
         try:
-            outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=8)
+            outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=3)
             to_remove = outlier_remover.total_matrix_to_remove
         except ValueError as e:
             logging.warning(f"PPCA failed with error: {e}, skipping outlier removal and saving empty array")
