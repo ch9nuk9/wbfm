@@ -236,6 +236,10 @@ def behavior_name_mapping(shorten=False):
         self_collision='Self-collision',
         head_cast='Head cast',
         slowing='Slowing',
+        eigenworm_1='Eigenworm 1',
+        eigenworm_2='Eigenworm 2',
+        eigenworm_3='Eigenworm 3',
+        eigenworm_4='Eigenworm 4',
     )
     if shorten:
         name_mapping = {k: v.replace(' curvature', '') for k, v in name_mapping.items()}

@@ -1338,7 +1338,9 @@ def _save_plotly_all_types(fig, project_data, fname='summary_trace_plot.html', o
 
 def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, to_show=False, keep_reversal_turns=False,
                                                      crop_x_axis=True, row_heights=None, x_range=None,
-                                                     apply_figure_size_settings=True, discrete_behaviors=False, **kwargs):
+                                                     apply_figure_size_settings=True, discrete_behaviors=False,
+                                                     showlegend=True, eigenworm_behaviors=False,
+                                                     **kwargs):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but with a kymograph instead of the neural traces
 
@@ -1362,6 +1364,10 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
         behavior_alias_dict = {'Turns': ['dorsal_turn', 'ventral_turn'],
                                'Other': ['self_collision', 'head_cast'],
                                'Rev': ['rev']}
+    elif eigenworm_behaviors:
+        behavior_alias_dict = {'Eigenworms1': ['eigenworm_1', 'eigenworm_2'],
+                               'Eigenworms2': ['eigenworm_3', 'eigenworm_4'],
+                               'Rev': ['rev']}
     else:
         behavior_alias_dict = {'Head curvature': ['dorsal_only_head_curvature', 'ventral_only_head_curvature'],
                                'Body curvature': ['ventral_only_body_curvature', 'dorsal_only_body_curvature']}
@@ -1371,11 +1377,11 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     additional_shaded_states = []#[BehaviorCodes.SLOWING, BehaviorCodes.HEAD_CAST]
     column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, _row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
         project_data, num_modes_to_plot, use_behavior_traces=True, behavior_alias_dict=behavior_alias_dict,
-        additional_shaded_states=additional_shaded_states, **kwargs)
+        additional_shaded_states=additional_shaded_states, showlegend=showlegend, **kwargs)
 
     # One column with a heatmap, (short) ethogram, and kymograph
     rows = 1 + num_modes_to_plot + 1
-    if not discrete_behaviors:
+    if not discrete_behaviors and not eigenworm_behaviors:
         # Will add speed manually
         rows += 1
     cols = 1
@@ -1404,7 +1410,7 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     # So I have to manually check the size of behavior_alias_dict and add the traces correctly
     i_num_traces_used = 0
     # Add dummy variable at the end for speed, which is always calculated and should be last
-    if not discrete_behaviors:
+    if not discrete_behaviors and not eigenworm_behaviors:
         behavior_alias_dict['speed'] = ['speed']
     for k, v in behavior_alias_dict.items():
         if not isinstance(v, list):
@@ -1450,6 +1456,11 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Turn<br>Annotations'), col=1, row=3)
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Other<br>Annotations'), col=1, row=4)
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Reversal<br>Annotation'), col=1, row=5)
+    elif eigenworm_behaviors:
+        fig.update_yaxes(dict(showticklabels=False, showgrid=False, title='Body Segment'), col=1, row=1)
+        fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Eigenworms'), col=1, row=3)
+        fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Eigenworms'), col=1, row=4)
+        fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Reversal'), col=1, row=5)
     else:
         fig.update_yaxes(dict(showticklabels=True, showgrid=True, title='Head<br>Curvature'), col=1, row=3)
         fig.update_yaxes(dict(showticklabels=True, showgrid=True, title='Body<br>Curvature'), col=1, row=4)
@@ -1460,10 +1471,14 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     if not discrete_behaviors:
         fig.update_layout(showlegend=False, overwrite=True)
     if apply_figure_size_settings:
-        apply_figure_settings(fig, width_factor=0.45, height_factor=0.4, plotly_not_matplotlib=True)
+        if showlegend:
+            width_factor = 0.35
+        else:
+            width_factor = 0.3
+        apply_figure_settings(fig, width_factor=width_factor, height_factor=0.4, plotly_not_matplotlib=True)
 
     # Add zero line to the speed plot
-    if not discrete_behaviors:
+    if not discrete_behaviors and not eigenworm_behaviors:
         fig.update_yaxes(dict(showticklabels=True, showgrid=True, griddash='dash', gridcolor='black'),
                          range=[-0.22, 0.14],
                          tickmode='array', tickvals=[-0.22, 0],
@@ -1490,6 +1505,8 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
           x=1.01
         )
     )
+    if not showlegend:
+        fig.update_coloraxes(showscale=False)
 
     # Add a single legend for behavior colors
     # ... this doesn't work here because the shapes don't and can't have legends...
@@ -1605,7 +1622,7 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
 
 def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plot=3, keep_reversal_turns=False,
                                               use_manual_annotations=False, use_behavior_traces=False,
-                                              behavior_alias_dict=None, behavior_kwargs=None,
+                                              behavior_alias_dict=None, behavior_kwargs=None, showlegend=True,
                                               additional_shaded_states=None, trace_opt: dict = None):
     if behavior_kwargs is None:
         behavior_kwargs = dict(fluorescence_fps=True, reset_index=True)
@@ -1720,7 +1737,9 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                     code = BehaviorCodes.DORSAL_TURN
                 else:
                     code = BehaviorCodes.UNKNOWN
-                trace_list.append(go.Scatter(y=y, x=y.index, name=single_name, showlegend=True,
+
+                legend_name = behavior_name_mapping().get(single_name, single_name)
+                trace_list.append(go.Scatter(y=y, x=y.index, name=legend_name, showlegend=showlegend,
                                              marker=dict(color=beh_colormap[code])))
 
                 # Same options, but additional entries to match length of trace_list
