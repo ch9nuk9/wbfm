@@ -761,8 +761,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
     def get_boxplot_before_and_after(self, neuron_name, trigger_type,
                                      summary_function=None,
                                      dynamic_window_center=False, dynamic_window_length=2,
-                                     gap=0, same_size_window=True,
-                                     return_individual_traces=False):
+                                     gap=0, same_size_window=False,
+                                     return_individual_traces=False, DEBUG=False):
         """
         Preps data for a ttest or other comparison before and after the event, by calculating the median of the traces
         (collapsing the time dimension, and leaving the trial dimension)
@@ -798,11 +798,17 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 gap_idx = i_of_0 + gap + len_before
                 means_after = summary_function(df_subset.iloc[i_of_0:gap_idx, :], axis=0)
             elif dynamic_window_center:
+                half_window = dynamic_window_length / 2
                 # Get the smoothed max value, removing the last half of the desired window length
-                smoothed_max = df_subset.loc[:-(dynamic_window_length/2)].rolling(window=5, center=True).mean().idxmax()
+                # And only look at positive values
+                df_subset_after = df_subset.loc[gap:, :].iloc[:-int(half_window)]
+                idx_max = df_subset_after.rolling(window=5, center=True).mean().mean(axis=1).idxmax()
                 # Get the window around the smoothed max value
-                window_idx = int(smoothed_max) + np.arange(-dynamic_window_length/2, dynamic_window_length/2)
-                means_after = summary_function(df_subset.iloc[window_idx, :], axis=0)
+                means_after = summary_function(df_subset.loc[idx_max-half_window:idx_max+half_window, :], axis=0)
+                if DEBUG:
+                    print(neuron_name)
+                    print(f"Smoothed max: {idx_max}")
+                    print(f"Means before: {means_before}; Means after: {means_after}")
             else:
                 means_after = summary_function(df_subset.loc[gap:, :], axis=0)
         return means_before, means_after
@@ -1107,9 +1113,13 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     -------
 
     """
+    default_ttest_kwargs = dict(return_individual_traces=False, summary_function=None,
+                                same_size_window=False, gap=0)
     if ttest_kwargs is None:
-        ttest_kwargs = dict(return_individual_traces=False, summary_function=None,
-                            same_size_window=False, gap=0)
+        ttest_kwargs = default_ttest_kwargs
+    else:
+        default_ttest_kwargs.update(ttest_kwargs)
+        ttest_kwargs = default_ttest_kwargs
     # Calculate the basic data for the t-test
     all_boxplot_data_dfs = []
     # all_df_p_values = []
