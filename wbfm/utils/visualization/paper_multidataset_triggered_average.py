@@ -19,7 +19,7 @@ from statsmodels.stats.multitest import multipletests
 from tqdm.auto import tqdm
 from wbfm.utils.external.utils_matplotlib import round_yticks
 
-from wbfm.utils.external.utils_pandas import split_flattened_index, combine_columns_with_suffix
+from wbfm.utils.external.utils_pandas import split_flattened_index, combine_columns_with_suffix, calc_closest_index
 from wbfm.utils.external.utils_plotly import float2rgba
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, add_behavior_shading_to_plot, \
     shade_using_behavior_plotly
@@ -796,6 +796,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 len_before = len(means_before)
                 i_of_0 = df_subset.index.get_loc(0)
                 gap_idx = i_of_0 + gap + len_before
+                idx_range = (i_of_0 - len_before, gap_idx)
                 means_after = summary_function(df_subset.iloc[i_of_0:gap_idx, :], axis=0)
             elif dynamic_window_center:
                 half_window = dynamic_window_length / 2
@@ -804,14 +805,19 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 df_subset_after = df_subset.loc[gap:, :].iloc[:-int(half_window)]
                 idx_max = df_subset_after.rolling(window=5, center=True).mean().mean(axis=1).idxmax()
                 # Get the window around the smoothed max value
-                means_after = summary_function(df_subset.loc[idx_max-half_window:idx_max+half_window, :], axis=0)
+                idx_range = [idx_max - half_window, idx_max + half_window]
+                # Closest index to the max value
+                idx_range = calc_closest_index(df_subset.index, idx_range)
+                means_after = summary_function(df_subset.loc[idx_range[0]:idx_range[1], :], axis=0)
                 if DEBUG:
                     print(neuron_name)
                     print(f"Smoothed max: {idx_max}")
                     print(f"Means before: {means_before}; Means after: {means_after}")
+                    print(df_subset_after.rolling(window=5, center=True).mean())
             else:
+                idx_range = (gap, df_subset.index[-1])  # Not actually used
                 means_after = summary_function(df_subset.loc[gap:, :], axis=0)
-        return means_before, means_after
+        return means_before, means_after, idx_range
 
     def calc_significance_using_mode(self, neuron_names, trigger_type, significance_calculation_method=None, **kwargs):
         """
@@ -1122,24 +1128,32 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         ttest_kwargs = default_ttest_kwargs
     # Calculate the basic data for the t-test
     all_boxplot_data_dfs = []
+    all_idx_range = []
     # all_df_p_values = []
     for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
         all_boxplot_data_dfs_single_type = []
+        all_idx_range_single_type = []
         for neuron in neuron_list:
-            means_before, means_after = obj.get_boxplot_before_and_after(neuron, trigger_type, **ttest_kwargs)
+            means_before, means_after, idx_range = obj.get_boxplot_before_and_after(neuron, trigger_type,
+                                                                                    **ttest_kwargs)
 
             df_before = pd.DataFrame(means_before, columns=['mean']).assign(before=True)
             df_after = pd.DataFrame(means_after, columns=['mean']).assign(before=False)
             df_both = pd.concat([df_before, df_after]).assign(neuron=neuron, is_mutant=is_mutant).assign(
                 trigger_type=trigger_type)
             all_boxplot_data_dfs_single_type.append(df_both)
+            df_idx_range = pd.DataFrame([idx_range], columns=['start', 'end']).assign(neuron=neuron,
+                                                                                      is_mutant=is_mutant)
+            all_idx_range_single_type.append(df_idx_range)
         # Process all neurons for this type, including multiple correction for p values
         # Only multiple correct for one type (mutant or not), not both
         df_boxplot_single_type = pd.concat(all_boxplot_data_dfs_single_type)
         all_boxplot_data_dfs.append(df_boxplot_single_type)
+        all_idx_range.append(pd.concat(all_idx_range_single_type))
         # all_df_p_values.append(df_p_values_single_type)
 
     # Combine
+    df_idx_range = pd.concat(all_idx_range)
     df_boxplot = pd.concat(all_boxplot_data_dfs)
     df_boxplot = _add_color_columns_to_df(df_boxplot, trigger_type=trigger_type)
     df_p_values = _calc_p_value(df_boxplot, groupby_columns=['neuron', 'is_mutant_str'])  # .reset_index(level=1)
@@ -1171,7 +1185,7 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         if DEBUG:
             print(_df)
         fig = plot_box_multi_axis(_df, x_columns_list=['is_mutant_str', 'before_str'], y_column='mean',
-                                  color_names=['Wild Type', 'gcy-31;-35;-9'], cmap=cmap, DEBUG=False)
+                                  color_names=['gcy-31;-35;-9', 'Wild Type'], cmap=cmap, DEBUG=False)
 
         precalculated_p_values = df_p_values.loc[neuron_name, 'p_value_corrected'].to_dict()
         add_p_value_annotation(fig, x_label='all', show_ns=True, show_only_stars=True, separate_boxplot_fig=False,
@@ -1187,6 +1201,17 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         if to_show:
             fig.show()
         all_figs[neuron_name] = fig
+
+        # If there is a dynamic time window used for the ttest, then add a bar as an annotation
+        if ttest_kwargs.get('dynamic_window_center', False):
+            this_idx = df_idx_range[df_idx_range['neuron'] == neuron_name]
+            # Add a bar for the dynamic window for each type (mutant and not)
+            cmap = plotly_paper_color_discrete_map()
+            for i, row in this_idx.iterrows():
+                color = cmap['Wild Type'] if not row['is_mutant'] else cmap['gcy-31;-35;-9']
+                y0 = 0.9 if i == 0 else 0.8
+                fig.add_shape(type="rect", x0=row['start'], y0=y0, x1=row['end'], y1=y0,
+                              line=dict(color=color, width=1), yref='paper')
 
         if output_dir is not None:
             fname = os.path.join(output_dir, f'{neuron_name}-{trigger_type}_triggered_average_boxplots.png')
