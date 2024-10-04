@@ -799,10 +799,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 idx_range = (i_of_0 - len_before, gap_idx)
                 means_after = summary_function(df_subset.iloc[i_of_0:gap_idx, :], axis=0)
             elif dynamic_window_center:
-                half_window = dynamic_window_length / 2
+                half_window = int(dynamic_window_length / 2)
                 # Get the smoothed max value, removing the last half of the desired window length
                 # And only look at positive values
-                df_subset_after = df_subset.loc[gap:, :].iloc[:-int(half_window)]
+                df_subset_after = df_subset.loc[gap+half_window:, :-half_window]
                 idx_max = df_subset_after.rolling(window=5, center=True).mean().mean(axis=1).idxmax()
                 # Get the window around the smoothed max value
                 idx_range = [idx_max - half_window, idx_max + half_window]
@@ -1248,7 +1248,7 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
                 # Add a bar for the dynamic window for each type (mutant and not)
                 _cmap = plotly_paper_color_discrete_map()
                 for i, row in this_idx.iterrows():
-                    y0 = 0.75
+                    y0 = 0.85
                     if row['is_mutant']:
                         color = _cmap['gcy-31;-35;-9']
                         y0 = 0.95
