@@ -799,10 +799,12 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 idx_range = (i_of_0 - len_before, gap_idx)
                 means_after = summary_function(df_subset.iloc[i_of_0:gap_idx, :], axis=0)
             elif dynamic_window_center:
+                assert gap == 0, "Dynamic window center only works with gap=0"
                 half_window = int(dynamic_window_length / 2)
-                # Get the smoothed max value, removing the last half of the desired window length
-                # And only look at positive values
-                df_subset_after = df_subset.loc[gap+half_window:, :-half_window]
+                # Get the smoothed max value
+                # Removing the last half of the desired window length (so the window can't be clipped)
+                # And only look at positive values (this is the after part)
+                df_subset_after = df_subset.loc[0:].iloc[half_window:, :-half_window-1]
                 idx_max = df_subset_after.rolling(window=5, center=True).mean().mean(axis=1).idxmax()
                 # Get the window around the smoothed max value
                 idx_range = [idx_max - half_window, idx_max + half_window]
