@@ -66,7 +66,7 @@ def plotly_paper_color_discrete_map():
                  'residual': base_cmap[4],
                  'Freely Moving (GCaMP, residual)': base_cmap[4],
                  'O2 or CO2 sensing': base_cmap[5],  # Brown
-                 'Not IDed': base_cmap[7], 'Undetermined': base_cmap[7],  # Same as gfp; shouldn't ever be on same plot
+                 'Not IDed': base_cmap[7], 'Not Identified': base_cmap[7],'Undetermined': base_cmap[7],  # Same as gfp; shouldn't ever be on same plot
                  'mutant': base_cmap[6], 'Freely Moving (gcy-31, gcy-35, gcy-9)': base_cmap[6],
                  'gcy-31, gcy-35, gcy-9': base_cmap[6], 'Mutant': base_cmap[6], 'gcy-31; -35; -9': base_cmap[6],
                  'gcy-31;-35;-9': base_cmap[6],  # Pink
