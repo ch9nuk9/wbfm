@@ -53,7 +53,8 @@ def plotly_paper_color_discrete_map():
     beh_cmap = BehaviorCodes.ethogram_cmap(include_collision=True, include_quiescence=True, include_reversal_turns=True,
                                            include_custom=True, include_stimulus=True)
 
-    cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0], 'Active in Freely Moving only': base_cmap[0],
+    cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0],
+                 'Active in Freely Moving only': base_cmap[0], 'Manifold in Freely Moving only': base_cmap[0],
                  'Freely Moving (GCaMP)': base_cmap[0], 'Freely Moving': base_cmap[0], 'Wild Type': base_cmap[0],
                  # Skip orange... don't like it!
                  'immob': base_cmap[2], 'Active in Immob': base_cmap[2], 'Manifold in Immob': base_cmap[2],
