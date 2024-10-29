@@ -33,3 +33,4 @@ dependencies:
     - seaborn
     - loguru
     - ndtiff
+    - ndstorage
