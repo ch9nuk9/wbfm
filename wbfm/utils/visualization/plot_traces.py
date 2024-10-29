@@ -1453,6 +1453,7 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     # Note: specific to the paper figure
     fig.update_yaxes(dict(showticklabels=True, showgrid=False, title='Body<br>Segment'), col=1, row=1)
     if discrete_behaviors:
+        fig.update_yaxes(dict(showticklabels=False, showgrid=False, title='Body Segment'), col=1, row=1)
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Turn<br>Annotations'), col=1, row=3)
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Other<br>Annotations'), col=1, row=4)
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Reversal<br>Annotation'), col=1, row=5)
