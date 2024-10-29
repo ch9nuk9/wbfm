@@ -1365,8 +1365,8 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
                                'Other': ['self_collision', 'head_cast'],
                                'Rev': ['rev']}
     elif eigenworm_behaviors:
-        behavior_alias_dict = {'Eigenworms1': ['eigenworm_1', 'eigenworm_2'],
-                               'Eigenworms2': ['eigenworm_3', 'eigenworm_4'],
+        behavior_alias_dict = {'Eigenworms1': ['eigenworm_0', 'eigenworm_1'],
+                               'Eigenworms2': ['eigenworm_2', 'eigenworm_3'],
                                'Rev': ['rev']}
     else:
         behavior_alias_dict = {'Head curvature': ['dorsal_only_head_curvature', 'ventral_only_head_curvature'],
