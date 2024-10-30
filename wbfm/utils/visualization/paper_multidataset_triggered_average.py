@@ -633,9 +633,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
             else:
                 if fig is not None:
-                    fig.update_yaxes(title=y_label)
+                    if show_y_label:
+                        fig.update_yaxes(title=y_label)
+                    else:
+                        fig.update_yaxes(title="")
                     if show_x_label:
                         fig.update_xaxes(title="Time (s)")
+                    else:
+                        fig.update_xaxes(title="")
 
             # Final saving
             if output_folder is not None:
@@ -1240,9 +1245,11 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
         all_figs = {}
         for neuron_name in neuron_list:
             fig, ax = None, None
+            show_x_label = 'URX' in neuron_name
             for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
                 fig, ax = obj.plot_triggered_average_single_neuron(neuron_name, trigger_type, is_mutant=is_mutant,
-                                                                   fig=fig, ax=ax,
+                                                                   fig=fig, ax=ax, show_x_label=show_x_label,
+                                                                   show_y_label=False,
                                                                    output_folder=output_dir, **kwargs)
             if df_idx_range is not None:
                 # If there is a dynamic time window used for the ttest, then add a bar as an annotation
