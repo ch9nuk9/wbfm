@@ -636,11 +636,11 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                     if show_y_label:
                         fig.update_yaxes(title=y_label)
                     else:
-                        fig.update_yaxes(title="")
+                        fig.update_layout(yaxis_title=None)
                     if show_x_label:
                         fig.update_xaxes(title="Time (s)")
                     else:
-                        fig.update_xaxes(title="")
+                        fig.update_layout(xaxis_title=None)
 
             # Final saving
             if output_folder is not None:
