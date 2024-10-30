@@ -542,3 +542,39 @@ def get_all_trigger_suffixes():
                     trigger_type = 'self_collision'
             all_trigger_suffixes.append(f"{suffix}-{trigger_type}")
     return all_trigger_suffixes
+
+
+def intrinsic_definition(x):
+    """
+    Uses a string based on 4 properties combined into one string to define intrinsic neurons
+
+    Specifically:
+    If the freely moving condition is not significantly different from 0, then it is "No manifold."
+    Otherwise, if the difference between the two conditions is significant, then it is "Intrinsic" if the sign is the same and "Encoding switches" if the sign is different.
+    If the immobilized is not significantly different from 0, but the difference is significant, then it is "Freely moving only".
+    Finally, regardless of the 0-comparison significance of the immobilized condition, if the difference is not significant, then it is "Intrinsic".
+
+
+    """
+    if 'gcamp_False' in x:
+        return 'No manifold' # At least in FM
+    elif 'gcamp_True_immob_True' in x:
+        if 'same_sign_True' in x:
+            # Ignore that the difference is significant
+            return 'Intrinsic'
+        elif 'same_sign_False_diff_True' in x:
+            # Diff must be significant
+            return 'Encoding switches'
+        else:
+            # Both different from 0, but not from each other... should not happen
+            raise ValueError
+    elif 'gcamp_True_immob_False' in x:
+        # Might be a new encoding, or might just be on the edge of immob encoding
+        if 'diff_True' in x:
+            # Ignore whether the sign is different, just check if the difference is significant
+            return 'Freely moving only'
+        else:
+            # Ignore the 0-comparison significance of the immob if the difference is not significant
+            return 'Intrinsic'# 'Intrinsic (stronger)'
+    else:
+        return ValueError
