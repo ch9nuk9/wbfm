@@ -1244,7 +1244,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     fig1.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig1.update_yaxes(dict(showticklabels=False, showgrid=True), title="Neurons",
                       col=1, overwrite=True)
-    fig1.update_coloraxes(cmin=0, cmax=1, colorbar=dict(
+    fig1.update_coloraxes(cmin=0, cmax=1.00, colorbar=dict(
         # thickness=10,
         title=dict(text=r'ΔR / R₅₀', **font_dict)
         # title=dict(text=r'$\frac{\Delta R}{R_{50}}$', **font_dict)
@@ -1629,17 +1629,12 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         behavior_kwargs = dict(fluorescence_fps=True, reset_index=True)
     if behavior_alias_dict is None:
         behavior_alias_dict = {}
-    default_trace_opt = dict(interpolate_nan=True,
-                             filter_mode='rolling_mean',
-                             min_nonnan=0.9,
-                             nan_tracking_failure_points=True,
-                             nan_using_ppca_manifold=True,
-                             channel_mode='dr_over_r_50')
+    default_trace_opt = dict(use_paper_options=True)
     if trace_opt is not None:
         default_trace_opt.update(trace_opt)
     df_traces = project_data.calc_default_traces(**default_trace_opt)
     x = project_data.x_for_plots
-    df_traces_no_nan = fill_nan_in_dataframe(df_traces, do_filtering=True)
+    df_traces_no_nan = fill_nan_in_dataframe(df_traces.copy(), do_filtering=True)
     # Calculate pca modes, and use them to sort
     pca_weights = PCA(n_components=10)
     pca_modes = PCA(n_components=10)
@@ -1647,8 +1642,8 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     pca_weights.fit(df_mean_subtracted)
     pca_modes.fit(df_mean_subtracted.T)
     # Preprocess
-    df_tmp = df_traces.copy()
-    df_tmp -= df_tmp.min()
+    df_tmp = df_traces
+    # df_tmp -= df_tmp.min()
     ind_sort = np.argsort(pca_weights.components_[0, :])
     dat = df_tmp.T.iloc[ind_sort, :]
     neuron_names = list(dat.index)
@@ -1689,7 +1684,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
 
     ### Main heatmap
     heatmap = go.Heatmap(y=dat.index, z=dat, x=x,
-                         zmin=0, zmax=1, colorscale='jet', xaxis="x", yaxis="y",
+                         zmin=-0.25, zmax=1.25, colorscale='jet', xaxis="x", yaxis="y",
                          coloraxis='coloraxis1')
     heatmap_opt = dict(row=1, col=1)
 

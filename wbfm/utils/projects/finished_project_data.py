@@ -859,7 +859,7 @@ class ProjectData:
         if use_paper_options:
             channel_mode = kwargs.get('channel_mode', 'dr_over_r_50')
             df = self.calc_paper_traces(channel_mode=channel_mode, residual_mode=residual_mode,
-                                        interpolate_nan=True)
+                                        interpolate_nan=interpolate_nan)
             # Most postprocessing is not done on these traces, but these are allowed
             if only_keep_confident_ids:
                 confident_ids = neurons_with_confident_ids()
