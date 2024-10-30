@@ -1061,6 +1061,13 @@ class WormFullVideoPosture:
         """
         Calculates derivative of position
 
+        Default (used in the paper):
+            Speed is calculated by first taking the stage position at the same frequency as the volumetric imaging.
+            The main calculation is to take the derivative is taking using numpy's gradient function.
+            Then, outliers are removed by taking the rolling mean (window of 10 frames) and removing values more than
+            2 standard deviations away from this smoothed time series.
+            Finally, any remaining large values are clipped to 0.5 mm/s.
+
         Parameters
         ----------
         fluorescence_fps - Whether to downsample
