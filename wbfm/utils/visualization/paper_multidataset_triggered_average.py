@@ -1199,12 +1199,9 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
                                precalculated_p_values=precalculated_p_values,
                                height_mode='top_of_data', has_multicategory_index=True, DEBUG=False)
 
-        fig.update_xaxes(title='')
-        # fig.update_yaxes(title=r'$\Delta R / R_{50}$')  # Already exists for the triggered averages themselves
-        fig.update_yaxes(title='')  # Already exists for the triggered averages themselves
-        fig.update_layout(showlegend=False)
+        fig.update_layout(showlegend=False, yaxis_title=None, xaxis_title=None)
         # Modify offsetgroup to have only 2 types (rev and fwd), not one for each legend entry
-        apply_figure_settings(fig, height_factor=0.15, width_factor=0.3)
+        apply_figure_settings(fig, height_factor=0.1, width_factor=0.25)
         if to_show:
             fig.show()
         all_figs[neuron_name] = fig
