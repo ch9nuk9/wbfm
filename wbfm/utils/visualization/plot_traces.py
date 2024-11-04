@@ -1224,6 +1224,11 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     if trace_opt is None:
         trace_opt = paper_trace_settings()
 
+    if not isinstance(base_height, list):
+        base_height = [base_height, base_height*(2/3)]
+    if not isinstance(base_width, list):
+        base_width = [base_width, base_width*0.8]
+
     # Get figure options
     figure_opt = paper_figure_page_settings()
     font_dict = figure_opt['plotly_font_opt']
@@ -1239,7 +1244,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     fig1.add_trace(heatmap, **heatmap_opt)
     fig1.update_layout(showlegend=False, autosize=False, #**plotly_opt,
                        coloraxis=dict(colorscale="jet"))
-    apply_figure_settings(fig1, width_factor=base_width, height_factor=base_height, plotly_not_matplotlib=True)
+    apply_figure_settings(fig1, width_factor=base_width[0], height_factor=base_height[0], plotly_not_matplotlib=True)
     # Remove ticks
     fig1.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig1.update_yaxes(dict(showticklabels=False, showgrid=True), title="Neurons",
@@ -1275,7 +1280,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
         for _i in range(num_before_adding_shapes, len(fig2.layout.shapes)):
             fig2.layout.shapes[_i]['yref'] = 'paper'
     fig2.update_layout(showlegend=False, autosize=False)#, **plotly_opt)
-    apply_figure_settings(fig2, width_factor=base_width*0.8, height_factor=base_height*(2/3), plotly_not_matplotlib=True)
+    apply_figure_settings(fig2, width_factor=base_width[1], height_factor=base_height[1], plotly_not_matplotlib=True)
     # Remove ticks
     fig2.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig2.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
@@ -1297,9 +1302,10 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
 
     # Use the y axis as titles... but make them smaller
     # fig2.update_yaxes(dict(title=dict(text='PCA <br> modes', font=dict(size=12))), row=3, overwrite=True)
-    fig2.update_yaxes(dict(title=dict(text='PC1', font=dict(size=12))), row=2, overwrite=True, tickangle=-90)
-    fig2.update_yaxes(dict(title=dict(text='PC2', font=dict(size=12))), row=3, overwrite=True, tickangle=-90)
-    fig2.update_yaxes(dict(title=dict(text='PC3', font=dict(size=12))), row=4, overwrite=True, tickangle=-90)
+    # fig2.update_yaxes(dict(title=dict(text='PC1', font=dict(size=12))), row=2, overwrite=True, tickangle=-90)
+    # fig2.update_yaxes(dict(title=dict(text='PC2', font=dict(size=12))), row=3, overwrite=True, tickangle=-90)
+    # fig2.update_yaxes(dict(title=dict(text='PC3', font=dict(size=12))), row=4, overwrite=True, tickangle=-90)
+    fig2.update_yaxes(dict(title=dict(text='First 3 PCA<br>Components', font=dict(size=12))), row=3, overwrite=True, tickangle=-90)
     fig2.update_yaxes(dict(title=dict(text='Speed <br> (mm/s)', font=dict(size=12))), row=5, overwrite=True)
 
     # For now, don't build the rest of the figures
