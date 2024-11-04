@@ -1204,7 +1204,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
 
 def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, trace_opt=None,
                                       include_speed_subplot=True,
-                                      output_folder=None, base_width=0.5, **kwargs):
+                                      output_folder=None, base_width=0.5, base_height=0.3, **kwargs):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but saves each subplot separately for more control
 
@@ -1239,12 +1239,12 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     fig1.add_trace(heatmap, **heatmap_opt)
     fig1.update_layout(showlegend=False, autosize=False, #**plotly_opt,
                        coloraxis=dict(colorscale="jet"))
-    apply_figure_settings(fig1, width_factor=base_width, height_factor=0.3, plotly_not_matplotlib=True)
+    apply_figure_settings(fig1, width_factor=base_width, height_factor=base_height, plotly_not_matplotlib=True)
     # Remove ticks
     fig1.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig1.update_yaxes(dict(showticklabels=False, showgrid=True), title="Neurons",
                       col=1, overwrite=True)
-    fig1.update_coloraxes(cmin=0, cmax=1.00, colorbar=dict(
+    fig1.update_coloraxes(cmin=-0.25, cmax=0.75, colorbar=dict(
         # thickness=10,
         title=dict(text=r'ΔR / R₅₀', **font_dict)
         # title=dict(text=r'$\frac{\Delta R}{R_{50}}$', **font_dict)
@@ -1275,7 +1275,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
         for _i in range(num_before_adding_shapes, len(fig2.layout.shapes)):
             fig2.layout.shapes[_i]['yref'] = 'paper'
     fig2.update_layout(showlegend=False, autosize=False)#, **plotly_opt)
-    apply_figure_settings(fig2, width_factor=base_width*0.8, height_factor=0.2, plotly_not_matplotlib=True)
+    apply_figure_settings(fig2, width_factor=base_width*0.8, height_factor=base_height*(2/3), plotly_not_matplotlib=True)
     # Remove ticks
     fig2.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
     fig2.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
