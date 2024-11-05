@@ -10,7 +10,6 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_matplotlib import export_legend
 from wbfm.utils.general.hardcoded_paths import load_paper_datasets
-from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 from wbfm.utils.utils_cache import cache_to_disk_class
 
@@ -104,6 +103,7 @@ def export_legend_for_paper(fname=None, frameon=True, reversal_shading=False):
         labels = ['Freely Moving', 'Reversal State', 'gcy-31, gcy-35, gcy-9']
         colors = [cmap[l] for l in labels]
     else:
+        from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
         # Just plot the gray background
         labels = ['Reversal State']
         colors = [BehaviorCodes.shading_cmap_func(BehaviorCodes.REV)]
