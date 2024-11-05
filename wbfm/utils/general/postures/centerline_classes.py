@@ -292,7 +292,7 @@ class WormFullVideoPosture:
         df = df.iloc[:, 1:]
         # Convert to physical units; currently in 1/pixel
         # Target: 1/um
-        um_per_pixel = self.physical_unit_conversion.zimmer_fluroscence_um_per_pixel_xy
+        um_per_pixel = self.physical_unit_conversion.zimmer_behavior_um_per_pixel_xy
         df = df / um_per_pixel
         return df
 
