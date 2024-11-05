@@ -20,7 +20,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.external.utils_matplotlib import round_yticks
 
 from wbfm.utils.external.utils_pandas import split_flattened_index, combine_columns_with_suffix, calc_closest_index
-from wbfm.utils.external.utils_plotly import float2rgba
+from wbfm.utils.external.utils_plotly import float2rgba, add_annotation_lines
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, add_behavior_shading_to_plot, \
     shade_using_behavior_plotly
 from wbfm.utils.general.utils_paper import apply_figure_settings, paper_trace_settings, plotly_paper_color_discrete_map, \
@@ -518,6 +518,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              z_score=False, fig_kwargs=None, legend=False, i_figure=3,
                                              apply_changes_even_if_no_trace=True, show_individual_lines=False,
                                              return_individual_traces=False, use_plotly=False,
+                                             df_idx_range=None, is_immobilized=False,
                                              width_factor_addition=0, height_factor_addition=0,
                                              to_show=True, DEBUG=False):
         if fig_kwargs is None:
@@ -642,6 +643,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                         height_factor_addition += 0.04
                     else:
                         fig.update_layout(xaxis_title=None)
+                    # Add line annotations if there is a dynamic ttest
+                    fig = add_annotation_lines(df_idx_range, neuron_name, fig, is_immobilized)
 
             # Final saving
             if output_folder is not None:
@@ -1255,27 +1258,8 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
             for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
                 fig, ax = obj.plot_triggered_average_single_neuron(neuron_name, trigger_type, is_mutant=is_mutant,
                                                                    fig=fig, ax=ax, show_x_label=show_x_label,
-                                                                   show_y_label=~is_mutant,
-                                                                   output_folder=output_dir, **kwargs)
-            if df_idx_range is not None:
-                # If there is a dynamic time window used for the ttest, then add a bar as an annotation
-                this_idx = df_idx_range[df_idx_range['neuron'] == neuron_name]
-                # Add a bar for the dynamic window for each type (mutant and not)
-                _cmap = plotly_paper_color_discrete_map()
-                for i, row in this_idx.iterrows():
-                    y0 = 0.9
-                    if row['is_mutant']:
-                        color = _cmap['gcy-31;-35;-9']
-                        y0 = 0.95
-                    elif is_immobilized:
-                        color = _cmap['immob']
-                    else:
-                        color = _cmap['Wild Type']
-                    if DEBUG:
-                        print(f"Adding bar for {neuron_name} with color {color}")
-                        print(f"At location {row['start']} to {row['end']}")
-                    fig.add_shape(type="rect", x0=row['start'], y0=y0, x1=row['end'], y1=y0,
-                                  line=dict(color=color, width=2), xref='x', yref='paper', layer='below')
+                                                                   output_folder=output_dir, df_idx_range=df_idx_range,
+                                                                   is_immobilized=is_immobilized, **kwargs)
 
             all_figs[neuron_name] = fig
             if to_show:
