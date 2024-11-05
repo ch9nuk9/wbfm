@@ -197,7 +197,6 @@ def round_yticks_plotly(fig, max_ticks=4, ndigits=1, DEBUG=False, **kwargs):
         print(f"New ticks: {fig.layout.yaxis.range}")
 
 
-
 def export_legend(legend=None, fig=None, fname="legend.png", expand=None):
     """From https://stackoverflow.com/questions/4534480/get-legend-as-a-separate-picture-in-matplotlib"""
     if fig is None and legend is None:
@@ -213,3 +212,5 @@ def export_legend(legend=None, fig=None, fname="legend.png", expand=None):
     bbox = bbox.from_extents(*(bbox.extents + np.array(expand)))
     bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
     fig.savefig(fname, dpi="figure", bbox_inches=bbox)
+    # Also save .svg
+    fig.savefig(fname.replace(".png", ".svg"), bbox_inches=bbox)

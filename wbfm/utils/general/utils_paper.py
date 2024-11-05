@@ -10,6 +10,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_matplotlib import export_legend
 from wbfm.utils.general.hardcoded_paths import load_paper_datasets
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 from wbfm.utils.utils_cache import cache_to_disk_class
 
@@ -97,12 +98,19 @@ def plotly_paper_color_discrete_map():
     return cmap_dict
 
 
-def export_legend_for_paper(fname=None, frameon=True):
-    cmap = plotly_paper_color_discrete_map()
-    labels = ['Freely Moving', 'Reversal State', 'gcy-31, gcy-35, gcy-9']
-    colors = [cmap[l] for l in labels]
+def export_legend_for_paper(fname=None, frameon=True, reversal_shading=False):
+    if not reversal_shading:
+        cmap = plotly_paper_color_discrete_map()
+        labels = ['Freely Moving', 'Reversal State', 'gcy-31, gcy-35, gcy-9']
+        colors = [cmap[l] for l in labels]
+    else:
+        # Just plot the gray background
+        labels = ['Reversal State']
+        colors = [BehaviorCodes.shading_cmap_func(BehaviorCodes.REV)]
+
     f = lambda m, c: plt.plot([], [], marker=m, color=c, ls="none")[0]
-    handles = [f("s", colors[i]) for i in range(3)]
+
+    handles = [f("s", colors[i]) for i in range(len(labels))]
     legend = plt.legend(handles, labels, loc=3, framealpha=1, frameon=frameon)
 
     if fname is not None:
