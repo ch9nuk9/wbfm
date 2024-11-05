@@ -284,11 +284,16 @@ class WormFullVideoPosture:
 
     @cached_property
     def _raw_curvature(self):
+        """Returns curvature in 1 / um units"""
         df = read_if_exists(self.filename_curvature, reader=pd.read_csv, header=None)
         # Remove the first column, which is the frame number
         if df is None:
             raise NoBehaviorAnnotationsError("(curvature)")
         df = df.iloc[:, 1:]
+        # Convert to physical units; currently in 1/pixel
+        # Target: 1/um
+        um_per_pixel = self.physical_unit_conversion.zimmer_fluroscence_um_per_pixel_xy
+        df = df / um_per_pixel
         return df
 
     @lru_cache(maxsize=8)
