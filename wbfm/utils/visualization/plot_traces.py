@@ -1500,7 +1500,7 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
                             y=0.75,
                             xanchor='left',
                             x=1.01,
-                            title=dict(text='Curvature')
+                            title=dict(text=r'Curvature (1/µm)', font=dict(size=14))
                         )),
     )
     fig.update_layout(
@@ -1698,8 +1698,9 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     try:
         kymo_dat = project_data.worm_posture_class.curvature(**behavior_kwargs).T
         # Instead of zmin and zmax on the plot, actually modify the data (options seem to not propagate to the plot)
-        kymo_dat[kymo_dat < -0.04] = -0.04
-        kymo_dat[kymo_dat > 0.04] = 0.04
+        kymo_thresh = 0.04 / project_data.physical_unit_conversion.zimmer_behavior_um_per_pixel_xy
+        kymo_dat[kymo_dat < -kymo_thresh] = -kymo_thresh
+        kymo_dat[kymo_dat > kymo_thresh] = kymo_thresh
         kymo_dat = kymo_dat.iloc[3:-3, :]
         # Flip the kymograph in the y direction, so that the head is on top
         # kymo_dat = kymo_dat.iloc[::-1, :].reset_index(drop=True)
