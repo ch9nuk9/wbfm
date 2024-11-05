@@ -97,7 +97,7 @@ def plotly_paper_color_discrete_map():
     return cmap_dict
 
 
-def export_legend_for_paper(fname=None, frameon=True, reversal_shading=False):
+def export_legend_for_paper(fname=None, frameon=True, reversal_shading=False, include_self_collision=False):
     if not reversal_shading:
         cmap = plotly_paper_color_discrete_map()
         labels = ['Freely Moving', 'Reversal State', 'gcy-31, gcy-35, gcy-9']
@@ -107,6 +107,10 @@ def export_legend_for_paper(fname=None, frameon=True, reversal_shading=False):
         # Just plot the gray background
         labels = ['Reversal State']
         colors = [BehaviorCodes.shading_cmap_func(BehaviorCodes.REV)]
+        if include_self_collision:
+            labels.append('Self-collision')
+            colors.append(BehaviorCodes.shading_cmap_func(BehaviorCodes.SELF_COLLISION,
+                                                          additional_shaded_states=[BehaviorCodes.SELF_COLLISION]))
 
     f = lambda m, c: plt.plot([], [], marker=m, color=c, ls="none")[0]
 
