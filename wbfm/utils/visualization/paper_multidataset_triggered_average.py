@@ -639,6 +639,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                         fig.update_layout(yaxis_title=None)
                     if show_x_label:
                         fig.update_xaxes(title="Time (s)")
+                        height_factor_addition += 0.04
                     else:
                         fig.update_layout(xaxis_title=None)
 
@@ -1254,7 +1255,7 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
             for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
                 fig, ax = obj.plot_triggered_average_single_neuron(neuron_name, trigger_type, is_mutant=is_mutant,
                                                                    fig=fig, ax=ax, show_x_label=show_x_label,
-                                                                   show_y_label=False,
+                                                                   show_y_label=~is_mutant,
                                                                    output_folder=output_dir, **kwargs)
             if df_idx_range is not None:
                 # If there is a dynamic time window used for the ttest, then add a bar as an annotation
