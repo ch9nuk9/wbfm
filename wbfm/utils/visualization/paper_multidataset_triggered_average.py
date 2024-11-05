@@ -805,22 +805,25 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 means_after = summary_function(df_subset.iloc[i_of_0:gap_idx, :], axis=0)
             elif dynamic_window_center:
                 assert gap == 0, "Dynamic window center only works with gap=0"
-                half_window = int(dynamic_window_length / 2)
+                half_window = int(dynamic_window_length / 2)  # In list units
+                idx_half_window = df_subset.index[half_window] - df_subset.index[0]  # In index units
                 # Get the smoothed max value
                 # Removing the last half of the desired window length (so the window can't be clipped)
                 # And only look at positive values (this is the after part)
+                # Note that the .loc[:-idx_half_window] gives a bug, thus the need for .iloc
                 df_subset_after = df_subset.loc[0:].iloc[half_window:, :-half_window]
                 idx_max = df_subset_after.rolling(window=5, center=True).mean().mean(axis=1).idxmax()
                 # Get the window around the smoothed max value
-                idx_range = [idx_max - half_window, idx_max + half_window]
+                idx_range = [idx_max - idx_half_window, idx_max + idx_half_window]
                 # Closest index to the max value
-                idx_range = calc_closest_index(df_subset.index, idx_range)
+                # idx_range = calc_closest_index(df_subset.index, idx_range)
                 means_after = summary_function(df_subset.loc[idx_range[0]:idx_range[1], :], axis=0)
                 if DEBUG:
                     print(neuron_name)
                     print(f"idx_max of smoothed time series: {idx_max}")
                     print(f"possible indices: {df_subset_after.index}")
-                    print(f"Means before: {means_before}; Means after: {means_after}")
+                    print(f"idx_half_window: {idx_half_window}")
+                    # print(f"Means before: {means_before}; Means after: {means_after}")
             else:
                 idx_range = (gap, df_subset.index[-1])  # Not actually used
                 means_after = summary_function(df_subset.loc[gap:, :], axis=0)
@@ -1152,6 +1155,9 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
             df_idx_range = pd.DataFrame([idx_range], columns=['start', 'end']).assign(neuron=neuron,
                                                                                       is_mutant=is_mutant)
             all_idx_range_single_type.append(df_idx_range)
+            if DEBUG:
+                print(f"Neuron {neuron} was tested with indices: {idx_range}")
+                print(f"Means before: {means_before}; Means after: {means_after}")
         # Process all neurons for this type, including multiple correction for p values
         # Only multiple correct for one type (mutant or not), not both
         df_boxplot_single_type = pd.concat(all_boxplot_data_dfs_single_type)
@@ -1174,8 +1180,8 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     #     all_dfs.append(_calc_p_value(df))
     # df_p_values = pd.concat(all_dfs).reset_index(level=1)
     # df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(), method='fdr_bh', alpha=0.05)[1]
-    if DEBUG:
-        print(df_p_values)
+    # if DEBUG:
+    #     print(df_p_values)
 
     # Modify colors to use green for immobilized
     cmap = plotly_paper_color_discrete_map()
@@ -1189,8 +1195,8 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         # Take the subset of the data for this neuron
         _df = df_boxplot[df_boxplot['neuron'] == neuron_name]
 
-        if DEBUG:
-            print(_df)
+        # if DEBUG:
+        #     print(_df)
         fig = plot_box_multi_axis(_df, x_columns_list=['is_mutant_str', 'before_str'], y_column='mean',
                                   color_names=['Wild Type', 'gcy-31;-35;-9'], cmap=cmap, DEBUG=False)
 
@@ -1222,6 +1228,8 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
                                                            df_idx_range: pd.DataFrame = None,
                                                            is_immobilized: bool = False,
                                                            output_dir=None,
+                                                           to_show=False,
+                                                           DEBUG=False,
                                                            **kwargs):
         """
         Plot the triggered averages for a list of neurons.
@@ -1254,7 +1262,7 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
                 # Add a bar for the dynamic window for each type (mutant and not)
                 _cmap = plotly_paper_color_discrete_map()
                 for i, row in this_idx.iterrows():
-                    y0 = 0.85
+                    y0 = 0.9
                     if row['is_mutant']:
                         color = _cmap['gcy-31;-35;-9']
                         y0 = 0.95
@@ -1262,10 +1270,15 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
                         color = _cmap['immob']
                     else:
                         color = _cmap['Wild Type']
+                    if DEBUG:
+                        print(f"Adding bar for {neuron_name} with color {color}")
+                        print(f"At location {row['start']} to {row['end']}")
                     fig.add_shape(type="rect", x0=row['start'], y0=y0, x1=row['end'], y1=y0,
                                   line=dict(color=color, width=2), xref='x', yref='paper', layer='below')
 
             all_figs[neuron_name] = fig
+            if to_show:
+                fig.show()
 
         return all_figs
 

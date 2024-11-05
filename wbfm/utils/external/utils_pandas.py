@@ -1245,7 +1245,7 @@ def get_contiguous_blocks_from_two_columns(df, col_group, col_value):
     return result
 
 
-def calc_closest_index(index, idx_target, return_idx=True):
+def calc_closest_index(index, idx_target, return_idx=True, round_down=False):
     """
     Given an index and a target index, find the closest index in the index
 
@@ -1253,6 +1253,7 @@ def calc_closest_index(index, idx_target, return_idx=True):
     ----------
     index
     idx_target
+    round_down
 
     Returns
     -------
@@ -1261,7 +1262,10 @@ def calc_closest_index(index, idx_target, return_idx=True):
     if isinstance(idx_target, list):
         idx_closest = [calc_closest_index(index, idx, return_idx=return_idx) for idx in idx_target]
         return idx_closest
-    idx_closest = (np.abs(index - idx_target)).argmin()
+    idx_closest = np.abs(index - idx_target).argmin()
+    if round_down and idx_closest > idx_target:
+        idx_closest -= 1
+
     if return_idx:
         return index[idx_closest]
     else:
