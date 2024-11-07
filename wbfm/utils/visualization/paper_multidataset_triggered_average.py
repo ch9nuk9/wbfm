@@ -520,7 +520,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              return_individual_traces=False, use_plotly=False,
                                              df_idx_range=None, is_immobilized=False,
                                              width_factor_addition=0, height_factor_addition=0,
-                                             to_show=True, DEBUG=False):
+                                             to_show=True, fig_opt=None, DEBUG=False):
         if fig_kwargs is None:
             fig_kwargs = {}
         if color is None:
@@ -648,21 +648,22 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
             # Final saving
             if output_folder is not None:
-                if i_figure == 0:  # Big
-                    fig_opt = dict(width_factor=1.0 + width_factor_addition,
-                                   height_factor=0.45 + height_factor_addition)
-                elif i_figure == 3:
-                    fig_opt = dict(width_factor=0.5 + width_factor_addition,
-                                   height_factor=0.20 + height_factor_addition)
-                elif i_figure > 3:
-                    if 'rectified' in trigger_type:
-                        fig_opt = dict(width_factor=0.35 + width_factor_addition,
-                                       height_factor=0.1 + height_factor_addition)
+                if fig_opt is None:
+                    if i_figure == 0:  # Big
+                        fig_opt = dict(width_factor=1.0 + width_factor_addition,
+                                       height_factor=0.45 + height_factor_addition)
+                    elif i_figure == 3:
+                        fig_opt = dict(width_factor=0.5 + width_factor_addition,
+                                       height_factor=0.20 + height_factor_addition)
+                    elif i_figure > 3:
+                        if 'rectified' in trigger_type:
+                            fig_opt = dict(width_factor=0.35 + width_factor_addition,
+                                           height_factor=0.1 + height_factor_addition)
+                        else:
+                            fig_opt = dict(width_factor=0.25 + width_factor_addition,
+                                           height_factor=0.1 + height_factor_addition)
                     else:
-                        fig_opt = dict(width_factor=0.25 + width_factor_addition,
-                                       height_factor=0.1 + height_factor_addition)
-                else:
-                    raise NotImplementedError(f"i_figure={i_figure} not implemented")
+                        raise NotImplementedError(f"i_figure={i_figure} not implemented")
                 apply_figure_settings(fig, plotly_not_matplotlib=use_plotly, **fig_opt)
 
                 title = self.get_title_from_trigger_type(trigger_type)
