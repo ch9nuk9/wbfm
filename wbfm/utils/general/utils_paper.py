@@ -243,6 +243,7 @@ def behavior_name_mapping(shorten=False):
         REV='Backward crawling',
         VENTRAL_TURN='Ventral turning',
         DORSAL_TURN='Dorsal turning',
+        UNKNOWN='Unknown',
         rev='Reversal',
         dorsal_turn='Dorsal turn',
         ventral_turn='Ventral turn',
