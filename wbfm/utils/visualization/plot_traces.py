@@ -1362,9 +1362,10 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     -------
 
     """
-    if x_range is None:
-        x_range = [25000, 29000]
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    if x_range is None:
+        fps = project_data.physical_unit_conversion.frames_per_second
+        x_range = [25000/fps, 29000/fps]
     project_data.use_physical_time = True
     if discrete_behaviors:
         behavior_alias_dict = {'Turns': ['dorsal_turn', 'ventral_turn'],
@@ -1461,7 +1462,7 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     # Note: specific to the paper figure
     fig.update_yaxes(dict(showticklabels=True, showgrid=False, title='Body<br>Segment'), col=1, row=1)
     if discrete_behaviors:
-        fig.update_yaxes(dict(showticklabels=False, showgrid=False, title='Body Segment'), col=1, row=1)
+        fig.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, row=1)
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Turn<br>Annotations'), col=1, row=3)
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Other<br>Annotations'), col=1, row=4)
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Reversal<br>Annotation'), col=1, row=5)
@@ -1484,7 +1485,7 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
             width_factor = 0.35
         else:
             width_factor = 0.3
-        apply_figure_settings(fig, width_factor=width_factor, height_factor=0.4, plotly_not_matplotlib=True)
+        apply_figure_settings(fig, width_factor=width_factor, height_factor=0.45, plotly_not_matplotlib=True)
 
     # Add zero line to the speed plot
     if not discrete_behaviors and not eigenworm_behaviors:
@@ -1634,7 +1635,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                                               behavior_alias_dict=None, behavior_kwargs=None, showlegend=True,
                                               additional_shaded_states=None, trace_opt: dict = None):
     if behavior_kwargs is None:
-        behavior_kwargs = dict(fluorescence_fps=True, reset_index=True)
+        behavior_kwargs = dict(fluorescence_fps=True, reset_index=False)
     if behavior_alias_dict is None:
         behavior_alias_dict = {}
     default_trace_opt = dict(use_paper_options=True)
@@ -1706,8 +1707,8 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         kymo_dat = kymo_dat.iloc[3:-3, :]
         # Flip the kymograph in the y direction, so that the head is on top
         # kymo_dat = kymo_dat.iloc[::-1, :].reset_index(drop=True)
-        kymograph = go.Heatmap(y=kymo_dat.index, z=kymo_dat, colorscale='RdBu', xaxis="x", yaxis="y",
-                               coloraxis='coloraxis2')
+        kymograph = go.Heatmap(x=kymo_dat.columns, y=kymo_dat.index, z=kymo_dat,
+                               colorscale='RdBu', xaxis="x", yaxis="y", coloraxis='coloraxis2')
         kymograph_opt = dict(row=3, col=1)
     except NoBehaviorAnnotationsError:
         kymograph = None
