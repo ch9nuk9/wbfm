@@ -1300,18 +1300,24 @@ class WormFullVideoPosture:
         return residual_speed
 
     def get_time_delta_in_s(self, fluorescence_fps):
-        df = self.stage_position(fluorescence_fps=fluorescence_fps)
-        all_diffs = pd.Series(df.index).diff()
-        # If the recording crossed a day or daylight saving boundary, then it will have a large jump
-        half_hour = pd.to_timedelta(30 * 60 * 1e9)
-        invalid_ind = np.where(np.abs(all_diffs) > half_hour)[0]
-        if len(invalid_ind) > 0:
-            all_diffs[invalid_ind[0] - 1:invalid_ind[-1] + 1] = pd.to_timedelta(0)
-        tdelta = all_diffs.mean()
-        # To replicate the behavior of tdelta.delta
-        tdelta_s = (1000 * tdelta.microseconds + tdelta.nanoseconds) / 1e9
-        assert tdelta_s > 0, f"Calculated negative delta time ({tdelta_s}); was there a power outage or something?"
-        return tdelta_s
+        if fluorescence_fps:
+            return self.physical_unit_conversion.time_delta_volume
+        else:
+            return self.physical_unit_conversion.time_delta_frame
+
+        # # Otherwise, have to calculate it manually
+        # df = self.stage_position(fluorescence_fps=fluorescence_fps)
+        # all_diffs = pd.Series(df.index).diff()
+        # # If the recording crossed a day or daylight saving boundary, then it will have a large jump
+        # half_hour = pd.to_timedelta(30 * 60 * 1e9)
+        # invalid_ind = np.where(np.abs(all_diffs) > half_hour)[0]
+        # if len(invalid_ind) > 0:
+        #     all_diffs[invalid_ind[0] - 1:invalid_ind[-1] + 1] = pd.to_timedelta(0)
+        # tdelta = all_diffs.mean()
+        # # To replicate the behavior of tdelta.delta
+        # tdelta_s = (1000 * tdelta.microseconds + tdelta.nanoseconds) / 1e9
+        # assert tdelta_s > 0, f"Calculated negative delta time ({tdelta_s}); was there a power outage or something?"
+        # return tdelta_s
 
     def flip_of_vector_during_state(self, vector, fluorescence_fps=False, state=BehaviorCodes.REV) -> pd.Series:
         """By default changes sign during reversal"""

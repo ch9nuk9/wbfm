@@ -33,6 +33,14 @@ class PhysicalUnitConversion:
         return self.num_z_slices + self.num_flyback_planes_discarded
 
     @property
+    def time_delta_frame(self):
+        return 1 / self.frames_per_second
+
+    @property
+    def time_delta_volume(self):
+        return 1 / self.volumes_per_second
+
+    @property
     def z_to_xy_ratio(self):
         return self.zimmer_um_per_pixel_z / self.zimmer_fluroscence_um_per_pixel_xy
 
