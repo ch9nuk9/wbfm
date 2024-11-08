@@ -182,7 +182,7 @@ class WormFullVideoPosture:
             if fluorescence_fps:
                 df.index = self._x_physical_time_volumes
             else:
-                df.index = self._x_physical_time_frames
+                df.index = self._x_physical_time_frames[:len(df)]
 
         return df
 
@@ -215,7 +215,7 @@ class WormFullVideoPosture:
     @property
     def _x_physical_time_frames(self):
         """Helper for reindexing plots from frames to seconds"""
-        x = np.arange(self.num_high_res_frames)
+        x = np.arange(self.num_high_res_frames + 1)
         x = x / self.physical_unit_conversion.frames_per_second
         return x
 
