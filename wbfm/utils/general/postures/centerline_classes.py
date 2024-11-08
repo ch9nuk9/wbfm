@@ -174,6 +174,11 @@ class WormFullVideoPosture:
             if needs_subsampling:
                 df = self._shorten_to_trace_length(df)
 
+        df = self.convert_index_to_physical_time(df, fluorescence_fps, use_physical_time)
+
+        return df
+
+    def convert_index_to_physical_time(self, df, fluorescence_fps, use_physical_time=None):
         # Convert to physical time
         if use_physical_time is None:
             use_physical_time = self.use_physical_time
@@ -183,7 +188,6 @@ class WormFullVideoPosture:
                 df.index = self._x_physical_time_volumes
             else:
                 df.index = self._x_physical_time_frames[:len(df)]
-
         return df
 
     @property
@@ -912,6 +916,7 @@ class WormFullVideoPosture:
         if is_already_fluorescence_fps:
             reset_index = True
         self.check_requested_frame_rate(fluorescence_fps, manual_annotation=use_manual_annotation)
+        beh = self.convert_index_to_physical_time(beh, fluorescence_fps=fluorescence_fps)
 
         # Add additional annotations from other files
         # These functions might give an error when called, so loop as a list of functions first
@@ -935,6 +940,7 @@ class WormFullVideoPosture:
         if DEBUG:
             print("Behavior before any additional annotations")
             print(beh)
+        correct_index = beh.index
         for beh_func in beh_funcs_to_add:
             try:
                 # This should not be fluorescence fps, unless the downsampling below is not used
@@ -942,6 +948,8 @@ class WormFullVideoPosture:
                 this_beh = beh_func(fluorescence_fps=is_already_fluorescence_fps, reset_index=reset_index)
                 if this_beh is None:
                     continue
+                if not this_beh.index[:len(correct_index)].equals(correct_index):
+                    raise DataSynchronizationError(correct_index, this_beh.index, "fixing the indices")
                 beh = beh + this_beh
                 if DEBUG:
                     print("Added behavior: ", beh_func.__name__)
@@ -1115,6 +1123,7 @@ class WormFullVideoPosture:
         if not subsample_before_derivative:
             speed_mm_per_s = self._validate_and_downsample(speed_mm_per_s, fluorescence_fps=fluorescence_fps,
                                                            reset_index=True)
+        speed_mm_per_s = self.convert_index_to_physical_time(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
         if strong_smoothing:
             window = 50
             speed_mm_per_s = pd.Series(speed_mm_per_s).rolling(window=window, center=True).mean()
@@ -1329,17 +1338,9 @@ class WormFullVideoPosture:
             velocity[rev_ind] *= -1
         elif len(velocity) == len(rev_ind) + 1:
             velocity = velocity.iloc[:-1]
-            try:
-                velocity[rev_ind] *= -1
-            except Exception as e:
-                print(velocity, rev_ind)
-                raise e
+            velocity[rev_ind] *= -1
         elif len(velocity) == len(rev_ind) - 1:
-            try:
-                velocity[rev_ind.iloc[:-1]] *= -1
-            except Exception as e:
-                print(velocity, rev_ind)
-                raise e
+            velocity[rev_ind.iloc[:-1]] *= -1
         else:
             raise DataSynchronizationError(f"velocity ({len(velocity)})", f"reversal indices ({len(rev_ind)})")
 

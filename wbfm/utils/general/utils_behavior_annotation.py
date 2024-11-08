@@ -1841,7 +1841,7 @@ def combine_pair_of_ided_neurons(df_traces, base_name='AVA'):
     return y
 
 
-def annotate_turns_from_reversal_ends(rev_ends, y_curvature):
+def annotate_turns_from_reversal_ends(rev_ends, y_curvature: pd.Series):
     """
     Uses the reversal ends and curvature to annotate turns in the following way:
     1. A turn starts at the end of the reversal
@@ -1866,7 +1866,7 @@ def annotate_turns_from_reversal_ends(rev_ends, y_curvature):
         if e == len(y_curvature):
             break
         # Determines ventral or dorsal turn
-        y_initial = y_curvature[e]  # Should I change this if there is a collision?
+        y_initial = y_curvature.iat[e]  # Should I change this if there is a collision?
 
         # Get the next approximate zero crossing
         _next_flip_array = sign_flips[sign_flips > e]
