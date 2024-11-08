@@ -1453,6 +1453,8 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     if crop_x_axis:
         fig.update_xaxes(dict(range=x_range), row=1, col=1, overwrite=True)
     fig.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
+    fig.update_xaxes(dict(showticklabels=True, title=project_data.x_label_for_plots),
+                     row=5, col=1, overwrite=True,)
 
     # Flip the kymograph
     fig.update_yaxes(dict(autorange='reversed'), col=1, row=1, overwrite=True)
@@ -1587,7 +1589,6 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
 
     ### Final updates
     fig.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
-    fig.update_xaxes(dict(showticklabels=True, title='Time (seconds)'), row=5, col=1, overwrite=True,)
     fig.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
 
     fig.update_layout(showlegend=False, autosize=False, width=1.5*1000, height=1.5*800)
