@@ -136,7 +136,7 @@ class ProjectData:
 
     # EXPERIMENTAL (but tested)
     use_custom_padded_dataframe: bool = False
-    use_physical_time: bool = False  # Relies on hardcoded volumes per second
+    _use_physical_time: bool = False  # Relies on hardcoded volumes per second
 
     # Caching
     data_cacher: PaperDataCache = None
@@ -1958,6 +1958,19 @@ class ProjectData:
 
     def has_traces(self):
         return (self.red_traces is not None) and (self.green_traces is not None)
+
+    @property
+    def use_physical_time(self) -> bool:
+        """Whether to reindex returned traces to physical time"""
+        return self._use_physical_time
+
+    @use_physical_time.setter
+    def use_physical_time(self, value: bool):
+        assert isinstance(value, bool), "use_physical_time must be a boolean"
+        self._use_physical_time = value
+        # Also set the internal behavioral class to use physical time
+        self.worm_posture_class.use_physical_time = value
+
 
     @property
     def _x_physical_time(self):

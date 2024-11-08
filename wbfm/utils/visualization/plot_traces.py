@@ -1674,7 +1674,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     try:
         speed.set_index(x, inplace=True)
     except ValueError:
-        # Then we are working in behavioral space, and we don't need this
+        # Then we are working in behavioral space, and the x axis should be set properly in the worm_posture class
         pass
 
     df_pca_weights = pd.DataFrame(pca_weights.components_[0:num_pca_modes_to_plot, :].T)

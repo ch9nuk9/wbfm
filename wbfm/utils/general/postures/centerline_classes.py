@@ -90,6 +90,9 @@ class WormFullVideoPosture:
     behavior_subfolder: str = None
     raw_behavior_subfolder: str = None
 
+    # Will be synchronized with the parent project
+    _use_physical_time: bool = False
+
     def __post_init__(self):
         if self.filename_curvature is not None:
             self.filename_curvature = resolve_mounted_path_in_current_os(self.filename_curvature, verbose=0)
@@ -133,7 +136,7 @@ class WormFullVideoPosture:
             raise MissingAnalysisError("Full fps annotation requested, but only low resolution exists")
 
     def _validate_and_downsample(self, df: Optional[Union[pd.DataFrame, pd.Series]], fluorescence_fps: bool,
-                                 reset_index=False, use_physical_time=False,
+                                 reset_index=False, use_physical_time=None,
                                  manual_annotation=False, force_downsampling=False) -> Optional[Union[pd.DataFrame, pd.Series]]:
         if df is None:
             return df
@@ -172,6 +175,9 @@ class WormFullVideoPosture:
                 df = self._shorten_to_trace_length(df)
 
         # Convert to physical time
+        if use_physical_time is None:
+            use_physical_time = self.use_physical_time
+            self.use_physical_time = use_physical_time  # Save the value
         if use_physical_time:
             if fluorescence_fps:
                 df.index = self._x_physical_time_volumes
@@ -209,7 +215,7 @@ class WormFullVideoPosture:
     @property
     def _x_physical_time_frames(self):
         """Helper for reindexing plots from frames to seconds"""
-        x = np.arange(self.num_volumes)
+        x = np.arange(self.num_high_res_frames)
         x = x / self.physical_unit_conversion.frames_per_second
         return x
 
@@ -2122,6 +2128,16 @@ class WormFullVideoPosture:
                 # Newer naming convention
                 return file
         return None
+
+    @property
+    def use_physical_time(self) -> bool:
+        """Whether to reindex returned behavioral time series or kymographs to physical time"""
+        return self._use_physical_time
+
+    @use_physical_time.setter
+    def use_physical_time(self, value: bool):
+        assert isinstance(value, bool), "use_physical_time must be a boolean"
+        self._use_physical_time = value
 
     def __repr__(self):
         return \
