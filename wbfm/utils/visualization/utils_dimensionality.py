@@ -150,6 +150,7 @@ def main(combine_left_right=True):
     new_col = new_col.map(lambda x: x if x != 'Inter, ' else 'Interneuron')
     new_col = new_col.str.replace('Sensory, ', 'Sensory')
     new_col = new_col.str.replace('SensorySensory', 'Sensory')
+    new_col = new_col.str.replace('SensoryReverse', 'Sensory')
     # new_col = new_col.str.replace('Forward', 'Forward')
     # new_col = new_col.str.replace('Reverse', 'Reverse')
     df_combined['combined_role'] = new_col
