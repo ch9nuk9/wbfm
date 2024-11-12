@@ -426,11 +426,11 @@ def _role_of_neurons():
     'Sensory': [
             'ASI', 'AWA', 'AWB', 'AWC', 'ASH', 'ASJ', 'ASG', 'ASK', 'ADF', 'PDE',
             'IL2L', 'IL2R', 'IL2', 'IL1L', 'IL1R', 'IL1', 'OLQD', 'OLQV', 'CEP', 'ADE', 'PVD', 'FLP', 'PHA', 'PHB', 'URX', 'BAG',
-            'AQR', 'SDQ', 'PQR', 'AUA', 'URB', 'SAA', 'URYD', 'URYV', 'URAD', 'URAV'
+            'AQR', 'SDQ', 'PQR', 'URB', 'SAA', 'URYD', 'URYV', 'URAD', 'URAV'
         ],
     'Interneuron': [
             'AIA', 'AIB', 'AIZ', 'AVA', 'AVE', 'AVB', 'AVD', 'AVG', 'RIM', 'ALA',
-            'RIB', 'RIC', 'RIA', 'RIG', 'RIF', 'RIS', 'AIM', 'DVA', 'HSN', 'PVQ', 'RID', 'SAAV', 'SAAD'
+            'RIB', 'RIC', 'RIA', 'AUA', 'RIG', 'RIF', 'RIS', 'AIM', 'DVA', 'HSN', 'PVQ', 'RID', 'SAAV', 'SAAD'
         ],
     'Motor': [
             'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'VD1-VD13', 'VA1-VA12', 'VB1-VB11',
@@ -441,16 +441,16 @@ def _role_of_neurons():
             'RID', 'RIM'
         ],
     'Forward': [
-        'AVB', 'RIB', 'DB1-DB7', 'VB1-VB11', 'RME', 'RMEV', 'RMED', 'RID'
+        'AVB', 'RIB', 'DB1-DB7', 'VB1-VB11', 'RME', 'RMEV', 'RMED', 'RID', 'SIAV', 'SIAD'
         ],
     'Reverse': [
-        'AVA', 'AIB', 'RIM', 'DA1-DA9', 'VA1-VA12', 'AVE'
+        'AVA', 'AIB', 'RIM', 'DA1-DA9', 'VA1-VA12', 'AVE', 'RIA', 'URYD', 'URYV',
         ],
     'Dorsal': [
-        'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'SMDD', 'RMEV', 'SIAD', 'SAAD'
+        'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'SMDD', 'RMEV', 'SIAD', 'SAAD', 'RMDD'
         ],
     'Ventral': [
-        'VA1-VA9', 'VB1-VB7', 'VD1-VD6', 'SMDV', 'RMED', 'SIAV', 'SAAV'
+        'VA1-VA9', 'VB1-VB7', 'VD1-VD6', 'SMDV', 'RMED', 'SIAV', 'SAAV', 'RMDV'
         ],
     # 'Turning': [
     #     'SMDV', 'SMDD', 'RIV'
