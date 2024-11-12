@@ -150,15 +150,15 @@ def main(combine_left_right=True):
     new_col = new_col.map(lambda x: x if x != 'Inter, ' else 'Interneuron')
     new_col = new_col.str.replace('Sensory, ', 'Sensory')
     new_col = new_col.str.replace('SensorySensory', 'Sensory')
-    new_col = new_col.str.replace('Forward', 'fwd')
-    new_col = new_col.str.replace('Reverse', 'rev')
+    # new_col = new_col.str.replace('Forward', 'Forward')
+    # new_col = new_col.str.replace('Reverse', 'Reverse')
     df_combined['combined_role'] = new_col
     # Add a black line around the points
     fig = px.scatter(df_combined, x='effect_size', y='minus_log_p',
                      # symbol='role', color='fwd_rev',
                      color='combined_role',
                      color_discrete_map=plotly_paper_color_discrete_map(),
-                     category_orders={'combined_role': ['Sensory', 'Interneuron', 'Motor', 'Inter, fwd', 'Inter, rev']},
+                     category_orders={'combined_role': ['Sensory', 'Interneuron', 'Motor', 'Inter, Forward', 'Inter, Reverse']},
                      hover_name=df_combined.index)
                      #title='Effect sizes and p values of the difference in variance explained between immob and gcamp')
 
@@ -169,9 +169,9 @@ def main(combine_left_right=True):
     fig.add_shape(type='line', x0=x_min, y0=-np.log10(alpha), x1=x_max, y1=-np.log10(alpha),
                   line=dict(color='black', width=1, dash='dash'))
 
-    fig.update_xaxes(title='Change in dimensionality <br> in freely moving')
+    fig.update_xaxes(title='Change in Dimensionality <br> in Freely Moving')
     fig.update_yaxes(title='-log10(p value)')
-    fig.update_layout(legend_title='Neuron role')
+    fig.update_layout(legend_title='Neuron Type')
     # apply_figure_settings(fig, width_factor=1.0, height_factor=1.0)
     apply_figure_settings(fig, width_factor=0.45, height_factor=0.25)
     fig.update_traces(marker=dict(size=12, line=dict(width=0.5, color='Black')))#, opacity=0.7)
