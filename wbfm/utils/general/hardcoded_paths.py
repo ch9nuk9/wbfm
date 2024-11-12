@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Union
+from typing import Union, Tuple
 import pkgutil
 import pandas as pd
 from collections import defaultdict
@@ -105,27 +105,44 @@ def get_project_parent_folder():
     return "/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects"
 
 
-def get_hierarchical_modeling_dir(gfp=False, immobilized=False):
-    if gfp:
-        return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp"
-    elif immobilized:
-        return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_immob"
-    else:
-        return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling"
+def get_hierarchical_modeling_dir(gfp=False, immobilized=False, o2_stimulus=False, mutant=False,
+                                  suffix=None):
+    parent_folder = "/lisc/scratch/neurobiology/zimmer/fieseler/paper/"
+    base_name = "hierarchical_modeling"
+    if suffix is None:
+        if gfp:
+            base_name += "_gfp"
+        elif immobilized:
+            base_name += "_immob"
+        if mutant:
+            base_name += "_mutant"
+        if o2_stimulus:
+            base_name += "_o2"
+    elif suffix != '':
+        if not suffix.startswith('_'):
+            base_name += '_'
+        base_name += suffix
+    return os.path.join(parent_folder, base_name)
+
+
+def get_triggered_average_modeling_dir():
+    return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/triggered_average_dataframes"
 
 
 def load_all_data_as_dataframe():
     # Load each type of data, and then concatenate
-    fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
-    Xy_fm = pd.read_hdf(fname).assign(dataset_type='wbfm')
-
-    fname = os.path.join(get_hierarchical_modeling_dir(immobilized=True), 'data.h5')
-    Xy_immob = pd.read_hdf(fname).assign(dataset_type='immob')
-
-    fname = os.path.join(get_hierarchical_modeling_dir(gfp=True), 'data.h5')
-    Xy_gfp = pd.read_hdf(fname).assign(dataset_type='gfp')
-
-    return pd.concat([Xy_fm, Xy_immob, Xy_gfp])
+    all_suffixes = ['gfp', 'immob', '', 'immob_mutant_o2', 'immob_o2', 'immob_o2_hiscl', 'mutant']
+    all_data = []
+    for suffix in all_suffixes:
+        folder_name = get_hierarchical_modeling_dir(suffix=suffix)
+        fname = os.path.join(folder_name, 'data.h5')
+        if suffix != '':
+            dataset_type = suffix
+        else:
+            dataset_type = 'gcamp'
+        Xy = pd.read_hdf(fname).assign(dataset_type=dataset_type)
+        all_data.append(Xy)
+    return pd.concat(all_data)
 
 
 def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=False, only_load_paths=False,
@@ -147,6 +164,14 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
 
     """
     from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, load_all_projects_in_folder
+
+    if isinstance(genotype, str):
+        if genotype == '':
+            # Load default gcamp paper projects
+            genotype = ['gcamp', 'hannah_O2_fm']
+        elif genotype == 'immob_o2':
+            # There are two different folders for this
+            genotype = ['hannah_O2_immob', 'itamar_O2_immob']
 
     if isinstance(genotype, list):
         good_projects = {}
@@ -195,13 +220,16 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
     elif genotype == 'hannah_O2_immob':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/immobilized_wt'
         good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
-    elif genotype == 'hannah_O2_fm_mutant':
+    elif genotype == 'itamar_O2_immob':
+        folder_path = '/lisc/scratch/neurobiology/zimmer/ItamarLev/WBFM/WBFM_projects/immob_wbfm_o2'
+        good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
+    elif genotype == 'hannah_O2_fm_mutant' or genotype == 'mutant':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/freely_moving_mutant'
         good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
-    elif genotype == 'hannah_O2_immob_mutant':
+    elif genotype == 'hannah_O2_immob_mutant' or genotype == 'immob_mutant_o2':
         folder_path = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/immobilized_mutant'
         good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
-    elif genotype == 'O2_hiscl':
+    elif genotype == 'O2_hiscl' or genotype == 'immob_o2_hiscl':
         folder_path = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/muscle_hiscl_o2_stimulation'
         good_projects = load_all_projects_in_folder(folder_path, only_load_paths=only_load_paths, **kwargs)
     else:
@@ -475,3 +503,78 @@ def role_of_neuron_dict(only_fwd_rev=False, include_modulatory=False, include_ve
         role_dict[k] = ', '.join(v) if len(v) > 1 else v[0]
 
     return role_dict
+
+
+def get_triggered_average_dataframe_fname(trigger_type, do_downshift=False, do_hiscl=False, do_immob=False,
+                                          do_mutant=False, suffix=None) -> Tuple[str, str]:
+    fname = f'triggered_average_gcamp_plotter'
+    if suffix is None:
+        suffix = ''
+        if do_immob:
+            suffix += '_immob'
+        if do_mutant:
+            suffix += '_mutant'
+        if do_downshift:
+            suffix += '_downshift'
+        if do_hiscl:
+            suffix += '_hiscl'
+    suffix += f'-{trigger_type}.h5'
+    fname += suffix
+
+    data_dir = get_triggered_average_modeling_dir()
+    fname = os.path.join(data_dir, fname)
+    if not os.path.exists(fname):
+        raise FileNotFoundError(f"Could not find data file {fname}")
+    return fname, suffix
+
+
+def get_all_trigger_suffixes():
+    all_datatype_suffixes = ['', '_immob', '_mutant',
+                             '_immob_downshift', '_immob_mutant', '_immob_mutant_downshift', '_immob_hiscl']
+    all_trigger_types = ['raw_rev', 'raw_fwd', 'stimulus']
+    all_trigger_suffixes = []
+    # Combine all in specific orders, related to how I exported them... messy
+    for suffix in all_datatype_suffixes:
+        for trigger_type in all_trigger_types:
+            if 'immob' not in suffix:
+                # Stimulus should be swapped for self_collision
+                if 'stimulus' in trigger_type:
+                    trigger_type = 'self_collision'
+            all_trigger_suffixes.append(f"{suffix}-{trigger_type}")
+    return all_trigger_suffixes
+
+
+def intrinsic_definition(x):
+    """
+    Uses a string based on 4 properties combined into one string to define intrinsic neurons
+
+    Specifically:
+    If the freely moving condition is not significantly different from 0, then it is "No manifold."
+    Otherwise, if the difference between the two conditions is significant, then it is "Intrinsic" if the sign is the same and "Encoding switches" if the sign is different.
+    If the immobilized is not significantly different from 0, but the difference is significant, then it is "Freely moving only".
+    Finally, regardless of the 0-comparison significance of the immobilized condition, if the difference is not significant, then it is "Intrinsic".
+
+
+    """
+    if 'gcamp_False' in x:
+        return 'No manifold' # At least in FM
+    elif 'gcamp_True_immob_True' in x:
+        if 'same_sign_True' in x:
+            # Ignore that the difference is significant
+            return 'Intrinsic'
+        elif 'same_sign_False_diff_True' in x:
+            # Diff must be significant
+            return 'Encoding switches'
+        else:
+            # Both different from 0, but not from each other... should not happen
+            raise ValueError
+    elif 'gcamp_True_immob_False' in x:
+        # Might be a new encoding, or might just be on the edge of immob encoding
+        if 'diff_True' in x:
+            # Ignore whether the sign is different, just check if the difference is significant
+            return 'Freely moving only'
+        else:
+            # Ignore the 0-comparison significance of the immob if the difference is not significant
+            return 'Intrinsic'# 'Intrinsic (stronger)'
+    else:
+        return ValueError

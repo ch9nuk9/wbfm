@@ -869,8 +869,8 @@ class WormFullVideoPosture:
     # @lru_cache(maxsize=8)
     def beh_annotation(self, fluorescence_fps=False, reset_index=False, use_manual_annotation=False,
                        include_collision=True, include_turns=True, include_head_cast=True, include_pause=True,
-                       include_slowing=False, include_stiumulus=True,
-                       use_pause_to_exclude_other_states=True, DEBUG=False) -> \
+                       include_slowing=False, include_stimulus=True, use_pause_to_exclude_other_states=True,
+                       simplify_states=False, DEBUG=False) -> \
             Optional[pd.Series]:
         """
         Main function for calculating the behavioral state vector. See BehaviorCodes for the possible states
@@ -918,7 +918,7 @@ class WormFullVideoPosture:
                 beh_funcs_to_add.append(self._turn_annotation)
             if include_head_cast:
                 beh_funcs_to_add.append(self._head_cast_annotation)
-            if include_stiumulus:
+            if include_stimulus:
                 beh_funcs_to_add.append(self._stimulus)
         num_warnings = 0
         if DEBUG:
@@ -955,6 +955,8 @@ class WormFullVideoPosture:
                                                 manual_annotation=use_manual_annotation)
         beh_vec.replace(np.nan, BehaviorCodes.UNKNOWN, inplace=True)
         BehaviorCodes.assert_all_are_valid(beh_vec)
+        if simplify_states:
+            beh_vec = beh_vec.apply(BehaviorCodes.convert_to_simple_states)
         return beh_vec
 
     def all_found_behaviors(self, convert_to_strings=False, **kwargs):
@@ -1058,6 +1060,13 @@ class WormFullVideoPosture:
                    reset_index=True) -> pd.Series:
         """
         Calculates derivative of position
+
+        Default (used in the paper):
+            Speed is calculated by first taking the stage position at the same frequency as the volumetric imaging.
+            The main calculation is to take the derivative is taking using numpy's gradient function.
+            Then, outliers are removed by taking the rolling mean (window of 10 frames) and removing values more than
+            2 standard deviations away from this smoothed time series.
+            Finally, any remaining large values are clipped to 0.5 mm/s.
 
         Parameters
         ----------
@@ -1427,9 +1436,8 @@ class WormFullVideoPosture:
                 behavioral_annotation = self.calc_behavior_from_alias(behavior_name)
         # This one is always from the raw annotation
         if behavioral_annotation_for_rectification is None:
-            behavioral_annotation_for_rectification = self.beh_annotation(fluorescence_fps=True,
-                                                                          use_manual_annotation=use_manual_annotation,
-                                                                          reset_index=True)
+            behavioral_annotation_for_rectification = self.beh_annotation(fluorescence_fps=True, reset_index=True,
+                                                                          use_manual_annotation=use_manual_annotation)
         # Build the class
         opt = dict(behavioral_annotation=behavioral_annotation,
                    behavioral_annotation_for_rectification=behavioral_annotation_for_rectification,
@@ -2059,7 +2067,7 @@ class WormFullVideoPosture:
         if graph_kwargs is None:
             graph_kwargs = {}
         kwargs.setdefault('fluorescence_fps', True)
-        beh_vec = self.beh_annotation(include_slowing=True, include_turns=True, **kwargs)
+        beh_vec = self.beh_annotation(include_turns=True, include_slowing=True, **kwargs)
         beh_vec = BehaviorCodes.convert_to_simple_states_vector(beh_vec)
         beh_vec = beh_vec.apply(lambda x: x.name)
 

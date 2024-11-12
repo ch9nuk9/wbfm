@@ -1028,9 +1028,10 @@ class ProjectData:
     def calc_all_paper_traces(self):
         # Primarily for caching
         df_traces = self.calc_paper_traces()
+        df_traces_r20 = self.calc_paper_traces(channel_mode='dr_over_r_20')
         df_res = self.calc_paper_traces(residual_mode='pca')
         df_global = self.calc_paper_traces(residual_mode='pca_global')
-        return df_traces, df_res, df_global
+        return df_traces, df_traces_r20, df_res, df_global
 
     @lru_cache(maxsize=16)
     def calc_raw_traces(self, neuron_names: tuple, **opt: dict):

@@ -3,6 +3,7 @@ import os
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import List, Tuple, Optional, Callable, Dict, Union
 import matplotlib
 import plotly.express as px
@@ -22,7 +23,7 @@ from sklearn.metrics import silhouette_score, silhouette_samples
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.custom_errors import NeedsAnnotatedNeuronError, NoBehaviorAnnotationsError
-from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior, shade_triggered_average
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior, add_behavior_shading_to_plot
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, remove_short_state_changes, \
     split_flattened_index, count_unique_datasets_from_flattened_index, flatten_multiindex_columns, flatten_nested_dict, \
     calc_surpyval_durations_and_censoring, combine_columns_with_suffix, extend_binary_vector
@@ -82,7 +83,6 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         return ax, None
 
     if not use_plotly:
-
         # Plot
         if show_shading:
             ax, lower_shading, upper_shading = plot_with_shading(triggered_avg, triggered_lower_std, xmax, ax=ax, **kwargs,
@@ -117,6 +117,9 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
         if show_vertical_line:
             fig.add_shape(type="line", x0=x_for_vertical_line, x1=x_for_vertical_line,
                           y0=0, y1=1, line=dict(color="Red", dash="dash"), yref='paper')
+        if show_individual_lines:
+            for i, trace in triggered_avg_matrix.iterrows():
+                fig.add_trace(px.line(trace.loc[:xmax], color_discrete_sequence=['gray']).data[0])
         ax = fig
 
     return ax, triggered_avg
@@ -251,7 +254,7 @@ class TriggeredAverageIndices:
     max_num_points_after_event: int = None  # If not None, then cut off the event if it is too long
 
     # Options for randomly shuffling the events
-    random_shuffle_offset: int = 0  # If not 0, then shuffle the events by up to this amount (randomly, but all the same offset)
+    max_random_shuffle_offset: int = 0  # If not 0, then shuffle the events by up to this amount (randomly, but all the same offset)
 
     # Options for filtering the events
     min_duration: int = 0
@@ -275,7 +278,7 @@ class TriggeredAverageIndices:
     def __post_init__(self):
         # Check the types of the behavioral annotation and state
         if not self.behavioral_annotation_is_continuous and\
-                not isinstance(self.behavioral_annotation.iat[0], BehaviorCodes):
+                not isinstance(self.behavioral_annotation.iat[0], Enum):
             # Attempt to cast using the 'custom' BehaviorCodes, but only if there is only one nontrivial behavior
             self.behavioral_annotation = pd.Series(self.behavioral_annotation)
             behavior_values = self.behavioral_annotation.unique()
@@ -331,11 +334,15 @@ class TriggeredAverageIndices:
             binary_state = remove_short_state_changes(binary_state, self.gap_size_to_remove)
 
         # Randomly shuffle the events
-        if self.random_shuffle_offset > 0:
-            _state = np.roll(binary_state, np.random.randint(0, self.random_shuffle_offset))
+        if self.max_random_shuffle_offset > 0:
+            _state = np.roll(binary_state, self.random_shuffle_offset)
             binary_state = pd.Series(_state, index=binary_state.index)
 
         return binary_state
+
+    @cached_property
+    def random_shuffle_offset(self) -> int:
+        return np.random.randint(0, self.max_random_shuffle_offset)
 
     @property
     def cleaned_binary_state(self) -> pd.Series:
@@ -356,7 +363,7 @@ class TriggeredAverageIndices:
         ----------
         dict_of_events_to_keep: Optional dict determining a subset of indices to keep. Key=state starts, value=0 or 1
             Example:
-            all_starts = [15, 66, 114, 130]
+            idx_onsets = [15, 66, 114, 130]
             dict_of_ind_to_keep = {15: 0, 66: 1, 114: 0}
 
             Note that not all starts need to be in dict_of_ind_to_keep; missing entries are dropped by default
@@ -423,6 +430,13 @@ class TriggeredAverageIndices:
             max_len_subset = max(map(len, all_ind))
         else:
             max_len_subset = max_len
+
+        # Preprocessing type 1: change amplitudes
+        if self.mean_subtract or self.z_score:
+            raw_trace -= raw_trace.mean()
+        if self.z_score:
+            raw_trace /= raw_trace.std()
+
         # Pad with nan in case there are negative indices, but only the end
         trace = np.pad(raw_trace, max_len_subset, mode='constant', constant_values=(np.nan, np.nan))[max_len_subset:]
         triggered_avg_matrix = np.zeros((len(all_ind), max_len_subset))
@@ -434,10 +448,6 @@ class TriggeredAverageIndices:
             triggered_avg_matrix[i, np.arange(len(ind))] = trace[ind]
 
         # Postprocessing type 1: change amplitudes
-        if self.mean_subtract or self.z_score:
-            triggered_avg_matrix -= np.nanmean(triggered_avg_matrix, axis=1, keepdims=True)
-        if self.z_score:
-            triggered_avg_matrix /= np.nanstd(triggered_avg_matrix, axis=1, keepdims=True)
         if self.normalize_amplitude_at_onset:
             # Normalize to the amplitude at the index of the event
             triggered_avg_matrix = triggered_avg_matrix - triggered_avg_matrix[:, [self.ind_preceding]]
@@ -548,8 +558,11 @@ class TriggeredAverageIndices:
             triggered_avg = np.nanmedian(triggered_avg_matrix, axis=0)
             # Use quantiles that would be same as std if the distribution were normal
             # https://tidsskriftet.no/en/2020/06/medisin-og-tall/mean-and-standard-deviation-or-median-and-quartiles
-            triggered_upper_std = np.nanquantile(triggered_avg_matrix, 0.84, axis=0)
-            triggered_lower_std = np.nanquantile(triggered_avg_matrix, 0.16, axis=0)
+            # triggered_upper_std = np.nanquantile(triggered_avg_matrix, 0.84, axis=0)
+            # triggered_lower_std = np.nanquantile(triggered_avg_matrix, 0.16, axis=0)
+            std = np.nanstd(triggered_avg_matrix, axis=0)
+            triggered_upper_std = triggered_avg_matrix.mean(axis=0) + std
+            triggered_lower_std = triggered_avg_matrix.mean(axis=0) - std
             triggered_avg_counts = np.nansum(~np.isnan(triggered_avg_matrix), axis=0)
         if isinstance(triggered_avg_matrix, pd.DataFrame):
             # Preserve the index, which are actually the columns of the matrix
@@ -581,7 +594,8 @@ class TriggeredAverageIndices:
         x_significant = np.where(np.logical_or(triggered_lower_std > raw_trace_mean, triggered_upper_std < raw_trace_mean))[0]
         return x_significant
 
-    def calc_p_value_using_zeta(self, trace, num_baseline_lines=100, DEBUG=False) -> float:
+    def calc_p_value_using_zeta(self, trace, num_baseline_lines=100, DEBUG=False) -> (
+            Tuple[float, Tuple[float, np.ndarray]]):
         """
         See utils_zeta_statistics. Following:
         https://elifesciences.org/articles/71969#
@@ -685,7 +699,7 @@ class TriggeredAverageIndices:
             plt.title(f"Distribution of maxima of null, with p value: {p}")
             plt.show()
 
-        return p
+        return p, (zeta_dat, zetas_baseline)
 
     def calc_null_distribution_of_triggered_lines(self, max_matrix_length, num_baseline_lines, trace,
                                                   triggered_average_indices):
@@ -906,11 +920,17 @@ class FullDatasetTriggeredAverages:
         names.sort()
         return names
 
-    @property
+    @cached_property
     def df_left_right_combined(self):
         return combine_columns_with_suffix(self.df_traces)
 
-    def triggered_average_matrix_from_name(self, name, **kwargs):
+    def get_df(self, combine_left_right=False):
+        if combine_left_right:
+            return self.df_left_right_combined
+        else:
+            return self.df_traces
+
+    def triggered_average_matrix_from_name(self, name, combine_left_right=False, **kwargs):
         """
         Calculates the triggered average matrix (events are rows, time is columns) for a single neuron
 
@@ -922,7 +942,7 @@ class FullDatasetTriggeredAverages:
         -------
 
         """
-        return self.ind_class.calc_triggered_average_matrix(self.df_traces[name], **kwargs)
+        return self.ind_class.calc_triggered_average_matrix(self.get_df(combine_left_right)[name], **kwargs)
 
     def dict_of_all_triggered_averages(self):
         """
@@ -960,22 +980,32 @@ class FullDatasetTriggeredAverages:
         return df_triggered
 
     def which_neurons_are_significant(self, min_points_for_significance=None, num_baseline_lines=100,
-                                      ttest_gap=5, DEBUG=False):
+                                      ttest_gap=5, neuron_names=None, combine_left_right=False, verbose=1, DEBUG=False):
         if min_points_for_significance is not None:
             self.min_points_for_significance = min_points_for_significance
+
+        df_traces = self.get_df(combine_left_right=combine_left_right)
+
         names_to_keep = []
         all_p_values = {}
         all_effect_sizes = {}
-        for name in tqdm(self.neuron_names, leave=False):
+        if neuron_names is None:
+            neuron_names = self.neuron_names
+        for name in tqdm(neuron_names, leave=False):
+            if name not in df_traces:
+                continue
             if DEBUG:
                 print("======================================")
                 print(name)
 
             if self.significance_calculation_method == 'zeta':
-                logging.warning("Zeta calculation is unstable for calcium imaging!")
-                trace = self.df_traces[name]
-                p = self.ind_class.calc_p_value_using_zeta(trace, num_baseline_lines, DEBUG=DEBUG)
+                # logging.warning("Zeta calculation is unstable for calcium imaging!")
+                trace = df_traces[name]
+                p, (zeta_dat, zetas_baseline) = self.ind_class.calc_p_value_using_zeta(trace, num_baseline_lines, DEBUG=DEBUG)
                 all_p_values[name] = p
+                _df = pd.DataFrame(zetas_baseline, columns=['zeta_value']).assign(baseline=True, neuron_name=name)
+                _df2 = pd.DataFrame({'zeta_value': [zeta_dat], 'baseline': False, 'neuron_name': name})
+                all_effect_sizes[name] = pd.concat([_df, _df2])
                 to_keep = p < 0.05
             elif self.significance_calculation_method == 'num_points':
                 # logging.warning("Number of points calculation is not statistically justified!")
@@ -984,7 +1014,7 @@ class FullDatasetTriggeredAverages:
                 all_p_values[name] = x_significant
                 to_keep = len(x_significant) > self.min_points_for_significance
             elif self.significance_calculation_method == 'ttest':
-                trace = self.df_traces[name]
+                trace = df_traces[name]
                 p, effect_size = self.ind_class.calc_p_value_using_ttest(trace, ttest_gap, DEBUG=DEBUG)
                 all_p_values[name] = p
                 all_effect_sizes[name] = effect_size
@@ -996,7 +1026,7 @@ class FullDatasetTriggeredAverages:
             if to_keep:
                 names_to_keep.append(name)
 
-        if len(names_to_keep) == 0:
+        if len(names_to_keep) == 0 and verbose >= 1:
             logging.warning("Found no significant neurons, subsequent steps may not work")
 
         return names_to_keep, all_p_values, all_effect_sizes
@@ -1582,7 +1612,7 @@ class ClusteredTriggeredAverages:
             plt.xlabel("Time (seconds)")
             plt.tight_layout()
 
-            shade_triggered_average(ind_preceding, pseudo_mat.columns, behavior_shading_type, ax)
+            add_behavior_shading_to_plot(ind_preceding, pseudo_mat.columns, behavior_shading_type, ax)
 
             base_fname = f"cluster_{i_clust}.png"
             self._save_plot(base_fname, output_folder)
@@ -1686,7 +1716,7 @@ class ClusteredTriggeredAverages:
             plt.legend()
 
         index_conversion = pseudo_mat.columns  # Should always exist
-        shade_triggered_average(ind_preceding, index_conversion, behavior_shading_type, ax)
+        add_behavior_shading_to_plot(ind_preceding, index_conversion, behavior_shading_type, ax)
 
         self._save_plot(f"multiple_clusters_{i_clust_list}.png", output_folder)
 
@@ -2590,7 +2620,7 @@ def calc_time_series_from_starts_and_ends(all_starts, all_ends, num_pts, min_dur
     return state_trace
 
 
-def clustered_triggered_averages_from_list_of_projects(all_projects, cluster_opt=None, **kwargs) \
+def clustered_triggered_averages_from_dict_of_projects(all_projects: dict, cluster_opt=None, **kwargs) \
         -> Tuple[ClusteredTriggeredAverages,
         Tuple[Dict[str, FullDatasetTriggeredAverages], pd.DataFrame, Dict[str, pd.DataFrame]]]:
     """

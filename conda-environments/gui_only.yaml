@@ -7,7 +7,7 @@
 
 channels:
   - conda-forge
-  - defaults
+  - nodefaults
 dependencies:
   - python=3.8
   - pip
@@ -33,3 +33,4 @@ dependencies:
     - seaborn
     - loguru
     - ndtiff
+    - ndstorage

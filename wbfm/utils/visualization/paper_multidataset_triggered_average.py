@@ -8,7 +8,7 @@ import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
 import random
-from typing import Dict, Optional, List, Union
+from typing import Dict, Optional, List, Union, Tuple
 import plotly.graph_objects as go
 
 import numpy as np
@@ -19,16 +19,18 @@ from statsmodels.stats.multitest import multipletests
 from tqdm.auto import tqdm
 from wbfm.utils.external.utils_matplotlib import round_yticks
 
-from wbfm.utils.external.utils_pandas import split_flattened_index, combine_columns_with_suffix
+from wbfm.utils.external.utils_pandas import split_flattened_index, combine_columns_with_suffix, calc_closest_index
 from wbfm.utils.external.utils_plotly import float2rgba
-from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_triggered_average
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, add_behavior_shading_to_plot, \
+    shade_using_behavior_plotly
 from wbfm.utils.general.utils_paper import apply_figure_settings, paper_trace_settings, plotly_paper_color_discrete_map, \
     plot_box_multi_axis
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_list_of_projects, \
-    ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level, calc_p_value_using_ttest_triggered_average
+from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_dict_of_projects, \
+    ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level, \
+    calc_p_value_using_ttest_triggered_average, FullDatasetTriggeredAverages
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
+from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation, convert_channel_mode_to_axis_label
 
 
 @dataclass
@@ -64,7 +66,8 @@ class PaperColoredTracePlotter:
                          'kymo': 'black',
                          'stimulus': cmap(2),
                          'self_collision': cmap(0),
-                         'mutant': cmap(6)}
+                         'mutant': cmap(6),
+                         'immob': plotly_paper_color_discrete_map()['immob'],}
         if trigger_type not in color_mapping:
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(color_mapping.keys())}')
         color = color_mapping[trigger_type]
@@ -165,7 +168,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
         self.dataset_clusterer_dict = defaultdict(None)
         # Per trigger type: Dict[str, FullDatasetTriggeredAverages], pd.DataFrame, Dict[str, pd.DataFrame]
-        self.intermediates_dict = defaultdict(lambda: (None, None, None))
+        self.intermediates_dict: Tuple[Dict[str, FullDatasetTriggeredAverages], pd.DataFrame, Dict[str, pd.DataFrame]] = (
+            defaultdict(lambda: (None, None, None)))
 
         if self.calculate_residual:
             try:
@@ -176,7 +180,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 trigger_opt.update(self.trigger_opt)
                 trace_opt = dict(residual_mode='pca')
                 trace_opt.update(trace_base_opt)
-                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                          trace_opt=trace_opt)
                 self.dataset_clusterer_dict['residual'] = out[0]
                 self.intermediates_dict['residual'] = out[1]
@@ -184,7 +188,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 # Residual rectified forward
                 trigger_opt['only_allow_events_during_state'] = BehaviorCodes.FWD
                 cluster_opt = {}
-                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
+                out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, cluster_opt=cluster_opt,
                                                                          trigger_opt=trigger_opt, trace_opt=trace_opt)
                 self.dataset_clusterer_dict['residual_rectified_fwd'] = out[0]
                 self.intermediates_dict['residual_rectified_fwd'] = out[1]
@@ -192,7 +196,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 # Residual rectified reverse
                 trigger_opt['only_allow_events_during_state'] = BehaviorCodes.REV
                 cluster_opt = {}
-                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, cluster_opt=cluster_opt,
+                out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, cluster_opt=cluster_opt,
                                                                          trigger_opt=trigger_opt, trace_opt=trace_opt)
                 self.dataset_clusterer_dict['residual_rectified_rev'] = out[0]
                 self.intermediates_dict['residual_rectified_rev'] = out[1]
@@ -202,7 +206,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 trigger_opt.update(self.trigger_opt)
                 trace_opt = dict(residual_mode='pca')
                 trace_opt.update(trace_base_opt)
-                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                          trace_opt=trace_opt)
                 self.dataset_clusterer_dict['residual_collision'] = out[0]
                 self.intermediates_dict['residual_collision'] = out[1]
@@ -217,7 +221,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             trigger_opt.update(self.trigger_opt)
             trace_opt = dict(residual_mode='pca_global')
             trace_opt.update(trace_base_opt)
-            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+            out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                      trace_opt=trace_opt)
             self.dataset_clusterer_dict['global_rev'] = out[0]
             self.intermediates_dict['global_rev'] = out[1]
@@ -225,7 +229,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             # Slow forward triggered (global)
             trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.FWD)
             trigger_opt.update(self.trigger_opt)
-            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+            out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                      trace_opt=trace_opt)
             self.dataset_clusterer_dict['global_fwd'] = out[0]
             self.intermediates_dict['global_fwd'] = out[1]
@@ -241,7 +245,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             try:
                 trigger_opt = dict(use_hilbert_phase=False, state=state)
                 trigger_opt.update(self.trigger_opt)
-                out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                          trace_opt=trace_opt)
                 self.dataset_clusterer_dict[trigger_type] = out[0]
                 self.intermediates_dict[trigger_type] = out[1]
@@ -252,7 +256,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         if self.calculate_stimulus:
             trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.STIMULUS)
             trigger_opt.update(self.trigger_opt)
-            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+            out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                      trace_opt=trace_opt)
             self.dataset_clusterer_dict['stimulus'] = out[0]
             self.intermediates_dict['stimulus'] = out[1]
@@ -260,7 +264,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         if self.calculate_self_collision:
             trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.SELF_COLLISION)
             trigger_opt.update(self.trigger_opt)
-            out = clustered_triggered_averages_from_list_of_projects(self.all_projects, trigger_opt=trigger_opt,
+            out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
                                                                      trace_opt=trace_opt)
             self.dataset_clusterer_dict['self_collision'] = out[0]
             self.intermediates_dict['self_collision'] = out[1]
@@ -561,14 +565,20 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             if triggered_avg is None:
                 logging.debug(f"Triggered average for {neuron_name} not valid, skipping")
 
+        y_label = convert_channel_mode_to_axis_label(self.trace_opt)
+
         # Apply additional settings, even if the above failed
         if apply_changes_even_if_no_trace or triggered_avg is not None:
             behavior_shading_type = self._get_shading_from_trigger_name(trigger_type)
-            if behavior_shading_type is not None and not use_plotly:
+            if DEBUG:
+                print(f"Behavior shading type: {behavior_shading_type}")
+            if behavior_shading_type is not None:
                 index_conversion = df_subset.columns
                 try:
-                    shade_triggered_average(ind_preceding=20, index_conversion=index_conversion,
-                                            behavior_shading_type=behavior_shading_type, ax=ax)
+                    add_behavior_shading_to_plot(ind_preceding=20, index_conversion=index_conversion,
+                                                 behavior_shading_type=behavior_shading_type,
+                                                 ax=ax if not use_plotly else fig,
+                                                 use_plotly=use_plotly, DEBUG=DEBUG)
                 except IndexError:
                     print(f"Index error for {neuron_name} and {trigger_type}; skipping shading")
 
@@ -591,7 +601,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 if z_score:
                     plt.ylabel("Amplitude (z-scored)")
                 else:
-                    plt.ylabel("$\Delta R / R_{50}$")
+                    plt.ylabel(y_label)
                 if show_title:
                     if title is None:
                         title = self.get_title_from_trigger_type(trigger_type)
@@ -623,9 +633,14 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
 
             else:
                 if fig is not None:
-                    fig.update_yaxes(title="$\Delta R / R_{50}$")
+                    if show_y_label:
+                        fig.update_yaxes(title=y_label)
+                    else:
+                        fig.update_layout(yaxis_title=None)
                     if show_x_label:
                         fig.update_xaxes(title="Time (s)")
+                    else:
+                        fig.update_layout(xaxis_title=None)
 
             # Final saving
             if output_folder is not None:
@@ -748,26 +763,93 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         p_value_dict = calc_p_value_using_ttest_triggered_average(df_subset, gap)
         return p_value_dict
 
-    def get_boxplot_before_and_after(self, neuron_name, trigger_type, gap=0, same_size_window=True,
-                                     return_individual_traces=False):
+    def get_boxplot_before_and_after(self, neuron_name, trigger_type,
+                                     summary_function=None,
+                                     dynamic_window_center=False, dynamic_window_length=2,
+                                     gap=0, same_size_window=False,
+                                     return_individual_traces=False, DEBUG=False):
         """
         Preps data for a ttest or other comparison before and after the event, by calculating the median of the traces
         (collapsing the time dimension, and leaving the trial dimension)
+
+        Parameters
+        ----------
+        neuron_name
+        trigger_type
+        summary_function - function to apply to the traces before and after the event; must accept the parameter axis=0
+            default is np.nanmedian
+        gap - time to skip around the event (both before and after)
+        dynamic_window_center - if True, then the window of the 'after' values will be centered around the smoothed max value
+        dynamic_window_length - if dynamic_window_center is True, then this is the length of the window (half on each side)
+            Note: the center will be, at the max: len(trace) - (dynamic_window_length/2)
+        same_size_window - if True, then the window before and after the event will be the same size
+        return_individual_traces - if True, then do not pool trials within individuals, but treat each trial independently
+
+        Returns
+        -------
+
         """
+        if summary_function is None:
+            summary_function = np.nanmedian
         df_subset = self.get_traces_single_neuron(neuron_name, trigger_type,
                                                   return_individual_traces=return_individual_traces)
         with warnings.catch_warnings():
             warnings.simplefilter(action='ignore', category=RuntimeWarning)
-            means_before = np.nanmedian(df_subset.loc[:-gap, :], axis=1)
+            means_before = summary_function(df_subset.loc[:-gap, :], axis=0)
             if same_size_window:
                 # Get last index based on size of means_before
                 len_before = len(means_before)
                 i_of_0 = df_subset.index.get_loc(0)
                 gap_idx = i_of_0 + gap + len_before
-                means_after = np.nanmedian(df_subset.iloc[i_of_0:gap_idx, :], axis=1)
+                idx_range = (i_of_0 - len_before, gap_idx)
+                means_after = summary_function(df_subset.iloc[i_of_0:gap_idx, :], axis=0)
+            elif dynamic_window_center:
+                assert gap == 0, "Dynamic window center only works with gap=0"
+                half_window = int(dynamic_window_length / 2)
+                # Get the smoothed max value
+                # Removing the last half of the desired window length (so the window can't be clipped)
+                # And only look at positive values (this is the after part)
+                df_subset_after = df_subset.loc[0:].iloc[half_window:, :-half_window]
+                idx_max = df_subset_after.rolling(window=5, center=True).mean().mean(axis=1).idxmax()
+                # Get the window around the smoothed max value
+                idx_range = [idx_max - half_window, idx_max + half_window]
+                # Closest index to the max value
+                idx_range = calc_closest_index(df_subset.index, idx_range)
+                means_after = summary_function(df_subset.loc[idx_range[0]:idx_range[1], :], axis=0)
+                if DEBUG:
+                    print(neuron_name)
+                    print(f"idx_max of smoothed time series: {idx_max}")
+                    print(f"possible indices: {df_subset_after.index}")
+                    print(f"Means before: {means_before}; Means after: {means_after}")
             else:
-                means_after = np.nanmedian(df_subset.loc[gap:, :], axis=1)
-        return means_before, means_after
+                idx_range = (gap, df_subset.index[-1])  # Not actually used
+                means_after = summary_function(df_subset.loc[gap:, :], axis=0)
+        return means_before, means_after, idx_range
+
+    def calc_significance_using_mode(self, neuron_names, trigger_type, significance_calculation_method=None, **kwargs):
+        """
+        Calculates the significance of a neuron using different modes, as implemented in the TriggeredAverage class.
+
+        Returns dictionaries indexed by dataset name, then neuron name
+        """
+
+        # Get the triggered average objects (dict for all projects) for the trigger type
+        triggered_average_dict = self.intermediates_dict[trigger_type][0]
+
+        all_names_to_keep = {}
+        all_all_p_values = {}
+        all_all_effect_sizes = {}
+        for _dataset, triggered_average_class in tqdm(triggered_average_dict.items()):
+            if significance_calculation_method is not None:
+                triggered_average_class.significance_calculation_method = significance_calculation_method
+            names_to_keep, all_p_values, all_effect_sizes = (
+                triggered_average_class.which_neurons_are_significant(neuron_names=neuron_names, verbose=0, **kwargs))
+            all_names_to_keep[_dataset] = names_to_keep
+            all_all_p_values[_dataset] = all_p_values
+            # This is already a dataframe, so making it a nested dictionary doesn't work well
+            all_all_effect_sizes[_dataset] = pd.concat(all_effect_sizes)
+
+        return all_names_to_keep, all_all_p_values, all_all_effect_sizes
 
 
 @dataclass
@@ -784,35 +866,18 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
     xlim: Optional[tuple] = (0, 150)
     ylim: Optional[tuple] = None
 
+    trace_options: Optional[dict] = None
+
     def __post_init__(self):
         self.project.use_physical_time = True
 
+        default_options = self.get_trace_opt()
+        if self.trace_options is not None:
+            default_options.update(self.trace_options)
+        self.trace_options = default_options
+
         # Load the cache
-        _ = self.df_traces
-        _ = self.df_traces_global
-        _ = self.df_traces_residual
-
-    @property
-    def df_traces(self):
-        return self.project.calc_paper_traces()
-
-    @property
-    def df_traces_residual(self):
-        return self.project.calc_paper_traces(residual_mode='pca')
-
-    @property
-    def df_traces_global(self):
-        return self.project.calc_paper_traces(residual_mode='pca_global')
-
-    def get_df_from_data_type(self, data_type):
-        if data_type == 'raw':
-            return self.df_traces
-        elif data_type == 'global':
-            return self.df_traces_global
-        elif data_type == 'residual':
-            return self.df_traces_residual
-        else:
-            raise ValueError(f"Invalid data type {data_type}; must be one of 'raw', 'global', 'residual'")
+        self.project.calc_all_paper_traces()
 
     def get_figure_opt(self):
         return dict(dpi=300, figsize=(10/3, 10/2), gridspec_kw={'wspace': 0.0, 'hspace': 0.0})
@@ -832,9 +897,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         -------
 
         """
-        df_traces = self.df_traces
-        df_traces_global = self.df_traces_global
-        df_traces_residual = self.df_traces_residual
+        df_traces, df_traces_residual, df_traces_global = self._load_triple_traces()
 
         fig_opt = self.get_figure_opt()
         fig, axes = plt.subplots(**fig_opt, nrows=3, ncols=1)
@@ -876,12 +939,20 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             for ax in axes:
                 round_yticks(ax)
 
-        apply_figure_settings(fig, width_factor=0.25, height_factor=0.3, plotly_not_matplotlib=False)
+        width_factor = kwargs.get('width_factor', 0.25)
+        height_factor = kwargs.get('height_factor', 0.3)
+        apply_figure_settings(fig, width_factor=width_factor, height_factor=height_factor, plotly_not_matplotlib=False)
 
         if output_foldername:
             self._save_fig(neuron_name, output_foldername, trigger_type='combined')
 
         return fig, axes
+
+    def _load_triple_traces(self):
+        df_traces, df_traces_r20, df_traces_residual, df_traces_global = self.project.calc_all_paper_traces()
+        if self.trace_options.get('channel_mode', 'dr_over_r_50') == 'dr_over_r_20':
+            df_traces = df_traces_r20
+        return df_traces, df_traces_residual, df_traces_global
 
     def _save_fig(self, neuron_name, output_foldername, trigger_type, plotly_fig=None):
         """
@@ -908,8 +979,17 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             plotly_fig.write_image(fname, scale=3)
             plotly_fig.write_image(fname.replace(".png", ".svg"))
 
-    def plot_single_trace(self, neuron_name, trace_type='raw', color_type=None, title=False, legend=False, round_y_ticks=False,
+    def get_trace_type_from_trace_options(self, trace_options):
+        name_mapping = {'raw': 'raw', 'pca_global': 'global', 'pca': 'residual'}
+        if trace_options is None:
+            trace_type = 'raw'
+        else:
+            trace_type = name_mapping[trace_options.get('residual_mode', 'raw')]
+        return trace_type
+
+    def plot_single_trace(self, neuron_name, color_type=None, title=False, legend=False, round_y_ticks=False,
                           xlabels=True, ax=None, color=None, output_foldername=None, shading_kwargs=None,
+                          trace_options=None,
                           use_plotly=False, **kwargs):
         """
         Plot a single trace.
@@ -936,7 +1016,15 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         """
         if shading_kwargs is None:
             shading_kwargs = {}
-        df_traces = self.get_df_from_data_type(trace_type)
+
+        default_trace_options = self.trace_options.copy()
+        if trace_options is not None:
+            default_trace_options.update(trace_options)
+        trace_options = default_trace_options
+        trace_type = self.get_trace_type_from_trace_options(trace_options)
+
+        df_traces = self.project.calc_default_traces(**trace_options)
+
         if neuron_name not in df_traces:
             # Try to combine L/R
             df_traces = combine_columns_with_suffix(df_traces)
@@ -961,7 +1049,8 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
                 ax.set_title(neuron_name)
             if legend:
                 ax.legend(frameon=False)
-            ax.set_ylabel(r"$\Delta R / R_{50}$")
+            label = convert_channel_mode_to_axis_label(trace_options.get('channel_mode', 'dr_over_r_50'))
+            ax.set_ylabel(label)
 
             if xlabels:
                 ax.set_xlabel("Time (s)")
@@ -988,7 +1077,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
                                        name=trace_type)])
 
             fig.update_layout(showlegend=legend, title=neuron_name if title else None)
-            fig.update_yaxes(title=r"$\Delta R / R_{50}$")
+            fig.update_yaxes(title=convert_channel_mode_to_axis_label(trace_options))
 
             if xlabels:
                 fig.update_xaxes(title="Time (s)")
@@ -1002,7 +1091,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             self.project.shade_axis_using_behavior(plotly_fig=fig, **shading_kwargs)
             fig.update_xaxes(range=self.xlim)
             y = df_traces[neuron_name][self.xlim[0]:self.xlim[1]]
-            fig.update_yaxes(range=[y.min(), y.max()])
+            fig.update_yaxes(range=[y.min()-np.abs(0.1*y.min()), y.max()+np.abs(0.1*y.max())])
 
         width_factor = kwargs.get('width_factor', 0.25)
         apply_figure_settings(fig=fig, width_factor=width_factor, height_factor=height_factor,
@@ -1017,9 +1106,9 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
                                                plotter_classes: List[PaperMultiDatasetTriggeredAverage],
                                                is_mutant_vec: List[bool],
-                                               trigger_type: str, gap: int = 0, same_size_window: bool = False,
+                                               trigger_type: str,
                                                output_dir=None,
-                                               return_individual_traces=False,
+                                               ttest_kwargs=None,
                                                to_show=True, DEBUG=False, **kwargs):
     """
     Calculate the data for a t-test on the traces before and after the event.
@@ -1037,29 +1126,56 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     -------
 
     """
+    default_ttest_kwargs = dict(return_individual_traces=False, summary_function=None,
+                                same_size_window=False, gap=0)
+    if ttest_kwargs is None:
+        ttest_kwargs = default_ttest_kwargs
+    else:
+        default_ttest_kwargs.update(ttest_kwargs)
+        ttest_kwargs = default_ttest_kwargs
     # Calculate the basic data for the t-test
     all_boxplot_data_dfs = []
-    for neuron in neuron_list:
-        for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
-            means_before, means_after = obj.get_boxplot_before_and_after(neuron, trigger_type, gap=gap,
-                                                                         same_size_window=same_size_window,
-                                                                         return_individual_traces=return_individual_traces)
+    all_idx_range = []
+    # all_df_p_values = []
+    for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
+        all_boxplot_data_dfs_single_type = []
+        all_idx_range_single_type = []
+        for neuron in neuron_list:
+            means_before, means_after, idx_range = obj.get_boxplot_before_and_after(neuron, trigger_type,
+                                                                                    **ttest_kwargs)
 
             df_before = pd.DataFrame(means_before, columns=['mean']).assign(before=True)
             df_after = pd.DataFrame(means_after, columns=['mean']).assign(before=False)
             df_both = pd.concat([df_before, df_after]).assign(neuron=neuron, is_mutant=is_mutant).assign(
                 trigger_type=trigger_type)
-            all_boxplot_data_dfs.append(df_both)
+            all_boxplot_data_dfs_single_type.append(df_both)
+            df_idx_range = pd.DataFrame([idx_range], columns=['start', 'end']).assign(neuron=neuron,
+                                                                                      is_mutant=is_mutant)
+            all_idx_range_single_type.append(df_idx_range)
+        # Process all neurons for this type, including multiple correction for p values
+        # Only multiple correct for one type (mutant or not), not both
+        df_boxplot_single_type = pd.concat(all_boxplot_data_dfs_single_type)
+        all_boxplot_data_dfs.append(df_boxplot_single_type)
+        all_idx_range.append(pd.concat(all_idx_range_single_type))
+        # all_df_p_values.append(df_p_values_single_type)
+
+    # Combine
+    df_idx_range = pd.concat(all_idx_range)
     df_boxplot = pd.concat(all_boxplot_data_dfs)
+    df_boxplot = _add_color_columns_to_df(df_boxplot, trigger_type=trigger_type)
+    df_p_values = _calc_p_value(df_boxplot, groupby_columns=['neuron', 'is_mutant_str'])  # .reset_index(level=1)
+    df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(),
+                                                     method='fdr_bh', alpha=0.05)[1]
 
     # Add columns to allow them to be properly plotted, including p values
-    all_dfs = []
-    is_rev_triggered = 'rev' in trigger_type.lower()
-    for neuron_name in neuron_list:
-        df = _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=is_rev_triggered)
-        all_dfs.append(_calc_p_value(df))
-    df_p_values = pd.concat(all_dfs).reset_index(level=1)
-    df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(), method='fdr_bh', alpha=0.05)[1]
+    # all_dfs = []
+    # for neuron_name in neuron_list:
+    #     df = _add_color_columns_to_df(df_boxplot, neuron_name, trigger_type=trigger_type)
+    #     all_dfs.append(_calc_p_value(df))
+    # df_p_values = pd.concat(all_dfs).reset_index(level=1)
+    # df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(), method='fdr_bh', alpha=0.05)[1]
+    if DEBUG:
+        print(df_p_values)
 
     # Modify colors to use green for immobilized
     cmap = plotly_paper_color_discrete_map()
@@ -1070,23 +1186,22 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     # Actually plot
     all_figs = {}
     for neuron_name in neuron_list:
-        # Redo this because it is specific to each neuron
-        df = _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=is_rev_triggered)
+        # Take the subset of the data for this neuron
+        _df = df_boxplot[df_boxplot['neuron'] == neuron_name]
 
         if DEBUG:
-            print(df)
-        fig = plot_box_multi_axis(df, x_columns_list=['is_mutant_str', 'before_str'], y_column='mean',
+            print(_df)
+        fig = plot_box_multi_axis(_df, x_columns_list=['is_mutant_str', 'before_str'], y_column='mean',
                                   color_names=['Wild Type', 'gcy-31;-35;-9'], cmap=cmap, DEBUG=False)
+
+        precalculated_p_values = df_p_values.loc[neuron_name, 'p_value_corrected'].to_dict()
         add_p_value_annotation(fig, x_label='all', show_ns=True, show_only_stars=True, separate_boxplot_fig=False,
-                               precalculated_p_values=df_p_values['p_value_corrected'].to_dict(),
+                               precalculated_p_values=precalculated_p_values,
                                height_mode='top_of_data', has_multicategory_index=True, DEBUG=False)
 
-        fig.update_xaxes(title='')
-        # fig.update_yaxes(title=r'$\Delta R / R_{50}$')  # Already exists for the triggered averages themselves
-        fig.update_yaxes(title='')  # Already exists for the triggered averages themselves
-        fig.update_layout(showlegend=False)
+        fig.update_layout(showlegend=False, yaxis_title=None, xaxis_title=None)
         # Modify offsetgroup to have only 2 types (rev and fwd), not one for each legend entry
-        apply_figure_settings(fig, height_factor=0.15, width_factor=0.3)
+        apply_figure_settings(fig, height_factor=0.1, width_factor=0.25)
         if to_show:
             fig.show()
         all_figs[neuron_name] = fig
@@ -1097,13 +1212,15 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
             fname = fname.replace('.png', '.svg')
             fig.write_image(fname)
 
-    return all_figs, df_boxplot, df_p_values
+    return all_figs, df_boxplot, df_p_values, df_idx_range
 
 
 def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str],
                                                            plotter_classes: List[PaperMultiDatasetTriggeredAverage],
                                                            is_mutant_vec: List[bool],
                                                            trigger_type: str,
+                                                           df_idx_range: pd.DataFrame = None,
+                                                           is_immobilized: bool = False,
                                                            output_dir=None,
                                                            **kwargs):
         """
@@ -1125,23 +1242,48 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
         all_figs = {}
         for neuron_name in neuron_list:
             fig, ax = None, None
+            show_x_label = 'URX' in neuron_name
             for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
                 fig, ax = obj.plot_triggered_average_single_neuron(neuron_name, trigger_type, is_mutant=is_mutant,
-                                                                   fig=fig, ax=ax,
+                                                                   fig=fig, ax=ax, show_x_label=show_x_label,
+                                                                   show_y_label=False,
                                                                    output_folder=output_dir, **kwargs)
+            if df_idx_range is not None:
+                # If there is a dynamic time window used for the ttest, then add a bar as an annotation
+                this_idx = df_idx_range[df_idx_range['neuron'] == neuron_name]
+                # Add a bar for the dynamic window for each type (mutant and not)
+                _cmap = plotly_paper_color_discrete_map()
+                for i, row in this_idx.iterrows():
+                    y0 = 0.85
+                    if row['is_mutant']:
+                        color = _cmap['gcy-31;-35;-9']
+                        y0 = 0.95
+                    elif is_immobilized:
+                        color = _cmap['immob']
+                    else:
+                        color = _cmap['Wild Type']
+                    fig.add_shape(type="rect", x0=row['start'], y0=y0, x1=row['end'], y1=y0,
+                                  line=dict(color=color, width=2), xref='x', yref='paper', layer='below')
+
             all_figs[neuron_name] = fig
 
         return all_figs
 
 
-def _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=True):
+def _add_color_columns_to_df(df_boxplot, neuron_name=None, trigger_type='rev'):
     # Make a new column with color information based on reversal
-    df = df_boxplot[df_boxplot['neuron'] == neuron_name].copy()
-
-    if is_rev_triggered:
-        before_str, after_str = 'Fwd', 'Rev'
+    if neuron_name is not None:
+        df = df_boxplot[df_boxplot['neuron'] == neuron_name].copy()
     else:
+        df = df_boxplot.copy()
+
+    if 'rev' in trigger_type.lower():
+        before_str, after_str = 'Fwd', 'Rev'
+    elif 'fwd' in trigger_type.lower():
         before_str, after_str = 'Rev', 'Fwd'
+    else:
+        before_str, after_str = 'Before', 'After'
+    df['before_str'] = [before_str if val else after_str for val in df['before']]
 
     df['color'] = ''
     df.loc[np.logical_and(df['before'], df['is_mutant']), 'color'] = f'{before_str}-Mutant'
@@ -1155,17 +1297,15 @@ def _add_color_columns_to_df(df_boxplot, neuron_name, is_rev_triggered=True):
     df['Data Type'] = df['color']
     df['dR/R50'] = df['mean']
 
-    if is_rev_triggered:
-        df['before_str'] = ['FWD' if val else 'REV' for val in df['before']]
-    else:
-        df['before_str'] = ['REV' if val else 'FWD' for val in df['before']]
-
     return df
 
 
-def _calc_p_value(df):
-    func = lambda x: stats.ttest_1samp(x, 0)[1]
-    df_groupby = df.dropna().groupby(['neuron', 'trigger_type'])
-    df_pvalue = df_groupby['mean'].apply(func).to_frame()
+def _calc_p_value(df, groupby_columns=None):
+    # func = lambda x: stats.ttest_1samp(x, 0)[1]
+    if groupby_columns is None:
+        groupby_columns = ['neuron', 'trigger_type']
+    func = lambda x: stats.ttest_rel(x[x['before']]['mean'], x[~x['before']]['mean'])[1]
+    df_groupby = df.dropna().groupby(groupby_columns)
+    df_pvalue = df_groupby.apply(func).to_frame()
     df_pvalue.columns = ['p_value']
     return df_pvalue

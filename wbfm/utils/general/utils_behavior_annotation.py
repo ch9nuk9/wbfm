@@ -666,7 +666,7 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
                                                            names_to_plot: Union[str, List[str]],
                                                            to_shade=True, to_save=False, fname_suffix='',
                                                            trace_kwargs=None, combine_neuron_pairs=True,
-                                                           DEBUG=False, **kwargs):
+                                                           DEBUG=False, full_path_title=False, **kwargs):
     """
     Loads the traces and behaviors from each project, producing a stack of plotly figures that
 
@@ -741,7 +741,12 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
     cmap = px.colors.qualitative.D3
 
     # Initialize the plotly figure with subplots
-    subplot_titles = [f"placeholder" for dataset_name in all_dataset_names]
+    if full_path_title:
+        # Do not use the full path, because it is too long; take the last 3 folders
+        f = lambda path: '/'.join(Path(path).parts[-4:])
+        subplot_titles = [f(all_projects[n].project_dir) for n in all_dataset_names]
+    else:
+        subplot_titles = [f"placeholder" for dataset_name in all_dataset_names]
     fig = make_subplots(rows=n_datasets, cols=1, #row_heights=[500]*len(all_dataset_names),
                         vertical_spacing=0.01, subplot_titles=subplot_titles)
 
@@ -762,8 +767,9 @@ def plot_stacked_figure_with_behavior_shading_using_plotly(all_projects: dict,
         fig.update_yaxes(title_text="dR/R", **opt)
         # Remove x ticks
         fig.update_xaxes(showticklabels=False, **opt)
-        # Goofy way to update the subplot titles: https://stackoverflow.com/questions/65563922/how-to-change-subplot-title-after-creation-in-plotly
-        fig.layout.annotations[i_dataset].update(text=f"{dataset_name}")
+        if not full_path_title:
+            # Goofy way to update the subplot titles: https://stackoverflow.com/questions/65563922/how-to-change-subplot-title-after-creation-in-plotly
+            fig.layout.annotations[i_dataset].update(text=f"{dataset_name}")
         # Add shapes
         if to_shade:
             beh_vector = df['raw_annotations'].reset_index(drop=True)
@@ -1467,20 +1473,23 @@ def shade_using_behavior(beh_vector, ax=None, behaviors_to_ignore=(BehaviorCodes
             ax.axvspan(ax_start, ax_end, alpha=alpha, color=color, zorder=-10)
 
 
-def shade_triggered_average(ind_preceding, index_conversion=None,
-                            behavior_shading_type='fwd', ax=None, DEBUG=False):
-    if True: #xlim is None:
-        # Instead of the xlim, we want the length of the vector
-        if ax is None:
-            # Get data from current figure
-            lines = plt.gca().get_lines()
-        else:
-            lines = ax.get_lines()
-        if len(lines) == 0:
-            # If there is more than one line, it should be fine
-            raise ValueError("No lines found in the axis, cannot shade")
-        x = lines[0].get_xdata()
-        xlim = (0, len(x))
+def add_behavior_shading_to_plot(ind_preceding, index_conversion=None,
+                                 behavior_shading_type='fwd', ax=None, use_plotly=False, DEBUG=False):
+    if not use_plotly:
+        if True: #xlim is None:
+            # Instead of the xlim, we want the length of the vector
+            if ax is None:
+                # Get data from current figure
+                lines = plt.gca().get_lines()
+            else:
+                lines = ax.get_lines()
+            if len(lines) == 0:
+                # If there is more than one line, it should be fine
+                raise ValueError("No lines found in the axis, cannot shade")
+            x = lines[0].get_xdata()
+            xlim = (0, len(x))
+    else:
+        xlim = (0, len(index_conversion))
     # Shade using behavior either before or after the ind_preceding line
     if behavior_shading_type is not None:
         # Initialize empty (FWD = no annotation)
@@ -1489,7 +1498,6 @@ def shade_triggered_average(ind_preceding, index_conversion=None,
         if behavior_shading_type == 'fwd':
             # If 'fwd' triggered, the shading should go BEFORE the line
             beh_vec[:ind_preceding] = BehaviorCodes.REV
-            # beh_vec[:xlim[0] + ind_preceding] = BehaviorCodes.REV
         elif behavior_shading_type == 'rev':
             # If 'rev' triggered, the shading should go AFTER the line
             beh_vec[ind_preceding:] = BehaviorCodes.REV
@@ -1504,8 +1512,25 @@ def shade_triggered_average(ind_preceding, index_conversion=None,
             print(ind_preceding)
             print(index_conversion)
             # print(beh_vec)
-        # Shade
-        shade_using_behavior(beh_vec, ax=ax, index_conversion=index_conversion)
+        # else:
+        #     # NOTE: ind_preceding is not used
+        #     assert ax is not None, "For plotly shading, ax (fig) must be provided"
+        #     beh_vec = pd.Series(index=index_conversion, data=False)
+        #     if behavior_shading_type == 'rev':
+        #         beh_vec.loc[0:] = BehaviorCodes.REV
+        #         beh_vec.loc[:0] = BehaviorCodes.FWD
+        #     elif behavior_shading_type == 'fwd':
+        #         beh_vec.loc[0:] = BehaviorCodes.FWD
+        #         beh_vec.loc[:0] = BehaviorCodes.REV
+        #     else:
+        #         raise ValueError(f"behavior_shading must be 'rev' or 'fwd', not {behavior_shading_type}")
+
+        # Actual shading
+        if use_plotly:
+            beh_vec = pd.Series(beh_vec, index=index_conversion)
+            shade_using_behavior_plotly(beh_vec, fig=ax)
+        else:
+            shade_using_behavior(beh_vec, ax=ax, index_conversion=index_conversion)
 
 
 def get_same_phase_segment_pairs(t, df_phase, min_distance=10, similarity_threshold=0.1, DEBUG=False):

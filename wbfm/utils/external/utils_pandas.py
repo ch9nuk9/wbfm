@@ -1086,7 +1086,7 @@ def apply_to_dict_of_dfs_and_concat(dict_of_dfs, func):
     return df_concat
 
 
-def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep=None):
+def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep=None, DEBUG=False):
     """
     Combines columns with the same prefix and different suffixes
 
@@ -1111,31 +1111,45 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
     # Loop through columns and check if they have a suffix; if so, search for the other suffix and combine
     base_names_found = set()
     for col in df.columns:
+        if col in raw_names_to_keep:
+            dict_df_combined[col] = df[col]
+            continue
         num_suffixes_found = 0
         col_base = None
         for suffix in suffixes:
             if col.endswith(suffix):
                 col_base = col[:-len(suffix)]
                 if col_base not in base_names_found:
+                    if DEBUG:
+                        print(f"Found base name: {col_base} with suffix {suffix}")
+                    num_suffixes_found += 1
                     # There could be a column with any other suffixes, so loop again
                     for other_suffix in suffixes:
                         if other_suffix == suffix:
                             continue
                         col_other = col_base + other_suffix
                         if col_other in df.columns:
+                            if DEBUG:
+                                print(f"Found partner for {col_base}: {col_other}")
                             dict_df_combined[col_base] = df[col] + df[col_other]
                             num_suffixes_found += 1
                 else:
                     base_names_found.add(col_base)
         if num_suffixes_found == 0:
-            if col_base is not None and col not in raw_names_to_keep:
-                # Then one was found, but no partners... still keep only the base
-                dict_df_combined[col_base] = df[col]
-            else:
-                dict_df_combined[col] = df[col]
-        elif col_base is not None:
+            # Then no suffixes were found, so keep the column as is
+            if DEBUG:
+                print(f"No suffixes found for {col}, keeping as is")
+            dict_df_combined[col] = df[col]
+        elif num_suffixes_found == 1:
+            # Then nothing to combine, just keep the original time series with the new base name
+            assert col_base is not None
+            dict_df_combined[col_base] = df[col]
+        elif num_suffixes_found > 1:
+            # Then we have combined the columns, and need to finish the operation
             if how == 'mean':
                 dict_df_combined[col_base] /= num_suffixes_found
+                if DEBUG:
+                    print(f"Dividing {col_base} by {num_suffixes_found}")
             elif how == 'sum':
                 pass
             else:
@@ -1229,3 +1243,46 @@ def get_contiguous_blocks_from_two_columns(df, col_group, col_value):
     result.index.set_names((col_group, col_value), inplace=True)
 
     return result
+
+
+def calc_closest_index(index, idx_target, return_idx=True):
+    """
+    Given an index and a target index, find the closest index in the index
+
+    Parameters
+    ----------
+    index
+    idx_target
+
+    Returns
+    -------
+
+    """
+    if isinstance(idx_target, list):
+        idx_closest = [calc_closest_index(index, idx, return_idx=return_idx) for idx in idx_target]
+        return idx_closest
+    idx_closest = (np.abs(index - idx_target)).argmin()
+    if return_idx:
+        return index[idx_closest]
+    else:
+        return idx_closest
+
+
+def reindex_with_new_diff(index, diff):
+    """
+    Given an index and a new difference, return a new index with the same length
+
+    Parameters
+    ----------
+    index
+    diff
+
+    Returns
+    -------
+
+    """
+    new_index = np.zeros_like(index)
+    new_index[0] = index[0]
+    for i in range(1, len(index)):
+        new_index[i] = new_index[i - 1] + diff
+    return new_index

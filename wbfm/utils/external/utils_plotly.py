@@ -1,6 +1,5 @@
 from typing import List
 
-import networkx as nx
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
@@ -146,20 +145,10 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
         opt['fillcolor'] = 'rgba(0,100,80,0.2)'
 
     # Add two lines in a unique group that will have shading between them
-    print('New style')
     fill_opt = dict(hoverinfo="skip", showlegend=False,
-                    # line=dict(color='rgba(255,255,255,0)'),
-                    line=dict(color='black'),
+                    line=dict(color='rgba(255,255,255,0)'),
                     **opt)
-    # fig.add_trace(go.Scatter(
-    #     x=np.concatenate([mean_y.index, mean_y.index[::-1]]),
-    #     y=np.concatenate([mean_y + std_y, (mean_y - std_y)[::-1]]),
-    #     fill='tonexty',
-    #     line=dict(color='rgba(255,255,255,0)'),
-    #     hoverinfo="skip",
-    #     showlegend=False,
-    #     **opt
-    # ))
+
     # First one, which doesn't show up
     fig.add_trace(go.Scatter(x=mean_y.index, y=mean_y + std_y, **fill_opt))
     # Second one, which does show up
@@ -213,6 +202,26 @@ def float2rgba(float_color, alpha=0.2):
 
 def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, add_nodes_with_no_text=True,
                                       x_range=None, y_range=None, **kwargs):
+    """
+
+    Parameters
+    ----------
+    x
+    y
+    all_text
+    fig
+    weight - weight of the edge between the data and the text (attraction)
+    k - optimal distance between nodes
+    add_nodes_with_no_text
+    x_range
+    y_range
+    kwargs
+
+    Returns
+    -------
+
+    """
+    import networkx as nx
     positions = np.array(list(zip(x, y)))
     G = nx.Graph()
 
@@ -260,7 +269,7 @@ def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, a
         if len(t) == 0:
             # Skip empty text
             continue
-        _x, _y = x[i], y[i]
+        _x, _y = x.iat[i], y.iat[i]
         x_new, y_new = new_positions[t]
         if x_range is not None:
             x_new = max(x_range[0], min(x_range[1], x_new))
@@ -272,7 +281,8 @@ def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, a
     return fig
 
 
-def combine_plotly_figures(all_figs, show_legends: List[bool] = None, **kwargs):
+def combine_plotly_figures(all_figs, show_legends: List[bool] = None, force_yref_paper=True,
+                           **kwargs):
     """
     Combine multiple plotly figures into a single figure, all on one row
 
@@ -307,7 +317,8 @@ def combine_plotly_figures(all_figs, show_legends: List[bool] = None, **kwargs):
 
     # Force the yref for shapes to be 'paper', which is turned off by default in subplots
     # https://community.plotly.com/t/drawing-vertical-line-on-histogram-in-subplot-but-yref-paper-is-not-working/31581/3
-    for shape in fig.layout.shapes:
-        shape['yref'] = 'paper'
+    if force_yref_paper:
+        for shape in fig.layout.shapes:
+            shape['yref'] = 'paper'
 
     return fig

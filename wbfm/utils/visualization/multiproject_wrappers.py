@@ -23,7 +23,7 @@ from wbfm.utils.external.utils_matplotlib import corrfunc, paired_boxplot_from_d
 from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, ProjectData
 from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages, \
-    clustered_triggered_averages_from_list_of_projects
+    clustered_triggered_averages_from_dict_of_projects
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivariateEncoding
 from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std
@@ -482,7 +482,7 @@ def build_time_series_from_multiple_project_clusters(all_projects: Dict[str, Pro
         cluster_opt = {'cluster_criterion': 'maxclust', 'linkage_threshold': num_clusters}
     # First build the clustering class
     multi_dataset_clusterer, clustering_intermediates = \
-        clustered_triggered_averages_from_list_of_projects(all_projects,
+        clustered_triggered_averages_from_dict_of_projects(all_projects,
                                                            cluster_opt=cluster_opt, trigger_opt=trigger_opt, **kwargs)
     all_triggered_average_classes, df_triggered_good, dict_of_triggered_traces = clustering_intermediates
 

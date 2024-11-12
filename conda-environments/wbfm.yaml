@@ -10,6 +10,7 @@ channels:
   - pytorch
   - nvidia
   - bioconda
+  - nodefaults
 dependencies:
   - python=3.8
   - pip
@@ -63,3 +64,4 @@ dependencies:
     - skan==0.9 # For behavior pipeline
     - loguru  # For imutils
     - ndtiff
+    - ndstorage

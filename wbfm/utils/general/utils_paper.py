@@ -53,7 +53,8 @@ def plotly_paper_color_discrete_map():
     beh_cmap = BehaviorCodes.ethogram_cmap(include_collision=True, include_quiescence=True, include_reversal_turns=True,
                                            include_custom=True, include_stimulus=True)
 
-    cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0], 'Active in Freely Moving only': base_cmap[0],
+    cmap_dict = {'gcamp': base_cmap[0], 'wbfm': base_cmap[0],
+                 'Active in Freely Moving only': base_cmap[0], 'Manifold in Freely Moving only': base_cmap[0],
                  'Freely Moving (GCaMP)': base_cmap[0], 'Freely Moving': base_cmap[0], 'Wild Type': base_cmap[0],
                  # Skip orange... don't like it!
                  'immob': base_cmap[2], 'Active in Immob': base_cmap[2], 'Manifold in Immob': base_cmap[2],
@@ -66,7 +67,7 @@ def plotly_paper_color_discrete_map():
                  'residual': base_cmap[4],
                  'Freely Moving (GCaMP, residual)': base_cmap[4],
                  'O2 or CO2 sensing': base_cmap[5],  # Brown
-                 'Not IDed': base_cmap[7], 'Undetermined': base_cmap[7],  # Same as gfp; shouldn't ever be on same plot
+                 'Not IDed': base_cmap[7], 'Not Identified': base_cmap[7],'Undetermined': base_cmap[7],  # Same as gfp; shouldn't ever be on same plot
                  'mutant': base_cmap[6], 'Freely Moving (gcy-31, gcy-35, gcy-9)': base_cmap[6],
                  'gcy-31, gcy-35, gcy-9': base_cmap[6], 'Mutant': base_cmap[6], 'gcy-31; -35; -9': base_cmap[6],
                  'gcy-31;-35;-9': base_cmap[6],  # Pink
@@ -108,11 +109,17 @@ def export_legend_for_paper(fname=None, frameon=True):
         export_legend(legend=legend, fname=fname)
 
 
-def data_type_name_mapping():
-    return {'wbfm': 'Freely Moving (GCaMP)',
-            'gcamp': 'Freely Moving (GCaMP)',
-            'immob': 'Immobilized (GCaMP)',
-            'gfp': 'Freely Moving (GFP)'}
+def data_type_name_mapping(include_mutant=False):
+    mapping = {'wbfm': 'Freely Moving (GCaMP)',
+               'gcamp': 'Freely Moving (GCaMP)',
+               'immob': 'Immobilized (GCaMP)',
+               'gfp': 'Freely Moving (GFP)'}
+    if include_mutant:
+        mapping['mutant'] = 'Freely Moving (gcy-31;-35;-9)'
+        mapping['immob_mutant_o2'] = 'Immobilized with O2 stimulus (gcy-31;-35;-9)'
+        mapping['immob_o2'] = 'Immobilized with O2 stimulus (GCaMP)'
+        mapping['immob_o2_hiscl'] = 'Immobilized with O2 stimulus (HisCl)'
+    return mapping
 
 
 # Basic settings based on the physical dimensions of the paper
@@ -230,6 +237,11 @@ def behavior_name_mapping(shorten=False):
         self_collision='Self-collision',
         head_cast='Head cast',
         slowing='Slowing',
+        # Eigenworms are counted from 0 in python, but the paper wants them from 1
+        eigenworm_0='Eigenworm 1',
+        eigenworm_1='Eigenworm 2',
+        eigenworm_2='Eigenworm 3',
+        eigenworm_3='Eigenworm 4',
     )
     if shorten:
         name_mapping = {k: v.replace(' curvature', '') for k, v in name_mapping.items()}
@@ -267,7 +279,7 @@ class PaperDataCache:
         all_zxy.loc[:, (slice(None), 'z')] = z_to_xy_ratio * all_zxy.loc[:, (slice(None), 'z')]
         outlier_remover = OutlierRemoval.load_from_arrays(all_zxy, coords, df_traces=None, names=names, verbose=0)
         try:
-            outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=8)
+            outlier_remover.iteratively_remove_outliers_using_ppca(max_iter=3)
             to_remove = outlier_remover.total_matrix_to_remove
         except ValueError as e:
             logging.warning(f"PPCA failed with error: {e}, skipping outlier removal and saving empty array")
@@ -298,6 +310,8 @@ class PaperDataCache:
             if residual_mode is None:
                 if channel_mode == 'dr_over_r_50':
                     return self.calc_paper_traces()
+                elif channel_mode == 'dr_over_r_20':
+                    return self.calc_paper_traces_r20()
                 elif channel_mode == 'red':
                     return self.calc_paper_traces_red()
                 elif channel_mode == 'green':
@@ -339,6 +353,32 @@ class PaperDataCache:
         if self.cache_dir is None:
             return None
         return os.path.join(self.cache_dir, 'paper_traces.h5')
+
+    @cache_to_disk_class('paper_traces_cache_fname_r20',
+                         func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),
+                         func_load_from_disk=pd.read_hdf)
+    def calc_paper_traces_r20(self):
+        """
+        Uses calc_default_traces to calculate traces according to settings used for the paper.
+        See paper_trace_settings() for details
+
+        Returns
+        -------
+
+        """
+        opt = paper_trace_settings()
+        opt['channel_mode'] = 'dr_over_r_20'
+        assert not opt.get('use_paper_traces', False), \
+            "paper_trace_settings should have use_paper_traces=False (recursion error)"
+        df = self.project_data.calc_default_traces(**opt)
+        if df is None:
+            raise ValueError(f"Paper traces for project {self.project_data.project_dir} is None")
+        return df
+
+    def paper_traces_cache_fname_r20(self):
+        if self.cache_dir is None:
+            return None
+        return os.path.join(self.cache_dir, 'paper_traces_r20.h5')
 
     @cache_to_disk_class('paper_traces_no_interpolation_cache_fname',
                          func_save_to_disk=lambda filename, data: data.to_hdf(filename, key='df_with_missing'),

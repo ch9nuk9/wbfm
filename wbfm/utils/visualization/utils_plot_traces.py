@@ -393,8 +393,10 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
         fig = go.Figure()
         is_second_plot = False
 
+    name = kwargs.get('label', f'Measurement_{i_line}')
+
     main_line = go.Scatter(
-        name=f'Measurement_{i_line}',
+        name=name,
         y=mean_vals,
         mode='lines',
         **opt
@@ -418,7 +420,7 @@ def plot_with_shading_plotly(mean_vals, std_vals, xmax=None, fig=None, std_vals_
     opt_shading = dict(
         x=x,
         mode='lines',
-        showlegend=True,
+        showlegend=False,
         fillcolor=fillcolor,
         line=dict(color='rgba(255,255,255,0)'),
     )
@@ -672,7 +674,7 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
         else:
             pvalue = precalculated_p_values[x_label]
         if DEBUG:
-            print(f"p-value: {pvalue}")
+            print(f"p-value: {pvalue} for x_label {x_label}")
         significance_stars = p_value_to_stars(pvalue)
 
         if not show_ns and significance_stars == 'ns':
@@ -812,9 +814,9 @@ def plot_triggered_averages(project_data_list, output_foldername=None,
                     behavior_shading_type = 'rev'
                 else:
                     behavior_shading_type = 'fwd'
-                from wbfm.utils.general.utils_behavior_annotation import shade_triggered_average
-                shade_triggered_average(ind_class.ind_preceding, mat.columns, behavior_shading_type, ax,
-                                        DEBUG=False)
+                from wbfm.utils.general.utils_behavior_annotation import add_behavior_shading_to_plot
+                add_behavior_shading_to_plot(ind_class.ind_preceding, mat.columns, behavior_shading_type, ax,
+                                             DEBUG=False)
 
             apply_figure_settings(fig, width_factor=0.3, height_factor=0.15, plotly_not_matplotlib=False)
 
@@ -829,3 +831,16 @@ def plot_triggered_averages(project_data_list, output_foldername=None,
                 plt.savefig(fname)
                 fname = Path(fname).with_suffix('.svg')
                 plt.savefig(fname)
+
+
+def convert_channel_mode_to_axis_label(channel_mode):
+    if isinstance(channel_mode, dict):
+        channel_mode = channel_mode.get('channel_mode', 'dr_over_r_50')
+    elif channel_mode is None:
+        return ''
+    if channel_mode == 'dr_over_r_20':
+        return r"$\Delta R/R_{20}$"
+    elif channel_mode == 'dr_over_r_50':
+        return r"$\Delta R/R_{50}$"
+    else:
+        raise ValueError(f"Unknown channel mode: {channel_mode}")

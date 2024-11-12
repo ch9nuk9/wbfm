@@ -25,6 +25,7 @@ def load_project_and_create_traces(project_path):
 
 
 def main(run_locally=False, DEBUG=False):
+    print("Starting with options: run_locally=", run_locally, "DEBUG=", DEBUG)
     # Load all paths to datasets used in the paper
     all_paths_gcamp = load_paper_datasets(['gcamp', 'hannah_O2_fm'], only_load_paths=True)
     all_paths_gfp = load_paper_datasets(['gfp'], only_load_paths=True)
