@@ -1127,9 +1127,9 @@ class ProjectData:
                         pca_modes[:, 0] = -pca_modes[:, 0]
 
         if return_pca_weights:
-            return pd.DataFrame(pca_weights, index=X.columns), pca.explained_variance_
+            return pd.DataFrame(pca_weights, index=X.columns), pca.explained_variance_ratio_
         else:
-            return pd.DataFrame(pca_modes, index=X.index), pca.explained_variance_
+            return pd.DataFrame(pca_modes, index=X.index), pca.explained_variance_ratio_
 
     def calc_correlation_to_pc1(self, **trace_kwargs):
         """
