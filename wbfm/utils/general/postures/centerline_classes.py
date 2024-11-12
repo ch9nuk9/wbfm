@@ -185,7 +185,7 @@ class WormFullVideoPosture:
             self.use_physical_time = use_physical_time  # Save the value
         if use_physical_time:
             if fluorescence_fps:
-                df.index = self._x_physical_time_volumes
+                df.index = self._x_physical_time_volumes[:len(df)]
             else:
                 df.index = self._x_physical_time_frames[:len(df)]
         return df
