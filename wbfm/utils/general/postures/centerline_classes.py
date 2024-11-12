@@ -24,7 +24,8 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_p
     shade_using_behavior_plotly, calc_slowing_from_speed, detect_peaks_and_interpolate_using_inter_event_intervals, \
     plot_dataframe_of_transitions, annotate_turns_from_reversal_ends
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
-    remove_short_state_changes, get_dataframe_of_transitions, make_binary_vector_from_starts_and_ends
+    remove_short_state_changes, get_dataframe_of_transitions, make_binary_vector_from_starts_and_ends, \
+    force_same_indexing
 from wbfm.utils.external.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
     MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
@@ -1335,15 +1336,8 @@ class WormFullVideoPosture:
         rev_ind = BehaviorCodes.vector_equality(
             self.beh_annotation(fluorescence_fps=fluorescence_fps, reset_index=False), state)
         velocity = copy.copy(vector)
-        if len(velocity) == len(rev_ind):
-            velocity[rev_ind] *= -1
-        elif len(velocity) == len(rev_ind) + 1:
-            velocity = velocity.iloc[:-1]
-            velocity[rev_ind] *= -1
-        elif len(velocity) == len(rev_ind) - 1:
-            velocity[rev_ind.iloc[:-1]] *= -1
-        else:
-            raise DataSynchronizationError(f"velocity ({len(velocity)})", f"reversal indices ({len(rev_ind)})")
+        vecolity, rev_ind = force_same_indexing(velocity, rev_ind)
+        velocity[rev_ind] *= -1
 
         return velocity
 

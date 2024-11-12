@@ -5,6 +5,8 @@ from typing import Tuple, List, Union, Dict
 import numpy as np
 import pandas as pd
 
+from wbfm.utils.external.custom_errors import DataSynchronizationError
+
 
 def fix_extra_spaces_in_dataframe_columns(df: pd.DataFrame) -> pd.DataFrame:
     new_df = {}
@@ -1290,3 +1292,54 @@ def reindex_with_new_diff(index, diff):
     for i in range(1, len(index)):
         new_index[i] = new_index[i - 1] + diff
     return new_index
+
+
+def force_same_indexing(vec1: pd.Series, vec2: pd.Series) -> Tuple[pd.Series, pd.Series]:
+    """
+    There are two categories of problems:
+        1. Different number of frames (usually off by one)
+        2. Different indexing style (either integer order, physical time, or original frame index with gaps)
+
+    This function:
+        1. Shortens a longer dataframe to match the shorter one, IF it is only 1 off
+        2. Reindexes both dataframes to be the same, using the following preference:
+            a. Physical time
+            b. Original frame index
+            c. Integer order (i.e. reset the index)
+
+    Parameters
+    ----------
+    vec1
+    vec2
+
+    Returns
+    -------
+
+    """
+    # Fix length
+    if len(vec1) == len(vec2) + 1:
+        vec1 = vec1.iloc[:-1]
+    elif len(vec1) + 1 == len(vec2):
+        vec2 = vec2.iloc[:-1]
+
+    # Fix indexing
+    if vec1.index.equals(vec2.index):
+        return vec1, vec2
+
+    # Check for physical indexing loosely: the values are floats
+    if vec1.index.dtype == 'float':
+        vec2.index = vec1.index
+    elif vec2.index.dtype == 'float':
+        vec1.index = vec2.index
+
+    # Check for original indexing: indices are not the same as the reindexed version
+    is_reindexed = lambda v: v.index.equals(v.reset_index().index)
+    if not is_reindexed(vec1):
+        vec2.index = vec1.index
+    elif not is_reindexed(vec2):
+        vec1.index = vec2.index
+
+    if not vec1.index.equals(vec2.index):
+        raise DataSynchronizationError(f"{vec1.index}", f"{vec2.index}")
+
+    return vec1, vec2
