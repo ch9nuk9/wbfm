@@ -1061,10 +1061,14 @@ class ProjectData:
         return df
 
     def calc_pca_modes(self, n_components=10, flip_pc1_to_have_reversals_high=True, return_pca_weights=False,
-                       return_pca_object=False, multiply_by_variance=False, **trace_kwargs) -> pd.DataFrame:
+                       return_pca_object=False, multiply_by_variance=False, **trace_kwargs) \
+            -> Tuple[pd.DataFrame, np.array]:
         """
         Calculates the PCA modes of the traces, and optionally flips the first mode to have reversals high
         This allows comparison of PC1 across datasets
+
+        Returns the modes (or weights if return_pca_weights is True) and the explained variance as a vector
+        OR: returns the PCA object itself, if return_pca_object is True
 
         Parameters
         ----------
@@ -1113,10 +1117,6 @@ class ProjectData:
                 else:
                     self.logger.warning("Could not calculate speed or AVA, so not flipping PC1")
 
-            # import plotly.express as px
-            # fig = px.line(reversal_time_series)
-            # fig.show()
-
             # If we have a reversal time series, flip the first PC to be anticorrelated with it
             if reversal_time_series is not None:
                 correlation = np.corrcoef(pca_modes[:, 0], reversal_time_series)[0, 1]
@@ -1127,9 +1127,9 @@ class ProjectData:
                         pca_modes[:, 0] = -pca_modes[:, 0]
 
         if return_pca_weights:
-            return pd.DataFrame(pca_weights, index=X.columns)
+            return pd.DataFrame(pca_weights, index=X.columns), pca.explained_variance_
         else:
-            return pd.DataFrame(pca_modes, index=X.index)
+            return pd.DataFrame(pca_modes, index=X.index), pca.explained_variance_
 
     def calc_correlation_to_pc1(self, **trace_kwargs):
         """
@@ -1158,7 +1158,7 @@ class ProjectData:
 
     def calc_plateau_state_using_pc1(self, replace_nan=True, DEBUG=False, **trace_kwargs):
         # Get the trace that will be used to calculate the plateau state
-        pca_modes = self.calc_pca_modes(n_components=1, **trace_kwargs)
+        pca_modes, _ = self.calc_pca_modes(n_components=1, **trace_kwargs)
         pc1 = pd.Series(pca_modes.loc[:, 0])
         # Calculate plateaus using worm posture class method
         plateaus, working_pw_fits = self.worm_posture_class.calc_plateau_state_from_trace(pc1, n_breakpoints=2,
@@ -2247,7 +2247,7 @@ def plot_pca_modes_from_project(project_data: ProjectData, n_components=3, trace
     if trace_kwargs is None:
         trace_kwargs = {}
 
-    pca_modes = project_data.calc_pca_modes(n_components=n_components, **trace_kwargs)
+    pca_modes, var_explained = project_data.calc_pca_modes(n_components=n_components, **trace_kwargs)
 
     # Use physical time axis
     x = project_data.x_for_plots

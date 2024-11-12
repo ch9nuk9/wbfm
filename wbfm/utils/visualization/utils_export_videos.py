@@ -162,7 +162,7 @@ def save_video_of_heatmap_with_behavior(project_path: Union[str, Path], output_f
     um_per_pixel = project_data.physical_unit_conversion.zimmer_behavior_um_per_pixel_xy
 
     # Sort traces by pc1
-    pc1_weights = project_data.calc_pca_modes(n_components=1, return_pca_weights=True, use_paper_options=True)
+    pc1_weights, _ = project_data.calc_pca_modes(n_components=1, return_pca_weights=True, use_paper_options=True)
     heatmap_data = df_traces.T.reindex(pc1_weights.sort_values(by=0, ascending=False).index)
 
     # Get video properties
@@ -293,7 +293,7 @@ def save_video_of_trace_overlay_with_behavior(project_path: Union[str, Path], t_
     um_per_pixel = project_data.physical_unit_conversion.zimmer_behavior_um_per_pixel_xy
 
     # Sort traces by pc1
-    pc1_weights = project_data.calc_pca_modes(n_components=1, return_pca_weights=True, use_paper_options=True)
+    pc1_weights, _ = project_data.calc_pca_modes(n_components=1, return_pca_weights=True, use_paper_options=True)
     heatmap_data = df_traces.T.reindex(pc1_weights.sort_values(by=0, ascending=False).index)
 
 

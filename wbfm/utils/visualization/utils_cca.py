@@ -1,6 +1,7 @@
 import os
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -170,7 +171,7 @@ class CCAPlotter:
         _, _, cca = self.calc_cca(n_components=mode+1, binary_behaviors=binary_behaviors, **kwargs)
         df_x, _ = self.get_weights_from_cca(cca, binary_behaviors, **kwargs)
         # PCA mode
-        df_x_pca = self.calc_pca_mode(mode, return_pca_weights=True)
+        df_x_pca, _ = self.calc_pca_mode(mode, return_pca_weights=True)
         # Normalize the modes
         df_x = df_x / np.linalg.norm(df_x)
         df_x = df_x.iloc[mode, :]
@@ -247,7 +248,7 @@ class CCAPlotter:
                          output_folder=None, **kwargs):
 
         if use_pca:
-            df = self.calc_pca_mode(i_mode)
+            df, var_explained = self.calc_pca_mode(i_mode)
         else:
             X_r, Y_r, cca = self.calc_cca(binary_behaviors=binary_behaviors, **kwargs)
 
@@ -268,11 +269,12 @@ class CCAPlotter:
             fname = os.path.join(output_folder, fname)
             self._save_plotly_all_formats(fig, fname)
 
-    def calc_pca_mode(self, i_mode, return_pca_weights=False) -> pd.DataFrame:
-        X_r = np.array(self.project_data.calc_pca_modes(n_components=i_mode + 1, multiply_by_variance=True,
-                                                        return_pca_weights=return_pca_weights, **self.trace_kwargs))
+    def calc_pca_mode(self, i_mode, return_pca_weights=False) -> Tuple[pd.DataFrame, np.array]:
+        X_r, var_explained = self.project_data.calc_pca_modes(n_components=i_mode + 1, multiply_by_variance=True,
+                                                              return_pca_weights=return_pca_weights, **self.trace_kwargs)
+        X_r = np.array(X_r)
         df = pd.DataFrame({f'PCA mode {i_mode + 1}': X_r[:, i_mode] / X_r[:, i_mode].max()})
-        return df
+        return df, var_explained
 
     def _save_plotly_all_formats(self, fig, fname):
         fig.write_html(fname)
@@ -316,7 +318,8 @@ class CCAPlotter:
             modes_to_plot = [0, 1, 2]
         if use_pca:
             # Multiply just to help the plotting
-            X_r = 3*self.project_data.calc_pca_modes(n_components=3, multiply_by_variance=False)
+            X_r, var_explained = self.project_data.calc_pca_modes(n_components=3, multiply_by_variance=False)
+            X_r = 3*X_r
             df_latents = pd.DataFrame(X_r)
         else:
             X_r, Y_r, cca = self.calc_cca(n_components=3, binary_behaviors=binary_behaviors, sparse_tau=sparse_tau)
@@ -661,7 +664,7 @@ def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_u
     trace_opt = kwargs.copy()
 
     for name, p in tqdm(all_projects.items()):
-        trace_weights = p.calc_pca_modes(return_pca_weights=True, **trace_opt)
+        trace_weights, _ = p.calc_pca_modes(return_pca_weights=True, **trace_opt)
         all_weights[name] = trace_weights.T.loc[which_mode, :]
 
     df_weights = pd.DataFrame(all_weights).T
