@@ -916,7 +916,7 @@ class WormFullVideoPosture:
         if is_already_fluorescence_fps:
             reset_index = True
         self.check_requested_frame_rate(fluorescence_fps, manual_annotation=use_manual_annotation)
-        beh = self.convert_index_to_physical_time(beh, fluorescence_fps=fluorescence_fps)
+        beh = self.convert_index_to_physical_time(beh, fluorescence_fps=is_already_fluorescence_fps)
 
         # Add additional annotations from other files
         # These functions might give an error when called, so loop as a list of functions first
@@ -968,10 +968,11 @@ class WormFullVideoPosture:
                 logging.warning("use_pause_to_exclude_other_states is True, but include_pause is False")
             beh = BehaviorCodes.use_pause_to_filter_vector(beh)
 
-        # Make sure there are no nan values.
-        # Necessary because sometimes removing tracking failures adds nan, even when they should be recognized
+        # Perform the downsampling at the very end
         beh_vec = self._validate_and_downsample(beh, fluorescence_fps=fluorescence_fps, reset_index=reset_index,
                                                 manual_annotation=use_manual_annotation)
+        # Make sure there are no nan values.
+        # Necessary because sometimes removing tracking failures adds nan, even when they should be recognized
         beh_vec.replace(np.nan, BehaviorCodes.UNKNOWN, inplace=True)
         BehaviorCodes.assert_all_are_valid(beh_vec)
         if simplify_states:
@@ -1332,7 +1333,7 @@ class WormFullVideoPosture:
         """By default changes sign during reversal"""
         BehaviorCodes.assert_is_valid(state)
         rev_ind = BehaviorCodes.vector_equality(
-            self.beh_annotation(fluorescence_fps=fluorescence_fps, reset_index=True), state)
+            self.beh_annotation(fluorescence_fps=fluorescence_fps, reset_index=False), state)
         velocity = copy.copy(vector)
         if len(velocity) == len(rev_ind):
             velocity[rev_ind] *= -1
