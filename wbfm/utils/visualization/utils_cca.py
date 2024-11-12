@@ -320,6 +320,7 @@ class CCAPlotter:
             # Multiply just to help the plotting
             X_r, var_explained = self.project_data.calc_pca_modes(n_components=3, multiply_by_variance=False)
             X_r = 3*X_r
+            var_explained = 100*var_explained
             df_latents = pd.DataFrame(X_r)
         else:
             X_r, Y_r, cca = self.calc_cca(n_components=3, binary_behaviors=binary_behaviors, sparse_tau=sparse_tau)
@@ -433,14 +434,11 @@ class CCAPlotter:
 
         # Get base string to use for modes
         if use_pca:
-            base_axis_title = 'Neuronal component {}<br>(PCA)'
-            # base_axis_title = 'PCA mode {}'
+            axis_title_func = lambda i: f'Neuronal component {i}<br>(PCA; {var_explained[i-1]:.1f}%)'
         elif binary_behaviors:
-            # base_axis_title = 'CCA mode {} (discrete)'
-            base_axis_title = 'Discrete Behavioral and<br>Neuronal component {} (CCA)'
+            axis_title_func = lambda i: f'Discrete Behavioral and<br>Neuronal component {i} (CCA)'
         else:
-            # base_axis_title = 'CCA mode {} (continuous)'
-            base_axis_title = 'Behavioral and<br>Neuronal component {} (CCA)'
+            axis_title_func = lambda i: f'Behavioral and<br>Neuronal component {i} (CCA)'
         # Get a shorter version
         # simple_base_axis_title = f"{base_axis_title.split('(')[1][:-1]} {{}}"
 
@@ -457,8 +455,8 @@ class CCAPlotter:
 
             opt = dict(showline=True, linecolor='black')#, font=dict(color='black', size=10))
             fig.update_layout(
-                xaxis=dict(title=base_axis_title.format(1), side='bottom', **opt),
-                yaxis=dict(title=base_axis_title.format(2), side='left', **opt),
+                xaxis=dict(title=axis_title_func(1), side='bottom', **opt),
+                yaxis=dict(title=axis_title_func(2), side='left', **opt),
             )
 
         if output_folder is not None:
