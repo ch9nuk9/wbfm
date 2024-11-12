@@ -1,7 +1,8 @@
+import logging
 import os
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -125,14 +126,41 @@ class CCAPlotter:
         else:
             cca = scc_mod.SCCA_IPLS(latent_dims=n_components, tau=sparse_tau)
             X_r, Y_r = cca.fit_transform([X, Y])
-
         return X_r, Y_r, cca
+
+    def calc_cca_scores(self, n_components=3, binary_behaviors=False, sparse_tau=None):
+        """
+        Does regular or sparse CCA. Returns the score on the CCA object
+
+        if sparse_tau is None, then regular CCA is performed (default)
+        Note that because this is a cached function, sparse_tau should be a tuple, not a list
+
+        Parameters
+        ----------
+        n_components
+        binary_behaviors
+        sparse_tau
+
+        Returns
+        -------
+
+        """
+
+        X = self.df_traces
+        Y = self._get_beh_df(binary_behaviors)
+        _, _, cca = self.calc_cca(n_components=n_components, binary_behaviors=binary_behaviors, sparse_tau=sparse_tau)
+        return cca.score(X, Y)
 
     def calc_cca_reconstruction(self, **kwargs):
         X_r, Y_r, cca = self.calc_cca(**kwargs)
         return cca.inverse_transform(X_r, Y_r)
 
-    def calc_r_squared(self, use_pca=False, n_components=1, **kwargs):
+    def calc_r_squared(self, use_pca=False, n_components: Union[int, list] = 1, **kwargs):
+        if isinstance(n_components, list):
+            all_r_squared = {}
+            for i in n_components:
+                all_r_squared[i] = self.calc_r_squared(use_pca, i, **kwargs)
+            return all_r_squared
         # First, calculate the reconstruction
         X = self._df_traces  # Use the non-truncated traces
         if use_pca:
@@ -142,7 +170,7 @@ class CCAPlotter:
             pca = PCA(n_components=n_components, whiten=False)
             X_r_recon = pca.inverse_transform(pca.fit_transform(X))
         else:
-            X_r_recon, _ = self.calc_cca_reconstruction(n_components=n_components, **kwargs)
+            X_r_recon, Y_r_recon = self.calc_cca_reconstruction(n_components=n_components, **kwargs)
             if self.preprocess_traces_using_pca:
                 # Transform the reconstructed traces back to the original space
                 X_r_recon = self._pca_traces.inverse_transform(X_r_recon)
@@ -324,10 +352,22 @@ class CCAPlotter:
             df_latents = pd.DataFrame(X_r)
         else:
             X_r, Y_r, cca = self.calc_cca(n_components=3, binary_behaviors=binary_behaviors, sparse_tau=sparse_tau)
+            n_components = list(np.arange(1, modes_to_plot[-1] + 1))
+            var_explained_cumulative = self.calc_r_squared(use_pca=False, n_components=n_components,
+                                                           binary_behaviors=binary_behaviors)
+            # Undo the cumulative calculation
+            # Note: unlike PCA, the first component is 1-indexed
+            var_explained = var_explained_cumulative.copy()
+            for i in n_components:
+                if i == 1:
+                    var_explained[i] = 100*var_explained_cumulative[i]
+                else:
+                    var_explained[i] = 100*(var_explained_cumulative[i] - var_explained_cumulative[i-1])
             if use_X_r:
                 df_latents = pd.DataFrame(X_r)
             else:
                 df_latents = pd.DataFrame(Y_r)
+                logging.warning("Variance explained is only calculate for neuronal space")
 
         # Need these variables even if continuous coloring is used
         col_names, df_out, ethogram_cmap, state_codes = self._build_discrete_behavior_dataframe(
@@ -430,15 +470,15 @@ class CCAPlotter:
 
         # Transparent background
         if use_paper_options:
-            apply_figure_settings(fig, width_factor=0.45, height_factor=1/4, plotly_not_matplotlib=True)
+            apply_figure_settings(fig, width_factor=0.4, height_factor=0.3, plotly_not_matplotlib=True)
 
         # Get base string to use for modes
         if use_pca:
-            axis_title_func = lambda i: f'Neuronal component {i}<br>(PCA; {var_explained[i-1]:.1f}%)'
+            axis_title_func = lambda i: f'Neuronal component {i}<br>(PCA; {var_explained[i-1]:.0f}%)'
         elif binary_behaviors:
-            axis_title_func = lambda i: f'Discrete Behavioral and<br>Neuronal component {i} (CCA)'
+            axis_title_func = lambda i: f'Discrete Behavioral and<br>Neuronal component {i} (CCA; {var_explained[i]:.0f}%)'
         else:
-            axis_title_func = lambda i: f'Behavioral and<br>Neuronal component {i} (CCA)'
+            axis_title_func = lambda i: f'Behavioral and<br>Neuronal component {i} (CCA; {var_explained[i]:.0f}%)'
         # Get a shorter version
         # simple_base_axis_title = f"{base_axis_title.split('(')[1][:-1]} {{}}"
 
