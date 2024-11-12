@@ -430,7 +430,7 @@ def _role_of_neurons():
         ],
     'Interneuron': [
             'AIA', 'AIB', 'AIZ', 'AVA', 'AVE', 'AVB', 'AVD', 'AVG', 'RIM', 'ALA',
-            'RIB', 'RIC', 'RIA', 'RIG', 'RIF', 'RIS', 'AIM', 'DVA', 'HSN', 'PVQ', 'RID'
+            'RIB', 'RIC', 'RIA', 'RIG', 'RIF', 'RIS', 'AIM', 'DVA', 'HSN', 'PVQ', 'RID', 'SAAV', 'SAAD'
         ],
     'Motor': [
             'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'VD1-VD13', 'VA1-VA12', 'VB1-VB11',
@@ -447,10 +447,10 @@ def _role_of_neurons():
         'AVA', 'AIB', 'RIM', 'DA1-DA9', 'VA1-VA12', 'AVE'
         ],
     'Dorsal': [
-        'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'SMDD', 'RMEV', 'SIAD'
+        'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'SMDD', 'RMEV', 'SIAD', 'SAAD'
         ],
     'Ventral': [
-        'VA1-VA9', 'VB1-VB7', 'VD1-VD6', 'SMDV', 'RMED', 'SIAV'
+        'VA1-VA9', 'VB1-VB7', 'VD1-VD6', 'SMDV', 'RMED', 'SIAV', 'SAAV'
         ],
     # 'Turning': [
     #     'SMDV', 'SMDD', 'RIV'
