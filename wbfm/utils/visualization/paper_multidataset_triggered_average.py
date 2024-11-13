@@ -514,7 +514,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              fig=None, ax=None, title=None, include_neuron_in_title=False,
                                              xlim=None, ylim=None, min_lines=2, round_y_ticks=False,
                                              show_title=False, show_x_ticks=True, show_y_ticks=True,
-                                             show_y_label=True, show_x_label=True, color=None, is_mutant=False,
+                                             show_y_label=True, show_y_label_only_export=False, show_x_label=True, color=None, is_mutant=False,
                                              z_score=False, fig_kwargs=None, legend=False, i_figure=3,
                                              apply_changes_even_if_no_trace=True, show_individual_lines=False,
                                              return_individual_traces=False, use_plotly=False,
@@ -678,6 +678,10 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                     fname = fname.replace(".png", "-plotly.png")
                     fig.write_image(fname.replace(".png", ".svg"))
                     fig.write_image(fname, scale=7)
+
+                    # Special option to change the returned figure only
+                    if show_y_label_only_export:
+                        fig.update_yaxes(title=y_label)
 
         return fig, ax
 
