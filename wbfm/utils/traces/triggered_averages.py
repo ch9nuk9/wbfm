@@ -500,7 +500,7 @@ class TriggeredAverageIndices:
                     if DEBUG:
                         print(f"Breaking at time {i_global} because of ind_preceding {self.ind_preceding}")
                     break
-                if beh_annotations[i_global] in invalid_states:
+                if beh_annotations.iat[i_global] in invalid_states:
                     # Remove all points before this
                     for i_to_remove in range(i_local + 1):
                         triggered_average_mat[i_trace, i_to_remove] = np.nan
