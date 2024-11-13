@@ -545,7 +545,11 @@ def add_p_value_annotation(fig, array_columns=None, subplot=None, x_label=None, 
                 assert len(inner_x_label_pair) == 2, "Only two columns can be compared"
                 # Get the outer labels, which will be different for each data entry list
                 all_outer_labels = [pd.Series(d.x[0]).unique() for d in fig.data]
-                category_x_labels = pd.Series(np.squeeze(np.array(all_outer_labels))).unique()
+                try:
+                    category_x_labels = pd.Series(np.squeeze(np.array(all_outer_labels))).unique()
+                except ValueError:
+                    # Occurs when there is only one outer label
+                    category_x_labels = pd.Series(np.concatenate(all_outer_labels)).unique()
             else:
                 category_x_labels = pd.Series(x_vec).unique()
             array_columns_dict = {x_label: None for x_label in category_x_labels}
