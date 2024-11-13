@@ -526,7 +526,7 @@ def get_triggered_average_dataframe_fname(trigger_type, do_downshift=False, do_h
     return fname, suffix
 
 
-def get_all_trigger_suffixes():
+def get_all_trigger_suffixes(include_pooled=True):
     all_datatype_suffixes = ['', '_immob', '_mutant', '_immob_no_O2',
                              '_immob_downshift', '_immob_mutant', '_immob_mutant_downshift', '_immob_hiscl']
     all_trigger_types = ['raw_rev', 'raw_fwd', 'stimulus']
@@ -541,6 +541,8 @@ def get_all_trigger_suffixes():
                 if 'stimulus' in trigger_type:
                     trigger_type = 'self_collision'
             all_trigger_suffixes.append(f"{suffix}-{trigger_type}")
+            if include_pooled:
+                all_trigger_suffixes.append(f"{suffix}-{trigger_type}-LR_pooled")
     return all_trigger_suffixes
 
 
