@@ -1094,6 +1094,8 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
 
     Note: for now there is one hardcoded exception: AQR, which has no AQL partner
 
+    If the columns are a multiindex, then only the top level is combined
+
     Parameters
     ----------
     df
@@ -1109,10 +1111,17 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
         # AQR has no AQL partner
         raw_names_to_keep = {'AQR'}
 
+    is_multiindex = isinstance(df.columns, pd.MultiIndex)
+    # Get the top level column names
+    if is_multiindex:
+        col_names = df.columns.get_level_values(0)
+    else:
+        col_names = df.columns
+
     dict_df_combined = dict()
     # Loop through columns and check if they have a suffix; if so, search for the other suffix and combine
     base_names_found = set()
-    for col in df.columns:
+    for col in col_names:
         if col in raw_names_to_keep:
             dict_df_combined[col] = df[col]
             continue
@@ -1130,7 +1139,7 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
                         if other_suffix == suffix:
                             continue
                         col_other = col_base + other_suffix
-                        if col_other in df.columns:
+                        if col_other in col_names:
                             if DEBUG:
                                 print(f"Found partner for {col_base}: {col_other}")
                             dict_df_combined[col_base] = df[col] + df[col_other]
@@ -1161,7 +1170,10 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
             raise NotImplementedError
 
     # Reinitialize the dataframe to fix fragmentation... but doesn't actually work :/
-    df_combined = pd.DataFrame(dict_df_combined)
+    if is_multiindex:
+        df_combined = pd.concat(dict_df_combined, axis=1)
+    else:
+        df_combined = pd.DataFrame(dict_df_combined)
 
     return df_combined
 
