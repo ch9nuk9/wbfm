@@ -1192,10 +1192,14 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     #     print(df_p_values)
 
     # Modify colors to use green for immobilized
+    # This is not the only case where is it immobilized, but it is the only one we are plotting
     cmap = plotly_paper_color_discrete_map()
-    if 'stimulus' in trigger_type:
-        # This is not the only case where is it immobilized, but it is the only one we are plotting
+    is_immobilized = 'stimulus' in trigger_type.lower()
+    if is_immobilized:
         cmap['Wild Type'] = cmap['immob']
+
+    df_p_values['is_immobilized'] = is_immobilized
+    df_boxplot['is_immobilized'] = is_immobilized
 
     # Actually plot
     all_figs = {}
