@@ -1117,6 +1117,7 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
                                                trigger_type: str,
                                                output_dir=None,
                                                ttest_kwargs=None,
+                                               df_p_values=None,
                                                to_show=True, DEBUG=False, **kwargs):
     """
     Calculate the data for a t-test on the traces before and after the event.
@@ -1177,19 +1178,10 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     df_idx_range = pd.concat(all_idx_range)
     df_boxplot = pd.concat(all_boxplot_data_dfs)
     df_boxplot = _add_color_columns_to_df(df_boxplot, trigger_type=trigger_type)
-    df_p_values = _calc_p_value(df_boxplot, groupby_columns=['neuron', 'is_mutant_str'])  # .reset_index(level=1)
-    df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(),
-                                                     method='fdr_bh', alpha=0.05)[1]
-
-    # Add columns to allow them to be properly plotted, including p values
-    # all_dfs = []
-    # for neuron_name in neuron_list:
-    #     df = _add_color_columns_to_df(df_boxplot, neuron_name, trigger_type=trigger_type)
-    #     all_dfs.append(_calc_p_value(df))
-    # df_p_values = pd.concat(all_dfs).reset_index(level=1)
-    # df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(), method='fdr_bh', alpha=0.05)[1]
-    # if DEBUG:
-    #     print(df_p_values)
+    if df_p_values is None:
+        df_p_values = _calc_p_value(df_boxplot, groupby_columns=['neuron', 'is_mutant_str'])  # .reset_index(level=1)
+        df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(),
+                                                         method='fdr_bh', alpha=0.05)[1]
 
     # Modify colors to use green for immobilized
     # This is not the only case where is it immobilized, but it is the only one we are plotting
