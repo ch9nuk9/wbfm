@@ -1114,7 +1114,7 @@ def combine_columns_with_suffix(df, suffixes=None, how='mean', raw_names_to_keep
     is_multiindex = isinstance(df.columns, pd.MultiIndex)
     # Get the top level column names
     if is_multiindex:
-        col_names = df.columns.get_level_values(0)
+        col_names = df.columns.get_level_values(0).unique()
     else:
         col_names = df.columns
 
