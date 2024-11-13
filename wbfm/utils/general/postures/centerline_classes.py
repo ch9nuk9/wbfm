@@ -193,7 +193,7 @@ class WormFullVideoPosture:
 
     @property
     def num_high_res_frames(self):
-        return int(self.num_volumes * self.physical_unit_conversion.frames_per_volume)
+        return len(self._raw_stage_position)
 
     def _pad_if_not_long_enough(self, df):
         # Need to properly continue the index
