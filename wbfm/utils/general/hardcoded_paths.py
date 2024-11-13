@@ -529,7 +529,8 @@ def get_triggered_average_dataframe_fname(trigger_type, do_downshift=False, do_h
 def get_all_trigger_suffixes(include_pooled=True):
     all_datatype_suffixes = ['', '_immob', '_mutant', '_immob_no_O2',
                              '_immob_downshift', '_immob_mutant', '_immob_mutant_downshift', '_immob_hiscl']
-    all_trigger_types = ['raw_rev', 'raw_fwd', 'stimulus']
+    all_trigger_types = ['raw_rev', 'raw_fwd', 'stimulus',
+                         'residual', 'residual_rectified_fwd', 'residual_rectified_rev']
     all_trigger_suffixes = []
     # Combine all in specific orders, related to how I exported them... messy
     for suffix in all_datatype_suffixes:
@@ -540,6 +541,8 @@ def get_all_trigger_suffixes(include_pooled=True):
                 # Stimulus should be swapped for self_collision
                 if 'stimulus' in trigger_type:
                     trigger_type = 'self_collision'
+            elif 'residual' in trigger_type:
+                continue  # No residuals for immobilized
             all_trigger_suffixes.append(f"{suffix}-{trigger_type}")
             if include_pooled:
                 all_trigger_suffixes.append(f"{suffix}-{trigger_type}-LR_pooled")
