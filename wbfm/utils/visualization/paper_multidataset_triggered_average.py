@@ -201,15 +201,16 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 self.dataset_clusterer_dict['residual_rectified_rev'] = out[0]
                 self.intermediates_dict['residual_rectified_rev'] = out[1]
 
-                # Only used for BAG: self-collision triggered
-                trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.SELF_COLLISION)
-                trigger_opt.update(self.trigger_opt)
-                trace_opt = dict(residual_mode='pca')
-                trace_opt.update(trace_base_opt)
-                out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
-                                                                         trace_opt=trace_opt)
-                self.dataset_clusterer_dict['residual_collision'] = out[0]
-                self.intermediates_dict['residual_collision'] = out[1]
+                if self.calculate_self_collision:
+                    # Only used for BAG: self-collision triggered
+                    trigger_opt = dict(use_hilbert_phase=False, state=BehaviorCodes.SELF_COLLISION)
+                    trigger_opt.update(self.trigger_opt)
+                    trace_opt = dict(residual_mode='pca')
+                    trace_opt.update(trace_base_opt)
+                    out = clustered_triggered_averages_from_dict_of_projects(self.all_projects, trigger_opt=trigger_opt,
+                                                                             trace_opt=trace_opt)
+                    self.dataset_clusterer_dict['residual_collision'] = out[0]
+                    self.intermediates_dict['residual_collision'] = out[1]
 
             except TypeError as e:
                 print("Hilbert triggered averages failed; this may be because the data is immobilized")
