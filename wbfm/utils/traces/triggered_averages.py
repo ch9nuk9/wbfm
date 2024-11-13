@@ -307,7 +307,7 @@ class TriggeredAverageIndices:
                 raise ValueError("Must pass behavioral_annotation_for_rectification if only_allow_events_during_state is not None")
             # Note that we use 'in' not '==' because the beh vector is a flag enum
             beh = self.behavioral_annotation_for_rectification
-            self.dict_of_events_to_keep = {i: state in beh[i] for i in range(len(self.behavioral_annotation))}
+            self.dict_of_events_to_keep = {i: state in beh.iat[i] for i in range(len(self.behavioral_annotation))}
 
         if self.ind_delay > 0:
             if self.to_nan_points_of_state_before_point:
