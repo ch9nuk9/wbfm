@@ -1151,7 +1151,10 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
         for neuron in neuron_list:
             means_before, means_after, idx_range = obj.get_boxplot_before_and_after(neuron, trigger_type,
                                                                                     **ttest_kwargs)
-
+            # Sanity check: are any of the lists entirely nan?
+            if np.all(np.isnan(means_before)) or np.all(np.isnan(means_after)):
+                raise ValueError(f"Neuron {neuron} has all nan values for before or after the event:"
+                                 f"means_before:{means_before}, means_after:{means_after}")
             df_before = pd.DataFrame(means_before, columns=['mean']).assign(before=True)
             df_after = pd.DataFrame(means_after, columns=['mean']).assign(before=False)
             df_both = pd.concat([df_before, df_after]).assign(neuron=neuron, is_mutant=is_mutant).assign(
