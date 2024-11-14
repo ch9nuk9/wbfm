@@ -41,15 +41,42 @@ NUM_JOBS_TO_SUBMIT=8
 # Details: https://snakemake.readthedocs.io/en/v7.7.0/tutorial/additional_features.html#using-cluster-status
 CLUSTER_STATUS_SCRIPT=$(mktemp /tmp/slurm_script.XXXXXX)
 
-cat << EOF > $CLUSTER_STATUS_SCRIPT
+cat << EOF > "$CLUSTER_STATUS_SCRIPT"
 #!/usr/bin/env python
 import subprocess
 import sys
+import time
 
 jobid = sys.argv[1]
 
-output = str(subprocess.check_output("sacct -j %s --format State --noheader | head -1 | awk '{print \$1}'" % jobid, shell=True).strip())
+# Function to check the job status, with retries
+def check_job_status(jobid, max_retries=10, delay=10):
+    for attempt in range(max_retries):
+        try:
+            output = str(subprocess.check_output(
+                "sacct -j %s --format State --noheader | head -1 | awk '{print \$1}'" % jobid
+                shell=True
+            ).strip())
+            return output
+        except subprocess.TimeoutExpired:
+            pass
+        except subprocess.CalledProcessError as e:
+            pass
+        # Always sleep between retries
+        time.sleep(delay)
 
+    # If all retries fail, raise an exception or return a failure status
+    raise RuntimeError("Failed to check job status after multiple attempts.")
+
+# Get the job status
+try:
+    output = check_job_status(jobid)
+except Exception as e:
+    logging.warning(f"failed to get job status: {e}")
+    sys.exit(1)
+
+# Define the possible running statuses, and check if the job is running
+# Note: the print statements must be exactly as shown here for snakemake to interpret them correctly
 running_status=["PENDING", "CONFIGURING", "COMPLETING", "RUNNING", "SUSPENDED"]
 if "COMPLETED" in output:
   print("success")
@@ -60,7 +87,7 @@ else:
 EOF
 
 # Make the script executable
-chmod +x $CLUSTER_STATUS_SCRIPT
+chmod +x "$CLUSTER_STATUS_SCRIPT"
 
 # Actual command
 if [ "$DRYRUN" ]; then
@@ -73,5 +100,5 @@ elif [ -z "$USE_CLUSTER" ]; then
 else
     echo "Running snakemake rule on the cluster: $RULE. Common options: traces_and_behavior (default), traces, behavior"
     snakemake -s pipeline.smk --unlock  # Unlock the folder, just in case
-    snakemake "$RULE" -s pipeline.smk --latency-wait 60 --cluster "$OPT --parsable" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT --cluster-status $CLUSTER_STATUS_SCRIPT
+    snakemake "$RULE" -s pipeline.smk --latency-wait 60 --cluster "$OPT --parsable" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT --cluster-status "$CLUSTER_STATUS_SCRIPT"
 fi
