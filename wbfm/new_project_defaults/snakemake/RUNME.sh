@@ -50,7 +50,12 @@ import time
 
 jobid = sys.argv[1]
 
-output = str(subprocess.check_output("sacct -j %s --format State --noheader | head -1 | awk '{print \$1}'" % jobid, shell=True).strip())
+try:
+  output = str(subprocess.check_output("sacct -j %s --format State --noheader | head -1 | awk '{print \$1}'" % jobid, shell=True).strip())
+except subprocess.TimeoutExpired:
+  output = "UNKNOWN"  # If the job is not found, we will consider it as unknown and check again later
+except subprocess.CalledProcessError as e:
+  output = "UNKNOWN"  # If the job is not found, we will consider it as unknown and check again later
 
 # Function to check the job status, with retries
 #def check_job_status(jobid, max_retries=10, delay=1):
@@ -80,7 +85,7 @@ output = str(subprocess.check_output("sacct -j %s --format State --noheader | he
 
 # Define the possible running statuses, and check if the job is running
 # Note: the print statements must be exactly as shown here for snakemake to interpret them correctly
-running_status=["PENDING", "CONFIGURING", "COMPLETING", "RUNNING", "SUSPENDED"]
+running_status=["PENDING", "CONFIGURING", "COMPLETING", "RUNNING", "SUSPENDED", "UNKNOWN"]
 if "COMPLETED" in output:
   print("success")
 elif any(r in output for r in running_status):
