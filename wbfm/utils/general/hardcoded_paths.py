@@ -584,3 +584,46 @@ def intrinsic_definition(x):
             return 'Intrinsic'# 'Intrinsic (stronger)'
     else:
         return ValueError
+
+
+def excel_event_full_description():
+    return {
+        "num_datasets_freely_moving_gcamp": "Freely moving GCaMP datasets",
+        "raw_rev": "Reversal events (freely moving GCaMP)",
+        "raw_fwd": "Forward events (freely moving GCaMP)",
+        "self_collision": "Self-collision events (freely moving GCaMP)",
+        "residual": "Same-posture events (freely moving GCaMP)",
+        "residual_rectified_fwd": "Same-posture events within the Forward state (freely moving GCaMP)",
+        "residual_rectified_rev": "Same-posture events within the Reversal state (freely moving GCaMP)",
+        "num_datasets_immob_gcamp": "Number of immobilized GCaMP datasets",
+        "immob-raw_rev": "Reversal events (immobilized GCaMP, datasets with stimulus)",
+        "immob-raw_fwd": "Forward events (immobilized GCaMP, datasets with stimulus)",
+        "immob-stimulus": "Upshift stimulus events (immobilized GCaMP, datasets with stimulus)",
+        "num_datasets_mutant_gcamp": "Sensory mutant GCaMP datasets (gcy-31;-35;-9)",
+        "mutant-raw_rev": "Reversal events (freely moving sensory mutant GCaMP)",
+        "mutant-raw_fwd": "Forward events (freely moving sensory mutant GCaMP)",
+        "mutant-self_collision": "Self-collision events (freely moving sensory mutant GCaMP)",
+        "mutant-residual": "Same-posture events (freely moving sensory mutant GCaMP)",
+        "mutant-residual_rectified_fwd": "Same-posture events within the Forward state (freely moving sensory mutant GCaMP)",
+        "mutant-residual_rectified_rev": "Same-posture events within the Forward state (freely moving sensory mutant GCaMP)",
+        "num_datasets_immob_no_O2": "Immobilized datasets without O2 stimulus",
+        "immob_no_O2-raw_rev": "Reversal events (immobilized GCaMP, datasets without stimulus)",
+        "immob_no_O2-raw_fwd": "Forward events (immobilized GCaMP, datasets without stimulus)",
+        "immob_downshift-raw_rev": "DROP",
+        "immob_downshift-raw_fwd": "DROP",
+        "immob_downshift-stimulus": "Downshift stimulus events (immobilized GCaMP, datasets with stimulus)",
+        "num_datasets_mutant_immob": "Immobilized sensory mutant datasets (gcy-31;-35;-9)",
+        "immob_mutant-raw_rev": "Reversal events (immobilized sensory mutant GCaMP, datasets with stimulus)",
+        "immob_mutant-raw_fwd": "Forward events (immobilized sensory mutant GCaMP, datasets with stimulus)",
+        "immob_mutant-stimulus": "Upshift stimulus events (immobilized sensory mutant GCaMP, datasets with stimulus)",
+        "immob_mutant_downshift-raw_rev": "DROP",
+        "immob_mutant_downshift-raw_fwd": "DROP",
+        "immob_mutant_downshift-stimulus": "Downshift stimulus events (immobilized sensory mutant GCaMP, datasets with stimulus)",
+        "num_datasets_immob_hiscl": "Alternate immobilization technique (HisCl) GCaMP with O2 stimulus",
+        "immob_hiscl-raw_rev": "DROP",
+        "immob_hiscl-raw_fwd": "DROP",
+        "immob_hiscl-stimulus": "Upshift stimulus events (immobilized sensory mutant GCaMP, datasets with stimulus)",
+        "num_datasets_gfp": "Freely moving GFP datasets",
+        "GFP-raw_rev": "Reversal events (freely moving GFP)",
+        "GFP-raw_fwd": "Forward events (freely moving GCaMP)",
+    }
