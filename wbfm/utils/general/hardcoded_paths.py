@@ -625,5 +625,5 @@ def excel_event_full_description():
         "immob_hiscl-stimulus": "Upshift stimulus events (immobilized sensory mutant GCaMP, datasets with stimulus)",
         "num_datasets_gfp": "Freely moving GFP datasets",
         "GFP-raw_rev": "Reversal events (freely moving GFP)",
-        "GFP-raw_fwd": "Forward events (freely moving GCaMP)",
+        "GFP-raw_fwd": "Forward events (freely moving GFP)",
     }
