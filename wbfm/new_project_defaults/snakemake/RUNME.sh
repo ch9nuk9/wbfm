@@ -39,6 +39,7 @@ NUM_JOBS_TO_SUBMIT=8
 # In principle we will use a python script, but because this needs to be valid for all users, we will create a temporary
 # script that will be deleted after the job is done
 # Details: https://snakemake.readthedocs.io/en/v7.7.0/tutorial/additional_features.html#using-cluster-status
+# More complex example: https://github.com/Snakemake-Profiles/slurm/blob/master/%7B%7Bcookiecutter.profile_name%7D%7D/slurm-status.py
 CLUSTER_STATUS_SCRIPT=$(mktemp /tmp/slurm_script.XXXXXX)
 
 cat << EOF > "$CLUSTER_STATUS_SCRIPT"
@@ -50,7 +51,7 @@ import time
 jobid = sys.argv[1]
 
 # Function to check the job status, with retries
-def check_job_status(jobid, max_retries=10, delay=10):
+def check_job_status(jobid, max_retries=10, delay=1):
     for attempt in range(max_retries):
         try:
             output = str(subprocess.check_output(
