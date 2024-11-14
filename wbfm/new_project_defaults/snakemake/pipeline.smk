@@ -641,7 +641,7 @@ rule make_heatmap_with_behavior_video:
     input:
         cfg=project_cfg_fname,
         traces=os.path.join(project_dir, "4-traces/green_traces.h5"),
-        behavior_btf=behavior_btf,
+        behavior_btf=behavior_btf if os.path.exists(behavior_btf) else raw_data_subfolder,
     output:
         figure=os.path.join(output_visualization_directory, "heatmap_with_behavior.mp4")
     run:
