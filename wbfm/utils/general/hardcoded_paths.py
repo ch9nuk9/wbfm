@@ -528,7 +528,8 @@ def get_triggered_average_dataframe_fname(trigger_type, do_downshift=False, do_h
 
 def get_all_trigger_suffixes(include_pooled=True):
     all_datatype_suffixes = ['', '_immob', '_mutant', '_immob_no_O2',
-                             '_immob_downshift', '_immob_mutant', '_immob_mutant_downshift', '_immob_hiscl']
+                             '_immob_downshift', '_immob_mutant', '_immob_mutant_downshift', '_immob_hiscl',
+                             '_GFP']
     all_trigger_types = ['raw_rev', 'raw_fwd', 'stimulus',
                          'residual', 'residual_rectified_fwd', 'residual_rectified_rev']
     all_trigger_suffixes = []
