@@ -57,32 +57,6 @@ except subprocess.TimeoutExpired:
 except subprocess.CalledProcessError as e:
   output = "UNKNOWN"  # If the job is not found, we will consider it as unknown and check again later
 
-# Function to check the job status, with retries
-#def check_job_status(jobid, max_retries=10, delay=1):
-#    for attempt in range(max_retries):
-#        try:
-#            output = str(subprocess.check_output(
-#                "sacct -j %s --format State --noheader | head -1 | awk '{print \$1}'" % jobid
-#                shell=True
-#            ).strip())
-#            return output
-#        except subprocess.TimeoutExpired:
-#            pass
-#        except subprocess.CalledProcessError as e:
-#            pass
-#        # Always sleep between retries
-#        time.sleep(delay)
-#
-#    # If all retries fail, raise an exception or return a failure status
-#    raise RuntimeError("Failed to check job status after multiple attempts.")
-#
-## Get the job status
-#try:
-#    output = check_job_status(jobid)
-#except Exception as e:
-#    logging.warning(f"failed to get job status: {e}")
-#    sys.exit(1)
-
 # Define the possible running statuses, and check if the job is running
 # Note: the print statements must be exactly as shown here for snakemake to interpret them correctly
 running_status=["PENDING", "CONFIGURING", "COMPLETING", "RUNNING", "SUSPENDED", "UNKNOWN"]
