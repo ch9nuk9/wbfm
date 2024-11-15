@@ -7,4 +7,4 @@
 # Usage:
 # ./convert_all_jupyter_notebooks_to_py.sh /path/to/target/folder
 
-find "$1" -name "*.ipynb" -exec jupyter nbconvert --to script {} \;
+find "$1" -not -path '*/.*' -name "*.ipynb" -exec jupyter nbconvert --to script {} \;
