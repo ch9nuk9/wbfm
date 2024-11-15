@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[1]:
+
+
 get_ipython().run_line_magic('load_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
+
+
+# In[54]:
 
 
 import pandas as pd
@@ -22,25 +28,46 @@ fname = os.path.join(get_hierarchical_modeling_dir(gfp=True), 'data.h5')
 Xy_gfp = pd.read_hdf(fname)
 
 
+# In[55]:
+
+
 # [n for n in Xy.columns.sort_values() if ('neuron' not in n and 'manifold' not in n)]
 
 
+# In[56]:
+
+
 # [n for n in Xy_gfp.columns.sort_values() if ('neuron' not in n and 'manifold' not in n)]
+
+
+# In[57]:
 
 
 Xy = Xy.rename(columns={0: 'pca_0', 1: 'pca_1'})
 Xy.to_hdf(fname, key='df_with_missing')
 
 
-# Xy
+# In[95]:
+
+
+# Xy['dataset_name'].unique()
 
 
 # ## Check that the eignworms seem phase aligned
 
+# In[201]:
+
+
 px.line(Xy.drop(columns='dataset_name')/Xy.drop(columns='dataset_name').std(), y=['VB02', 'eigenworm1', 'vb02_curvature'])
 
 
+# In[ ]:
 
+
+
+
+
+# In[4]:
 
 
 import pymc as pm
@@ -60,6 +87,9 @@ curvature = Xy['vb02_curvature'][ind_data].values
 curvature = (curvature-curvature.mean()) / curvature.std()  # z-score
 
 print(x.shape, y.shape, curvature.shape)
+
+
+# In[5]:
 
 
 with pm.Model() as model:
@@ -87,7 +117,13 @@ with pm.Model() as model:
     likelihood = pm.Normal('y', mu=mu, sigma=sigma, observed=y)
 
 
+# In[6]:
+
+
 pm.model_to_graphviz(model)
+
+
+# In[7]:
 
 
 # Run inference
@@ -95,8 +131,14 @@ with model:
     trace = pm.sample(1000, tune=1000, cores=64)
 
 
+# In[8]:
+
+
 # Plot posterior distributions
 az.plot_trace(trace, compact=True, var_names=['sigmoid_slope', 'inflection_point', 'amplitude']);
+
+
+# In[9]:
 
 
 import matplotlib.pyplot as plt
@@ -105,9 +147,15 @@ with model:
     posterior_predictive = pm.sample_posterior_predictive(trace, var_names=['y', 'sigmoid_term'])
 
 
+# In[9]:
+
+
 # Average across chains, but not draws
 y_pred = np.mean(np.mean(posterior_predictive.posterior_predictive['y'], axis=0), axis=0)
 sigmoid_pred = np.mean(np.mean(posterior_predictive.posterior_predictive['sigmoid_term'], axis=0), axis=0)
+
+
+# In[10]:
 
 
 df_pred = pd.DataFrame({'y': y, 'y_pred': y_pred, 'curvature': curvature, 'manifold': x,
@@ -117,9 +165,16 @@ px.line(df_pred)
 
 # # Look at the other measures of behavior
 
+# In[96]:
+
+
 curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3',
                               'dorsal_only_body_curvature', 'dorsal_only_head_curvature',
-                              'ventral_only_body_curvature', 'ventral_only_head_curvature', 'self_collision', 'speed']
+                              'ventral_only_body_curvature', 'ventral_only_head_curvature', 
+                          # 'self_collision', 'speed',
+                         # 'head_signed_curvature', 
+                          'summed_curvature'
+                         ]
 df_beh = Xy[curvature_terms_to_use].copy()
 df_beh = (df_beh-df_beh.mean())/df_beh.std()
 
@@ -127,13 +182,39 @@ df_corr = df_beh.corr()
 px.imshow(df_corr - np.eye(len(df_corr)))
 
 
+# In[92]:
+
+
+# curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3',
+#                               # 'dorsal_only_body_curvature', 'dorsal_only_head_curvature',
+#                               # 'ventral_only_body_curvature', 'ventral_only_head_curvature', 
+#                           'self_collision', 'speed',
+#                          # 'head_signed_curvature', 
+#                           'summed_curvature']
+# df_beh = Xy[curvature_terms_to_use].copy()
+# df_beh = (df_beh-df_beh.mean())/df_beh.std()
+
+# fig = px.scatter_matrix(df_beh)
+# fig.update_traces(diagonal_visible=False)
+# fig.show()
+
+
+# In[93]:
+
+
 from sklearn.decomposition import PCA
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
-pca = PCA(n_components=8).fit(fill_nan_in_dataframe(df_beh))
-px.scatter(pca.explained_variance_ratio_)
+pca = PCA(n_components=df_beh.shape[1]).fit(fill_nan_in_dataframe(df_beh))
+px.scatter(pca.explained_variance_ratio_, range_y=[0, 1])
+
+
+# In[ ]:
 
 
 
+
+
+# In[ ]:
 
 
 
@@ -141,10 +222,19 @@ px.scatter(pca.explained_variance_ratio_)
 
 # # DEBUG: Build model in jupyter
 
+# In[35]:
+
+
 from wbfm.utils.external.utils_pymc import build_baseline_priors, build_final_likelihood, build_sigmoid_term, build_curvature_term
 
 
+# In[36]:
+
+
 Xy['VB02_manifold'].count(), Xy['VB02'].count(), Xy[['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']].count()
+
+
+# In[37]:
 
 
 
@@ -157,6 +247,9 @@ if use_additional_behaviors:
                                        #'speed',
                                        'self_collision'])
 curvature_terms_to_use
+
+
+# In[38]:
 
 
 # Allow gating based on the global component
@@ -179,17 +272,32 @@ df_model = df_model.dropna()
 df_model.shape
 
 
+# In[39]:
+
+
 # px.line(df_model.reset_index(), y=['x', 'y', 'eigenworm0'])
 
 
+# In[40]:
+
+
 # df_model[['eigenworm0', 'eigenworm1', 'eigenworm2']].shape, df_model['x'].shape, df_model['y'].shape
+
+
+# In[41]:
 
 
 
 dataset_name_idx, dataset_name_values = df_model.dataset_name.factorize()
 
 
+# In[42]:
+
+
 curvature_terms_to_use
+
+
+# In[ ]:
 
 
 coords = {'dataset_name': dataset_name_values}
@@ -229,7 +337,13 @@ with pm.Model(coords=coords) as model:
     # likelihood = pm.Normal('y', mu, sigma=1, observed=y)
 
 
+# In[44]:
+
+
 pm.model_to_graphviz(model)
+
+
+# In[211]:
 
 
 # Sample from the prior for debugging
@@ -239,9 +353,15 @@ with model:
                                        var_names=['y', 'sigmoid_term','curvature_term', 'intercept', 'mu', 'sigma'])
 
 
+# In[ ]:
+
+
 from wbfm.utils.external.utils_arviz import plot_ts, plot_model_elements
 # fig = plot_ts(idata=idata, y='y', y_hat='y')#, plot_dim='y_dim_0')
 fig = plot_model_elements(idata, y_list = ['y', 'sigmoid_term', 'curvature_term', 'mu'])
+
+
+# In[213]:
 
 
 # az.plot_forest(az.convert_to_dataset(idata, group='prior'), var_names=['sigma'])
@@ -249,15 +369,24 @@ fig = plot_model_elements(idata, y_list = ['y', 'sigmoid_term', 'curvature_term'
 
 # ## ACTUALLY RUN
 
+# In[214]:
+
+
 # Run inference
 with model:
     trace = pm.sample(1000, tune=1000, cores=32, chains=2)
     # trace = pm.sample(1000, tune=1000, cores=56, nuts_sampler="blackjax")
 
 
+# In[219]:
+
+
 # Plot posterior distributions
 az.plot_trace(trace, compact=True, var_names=['intercept', 'sigmoid_slope', 'inflection_point', 
                                               'amplitude', 'phase_shift', 'eigenworm3_coefficient']);
+
+
+# In[216]:
 
 
 import matplotlib.pyplot as plt
@@ -266,9 +395,15 @@ with model:
     posterior_predictive = pm.sample_posterior_predictive(trace, var_names=['y', 'sigmoid_term'])
 
 
+# In[217]:
+
+
 from wbfm.utils.external.utils_arviz import plot_ts, plot_model_elements
 # fig = plot_ts(idata=idata, y='y', y_hat='y')#, plot_dim='y_dim_0')
 fig = plot_model_elements(posterior_predictive, y_list = ['y', 'sigmoid_term'])
+
+
+# In[220]:
 
 
 from wbfm.utils.external.utils_arviz import plot_ts
@@ -282,8 +417,14 @@ fig = plot_ts(idata=posterior_predictive, y='y', y_hat='y')#, plot_dim='y_dim_0'
 
 # ## Now do the comparison across other model types with my function
 
+# In[6]:
+
+
 from wbfm.utils.external.utils_pymc import fit_multiple_models
 Xy['dataset_name'].unique()
+
+
+# In[7]:
 
 
 df_compare, all_traces, all_models = fit_multiple_models(Xy, 'VB02', 
@@ -293,16 +434,28 @@ df_compare, all_traces, all_models = fit_multiple_models(Xy, 'VB02',
 az.plot_compare(df_compare, insample_dev=False);
 
 
+# In[9]:
+
+
 df_compare
 
 
+# In[11]:
+
+
 all_traces['hierarchical_pca'].posterior
+
+
+# In[20]:
 
 
 # Plot posterior distributions
 var_names = ['intercept', 'inflection_point', 'amplitude', 
              'phase_shift', 'eigenworm3_coefficient']
 az.plot_trace(all_traces['hierarchical_pca'], compact=True, var_names=var_names);
+
+
+# In[21]:
 
 
 # # Plot posterior distributions
@@ -313,19 +466,34 @@ az.plot_trace(all_traces['hierarchical_pca'], compact=True, var_names=var_names)
 #               kind='ridgeplot', combined=True);
 
 
+# In[22]:
+
+
 from wbfm.utils.external.utils_arviz import plot_ts, plot_model_elements
 # The trace should have samples already
 fig = plot_model_elements(all_traces['hierarchical_pca'], y_list = ['y', 'sigmoid_term', 'curvature_term'])
+
+
+# In[23]:
 
 
 from wbfm.utils.external.utils_arviz import plot_ts
 fig = plot_ts(all_traces['hierarchical_pca'])
 
 
+# In[24]:
+
+
 az.plot_loo_pit(all_traces['hierarchical_pca'], y='y')
 
 
+# In[27]:
+
+
 # az.plot_loo_pit(all_traces['nonhierarchical'], y='y')
+
+
+# In[28]:
 
 
 # az.plot_loo_pit(all_traces['null'], y='y')
@@ -333,7 +501,13 @@ az.plot_loo_pit(all_traces['hierarchical_pca'], y='y')
 
 # # Now do the comparison across other model types with my function
 
+# In[6]:
+
+
 from wbfm.utils.external.utils_pymc import fit_multiple_models
+
+
+# In[12]:
 
 
 # One dataset
@@ -342,7 +516,13 @@ df_compare, all_traces, all_models = fit_multiple_models(Xy, 'VB02', dataset_nam
 az.plot_compare(df_compare, insample_dev=False);
 
 
+# In[36]:
+
+
 # Xy['dataset_name'].unique()
+
+
+# In[37]:
 
 
 df_compare, all_traces, all_models = fit_multiple_models(Xy, 'BAGL', dataset_name='ZIM2165_Gcamp7b_worm1-2022_11_28',
@@ -350,10 +530,19 @@ df_compare, all_traces, all_models = fit_multiple_models(Xy, 'BAGL', dataset_nam
 az.plot_compare(df_compare, insample_dev=False);
 
 
+# In[49]:
+
+
 df_compare
 
 
+# In[80]:
+
+
 all_traces['hierarchical_pca']
+
+
+# In[82]:
 
 
 # Plot posterior distributions
@@ -363,6 +552,9 @@ var_names = [#'intercept', 'inflection_point',
 az.plot_trace(all_traces['hierarchical_pca'], compact=True, var_names=var_names);
 
 
+# In[44]:
+
+
 # # Plot posterior distributions
 # var_names = ['intercept', #'inflection_point', #'amplitude', 
 #              'phase_shift', #'eigenworm',
@@ -371,13 +563,22 @@ az.plot_trace(all_traces['hierarchical_pca'], compact=True, var_names=var_names)
 #               kind='ridgeplot', combined=True);
 
 
+# In[45]:
+
+
 from wbfm.utils.external.utils_arviz import plot_ts, plot_model_elements
 # The trace should have samples already
 fig = plot_model_elements(all_traces['hierarchical_pca'], y_list = ['y', 'sigmoid_term', 'curvature_term'])
 
 
+# In[57]:
+
+
 from wbfm.utils.external.utils_arviz import plot_ts
 fig = plot_ts(all_traces['hierarchical_pca'])
+
+
+# In[32]:
 
 
 # import matplotlib.pyplot as plt
@@ -386,13 +587,22 @@ fig = plot_ts(all_traces['hierarchical_pca'])
 #     posterior_predictive = pm.sample_posterior_predictive(all_traces['hierarchical'], var_names=['y', 'sigmoid_term'])
 
 
+# In[33]:
+
+
 # from wbfm.utils.external.utils_arviz import plot_ts, plot_model_elements
 # fig = plot_model_elements(posterior_predictive, y_list = ['y', 'sigmoid_term'])
 
 
 # # Same thing, but with a gfp dataset
 
+# In[50]:
+
+
 Xy_gfp['dataset_name'].unique()
+
+
+# In[54]:
 
 
 df_compare_gfp, all_traces_gfp, all_models_gfp = fit_multiple_models(Xy_gfp, 'VB02', dataset_name='ZIM2319_GFP_worm3-2022-12-10',
@@ -400,11 +610,20 @@ df_compare_gfp, all_traces_gfp, all_models_gfp = fit_multiple_models(Xy_gfp, 'VB
 az.plot_compare(df_compare_gfp, insample_dev=False);
 
 
+# In[77]:
+
+
 df_compare
+
+
+# In[67]:
 
 
 # loo = az.loo(all_traces_gfp['hierarchical_pca'], pointwise=True)
 # az.plot_khat(loo)
+
+
+# In[70]:
 
 
 from wbfm.utils.external.utils_arviz import plot_ts, plot_model_elements
@@ -412,11 +631,20 @@ from wbfm.utils.external.utils_arviz import plot_ts, plot_model_elements
 fig = plot_model_elements(all_traces_gfp['hierarchical_pca'], y_list = ['y', 'sigmoid_term', 'curvature_term', 'mu'])
 
 
+# In[61]:
+
+
 from wbfm.utils.external.utils_arviz import plot_ts
 fig = plot_ts(all_traces_gfp)
 
 
+# In[71]:
+
+
 # az.plot_elpd(all_traces_gfp)
+
+
+# In[ ]:
 
 
 # Plot posterior distributions
@@ -428,7 +656,13 @@ az.plot_forest(all_traces['hierarchical_pca'], var_names=var_names, filter_vars=
               kind='ridgeplot', combined=True);
 
 
+# In[69]:
+
+
 all_traces_gfp['hierarchical_pca']
+
+
+# In[ ]:
 
 
 
@@ -436,9 +670,15 @@ all_traces_gfp['hierarchical_pca']
 
 # ## Many neurons
 
+# In[232]:
+
+
 # One dataset
 df_compare, all_traces, all_models = fit_multiple_models(Xy, 'VB02', dataset_name='all')
 az.plot_compare(df_compare, insample_dev=False);
+
+
+# In[ ]:
 
 
 neuron_list = ['VB02', 'DB01', 'DB02', 'VB01', 'VB03', 'RMEV', 'URXL', 'BAGL', 'AVAL', 'ALA', 'SMDDL']
@@ -458,18 +698,30 @@ for neuron in neuron_list:
     all_models[neuron] = _all_models
 
 
+# In[ ]:
+
+
 # df_compare_db, all_traces_db, all_models_db = fit_multiple_models(Xy, 'DB01', dataset='all')
 # az.plot_compare(df_compare_db, insample_dev=False);
 
 
 # # Load from disk and plot
 
+# In[26]:
+
+
 from wbfm.utils.external.utils_arviz import plot_model_elements
 from wbfm.utils.external.utils_pymc import get_dataframe_for_single_neuron, build_baseline_priors, build_sigmoid_term, build_curvature_term, build_final_likelihood, build_sigmoid_term_pca
 
 
+# In[20]:
+
+
 fname = "/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/output/VB02_hierarchical_pca_trace.nc"
 trace = az.from_netcdf(fname)
+
+
+# In[24]:
 
 
 # # # Plot posterior distributions
@@ -481,10 +733,16 @@ trace = az.from_netcdf(fname)
 # # az.plot_pair(trace, var_names=['sigmoid_slope', 'inflection_point', 'phase_shift', 'eigenworm3_coefficient'])
 
 
+# In[ ]:
+
+
 fig_raw = plot_model_elements(trace, to_show=False,
                          y_list=['sigmoid_term', 'curvature_term'])
 
 fig_raw.update_xaxes(range=Xy_ind_range.iloc[12, :])
+
+
+# In[28]:
 
 
 # Redefine model
@@ -514,14 +772,26 @@ with pm.Model(coords=coords) as hierarchical_model:
     likelihood = build_final_likelihood(mu, sigma, y)
 
 
+# In[29]:
+
+
 with hierarchical_model:
     posterior_predictive = pm.sample_posterior_predictive(trace, var_names=['y', 'sigmoid_term', 'curvature_term', 'mu'])
+
+
+# In[86]:
 
 
 fig = plot_model_elements(posterior_predictive, to_show=False, y_list=['y', 'sigmoid_term', 'curvature_term'])
 
 
+# In[92]:
+
+
 import kaleido
+
+
+# In[ ]:
 
 
 # from wbfm.utils.general.utils_paper import apply_figure_settings
@@ -545,16 +815,25 @@ fig.write_image(fname, scale=3, engine='kaleido')
 # fig.write_image(fname)
 
 
+# In[75]:
+
+
 Xy_ind_range.index[12], Xy_ind_range.iloc[12, :]
 
 
 # ## Save for further plotting
+
+# In[73]:
+
 
 fname = "/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/output/VB02_hierarchical_pca_pps.nc"
 posterior_predictive.to_netcdf(fname)
 
 
 # ## Run for all neurons
+
+# In[ ]:
+
 
 from wbfm.utils.external.utils_arviz import load_from_disk_and_plot
 from pathlib import Path
@@ -574,11 +853,17 @@ for fname in Path(os.path.join(get_hierarchical_modeling_dir(), 'output')).iterd
 
 # # Test with alternative models
 
+# In[62]:
+
+
 df_compare2, all_traces2, all_models2 = fit_multiple_models(Xy, 'VB02', 
                                                          # dataset_name='ZIM2165_Gcamp7b_worm1-2022_11_28',
                                                          dataset_name='2022-11-23_worm11',
                                                         use_additional_behaviors=True)
 az.plot_compare(df_compare2, insample_dev=False);
+
+
+# In[76]:
 
 
 from wbfm.utils.external.utils_arviz import plot_ts, plot_model_elements
@@ -587,7 +872,13 @@ fig = plot_model_elements(all_traces2['hierarchical_pca'], y_list = ['y', 'sigmo
 # fig = plot_model_elements(all_traces2['nonhierarchical'], y_list = ['y', 'curvature_term'])
 
 
+# In[64]:
+
+
 # all_traces2['hierarchical_pca_model_with_drift']
+
+
+# In[70]:
 
 
 fig = plt.figure(figsize=(8, 6), constrained_layout=False)
@@ -598,7 +889,13 @@ ax.plot(az.extract(all_traces2['hierarchical_pca_model_with_drift'], var_names="
 # ax.set_xticklabels(ticklabels_changes)
 
 
+# In[68]:
+
+
 all_traces2['hierarchical_pca_model_with_drift']
+
+
+# In[66]:
 
 
 from wbfm.utils.external.utils_arviz import plot_ts
@@ -606,6 +903,9 @@ from wbfm.utils.external.utils_arviz import plot_ts
 # az.plot_lm(idata=posterior_predictive, y='y', x=None)
 fig = plot_ts(all_traces2['hierarchical_pca_model_with_drift'], y='y', y_hat='y')#, plot_dim='y_dim_0')
 # posterior_predictive.posterior_predictive.y
+
+
+# In[ ]:
 
 
 

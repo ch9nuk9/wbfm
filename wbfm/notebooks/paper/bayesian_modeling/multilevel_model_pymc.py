@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[ ]:
 
+
+
+
+
+# In[1]:
 
 
 
@@ -17,10 +23,16 @@ Xy = pd.read_hdf(fname)
 import pymc as pm
 
 
+# In[2]:
+
+
 Xy.head()
 
 
 # # Look at one dataset
+
+# In[3]:
+
 
 # Choose one dataset
 ind_data = Xy['dataset_name'] == '2022-11-23_worm8'
@@ -29,10 +41,16 @@ ind_data = Xy['dataset_name'] == '2022-11-23_worm8'
 px.scatter(Xy[ind_data], x='vb02_curvature', y='VB02', color='fwd', trendline='ols')
 
 
+# In[60]:
+
+
 Xy[ind_data]
 
 
 # # Baseline: on one dataset, use the vb02 curvature directly
+
+# In[4]:
+
 
 import pymc as pm
 
@@ -51,6 +69,9 @@ curvature = Xy['vb02_curvature'][ind_data].values
 curvature = (curvature-curvature.mean()) / curvature.std()  # z-score
 
 print(x.shape, y.shape, curvature.shape)
+
+
+# In[5]:
 
 
 with pm.Model() as model:
@@ -78,7 +99,13 @@ with pm.Model() as model:
     likelihood = pm.Normal('y', mu=mu, sigma=sigma, observed=y)
 
 
+# In[6]:
+
+
 pm.model_to_graphviz(model)
+
+
+# In[7]:
 
 
 # Run inference
@@ -86,8 +113,14 @@ with model:
     trace = pm.sample(1000, tune=1000, cores=64)
 
 
+# In[8]:
+
+
 # Plot posterior distributions
 az.plot_trace(trace, compact=True, var_names=['sigmoid_slope', 'inflection_point', 'amplitude']);
+
+
+# In[9]:
 
 
 import matplotlib.pyplot as plt
@@ -96,9 +129,15 @@ with model:
     posterior_predictive = pm.sample_posterior_predictive(trace, var_names=['y', 'sigmoid_term'])
 
 
+# In[10]:
+
+
 # Average across chains, but not draws
 y_pred = np.mean(np.mean(posterior_predictive.posterior_predictive['y'], axis=0), axis=0)
 sigmoid_pred = np.mean(np.mean(posterior_predictive.posterior_predictive['sigmoid_term'], axis=0), axis=0)
+
+
+# In[11]:
 
 
 df_pred = pd.DataFrame({'y': y, 'y_pred': y_pred, 'curvature': curvature, 'manifold': x,
@@ -107,6 +146,9 @@ px.line(df_pred)
 
 
 # # Baseline 2: on one dataset, use the eigenworms
+
+# In[12]:
+
 
 
 ind_data = Xy['dataset_name'] == '2022-11-23_worm8'
@@ -125,6 +167,9 @@ curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']][ind_dat
 curvature = (curvature-curvature.mean()) / curvature.std()  # z-score
 
 print(x.shape, y.shape, curvature.shape)
+
+
+# In[13]:
 
 
 with pm.Model() as model:
@@ -164,12 +209,21 @@ with pm.Model() as model:
     likelihood = pm.Normal('y', mu=mu, sigma=sigma, observed=y)
 
 
+# In[14]:
+
+
 
 for rv, shape in model.eval_rv_shapes().items():
     print(f"{rv:>11}: shape={shape}")
 
 
+# In[15]:
+
+
 pm.model_to_graphviz(model)
+
+
+# In[16]:
 
 
 # Run inference
@@ -177,8 +231,14 @@ with model:
     trace = pm.sample(1000, tune=1000, cores=64)
 
 
+# In[17]:
+
+
 # Plot posterior distributions
 az.plot_trace(trace, compact=True, var_names=['sigmoid_slope', 'inflection_point', 'amplitude', 'coefficients_vec']);
+
+
+# In[18]:
 
 
 import matplotlib.pyplot as plt
@@ -187,7 +247,13 @@ with model:
     posterior_predictive = pm.sample_posterior_predictive(trace, var_names=['y', 'sigmoid_term'])
 
 
+# In[32]:
+
+
 az.plot_pair(trace, var_names=['coefficients_vec'])
+
+
+# In[26]:
 
 
 # # Average across chains, but not draws
@@ -195,10 +261,16 @@ az.plot_pair(trace, var_names=['coefficients_vec'])
 # sigmoid_pred = np.mean(np.mean(posterior_predictive.posterior_predictive['sigmoid_term'], axis=0), axis=0)
 
 
+# In[62]:
+
+
 # df_pred = pd.DataFrame({'y': y, 'y_pred': y_pred, #'curvature': curvature, 
 #                         'manifold': x,
 #                         'fwd': Xy['fwd'][ind_data], 'sigmoid_pred': sigmoid_pred})
 # px.line(df_pred)
+
+
+# In[25]:
 
 
 from wbfm.utils.external.utils_arviz import plot_ts
@@ -208,10 +280,16 @@ fig = plot_ts(idata=posterior_predictive, y='y', y_hat='y')#, plot_dim='y_dim_0'
 # posterior_predictive.posterior_predictive.y
 
 
+# In[ ]:
+
+
 
 
 
 # # Baseline 3: use the eigenworms on a neuron which shouldn't show anything (ALA)
+
+# In[33]:
+
 
 
 ind_data = Xy['dataset_name'] == '2022-11-23_worm8'
@@ -230,6 +308,9 @@ curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']][ind_dat
 curvature = (curvature-curvature.mean()) / curvature.std()  # z-score
 
 print(x.shape, y.shape, curvature.shape)
+
+
+# In[76]:
 
 
 def add_baseline(model):
@@ -275,7 +356,13 @@ with pm.Model() as model:
     likelihood = pm.Normal('y', mu=mu, sigma=sigma, observed=y)
 
 
+# In[77]:
+
+
 # model.to_graphviz()
+
+
+# In[78]:
 
 
 
@@ -283,13 +370,22 @@ with pm.Model() as model:
 #     print(f"{rv:>11}: shape={shape}")
 
 
+# In[79]:
+
+
 # Run inference
 with model:
     trace = pm.sample(1000, tune=1000, cores=64)
 
 
+# In[38]:
+
+
 # Plot posterior distributions
 az.plot_trace(trace, compact=True, var_names=['sigmoid_slope', 'inflection_point', 'amplitude', 'coefficients_vec']);
+
+
+# In[39]:
 
 
 import matplotlib.pyplot as plt
@@ -298,15 +394,24 @@ with model:
     posterior_predictive = pm.sample_posterior_predictive(trace, var_names=['y', 'sigmoid_term'])
 
 
+# In[40]:
+
+
 # Average across chains, but not draws
 y_pred = np.mean(np.mean(posterior_predictive.posterior_predictive['y'], axis=0), axis=0)
 sigmoid_pred = np.mean(np.mean(posterior_predictive.posterior_predictive['sigmoid_term'], axis=0), axis=0)
+
+
+# In[41]:
 
 
 df_pred = pd.DataFrame({'y': y, 'y_pred': y_pred, #'curvature': curvature, 
                         'manifold': x,
                         'fwd': Xy['fwd'][ind_data], 'sigmoid_pred': sigmoid_pred})
 px.line(df_pred)
+
+
+# In[47]:
 
 
 from wbfm.utils.external.utils_arviz import plot_ts
@@ -316,12 +421,18 @@ fig = plot_ts(idata=posterior_predictive, y='y', y_hat='y', num_samples=1000)#, 
 # posterior_predictive.posterior_predictive.y
 
 
+# In[46]:
+
+
 with model:
     pm.compute_log_likelihood(trace)
 az.loo(trace)
 
 
 # # Baseline 4: use the eigenworms on a neuron which shouldn't show anything (AVA)
+
+# In[48]:
+
 
 
 ind_data = Xy['dataset_name'] == '2022-11-23_worm8'
@@ -340,6 +451,9 @@ curvature = Xy[['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']][ind_dat
 curvature = (curvature-curvature.mean()) / curvature.std()  # z-score
 
 print(x.shape, y.shape, curvature.shape)
+
+
+# In[49]:
 
 
 with pm.Model() as model:
@@ -379,13 +493,22 @@ with pm.Model() as model:
     likelihood = pm.Normal('y', mu=mu, sigma=sigma, observed=y)
 
 
+# In[50]:
+
+
 # Run inference
 with model:
     trace = pm.sample(1000, tune=1000, cores=64)
 
 
+# In[51]:
+
+
 # Plot posterior distributions
 az.plot_trace(trace, compact=True, var_names=['sigmoid_slope', 'inflection_point', 'amplitude', 'coefficients_vec']);
+
+
+# In[52]:
 
 
 import matplotlib.pyplot as plt
@@ -394,9 +517,15 @@ with model:
     posterior_predictive = pm.sample_posterior_predictive(trace, var_names=['y', 'sigmoid_term'])
 
 
+# In[53]:
+
+
 # Average across chains, but not draws
 y_pred = np.mean(np.mean(posterior_predictive.posterior_predictive['y'], axis=0), axis=0)
 sigmoid_pred = np.mean(np.mean(posterior_predictive.posterior_predictive['sigmoid_term'], axis=0), axis=0)
+
+
+# In[54]:
 
 
 df_pred = pd.DataFrame({'y': y, 'y_pred': y_pred, #'curvature': curvature, 
@@ -405,11 +534,17 @@ df_pred = pd.DataFrame({'y': y, 'y_pred': y_pred, #'curvature': curvature,
 px.line(df_pred)
 
 
+# In[55]:
+
+
 from wbfm.utils.external.utils_arviz import plot_ts
 # x = np.linspace(0, posterior_predictive.observed_data['y'].shape)
 # az.plot_lm(idata=posterior_predictive, y='y', x=None)
 fig = plot_ts(idata=posterior_predictive, y='y', y_hat='y')#, plot_dim='y_dim_0')
 # posterior_predictive.posterior_predictive.y
+
+
+# In[56]:
 
 
 with model:

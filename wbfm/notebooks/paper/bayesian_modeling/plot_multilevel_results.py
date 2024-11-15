@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[1]:
+
+
 get_ipython().run_line_magic('load_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 import matplotlib.pyplot as plt
@@ -10,6 +13,9 @@ import os
 import numpy as np
 from pathlib import Path
 import plotly.express as px
+
+
+# In[2]:
 
 
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
@@ -23,7 +29,13 @@ print(fname)
 Xy_gfp = pd.read_hdf(fname)
 
 
+# In[3]:
+
+
 'VG_post_turning_R' in Xy_gfp
+
+
+# In[4]:
 
 
 Xy_gfp.head()
@@ -31,8 +43,22 @@ Xy_gfp.head()
 
 # # Plot model comparison statistics
 
+# In[5]:
+
+
+from wbfm.utils.external.utils_plotly import get_nonoverlapping_text_positions
+
+
+# In[6]:
+
+
+# suffix = ''
+suffix = '_new_ids_only_eigenworms'
+# suffix = '_eigenworms34_speed'
+# suffix = '_only_eigenworms'
+
 # Load data from many dataframes
-output_dir = '/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/output'
+output_dir = '/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/output' + suffix
 # output_dir = os.path.join(get_hierarchical_modeling_dir(), 'output')
 all_dfs = {}
 for filename in tqdm(Path(output_dir).iterdir()):
@@ -42,8 +68,11 @@ for filename in tqdm(Path(output_dir).iterdir()):
 df = pd.concat(all_dfs).reset_index(names=['neuron_name', 'model_type'])
 
 
+# In[7]:
+
+
 # Also load gfp
-output_dir = '/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp/output'
+output_dir = '/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling_gfp/output' + suffix
 
 # output_dir = os.path.join(get_hierarchical_modeling_dir(gfp=True), 'output')
 all_dfs_gfp = {}
@@ -54,16 +83,22 @@ for filename in tqdm(Path(output_dir).iterdir()):
 df_gfp = pd.concat(all_dfs_gfp).reset_index(names=['neuron_name', 'model_type'])
 
 
-from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
-df_num_datasets = Xy.groupby('dataset_name').apply(lambda x: x.notnull().any()).sum().to_frame()
-df_num_datasets['datatype'] = 'gcamp'
-df_num_datasets_gfp = Xy_gfp.groupby('dataset_name').apply(lambda x: x.notnull().any()).sum().to_frame()
-df_num_datasets_gfp['datatype'] = 'gfp'
-df_num_datasets = pd.concat([df_num_datasets, df_num_datasets_gfp])
-df_num_datasets.rename(columns={0: 'number'}, inplace=True)
+# In[8]:
 
-px.bar(df_num_datasets.loc[neurons_with_confident_ids(), :].sort_values(by='number'), y='number', 
-       color='datatype', barmode='group')
+
+# from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
+# df_num_datasets = Xy.groupby('dataset_name').apply(lambda x: x.notnull().any()).sum().to_frame()
+# df_num_datasets['datatype'] = 'gcamp'
+# df_num_datasets_gfp = Xy_gfp.groupby('dataset_name').apply(lambda x: x.notnull().any()).sum().to_frame()
+# df_num_datasets_gfp['datatype'] = 'gfp'
+# df_num_datasets = pd.concat([df_num_datasets, df_num_datasets_gfp])
+# df_num_datasets.rename(columns={0: 'number'}, inplace=True)
+
+# px.bar(df_num_datasets.loc[neurons_with_confident_ids(), :].sort_values(by='number'), y='number', 
+#        color='datatype', barmode='group')
+
+
+# In[9]:
 
 
 # from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
@@ -71,9 +106,15 @@ px.bar(df_num_datasets.loc[neurons_with_confident_ids(), :].sort_values(by='numb
 # px.scatter(df_num_datasets[c for c in neurons_with_confident_ids() if c in df_num_datasets.index].sort_values())
 
 
+# In[10]:
+
+
 # df_pivot = df.pivot(columns='model_type', index='neuron_name', values='elpd_loo')
 # df_pivot = df_pivot.divide(Xy.count(), axis=0).dropna()
 # px.scatter(df_pivot, x='null', y='hierarchical_pca', text=df_pivot.index)
+
+
+# In[11]:
 
 
 # What I want to plot:
@@ -84,9 +125,9 @@ from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 
 # df_to_plot_gcamp = package_bayesian_df_for_plot(df, relative_improvement=False).assign(datatype='Freely Moving (GCaMP, residual)')
 # df_to_plot_gfp = package_bayesian_df_for_plot(df_gfp, relative_improvement=False).assign(datatype='Freely Moving (GFP, residual)')
-df_to_plot_gcamp = package_bayesian_df_for_plot(df, df_normalization=Xy, relative_improvement=False,
+df_to_plot_gcamp = package_bayesian_df_for_plot(df, df_normalization=Xy, 
                                                 min_num_datapoints=10000).assign(datatype='Freely Moving (GCaMP, residual)')
-df_to_plot_gfp = package_bayesian_df_for_plot(df_gfp, df_normalization=Xy_gfp, relative_improvement=False,
+df_to_plot_gfp = package_bayesian_df_for_plot(df_gfp, df_normalization=Xy_gfp, 
                                               min_num_datapoints=5000).assign(datatype='Freely Moving (GFP, residual)')
 
 # Add a couple names back in
@@ -97,141 +138,234 @@ rename_func = lambda x: f'{x} (gfp)' if x != '' else ''
 df_to_plot_gfp.loc[:, 'text'] = df_to_plot_gfp.loc[:, 'text'].apply(rename_func)
 # df_to_plot_gcamp.loc['RMDVL', 'text'] = 'RMDVL'
 # df_to_plot_gcamp.loc['SMDVR', 'text'] = 'SMDVR'
-df_to_plot_gcamp.loc['VB03', 'text'] = 'VB03'
+# df_to_plot_gcamp.loc['VB03', 'text'] = 'VB03'
 # Remove a couple names
 # df_to_plot_gcamp.loc['BAGL', 'text'] = ''
-df_to_plot_gcamp.loc['URADL', 'text'] = ''
+# df_to_plot_gcamp.loc['URADL', 'text'] = ''
 
 df_to_plot = pd.concat([df_to_plot_gcamp, df_to_plot_gfp])
 df_to_plot['Dataset Type'] = df_to_plot['datatype']
 df_to_plot['Size'] = 1
 
 
-# %debug
+# In[12]:
 
 
-# y, x = 'Hierarchy Score', 'null_normalized'
+# df_to_plot.loc['VB01', :]
+
+
+# In[13]:
+
+
+df_to_plot.head()
+
+
+# In[14]:
+
+
+import plotly.graph_objects as go
+def paper_plot(x, y, to_save=True, remove_names_of_ns=True, display_text=True, to_show=True, **kwargs):
+
+    x_max_gfp = df_to_plot_gfp[x].max()
+    y_max_gfp = df_to_plot_gfp[y].max()
+    print('GFP thresholds: ', y_max_gfp, x_max_gfp)
+
+    def categorize_row(row):
+        if row[y] > y_max_gfp and row[x] > x_max_gfp:
+            return 'Hierarchical Behavior'
+        elif row[y] <= y_max_gfp and row[x] > x_max_gfp:
+            return 'Behavior only'
+        elif row[y] > y_max_gfp and row[x] <= x_max_gfp:
+            return 'Hierarchy only'
+        else:
+            return 'No Behavior or Hierarchy'
+
+    # Apply function to create new column
+    df_to_plot_gcamp['Category'] = df_to_plot_gcamp.apply(categorize_row, axis=1)
+    df_to_plot['Category'] = df_to_plot.apply(categorize_row, axis=1)
+    _df = df_to_plot[df_to_plot.index.isin(neurons_with_confident_ids())]
+    text = _df['text'].copy()
+    if remove_names_of_ns:
+        text[_df[y] <= y_max_gfp] = ''
+    
+    fig = px.scatter(_df, 
+                     # x='Hierarchy Score', y='Behavior Score', range_y=[-2, 60],
+                     y=y, x=x, #range_x=[-2, 60],
+                     text=text if display_text else None, 
+                     # color='Category', #
+                     color='Dataset Type',
+                     color_discrete_map=plotly_paper_color_discrete_map(), 
+                     #size='Size', 
+                     size_max=10,
+                     hover_data=['Category'],
+                     **kwargs
+                    )
+    fig.update_traces(textposition='middle left')
+
+    apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
+
+    # gfp lines
+    fig.add_shape(type="line",
+                  x0=x_max_gfp, y0=0,  # start of the line (bottom of the plot)
+                  x1=x_max_gfp, y1=1,  # end of the line (top of the plot)
+                  line=dict(color="black", width=1, dash="dash"),
+                  xref='x',
+                  yref='paper')
+    fig.add_shape(type="line",
+                  x0=0, y0=y_max_gfp,  # start of the line (bottom of the plot)
+                  x1=1, y1=y_max_gfp,  # end of the line (top of the plot)
+                  line=dict(color="black", width=1, dash="dash"),
+                  xref='paper',
+                  yref='y')
+    # Diagonal line
+    xy_max = np.min([df_to_plot[x].max(), df_to_plot[y].max()])
+    fig.add_shape(type="line",
+                  x0=0, y0=0,  # start of the line (bottom of the plot)
+                  x1=xy_max, y1=xy_max,  # end of the line (top of the plot)
+                  line=dict(color="black", width=1, dash="dash"),
+                  xref='x',
+                  yref='y')
+    fig.update_layout(legend=dict(
+        yanchor="top",
+        y=1.02,
+        xanchor="left",
+        x=0.02
+    ))
+    fig.update_xaxes(title=f'{x}')# over Behavior model')
+    fig.update_yaxes(title=f'{y}')# <br>over Trivial model')
+    
+    # Add contour plot for the gfp points
+    # _df2 = _df[_df['Dataset Type'] == 'Freely Moving (GFP, residual)']
+    # hist, x_edges, y_edges = np.histogram2d(_df2[x], _df2[y], bins=4)
+    # x_centers = (x_edges[:-1] + x_edges[1:]) / 2
+    # y_centers = (y_edges[:-1] + y_edges[1:]) / 2
+    # # contour = go.Figure(data=
+    # contour = go.Contour(
+    #         x=x_centers,
+    #         y=y_centers,
+    #         z=hist.T * 2,
+    #         contours_coloring='lines',
+    #         line_width=2,
+    #     )
+    # )
+    # Combine the scatter and contour plots
+    # fig.add_trace(contour)
+
+    if to_save:
+        ##
+        # Make a figure for presentations with fewer names
+        ##
+        apply_figure_settings(fig, height_factor=0.4, width_factor=0.5)
+        # fig.show()  # Showing here messes it up for the next save
+        fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", 'hierarchy_behavior_score_with_gfp_presentation.png')
+        fig.write_image(fname, scale=7)
+
+    ##
+    # Final settings
+    ##
+
+    # # Add some additional annotations with arrows and offsets (gfp)
+    # annotations_to_add = ['VB02', 'RMED', 'RMEV']
+    # offset_list = [[10, -150], [250, -50], [130, -50]]
+    # for offset, neuron in zip(offset_list, annotations_to_add):
+    #     ind = df_to_plot['datatype'] == 'Freely Moving (GFP, residual)'
+    #     xy = list(df_to_plot[ind].loc[neuron, [x, y]])
+    #     text = f'{neuron} (GFP)'
+    #     fig.add_annotation(x=xy[0], y=xy[1], ax=offset[0], ay=offset[1],
+    #                        text=text, showarrow=True)
+
+    # # Add some additional annotations with arrows and offsets (gcamp)
+    # annotations_to_add = ['RIS']
+    # offset_list = [[100, -50]]
+    # for offset, neuron in zip(offset_list, annotations_to_add):
+    #     ind = df_to_plot['datatype'] == 'Freely Moving (GCaMP, residual)'
+    #     xy = list(df_to_plot[ind].loc[neuron, [x, y]])
+    #     text = f'{neuron}'
+    #     fig.add_annotation(x=xy[0], y=xy[1], ax=offset[0], ay=offset[1],
+    #                        text=text, showarrow=True)
+
+    apply_figure_settings(fig, height_factor=0.3, width_factor=0.6)
+
+    if to_save:
+        fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", f'x-{x}_y-{y}.png')
+        fig.write_image(fname, scale=3)
+        fname = Path(fname).with_suffix('.svg')
+        fig.write_image(fname)
+        fname = Path(fname).with_suffix('.html')
+        fig.write_html(fname)
+        
+    if to_show:
+        fig.show()
+    
+    return fig, _df, text
+
+
+# In[15]:
+
+
+y, x = 'Hierarchy Score', 'Relative Hierarchy Score'
+fig, _df, text = paper_plot(x, y, display_text=False)
+
+
+# In[16]:
+
+
 y, x = 'Hierarchy Score', 'Behavior Score'
-# y, x = 'Hierarchy Score', 'hierarchical_pca_normalized'
+fig, _df, text = paper_plot(x, y, #size='Relative Hierarchy Score', 
+                            display_text=False, to_show=False)
 
-x_max_gfp = df_to_plot_gfp[x].max()
-y_max_gfp = df_to_plot_gfp[y].max()
-print('GFP thresholds: ', y_max_gfp, x_max_gfp)
+get_nonoverlapping_text_positions(_df[x], _df[y], text, fig, weight=1, k=4, add_nodes_with_no_text=True,
+                                 x_range=[0, 29], size=12)
 
-def categorize_row(row):
-    if row[y] > y_max_gfp and row[x] > x_max_gfp:
-        return 'Hierarchical Behavior'
-    elif row[y] <= y_max_gfp and row[x] > x_max_gfp:
-        return 'Behavior only'
-    elif row[y] > y_max_gfp and row[x] <= x_max_gfp:
-        return 'Hierarchy only'
-    else:
-        return 'No Behavior or Hierarchy'
-
-# Apply function to create new column
-df_to_plot_gcamp['Category'] = df_to_plot_gcamp.apply(categorize_row, axis=1)
-df_to_plot['Category'] = df_to_plot.apply(categorize_row, axis=1)
-
-fig = px.scatter(df_to_plot, 
-                 # x='Hierarchy Score', y='Behavior Score', range_y=[-2, 60],
-                 y=y, x=x, #range_x=[-2, 60],
-                 text='text', 
-                 color='Category', #color='Dataset Type',
-                color_discrete_map=plotly_paper_color_discrete_map(), size='Size', size_max=10,
-                )
-fig.update_traces(textposition='middle right')
-
-apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
-
-# gfp lines
-fig.add_shape(type="line",
-              x0=x_max_gfp, y0=0,  # start of the line (bottom of the plot)
-              x1=x_max_gfp, y1=1,  # end of the line (top of the plot)
-              line=dict(color="black", width=2, dash="dash"),
-              xref='x',
-              yref='paper')
-fig.add_shape(type="line",
-              x0=0, y0=y_max_gfp,  # start of the line (bottom of the plot)
-              x1=1, y1=y_max_gfp,  # end of the line (top of the plot)
-              line=dict(color="black", width=2, dash="dash"),
-              xref='paper',
-              yref='y')
-fig.update_layout(legend=dict(
-    yanchor="top",
-    y=0.99,
-    xanchor="left",
-    x=0.3
-))
-fig.update_xaxes(title=f'{x}')# over Behavior model')
-fig.update_yaxes(title=f'{y}')# <br>over Trivial model')
-
-to_save = False
-if to_save:
-    ##
-    # Make a figure for presentations with fewer names
-    ##
-    apply_figure_settings(fig, height_factor=0.3, width_factor=0.5)
-    # fig.show()  # Showing here messes it up for the next save
-    fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", 'hierarchy_behavior_score_with_gfp_presentation.png')
-    fig.write_image(fname, scale=7)
-
-
-##
-# Final settings
-##
-
-# # Add some additional annotations with arrows and offsets (gfp)
-# annotations_to_add = ['VB02', 'RMED', 'RMEV']
-# offset_list = [[10, -150], [250, -50], [130, -50]]
-# for offset, neuron in zip(offset_list, annotations_to_add):
-#     ind = df_to_plot['datatype'] == 'Freely Moving (GFP, residual)'
-#     xy = list(df_to_plot[ind].loc[neuron, [x, y]])
-#     text = f'{neuron} (GFP)'
-#     fig.add_annotation(x=xy[0], y=xy[1], ax=offset[0], ay=offset[1],
-#                        text=text, showarrow=True)
-    
-# # Add some additional annotations with arrows and offsets (gcamp)
-# annotations_to_add = ['RIS']
-# offset_list = [[100, -50]]
-# for offset, neuron in zip(offset_list, annotations_to_add):
-#     ind = df_to_plot['datatype'] == 'Freely Moving (GCaMP, residual)'
-#     xy = list(df_to_plot[ind].loc[neuron, [x, y]])
-#     text = f'{neuron}'
-#     fig.add_annotation(x=xy[0], y=xy[1], ax=offset[0], ay=offset[1],
-#                        text=text, showarrow=True)
-    
-apply_figure_settings(fig, height_factor=0.3, width_factor=1.0)
+fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", f'x-{x}_y-{y}-annotations.png')
+fig.write_image(fname, scale=3)
+fname = Path(fname).with_suffix('.svg')
+fig.write_image(fname)
+fname = Path(fname).with_suffix('.html')
+fig.write_html(fname)
 
 fig.show()
 
-to_save = False
-if to_save:
-    fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", 'hierarchy_behavior_score_with_gfp.png')
-    # fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/presentations_and_grants/CSH", 'hierarchy_behavior_score_with_gfp.png')
-    fig.write_image(fname, scale=3)
-    fname = Path(fname).with_suffix('.svg')
-    fig.write_image(fname)
+
+# In[17]:
+
+
+y, x = 'Hierarchy Score', 'Behavior Score'
+fig = paper_plot(x, y, size='Relative Hierarchy Score')
+
+
+# In[18]:
+
+
+# y, x = 'Relative Hierarchy Score', 'Behavior Score'
+# paper_plot(x, y)
+
+
+# In[19]:
 
 
 
-fig = px.pie(df_to_plot_gcamp, names='Category', color='Category',
-         color_discrete_map=plotly_paper_color_discrete_map(),
-           )
-apply_figure_settings(fig, height_factor=0.2, width_factor=0.5)
+# fig = px.pie(df_to_plot_gcamp, names='Category', color='Category',
+#           color_discrete_map=plotly_paper_color_discrete_map(),
+#             )
+# apply_figure_settings(fig, height_factor=0.2, width_factor=0.5)
 
-fig.show()
+# fig.show()
 
-to_save = False
-if to_save:
-   # output_folder = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/presentations_and_grants/CSH"
-   output_folder = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots"
-   fname = os.path.join(output_folder, 'hierarchy_explained_pie_chart.png')
-   fig.write_image(fname, scale=4)
-   fname = fname.replace('.png', '.svg')
-   fig.write_image(fname)
+# to_save = False
+# if to_save:
+#     # output_folder = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/presentations_and_grants/CSH"
+#     output_folder = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots"
+#     fname = os.path.join(output_folder, 'hierarchy_explained_pie_chart.png')
+#     fig.write_image(fname, scale=4)
+#     fname = fname.replace('.png', '.svg')
+#     fig.write_image(fname)
 
 
 # # Alternate axes: manifold variance
+
+# In[20]:
+
 
 
 
@@ -256,12 +390,18 @@ df_var_exp = pd.concat([df_var_exp_gcamp, df_var_exp_gfp], axis=0)
 # px.box(df_var_exp.dropna(thresh=3, axis=1), color='Dataset Type')
 
 
+# In[21]:
+
+
 
 df_var_exp_median = df_var_exp.groupby('Dataset Type').median().reset_index().melt(
     id_vars='Dataset Type', var_name='neuron_name', value_name='manifold_variance')
 df_to_plot_with_var = df_to_plot.merge(df_var_exp_median, on=['neuron_name', 'Dataset Type'])
 
 # df_to_plot_with_var
+
+
+# In[22]:
 
 
 x, y = 'manifold_variance', 'Hierarchy Score'
@@ -274,10 +414,15 @@ df_to_plot_with_var['above_gfp'] = df_to_plot_with_var[y] > y_max_gfp
 df_to_plot_with_var['text_simple'] = df_to_plot_with_var['text']
 df_to_plot_with_var.loc[~df_to_plot_with_var['above_gfp'], 'text_simple'] = ''
 
+# Remove or include temporary names
+df_to_plot_with_var = df_to_plot_with_var.loc[df_to_plot_with_var['neuron_name'].isin(neurons_with_confident_ids())].copy()
+df_to_plot_with_var = df_to_plot_with_var.loc[df_to_plot_with_var['neuron_name'] != '']
+
 # Actual plot
 fig = px.scatter(df_to_plot_with_var, 
                  y=y, x=x,
-                 text='text_simple', 
+                 # text='neuron_name', 
+                 # text='text_simple', 
                  color='Dataset Type',
                 color_discrete_map=plotly_paper_color_discrete_map(), size='Size', size_max=10,
                 )
@@ -289,14 +434,28 @@ fig.add_shape(type="line",
               yref='y')
 fig.update_xaxes(title='Variance Explained by Manifold')
 fig.update_yaxes(title='Hierarchical Model Performance')
-apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
 
 fig.update_layout(legend=dict(
     yanchor="top",
     y=0.99,
     xanchor="left",
-    x=0.5
+    x=0.4
 ))
+
+to_save = True
+if to_save:
+    apply_figure_settings(fig, width_factor=0.6, height_factor=0.3)
+    fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", 'hierarchy_behavior_score_and_manifold_variance-no_text.png')
+    fig.write_image(fname, scale=3)
+    fname = Path(fname).with_suffix('.svg')
+    fig.write_image(fname)
+
+text = df_to_plot_with_var['text_simple']
+get_nonoverlapping_text_positions(df_to_plot_with_var[x], df_to_plot_with_var[y], text, fig, weight=1, k=0.1, 
+                                  add_nodes_with_no_text=True, size=12, x_range=[-0.2, 1.2])
+
+apply_figure_settings(fig, width_factor=0.6, height_factor=0.3)
+
 
 fig.show()
 
@@ -310,13 +469,18 @@ if to_save:
     fig.write_image(fname)
 
 
-# df_to_plot_with_var.head()
-
-
 # # Additional subplots: model parameters
+
+# In[23]:
+
 
 import arviz as az
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
+from wbfm.utils.general.hardcoded_paths import role_of_neuron_dict
+
+
+# In[24]:
+
 
 def load_all_traces(foldername):
     fnames = neurons_with_confident_ids()
@@ -327,24 +491,41 @@ def load_all_traces(foldername):
             try:
                 trace = az.from_netcdf(trace_fname)
                 all_traces[neuron] = trace
-            except:
+            except ValueError:
                 pass
     return all_traces
 
 parent_folder = '/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling'
+# suffix = '_only_eigenworms'
 # suffix = '_eigenworms34_speed'
-suffix = ''
+# suffix = ''
+suffix = '_new_ids_only_eigenworms'
             
 foldername = os.path.join(parent_folder, f'output{suffix}')
 all_traces_gcamp = load_all_traces(foldername)
 
-foldername = os.path.join(f'{parent_folder}_gfp', f'output{suffix}')
-all_traces_gfp = load_all_traces(foldername)
+# foldername = os.path.join(f'{parent_folder}_gfp', f'output{suffix}')
+# all_traces_gfp = load_all_traces(foldername)
+
+
+# In[25]:
+
+
+# Also load the NMJ connectivity
+fname = '/home/charles/Current_work/repos/dlc_for_wbfm/paper/NeuronFixedPoints.xls'
+df_connect = pd.read_excel(fname)
+_df = df_connect[df_connect['Landmark'].str.contains('M')]
+muscle_position = _df.groupby('Neuron')['Landmark Position'].mean()
+
+
+# In[26]:
 
 
 # Plot all that make it above the gfp line
-# neurons_to_plot = df_to_plot_with_var['neuron_name'][df_to_plot_with_var['Category'] != 'No Behavior or Hierarchy']
-neurons_to_plot = neurons_with_confident_ids()
+cols_to_plot = ['Hierarchy only', 'Hierarchical Behavior']
+
+neurons_to_plot = df_to_plot_with_var['neuron_name'][df_to_plot_with_var['Category'].isin(cols_to_plot)]
+# neurons_to_plot = neurons_with_confident_ids()
 # neurons_to_plot = ['URXR', 'URXL']
 
 # neurons_to_plot = ['SMDDL', 'SMDDR', 'VB02', 'DB01', 'DB02']
@@ -352,9 +533,10 @@ neurons_to_plot = neurons_with_confident_ids()
 # neurons_to_plot = fnames
 # neurons_to_plot = ['SMDDL', 'SMDDR', 'VG_post_turning_R', 'VG_post_turning_L']
 neurons_to_plot = list(set(neurons_to_plot).intersection(set(all_traces_gcamp.keys())))
+# df_to_plot_with_var[df_to_plot_with_var['neuron_name'] == 'AVAL']
 
 
-# all_traces_gfp['URXL']
+# In[27]:
 
 
 # var_names = ["self_collision", 'speed', 'eigenworm3', 'eigenworm4', 'amplitude_mu']
@@ -368,67 +550,301 @@ all_traces = all_traces_gcamp
 #               filter_vars='like', kind='ridgeplot', figsize=(9, 7), ridgeplot_overlap=3)
 
 
+# In[28]:
+
+
 # Scatter plot of median model parameters
 from collections import defaultdict
-var_names = ["self_collision", 'amplitude_mu', 'eigenworm', 'speed', 'phase', 'dorsal', 'ventral']
+var_names = ["self_collision", 'amplitude_mu', 'eigenworm', 'speed', 'phase', 'dorsal', 'ventral', 'hyper_pca0_amplitude']
+var_names2 = ["sigmoid_term"]
 
 all_dfs = {}
 for n in tqdm(neurons_to_plot):
     dat = az.extract(all_traces[n], group='posterior', var_names=var_names, filter_vars='like')
-    all_dfs[n] = dat.to_dataframe().drop(columns=['chain', 'draw']).median()
+    all_dfs[n] = [dat.to_dataframe().drop(columns=['chain', 'draw']).median()]
+    
+    dat = az.extract(all_traces[n], group='posterior', var_names=var_names2, filter_vars='like')
+    dat_sigmoid = dat.to_dataframe().drop(columns=['chain', 'draw'])
+    dat_sigmoid_quantile = dat_sigmoid.quantile(0.8)#.rename('sigmoid_term_quantile')
+    dat_sigmoid_quantile.index = ['sigmoid_term_quantile']
+    dat_sigmoid_variance = dat_sigmoid.var()
+    dat_sigmoid_variance.index = ['sigmoid_term_variance']
+    all_dfs[n].extend([dat_sigmoid.median(), dat_sigmoid_quantile, dat_sigmoid_variance])
+    all_dfs[n] = pd.concat(all_dfs[n])
 
 
+# In[29]:
+
+
+# df_to_plot_with_var
+
+
+# In[69]:
+
+
+# Add final columns
 df_params = pd.concat(all_dfs, axis=1).T
 df_params['dataset_type'] = 'residual'
+
+df_params['muscle_position'] = muscle_position
+df_params.loc['RID', 'muscle_position'] = np.nan  # RID is strange
+
+_df = df_to_plot_with_var[df_to_plot_with_var['datatype']=='Freely Moving (GCaMP, residual)'].copy()
+_df.index = _df['neuron_name']
+df_params['Hierarchy Score'] = _df['Hierarchy Score']
+df_params['Relative Hierarchy Score'] = _df['Relative Hierarchy Score']
+
+df_params['Neuron Type'] = list(pd.Series(df_params.index).map(role_of_neuron_dict()))
+
 df_params.head()
 
 
-r = np.exp(df_params['log_amplitude_mu'])
-text = np.array(df_params.index)
-text[r < 0.2] = ''
+# In[70]:
 
-fig = px.scatter_polar(df_params, r=r, theta='phase_shift', text=text,
-                      color='dataset_type', color_discrete_map=plotly_paper_color_discrete_map())
-fig.update_traces(thetaunit='radians', textposition='bottom center')
 
-apply_figure_settings(fig, width_factor=0.4, height_factor=0.3)
+# px.histogram(df_params['sigmoid_term_variance'])
+
+
+# In[71]:
+
+
+# px.scatter(df_params['hyper_pca0_amplitude'])
+
+
+# In[72]:
+
+
+# fig = px.scatter_matrix(df_params, width=1000, height=1000)
+# fig.update_traces(diagonal_visible=False)
+# fig.show()
+
+
+# In[84]:
+
+
+from wbfm.utils.general.hardcoded_paths import role_of_neuron_dict
+# Get radial term: combination of raw curvature amplitude and median of the sigmoid term
+df_params['r'] = np.exp(df_params['log_amplitude_mu']) * df_params['sigmoid_term_quantile'] 
+
+df_params['Neuron Type'] = pd.Series(df_params.index).map(role_of_neuron_dict(include_ventral_dorsal=True)).values
+
+# r = df_params['log_amplitude_mu']
+df_params['text'] = np.array(df_params.index)
+df_params.loc[df_params['r'] < 0.1, 'text'] = ''
+# size = 3*np.ones(len(df_params.index))
+# size[r < 0.2] = 1
+
+
+# In[85]:
+
+
+fig = px.scatter_polar(df_params[df_params['Neuron Type'].str.contains('Motor')], r='r', theta='phase_shift', direction='counterclockwise', start_angle=0,
+                       text='text',
+                       color='Neuron Type', 
+                       color_discrete_map=plotly_paper_color_discrete_map(),
+                       size='Relative Hierarchy Score', size_max=15, #log_r=True,
+                       #color='Neuron Role',
+                       #color='muscle_position'
+                      )
+fig.update_traces(thetaunit='radians', textposition='top center', textfont_size=12, )
+
+apply_figure_settings(fig, width_factor=0.4, height_factor=0.4)
+# apply_figure_settings(fig, width_factor=1.0, height_factor=1.0)
+
 fig.update_layout(polar=dict(
     angularaxis = dict(thetaunit = "radians"),
-    radialaxis = dict(#title='Oscillation<br>Amplitude', 
+    radialaxis = dict(range=[0, 0.5],
                       nticks=3)
 ), 
-                  showlegend=False, title='Oscillation Amplitude and Phase', margin=dict(t=40))
+                  showlegend=True, 
+                  legend=dict(
+        yanchor="top",
+        y=0.4,
+        xanchor="left",
+        x=0.6,
+                      bordercolor="Black", borderwidth=2, bgcolor = 'white'
+    )
+                 )
+
+fig.show()
+
+to_save = True
+if to_save:
+    fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", 'phase_shift_and_oscillation_amplitude_only_motor.png')
+    fig.write_image(fname, scale=3)
+    fname = Path(fname).with_suffix('.svg')
+    fig.write_image(fname)
+    fname = Path(fname).with_suffix('.html')
+    fig.write_html(fname)
+    
+
+
+# In[86]:
+
+
+fig = px.scatter_polar(df_params, r='r', theta='phase_shift', direction='counterclockwise', start_angle=0,
+                       text='text',
+                       color='Neuron Type', 
+                       color_discrete_map=plotly_paper_color_discrete_map(),
+                       size='Relative Hierarchy Score', size_max=15, #log_r=True,
+                       #color='Neuron Role',
+                       #color='muscle_position'
+                      )
+fig.update_traces(thetaunit='radians', textposition='top center', textfont_size=12, )
+
+apply_figure_settings(fig, width_factor=0.4, height_factor=0.4)
+# apply_figure_settings(fig, width_factor=1.0, height_factor=1.0)
+
+fig.update_layout(polar=dict(
+    angularaxis = dict(thetaunit = "radians"),
+    radialaxis = dict(range=[0, 0.5],
+                      nticks=3)
+), 
+                  showlegend=True, 
+                  legend=dict(
+        yanchor="top",
+        y=0.4,
+        xanchor="left",
+        x=0.6,
+                      bordercolor="Black", borderwidth=2, bgcolor = 'white'
+    )
+                 )
 
 fig.show()
 
 to_save = True
 if to_save:
     fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", 'phase_shift_and_oscillation_amplitude.png')
-    # fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/presentations_and_grants/CSH", 'hierarchy_behavior_score_with_gfp.png')
     fig.write_image(fname, scale=3)
     fname = Path(fname).with_suffix('.svg')
     fig.write_image(fname)
+    fname = Path(fname).with_suffix('.html')
+    fig.write_html(fname)
+    
 
 
-fig = px.scatter(df_params.sort_values(by='self_collision_coefficient'), y='self_collision_coefficient', #x=df_params.index,
-                )#text=df_params.index)
+# ### Same, but no text
 
-apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
+# In[87]:
+
+
+
+fig = px.scatter_polar(df_params[df_params['Neuron Type'].str.contains('Motor')], r='r', theta='phase_shift', direction='counterclockwise', start_angle=0,
+                       color='Neuron Type', 
+                       color_discrete_map=plotly_paper_color_discrete_map(),
+                       size='Relative Hierarchy Score', size_max=15, #log_r=True,
+                       #color='Neuron Role',
+                       #color='muscle_position'
+                      )
+fig.update_traces(thetaunit='radians', textposition='top center', textfont_size=12, )
+
+apply_figure_settings(fig, width_factor=0.4, height_factor=0.4)
+# apply_figure_settings(fig, width_factor=1.0, height_factor=1.0)
+
+fig.update_layout(polar=dict(
+    angularaxis = dict(thetaunit = "radians"),
+    radialaxis = dict(range=[0, 0.5],
+                      nticks=3)
+), 
+                  showlegend=True, 
+                  legend=dict(
+        yanchor="top",
+        y=0.4,
+        xanchor="left",
+        x=0.6,
+                      bordercolor="Black", borderwidth=2, bgcolor = 'white'
+    )
+                 )
+
 fig.show()
 
+to_save = True
+if to_save:
+    fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", 'phase_shift_and_oscillation_amplitude_only_motor-no_text.png')
+    fig.write_image(fname, scale=3)
+    fname = Path(fname).with_suffix('.svg')
+    fig.write_image(fname)
+    fname = Path(fname).with_suffix('.html')
+    fig.write_html(fname)
+    
 
-fig = px.scatter(df_params, x='dorsal_only_head_curvature_coefficient', y='ventral_only_head_curvature_coefficient',
-          text=df_params.index)
 
-apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
-fig.show()
+# In[38]:
 
 
-fig = px.scatter(df_params, x='dorsal_only_body_curvature_coefficient', y='ventral_only_body_curvature_coefficient',
-          text=df_params.index)
 
-apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
-fig.show()
+# az.plot_forest([all_traces[n] for n in neurons_to_plot], model_names=neurons_to_plot,
+#                var_names=['log_amplitude_mu'], combined=True,
+#               filter_vars='like', kind='ridgeplot', figsize=(9, 7), ridgeplot_overlap=3)
+# az.plot_density([all_traces[n] for n in neurons_to_plot], data_labels=neurons_to_plot,
+#                var_names=['phase_shift', 'log_amplitude_mu'],  
+#               filter_vars='like', figsize=(9, 7))
+
+
+# In[39]:
+
+
+# # Look at one neuron specifically which seems weird
+
+# opt = dict(#var_names=['sigmoid_term'],
+#     var_names=['phase_shift', 'amplitude', 'log_amplitude_mu'], #filter_vars='like',
+#               combined=True)
+
+# az.plot_trace(all_traces_gcamp['URXL'], **opt)
+# az.plot_trace(all_traces_gcamp['VB02'], **opt);
+
+
+# In[40]:
+
+
+# fig = px.scatter(df_params.sort_values(by='self_collision_coefficient'), y='self_collision_coefficient', #x=df_params.index,
+#                 )#text=df_params.index)
+
+# apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
+# fig.show()
+
+
+# In[41]:
+
+
+# fig = px.scatter(df_params.sort_values(by='speed_coefficient'), y='speed_coefficient', #x=df_params.index,
+#                 )#text=df_params.index)
+
+# apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
+# fig.show()
+
+
+# In[42]:
+
+
+# fig = px.scatter(df_params, y='self_collision_coefficient', x='speed_coefficient',
+#                 text=df_params.index)
+
+# apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
+# fig.show()
+
+
+# In[43]:
+
+
+# fig = px.scatter(df_params, x='dorsal_only_head_curvature_coefficient', y='ventral_only_head_curvature_coefficient',
+#           text=df_params.index)
+
+# apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
+# fig.show()
+
+
+# In[44]:
+
+
+# fig = px.scatter(df_params, x='dorsal_only_body_curvature_coefficient', y='ventral_only_body_curvature_coefficient',
+#           text=df_params.index)
+
+# apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
+# fig.show()
+
+
+# In[45]:
 
 
 fig = px.scatter(df_params, x='eigenworm3_coefficient', y='eigenworm4_coefficient',
@@ -438,12 +854,21 @@ apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
 fig.show()
 
 
+# In[46]:
+
+
 # az.plot_density([all_traces_gcamp[n] for n in neurons_to_plot], data_labels=neurons_to_plot ,
 #                var_names=var_names,
 #               filter_vars='like', figsize=(15, 7))
 
 
+# In[ ]:
 
+
+
+
+
+# In[ ]:
 
 
 
@@ -451,31 +876,80 @@ fig.show()
 
 # ## Check the variables used
 
-import arviz as az
+# In[47]:
 
-foldername = '/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/output/'
-fnames = ['URXL']
-for neuron in tqdm(fnames):
-    trace_fname = os.path.join(foldername, f'{neuron}_hierarchical_pca_trace.nc')
-    if os.path.exists(trace_fname):
-        test_trace = az.from_netcdf(trace_fname)
+
+# import arviz as az
+
+# foldername = '/lisc/scratch/neurobiology/zimmer/fieseler/paper/hierarchical_modeling/output_new_ids_only_eigenworms/'
+# fnames = ['URXL']
+# for neuron in tqdm(fnames):
+#     trace_fname = os.path.join(foldername, f'{neuron}_hierarchical_pca_trace.nc')
+#     if os.path.exists(trace_fname):
+#         test_trace = az.from_netcdf(trace_fname)
             
 
 
-test_trace
+# In[48]:
 
 
-all_traces_gfp['URXL']
+# test_trace
+
+
+# In[49]:
+
+
+# all_traces_gcamp['URXL']
+
+
+# ## Debugging: look at time series reconstruction
+
+# In[50]:
+
+
+from wbfm.utils.external.utils_arviz import plot_ts, plot_model_elements
+
+
+# In[51]:
+
+
+fig = plot_model_elements(all_traces_gcamp['URXL'])
+
+
+# In[52]:
+
+
+idata = all_traces['URXL']
+dat = np.mean(np.mean(idata.posterior_predictive['sigmoid_term'], axis=0), axis=0)
+idata = all_traces['VB02']
+dat2 = np.mean(np.mean(idata.posterior_predictive['sigmoid_term'], axis=0), axis=0)
+
+
+# In[53]:
+
+
+# fig = px.box(pd.DataFrame({'URXL': pd.Series(dat), 'VB02': pd.Series(dat2)}))
+# print(np.quantile(dat, 0.9), np.quantile(dat2, 0.9))
+# fig.show()
 
 
 # # Model explanation (simplified cartoon)
+
+# In[54]:
+
 
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 
+# In[55]:
+
+
 fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
 Xy = pd.read_hdf(fname)
+
+
+# In[56]:
 
 
 fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28"
@@ -484,17 +958,29 @@ project_data = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 dataset_name = "ZIM2165_Gcamp7b_worm1-2022_11_28"
 
 
+# In[57]:
+
+
 # dataset_name = Xy_ind_range.index[i_dataset]
 idx = Xy['dataset_name'] == dataset_name
 project_data.use_physical_time = True
 x_range = [0, 120]
 
 
+# In[58]:
+
+
 df_to_plot = Xy.loc[idx, :].reset_index(drop=True)
 df_to_plot.index = project_data.x_for_plots#[:-1]
 
 
+# In[59]:
+
+
 df_to_plot.head()
+
+
+# In[60]:
 
 
 # SECOND STYLE: two plots on one 
@@ -530,13 +1016,22 @@ for y_name in ['VB02']:
     # fig.write_image(f'{y_name}-raw.png', scale=7)
 
 
+# In[ ]:
 
+
+
+
+
+# In[ ]:
 
 
 
 
 
 # # Debug scores
+
+# In[61]:
+
 
 _df = df_gfp
 
@@ -555,7 +1050,13 @@ no_label_idx = np.logical_and(x < 5, y < 8)  # Displays some blue-only text
 df_to_plot = pd.DataFrame({'Hierarchy Score': x, 'Behavior Score': y, 'text': text_labels, 'neuron_name': x.index})
 
 
+# In[62]:
+
+
 df.head()
+
+
+# In[63]:
 
 
 df_weight = df.pivot(columns='model_type', index='neuron_name', values='elpd_diff').copy()#.reset_index()
@@ -568,19 +1069,37 @@ df_weight = pd.concat([df_weight, df_weight2])
 # df_weight['
 
 
+# In[64]:
+
+
 px.scatter(df_weight, x='nonhierarchical', y='null', color='datatype', text=df_weight.index)
+
+
+# In[65]:
 
 
 # df[df['model_type'] == 'hierarchical_pca']
 
 
+# In[66]:
+
+
 df[df['neuron_name'] == 'AVAL']
+
+
+# In[67]:
 
 
 df_gfp[df_gfp['neuron_name'] == 'AVAL']
 
 
+# In[68]:
+
+
 df
+
+
+# In[ ]:
 
 
 

@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[ ]:
 
+
+
+
+
+# In[1]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -19,16 +25,25 @@ import os
 import seaborn as sns
 
 
+# In[2]:
+
+
 from sklearn.decomposition import PCA
 from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
 import seaborn as sns
 import plotly.express as px
 
 
+# In[3]:
+
+
 # fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
 # Manually corrected version
 fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/paper_data/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
 project_data_gcamp = ProjectData.load_final_project_data_from_config(fname)
+
+
+# In[7]:
 
 
 # Load multiple datasets
@@ -38,12 +53,18 @@ all_projects_gcamp = load_paper_datasets(['gcamp', 'hannah_O2_fm'])
 
 # # Look at RID in an example dataset, coloring by post-reversal self-collision
 
+# In[5]:
+
+
 opt = dict(interpolate_nan=True, channel_mode='dr_over_r_50', remove_outliers=True, filter_mode='rolling_mean')
 
 df_traces = project_data_gcamp.calc_default_traces(**opt)
 
 idx_rid = project_data_gcamp.neuron_name_to_manual_id_mapping(flip_names_and_ids=True)['RID']
 y_rid = df_traces[idx_rid]
+
+
+# In[6]:
 
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
@@ -54,10 +75,16 @@ y_rev = BehaviorCodes.vector_equality(beh_annotation, BehaviorCodes.REV).astype(
 y_collision = BehaviorCodes.vector_equality(beh_annotation, BehaviorCodes.SELF_COLLISION).astype(int)
 
 
+# In[7]:
+
+
 plt.figure(dpi=200, figsize=(10, 3))
 plt.plot(y_rid)
 plt.plot(df_traces['neuron_045'])
 project_data_gcamp.shade_axis_using_behavior(additional_shaded_states=[BehaviorCodes.DORSAL_TURN])
+
+
+# In[8]:
 
 
 df = pd.DataFrame({'y_rid': y_rid, 'y_rev': y_rev, 'y_collision': y_collision})
@@ -65,8 +92,14 @@ df = pd.DataFrame({'y_rid': y_rid, 'y_rev': y_rev, 'y_collision': y_collision})
 px.line(df)
 
 
+# In[9]:
+
+
 peaks_rid = worm.get_peaks_post_reversal(y_rid, allow_reversal_before_peak=True)
 peaks_collision = worm.get_peaks_post_reversal(y_collision, allow_reversal_before_peak=True)
+
+
+# In[5]:
 
 
 # df = pd.DataFrame({'peak_rid': peaks_rid, 'collision': peaks_collision})
@@ -74,6 +107,9 @@ peaks_collision = worm.get_peaks_post_reversal(y_collision, allow_reversal_befor
 
 
 # # Loop over all datasets (RID should be ID'ed)
+
+# In[8]:
+
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 # opt = dict(interpolate_nan=True, channel_mode='dr_over_r_50', remove_outliers=True, filter_mode='rolling_mean')
@@ -97,6 +133,9 @@ for name, p in tqdm(all_projects_gcamp.items()):
         continue
 
 
+# In[9]:
+
+
 # Melt these dataframes into one with a single column
 df_rid = pd.DataFrame.from_dict(all_peaks_rid, orient='index').T.stack().dropna().reset_index(level=1)
 df_rid.columns = ['dataset_name', 'rid_peaks']
@@ -104,11 +143,20 @@ df_rid.columns = ['dataset_name', 'rid_peaks']
 df_collision = pd.DataFrame.from_dict(all_collision_flags, orient='index').T.stack().dropna().reset_index(level=1, drop=True)
 
 
+# In[10]:
+
+
 df = pd.concat([df_rid, df_collision.astype(int)], axis=1)
 df.columns = ['dataset_name', 'rid_peaks', 'collision_flag']
 
 
+# In[12]:
+
+
 # px.box(df, x='collision_flag', y='rid_peaks', color='collision_flag')
+
+
+# In[ ]:
 
 
 # px.box(df, x='collision_flag', y='rid_peaks', color='dataset_name')
@@ -116,8 +164,14 @@ df.columns = ['dataset_name', 'rid_peaks', 'collision_flag']
 
 # # Correlate RID and curvature post reversals
 
+# In[13]:
+
+
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.general.utils_paper import apply_figure_settings
+
+
+# In[14]:
 
 
 # opt = dict(interpolate_nan=True, channel_mode='dr_over_r_50', remove_outliers=True, filter_mode='rolling_mean')
@@ -160,7 +214,13 @@ for name, p in tqdm(all_projects_gcamp.items()):
         raise e
 
 
+# In[15]:
+
+
 # %debug
+
+
+# In[16]:
 
 
 # Melt these dataframes into one with a single column
@@ -180,10 +240,19 @@ df['ventral_turn'] = df['curvature_ventral'] > 0
 df['post_reversal_turn'] = df['vt'] + 2*df['dt']
 
 
+# In[17]:
+
+
 # df_rid.shape, df.shape, df_vt.shape, df_curvature_dorsal.shape
 
 
+# In[18]:
+
+
 # sum(map(len, list(all_peaks_rid.values()))), sum(map(len, list(all_curvature_dorsal_peaks.values())))
+
+
+# In[19]:
 
 
 # fig = px.scatter(df[df['curvature_ventral']>0], x='curvature_ventral', y='rid_peaks', trendline='ols', 
@@ -192,13 +261,25 @@ df['post_reversal_turn'] = df['vt'] + 2*df['dt']
 # # apply_figure_settings(fig, width_factor=1.0, 
 
 
+# In[ ]:
+
+
 # px.scatter(df, x='curvature_ventral', y='rid_peaks', color='collision_flag', trendline='ols')
+
+
+# In[20]:
 
 
 # px.scatter(df, x='curvature_ventral', y='rid_peaks', color='ventral_turn', trendline='ols')
 
 
+# In[320]:
+
+
 # px.scatter(df, x='curvature_dorsal', y='rid_peaks', color='ventral_turn', trendline='ols')
+
+
+# In[ ]:
 
 
 # fig = px.scatter(df, x='curvature_ventral', y='rid_peaks', facet_row='post_reversal_turn', trendline='ols', height=1000)
@@ -207,8 +288,14 @@ df['post_reversal_turn'] = df['vt'] + 2*df['dt']
 
 # # Same but for SMD and RIV (as many as found)
 
+# In[32]:
+
+
 from wbfm.utils.general.utils_paper import  apply_figure_settings
 from wbfm.utils.external.utils_plotly import add_trendline_annotation
+
+
+# In[21]:
 
 
 from collections import defaultdict
@@ -262,6 +349,9 @@ for name, p in tqdm(all_projects_gcamp.items()):
         # raise e
 
 
+# In[22]:
+
+
 my_reshape = lambda d: pd.DataFrame.from_dict(d, orient='index').T.stack(dropna=True).reset_index(drop=False)
 
 all_columns_neurons = [my_reshape(d).rename(columns={0: k, 'level_0': 'dataset_idx', 'level_1': 'dataset_name'}) for k, d in all_peaks_named_neurons.items()]
@@ -272,6 +362,9 @@ df_neurons = reduce(lambda left, right: pd.merge(left, right, on=['dataset_idx',
 # df_neurons
 # df_neurons = pd.concat(all_columns_neurons, join='outer', axis=1)
 # df_neurons = df_neurons.loc[:,~df_neurons.columns.duplicated()].copy()
+
+
+# In[23]:
 
 
 # Make sure the neurons are actually aligned with the other events
@@ -297,10 +390,16 @@ df_multi_neurons['collision_flag'] = df_multi_neurons['collision_flag'].astype(b
 df_multi_neurons['ventral_body_curvature'] = df_multi_neurons['summed_signed_curvature'] > 0
 
 
+# In[24]:
+
+
 # for name in names_to_check:
 #     fig = px.scatter(df_multi_neurons[df_multi_neurons['ventral_only_head_curvature']>0], x='ventral_only_head_curvature', y=name, trendline='ols',
 #                     title='Correlation between curvature and post-reversal peak of ventral-only curvature')
 #     fig.show()
+
+
+# In[25]:
 
 
 # for name in names_to_check:
@@ -310,10 +409,16 @@ df_multi_neurons['ventral_body_curvature'] = df_multi_neurons['summed_signed_cur
 #     fig.show()
 
 
+# In[26]:
+
+
 # for name in names_to_check:
 #     fig = px.scatter(df_multi_neurons[df_multi_neurons['ventral_only_head_curvature']>0], x='ventral_only_curvature', y=name, trendline='ols', color='ventral_body_curvature',
 #                     title='Correlation between curvature and post-reversal peak of ventral-only curvature')
 #     fig.show()
+
+
+# In[27]:
 
 
 # for name in names_to_check:
@@ -321,14 +426,23 @@ df_multi_neurons['ventral_body_curvature'] = df_multi_neurons['summed_signed_cur
 #     fig.show()
 
 
+# In[28]:
+
+
 # for name in names_to_check:
 #     fig = px.scatter(df_multi_neurons[df_multi_neurons['summed_signed_curvature']>0], x='ventral_only_curvature', y=name, trendline='ols')
 #     fig.show()
 
 
+# In[29]:
+
+
 
 # fig = px.scatter(df_multi_neurons, x='RIVL', y='RIVR', trendline='ols', title="RIVs are strongly correlated")
 # fig.show()
+
+
+# In[52]:
 
 
 
@@ -346,6 +460,9 @@ if to_save:
     fig.write_image(fname)
 
 
+# In[44]:
+
+
 fig = px.box(df_multi_neurons.groupby('dataset_name')[['RID', 'RIVL']].corr().unstack().iloc[:, 1].values, points='all')
 fig.update_yaxes(title="Correlation per dataset", range=[-1, 1])
 fig.update_xaxes(title="", showticklabels=False)
@@ -361,6 +478,9 @@ if to_save:
     fig.write_image(fname)
 
 
+# In[51]:
+
+
 
 fig = px.scatter(df_multi_neurons, x='RIVL', y='ventral_only_head_curvature', trendline='ols')
 fig = add_trendline_annotation(fig)
@@ -374,6 +494,9 @@ if to_save:
     fig.write_image(fname, scale=5)
     fname = str(Path(fname).with_suffix('.svg'))
     fig.write_image(fname)
+
+
+# In[67]:
 
 
 fig = px.box(df_multi_neurons.groupby('dataset_name')[['RID', 'ventral_only_head_curvature']].corr().unstack().iloc[:, 1].values, points='all')
@@ -392,6 +515,9 @@ if to_save:
 
 
 # # Quantify the delay of RIV and RID peaks
+
+# In[54]:
+
 
 from collections import defaultdict
 # opt = dict(interpolate_nan=True, channel_mode='dr_over_r_50', remove_outliers=True, filter_mode='rolling_mean')
@@ -439,6 +565,9 @@ for name, p in tqdm(all_projects_gcamp.items()):
         continue
 
 
+# In[55]:
+
+
 from functools import reduce
 my_reshape = lambda d: pd.DataFrame.from_dict(d, orient='index').T.stack(dropna=True).reset_index(drop=False)
 
@@ -449,6 +578,9 @@ df_neurons = reduce(lambda left, right: pd.merge(left, right, on=['dataset_idx',
 # Timing
 all_columns_neurons = [my_reshape(d).rename(columns={0: k, 'level_0': 'dataset_idx', 'level_1': 'dataset_name'}) for k, d in all_peaks_timing_named_neurons.items()]
 df_neurons_timing = reduce(lambda left, right: pd.merge(left, right, on=['dataset_idx', 'dataset_name'], how='outer'), all_columns_neurons)
+
+
+# In[56]:
 
 
 # Make sure the neurons are actually aligned with the other events
@@ -475,13 +607,22 @@ df_multi_neurons_timing['collision_flag'] = df_multi_neurons['collision_flag'].a
 df_multi_neurons_timing['ventral_body_curvature'] = df_multi_neurons['summed_signed_curvature'] > 0
 
 
+# In[57]:
+
+
 df_multi_neurons_timing.head()
+
+
+# In[58]:
 
 
 # fig = px.box(df_multi_neurons_timing[['RID_timing', 'RIVL_timing', 'summed_signed_curvature']])
 # from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
 # fig = add_p_value_annotation(fig, array_columns=[[0,1], [1,2]])
 # fig.show()
+
+
+# In[59]:
 
 
 _df = df_multi_neurons_timing
@@ -504,7 +645,13 @@ if to_save:
     fig.write_image(fname)
 
 
+# In[60]:
+
+
 df_multi_neurons_timing['RID_timing'] - df_multi_neurons_timing['RIVL_timing']
+
+
+# In[69]:
 
 
 df_multi_neurons_timing['diff'] = df_multi_neurons_timing['RID_timing'] - df_multi_neurons_timing['RIVL_timing']
@@ -524,11 +671,17 @@ if to_save:
     fig.write_image(fname)
 
 
+# In[62]:
+
+
 # fig = px.scatter(df_multi_neurons_timing, x='RID_timing', y='RIVL_timing', color='RID',
 #                  marginal_x='histogram', marginal_y='histogram', 
 #                  height=1000, width=1000)
 # fig.update_layout(xaxis_title="RID Delay (volumes)", yaxis_title="RIV Delay (volumes)", font=dict(size=18))
 # fig.show()
+
+
+# In[63]:
 
 
 # df_subset = df_multi_neurons_timing[df_multi_neurons_timing['RID_timing'] > 0]
@@ -542,6 +695,9 @@ if to_save:
 # fig.show()
 
 
+# In[64]:
+
+
 # # df_subset = df_multi_neurons_timing[df_multi_neurons_timing['RID_timing'] > 0]
 # # df_subset = df_subset[df_subset['summed_signed_curvature'] > 0]
 
@@ -553,7 +709,13 @@ if to_save:
 # fig.show()
 
 
+# In[65]:
+
+
 # px.scatter_matrix(df_multi_neurons_timing, dimensions=['RIVL_timing', 'RID_timing', 'summed_signed_curvature'], height=1000, width=1000)
+
+
+# In[66]:
 
 
 # # Only plot the points that have 'real' peaks
@@ -567,10 +729,16 @@ if to_save:
 #     fig.show()
 
 
+# In[ ]:
+
+
 
 
 
 # # Same but for SMD and RIV (as many as found), but the residuals
+
+# In[ ]:
+
 
 from collections import defaultdict
 opt = dict(interpolate_nan=True, channel_mode='dr_over_r_50', remove_outliers=True, filter_mode='rolling_mean', residual_mode='pca')
@@ -613,12 +781,18 @@ for name, p in tqdm(all_projects_gcamp.items()):
         continue
 
 
+# In[448]:
+
+
 my_reshape = lambda d: pd.DataFrame.from_dict(d, orient='index').T.stack(dropna=True).reset_index(drop=False)
 all_columns_neurons = [my_reshape(d).rename(columns={0: k, 'level_0': 'dataset_idx', 'level_1': 'dataset_name'}) for k, d in all_peaks_named_neurons.items()]
 
 # from functools import reduce
 df_neurons = reduce(lambda left, right: pd.merge(left, right, on=['dataset_idx', 'dataset_name'], how='outer'), all_columns_neurons)
 df_neurons
+
+
+# In[449]:
 
 
 # Make sure the neurons are actually aligned with the other events
@@ -636,16 +810,28 @@ df_multi_neurons_res['collision_flag'] = df_multi_neurons_res['collision_flag'].
 df_multi_neurons_res['ventral_body_curvature'] = df_multi_neurons_res['summed_signed_curvature'] > 0
 
 
+# In[ ]:
 
 
 
 
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
 
 
 for name in names_to_check:
     fig = px.scatter(df_multi_neurons_res[df_multi_neurons['ventral_only_head_curvature']>0], x='ventral_only_head_curvature', y=name, trendline='ols',
                     title='Correlation between curvature and post-reversal peak of ventral-only curvature')
     fig.show()
+
+
+# In[ ]:
 
 
 for name in names_to_check:
@@ -655,10 +841,16 @@ for name in names_to_check:
     fig.show()
 
 
+# In[452]:
+
+
 # for name in names_to_check:
 #     fig = px.scatter(df_multi_neurons[df_multi_neurons['ventral_only_head_curvature']>0], x='ventral_only_curvature', y=name, trendline='ols', color='ventral_body_curvature',
 #                     title='Correlation between curvature and post-reversal peak of ventral-only curvature')
 #     fig.show()
+
+
+# In[453]:
 
 
 # for name in names_to_check:
@@ -666,9 +858,15 @@ for name in names_to_check:
 #     fig.show()
 
 
+# In[454]:
+
+
 # for name in names_to_check:
 #     fig = px.scatter(df_multi_neurons[df_multi_neurons['summed_signed_curvature']>0], x='ventral_only_curvature', y=name, trendline='ols')
 #     fig.show()
+
+
+# In[455]:
 
 
 
@@ -676,33 +874,60 @@ fig = px.scatter(df_multi_neurons_res, x='RIVL', y='RIVR', trendline='ols', titl
 fig.show()
 
 
+# In[456]:
+
+
 
 fig = px.scatter(df_multi_neurons_res, x='RIVL', y='RID', trendline='ols', title="RIV and RID are strongly correlated")
 fig.show()
 
 
+# In[ ]:
 
 
 
 
 
+# In[ ]:
 
 
 
 
 
+# In[ ]:
 
 
 
 
 
+# In[ ]:
 
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
 
 
 
 
 
 # # NOT DONE: RIS correlation to speed
+
+# In[ ]:
+
 
 worm = project_data_gcamp.worm_posture_class
 df_traces = project_data_gcamp.calc_default_traces()
@@ -712,9 +937,15 @@ y_speed = worm.worm_speed(fluorescence_fps=True, signed=True)
 y_rev = worm.calc_behavior_from_alias('rev')
 
 
+# In[ ]:
+
+
 df = pd.DataFrame({'ris': y_ris, 'speed': y_speed, 'rev': y_rev})
 
 px.scatter(df, x='ris', y='speed', color='rev', trendline='ols')
+
+
+# In[ ]:
 
 
 px.line(y_speed)
@@ -722,7 +953,13 @@ px.line(y_speed)
 
 # ## Not done: Trigger to peaks of RIS instead of direct correlation
 
+# In[ ]:
+
+
 from scipy.signal import find_peaks
+
+
+# In[ ]:
 
 
 df_traces_filt = project_data_gcamp.calc_default_traces(filter_mode='rolling_mean')
@@ -738,25 +975,49 @@ plt.plot(peaks, x[peaks], "x")
 plt.show()
 
 
+# In[ ]:
+
+
 plt.hist(properties['prominences'], bins=100);
+
+
+# In[ ]:
 
 
 np.median(properties['prominences'])
 
 
+# In[ ]:
 
 
 
 
 
+# In[ ]:
 
 
 
 
 
+# In[ ]:
 
 
 
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
 
 
 
@@ -764,7 +1025,13 @@ np.median(properties['prominences'])
 
 # # Scratch
 
+# In[ ]:
+
+
 from wbfm.utils.general.utils_behavior_annotation import shade_using_behavior_plotly
+
+
+# In[ ]:
 
 
 # Look at reannotating turns based on a more head-centered definition
@@ -796,20 +1063,35 @@ shade_using_behavior_plotly(beh, fig)
 fig.show()
 
 
+# In[ ]:
+
+
 plt.figure(figsize=(20,3))
 plt.plot(df['y_ventral_head'])
 plt.plot(df['y_dorsal_head'])
 project_data_gcamp.shade_axis_using_behavior(additional_shaded_states=[BehaviorCodes.VENTRAL_TURN, BehaviorCodes.DORSAL_TURN], DEBUG=True)
 
 
+# In[ ]:
+
+
 px.imshow(df_amp.T, aspect=5, zmin=0, zmax=0.1)
+
+
+# In[ ]:
 
 
 df_kymo = worm.curvature(fluorescence_fps=True, reset_index=True)
 px.imshow(df_kymo.T, aspect=5, zmin=-0.05, zmax=0.05)
 
 
+# In[ ]:
+
+
 from scipy.signal._peak_finding import find_peaks
+
+
+# In[ ]:
 
 
 dat = y_ventral_head
@@ -818,6 +1100,9 @@ width = 2
 
 peaks, properties = find_peaks(dat, height=height, width=width)
 y_peaks = dat[peaks]
+
+
+# In[ ]:
 
 
 px.histogram(y_peaks)

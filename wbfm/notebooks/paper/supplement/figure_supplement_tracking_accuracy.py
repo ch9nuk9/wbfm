@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[ ]:
 
+
+
+
+
+# In[1]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -19,9 +25,15 @@ import os
 import seaborn as sns
 
 
+# In[2]:
+
+
 from sklearn.decomposition import PCA
 from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
 import seaborn as sns
+
+
+# In[3]:
 
 
 # fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
@@ -30,10 +42,16 @@ fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/
 project_data_gcamp = ProjectData.load_final_project_data_from_config(fname)
 
 
+# In[4]:
+
+
 # fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/paper_data/2022-11-23_worm11/project_config.yaml"
 fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/paper_data/ZIM2165_Gcamp7b_worm1-2022-12-10/project_config.yaml"
 project_data_gcamp2 = ProjectData.load_final_project_data_from_config(fname)
 len(project_data_gcamp2.finished_neuron_names())
+
+
+# In[5]:
 
 
 # # Load multiple datasets
@@ -42,7 +60,13 @@ len(project_data_gcamp2.finished_neuron_names())
 # all_projects_gfp = load_paper_datasets('gfp')
 
 
+# In[ ]:
 
+
+
+
+
+# In[6]:
 
 
 output_folder = "pipeline_accuracy"
@@ -53,9 +77,15 @@ output_folder = "pipeline_accuracy"
 # 2. Initial pipeline tracks
 # 3. Manually corrected tracks
 
+# In[7]:
+
+
 from wbfm.utils.performance.comparing_ground_truth import calculate_accuracy_from_dataframes, calc_accuracy_of_pipeline_steps
 import plotly.express as px
 from wbfm.utils.general.utils_paper import apply_figure_settings
+
+
+# In[8]:
 
 
 plt.rcParams["font.family"] = "DejaVu Sans"  # Default
@@ -72,33 +102,61 @@ if to_save:
     plt.savefig(fname)
 
 
+# In[35]:
+
+
 df_acc.index.name = 'Neuron'
+df_acc_melt = df_acc.melt(var_name='Algorithm option', value_name='Accuracy')
 
 
-# fig = px.scatter(df_acc.sort_values(by='Full pipeline'), marginal_y='violin')
-# apply_figure_settings(fig, width_factor=0.5, height_factor=0.3, plotly_not_matplotlib=True)
-
-# # fig.update_xaxes(dict(showticklabels=False),row=1, col=1)
-# fig.update_yaxes(title="Fraction correctly tracked points", range=[0.5, 1.03])
-
-# fig.show()
+# In[38]:
 
 
-# to_save = True
-# if to_save:
-#     fname = os.path.join("pipeline_accuracy", "pipeline_steps_scatterplot.png")
-#     fig.write_image(fname, scale=5)
-#     fname = str(Path(fname).with_suffix('.svg'))
-#     fig.write_image(fname)
+df_acc_melt
+
+
+# In[43]:
+
+
+# fig = px.scatter(df_acc.sort_values(by='Full pipeline'), marginal_y='box')
+fig = px.box(df_acc_melt, color='Algorithm option')
+apply_figure_settings(fig, width_factor=0.15, height_factor=0.5, plotly_not_matplotlib=True)
+
+fig.update_xaxes(dict(showticklabels=False, title=""),row=1, col=1)
+fig.update_yaxes(title="Fraction correctly tracked points", range=[0.5, 1.03])
+fig.update_layout(showlegend=False)
+fig.show()
+
+
+to_save = True
+if to_save:
+    fname = os.path.join("pipeline_accuracy", "pipeline_steps_scatterplot.png")
+    fig.write_image(fname, scale=5)
+    fname = str(Path(fname).with_suffix('.svg'))
+    fig.write_image(fname)
+
+
+# In[45]:
 
 
 df_delta = (df_acc.T - df_acc['Single reference frame'].values).T
-fig = px.scatter(df_delta.sort_values(by='Full pipeline'), marginal_y='box')
-apply_figure_settings(fig, width_factor=1.0, height_factor=0.5, plotly_not_matplotlib=True)
+fig = px.scatter(df_delta.sort_values(by='Full pipeline'))#, marginal_y='box')
+apply_figure_settings(fig, width_factor=0.35, height_factor=0.5, plotly_not_matplotlib=True)
 
 # fig.update_xaxes(dict(showticklabels=False),row=1, col=1)
 fig.update_yaxes(title="Change in fraction correctly tracked", zeroline=True, zerolinecolor='black')#, range=[0.5, 1.03])
-fig.update_layout(legend=dict(title='Algorithm option'))
+fig.update_layout(
+    showlegend=True,
+    legend=dict(
+      title='Algorithm option',
+      yanchor="top",
+      y=0.95,
+      xanchor="left",
+      x=0.05
+    ),
+)
+
+
 fig.show()
 
 to_save = True
@@ -113,23 +171,41 @@ if to_save:
 
 # ## Look at accuracy as an image
 
+# In[106]:
+
+
 neuron_names = project_data_gcamp.finished_neuron_names()
+
+
+# In[ ]:
 
 
 df_acc_image = df_gt.loc[:, (neuron_names, 'raw_neuron_ind_in_list')] == df_global.loc[:, (neuron_names, 'raw_neuron_ind_in_list')]
 px.imshow(df_acc_image.droplevel(1, axis=1), title="Correct global (multiple reference frames)")
 
 
+# In[ ]:
+
+
 df_acc_image = df_gt.loc[:, (neuron_names, 'raw_neuron_ind_in_list')] == df_single_reference.loc[:, (neuron_names, 'raw_neuron_ind_in_list')]
 px.imshow(df_acc_image.droplevel(1, axis=1), title="Correct global (single reference frames)")
+
+
+# In[ ]:
 
 
 df_acc_image = df_gt.loc[:, (neuron_names, 'raw_neuron_ind_in_list')] == df_pipeline.loc[:, (neuron_names, 'raw_neuron_ind_in_list')]
 px.imshow(df_acc_image.droplevel(1, axis=1), title="Correct full pipeline")
 
 
+# In[ ]:
+
+
 df_acc_image = ~np.isnan(df_gt.loc[:, (neuron_names, 'raw_neuron_ind_in_list')])
 px.imshow(df_acc_image.droplevel(1, axis=1), title="Nan points in the ground truth")
+
+
+# In[133]:
 
 
 # (df_gt.loc[:, (neuron_names, 'raw_neuron_ind_in_list')].count() / 1666).hist()
@@ -137,20 +213,38 @@ px.imshow(df_acc_image.droplevel(1, axis=1), title="Nan points in the ground tru
 
 # ## Another project (todo: recalculate tracks using ground truth)
 
+# In[101]:
+
+
 from wbfm.utils.performance.comparing_ground_truth import  calc_accuracy_of_pipeline_steps
+
+
+# In[261]:
 
 
 # Original project
 # calc_accuracy_of_pipeline_steps(project_data_gcamp, remove_gt_nan=True)
 
 
+# In[119]:
+
+
 # calc_accuracy_of_pipeline_steps(project_data_gcamp2)
 
 
+# In[ ]:
 
 
 
 
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
 
 
 
@@ -158,10 +252,16 @@ from wbfm.utils.performance.comparing_ground_truth import  calc_accuracy_of_pipe
 
 # ## Plot fraction tracked (gaps) vs. fraction correct
 
+# In[63]:
+
+
 neuron_names = project_data_gcamp.finished_neuron_names()
 
 df_pipeline = project_data_gcamp.initial_pipeline_tracks[neuron_names]
 df_gt = project_data_gcamp.final_tracks[neuron_names]
+
+
+# In[64]:
 
 
 opt = dict(column_names=['raw_neuron_ind_in_list'])
@@ -169,15 +269,27 @@ opt = dict(column_names=['raw_neuron_ind_in_list'])
 df_acc_pipeline = calculate_accuracy_from_dataframes(df_gt, df_pipeline, **opt)
 
 
+# In[71]:
+
+
 df_pipeline_nonnan = df_pipeline.loc[:, (slice(None), 'raw_neuron_ind_in_list')].droplevel(1, axis=1).count()
 df_pipeline_nonnan /= df_pipeline.shape[0]
+
+
+# In[72]:
 
 
 df_pipeline_nonnan
 
 
+# In[79]:
+
+
 df_acc_pipeline['fraction_tracked'] = df_pipeline_nonnan
 df_acc_pipeline['enough_tracked'] = df_acc_pipeline['fraction_tracked'] > 0.9
+
+
+# In[91]:
 
 
 
@@ -187,15 +299,24 @@ px.scatter(df_acc_pipeline, x='matches', y='fraction_tracked', **opt,
           color='enough_tracked', title="Better tracking implies more correct matches")
 
 
+# In[90]:
+
+
 
 px.scatter(df_acc_pipeline, x='mismatches', y='fraction_tracked', **opt,
           color='enough_tracked', title="Better tracking implies fewer mismatches")
+
+
+# In[82]:
 
 
 df_acc_pipeline.head()
 
 
 # ## Estimate tracking and segmentation statistics
+
+# In[158]:
+
 
 projects_to_compare = dict(
     gcamp = all_projects_gcamp,
@@ -221,7 +342,13 @@ cols = ["Neurons > threshold", "Threshold for successfully tracked frames (fract
 df_tracked.columns = cols
 
 
+# In[159]:
+
+
 df_tracked.head()
+
+
+# In[160]:
 
 
 # Export options
@@ -234,6 +361,9 @@ fig_opt = dict(
         size=18,
     )
 )
+
+
+# In[162]:
 
 
 to_plot = cols[0]
@@ -251,7 +381,13 @@ fname = str(Path(fname).with_suffix('.svg'))
 fig.write_image(fname, **save_opt)
 
 
+# In[ ]:
 
+
+
+
+
+# In[ ]:
 
 
 
@@ -259,13 +395,25 @@ fig.write_image(fname, **save_opt)
 
 # ## Fix reading of manual annotation
 
+# In[33]:
+
+
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/paper_data/ZIM2165_Gcamp7b_worm1-2022_11_28/3-tracking/manual_annotation/ZIM2165_Gcamp7b_worm1-2022_11_28.xlsx"
+
+
+# In[34]:
 
 
 df = pd.read_excel(fname)
 
 
+# In[35]:
+
+
 df['Finished?'].count()
+
+
+# In[ ]:
 
 
 

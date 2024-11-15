@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[ ]:
 
+
+
+
+
+# In[18]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -19,6 +25,9 @@ import os
 import seaborn as sns
 
 
+# In[19]:
+
+
 from sklearn.decomposition import PCA
 from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
 import seaborn as sns
@@ -27,13 +36,22 @@ import plotly.express as px
 from wbfm.utils.general.utils_filenames import add_name_suffix
 
 
+# In[20]:
+
+
 # Load multiple datasets
 from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 all_projects_gcamp = load_paper_datasets('gcamp')
 all_projects_gfp = load_paper_datasets('gfp')
 
 
+# In[21]:
+
+
 all_projects_immob = load_paper_datasets('immob')
+
+
+# In[22]:
 
 
 # Get specific example datasets
@@ -43,7 +61,13 @@ project_data_immob = all_projects_immob['2022-12-13_15-16_ZIM2165_immob_worm9-20
 
 # # Plot example heatmap and pca modes
 
+# In[24]:
+
+
 from wbfm.utils.visualization.plot_traces import make_summary_interactive_heatmap_with_pca, make_summary_heatmap_and_subplots
+
+
+# In[25]:
 
 
 project_data_gfp = all_projects_gfp['ZIM2319_GFP_worm3-2022-12-10']
@@ -52,12 +76,21 @@ project_data_gfp = all_projects_gfp['ZIM2319_GFP_worm3-2022-12-10']
 project_data_gfp.use_physical_x_axis = True
 
 
+# In[26]:
+
+
 fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gfp, trace_opt=dict(use_paper_options=True), to_save=True, to_show=True, 
                                                output_folder="gfp", base_width=0.5)
 
 
+# In[23]:
+
+
 # fig2.update_yaxes(row=5, overwrite=True, tickangle=0, griddash='dash', 
 #                   range=[-0.2, 0.2], tickmode='array', tickvals=[-0.2, 0, 0.2], zeroline=False, showline=True , showgrid=True, gridcolor='black')
+
+
+# In[6]:
 
 
 # fig1.update_layout(
@@ -67,14 +100,23 @@ fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gfp, trace_opt=dict(
 # )
 
 
+# In[46]:
+
+
 # fig2['layout']
 
 
 # # Get traces for each datatype
 
+# In[27]:
+
+
 from wbfm.utils.visualization.multiproject_wrappers import build_trace_time_series_from_multiple_projects
 from wbfm.utils.external.utils_pandas import apply_to_dict_of_dfs_and_concat
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
+
+
+# In[28]:
 
 
 df_all_gcamp = build_trace_time_series_from_multiple_projects(all_projects_gcamp, use_paper_options=True)
@@ -82,10 +124,19 @@ df_all_gfp = build_trace_time_series_from_multiple_projects(all_projects_gfp, us
 df_all_immob = build_trace_time_series_from_multiple_projects(all_projects_immob, use_paper_options=True)
 
 
+# In[29]:
+
+
 dict_of_dfs = {'wbfm': df_all_gcamp, 'immob': df_all_immob, 'gfp': df_all_gfp}
 
 
+# In[30]:
+
+
 # df_all_gcamp
+
+
+# In[60]:
 
 
 func = lambda df: df.drop(columns=['local_time']).groupby('dataset_name').var().melt()
@@ -111,9 +162,15 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
+# In[32]:
+
+
 
 # fig = px.scatter(df_all_var, x='Data Type', y='Variance', color='Data Type', log_y=True, marginal_y='box')
 # fig.show()
+
+
+# In[16]:
 
 
 
@@ -124,6 +181,9 @@ fig.write_image(fname)
 #                    cumulative=True, histnorm='probability')#, barmode='group')
 # fig.update_xaxes(title='Variance')
 # fig.show()
+
+
+# In[59]:
 
 
 # import plotly.graph_objects as go
@@ -153,9 +213,15 @@ fig.write_image(fname)
 
 # # Same but for green and red
 
+# In[49]:
+
+
 from wbfm.utils.visualization.multiproject_wrappers import build_trace_time_series_from_multiple_projects
 from wbfm.utils.external.utils_pandas import apply_to_dict_of_dfs_and_concat
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map, data_type_name_mapping
+
+
+# In[50]:
 
 
 df_all_gcamp_red = build_trace_time_series_from_multiple_projects(all_projects_gcamp, use_paper_options=True, channel_mode='red', min_nonnan=0.7)
@@ -163,16 +229,28 @@ df_all_gfp_red = build_trace_time_series_from_multiple_projects(all_projects_gfp
 df_all_immob_red = build_trace_time_series_from_multiple_projects(all_projects_immob, use_paper_options=True, channel_mode='red', min_nonnan=0.7)
 
 
+# In[51]:
+
+
 df_all_gcamp_green = build_trace_time_series_from_multiple_projects(all_projects_gcamp, use_paper_options=True, channel_mode='green', min_nonnan=0.7)
 df_all_gfp_green = build_trace_time_series_from_multiple_projects(all_projects_gfp, use_paper_options=True, channel_mode='green', min_nonnan=0.7)
 df_all_immob_green = build_trace_time_series_from_multiple_projects(all_projects_immob, use_paper_options=True, channel_mode='green', min_nonnan=0.7)
 
 
+# In[52]:
+
+
 # px.line(df_all_gcamp_red['AVAL'])
+
+
+# In[53]:
 
 
 dict_of_dfs_red = {'wbfm': df_all_gcamp_red, 'immob': df_all_immob_red, 'gfp': df_all_gfp_red}
 dict_of_dfs_green = {'wbfm': df_all_gcamp_green, 'immob': df_all_immob_green, 'gfp': df_all_gfp_green}
+
+
+# In[54]:
 
 
 # func = lambda df: df.drop(columns=['local_time']).groupby('dataset_name').var().melt()
@@ -192,6 +270,9 @@ dict_of_dfs_green = {'wbfm': df_all_gcamp_green, 'immob': df_all_immob_green, 'g
 # fig.write_image(fname)
 
 
+# In[55]:
+
+
 # func = lambda df: df.drop(columns=['local_time']).groupby('dataset_name').var().melt()
 
 # df_all_var_red = apply_to_dict_of_dfs_and_concat(dict_of_dfs_red, func)
@@ -207,6 +288,9 @@ dict_of_dfs_green = {'wbfm': df_all_gcamp_green, 'immob': df_all_immob_green, 'g
 # fig.write_image(fname, scale=7)
 # fname = Path(fname).with_suffix('.svg')
 # fig.write_image(fname)
+
+
+# In[64]:
 
 
 func = lambda df: df.drop(columns=['local_time']).groupby('dataset_name').mean().melt()
@@ -240,6 +324,9 @@ fig.write_image(fname)
 
 # # Plot correlations between behavior and pca/ava
 
+# In[2]:
+
+
 
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
@@ -249,9 +336,15 @@ fname = os.path.join(get_hierarchical_modeling_dir(gfp=True), 'data.h5')
 Xy_gfp = pd.read_hdf(fname)
 
 
+# In[3]:
+
+
 # column_names = ['AVAL', 'pca_0', 'fwd', 'speed']
 # fig = px.scatter_matrix(Xy, dimensions=column_names)
 # fig.update_traces(diagonal_visible=False, showupperhalf=False)
+
+
+# In[11]:
 
 
 import pandas as pd
@@ -295,6 +388,9 @@ df_corr = pd.concat([df_corr_gcamp, df_corr_gfp], axis=0)
 # print(df_corr)
 
 
+# In[32]:
+
+
 from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map, apply_figure_settings
 
 fig = px.box(df_corr, x='both_variables', y='Correlation', color='Data Type', points='all', 
@@ -313,11 +409,17 @@ fig.write_image(fname)
 
 # ## Autocovariance
 
+# In[57]:
+
+
 # df_all = pd.concat(dict_of_dfs, ignore_index=True).drop(columns=['local_time'])
 # 0lag=1
 
 # df_all_autocorr = df_all.groupby('dataset_name').apply(lambda group: group.select_dtypes(include='number').apply(autocorr_func)).melt()
 # df_all_autocorr.head()
+
+
+# In[20]:
 
 
 # lag=1
@@ -342,6 +444,9 @@ fig.write_image(fname)
 # fig.write_image(fname)
 
 
+# In[58]:
+
+
 # df_combined = df_all_autocorr.copy()
 # df_combined['Variance'] = df_all_var['Variance']
 
@@ -350,10 +455,19 @@ fig.write_image(fname)
 
 # # Scratch
 
+# In[19]:
+
+
 df_red = project_data_gcamp.calc_default_traces(use_paper_options=True, channel_mode='red', min_nonnan=0.9)
 
 
+# In[34]:
+
+
 # df_red['AVAL'].plot()
+
+
+# In[ ]:
 
 
 

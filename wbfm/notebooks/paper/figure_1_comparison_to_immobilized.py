@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[ ]:
 
+
+
+
+
+# In[1]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -19,6 +25,9 @@ import os
 import seaborn as sns
 
 
+# In[2]:
+
+
 from sklearn.decomposition import PCA
 from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
 import seaborn as sns
@@ -27,31 +36,63 @@ import plotly.express as px
 from wbfm.utils.general.utils_filenames import add_name_suffix
 
 
+# In[3]:
+
+
 # Load multiple datasets
 from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 all_projects_gcamp = load_paper_datasets(['gcamp', 'hannah_O2_fm'])
 
 
+# In[4]:
+
+
 all_projects_gfp = load_paper_datasets('gfp')
+
+
+# In[5]:
 
 
 all_projects_immob = load_paper_datasets('immob')
 
 
+# In[6]:
+
+
 # Get specific example datasets
 project_data_gcamp = all_projects_gcamp['ZIM2165_Gcamp7b_worm1-2022_11_28']
-project_data_immob = all_projects_immob['2022-12-13_15-16_ZIM2165_immob_worm9-2022-12-13']
+# project_data_immob = all_projects_immob['2022-12-13_15-16_ZIM2165_immob_worm9-2022-12-13']
+
+# Comparing 2 datasets
+project_data_gcamp2 = all_projects_gcamp['ZIM2165_Gcamp7b_worm1-2022-11-30']
+project_data_immob2 = all_projects_immob['ZIM2165_immob_adj_set_2_worm2-2022-11-30']
 
 
-# Same individual: fm and immob
-fname = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-12-06_wbfm_to_immob/2022-12-06_17-23_ZIM2165_worm5-2022-12-06/project_config.yaml'
-project_data_fm2immob_fm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
-
-fname = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-12-06_wbfm_to_immob/2022-12-06_17-41_ZIM2165_immob_worm5-2022-12-06'
-project_data_fm2immob_immob = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+# In[7]:
 
 
-# project_data_gcamp
+# # Same individual: fm and immob
+# fname = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-12-06_wbfm_to_immob/2022-12-06_17-23_ZIM2165_worm5-2022-12-06/project_config.yaml'
+# project_data_fm2immob_fm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+# fname = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-12-06_wbfm_to_immob/2022-12-06_17-41_ZIM2165_immob_worm5-2022-12-06'
+# project_data_fm2immob_immob = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+# # Same individual: fm and immob
+# # fname = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-12-06_wbfm_to_immob/2022-12-06_17-23_ZIM2165_worm5-2022-12-06/project_config.yaml'
+# # project_data_fm2immob_fm2 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+# fname = '/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-12-06_wbfm_to_immob/2022-12-06_11-07_ZIM2165_immob_worm1-2022-12-06/project_config.yaml'
+# project_data_fm2immob_immob2 = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+
+# In[8]:
+
+
+# [str(p.project_config.self_path) for p in all_projects_gcamp.values()]
+
+
+# In[9]:
 
 
 path_to_saved_data = "../step1_analysis/figure_1"
@@ -60,10 +101,16 @@ path_to_shared_saved_data = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/
 
 # # Precalculate the trace dataframes (cached to disk)
 
+# In[10]:
+
+
 # # Optional: clear just one cache
 # for project_dict in tqdm([all_projects_immob]):
 #     for name, project_data in tqdm(project_dict.items()):
 #         project_data.data_cacher.clear_disk_cache(delete_invalid_indices=False, delete_traces=True)
+
+
+# In[11]:
 
 
 # # Optional: clear the trace cache
@@ -73,60 +120,113 @@ path_to_shared_saved_data = "/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/
 #         project_data.data_cacher.clear_disk_cache(delete_invalid_indices=False, delete_traces=True)
 
 
+# In[12]:
+
+
 for project_dict in tqdm([all_projects_gcamp, all_projects_gfp, all_projects_immob]):
     for name, project_data in tqdm(project_dict.items()):
         df_traces = project_data.calc_paper_traces()
         df_res = project_data.calc_paper_traces(residual_mode='pca')
-        df_global = project_data.calc_paper_traces_global(residual_mode='pca_global')
+        df_global = project_data.calc_paper_traces(residual_mode='pca_global')
         if df_res is None or df_global is None or df_traces is None:
             raise ValueError
 
 
-project_data_fm2immob_immob.data_cacher.clear_disk_cache(delete_invalid_indices=False, delete_traces=True)
+# In[13]:
 
 
-# Also for FM to IMMOB datasets
+# project_data_fm2immob_immob.data_cacher.clear_disk_cache(delete_invalid_indices=False, delete_traces=True)
 
-for project_data in [project_data_fm2immob_fm, project_data_fm2immob_immob]:
-    df_traces = project_data.calc_paper_traces()
-    df_res = project_data.calc_paper_traces(residual_mode='pca')
-    df_global = project_data.calc_paper_traces(residual_mode='pca_global')
-    if df_res is None or df_global is None or df_traces is None:
-        raise ValueError
+
+# In[15]:
+
+
+# # Also for FM to IMMOB datasets
+
+# for project_data in [project_data_fm2immob_fm, project_data_fm2immob_immob]:
+#     df_traces = project_data.calc_paper_traces()
+#     df_res = project_data.calc_paper_traces(residual_mode='pca')
+#     df_global = project_data.calc_paper_traces(residual_mode='pca_global')
+#     if df_res is None or df_global is None or df_traces is None:
+#         raise ValueError
 
 
 # # Plots
 
 # ## Heatmaps: immobilized and WBFM
 
+# In[16]:
+
+
 from wbfm.utils.visualization.plot_traces import make_summary_interactive_heatmap_with_pca, make_summary_heatmap_and_subplots
 
 
-project_data_gcamp.use_physical_x_axis = True
-project_data_immob.use_physical_x_axis = True
+# In[22]:
 
 
-fig = make_summary_interactive_heatmap_with_pca(project_data_gcamp, to_save=True, to_show=True, output_folder="intro/example_summary_plots_wbfm")
+# project_data_gcamp.use_physical_x_axis = True
+# project_data_immob.use_physical_x_axis = True
+
+
+# In[ ]:
+
+
+# NOT USED (combined plot)
+# fig = make_summary_interactive_heatmap_with_pca(project_data_gcamp, to_save=True, to_show=True, output_folder="intro/example_summary_plots_wbfm")
+
+
+# In[ ]:
+
+
+# Print number of neurons
+project_data_gcamp.calc_paper_traces().shape
+
+
+# In[ ]:
 
 
 # fig = make_summary_interactive_heatmap_with_pca(project_data_immob, to_save=True, to_show=True, output_folder="example_summary_plots_immob")
 
 
-fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp, trace_opt=dict(use_paper_options=True), to_save=True, to_show=True, 
-                                               output_folder="intro/example_summary_plots_wbfm")
+# In[ ]:
 
 
-fig1, fig2 = make_summary_heatmap_and_subplots(project_data_immob, trace_opt=dict(use_paper_options=True), include_speed_subplot=False,
-                                               to_save=True, to_show=True, output_folder="intro/example_summary_plots_immob")
+# USED: different figures for each
+fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp, trace_opt=dict(use_paper_options=True, interpolate_nan=True), to_save=True, to_show=True, 
+                                               base_height=[0.25, 0.2], base_width=0.6, output_folder="intro/example_summary_plots_wbfm")
 
 
-# ## Heatmaps: same dataset fm to immob
+# In[ ]:
+
+
+# # Comparison: interpolated values
+# fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp, trace_opt=dict(use_paper_options=True, interpolate_nan=True), to_save=True, to_show=True, 
+#                                                output_folder="intro/example_summary_plots_wbfm")
+
+
+# In[ ]:
+
+
+# fig1, fig2 = make_summary_heatmap_and_subplots(project_data_immob, trace_opt=dict(use_paper_options=True), include_speed_subplot=False,
+#                                                to_save=True, to_show=True, output_folder="intro/example_summary_plots_immob")
+
+
+# ## Heatmaps (actually figure 2): comparing fm to immob
+
+# In[23]:
+
 
 from wbfm.utils.visualization.plot_traces import make_summary_interactive_heatmap_with_pca, make_summary_heatmap_and_subplots
 
 
-project_data_fm2immob_fm.use_physical_x_axis = True
-project_data_fm2immob_immob.use_physical_x_axis = True
+# In[24]:
+
+
+project_data_gcamp2.use_physical_x_axis = True
+project_data_immob2.use_physical_x_axis = True
+
+
+# In[25]:
 
 
 # from wbfm.utils.general.utils_behavior_annotation import approximate_behavioral_annotation_using_pc1
@@ -134,31 +234,84 @@ project_data_fm2immob_immob.use_physical_x_axis = True
 # approximate_behavioral_annotation_using_pc1(project_data_fm2immob_fm)  # This is an old dataset and the behavior was deleted
 
 
-project_data_fm2immob_immob
+# In[26]:
 
 
-fig1, fig2 = make_summary_heatmap_and_subplots(project_data_fm2immob_immob, trace_opt=dict(use_paper_options=True, interpolate_nan=False, verbose=True), include_speed_subplot=False,
+project_data_immob2.calc_paper_traces().shape
+
+
+# In[34]:
+
+
+fig1, fig2 = make_summary_heatmap_and_subplots(project_data_immob2, trace_opt=dict(use_paper_options=True, interpolate_nan=True, verbose=True), include_speed_subplot=False,
                                                to_save=True, to_show=True, output_folder="intro/fm_to_immob/immob")
 
 
-fig1, fig2 = make_summary_heatmap_and_subplots(project_data_fm2immob_fm, trace_opt=dict(use_paper_options=True, interpolate_nan=False, verbose=True), include_speed_subplot=False,
+# In[35]:
+
+
+project_data_gcamp2.calc_paper_traces().shape
+
+
+# In[36]:
+
+
+fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp2, trace_opt=dict(use_paper_options=True, interpolate_nan=True, verbose=True), include_speed_subplot=False,
                                                to_save=True, to_show=True, output_folder="intro/fm_to_immob/fm")
 
 
-trace_opt=dict(use_paper_options=True, interpolate_nan=False, verbose=True)
-df = project_data_fm2immob_immob.calc_default_traces(**trace_opt)
+# In[ ]:
 
 
-# df['neuron_014']
+# trace_opt=dict(use_paper_options=True, interpolate_nan=False, verbose=True)
+# df = project_data_fm2immob_fm.calc_default_traces(**trace_opt)
 
 
-# project_data_fm2immob_immob.tail_neuron_names()
+# In[ ]:
+
+
+# project_data_immob2.calc_paper_traces()
+
+
+# In[ ]:
+
+
+# project_data_immob2.tail_neuron_names()
+
+
+# In[ ]:
+
+
+# # Test: include tail neurons
+# fig1, fig2 = make_summary_heatmap_and_subplots(project_data_fm2immob_immob2, 
+#                                                trace_opt=dict(use_paper_options=True, interpolate_nan=False), 
+#                                                include_speed_subplot=False,
+#                                                to_save=False, to_show=True, output_folder="intro/fm_to_immob/immob")
+
+
+# ### Just plot the legend for reversal shading
+
+# In[ ]:
+
+
+from wbfm.utils.general.utils_paper import export_legend_for_paper
+
+fname = 'intro/reversal_legend.png'
+export_legend_for_paper(reversal_shading=True, fname=fname)
+
+
+# In[ ]:
 
 
 
+fname = 'intro/reversal_and_collision_legend.png'
+export_legend_for_paper(reversal_shading=True, fname=fname, include_self_collision=True)
 
 
 # ## Triggered average examples
+
+# In[ ]:
+
 
 # from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages
@@ -166,7 +319,13 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_us
 from wbfm.utils.visualization.utils_plot_traces import plot_triggered_averages
 
 
+# In[ ]:
 
+
+
+
+
+# In[ ]:
 
 
 plot_triggered_averages([project_data_gcamp, project_data_immob], output_foldername="intro/basic_triggered_average")
@@ -174,12 +333,21 @@ plot_triggered_averages([project_data_gcamp, project_data_immob], output_foldern
 
 # ## PCA variance explained plot of all datasets
 
+# In[ ]:
+
+
 from wbfm.utils.visualization.multiproject_wrappers import get_all_variance_explained
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
 
 
+# In[ ]:
+
+
 gcamp_var, gfp_var, immob_var, gcamp_var_sum, gfp_var_sum, immob_var_sum = get_all_variance_explained(all_projects_gcamp, all_projects_gfp, all_projects_immob)
+
+
+# In[ ]:
 
 
 fig, ax = plt.subplots(dpi=200, figsize=(5,5))
@@ -211,7 +379,13 @@ plt.savefig(fname, transparent=True)
 fig.savefig(fname.replace(".png", ".svg"), transparent=True)
 
 
+# In[ ]:
 
+
+
+
+
+# In[ ]:
 
 
 
@@ -219,13 +393,22 @@ fig.savefig(fname.replace(".png", ".svg"), transparent=True)
 
 # # PCA weights across wbfm and immob
 
+# In[ ]:
+
+
 from wbfm.utils.visualization.utils_cca import calc_pca_weights_for_all_projects
 from wbfm.utils.external.utils_plotly import plotly_boxplot_colored_boxes
 from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 
 
+# In[ ]:
+
+
 neuron_names = neurons_with_confident_ids()
+
+
+# In[ ]:
 
 
 
@@ -233,8 +416,14 @@ wbfm_weights = calc_pca_weights_for_all_projects(all_projects_gcamp, use_paper_o
                                                 neuron_names=neuron_names)
 
 
+# In[ ]:
+
+
 immob_weights = calc_pca_weights_for_all_projects(all_projects_immob, use_paper_options=True, combine_left_right=True,
                                                  neuron_names=neuron_names)
+
+
+# In[ ]:
 
 
 # # Create a list of colors to highlight BAG
@@ -258,6 +447,9 @@ immob_weights = calc_pca_weights_for_all_projects(all_projects_immob, use_paper_
 # fig.write_image(fname)
 
 
+# In[ ]:
+
+
 # # Create a list of colors to highlight BAG
 # base_color = '#FF7F0E'  # Orange, overall immob color
 # names = list(immob_weights.columns)
@@ -279,9 +471,15 @@ immob_weights = calc_pca_weights_for_all_projects(all_projects_immob, use_paper_
 
 # ## FM and immob on same plot
 
+# In[ ]:
+
+
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
 from wbfm.utils.general.utils_paper import data_type_name_mapping, plotly_paper_color_discrete_map
 import plotly.graph_objects as go
+
+
+# In[ ]:
 
 
 names_to_keep = set(wbfm_weights.columns).intersection(immob_weights.columns)
@@ -293,6 +491,9 @@ df_both['Dataset Type'] = df_both['dataset_type'].map(data_type_name_mapping())
 df_both['neuron_name'].unique()
 
 
+# In[ ]:
+
+
 
 fig = px.box(df_both, y='PC1 weight', x='neuron_name', color='Dataset Type', 
             color_discrete_map=plotly_paper_color_discrete_map(),
@@ -300,7 +501,7 @@ fig = px.box(df_both, y='PC1 weight', x='neuron_name', color='Dataset Type',
 
 add_p_value_annotation(fig, x_label='all', show_ns=False, show_only_stars=True, permutations=1000,
                       height_mode='top_of_data')#, _format=dict(text_height=0.075))
-apply_figure_settings(fig, width_factor=0.7, height_factor=0.3, plotly_not_matplotlib=True)
+apply_figure_settings(fig, width_factor=0.8, height_factor=0.3, plotly_not_matplotlib=True)
 
 fig.update_layout(legend=dict(
     yanchor="top",
@@ -339,33 +540,77 @@ fig.write_image(fname)
 # 4. Negative difference
 # 
 # ... problem: AVA will then show a very strong difference, as will many that stay "on the same side"... what we really want is a switch in correlations for category 3/4
-# New categories:
-# 3. immob NS diff from 0, fm positive
-# 4. immob NS diff from 0, fm negative
-# 5. Both NS diff from 0, but not from each other (will this exist?)
-# 6. fm NS diff from 0, immob positive
-# 7. fm NS diff from 0, immob negative
-# 8. Both NS diff from 0
+# New categories (including above):
+# 1. immob NS diff from 0, fm positive
+# 2. immob NS diff from 0, fm negative
+# 3. Both NS diff from 0, but not from each other (will this exist?)
+# 4. fm NS diff from 0, immob positive
+# 5. fm NS diff from 0, immob negative
+# 6. Both NS diff from 0
 # 
-# ... this is a lot of categories! I can maybe just ignore categories 6-8, as they are not interesting in FM
+# ... this is a lot of categories! I can maybe just ignore categories 4-6, as they are not interesting in FM
+# 
+# Restart:
+# 1. Both significant, both same sign
+# 2. Both significant, switch sign
+# 3. Only significant in FM (ignore sign)
+# 4. Not significant in FM (ignore significance in immob)
+# 
+# Fundamentally, we don't care much about the ones that are significant in immob... intuitively we think they are just less noisy, but it's hard to quantify
+# 
+# ... Unfortunately, many neurons are slightly on one edge of significance in immob or fm, creating a lot more "switching" or "fm only" guys than really make sense...
+# 
+# Restart, removing the focus on the (not shown) comparison to 0:
+# 1. Same sign, both sig from 0, NS or sig difference: Intrinsic
+# 2. Different sign, but sig from 
+# 3. 
+# 
 
-df_both.head()
+# In[ ]:
+
+
+from wbfm.utils.general.hardcoded_paths import intrinsic_definition
+
+
+# In[ ]:
 
 
 from scipy import stats
 from statsmodels.stats.multitest import multipletests
 
-# 
+# Significantly different from 0
 func = lambda x: stats.ttest_1samp(x, 0)[1]
 df_groupby = df_both.dropna().groupby(['neuron_name', 'dataset_type'])
 df_pvalue = df_groupby['PC1 weight'].apply(func).to_frame()
 df_pvalue.columns = ['p_value']
-output = multipletests(df_pvalue.values.squeeze(), method='bonferroni')
+
+output = multipletests(df_pvalue.values.squeeze(), method='sidak')
 df_pvalue['p_value_corrected'] = output[1]
 df_pvalue['significance_corrected'] = output[0]
 
-df_medians = df_groupby['PC1 weight'].median()[(slice(None), 'gcamp')]
-# df_medians_diff = df_medians[(slice(None), 'gcamp')] - df_medians[(slice(None), 'immob')]
+# Sign of medians
+df_medians_gcamp = df_groupby['PC1 weight'].median()[(slice(None), 'gcamp')]
+df_medians_immob = df_groupby['PC1 weight'].median()[(slice(None), 'immob')]
+
+# Significantly different from each other
+df_groupby = df_both.dropna().groupby(['neuron_name'])
+func = lambda x: stats.ttest_ind(x[x['dataset_type']=='gcamp']['PC1 weight'], x[x['dataset_type']=='immob']['PC1 weight'], 
+                                 equal_var=False)[1]
+df_significant_diff = df_groupby.apply(func).to_frame()
+df_significant_diff.columns = ['p_value_diff']
+output = multipletests(df_significant_diff.values.squeeze(), method='sidak')
+df_significant_diff['p_value_corrected_diff'] = output[1]
+df_significant_diff['significance_corrected_diff'] = output[0]
+df_significant_diff.head()
+
+
+# In[ ]:
+
+
+# %debug
+
+
+# In[ ]:
 
 
 
@@ -381,60 +626,54 @@ df_medians = df_groupby['PC1 weight'].median()[(slice(None), 'gcamp')]
 # fig.show()
 
 
-# df_pvalue_thresh = (df_pvalue*len(df_pvalue) < 0.05).reset_index()
+# In[ ]:
+
+
+# Process p value comparisons to 0
 df_pvalue_thresh = df_pvalue['significance_corrected'].reset_index()
 
+# Collect signficance calculations per datatype
 df_pivot = df_pvalue_thresh.pivot_table(index='neuron_name', columns='dataset_type', values='significance_corrected', aggfunc='first')
 df_4states = df_pivot.astype(str).radd(df_pivot.columns + '_')
 df_4states = (df_4states['gcamp'] + '_' + df_4states['immob'])#.reset_index()
 
-df_medians.name = 'pc1_diff'
-df_medians_diff_str = (df_medians > 0).astype(str).radd(df_medians.name + '_')
-df_4states = df_4states.to_frame().join(df_medians_diff_str)#.reset_index()
+# Add suffix to the state: are both medians on the same side?
+df_medians_gcamp.name = 'same_sign'
+df_medians_immob.name = 'same_sign'
+df_medians_same_sign = ((df_medians_gcamp>0) == (df_medians_immob>0)).astype(str).radd(df_medians_gcamp.name + '_')
+df_4states = df_4states.to_frame().join(df_medians_same_sign)#.reset_index()
 
-# Combine columns again
-df_4states.columns = ['pvalue_result', 'diff_result']
-df_4states = (df_4states['pvalue_result'] + '_' + df_4states['diff_result']).to_frame()
+# Add suffix to the state: is the difference between them significant?
+df_4states = df_4states.join(df_significant_diff['significance_corrected_diff'].astype(str).radd('diff_'))
+
+# Combine into final categories
+df_4states.columns = ['pvalue_result', 'diff_sign', 'diff_sig']
+df_4states = (df_4states['pvalue_result'] + '_' + df_4states['diff_sign'] + '_' + df_4states['diff_sig']).to_frame()
 df_4states.columns = ['Result']
+df_4states.head()
 
 
-# df_4states.sort_values(by='Result')
-
-
-# df_4states['Result'].value_counts().reset_index()
+# In[ ]:
 
 
 df_4states_counts = df_4states['Result'].value_counts().reset_index()
 
 # name_mapping = {
-#     'gcamp_False_immob_False': 'No manifold',
-#     'gcamp_False_immob_True': 'Reduce manifold',
-#     'gcamp_True_immob_False': 'Increase manifold',
-#     'gcamp_True_immob_True': 'Keep manifold'
+#     'gcamp_True_immob_True_same_sign_True': 'Same encoding in both',
+#     'gcamp_True_immob_True_same_sign_False': 'Encoding switches',
+#     'gcamp_True_immob_False_same_sign_False': 'Encoding switches',
+#     'gcamp_False_immob_True_same_sign_False': 'Fwd in immob only',
+#     'gcamp_True_immob_False_same_sign_True': 'Manifold in FM only',
+#     'gcamp_False_immob_False_same_sign_False': 'No manifold',
+#     'gcamp_False_immob_False_same_sign_True': 'No manifold',
+#     'gcamp_False_immob_True_same_sign_True': 'Manifold in immob only',
 # }
-name_mapping = {
-    'gcamp_True_immob_True_pc1_diff_True': 'Rev in both',
-    'gcamp_True_immob_True_pc1_diff_False': 'Fwd in both',
-    'gcamp_True_immob_False_pc1_diff_False': 'Fwd in FM only',
-    'gcamp_False_immob_True_pc1_diff_False': 'Fwd in immob only',
-    'gcamp_True_immob_False_pc1_diff_True': 'Rev in FM only',
-    'gcamp_False_immob_False_pc1_diff_False': 'No manifold',
-    'gcamp_False_immob_False_pc1_diff_True': 'No manifold',
-    'gcamp_False_immob_True_pc1_diff_True': 'Rev in immob only',
-}
-df_4states_counts['Result'] = df_4states_counts['Result'].map(name_mapping)
+# df_4states_counts['Result_long'] = df_4states_counts['Result'].map(name_mapping)
+# df_4states['Result_long'] = df_4states['Result'].map(name_mapping)
 
-def func(x):
-    if 'both' in x:
-        return 'Conserved'
-    elif 'FM only' in x:
-        return 'Freely moving only'
-    elif 'immob only' in x:
-        return 'Immobilized only'
-    else:
-        return 'No manifold participation'
 
-df_4states_counts['Result_simple'] = df_4states_counts['Result'].map(func)
+df_4states_counts['Result_simple'] = df_4states_counts['Result'].map(intrinsic_definition)
+df_4states['Result_simple'] = df_4states['Result'].map(intrinsic_definition)
 
 d2 = px.colors.qualitative.Dark2
 s2 = px.colors.qualitative.Set2
@@ -448,27 +687,28 @@ cmap = {'Rev in both': d2[1],
        }
 
 d3 = px.colors.qualitative.D3
-cmap = {'Rev in both': d3[4],
+cmap = {'Intrinsic': d3[4],
        'Rev in FM only': d3[0],
        'Fwd in both': d3[4],
-       'Fwd in FM only': d3[0],
+       'Freely moving only': d3[0],
        'No manifold': d3[-3],
        'Rev in immob only': d3[2],
-       'Fwd in immob only': d3[2]
+       'Fwd in immob only': d3[2],
+       'Freely moving only': d3[0]
        }
 
 # Drop uninteresting rows
 # df_4states_counts = df_4states_counts.drop(df_4states_counts[df_4states_counts['Result'].str.contains('No')].index)
 # df_4states_counts = df_4states_counts.drop(df_4states_counts[df_4states_counts['Result'].str.contains('immob only')].index)
 
-fig = px.pie(df_4states_counts, names='Result_simple', values='count', color='Result', color_discrete_map=cmap)
-apply_figure_settings(fig, width_factor=0.4, height_factor=0.2)
-# fig.update_layout(legend=dict(
-#     yanchor="top",
-#     y=0.99,
-#     xanchor="left",
-#     x=0.01
-# ))
+fig = px.pie(df_4states_counts, names='Result_simple', values='count', color='Result_simple', color_discrete_map=cmap)
+apply_figure_settings(fig, width_factor=0.2, height_factor=0.2)
+fig.update_layout(legend=dict(
+    yanchor="top",
+    y=0.0,
+    xanchor="left",
+    x=0.2
+))
 
 # fig.update_traces(
 #         textposition="outside",
@@ -482,28 +722,62 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-df_4states_counts.drop(df_4states_counts[df_4states_counts['Result'].str.contains('No')].index)
+# In[ ]:
+
+
+df_4states.sort_values(by='Result')
+
+
+# In[ ]:
+
+
+df_4states['Result_simple'].value_counts()
 
 
 # # Variance explained by mode 1 across neurons
 # 
 # i.e. the cumulative histogram, with error bar per dataset
 
+# In[ ]:
+
+
 from wbfm.utils.visualization.multiproject_wrappers import build_dataframe_of_variance_explained
 
 
-trace_opt = dict(use_paper_options=True)
-opt = dict(n_components=1, melt=True)
+# In[ ]:
 
-df_var_exp_gcamp = build_dataframe_of_variance_explained(all_projects_gcamp, **opt, **trace_opt)
-df_var_exp_gcamp['Type of data'] = 'gcamp'
-df_var_exp_immob = build_dataframe_of_variance_explained(all_projects_immob, **opt, **trace_opt)
-df_var_exp_immob['Type of data'] = 'immob'
-df_var_exp = pd.concat([df_var_exp_gcamp, df_var_exp_immob], axis=0)
+
+trace_opt = dict(use_paper_options=True, interpolate_nan=True)
+
+all_dfs = []
+for n in tqdm([1, 2]):
+    opt = dict(n_components=n, melt=True)
+
+    df_var_exp_gcamp = build_dataframe_of_variance_explained(all_projects_gcamp, **opt, **trace_opt)
+    df_var_exp_gcamp['Type of data'] = 'gcamp'
+    df_var_exp_gcamp['n_components'] = n
+
+    df_var_exp_immob = build_dataframe_of_variance_explained(all_projects_immob, **opt, **trace_opt)
+    df_var_exp_immob['Type of data'] = 'immob'
+    df_var_exp_immob['n_components'] = n
+
+    df_var_exp_gfp = build_dataframe_of_variance_explained(all_projects_gfp, **opt, **trace_opt)
+    df_var_exp_gfp['Type of data'] = 'gfp'
+    df_var_exp_gfp['n_components'] = n
+    
+    all_dfs.extend([df_var_exp_gcamp, df_var_exp_immob, df_var_exp_gfp])
+
+df_var_exp = pd.concat(all_dfs, axis=0)
 df_var_exp.head()
 
 
-# df_var_exp['neuron_name'].unique()
+# In[ ]:
+
+
+df_var_exp[(df_var_exp['dataset_name'] == '2022-11-23_worm10') & (df_var_exp['neuron_name'] == 'ALA')]
+
+
+# In[ ]:
 
 
 # px.histogram(df_var_exp, color='dataset_name', x='fraction_variance_explained', cumulative=True, 
@@ -511,29 +785,30 @@ df_var_exp.head()
 #              barmode='overlay', histnorm='percent')
 
 
+# In[ ]:
+
+
 df_var_exp_hist = df_var_exp.copy()
 
+# Get counts of neurons in each bin
 bins = np.linspace(0, 1, 50)
 func = lambda Z: np.cumsum(np.histogram(Z, bins=bins)[0])
-df_var_exp_hist = df_var_exp_hist.groupby('dataset_name')['fraction_variance_explained'].apply(func)
-df_var_exp_hist.head()
+df_var_exp_hist = df_var_exp_hist.groupby(['dataset_name', 'n_components'])['fraction_variance_explained'].apply(func)
+# df_var_exp_hist.head()
 
-
-# px.line(df_var_exp_hist['2022-11-23_worm10'])
-
-
+# Explode to long form
 long_vars = df_var_exp_hist.reset_index().explode('fraction_variance_explained')
 long_vars.rename(columns={'fraction_variance_explained': 'cumulative_fraction_variance_explained'}, inplace=True)
 long_vars.sort_values(by=['dataset_name', 'cumulative_fraction_variance_explained'], inplace=True)
 # Just remake the bins
-long_vars['cumcount'] = long_vars.groupby('dataset_name').cumcount()
+long_vars['cumcount'] = long_vars.groupby(['dataset_name', 'n_components']).cumcount()
 long_vars['fraction_count'] = long_vars['cumcount'] / long_vars['cumcount'].max()
 
 # Add back datatype column
-long_vars = long_vars.merge(df_var_exp[['dataset_name', 'Type of data']], on='dataset_name')
+long_vars = long_vars.merge(df_var_exp[['dataset_name', 'n_components', 'Type of data']], on=['dataset_name', 'n_components'])
 
-# Normalize by number of total neurons
-total_num_neurons = df_var_exp.dropna()['dataset_name'].value_counts()
+# Normalize by number of total neurons (Only take one component to avoid duplication)
+total_num_neurons = df_var_exp[df_var_exp['n_components']==1].dropna()['dataset_name'].value_counts()
 long_vars.index = long_vars['dataset_name']  # So the division matches
 long_vars['cumulative_fraction_variance_explained'] = long_vars['cumulative_fraction_variance_explained'] / total_num_neurons
 long_vars.reset_index(drop=True, inplace=True)
@@ -541,44 +816,120 @@ long_vars.reset_index(drop=True, inplace=True)
 long_vars.head()
 
 
+# In[ ]:
+
+
 # px.line(long_vars, x='fraction_count', 
 #         y='cumulative_fraction_variance_explained', color='dataset_name',
 #        facet_row='Type of data')
 
 
+# In[ ]:
+
+
 from wbfm.utils.external.utils_plotly import plotly_plot_mean_and_shading
 
-opt = dict(x='fraction_count', y='cumulative_fraction_variance_explained', color='dataset_name', 
-           cmap=plotly_paper_color_discrete_map())
+opt = dict(x='fraction_count', y='cumulative_fraction_variance_explained', color='n_components', 
+           cmap=plotly_paper_color_discrete_map()
+          )
 
 fig = None
-for g in ['gcamp']:#, 'immob']:
-    fig = plotly_plot_mean_and_shading(long_vars[long_vars['Type of data']==g], line_name=g, fig=fig, **opt,
-                                      x_intersection_annotation=0.5)
+g = 'gcamp'
+df_subset = long_vars[(long_vars['Type of data']==g)]
+fig = plotly_plot_mean_and_shading(df_subset, line_name=g, fig=fig, **opt,
+                                   x_intersection_annotation=0.5)
+# for n in [1, 2]:
+#     df_subset = long_vars[(long_vars['Type of data']==g)]# & (long_vars['n_components']==n)]
+#     fig = plotly_plot_mean_and_shading(df_subset, line_name=g, fig=fig, **opt,
+#                                        x_intersection_annotation=0.5)
 
-fig.update_xaxes(title='Variance explained <br> by PC1 (fraction)', range=[0, 1.05])
+fig.update_xaxes(title='Var. explained (fraction)', range=[0, 1.05])
 fig.update_yaxes(title='Fraction of neurons <br> (cumulative)', range=[0, 1.05])
-fig.update_layout(showlegend=False)
-# fig.update_traces(line=dict(color=plotly_paper_color_discrete_map()['PCA']))
+fig.update_layout(
+        showlegend=True,
+        legend=dict(
+            title='Mode',
+          yanchor="middle",
+          y=0.25,
+          xanchor="left",
+          x=0.6
+        )
+    )# fig.update_traces(line=dict(color=plotly_paper_color_discrete_map()['PCA']))
+fig.update_traces(name='1 + 2', selector=dict(name='2'))
 
-apply_figure_settings(fig, width_factor=0.25, height_factor=0.2)
+apply_figure_settings(fig, width_factor=0.3, height_factor=0.2)
 
 fig.show()
 
-output_foldername = 'intro/dimensionality'
-fname = os.path.join(output_foldername, 'variance_explained_by_pc1_cumulative.png')
-fig.write_image(fname, scale=3)
-fname = Path(fname).with_suffix('.svg')
-fig.write_image(fname)
+to_save = True
+if to_save:
+    output_foldername = 'intro/dimensionality'
+    fname = os.path.join(output_foldername, 'variance_explained_by_pc1_and_pc2_cumulative.png')
+    fig.write_image(fname, scale=3)
+    fname = Path(fname).with_suffix('.svg')
+    fig.write_image(fname)
+
+
+# In[ ]:
+
+
+# %debug
+
+
+# In[ ]:
+
+
+long_vars['Type of data'].unique()
+
+
+# In[ ]:
+
+
+from wbfm.utils.external.utils_plotly import plotly_plot_mean_and_shading
+# Same as above, but with FM and immob, not only FM
+
+opt = dict(x='fraction_count', y='cumulative_fraction_variance_explained', color='Type of data', 
+           cmap=plotly_paper_color_discrete_map()
+          )
+# fig = None
+# g = 'gcamp'
+# df_subset = long_vars[(long_vars['Type of data']==g)]
+# fig = plotly_plot_mean_and_shading(df_subset, line_name=g, fig=fig, **opt,
+#                                    x_intersection_annotation=0.5)
 
 
 # Add immob
-g = 'immob'
-fig = plotly_plot_mean_and_shading(long_vars[long_vars['Type of data']==g], line_name=g, fig=fig, **opt,
+n_components = 2
+fig = None
+fig = plotly_plot_mean_and_shading(long_vars[long_vars['n_components']==n_components], line_name='immob', fig=fig, **opt,
                                   x_intersection_annotation=0.5, annotation_position='right')
 
+# Add gfp
+n_components = 2
+fig = None
+fig = plotly_plot_mean_and_shading(long_vars[long_vars['n_components']==n_components], line_name='gfp', fig=fig, **opt,
+                                  x_intersection_annotation=0.5, annotation_position='right')
+
+
+
+fig.update_xaxes(title='Var. explained by modes 1 and 2 (fraction)', range=[0, 1.05])
+fig.update_yaxes(title='Fraction of neurons (cumulative)', range=[0, 1.05])
+fig.update_traces(name='Immobilized', selector=dict(name='immob'))
+fig.update_traces(name='Freely Moving (GFP)', selector=dict(name='gfp'))
+fig.update_traces(name='Freely Moving (GCaMP)', selector=dict(name='gcamp'))
+fig.update_layout(
+        showlegend=True,
+        legend=dict(
+          title='Datatype',
+          yanchor="middle",
+          y=0.15,
+          xanchor="left",
+          x=0.5
+        )
+    )
 # In the supp, so it's larger
-apply_figure_settings(fig, width_factor=0.5, height_factor=0.5)
+apply_figure_settings(fig, width_factor=0.5, height_factor=0.4)
+
 
 fig.show()
 
@@ -589,36 +940,43 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-# ## Not used: gfp
-
-# gfp_weights = calc_pca_weights_for_all_projects(all_projects_gfp)
-
-
-# fig = px.box(gfp_weights)
-# fig.show()
-
-# fname = os.path.join(output_folder, 'gfp_pca_weights.png')
-# fig.write_image(fname)
-# fname = Path(fname).with_suffix('.svg')
-# fig.write_image(fname)
+# In[ ]:
 
 
 
 
 
+# In[ ]:
 
 
 
 
 
+# In[ ]:
 
 
 
 
 
+# In[ ]:
 
 
 
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
 
 
 
@@ -630,9 +988,15 @@ fig.write_image(fname)
 
 # ## Plateau in PC1 and speed during reversals
 
+# In[ ]:
+
+
 
 
 from wbfm.utils.external.utils_pandas import calc_eventwise_cooccurrence_matrix
+
+
+# In[ ]:
 
 
 # p = project_data_gcamp
@@ -652,7 +1016,13 @@ for name, p in tqdm(all_projects_gcamp.items()):
 df_all_cooccurances = pd.concat(df_all_occurances)
 
 
+# In[ ]:
 
+
+
+
+
+# In[ ]:
 
 
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
@@ -664,16 +1034,31 @@ plt.ylabel('PC1')
 plt.show()
 
 
+# In[ ]:
 
 
 
 
 
+# In[ ]:
 
 
 
 
 
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
 
 
 

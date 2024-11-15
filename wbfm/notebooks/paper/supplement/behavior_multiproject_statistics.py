@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[ ]:
 
+
+
+
+
+# In[1]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -19,11 +25,19 @@ import os
 import seaborn as sns
 
 
+# In[2]:
+
+
 from sklearn.decomposition import PCA
 from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
 import seaborn as sns
 import surpyval
+from wbfm.utils.general.utils_paper import apply_figure_settings
+from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map
 import plotly.express as px
+
+
+# In[3]:
 
 
 # fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
@@ -32,12 +46,21 @@ fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/
 project_data_gcamp = ProjectData.load_final_project_data_from_config(fname)
 
 
+# In[4]:
+
+
 # Load multiple datasets
-from wbfm.utils.visualization.hardcoded_paths import load_paper_datasets
+from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 all_projects_gcamp = load_paper_datasets('gcamp')
 
 
+# In[5]:
+
+
 all_projects_gfp = load_paper_datasets('gfp')
+
+
+# In[6]:
 
 
 output_folder = "multiproject_behavior_quantifications"
@@ -45,11 +68,34 @@ output_folder = "multiproject_behavior_quantifications"
 
 # # Example dataset with zoom in
 
+# In[7]:
+
+
 from wbfm.utils.visualization.plot_traces import make_summary_interactive_kymograph_with_behavior
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 
-fig = make_summary_interactive_kymograph_with_behavior(project_data_gcamp, to_save=False, to_show=True);
+# In[8]:
+
+
+from wbfm.utils.visualization.plot_traces import build_all_plot_variables_for_summary_plot
+# Test: look at variables that I'm plotting
+behavior_alias_dict = {'Turns': ['dorsal_turn', 'ventral_turn'],
+                               'Other': ['self_collision', 'head_cast'],
+                               'Rev': ['rev']}
+additional_shaded_states = []
+
+column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, _row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
+        project_data_gcamp, 3, use_behavior_traces=True, behavior_alias_dict=behavior_alias_dict,
+        additional_shaded_states=additional_shaded_states, showlegend=False)
+
+
+# In[9]:
+
+
+fig = make_summary_interactive_kymograph_with_behavior(project_data_gcamp, to_save=False, to_show=True,
+                                                      apply_figure_size_settings=True, showlegend=False,
+                                                       row_heights=[0.25, 0.05, 0.2, 0.2, 0.2])
 
 to_save = True
 if to_save:
@@ -59,29 +105,91 @@ if to_save:
     fig.write_image(fname)
 
 
+# In[ ]:
+
+
+fps = project_data_gcamp.physical_unit_conversion.frames_per_second
+fig = make_summary_interactive_kymograph_with_behavior(project_data_gcamp, to_save=False, to_show=True,
+                                                      apply_figure_size_settings=True, discrete_behaviors=True,
+                                                       row_heights=[0.25, 0.05, 0.2, 0.2, 0.2],
+                                                      x_range=[31000/fps, 35000/fps])
+
+to_save = True
+if to_save:
+    fname = os.path.join("behavior", "kymograph_with_discrete_time_series.png")
+    fig.write_image(fname, scale=5)
+    fname = str(Path(fname).with_suffix('.svg'))
+    fig.write_image(fname)
+
+
+# In[ ]:
+
+
+fig = make_summary_interactive_kymograph_with_behavior(project_data_gcamp, to_save=False, to_show=True,
+                                                      apply_figure_size_settings=True, eigenworm_behaviors=True,
+                                                       row_heights=[0.25, 0.05, 0.2, 0.2, 0.2],
+                                                      #x_range=[31000, 35000]
+                                                      )
+
+to_save = True
+if to_save:
+    fname = os.path.join("behavior", "kymograph_with_eigenworm_time_series.png")
+    fig.write_image(fname, scale=5)
+    fname = str(Path(fname).with_suffix('.svg'))
+    fig.write_image(fname)
+
+
+# In[ ]:
+
+
+get_ipython().run_line_magic('debug', '')
+
+
 # ## Trajectory
 
-xy = project_data_gcamp.worm_posture_class.stage_position(fluorescence_fps=False).copy()
+# In[ ]:
+
+
+from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
+
+
+# In[ ]:
+
+
+xy = project_data_gcamp.worm_posture_class.stage_position(fluorescence_fps=True).copy()
 xy = xy - xy.iloc[0, :]
+
+beh = project_data_gcamp.worm_posture_class.beh_annotation(fluorescence_fps=True, simplify_states=True,
+                                                           include_head_cast=False, include_collision=False, include_pause=False)
+
+df_xy = xy
+df_xy['Behavior'] = beh.values
+
+
+# In[ ]:
 
 
 import plotly.graph_objects as go
 
-fig = px.scatter(xy, x='X', y='Y')
+df_xy['size'] = 1
+
+fig = px.scatter(df_xy, x='X', y='Y')
 fig.update_yaxes(dict(title="Distance (mm)"))
 fig.update_xaxes(dict(title="Distance (mm)"))
 
 fig.add_trace(go.Scatter(x=[0], y=[0], marker=dict(
                     color='green',
-                    size=20
+                    size=5
                 ), name='start'))
 
 fig.add_trace(go.Scatter(x=[xy.iloc[-1, 0]], y=[xy.iloc[-1, 1]], marker=dict(
                     color='red',
-                    size=20), name='end'
+                    size=5), name='end'
                 ))
-apply_figure_settings(fig, width_factor=0.4, height_factor=0.25, plotly_not_matplotlib=True)
+apply_figure_settings(fig, width_factor=0.8, height_factor=0.25, plotly_not_matplotlib=True)
 
+fig.update_traces(marker=dict(line=dict(width=0)))
 fig.show()
 
     
@@ -91,14 +199,73 @@ fig.write_image(fname, scale=3)
 fig.write_image(fname.replace(".png", ".svg"))
 
 
-# ## Behavior transition diagram
+# In[ ]:
 
-dot, df_probabilities, df_raw_number = project_data_gcamp.worm_posture_class.plot_behavior_transition_diagram(output_folder='behavior')
+
+import plotly.graph_objects as go
+
+df_xy['size'] = 1
+ethogram_cmap = BehaviorCodes.ethogram_cmap(include_turns=True, include_reversal_turns=False)
+df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_xy, ['X', 'Y'], 'Behavior')
+
+# Loop to prep each line, then plot
+state_codes = df_xy['Behavior'].unique()
+phase_plot_list = []
+for i, state_code in enumerate(state_codes):
+    if state_code == BehaviorCodes.UNKNOWN:
+        continue
+    phase_plot_list.append(
+                go.Scatter(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], mode='lines',
+                             name=state_code.full_name, line=dict(color=ethogram_cmap.get(state_code, None), width=4)))
+
+fig = go.Figure()
+fig.add_traces(phase_plot_list)
+
+# fig = px.scatter(df_xy, x='X', y='Y', color='Behavior')
+fig.update_yaxes(dict(title="Distance (mm)"))
+fig.update_xaxes(dict(title="Distance (mm)"))
+
+fig.add_trace(go.Scatter(x=[0], y=[0], marker=dict(
+                    color='black', symbol='x',
+                    size=10
+                ), name='start'))
+
+fig.add_trace(go.Scatter(x=[xy.iloc[-1, 0]], y=[xy.iloc[-1, 1]], marker=dict(
+                    color='black',
+                    size=10), name='end'
+                ))
+apply_figure_settings(fig, width_factor=0.75, height_factor=0.25, plotly_not_matplotlib=True)
+
+fig.update_traces(marker=dict(line=dict(width=0)))
+fig.show()
+
+    
+fname = f"trajectory.png"
+fname = os.path.join("behavior", fname)
+fig.write_image(fname, scale=3)
+fig.write_image(fname.replace(".png", ".svg"))
+
+
+# In[ ]:
+
+
+1
+
+
+# ## NOT USING: Behavior transition diagram
+
+# In[ ]:
+
+
+# dot, df_probabilities, df_raw_number = project_data_gcamp.worm_posture_class.plot_behavior_transition_diagram(output_folder='behavior')
 
 
 # # Histograms of multiproject statistics
 
 # ## Displacement
+
+# In[ ]:
+
 
 from collections import defaultdict
 
@@ -133,17 +300,29 @@ def calc_displacement_dataframes(all_projects):
     return df_displacement_gcamp
 
 
+# In[ ]:
+
+
 df_displacement_gcamp = calc_displacement_dataframes(all_projects_gcamp)
 df_displacement_gfp = calc_displacement_dataframes(all_projects_gfp)
 
 
+# In[ ]:
+
+
 df_displacement_gfp.shape
+
+
+# In[ ]:
 
 
 df_displacement_gcamp['genotype'] = 'gcamp'
 df_displacement_gfp['genotype'] = 'gfp'
 
 df_displacement = pd.concat([df_displacement_gcamp, df_displacement_gfp])
+
+
+# In[ ]:
 
 
 # fig = px.histogram(df_displacement, x='net', color='genotype', nbins=40)
@@ -154,8 +333,14 @@ df_displacement = pd.concat([df_displacement_gcamp, df_displacement_gfp])
 # fig.show()
 
 
+# In[ ]:
+
+
 # fig = px.histogram(df_displacement, x='net', facet_row='genotype', color='genotype', nbins=30)
 # fig.show()
+
+
+# In[ ]:
 
 
 # Alternative: boxplot with scatter plot
@@ -168,10 +353,13 @@ fig.update_layout(
 fig.show()
 
 fname = "net_displacement.png"
-fname = os.path.join(output_folder, fname)
+fname = os.path.join('behavior', fname)
 fig.write_image(fname)
 
 fig.write_image(fname.replace(".png", ".svg"))
+
+
+# In[ ]:
 
 
 # fig = px.histogram(df_displacement, x='cumulative', facet_row='genotype', color='genotype', nbins=30)
@@ -180,39 +368,55 @@ fig.write_image(fname.replace(".png", ".svg"))
 
 # ## Speed, in several different ways
 
+# In[ ]:
+
+
 from wbfm.utils.visualization.plot_summary_statistics import calc_speed_dataframe
 from wbfm.utils.general.utils_paper import apply_figure_settings
+
+
+# In[ ]:
 
 
 df_speed_gcamp = calc_speed_dataframe(all_projects_gcamp)
 df_speed_gfp = calc_speed_dataframe(all_projects_gfp)
 
 
-df_speed_gcamp['genotype'] = 'gcamp'
-df_speed_gfp['genotype'] = 'gfp'
+# In[ ]:
 
+
+
+
+
+# In[ ]:
+
+
+from wbfm.utils.general.utils_paper import data_type_name_mapping
+
+df_speed_gcamp['Genotype'] = 'gcamp'
+df_speed_gfp['Genotype'] = 'gfp'
 df_speed = pd.concat([df_speed_gcamp, df_speed_gfp])
 
-
-# TODO: trace of hist (fewer bins), with error bars and gray with individual traces
-# TODO: OR: normaly histogram, but boxplot per individual of rectified speeds
-
-
+df_speed['Genotype'] = df_speed['Genotype'].map(data_type_name_mapping())
 speed_types = [#'abs_stage_speed', 'middle_body_speed', 
                'signed_middle_body_speed']
 for x in speed_types:
-    fig = px.histogram(df_speed, x=x, facet_row='genotype', color='genotype', title="Speed",#x, 
+    fig = px.histogram(df_speed, x=x, facet_row='Genotype', color='Genotype', color_discrete_map=plotly_paper_color_discrete_map(), #title="Speed",#x, 
                        histnorm='probability')
     fig.update_layout(title=dict(x=0.4, y=0.99))
     # Remove facet_row annotations
     for anno in fig['layout']['annotations']:
         anno['text']=''
     fig.update_layout(showlegend=True)
+    # fig.update_yaxes(dict(title="Probability", range=[0, 0.019]))
     fig.update_yaxes(dict(title="Probability", range=[0, 0.029]))
     fig.update_xaxes(dict(title="Speed (mm/s)", range=[-0.25, 0.19]))
     fig.update_xaxes(dict(title=""), row=2, col=1)
     
-    apply_figure_settings(fig, width_factor=0.35, height_factor=0.25, plotly_not_matplotlib=True)
+    fig.update_traces(xbins=dict( # bins used for histogram
+        size=0.002
+    ))
+    apply_figure_settings(fig, width_factor=0.4, height_factor=0.2, plotly_not_matplotlib=True)
     
     fig.show()
     
@@ -222,20 +426,35 @@ for x in speed_types:
     fig.write_image(fname.replace(".png", ".svg"))
 
 
+# In[ ]:
+
+
 # fname = os.path.join(output_folder, "df_speed.h5")
 # df_speed.to_hdf(fname, 'df_with_missing')
 
 
 # ## Reversal and forward durations
 
+# In[ ]:
+
+
 from wbfm.utils.visualization.plot_summary_statistics import calc_durations_dataframe
+
+
+# In[ ]:
 
 
 df_duration_gcamp = calc_durations_dataframe(all_projects_gcamp)
 df_duration_gfp = calc_durations_dataframe(all_projects_gfp)
 
 
+# In[ ]:
+
+
 # %debug
+
+
+# In[ ]:
 
 
 df_duration_gcamp['genotype'] = 'gcamp'
@@ -248,15 +467,22 @@ df_duration['BehaviorCodes.FWD'] /= fps
 df_duration['BehaviorCodes.REV'] /= fps
 
 
+# In[ ]:
+
+
 df_duration.columns
+
+
+# In[ ]:
 
 
 
 states = ['BehaviorCodes.FWD', 'BehaviorCodes.REV']
-titles = ["forward", "reversal"]
+titles = ["Forward", "Reversal"]
 
 for x, t in zip(states, titles):
-    fig = px.histogram(df_duration, x=x, facet_row='genotype', color='genotype', title=f"Duration of {t} states", 
+    fig = px.histogram(df_duration, x=x, facet_row='genotype', color='genotype', color_discrete_map=plotly_paper_color_discrete_map(), 
+                       title=f"<br>                {t} duration", 
                        histnorm='probability')
 
     fig.update_layout(title=dict(x=0.5, y=0.99))
@@ -264,14 +490,23 @@ for x, t in zip(states, titles):
     for anno in fig['layout']['annotations']:
         anno['text']=''
     fig.update_layout(xaxis_title="Time (s)", showlegend=False)
-    if t == 'reversal':
-        fig.update_xaxes(dict(range=[0, 20]))
-        fig.update_yaxes(dict(range=[0, 0.19]))
-    else:
-        fig.update_xaxes(dict(range=[0, 90]))
-        fig.update_yaxes(dict(range=[0, 0.5]))
+    fig.update_traces(xbins=dict( # bins used for histogram
+        # start=0.0,
+        # end=60.0,
+        size=1
+    ))
+    fig.update_xaxes(dict(range=[0, 90]))
+    fig.update_yaxes(dict(range=[0, 0.19]), title="")
+    width_factor = 0.2
+    if t == 'Reversal':
+        # fig.update_xaxes(dict(range=[0, 20]))
+        fig.update_yaxes(showticklabels=False, overwrite=True)
+        width_factor -= 0.01
+    # else:
+    #     fig.update_xaxes(dict(range=[0, 90]))
+    #     fig.update_yaxes(dict(range=[0, 0.19]))
                         
-    apply_figure_settings(fig, width_factor=0.25, height_factor=0.25, plotly_not_matplotlib=True)
+    apply_figure_settings(fig, width_factor=width_factor, height_factor=0.2, plotly_not_matplotlib=True)
     fig.show()
     
     fname = f"duration_histogram_{x.split('.')[1]}.png"
@@ -280,17 +515,47 @@ for x, t in zip(states, titles):
     fig.write_image(fname.replace(".png", ".svg"))
 
 
+# In[ ]:
+
+
+
+fig = px.histogram(df_duration.melt(id_vars=['dataset_name', 'genotype']), 
+                   x='value', facet_row='genotype', color='genotype',
+                   facet_col='variable',
+                   color_discrete_map=plotly_paper_color_discrete_map(), 
+                   title=f"<br>                {t} duration", 
+                   histnorm='probability')
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
 # fname = os.path.join(output_folder, "df_durations.h5")
 # df_duration.to_hdf(fname, 'df_with_missing')
 
 
 # ## Reversal and forward frequency
 
+# In[ ]:
+
+
 from wbfm.utils.visualization.plot_summary_statistics import calc_onset_frequency_dataframe
+
+
+# In[ ]:
 
 
 df_frequency_gcamp = calc_onset_frequency_dataframe(all_projects_gcamp)
 df_frequency_gfp = calc_onset_frequency_dataframe(all_projects_gfp)
+
+
+# In[ ]:
 
 
 df_frequency_gcamp['genotype'] = 'gcamp'
@@ -302,20 +567,26 @@ df_frequency = pd.concat([df_frequency_gcamp, df_frequency_gfp])
 # df_frequency['BehaviorCodes.REV'] /= fps
 
 
+# In[ ]:
+
+
 
 states = ['BehaviorCodes.FWD', 'BehaviorCodes.REV']
-titles = ["forward", "reversal"]
+titles = ["Forward", "Reversal"]
 
 for x, t in zip(states, titles):
-    fig = px.histogram(df_frequency, x=x, facet_row='genotype', color='genotype', title=f"Frequency of {t} states", 
-                       histnorm='probability')
+    fig = px.histogram(df_frequency, x=x, facet_row='genotype', color='genotype', title=f"<br>     {t} frequency", 
+                       histnorm='probability', color_discrete_map=plotly_paper_color_discrete_map())
     
     fig.update_layout(title=dict(x=0.5, y=0.99))
     fig.update_layout(
         xaxis_title="Frequency (1/min)", showlegend=False
     )
-    fig.update_yaxes(dict(range=[0, 0.59]))
-    apply_figure_settings(fig, width_factor=0.25, height_factor=0.25, plotly_not_matplotlib=True)
+    fig.update_yaxes(dict(range=[0, 0.69]))
+    fig.update_traces(xbins=dict( # bins used for histogram
+        size=1
+    ))
+    apply_figure_settings(fig, width_factor=0.25, height_factor=0.2, plotly_not_matplotlib=True)
     
     for anno in fig['layout']['annotations']:
         anno['text']=''
@@ -328,96 +599,15 @@ for x, t in zip(states, titles):
     fig.write_image(fname.replace(".png", ".svg"))
 
 
-# ## Other states: SLOWING
-
-# ### Frequency
-
-from wbfm.utils.visualization.plot_summary_statistics import calc_onset_frequency_dataframe
-from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
-
-
-df_frequency_gcamp = calc_onset_frequency_dataframe(all_projects_gcamp, states=[BehaviorCodes.SLOWING])
-df_frequency_gfp = calc_onset_frequency_dataframe(all_projects_gfp, states=[BehaviorCodes.SLOWING])
-
-
-df_frequency_gcamp['genotype'] = 'gcamp'
-df_frequency_gfp['genotype'] = 'gfp'
-
-df_frequency = pd.concat([df_frequency_gcamp, df_frequency_gfp])
-
-
-states = ['BehaviorCodes.SLOWING']
-titles = ["slowing"]
-
-for x, t in zip(states, titles):
-    fig = px.histogram(df_frequency, x=x, facet_row='genotype', color='genotype', title=f"Frequency of {t} states", histnorm='probability')
-    
-    fig.update_layout(
-        font=dict(size=16)
-    )
-    fig.update_layout(
-        xaxis_title="Frequency (1/min)"
-    )
-    for anno in fig['layout']['annotations']:
-        anno['text']=''
-    fig.show()
-    
-    fname = f"frequency_histogram_SLOWING_{x.split('.')[1]}.png"
-    fname = os.path.join(output_folder, fname)
-    fig.write_image(fname)
-    fig.write_image(fname.replace(".png", ".svg"))
-
-
-# ### Duration
-
-from wbfm.utils.visualization.plot_summary_statistics import calc_durations_dataframe
-
-
-df_duration_gcamp = calc_durations_dataframe(all_projects_gcamp, states=[BehaviorCodes.SLOWING])
-df_duration_gfp = calc_durations_dataframe(all_projects_gfp, states=[BehaviorCodes.SLOWING])
-
-
-df_duration_gcamp['genotype'] = 'gcamp'
-df_duration_gfp['genotype'] = 'gfp'
-
-df_duration = pd.concat([df_duration_gcamp, df_duration_gfp])
-
-fps = 3.5
-df_duration['BehaviorCodes.SLOWING'] /= fps
-
-
-
-states = ['BehaviorCodes.SLOWING']
-titles = ["slowing"]
-
-for x, t in zip(states, titles):
-    fig = px.histogram(df_duration, x=x, facet_row='genotype', color='genotype', title=f"Duration of {t} states", histnorm='probability')
-    
-    fig.update_layout(
-        font=dict(size=24)
-    )
-    fig.update_layout(
-        xaxis_title="Time (s)"
-    )
-    for anno in fig['layout']['annotations']:
-        anno['text']=''
-    fig.show()
-    
-    fname = f"duration_histogram_SLOWING_{x.split('.')[1]}.png"
-    fname = os.path.join(output_folder, fname)
-    fig.write_image(fname)
-    fig.write_image(fname.replace(".png", ".svg"))
-
-
-
-
-
-
-
-
 # # Histogram of post-reversal head bend peaks
 
+# In[ ]:
+
+
 from wbfm.utils.general.utils_paper import apply_figure_settings
+
+
+# In[ ]:
 
 
 # For each project, get the positive and negative post reversal peaks
@@ -460,6 +650,9 @@ for name, p in tqdm(all_projects_gcamp.items()):
     final_dorsal_dict[name] = dorsal_to_keep
 
 
+# In[ ]:
+
+
 # For now, ignore the dataset they came from
 df_ventral = pd.DataFrame(np.concatenate(list(final_ventral_dict.values())))
 df_ventral['Turn Direction'] = 'Ventral'
@@ -470,8 +663,14 @@ df_turns = pd.concat([df_ventral, df_dorsal])
 df_turns.columns = ['Amplitude', 'Turn Direction']
 
 
+# In[ ]:
+
+
 beh_list = [BehaviorCodes.VENTRAL_TURN, BehaviorCodes.DORSAL_TURN]
 cmap = [BehaviorCodes.ethogram_cmap()[beh] for beh in beh_list]
+
+
+# In[ ]:
 
 
 df_turns['Amplitude'] = df_turns['Amplitude'].abs()
@@ -479,7 +678,12 @@ df_turns['Amplitude'] = df_turns['Amplitude'].abs()
 fig = px.histogram(df_turns, color="Turn Direction", histnorm='probability', color_discrete_sequence=cmap,
                   barmode='overlay')
 fig.update_layout(xaxis=dict(title="Peak Head Curvature"), showlegend=False)
-apply_figure_settings(fig, width_factor=0.35, height_factor=0.15, plotly_not_matplotlib=True)
+fig.update_traces(xbins=dict( # bins used for histogram
+    # start=0.0,
+    # end=60.0,
+    size=0.002
+))
+apply_figure_settings(fig, width_factor=0.3, height_factor=0.12, plotly_not_matplotlib=True)
 
 fig.show()
 
@@ -489,9 +693,13 @@ fig.write_image(fname, scale=3)
 fig.write_image(fname.replace(".png", ".svg"))
 
 
+# In[ ]:
+
+
 fig = px.pie(df_turns, names="Turn Direction", color_discrete_sequence=cmap)
 
-apply_figure_settings(fig, width_factor=0.25, height_factor=0.25, plotly_not_matplotlib=True)
+apply_figure_settings(fig, width_factor=0.25, height_factor=0.2, plotly_not_matplotlib=True)
+fig.update_layout(showlegend=False)
 fig.show()
 
 fname = f"first_head_bend_absolute_curvature_pie_chart.png"
@@ -500,8 +708,14 @@ fig.write_image(fname, scale=3)
 fig.write_image(fname.replace(".png", ".svg"))
 
 
+# In[ ]:
+
+
 # fname = os.path.join(output_folder, "df_dorsal_ventral.h5")
 # df_turns.to_hdf(fname, 'df_with_missing')
+
+
+# In[ ]:
 
 
 
@@ -509,8 +723,14 @@ fig.write_image(fname.replace(".png", ".svg"))
 
 # # Histograms of new ventral annotations
 
+# In[ ]:
+
+
 from wbfm.utils.external.utils_pandas import get_dataframe_of_transitions
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
+
+
+# In[ ]:
 
 
 beh_vec = project_data_gcamp.worm_posture_class.beh_annotation(fluorescence_fps=True)
@@ -519,10 +739,16 @@ beh_vec = [b.value for b in beh_vec]
 df_transition = get_dataframe_of_transitions(beh_vec, convert_to_probabilities=True)
 
 
+# In[ ]:
+
+
 mapper = lambda val: BehaviorCodes(val).name
 
 df_transition = df_transition#.rename(columns=mapper).rename(index=mapper)
 df_transition
+
+
+# In[ ]:
 
 
 # For each project, get the transition probability dataframe
@@ -537,6 +763,9 @@ for name, p in tqdm(all_projects_gcamp.items()):
 df_all_transitions = sum(all_transitions)
 
 
+# In[ ]:
+
+
 mapper = lambda val: BehaviorCodes(val).name
 
 df = df_all_transitions.rename(columns=mapper).rename(index=mapper)
@@ -546,7 +775,13 @@ df.columns.name = None
 df
 
 
+# In[ ]:
+
+
 px.bar(df.loc['REV', :])
+
+
+# In[ ]:
 
 
 import plotly.graph_objs as go
@@ -570,13 +805,165 @@ fig.write_image(fname, scale=3)
 fig.write_image(fname.replace(".png", ".svg"))
 
 
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# # SCRATCH
+
+# ## Other states: SLOWING
+
+# ### Frequency
+
+# In[ ]:
+
+
+from wbfm.utils.visualization.plot_summary_statistics import calc_onset_frequency_dataframe
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
+
+
+# In[ ]:
+
+
+df_frequency_gcamp = calc_onset_frequency_dataframe(all_projects_gcamp, states=[BehaviorCodes.SLOWING])
+df_frequency_gfp = calc_onset_frequency_dataframe(all_projects_gfp, states=[BehaviorCodes.SLOWING])
+
+
+# In[ ]:
+
+
+df_frequency_gcamp['genotype'] = 'gcamp'
+df_frequency_gfp['genotype'] = 'gfp'
+
+df_frequency = pd.concat([df_frequency_gcamp, df_frequency_gfp])
+
+
+# In[ ]:
+
+
+states = ['BehaviorCodes.SLOWING']
+titles = ["slowing"]
+
+for x, t in zip(states, titles):
+    fig = px.histogram(df_frequency, x=x, facet_row='genotype', color='genotype', title=f"Frequency of {t} states", histnorm='probability')
+    
+    fig.update_layout(
+        font=dict(size=16)
+    )
+    fig.update_layout(
+        xaxis_title="Frequency (1/min)"
+    )
+    for anno in fig['layout']['annotations']:
+        anno['text']=''
+    fig.show()
+    
+    fname = f"frequency_histogram_SLOWING_{x.split('.')[1]}.png"
+    fname = os.path.join(output_folder, fname)
+    fig.write_image(fname)
+    fig.write_image(fname.replace(".png", ".svg"))
+
+
+# ### Duration
+
+# In[ ]:
+
+
+from wbfm.utils.visualization.plot_summary_statistics import calc_durations_dataframe
+
+
+# In[ ]:
+
+
+df_duration_gcamp = calc_durations_dataframe(all_projects_gcamp, states=[BehaviorCodes.SLOWING])
+df_duration_gfp = calc_durations_dataframe(all_projects_gfp, states=[BehaviorCodes.SLOWING])
+
+
+# In[ ]:
+
+
+df_duration_gcamp['genotype'] = 'gcamp'
+df_duration_gfp['genotype'] = 'gfp'
+
+df_duration = pd.concat([df_duration_gcamp, df_duration_gfp])
+
+fps = 3.5
+df_duration['BehaviorCodes.SLOWING'] /= fps
+
+
+# In[ ]:
+
+
+
+states = ['BehaviorCodes.SLOWING']
+titles = ["slowing"]
+
+for x, t in zip(states, titles):
+    fig = px.histogram(df_duration, x=x, facet_row='genotype', color='genotype', title=f"Duration of {t} states", histnorm='probability')
+    
+    fig.update_layout(
+        font=dict(size=24)
+    )
+    fig.update_layout(
+        xaxis_title="Time (s)"
+    )
+    for anno in fig['layout']['annotations']:
+        anno['text']=''
+    fig.show()
+    
+    fname = f"duration_histogram_SLOWING_{x.split('.')[1]}.png"
+    fname = os.path.join(output_folder, fname)
+    fig.write_image(fname)
+    fig.write_image(fname.replace(".png", ".svg"))
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
 # # Summary plots, to be saved in their own folders
 
+# In[ ]:
 
+
+
+
+
+# In[ ]:
 
 
 from wbfm.utils.visualization.plot_traces import make_summary_interactive_kymograph_with_behavior
 from wbfm.utils.projects.finished_project_data import load_all_projects_in_folder
+
+
+# In[ ]:
 
 
 # Save these for all the datasets that Ulises annotated head casts
@@ -585,14 +972,26 @@ folder = '/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-11-27_spacer_
 all_projects = load_all_projects_in_folder(folder)
 
 
+# In[ ]:
+
+
 # df = project_data_gcamp.worm_posture_class.beh_annotation(fluorescence_fps=True)
 # df.value_counts()
+
+
+# In[ ]:
 
 
 # fig = make_summary_interactive_kymograph_with_behavior(project_data_gcamp, to_save=False, to_show=True)
 
 
+# In[ ]:
+
+
 # %debug
+
+
+# In[ ]:
 
 
 for name, p in tqdm(all_projects.items()):
@@ -605,6 +1004,9 @@ for name, p in tqdm(all_projects.items()):
 
 # # Calculate the cumulative distribution of forward durations, including censoring information
 
+# In[ ]:
+
+
 duration_vec = []
 censored_vec = []
 for name, p in all_projects_gcamp.items():
@@ -614,11 +1016,17 @@ for name, p in all_projects_gcamp.items():
     censored_vec.extend(c)
 
 
+# In[ ]:
+
+
 # With censoring
 model = surpyval.Weibull.fit(x=duration_vec, c=censored_vec)
 print(model)
 print(model.aic())
 model.plot()
+
+
+# In[ ]:
 
 
 # Package everything for saving
@@ -638,6 +1046,9 @@ with open(fname, 'wb') as f:
     pickle.dump(out, f)
 
 
+# In[ ]:
+
+
 x = np.arange(1000)
 y = model.ff(x)
 
@@ -651,7 +1062,13 @@ plt.plot(x_dat, y_dat)
 
 # ## Same but for reversal distribution
 
+# In[ ]:
+
+
 from wbfm.utils.external.utils_behavior_annotation import BehaviorCodes
+
+
+# In[ ]:
 
 
 duration_vec = []
@@ -663,11 +1080,17 @@ for name, p in all_projects_gcamp.items():
     censored_vec.extend(c)
 
 
+# In[ ]:
+
+
 # With censoring
 model = surpyval.Weibull.fit(x=duration_vec, c=censored_vec)
 print(model)
 print(model.aic())
 model.plot()
+
+
+# In[ ]:
 
 
 # Package everything for saving
@@ -687,6 +1110,9 @@ with open(fname, 'wb') as f:
     pickle.dump(out, f)
 
 
+# In[ ]:
+
+
 x = np.arange(1000)
 y = model.ff(x)
 
@@ -698,6 +1124,9 @@ plt.plot(y)
 plt.plot(x_dat, y_dat)
 
 
+# In[ ]:
+
+
 # With censoring
 model = surpyval.Exponential.fit(x=duration_vec, c=censored_vec)
 print(model)
@@ -705,10 +1134,19 @@ print(model.aic())
 model.plot()
 
 
+# In[ ]:
 
 
 
 
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
 
 
 
@@ -716,11 +1154,17 @@ model.plot()
 
 # # Scratch: other distributions
 
+# In[ ]:
+
+
 
 model = surpyval.Exponential.fit(x=duration_vec, c=censored_vec)
 print(model)
 print(model.aic())
 model.plot()
+
+
+# In[ ]:
 
 
 # NO CENSORING
@@ -730,6 +1174,9 @@ model = surpyval.Weibull.fit(x=duration_vec)
 print(model)
 print(model.aic())
 model.plot()
+
+
+# In[ ]:
 
 
 # See: https://surpyval.readthedocs.io/en/latest/applications.html
@@ -747,6 +1194,9 @@ model = GompertzMakeham.fit(x=duration_vec / np.max(duration_vec), c=censored_ve
 model.plot(alpha_ci=0.95)
 print(model)
 print(model.aic())
+
+
+# In[ ]:
 
 
 # See: https://surpyval.readthedocs.io/en/latest/applications.html
@@ -767,8 +1217,14 @@ model.plot(alpha_ci=0.95, heuristic='Nelson-Aalen')
 print(model)
 
 
+# In[ ]:
+
+
 y = surpyval.Weibull.random(1000, 34, 0.63)
 n = plt.hist(y, cumulative=True, bins=1000, log=True);
+
+
+# In[ ]:
 
 
 

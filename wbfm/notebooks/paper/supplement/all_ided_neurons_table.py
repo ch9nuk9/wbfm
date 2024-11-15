@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[ ]:
 
+
+
+
+
+# In[10]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -19,27 +25,309 @@ import os
 import seaborn as sns
 
 
+# In[11]:
+
+
 from sklearn.decomposition import PCA
 from wbfm.utils.visualization.plot_traces import make_grid_plot_from_dataframe
 import seaborn as sns
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 import plotly.express as px
+from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
+
 from wbfm.utils.general.utils_filenames import add_name_suffix
 
 
-# Load multiple datasets
-from wbfm.utils.general.hardcoded_paths import load_paper_datasets
-all_projects_gcamp = load_paper_datasets(['gcamp', 'hannah_O2_fm'])
-# all_projects_gfp = load_paper_datasets('gfp')
+# In[12]:
 
 
-all_projects_immob = load_paper_datasets('immob')
+# # Load multiple datasets
+# from wbfm.utils.general.hardcoded_paths import load_paper_datasets
+# all_projects_gcamp = load_paper_datasets(['gcamp', 'hannah_O2_fm'])
+# # all_projects_gfp = load_paper_datasets('gfp')
 
 
-all_projects_immob_O2 = load_paper_datasets('hannah_O2_immob')
+# In[13]:
 
+
+# all_projects_immob = load_paper_datasets('immob')
+
+
+# In[14]:
+
+
+# all_projects_immob_O2 = load_paper_datasets('hannah_O2_immob')
+
+
+# In[15]:
+
+
+from wbfm.utils.general.hardcoded_paths import load_all_data_as_dataframe
+
+
+# In[16]:
+
+
+get_hierarchical_modeling_dir()
+
+
+# In[17]:
+
+
+Xy = load_all_data_as_dataframe()
+
+
+# In[18]:
+
+
+Xy['fwd'].unique()
+
+
+# # Plot ided neurons, counted by dataset and colored by datatype
+
+# In[19]:
+
+
+from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
+from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map, data_type_name_mapping
+
+
+# In[20]:
+
+
+def func(col):
+    if 'neuron' in col.name or '_' in col.name:
+        return np.nan
+    # print(col.name)
+    non_null_this_col = col.dropna().index
+    return len(Xy.loc[non_null_this_col, 'dataset_name'].unique())
+
+Xy_count = Xy.apply(func)
+# Xy_count = Xy_count.div(Xy_count['local_time'].values, axis=0)
+Xy_count
+
+
+# In[32]:
+
+
+non_nan_groups = Xy.groupby(['dataset_name', 'dataset_type'])[neurons_with_confident_ids()].agg(lambda x: x.count() > 0).reset_index()
+# non_nan_groups = Xy.groupby(['dataset_name', 'dataset_type']).agg(lambda x: x.count() > 0).reset_index()
+
+non_nan_totals = non_nan_groups.groupby('dataset_type').sum(numeric_only=True).sort_values(by='gcamp', axis=1)
+# non_nan_totals /= non_nan_totals.max(axis=1, numeric_only=True)
+non_nan_melt = non_nan_totals.reset_index().melt(id_vars='dataset_type', var_name='neuron_name', value_name='count')
+
+non_nan_fraction = (non_nan_totals.T / non_nan_totals.max(axis=1)).T
+non_nan_fraction = non_nan_fraction.reset_index().melt(id_vars='dataset_type', var_name='neuron_name', value_name='count')
+
+
+# In[33]:
+
+
+non_nan_totals
+
+
+# In[34]:
+
+
+non_nan_melt.columns = ['Dataset Type', 'Neuron Name', 'Count']
+non_nan_melt['Dataset Type'] = non_nan_melt['Dataset Type'].map(data_type_name_mapping())
+
+non_nan_fraction.columns = ['Dataset Type', 'Neuron Name', 'Count']
+non_nan_fraction['Dataset Type'] = non_nan_fraction['Dataset Type'].map(data_type_name_mapping())
+
+
+# In[35]:
+
+
+non_nan_melt[non_nan_melt['Neuron Name'] == 'AIBR']
+
+
+# In[36]:
+
+
+
+fig = px.bar(non_nan_melt, color='Dataset Type', x='Neuron Name', y='Count',
+       barmode='group', color_discrete_map=plotly_paper_color_discrete_map(),
+            category_orders={'Dataset Type': ['Freely Moving (GCaMP)', 'Immobilized (GCaMP)', 'Freely Moving (GFP)']})
+
+fig.update_layout(
+    showlegend=False,
+    legend=dict(
+      yanchor="top",
+      y=1.5,
+      xanchor="left",
+      x=0.01
+    ),
+)
+fig.update_xaxes(tickfont_size=10)
+apply_figure_settings(fig, width_factor=1.0, height_factor=0.2)
+fig.update_yaxes(showgrid=True, gridwidth=1, griddash='dash', gridcolor='black', overwrite=True)
+
+fig.show()
+
+
+fname = 'ids/neuron_ids_per_neuron.png'
+fig.write_image(fname, scale=3)
+fname = fname.replace('.png', '.svg')
+fig.write_image(fname)
+
+
+# In[37]:
+
+
+# Same, but no grid and with horizontal lines where the total number of datasets are
+
+fig = px.bar(non_nan_melt, color='Dataset Type', x='Neuron Name', y='Count',
+       barmode='group', color_discrete_map=plotly_paper_color_discrete_map(),
+            category_orders={'Dataset Type': ['Freely Moving (GCaMP)', 'Immobilized (GCaMP)', 'Freely Moving (GFP)']})
+
+fig.update_layout(
+    showlegend=False,
+    legend=dict(
+      yanchor="top",
+      y=1.5,
+      xanchor="left",
+      x=0.01
+    ),
+)
+fig.update_xaxes(tickfont_size=10)
+apply_figure_settings(fig, width_factor=1.0, height_factor=0.2)
+# fig.update_yaxes(showgrid=True, gridwidth=1, griddash='dash', gridcolor='black', overwrite=True)
+
+# New: lines
+all_maxes = non_nan_melt.groupby('Dataset Type').max().to_dict()['Count']
+for datatype, y_val in all_maxes.items():
+    color = plotly_paper_color_discrete_map()[datatype]
+    fig.add_shape(type="line",
+                  x0=0, y0=y_val,  # start of the line (bottom of the plot)
+                  x1=1, y1=y_val,  # end of the line (top of the plot)
+                  line=dict(color=color, width=2),
+                  xref='paper',
+                  yref='y')
+fig.show()
+
+
+fname = 'ids/neuron_ids_per_neuron_with_lines.png'
+fig.write_image(fname, scale=3)
+fname = fname.replace('.png', '.svg')
+fig.write_image(fname)
+
+
+# In[38]:
+
+
+
+fig = px.bar(non_nan_fraction, color='Dataset Type', x='Neuron Name', y='Count',
+       barmode='group', color_discrete_map=plotly_paper_color_discrete_map(),
+            category_orders={'Dataset Type': ['Freely Moving (GCaMP)', 'Immobilized (GCaMP)', 'Freely Moving (GFP)']})
+
+fig.update_layout(
+    showlegend=False
+)
+fig.update_xaxes(tickfont_size=10)
+apply_figure_settings(fig, width_factor=1.0, height_factor=0.2)
+fig.update_yaxes(showgrid=True, gridwidth=1, griddash='dash', gridcolor='black', overwrite=True)
+
+fig.show()
+
+
+fname = 'ids/fraction_neuron_ids_per_neuron.png'
+fig.write_image(fname, scale=3)
+fname = fname.replace('.png', '.svg')
+fig.write_image(fname)
+
+
+# In[39]:
+
+
+non_nan_fraction['Neuron Name'].value_counts()
+
+
+# ## Export to an excel sheet, with total numbers
+
+# In[40]:
+
+
+id_export = non_nan_totals.copy()
+id_export['Number of Datasets'] = Xy.groupby('dataset_type')['dataset_name'].agg(lambda x: len(x.unique()))
+id_export.index = id_export.index.map(data_type_name_mapping(include_mutant=True))
+# id_export.head()
+
+
+# In[41]:
+
+
+
+fname = 'ids/ids_per_dataset_type.xlsx'
+id_export.to_excel(fname)
+
+
+# # Boxplot of IDed neurons per dataset
+
+# In[42]:
+
+
+non_nan_groups_melt = non_nan_groups.melt(id_vars=['dataset_type', 'dataset_name'])
+non_nan_groups_melt = non_nan_groups_melt[non_nan_groups_melt['value']]
+non_nan_id_per_dataset = non_nan_groups_melt.groupby('dataset_type')['dataset_name'].value_counts().reset_index()
+
+non_nan_id_per_dataset.columns = ['Dataset Type', 'Dataset Name', 'Number of IDed neurons']
+non_nan_id_per_dataset['Dataset Type'] = non_nan_id_per_dataset['Dataset Type'].map(data_type_name_mapping())
+non_nan_id_per_dataset
+
+
+# In[43]:
+
+
+fig = px.box(non_nan_id_per_dataset, x='Dataset Type', y='Number of IDed neurons', color='Dataset Type', 
+      color_discrete_map=plotly_paper_color_discrete_map(), points='all',
+            category_orders={'Dataset Type': ['Freely Moving (GFP)', 'Freely Moving (GCaMP)', 'Immobilized (GCaMP)', ]})
+
+fig.update_layout(
+    showlegend=True,
+    legend=dict(
+      yanchor="top",
+      y=0.3,
+      xanchor="left",
+      x=0.3
+    ),
+)
+fig.update_xaxes(title="", showticklabels=False)
+
+apply_figure_settings(fig, width_factor=0.4, height_factor=0.3)
+fig.show()
+
+fname = 'ids/neuron_ids_per_dataset.png'
+fig.write_image(fname, scale=3)
+fname = fname.replace('.png', '.svg')
+fig.write_image(fname)
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# # Alt: go back to projects
 
 # # Freely moving: ID'ed neurons
+
+# In[ ]:
+
 
 all_ids = defaultdict(int)
 
@@ -50,8 +338,14 @@ for name, proj in tqdm(all_projects_gcamp.items()):
         all_ids[c] += 1
 
 
+# In[ ]:
+
+
 df_ids = pd.DataFrame(all_ids, index=[0]).T.sort_values(0, ascending=False)
 px.scatter(df_ids)
+
+
+# In[ ]:
 
 
 fname = os.path.join('ids', 'id_counts.csv')
@@ -59,6 +353,9 @@ df_ids.to_csv(fname)
 
 
 # # Immobilized: ID'ed neurons
+
+# In[ ]:
+
 
 all_ids = defaultdict(int)
 
@@ -69,8 +366,14 @@ for name, proj in tqdm(all_projects_immob.items()):
         all_ids[c] += 1
 
 
+# In[ ]:
+
+
 df_ids = pd.DataFrame(all_ids, index=[0]).T.sort_values(0, ascending=False)
 px.scatter(df_ids)
+
+
+# In[ ]:
 
 
 fname = os.path.join('ids', 'id_counts_immob.csv')
@@ -78,6 +381,9 @@ df_ids.to_csv(fname)
 
 
 # # Immobilized with O2 stimulus: ID'ed neurons
+
+# In[ ]:
+
 
 all_ids = defaultdict(int)
 
@@ -88,8 +394,14 @@ for name, proj in tqdm(all_projects_immob_O2.items()):
         all_ids[c] += 1
 
 
+# In[ ]:
+
+
 df_ids = pd.DataFrame(all_ids, index=[0]).T.sort_values(0, ascending=False)
 px.scatter(df_ids)
+
+
+# In[ ]:
 
 
 fname = os.path.join('ids', 'id_counts_immob_O2.csv')
@@ -97,6 +409,9 @@ df_ids.to_csv(fname)
 
 
 # # Same but with simple dataframes, not full projects
+
+# In[63]:
+
 
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 # fname = 'data.h5'
@@ -106,6 +421,9 @@ Xy = pd.read_hdf(fname)
 
 fname = os.path.join(get_hierarchical_modeling_dir(gfp=True), 'data.h5')
 Xy_gfp = pd.read_hdf(fname)
+
+
+# In[64]:
 
 
 def get_counts(Xy):
@@ -121,16 +439,28 @@ all_ids = get_counts(Xy)
 all_ids_gfp = get_counts(Xy_gfp)
 
 
-px.scatter(all_ids_gfp)
+# In[66]:
+
+
+# px.scatter(all_ids_gfp)
+
+
+# In[ ]:
 
 
 
+
+
+# In[ ]:
 
 
 
 
 
 # # Scratch: Do any projects have no IDs?
+
+# In[ ]:
+
 
 all_num_ids = defaultdict(int)
 
@@ -144,8 +474,14 @@ for name, proj in tqdm(all_projects_gcamp.items()):
     all_num_ids[name] = len(neuron_columns)
 
 
+# In[ ]:
+
+
 p = all_projects_gcamp['ZIM2165_Gcamp7b_worm2-2022-12-10']
 df = p.calc_default_traces(use_paper_options=True)
+
+
+# In[ ]:
 
 
 all_num_ids = defaultdict(int)
@@ -161,7 +497,13 @@ for name, proj in tqdm(all_projects_immob.items()):
 min(list(all_num_ids.values()))
 
 
+# In[ ]:
+
+
 all_num_ids
+
+
+# In[ ]:
 
 
 
