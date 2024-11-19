@@ -563,7 +563,7 @@ def intrinsic_definition(x):
 
     """
     if 'gcamp_False' in x:
-        return 'No manifold' # At least in FM
+        return 'No manifold'  # At least in FM
     elif 'gcamp_True_immob_True' in x:
         if 'same_sign_True' in x:
             # Ignore that the difference is significant
@@ -581,7 +581,7 @@ def intrinsic_definition(x):
             return 'Freely moving only'
         else:
             # Ignore the 0-comparison significance of the immob if the difference is not significant
-            return 'Intrinsic'# 'Intrinsic (stronger)'
+            return 'Intrinsic'  # 'Intrinsic (stronger)'
     else:
         return ValueError
 
@@ -626,4 +626,34 @@ def excel_event_full_description():
         "num_datasets_gfp": "Freely moving GFP datasets",
         "GFP-raw_rev": "Reversal events (freely moving GFP)",
         "GFP-raw_fwd": "Forward events (freely moving GFP)",
+    }
+
+
+def intrinsic_categories_long_description():
+    return {
+            "gcamp_True_immob_True_same_sign_True_diff_True":    "Intrinsic. Statistically significant difference between a) conditions; b) freely moving and 0; and c) immobilized and 0. The medians have the same sign.",
+            "gcamp_True_immob_True_same_sign_True_diff_False":   "Intrinsic. Statistically insignificant difference between conditions. Statistically significant between a) freely moving and 0 and b) 0 and immobilized. The medians have a different sign.",
+            "gcamp_True_immob_False_same_sign_True_diff_False":  "Intrinsic. Statistically insignificant difference between a) conditions; and b) 0 and immobilized. Statistically significant between freely moving and 0. The medians have the same sign.",
+            "gcamp_True_immob_False_same_sign_False_diff_False": "Intrinsic. Statistically insignificant difference between a) conditions; and b) 0 and immobilized. Statistically significant between freely moving and 0. The medians have the same sign.",
+            "gcamp_True_immob_False_same_sign_False_diff_True":  "Freely moving only. Statistically insignificant difference between a) conditions; and b) 0 and immobilized. Statistically significant between freely moving and 0. The medians have a different sign.",
+            "gcamp_True_immob_False_same_sign_True_diff_True":   "Freely moving only. Statistically insignificant difference between 0 and immobilized. Statistically significant between a) freely moving and 0 and b) conditions. The medians have a different sign.",
+            "gcamp_False_immob_True_same_sign_False_diff_True":  "No manifold. Statistically insignificant difference between 0 and freely moving. Statistically significant between a) freely moving and 0 and b) conditions. The medians have a different sign.",
+            "gcamp_False_immob_False_same_sign_True_diff_False": "No manifold. Statistically insignificant difference between a) freely moving and 0; b) conditions; and c) immobilized and 0. The medians have the same sign.",
+            "gcamp_False_immob_False_same_sign_False_diff_True": "No manifold. Statistically insignificant difference between a) freely moving and 0; and b) 0 and immobilized. Statistically significant between conditions. The medians have a different sign.",
+            "gcamp_False_immob_True_same_sign_True_diff_False":  "No manifold. Statistically insignificant difference between a) freely moving and 0; and b) conditions. Statistically significant between immobilized and 0. The medians have the same sign.",
+    }
+
+
+def intrinsic_categories_short_description():
+    return {
+            "gcamp_True_immob_True_same_sign_True_diff_True":    "Intrinsic. Statistically significant difference between conditions, BUT The medians have the same sign.",
+            "gcamp_True_immob_True_same_sign_True_diff_False":   "Intrinsic. Statistically insignificant difference between conditions.",
+            "gcamp_True_immob_False_same_sign_True_diff_False":  "Intrinsic. Statistically insignificant difference between conditions.",
+            "gcamp_True_immob_False_same_sign_False_diff_False": "Intrinsic. Statistically insignificant difference between conditions.",
+            "gcamp_True_immob_False_same_sign_False_diff_True":  "Freely moving only. Statistically insignificant difference between 0 and immobilized.",
+            "gcamp_True_immob_False_same_sign_True_diff_True":   "Freely moving only. Statistically insignificant difference between 0 and immobilized.",
+            "gcamp_False_immob_True_same_sign_False_diff_True":  "No manifold. Statistically insignificant difference between 0 and freely moving.",
+            "gcamp_False_immob_False_same_sign_True_diff_False": "No manifold. Statistically insignificant difference between 0 and freely moving.",
+            "gcamp_False_immob_False_same_sign_False_diff_True": "No manifold. Statistically insignificant difference between 0 and freely moving.",
+            "gcamp_False_immob_True_same_sign_True_diff_False":  "No manifold. Statistically insignificant difference between 0 and freely moving.",
     }
