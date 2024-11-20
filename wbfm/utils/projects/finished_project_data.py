@@ -2238,9 +2238,10 @@ def load_all_projects_from_list(list_of_project_folders: List[Union[str, Path]],
     return all_projects_dict
 
 
-def plot_pca_modes_from_project(project_data: ProjectData, n_components=3, trace_kwargs=None, title=""):
+def plot_pca_modes_from_project(project_data: ProjectData, n_components=3, trace_kwargs=None, title="",
+                                to_save=True):
     """
-    Plots 2d pca modes of traces.
+    Plots pca modes across time of traces. Not a phase plot.
 
     Interpolates nan by default, but does not remove estimated tracking errors
     """
@@ -2265,19 +2266,37 @@ def plot_pca_modes_from_project(project_data: ProjectData, n_components=3, trace
     plt.xlabel("Time (seconds)")
     plt.ylabel("Normalized activity (ratio)")
 
-    vis_cfg = project_data.project_config.get_visualization_config(make_subfolder=True)
-    fname = 'pca_modes.png'
-    fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
-    plt.savefig(fname)
+    if to_save:
+        vis_cfg = project_data.project_config.get_visualization_config(make_subfolder=True)
+        fname = 'pca_modes.png'
+        fname = vis_cfg.resolve_relative_path(fname, prepend_subfolder=True)
+        plt.savefig(fname)
 
 
 def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_start=None, t_end=None,
-                                        include_subplot=True, verbose=0):
-    """Similar to plot_pca_modes_from_project, but 3d. Plots times series and 3d axis"""
+                                        include_time_series_subplot=True, fig=None, verbose=0):
+    """
+    Similar to plot_pca_modes_from_project, but 3d. Plots times series and 3d axis
+    
+    Parameters
+    ----------
+    project_data
+    trace_kwargs
+    t_start
+    t_end
+    include_time_series_subplot
+    fig
+    verbose
+
+    Returns
+    -------
+
+    """
     if trace_kwargs is None:
         trace_kwargs = {}
-    fig = plt.figure(figsize=(15, 15), dpi=200)
-    if include_subplot:
+    if fig is None:
+        fig = plt.figure(figsize=(15, 15), dpi=200)
+    if include_time_series_subplot:
         ax = fig.add_subplot(211, projection='3d')
     else:
         ax = fig.add_subplot(111, projection='3d')
@@ -2297,11 +2316,8 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
         print("Forward blocks: ", starts_fwd, ends_fwd)
         print("Reversal blocks: ", starts_rev, ends_rev)
 
-    X = project_data.calc_default_traces(**trace_kwargs, interpolate_nan=True)
-    X = detrend(X, axis=0)
-    pca = PCA(n_components=3, whiten=False)
-    pca.fit(X.T)
-    pca_proj = pca.components_.T
+    pca_proj, _ = project_data.calc_pca_modes(**trace_kwargs, interpolate_nan=True)
+
     if t_end is not None:
         pca_proj = pca_proj[:t_end, :]
     if t_start is not None:
@@ -2310,11 +2326,11 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     c = 'tab:red'
     for s, e in zip(starts_rev, ends_rev):
         e += 1
-        ax.plot(pca_proj[s:e, 0], pca_proj[s:e, 1], pca_proj[s:e, 2], c)
+        ax.plot(pca_proj.iloc[s:e, 0], pca_proj.iloc[s:e, 1], pca_proj.iloc[s:e, 2], c)
     c = 'tab:blue'
     for s, e in zip(starts_fwd, ends_fwd):
         e += 1
-        ax.plot(pca_proj[s:e, 0], pca_proj[s:e, 1], pca_proj[s:e, 2], c)
+        ax.plot(pca_proj.iloc[s:e, 0], pca_proj.iloc[s:e, 1], pca_proj.iloc[s:e, 2], c)
 
     ax.set_xlabel("Mode 1")
     ax.set_ylabel("Mode 2")
@@ -2325,12 +2341,14 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     # plt.colorbar()
 
     # Also plot the simple time series
-    if include_subplot:
+    if include_time_series_subplot:
         ax2 = fig.add_subplot(212)
         for i in range(3):
             ax2.plot(pca_proj[:, i] / np.max(pca_proj[:, i]) - i, label=f'mode {i+1}')
         plt.legend()
         ax2.set_title("PCA modes")
+
+    return fig, ax
 
 
 def calc_frequency_spectrum(project_data, neuron_name, z_score=False, **kwargs):
