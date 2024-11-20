@@ -230,7 +230,7 @@ class DetectedNeurons:
         """
         Returns all metadata for all neurons at a single time
         """
-        all_metadata = self._segmentation_metadata[t].copy()
+        all_metadata = self.segmentation_metadata[t].copy()
         column_names = self._column_names
         # Reformat using the new column names
         zxy = np.array(all_metadata['centroids'].values.tolist())
