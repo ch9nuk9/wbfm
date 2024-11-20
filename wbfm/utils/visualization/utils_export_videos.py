@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 from typing import Union
 
@@ -12,7 +13,7 @@ from tifffile import tifffile
 from tqdm.auto import tqdm
 
 from wbfm.utils.general.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
-from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.finished_project_data import ProjectData, plot_pca_projection_3d_from_project
 
 
 def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=None, fps=7,
@@ -147,7 +148,7 @@ def save_video_of_heatmap_with_behavior(project_path: Union[str, Path], output_f
     project_data = ProjectData.load_final_project_data_from_config(project_path, verbose=0)
 
     if output_fname is None:
-        output_fname = project_data.project_config.get_visualization_config().resolve_relative_path("heatmap_with_behavior.mp4")
+        output_fname = project_data.project_config.get_visualization_config().resolve_relative_path("heatmap_with_behavior.mp4", prepend_subfolder=True)
 
     # Get raw data
     df_traces = project_data.calc_default_traces(use_paper_options=True)
@@ -456,7 +457,7 @@ def save_video_of_trace_overlay_with_behavior(project_path: Union[str, Path], t_
     output_video.release()
 
 
-def save_video_of_pca_plot_with_behavior(project_path: Union[str, Path], plot_3d=False, output_fname=None):
+def save_video_of_pca_plot_with_behavior(project_path: Union[str, Path], plot_3d=False, output_fname=None, t_max=None):
     """
     Save a video of a 3d or 2d pca plot with moving dot for the current time (bottom half) with the behavior (on top)
 
@@ -473,11 +474,9 @@ def save_video_of_pca_plot_with_behavior(project_path: Union[str, Path], plot_3d
     project_data = ProjectData.load_final_project_data_from_config(project_path, verbose=0)
 
     if output_fname is None:
-        output_fname = project_data.project_config.get_visualization_config().resolve_relative_path("pca3d_with_behavior.mp4")
+        output_fname = project_data.project_config.get_visualization_config().resolve_relative_path("pca3d_with_behavior.mp4", prepend_subfolder=True)
 
     # Get raw data
-    df_traces = project_data.calc_default_traces(use_paper_options=True)
-
     behavior_parent_folder, behavior_raw_folder, behavior_output_folder, \
         background_img, background_video, btf_file = project_data.project_config.get_folders_for_behavior_pipeline()
     video = MicroscopeDataReader(btf_file, as_raw_tiff=True)
@@ -501,16 +500,14 @@ def save_video_of_pca_plot_with_behavior(project_path: Union[str, Path], plot_3d
     output_video = cv2.VideoWriter(output_fname, fourcc, fps, output_size)
 
     # Initialize behavior-colored pca plot, and black dot for time
-    fig, ax = plt.subplots(figsize=(width / 100, height / 100), dpi=100)
-    heatmap = ax.imshow(heatmap_data, cmap='jet', interpolation='nearest', aspect='auto',
-                        extent=[0, np.max(heatmap_data.T.index), 0, height], **plot_kwargs)
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Neurons")
-    ax.set_yticks([])
-    vertical_line = ax.axvline(x=0, color='white', linewidth=2)
+    plt.ion()
+    fig_opt = dict(figsize=(width / 100, height / 100), dpi=100)
+    fig, ax, pca_proj = plot_pca_projection_3d_from_project(project_data, fig_opt=fig_opt,
+                                                            include_time_series_subplot=False)
+
+    # Update-able point: https://stackoverflow.com/questions/61326186/how-to-animate-multiple-dots-moving-along-the-circumference-of-a-circle-in-pytho
+    (time_dot,) = ax.plot(*pca_proj.iloc[0, :n_components+1], marker="o", color='black', linewidth=2)
     canvas = FigureCanvas(fig)
-    cbar = fig.colorbar(heatmap, ax=ax)
-    cbar.set_label(r'$\Delta R/R50$')
 
     plt.tight_layout()
 
@@ -530,8 +527,7 @@ def save_video_of_pca_plot_with_behavior(project_path: Union[str, Path], plot_3d
     scale_bar_end = (10 + scale_length_px, height - 50)  # Ending position (x, y)
 
     # Loop through each frame in the video
-    num_frames = heatmap_data.shape[1]
-    # num_frames = 2
+    num_frames = pca_proj.shape[0] if t_max is None else t_max
     subsample_rate = 1
     for frame_idx in tqdm(range(0, num_frames, subsample_rate)):
         # Get the video frame from dask array
@@ -539,20 +535,22 @@ def save_video_of_pca_plot_with_behavior(project_path: Union[str, Path], plot_3d
         grayscale_frame = normalize_to_grayscale(video_array[frame_idx_behavior].compute()).T
         rgb_frame = convert_to_rgb(grayscale_frame)
 
-        # Update the vertical line to track the current time
-        # Units should be same as the 'extent' of the ax.imshow command, which is the x axis of the heatmap
-        line_position = heatmap_data.T.index[frame_idx]
-        vertical_line.set_xdata([line_position])
+        # Update the dot line to track the current time
+        dot_position = list(pca_proj.iloc[frame_idx, :n_components+1])
+        time_dot.set_data_3d([dot_position[0]], [dot_position[1]], [dot_position[2]])
 
         # Render the updated figure to a numpy array
-        canvas.draw()
-        heatmap_image = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
-        heatmap_image = heatmap_image.reshape(canvas.get_width_height()[::-1] + (3,))
+        fig.canvas.draw()
+        matplotlib_image = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        matplotlib_image = matplotlib_image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        # canvas.draw()
+        # matplotlib_image = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
+        # matplotlib_image = matplotlib_image.reshape(canvas.get_width_height()[::-1] + (3,))
         # Convert heatmap from RGB to BGR to align with OpenCV's format
-        heatmap_image = cv2.cvtColor(heatmap_image, cv2.COLOR_RGB2BGR)
+        matplotlib_image = cv2.cvtColor(matplotlib_image, cv2.COLOR_RGB2BGR)
 
         # Combine the video frame and heatmap, converting to width/height like opencv expects
-        combined_frame = np.vstack((rgb_frame, heatmap_image))
+        combined_frame = np.vstack((rgb_frame, matplotlib_image))
 
         # Add text label and line for scale bar
         cv2.line(combined_frame, scale_bar_start, scale_bar_end, (255, 255, 255), 2)

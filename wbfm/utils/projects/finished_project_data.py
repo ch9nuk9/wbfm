@@ -2276,7 +2276,7 @@ def plot_pca_modes_from_project(project_data: ProjectData, n_components=3, trace
 
 
 def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_start=None, t_end=None,
-                                        include_time_series_subplot=True, fig=None, verbose=0):
+                                        include_time_series_subplot=True, fig=None, fig_opt=None, verbose=0):
     """
     Similar to plot_pca_modes_from_project, but 3d. Plots times series and 3d axis
     
@@ -2294,29 +2294,16 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     -------
 
     """
+    if fig_opt is None:
+        fig_opt = dict(figsize=(15, 15), dpi=200)
     if trace_kwargs is None:
         trace_kwargs = {}
     if fig is None:
-        fig = plt.figure(figsize=(15, 15), dpi=200)
+        fig = plt.figure(**fig_opt)
     if include_time_series_subplot:
         ax = fig.add_subplot(211, projection='3d')
     else:
         ax = fig.add_subplot(111, projection='3d')
-    # c = np.arange(project_data.num_frames) / 1e6
-    beh = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True).reset_index(drop=True)
-    if t_end is not None:
-        beh = beh[:t_end]
-    if t_start is not None:
-        beh = beh[t_start:]
-    beh_rev = BehaviorCodes.vector_equality(beh, BehaviorCodes.REV)
-    starts_rev, ends_rev = get_contiguous_blocks_from_column(beh_rev, already_boolean=True)
-
-    beh_fwd = BehaviorCodes.vector_equality(beh, BehaviorCodes.FWD)
-    starts_fwd, ends_fwd = get_contiguous_blocks_from_column(beh_fwd, already_boolean=True)
-
-    if verbose:
-        print("Forward blocks: ", starts_fwd, ends_fwd)
-        print("Reversal blocks: ", starts_rev, ends_rev)
 
     pca_proj, _ = project_data.calc_pca_modes(**trace_kwargs, interpolate_nan=True)
 
@@ -2351,22 +2338,12 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
 
         ax.plot(state_df[0], state_df[1], state_df[2], c=ethogram_cmap[state_code], label=state_code)
 
-    # c = 'tab:red'
-    # for s, e in zip(starts_rev, ends_rev):
-    #     e += 1
-    #     ax.plot(pca_proj.iloc[s:e, 0], pca_proj.iloc[s:e, 1], pca_proj.iloc[s:e, 2], c)
-    # c = 'tab:blue'
-    # for s, e in zip(starts_fwd, ends_fwd):
-    #     e += 1
-    #     ax.plot(pca_proj.iloc[s:e, 0], pca_proj.iloc[s:e, 1], pca_proj.iloc[s:e, 2], c)
-
     ax.set_xlabel("Mode 1")
     ax.set_ylabel("Mode 2")
     ax.set_zlabel("Mode 3")
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.set_zticklabels([])
-    # plt.colorbar()
 
     # Also plot the simple time series
     if include_time_series_subplot:
@@ -2376,7 +2353,7 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
         plt.legend()
         ax2.set_title("PCA modes")
 
-    return fig, ax
+    return fig, ax, pca_proj
 
 
 def calc_frequency_spectrum(project_data, neuron_name, z_score=False, **kwargs):
