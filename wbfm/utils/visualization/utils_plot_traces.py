@@ -265,6 +265,9 @@ def modify_dataframe_to_allow_gaps_for_plotly(df, x_name, state_name, connect_at
         fig.show()
 
 
+    Note that this is not required for matplotlib; instead, nan values will be properly skipped
+    See: plot_pca_projection_3d_from_project
+
     See:
     https://stackoverflow.com/questions/70407755/plotly-express-conditional-coloring-doesnt-work-properly/70408557#70408557
 

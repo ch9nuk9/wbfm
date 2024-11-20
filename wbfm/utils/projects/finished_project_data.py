@@ -34,7 +34,8 @@ from wbfm.utils.traces.triggered_averages import plot_triggered_average_from_mat
 from wbfm.utils.general.hardcoded_paths import read_names_of_neurons_to_id, neurons_with_confident_ids
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
     get_column_name_from_time_and_column_value, fix_extra_spaces_in_dataframe_columns, \
-    get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends
+    get_contiguous_blocks_from_column, make_binary_vector_from_starts_and_ends, fill_missing_indices_with_nan, \
+    ffill_using_raw_data
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.utils_project_status import get_project_status
@@ -54,6 +55,7 @@ from backports.cached_property import cached_property
 
 from wbfm.utils.visualization.filtering_traces import fast_slow_decomposition, filter_trace_using_mode, \
     fill_nan_in_dataframe
+from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 
 
 @dataclass
@@ -2323,14 +2325,40 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     if t_start is not None:
         pca_proj = pca_proj[t_start:, :]
 
-    c = 'tab:red'
-    for s, e in zip(starts_rev, ends_rev):
-        e += 1
-        ax.plot(pca_proj.iloc[s:e, 0], pca_proj.iloc[s:e, 1], pca_proj.iloc[s:e, 2], c)
-    c = 'tab:blue'
-    for s, e in zip(starts_fwd, ends_fwd):
-        e += 1
-        ax.plot(pca_proj.iloc[s:e, 0], pca_proj.iloc[s:e, 1], pca_proj.iloc[s:e, 2], c)
+    # Color the lines by behavior annotation using proper colormap
+    beh_annotation = dict(fluorescence_fps=True, reset_index=True, include_collision=False, include_turns=True,
+                          include_head_cast=False, include_pause=False, include_slowing=False)
+    ethogram_cmap_kwargs = dict(use_plotly_style_strings=False)
+    # beh_annotation.update(beh_annotation_kwargs)
+    state_vec = project_data.worm_posture_class.beh_annotation(**beh_annotation)
+    pca_proj['state'] = state_vec.values
+    ethogram_cmap_kwargs.setdefault('include_turns', beh_annotation['include_turns'])
+    ethogram_cmap_kwargs.setdefault('include_quiescence', beh_annotation['include_pause'])
+    ethogram_cmap_kwargs.setdefault('include_collision', beh_annotation['include_collision'])
+    ethogram_cmap = BehaviorCodes.ethogram_cmap(**ethogram_cmap_kwargs)
+
+    # modes_to_plot = [0, 1, 2]
+    # df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(pca_proj, modes_to_plot, 'state')
+    state_codes = pca_proj['state'].unique()
+
+    for i, state_code in enumerate(state_codes):
+        # Plot the state
+        state_df = pca_proj[pca_proj['state'] == state_code].copy()
+        # Fill with nan so matplotlib doesn't connect the gaps
+        state_df, _ = fill_missing_indices_with_nan(state_df, expected_max_t=pca_proj.shape[0])
+        # For every first nan value after a gap, add in the real data in order to connect states
+        state_df = ffill_using_raw_data(state_df, pca_proj)
+
+        ax.plot(state_df[0], state_df[1], state_df[2], c=ethogram_cmap[state_code], label=state_code)
+
+    # c = 'tab:red'
+    # for s, e in zip(starts_rev, ends_rev):
+    #     e += 1
+    #     ax.plot(pca_proj.iloc[s:e, 0], pca_proj.iloc[s:e, 1], pca_proj.iloc[s:e, 2], c)
+    # c = 'tab:blue'
+    # for s, e in zip(starts_fwd, ends_fwd):
+    #     e += 1
+    #     ax.plot(pca_proj.iloc[s:e, 0], pca_proj.iloc[s:e, 1], pca_proj.iloc[s:e, 2], c)
 
     ax.set_xlabel("Mode 1")
     ax.set_ylabel("Mode 2")

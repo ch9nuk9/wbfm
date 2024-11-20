@@ -655,6 +655,28 @@ def fill_missing_indices_with_nan(df: Union[pd.DataFrame, pd.Series], expected_m
     return df, num_added
 
 
+def ffill_using_raw_data(df_with_gaps, df_raw):
+    """
+    Like ffill, but instead fills with values from another dataframe.
+    
+    Useful for filling gaps in plots in matplotlib
+    
+    Parameters
+    ----------
+    df_with_gaps
+    df_raw
+
+    Returns
+    -------
+
+    """
+    state_df_next_fill = df_with_gaps.fillna(method='ffill', limit=1)
+    idx_to_fill = state_df_next_fill.notna() & df_with_gaps.isna()
+    idx_to_fill = idx_to_fill.any(axis=1)  # Only need rows
+    df_with_gaps.loc[idx_to_fill] = df_raw.loc[idx_to_fill]
+    return df_with_gaps
+
+
 def get_column_name_from_time_and_column_value(df: pd.DataFrame, i_time: int, col_value: int, col_name: str):
     """
     Note that the col_value could be other data types as well
