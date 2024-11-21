@@ -249,8 +249,9 @@ def add_metadata_to_df_raw_ind(df_raw_ind, segmentation_metadata: DetectedNeuron
     new_df_values = defaultdict(make_new_col)
 
     # Iterate over each column (slightly slow but better than messing with column names and indices)
-    for neuron_name in tqdm(df_raw_ind.columns):
-        this_col = df_raw_ind[neuron_name]
+    top_level_names = df_raw_ind.columns.get_level_values(0).unique()
+    for neuron_name in tqdm(top_level_names):
+        this_col = df_raw_ind.loc[:, (neuron_name, 'raw_neuron_ind_in_list')]
         for t in tqdm(range(len(this_col)), leave=False):
             raw_ind = cast_int_or_nan(this_col.iat[t])
             if np.isnan(raw_ind):
@@ -265,7 +266,7 @@ def add_metadata_to_df_raw_ind(df_raw_ind, segmentation_metadata: DetectedNeuron
                 continue
             row_data, column_names = segmentation_metadata.get_all_metadata_for_single_time(mask_ind, t)
             for val, col_name in zip(row_data, column_names):
-                key = (neuron_name[0], col_name)
+                key = (neuron_name, col_name)
                 new_df_values[key][t] = val
 
     # Now, convert to a dataframe
