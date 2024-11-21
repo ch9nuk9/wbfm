@@ -226,10 +226,14 @@ class DetectedNeurons:
         return ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list', 'raw_segmentation_id',
                 'brightness_red', 'volume']
 
-    def get_all_neuron_metadata_for_single_time(self, t, likelihood=1.0):
+    def get_all_neuron_metadata_for_single_time(self, t, likelihood=1.0) -> Tuple[list, list]:
         """
         Returns all metadata for all neurons at a single time
+
+        If there are no neurons, the returns two empty lists
         """
+        if t in self.volumes_with_no_neurons:
+            return [], []
         all_metadata = self.segmentation_metadata[t].copy()
         column_names = self._column_names
         # Reformat using the new column names
