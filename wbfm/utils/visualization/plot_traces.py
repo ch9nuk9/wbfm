@@ -1684,7 +1684,7 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
     if row_heights is None:
         row_heights = [0.325, 0.05, 0.325]
         row_heights.extend([0.05]*6)
-    col_widths = [0.85, 0.15]
+    col_widths = [0.7, 0.25]
     num_modes_to_plot = 2
     # Use the same function as all individual plots, but loop to get all the variables
 
@@ -1719,7 +1719,8 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
 
     # Build figure
     fig = make_subplots(rows=rows, cols=cols, shared_xaxes=False, shared_yaxes=False,
-                        row_heights=row_heights, column_widths=col_widths, vertical_spacing=0.0)
+                        row_heights=row_heights, column_widths=col_widths,
+                        vertical_spacing=0.0, horizontal_spacing=1-sum(col_widths))
 
     ## 1: Heatmap
     fig.add_trace(heatmap, **heatmap_opt)
@@ -1735,7 +1736,7 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
     # I am adding multiple traces to a single plot, which the original function wasn't designed for
     # So I have to manually check the size of behavior_alias_dict and add the traces correctly
     i_num_traces_used = 0
-    legend_entries_to_remove = [#'Head curv.',
+    legend_entries_to_remove = ['Head curv.',
                                 'Body curv.'
                                 ]
     for y_axis_title, trace_names in behavior_alias_dict.items():
@@ -1767,14 +1768,15 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
     ## Second column (pca phase plot and trajectory)
     for trace in phase_plot_list:
         fig.add_trace(trace, row=1, col=2)
-    fig.update_xaxes(row=1, col=2, overwrite=True, title=dict(text='PC1', font=dict(size=14)))
-    fig.update_yaxes(row=1, col=2, overwrite=True, title=dict(text='PC2', font=dict(size=14)))
+    fig.update_xaxes(dict(showticklabels=True), row=1, col=2, overwrite=True, title=dict(text='PC1', font=dict(size=14)))
+    fig.update_yaxes(dict(showticklabels=True), row=1, col=2, overwrite=True, )
+                     # title=dict(text='PC2', font=dict(size=14)))
 
     for trace in trajectory_plot_list:
         trace['showlegend'] = False
         fig.add_trace(trace, **trajectory_plot_list_opt)
     fig.update_xaxes(row=3, col=2, overwrite=True, title=dict(text='Distance (mm)', font=dict(size=14)))
-    fig.update_yaxes(row=3, col=2, overwrite=True, title=dict(text='Distance (mm)', font=dict(size=14)))
+    fig.update_yaxes(row=3, col=2, overwrite=True, )#title=dict(text='Distance (mm)', font=dict(size=14)))
 
     ### Final updates
     fig.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
@@ -1805,21 +1807,21 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
     fig.update_layout(
         coloraxis2=dict(colorscale='RdBu',
                         colorbar=dict(
-                            len=0.25,
+                            len=0.34,
                             yanchor='bottom',
                             y=0.3,
                             xanchor='left',
                             x=-0.13,
-                            title=dict(text=r'Body<br>Segment<br>Curvature<br>(1/µm)', font=dict(size=14))
+                            title=dict(text=r'Body<br>Segment<br>Curvature<br>(1/mm)', font=dict(size=14))
                         )),
     )
     # Traces
     fig.update_layout(
         coloraxis=dict(colorscale='jet',
                         colorbar=dict(
-                            len=0.25,
+                            len=0.34,
                             yanchor='bottom',
-                            y=0.7,
+                            y=0.65,
                             xanchor='left',
                             x=-0.13,
                             title=dict(text=r'Neuronal<br>Activity<br>dR/R50', font=dict(size=14))
@@ -1829,9 +1831,9 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
         showlegend=True,
         legend=dict(
           yanchor="bottom",
-          y=-0.05,
+          y=-0.02,
           xanchor="left",
-          x=col_widths[0] - 0.05
+          x=col_widths[0]
         )
     )
     if not showlegend:
@@ -1921,9 +1923,8 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         kymo_thresh = 0.04 / project_data.physical_unit_conversion.zimmer_behavior_um_per_pixel_xy
         kymo_dat[kymo_dat < -kymo_thresh] = -kymo_thresh
         kymo_dat[kymo_dat > kymo_thresh] = kymo_thresh
-        kymo_dat = kymo_dat.iloc[3:-3, :]
-        # Flip the kymograph in the y direction, so that the head is on top
-        # kymo_dat = kymo_dat.iloc[::-1, :].reset_index(drop=True)
+        # Convert to 1/mm
+        kymo_dat = kymo_dat.iloc[3:-3, :] * 1000
         kymograph = go.Heatmap(x=kymo_dat.columns, y=kymo_dat.index, z=kymo_dat,
                                colorscale='RdBu', xaxis="x", yaxis="y", coloraxis='coloraxis2')
         kymograph_opt = dict(row=3, col=1)
