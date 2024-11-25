@@ -1074,3 +1074,5 @@ def make_project_like(project_path: str, target_directory: str,
 
     # Also update the snakemake file with the project directory
     update_snakemake_config_path(target_project_name)
+
+    return target_project_name
