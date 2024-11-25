@@ -1685,7 +1685,7 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
         row_heights = [0.25, 0.05, 0.1]
         row_heights.extend([0.05]*7)
         row_heights.extend([0.3])
-    col_widths = [0.4, 0.4, 0.15]  # All but the bottom rows span the entire width
+    col_widths = [0.388, 0.388, 0.15]  # Make the bottom row two columns actually square
     num_modes_to_plot = 2
     # Use the same function as all individual plots, but loop to get all the variables
 
@@ -1782,7 +1782,9 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
         trace['showlegend'] = False
         fig.add_trace(trace, **trajectory_plot_list_opt)
     fig.update_xaxes(overwrite=True, **trajectory_plot_list_opt, title=dict(text='Distance (mm)', font=dict(size=14)))
-    fig.update_yaxes(overwrite=True, **trajectory_plot_list_opt, title=dict(text='Distance (mm)', font=dict(size=14)))
+    fig.update_yaxes(overwrite=True, **trajectory_plot_list_opt, title=dict(text='Distance (mm)', font=dict(size=14)),
+                     scaleanchor='x12', scaleratio=1  # Also make the axes square
+                     )
 
     ### Final updates
     fig.update_xaxes(dict(showticklabels=False, showgrid=False),
@@ -1816,11 +1818,14 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
     fig.update_xaxes(dict(showticklabels=True), **phase_plot_opt, title=dict(text=f'PC1 ({var_explained[0]:2.1f}%)', font=dict(size=14)))
     fig.update_yaxes(dict(showticklabels=True), **phase_plot_opt, title=dict(text=f'PC2 ({var_explained[1]:2.1f}%)', font=dict(size=14)))
 
+    fig.update_yaxes(dict(showticklabels=True, showgrid=True), **trajectory_plot_list_opt)
+
     # Add zero line to the speed plot
     fig.update_yaxes(dict(showticklabels=True, showgrid=True, griddash='dash', gridcolor='black'),
                      range=[-0.16, 0.16],
                      tickmode='array', tickvals=[-0.1, 0, 0.1],
                      row=len(row_heights)-2, overwrite=True)
+    # fig.update_xaxes(dict(showticklabels=True), row=len(row_heights)-2, overwrite=True)
     # Get the colormaps and legends in the right places, and not overlapping
     # Kymograph
     fig.update_layout(
@@ -1852,7 +1857,7 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
           yanchor="bottom",
           y=-0.02,
           xanchor="left",
-          x=sum(col_widths[:-1]) #+ 0.1
+          x=sum(col_widths[:-1]) + 0.02
         )
     )
     if not showlegend:
