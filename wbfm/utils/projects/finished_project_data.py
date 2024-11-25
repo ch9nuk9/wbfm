@@ -234,15 +234,17 @@ class ProjectData:
         self.all_used_fnames.append(fname)
         return final_tracks
 
-    def get_final_tracks_only_finished_neurons(self) -> Tuple[pd.DataFrame, List[str]]:
+    def get_final_tracks_only_finished_neurons(self) -> Tuple[Optional[pd.DataFrame], List[str]]:
         """
         See get_ground_truth_annotations()
 
         Dataframe with subset of columns (neurons)
         """
         df_gt, finished_neurons = self.get_list_of_finished_neurons()
-
-        return df_gt.loc[:, finished_neurons], finished_neurons
+        if df_gt is None:
+            return None, []
+        else:
+            return df_gt.loc[:, finished_neurons], finished_neurons
 
     def get_list_of_finished_neurons(self):
         """Get the finished neurons and dataframe that will be subset-ed"""
