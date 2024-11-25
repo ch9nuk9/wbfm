@@ -1682,9 +1682,10 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
     trace_kwargs = dict(use_paper_traces=True)
     additional_shaded_states = []
     if row_heights is None:
-        row_heights = [0.325, 0.05, 0.325]
-        row_heights.extend([0.05]*6)
-    col_widths = [0.7, 0.25]
+        row_heights = [0.25, 0.05, 0.1]
+        row_heights.extend([0.05]*7)
+        row_heights.extend([0.3])
+    col_widths = [0.4, 0.4, 0.15]  # All but the bottom rows span the entire width
     num_modes_to_plot = 2
     # Use the same function as all individual plots, but loop to get all the variables
 
@@ -1699,8 +1700,8 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
     behavior_alias_dict = {'Head curv.': ['dorsal_only_head_curvature', 'ventral_only_head_curvature'],
                            'Body curv.': ['ventral_only_body_curvature', 'dorsal_only_body_curvature'],
                            'Other annot.': ['self_collision', 'head_cast'],
-                           'Eigen- worms1': ['eigenworm_0', 'eigenworm_1'],
-                           'Eigen- worms2': ['eigenworm_2', 'eigenworm_3'],
+                           'Eigen- worms 1/2': ['eigenworm_0', 'eigenworm_1'],
+                           'Eigen- worms 3/4': ['eigenworm_2', 'eigenworm_3'],
                            'Speed': ['speed']}
     opt = dict(use_behavior_traces=True, behavior_alias_dict=behavior_alias_dict)
     (_, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, _, _,
@@ -1711,16 +1712,18 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
 
     # Right side: trajectory
     trajectory_plot_list = _make_trajectory_plot(project_data)
-    trajectory_plot_list_opt = dict(row=3, col=2)
 
     # One column with a heatmap, (short) ethogram, and kymograph
     rows = len(row_heights)
     cols = len(col_widths)
 
     # Build figure
+    specs = [[{"colspan": 3}, None, None]]*(len(row_heights)-1)
+    specs.append([{}, {}, {}])
     fig = make_subplots(rows=rows, cols=cols, shared_xaxes=False, shared_yaxes=False,
                         row_heights=row_heights, column_widths=col_widths,
-                        vertical_spacing=0.0, horizontal_spacing=1-sum(col_widths))
+                        vertical_spacing=0.0, horizontal_spacing=0.075,
+                        specs=specs)
 
     ## 1: Heatmap
     fig.add_trace(heatmap, **heatmap_opt)
@@ -1753,38 +1756,46 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
             fig.add_trace(trace, **trace_opt)
             # Add the yaxis label
             fig.update_yaxes(dict(showticklabels=False,  #'annotations' not in y_axis_title,
-                                  title=dict(text=y_axis_title.replace(' ', '<br>'), font=dict(size=14), )),
+                                  title=dict(text=y_axis_title.replace(' ', '<br>'),
+                                             font=dict(size=12), )),
                              **trace_opt)
 
             num_before_adding_shapes = len(fig.layout.shapes)
             for shade_opt in trace_shading_opt:
                 shade_opt['y1'] = 1-row_heights[0]  # Default is half the overall plot
+                shade_opt['y0'] = row_heights[-1]  # Do not shade the last row
                 fig.add_shape(**shade_opt, row=trace_opt['row'], col=trace_opt['col'])
             # Force yref in all of these new shapes, which doesn't really work for subplots
             # But here it is hardcoded as 50% of the overall plot (extending across subplots)
             for i in range(num_before_adding_shapes, len(fig.layout.shapes)):
                 fig.layout.shapes[i]['yref'] = 'paper'
 
-    ## Second column (pca phase plot and trajectory)
+    ## Below everything (pca phase plot and trajectory)
+    phase_plot_opt = dict(row=len(row_heights), col=1)
     for trace in phase_plot_list:
-        fig.add_trace(trace, row=1, col=2)
-    fig.update_xaxes(dict(showticklabels=True), row=1, col=2, overwrite=True, title=dict(text='PC1', font=dict(size=14)))
-    fig.update_yaxes(dict(showticklabels=True), row=1, col=2, overwrite=True, )
-                     # title=dict(text='PC2', font=dict(size=14)))
+        fig.add_trace(trace, **phase_plot_opt)
 
+    trajectory_plot_list_opt = dict(row=len(row_heights), col=2)
     for trace in trajectory_plot_list:
         trace['showlegend'] = False
         fig.add_trace(trace, **trajectory_plot_list_opt)
-    fig.update_xaxes(row=3, col=2, overwrite=True, title=dict(text='Distance (mm)', font=dict(size=14)))
-    fig.update_yaxes(row=3, col=2, overwrite=True, )#title=dict(text='Distance (mm)', font=dict(size=14)))
+    fig.update_xaxes(overwrite=True, **trajectory_plot_list_opt, title=dict(text='Distance (mm)', font=dict(size=14)))
+    fig.update_yaxes(overwrite=True, **trajectory_plot_list_opt, title=dict(text='Distance (mm)', font=dict(size=14)))
 
     ### Final updates
-    fig.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
+    fig.update_xaxes(dict(showticklabels=False, showgrid=False),
+                     col=1, overwrite=True, matches='x')
+    fig.update_xaxes(dict(showgrid=False), row=len(row_heights), col=1, overwrite=True,
+                     matches=None)
     if crop_x_axis:
         fig.update_xaxes(dict(range=x_range), row=1, col=1, overwrite=True)
-    # fig.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True)
+    # for i_row in range(2, len(row_heights)):
+    #     fig.update_yaxes(dict(showticklabels=True), row=i_row, col=1, overwrite=True)
     fig.update_xaxes(dict(showticklabels=True, title=project_data.x_label_for_plots),
-                     row=len(row_heights), col=1, overwrite=True,)
+                     row=len(row_heights)-2, col=1, overwrite=True,)
+
+    fig.update_annotations(#yshift=-19,
+                           xshift=-40)
 
     # Update top yaxes
     fig.update_yaxes(dict(showticklabels=False, showgrid=False, ),#title='Ethogram'),
@@ -1797,19 +1808,23 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
 
     apply_figure_settings(fig, width_factor=1.0, height_factor=1.0, plotly_not_matplotlib=True)
 
+    # Update bottom rows
+    fig.update_xaxes(dict(showticklabels=True), **phase_plot_opt, overwrite=True, title=dict(text='PC1', font=dict(size=14)))
+    fig.update_yaxes(dict(showticklabels=True), **phase_plot_opt, overwrite=True, title=dict(text='PC2', font=dict(size=14)))
+
     # Add zero line to the speed plot
     fig.update_yaxes(dict(showticklabels=True, showgrid=True, griddash='dash', gridcolor='black'),
-                     range=[-0.22, 0.14],
+                     range=[-0.16, 0.16],
                      tickmode='array', tickvals=[-0.1, 0, 0.1],
-                     row=len(row_heights), overwrite=True)
+                     row=len(row_heights)-2, overwrite=True)
     # Get the colormaps and legends in the right places, and not overlapping
     # Kymograph
     fig.update_layout(
         coloraxis2=dict(colorscale='RdBu',
                         colorbar=dict(
-                            len=0.34,
+                            len=0.2,
                             yanchor='bottom',
-                            y=0.3,
+                            y=0.61,
                             xanchor='left',
                             x=-0.13,
                             title=dict(text=r'Body<br>Segment<br>Curvature<br>(1/mm)', font=dict(size=14))
@@ -1819,9 +1834,9 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
     fig.update_layout(
         coloraxis=dict(colorscale='jet',
                         colorbar=dict(
-                            len=0.34,
+                            len=0.2,
                             yanchor='bottom',
-                            y=0.65,
+                            y=0.8,
                             xanchor='left',
                             x=-0.13,
                             title=dict(text=r'Neuronal<br>Activity<br>dR/R50', font=dict(size=14))
@@ -1833,7 +1848,7 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
           yanchor="bottom",
           y=-0.02,
           xanchor="left",
-          x=col_widths[0]
+          x=sum(col_widths[:-1]) #+ 0.1
         )
     )
     if not showlegend:
@@ -1956,8 +1971,10 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                 # But first, need to convert to the relevant behavior code (this is a longer string)
                 if 'ventral' in single_name:
                     code = BehaviorCodes.VENTRAL_TURN
+                    # y *= 1000 # Move to mm instead of um
                 elif 'dorsal' in single_name:
                     code = BehaviorCodes.DORSAL_TURN
+                    # y *= 1000 # Move to mm instead of um
                 else:
                     code = BehaviorCodes.UNKNOWN
 
