@@ -250,6 +250,7 @@ def behavior_name_mapping(shorten=False):
         self_collision='Self-collision',
         head_cast='Head cast',
         slowing='Slowing',
+        PAUSE='Pause',
         # Eigenworms are counted from 0 in python, but the paper wants them from 1
         eigenworm_0='Eigenworm 1',
         eigenworm_1='Eigenworm 2',

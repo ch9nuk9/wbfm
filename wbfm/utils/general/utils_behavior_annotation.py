@@ -232,7 +232,7 @@ class BehaviorCodes(Flag):
         if include_complex_states:
             states.extend([cls.FWD | cls.VENTRAL_TURN, cls.FWD | cls.DORSAL_TURN,
                            cls.REV | cls.VENTRAL_TURN, cls.REV | cls.DORSAL_TURN,
-                           cls.QUIESCENCE])
+                           cls.QUIESCENCE, cls.PAUSE])
         return states
 
     @classmethod
@@ -314,7 +314,7 @@ class BehaviorCodes(Flag):
 
     @classmethod
     def ethogram_cmap(cls, include_turns=True, include_reversal_turns=False, include_quiescence=False,
-                      include_collision=False, additional_shaded_states=None,
+                      include_collision=False, additional_shaded_states=None, include_pause=True,
                       use_plotly_style_strings=True, include_custom=False, include_stimulus=False) -> Dict['BehaviorCodes', str]:
         """
         Colormap for shading as a stand-alone ethogram
@@ -371,6 +371,9 @@ class BehaviorCodes(Flag):
             cmap[cls.QUIESCENCE | cls.VENTRAL_TURN] = base_cmap[6]
             cmap[cls.QUIESCENCE | cls.DORSAL_TURN] = base_cmap[6]
             cmap[cls.PAUSE | cls.QUIESCENCE] = base_cmap[6]
+        if include_pause:
+            # Brown (same as quiescence)
+            cmap[cls.PAUSE] = base_cmap[6]
         if include_collision:
             # Gray
             cmap[cls.SELF_COLLISION] = base_cmap[7]

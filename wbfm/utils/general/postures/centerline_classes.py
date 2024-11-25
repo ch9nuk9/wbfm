@@ -590,7 +590,8 @@ class WormFullVideoPosture:
         if self.centerlineX() is None:
             raise NoBehaviorAnnotationsError("(centerline)")
         # Depends on camera and magnification
-        mm_per_pixel = 0.00245
+        mm_per_pixel = self.physical_unit_conversion.zimmer_behavior_um_per_pixel_xy / 1000
+        # mm_per_pixel = 0.00245
         # Offset depends on camera and frame size
         x = (self.centerlineX(fluorescence_fps, **kwargs) - 340) * mm_per_pixel
         y = (self.centerlineY(fluorescence_fps, **kwargs) - 324) * mm_per_pixel
@@ -865,6 +866,16 @@ class WormFullVideoPosture:
             y1 = self.calc_behavior_from_alias('interpolated_ventral_midbody_curvature', **kwargs)
             y0 = self.calc_behavior_from_alias('interpolated_dorsal_midbody_curvature', **kwargs)
             y = y1 + y0
+        elif behavior_alias == 'centroid_position':
+            xy = self.centerline_absolute_coordinates(**kwargs).swaplevel(axis=1)
+            y = xy['X'].mean(axis=1)
+            x = xy['Y'].mean(axis=1)
+            y = pd.concat([x, y], keys=['X', 'Y'], axis=1)
+        elif behavior_alias == 'worm_center_position':
+            xy = self.centerline_absolute_coordinates(**kwargs).swaplevel(axis=1)
+            y = xy['X', 50]
+            x = xy['Y', 50]
+            y = pd.concat([x, y], keys=['X', 'Y'], axis=1)
         elif isinstance(behavior_alias, str) and 'eigenworm' in behavior_alias:
             # Eigenworms 0-4 are possible, calculated on curvature
             # i.e. the full string should be 'eigenworm0', 'eigenworm1', etc.

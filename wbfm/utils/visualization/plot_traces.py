@@ -1740,7 +1740,7 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
     # So I have to manually check the size of behavior_alias_dict and add the traces correctly
     i_num_traces_used = 0
     legend_entries_to_remove = ['Head curv.',
-                                'Body curv.'
+                                'Body curv.', 'Speed'
                                 ]
     for y_axis_title, trace_names in behavior_alias_dict.items():
         if not isinstance(trace_names, list):
@@ -1759,6 +1759,8 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
                                   title=dict(text=y_axis_title.replace(' ', '<br>'),
                                              font=dict(size=12), )),
                              **trace_opt)
+            # Shrink traces
+            # fig.update_traces(, **trace_opt)
 
             num_before_adding_shapes = len(fig.layout.shapes)
             for shade_opt in trace_shading_opt:
@@ -1794,8 +1796,8 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
     fig.update_xaxes(dict(showticklabels=True, title=project_data.x_label_for_plots),
                      row=len(row_heights)-2, col=1, overwrite=True,)
 
-    fig.update_annotations(#yshift=-19,
-                           xshift=-40)
+    # fig.update_annotations(#yshift=-19,
+    #                        xshift=-40)
 
     # Update top yaxes
     fig.update_yaxes(dict(showticklabels=False, showgrid=False, ),#title='Ethogram'),
@@ -1966,6 +1968,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
             # They may be a list of behaviors
             if not isinstance(name_list, list):
                 name_list = [name_list]
+            legendgroup = name_key if 'Eigen' not in name_key else 'Eigenworms'
             for single_name in name_list:
                 y = project_data.worm_posture_class.calc_behavior_from_alias(single_name, **behavior_kwargs)
                 # Do not control the line colors here, because we want different ones on one plot
@@ -1981,8 +1984,11 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                     code = BehaviorCodes.UNKNOWN
 
                 legend_name = behavior_name_mapping().get(single_name, single_name)
-                trace_list.append(go.Scatter(y=y, x=y.index, name=legend_name, showlegend=showlegend,
-                                             marker=dict(color=beh_colormap[code])))
+                trace_list.append(go.Scatter(y=y, x=y.index,
+                                             name=legend_name, showlegend=showlegend,
+                                             legendgroup=legendgroup, legendgrouptitle=dict(text=legendgroup),
+                                             marker=dict(color=beh_colormap[code]),
+                                             line=dict(width=1)))
 
                 # Same options, but additional entries to match length of trace_list
                 trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
@@ -1991,7 +1997,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
 
     #### Shading on top of the PCA modes
     try:
-        beh_vec = project_data.worm_posture_class.beh_annotation(**behavior_kwargs)
+        beh_vec = project_data.worm_posture_class.beh_annotation(**behavior_kwargs, include_pause=True)
         beh_vec = pd.DataFrame(beh_vec)
         # Check lengths; sometimes beh_vec is one too short
         if len(beh_vec) == df_pca_modes.shape[0] - 1:
@@ -2028,8 +2034,8 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
             logging.warning('No manual annotations found')
             beh_vec = None
     if beh_vec is None:
-        beh_vec = project_data.worm_posture_class.beh_annotation(**behavior_kwargs)
-    ethogram_cmap_opt = dict(include_reversal_turns=keep_reversal_turns)
+        beh_vec = project_data.worm_posture_class.beh_annotation(**behavior_kwargs, include_pause=True)
+    ethogram_cmap_opt = dict(include_reversal_turns=keep_reversal_turns, include_pause=True)
     if beh_vec is None:
         # If still none, that means there are no annotations (e.g. it is immobilized)
         beh_vec = pd.Series([BehaviorCodes.UNKNOWN for i in range(df_pca_modes.shape[0])])
@@ -2044,6 +2050,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         except ValueError:
             # Then we are working in behavioral space, and we don't need this
             pass
+        # print(f'Unique state codes for ethogram: {[s.full_name for s in beh_vec.iloc[:, 0].unique()]}')
         ethogram_opt = options_for_ethogram(beh_vec, **ethogram_cmap_opt, include_turns=True,
                                             to_extend_short_states=True,
                                             additional_shaded_states=additional_shaded_states, DEBUG=False)
@@ -2058,27 +2065,32 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
 
         state_codes = beh_vec.iloc[:, 0].unique()  # Get unique state codes; there is only one column
         phase_plot_list = []
+        # print(f'Unique state codes: {[s.full_name for s in state_codes]}')
         for i, state_code in enumerate(state_codes):
             try:
                 # Only show the legend if the behavior is FWD or REV
                 showlegend = state_code.full_name in {'FWD', 'REV',
                                                       'VENTRAL_TURN and FWD', 'FWD and VENTRAL_TURN',
-                                                      'DORSAL_TURN and FWD', 'FWD and DORSAL_TURN'}
+                                                      'DORSAL_TURN and FWD', 'FWD and DORSAL_TURN',
+                                                      'PAUSE'}
                 name = state_code.name
                 if name is None:
                     # If there is a complex state
                     name = state_code.full_name.split(' and ')[0]
                 name = behavior_name_mapping().get(name, name)
+                # print(f'Adding phase plot for {name} with color {ethogram_cmap[state_code]}')
                 phase_plot_list.append(
                     go.Scatter(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]],
                                mode='lines',
                                name=name, line=dict(color=ethogram_cmap[state_code], width=4),
-                               showlegend=showlegend), )
-            except KeyError:
+                               showlegend=showlegend, legendgroup='Ethogram', legendgrouptitle=dict(text='Ethogram')),)
+            except KeyError as e:
+                # print(f'KeyError: {e} on behavior {state_code.full_name}')
                 pass
 
-    except ValueError:
+    except ValueError as e:
         # Then we are working in behavioral space, and we don't need a phase plot
+        print(f'ValueError: {e}; if only the behavior is being plotted, this is not a problem')
         phase_plot_list = []
 
     phase_plot_list_opt = dict(row=3, col=2, pca_obj=pca_weights)
@@ -2188,7 +2200,8 @@ def _make_trajectory_plot(project_data):
     -------
 
     """
-    xy = project_data.worm_posture_class.stage_position(fluorescence_fps=True).copy()
+    # xy = project_data.worm_posture_class.stage_position(fluorescence_fps=True).copy()
+    xy = project_data.worm_posture_class.calc_behavior_from_alias('worm_center_position').copy()
     xy = xy - xy.iloc[0, :]
 
     beh = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, simplify_states=True,
@@ -2199,7 +2212,8 @@ def _make_trajectory_plot(project_data):
     df_xy['Behavior'] = beh.values
 
     df_xy['size'] = 1
-    ethogram_cmap = BehaviorCodes.ethogram_cmap(include_turns=True, include_reversal_turns=False)
+    ethogram_cmap = BehaviorCodes.ethogram_cmap(include_turns=True, include_reversal_turns=False,
+                                                include_quiescence=True)
     df_out, col_names = modify_dataframe_to_allow_gaps_for_plotly(df_xy, ['X', 'Y'], 'Behavior')
 
     # Loop to prep each line, then plot
