@@ -1809,8 +1809,10 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
     apply_figure_settings(fig, width_factor=1.0, height_factor=1.0, plotly_not_matplotlib=True)
 
     # Update bottom rows
-    fig.update_xaxes(dict(showticklabels=True), **phase_plot_opt, overwrite=True, title=dict(text='PC1', font=dict(size=14)))
-    fig.update_yaxes(dict(showticklabels=True), **phase_plot_opt, overwrite=True, title=dict(text='PC2', font=dict(size=14)))
+    var_explained = 100 * phase_plot_list_opt['pca_obj'].explained_variance_ratio_
+    phase_plot_opt['overwrite'] = True
+    fig.update_xaxes(dict(showticklabels=True), **phase_plot_opt, title=dict(text=f'PC1 ({var_explained[0]:2.1f}%)', font=dict(size=14)))
+    fig.update_yaxes(dict(showticklabels=True), **phase_plot_opt, title=dict(text=f'PC2 ({var_explained[1]:2.1f}%)', font=dict(size=14)))
 
     # Add zero line to the speed plot
     fig.update_yaxes(dict(showticklabels=True, showgrid=True, griddash='dash', gridcolor='black'),
@@ -2079,7 +2081,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         # Then we are working in behavioral space, and we don't need a phase plot
         phase_plot_list = []
 
-    phase_plot_list_opt = dict(row=3, col=2)
+    phase_plot_list_opt = dict(row=3, col=2, pca_obj=pca_weights)
     ### Variance explained
     var_explained_line = go.Scatter(x=np.arange(1, len(var_explained)+1), y=var_explained, showlegend=False)
     var_explained_line_opt = dict(row=6, col=2, secondary_y=False)
