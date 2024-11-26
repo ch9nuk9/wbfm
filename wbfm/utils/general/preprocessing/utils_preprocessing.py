@@ -544,7 +544,7 @@ class PreprocessingSettings:
             num_slices = dat.shape[0]
         return num_slices
 
-    def get_path_to_preprocessed_data(self, red_not_green=True) -> str:
+    def get_path_to_preprocessed_data(self, red_not_green=True, DEBUG=False) -> str:
         """
         Like get_raw_data_fname, but for preprocessed data
 
@@ -559,18 +559,24 @@ class PreprocessingSettings:
 
         """
         if red_not_green:
-            fname = str(self.cfg_preprocessing.resolve_relative_path_from_config('preprocessed_red_fname'))
+            fname = self.cfg_preprocessing.resolve_relative_path_from_config('preprocessed_red_fname')
         else:
-            fname = str(self.cfg_preprocessing.resolve_relative_path_from_config('preprocessed_green_fname'))
+            fname = self.cfg_preprocessing.resolve_relative_path_from_config('preprocessed_green_fname')
 
         if fname is None:
+            if DEBUG:
+                self.cfg_preprocessing.logger.warning(f"Could not find preprocessed data for channel {red_not_green}; "
+                                                      f"Checking old style")
             # Then check old style
             if red_not_green:
                 fname = str(self.cfg_project.resolve_relative_path_from_config('preprocessed_red'))
             else:
                 fname = str(self.cfg_project.resolve_relative_path_from_config('preprocessed_green'))
+        else:
+            if DEBUG:
+                self.cfg_preprocessing.logger.warning(f"Found preprocessed data using new style at {fname}")
 
-        return fname
+        return str(fname)
 
     def __repr__(self):
         return f"Preprocessing settings object with settings: \n\
