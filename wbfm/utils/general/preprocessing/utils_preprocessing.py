@@ -171,11 +171,15 @@ class PreprocessingSettings:
 
     @cached_property
     def background_red(self):
-        self.load_background(self.background_fname_red)
+        if self.background_fname_red is None:
+            return None
+        return self.load_background(self.background_fname_red)
 
     @cached_property
     def background_green(self):
-        self.load_background(self.background_fname_green)
+        if self.background_fname_green is None:
+            return None
+        return self.load_background(self.background_fname_green)
 
     def find_background_files_from_raw_data_path(self, force_search=False):
         if self.background_fname_red is not None:
