@@ -54,9 +54,10 @@ def check_all_needed_data_for_step(project_config: ModularProjectConfig,
 def check_preprocessed_data(project_config: ModularProjectConfig, verbose=0):
 
     try:
+        p = project_config.get_preprocessing_class()
         all_to_check = [
-            project_config.resolve_relative_path_from_config('preprocessed_red'),
-            project_config.resolve_relative_path_from_config('preprocessed_green')
+            p.get_path_to_preprocessed_data(red_not_green=True),
+            p.get_path_to_preprocessed_data(red_not_green=False)
         ]
         all_exist = _check_and_print(all_to_check, 'preprocessed data', verbose)
 
@@ -151,8 +152,9 @@ def check_traces(project_config: ModularProjectConfig, verbose=0):
 
 
 def check_zarr_file_integrity(project_config: ModularProjectConfig, verbose=0):
-    fnames = [project_config.resolve_relative_path_from_config('preprocessed_red'),
-              project_config.resolve_relative_path_from_config('preprocessed_green')]
+    p = project_config.get_preprocessing_class()
+    fnames = [p.get_path_to_preprocessed_data(red_not_green=True),
+              p.get_path_to_preprocessed_data(red_not_green=False)]
 
     for fname in fnames:
         logging.info(f"Checking integrity of {fname}")

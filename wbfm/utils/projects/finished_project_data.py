@@ -18,7 +18,6 @@ from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.external.custom_errors import NoMatchesError, NoNeuronsError, NoBehaviorAnnotationsError
 from wbfm.utils.general.postprocessing.utils_imputation import impute_missing_values_in_dataframe
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
-from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from wbfm.utils.neuron_matching.matches_class import MatchesWithConfidence, get_mismatches
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron
@@ -55,7 +54,6 @@ from backports.cached_property import cached_property
 
 from wbfm.utils.visualization.filtering_traces import fast_slow_decomposition, filter_trace_using_mode, \
     fill_nan_in_dataframe
-from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 
 
 @dataclass
@@ -544,8 +542,8 @@ class ProjectData:
         obj.all_used_fnames = []
         preprocessing_settings = cfg.get_preprocessing_class(do_background_subtraction=False)
 
-        red_dat_fname = str(cfg.resolve_relative_path_from_config('preprocessed_red'))
-        green_dat_fname = str(cfg.resolve_relative_path_from_config('preprocessed_green'))
+        red_dat_fname = preprocessing_settings.cfg_preprocessing.get_path_to_preprocessed_data(red_not_green=True)
+        green_dat_fname = preprocessing_settings.cfg_preprocessing.get_path_to_preprocessed_data(red_not_green=True)
         red_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['red'])
         green_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['green'])
 

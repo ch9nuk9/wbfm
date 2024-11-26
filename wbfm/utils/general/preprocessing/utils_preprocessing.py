@@ -540,6 +540,34 @@ class PreprocessingSettings:
             num_slices = dat.shape[0]
         return num_slices
 
+    def get_path_to_preprocessed_data(self, red_not_green=True) -> str:
+        """
+        Like get_raw_data_fname, but for preprocessed data
+
+        Was previously just a direct config file lookup, but it has been moved and now checks both places
+
+        Parameters
+        ----------
+        red_not_green
+
+        Returns
+        -------
+
+        """
+        if red_not_green:
+            fname = str(self.cfg_preprocessing.resolve_relative_path_from_config('preprocessed_red_fname'))
+        else:
+            fname = str(self.cfg_preprocessing.resolve_relative_path_from_config('preprocessed_green_fname'))
+
+        if fname is None:
+            # Then check old style
+            if red_not_green:
+                fname = str(self.cfg_project.resolve_relative_path_from_config('preprocessed_red'))
+            else:
+                fname = str(self.cfg_project.resolve_relative_path_from_config('preprocessed_green'))
+
+        return fname
+
     def __repr__(self):
         return f"Preprocessing settings object with settings: \n\
     Data settings: \n\

@@ -36,8 +36,9 @@ def cfg(project_path, DEBUG):
 def main(_config, _run):
     sacred.commands.print_config(_run)
     raise NotImplementedError("Needs to be fixed with preprocessing config")
+    cfg = _config['cfg']
 
-    video_fname = _config['cfg'].config['preprocessed_red']
+    video_fname = cfg.get_preprocessing_class().get_path_to_preprocessed_data(red_not_green=True)
     bbox_fname = _config['bounding_box_fname']
     num_frames = _config['num_frames']
     calculate_bounding_boxes_from_cfg_and_save(video_fname, bbox_fname, num_frames)

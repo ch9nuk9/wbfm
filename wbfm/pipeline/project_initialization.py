@@ -178,8 +178,8 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
             edits = {'preprocessed_red': out_fname}
         else:
             edits = {'preprocessed_green': out_fname}
-        cfg.config.update(edits)
-        cfg.update_self_on_disk()
+        preprocessing_settings.cfg_preprocessing.config.update(edits)
+        preprocessing_settings.cfg_preprocessing.update_self_on_disk()
 
 
 def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_fname_in_red_not_green, tiff_not_zarr,
@@ -213,8 +213,9 @@ def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_
 
 def crop_zarr_using_config(cfg: ModularProjectConfig):
 
-    fields = ['preprocessed_red', 'preprocessed_green']
-    to_crop = [cfg.config[f] for f in fields]
+    cfg_preprocessing = cfg.get_preprocessing_class()
+    to_crop = [cfg_preprocessing.get_path_to_preprocessed_data(red_not_green=True),
+               cfg_preprocessing.get_path_to_preprocessed_data(red_not_green=False)]
     start_volume = cfg.config['deprecated_dataset_params']['start_volume']
     num_frames = cfg.config['deprecated_dataset_params']['num_frames']
     end_volume = start_volume + num_frames
@@ -238,14 +239,17 @@ def crop_zarr_using_config(cfg: ModularProjectConfig):
     cfg.update_self_on_disk()
 
 
-def zip_zarr_using_config(project_cfg: ModularProjectConfig):
-    project_cfg.logger.info("Zipping zarr data (both channels)")
-    out_fname_red_7z = zip_raw_data_zarr(project_cfg.config['preprocessed_red'], verbose=1)
-    out_fname_green_7z = zip_raw_data_zarr(project_cfg.config['preprocessed_green'], verbose=1)
+def zip_zarr_using_config(preprocessing_class: PreprocessingSettings):
+    preprocessing_class.cfg_preprocessing.logger.info("Zipping zarr data (both channels)")
+    out_fname_red_7z = zip_raw_data_zarr(preprocessing_class.get_path_to_preprocessed_data(red_not_green=True),
+                                         verbose=1)
+    out_fname_green_7z = zip_raw_data_zarr(preprocessing_class.get_path_to_preprocessed_data(red_not_green=False),
+                                           verbose=1)
 
-    project_cfg.config['preprocessed_red'] = str(project_cfg.unresolve_absolute_path(out_fname_red_7z))
-    project_cfg.config['preprocessed_green'] = str(project_cfg.unresolve_absolute_path(out_fname_green_7z))
-    project_cfg.update_self_on_disk()
+    cfg = preprocessing_class.cfg_preprocessing
+    cfg.config['preprocessed_red_fname'] = str(cfg.unresolve_absolute_path(out_fname_red_7z))
+    cfg.config['preprocessed_green_fname'] = str(cfg.unresolve_absolute_path(out_fname_green_7z))
+    cfg.update_self_on_disk()
 
 
 def subtract_background_using_config(cfg: ModularProjectConfig, do_preprocessing=True, DEBUG=False):
@@ -265,20 +269,20 @@ def subtract_background_using_config(cfg: ModularProjectConfig, do_preprocessing
                DEBUG=DEBUG)
     if not do_preprocessing:
         opt['preprocessing_settings'] = None
-    raw_fname_red = cfg.config[f'preprocessed_red']
-    background_fname_red = preprocessing_settings.cfg_preprocessing.config[f'preprocessed_red_fname']
-    raw_fname_green = cfg.config[f'preprocessed_green']
-    background_fname_green = preprocessing_settings.cfg_preprocessing.config[f'preprocessed_green_fname']
+    raw_fname_red = preprocessing_settings.get_path_to_preprocessed_data(red_not_green=True)
+    background_fname_red = preprocessing_settings.cfg_preprocessing.config[f'background_fname_red']
+    raw_fname_green = preprocessing_settings.get_path_to_preprocessed_data(red_not_green=False)
+    background_fname_green = preprocessing_settings.cfg_preprocessing.config[f'background_fname_green']
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
         red_fname_subtracted = ex.submit(background_subtract_single_channel, raw_fname_red, background_fname_red,
                                          **opt).result()
         green_fname_subtracted = ex.submit(background_subtract_single_channel, raw_fname_green, background_fname_green,
                                            **opt).result()
-    cfg.config['preprocessed_red'] = str(red_fname_subtracted)
-    cfg.config['preprocessed_green'] = str(green_fname_subtracted)
+    preprocessing_settings.cfg_preprocessing.config['preprocessed_red_fname'] = str(red_fname_subtracted)
+    preprocessing_settings.cfg_preprocessing.config['preprocessed_green_fname'] = str(green_fname_subtracted)
 
-    zip_zarr_using_config(cfg)
+    zip_zarr_using_config(preprocessing_settings)
 
 
 def calculate_total_number_of_frames_from_bigtiff(cfg):
