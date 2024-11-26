@@ -280,14 +280,16 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         fname = Path(self.get_preprocessing_config_filename())
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
+    @lru_cache(maxsize=2)
     def get_preprocessing_class(self, do_background_subtraction=None):
         fname = self.get_preprocessing_config_filename()
         from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
-        preprocessing_settings = PreprocessingSettings._load_from_yaml(fname, do_background_subtraction)
+        preprocessing_settings = PreprocessingSettings.load_from_yaml(fname, do_background_subtraction)
         preprocessing_settings.cfg_preprocessing = self.get_preprocessing_config()
+        preprocessing_settings.cfg_project = self
         if not preprocessing_settings.background_is_ready:
             try:
-                preprocessing_settings.find_background_files_from_raw_data_path(self)
+                preprocessing_settings.find_background_files_from_raw_data_path()
             except FileNotFoundError:
                 self.logger.warning("Did not find background; turning off background subtraction")
                 preprocessing_settings.do_background_subtraction = False
@@ -447,16 +449,12 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return red_btf_fname, green_btf_fname
 
     def open_raw_data(self, **kwargs) -> Optional[MicroscopeDataReader]:
-        return self.get_preprocessing_config().open_raw_data(**kwargs)
+        """Only for backwards compatibility; function is now in PreprocessingSettings"""
+        return self.get_preprocessing_class().open_raw_data(**kwargs)
 
-    def open_raw_data_as_4d_dask(self, red_not_green=True):
-        dat = self.open_raw_data(red_not_green)
-        if dat is None:
-            return None
-        dat_out = da.squeeze(dat.dask_array)
-        if dat_out.ndim != 4:
-            raise ValueError(f"Expected 4d data, got {dat_out.ndim}d data")
-        return dat_out
+    def open_raw_data_as_4d_dask(self, **kwargs) -> Optional[da.Array]:
+        """Only for backwards compatibility; function is now in PreprocessingSettings"""
+        return self.get_preprocessing_class().open_raw_data_as_4d_dask(**kwargs)
 
     def get_raw_data_fname(self, red_not_green) -> Tuple[Optional[str], bool]:
         is_btf = True
@@ -474,55 +472,26 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     @property
     def start_volume(self):
-        # Checks for either the old or new key
-        num_slices = self.config['dataset_params'].get('start_volume', 0)
-        if num_slices is None:
-            num_slices = self.config['deprecated_dataset_params'].get('start_volume', 0)
-        return num_slices
+        """Only for backwards compatibility; function is now in PreprocessingSettings"""
+        return self.get_preprocessing_class().start_volume
 
     @property
     def num_slices(self):
-        # Checks for either the old or new key
-        num_slices = self.config['dataset_params'].get('num_slices', None)
-        if num_slices is None:
-            num_slices = self.config['deprecated_dataset_params'].get('num_slices', None)
-        return num_slices
+        """Only for backwards compatibility; function is now in PreprocessingSettings"""
+        return self.get_preprocessing_class().num_slices
 
     def get_num_slices_robust(self):
-        """
-        Tries to read from the config file, but if that fails then read the raw data file
-
-        Returns
-        -------
-
-        """
-        num_slices = self.num_slices
-        if num_slices is None:
-            dat = self.open_raw_data_as_4d_dask()
-            num_slices = dat.shape[1]
-        return num_slices
+        """Only for backwards compatibility; function is now in PreprocessingSettings"""
+        return self.get_preprocessing_class().get_num_slices_robust()
 
     @property
     def num_frames(self):
-        # Checks for either the old or new key
-        num_frames = self.config['dataset_params'].get('num_frames', None)
-        if num_frames is None:
-            num_frames = self.config['deprecated_dataset_params'].get('num_frames', None)
-        return num_frames
+        """Only for backwards compatibility; function is now in PreprocessingSettings"""
+        return self.get_preprocessing_class().num_frames
 
     def get_num_frames_robust(self):
-        """
-        Tries to read from the config file, but if that fails then read the raw data file
-
-        Returns
-        -------
-
-        """
-        num_slices = self.num_frames
-        if num_slices is None:
-            dat = self.open_raw_data_as_4d_dask()
-            num_slices = dat.shape[0]
-        return num_slices
+        """Only for backwards compatibility; function is now in PreprocessingSettings"""
+        return self.get_preprocessing_class().get_num_frames_robust()
 
     def get_red_and_green_grid_alignment_bigtiffs(self) -> Tuple[List[str], List[str]]:
         """

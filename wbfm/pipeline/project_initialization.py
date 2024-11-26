@@ -266,9 +266,9 @@ def subtract_background_using_config(cfg: ModularProjectConfig, do_preprocessing
     if not do_preprocessing:
         opt['preprocessing_settings'] = None
     raw_fname_red = cfg.config[f'preprocessed_red']
-    background_fname_red = cfg.config[f'red_background_fname']
+    background_fname_red = preprocessing_settings.cfg_preprocessing.config[f'preprocessed_red_fname']
     raw_fname_green = cfg.config[f'preprocessed_green']
-    background_fname_green = cfg.config[f'green_background_fname']
+    background_fname_green = preprocessing_settings.cfg_preprocessing.config[f'preprocessed_green_fname']
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
         red_fname_subtracted = ex.submit(background_subtract_single_channel, raw_fname_red, background_fname_red,

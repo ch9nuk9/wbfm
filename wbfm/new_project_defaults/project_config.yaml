@@ -17,9 +17,6 @@ behavior_fname: null
 red_fname: null
 green_fname: null
 
-red_background_fname: null
-green_background_fname: null
-
 dataset_params:
   # As of January 2022
   red_and_green_mirrored: False

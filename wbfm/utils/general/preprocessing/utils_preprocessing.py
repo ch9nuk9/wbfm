@@ -10,7 +10,7 @@ from typing import List, Optional
 from imutils import MicroscopeDataReader
 from methodtools import lru_cache
 
-import dask.array
+import dask.array as da
 import numpy as np
 import zarr
 from backports.cached_property import cached_property
@@ -134,6 +134,7 @@ class PreprocessingSettings:
 
     # For updating self on disk
     cfg_preprocessing: ConfigFileWithProjectContext = None
+    cfg_project: ModularProjectConfig = None
 
     # Load results of a separate preprocessing step, if available
     to_save_warp_matrices: bool = True
@@ -176,13 +177,13 @@ class PreprocessingSettings:
     def background_green(self):
         self.load_background(self.background_fname_green)
 
-    def find_background_files_from_raw_data_path(self, cfg: ModularProjectConfig, force_search=False):
+    def find_background_files_from_raw_data_path(self, force_search=False):
         if self.background_fname_red is not None:
             logging.info(f"Already has background at {self.background_fname_red}")
             if not force_search:
                 return
 
-        folder_for_background = cfg.get_folder_with_background()
+        folder_for_background = self.cfg_project.get_folder_with_background()
         logging.info(f"Attempting to find new background files in parent folder {folder_for_background}")
 
         for subfolder in folder_for_background.iterdir():
@@ -263,7 +264,7 @@ class PreprocessingSettings:
         logging.info(f"Calculating alpha from data for channel {which_channel}; may take ~2 minutes per video")
         if num_volumes_to_load is None:
             # Load the entire video; only really works with zarr
-            current_max_value = dask.array.from_zarr(video).max().compute()
+            current_max_value = da.from_zarr(video).max().compute()
             targeted_max_value = 254.0
         else:
             # Assumed to be tiff files; note that the stack axis doesn't matter
@@ -285,7 +286,7 @@ class PreprocessingSettings:
         self.cfg_preprocessing.update_self_on_disk()
 
     @staticmethod
-    def _load_from_yaml(fname, do_background_subtraction=None):
+    def load_from_yaml(fname, do_background_subtraction=None):
         with open(fname, 'r') as f:
             preprocessing_dict = YAML().load(f)
         if do_background_subtraction is not None:
@@ -453,7 +454,7 @@ class PreprocessingSettings:
 
         """
         # First check btf style
-        fname, is_btf = self.get_raw_data_fname(red_not_green)
+        fname, is_btf = self.cfg_project.get_raw_data_fname(red_not_green)
         if fname is None:
             raise FileNotFoundError("Could not find raw data file")
 
@@ -476,6 +477,68 @@ class PreprocessingSettings:
                 dat = None
 
         return dat
+
+    def open_raw_data_as_4d_dask(self, red_not_green=True) -> Optional[da.Array]:
+        dat = self.open_raw_data(red_not_green)
+        if dat is None:
+            return None
+        dat_out = da.squeeze(dat.dask_array)
+        if dat_out.ndim != 4:
+            raise ValueError(f"Expected 4d data, got {dat_out.ndim}d data")
+        return dat_out
+
+    @property
+    def num_slices(self):
+        """Just for backwards compability: Checks for either the old or new key"""
+        num_slices = self.cfg_project.config['dataset_params'].get('num_slices', None)
+        if num_slices is None:
+            num_slices = self.cfg_project.config['deprecated_dataset_params'].get('num_slices', None)
+        return num_slices
+
+    def get_num_slices_robust(self):
+        """
+        Tries to read from the config file, but if that fails then read the raw data file
+
+        Returns
+        -------
+
+        """
+        num_slices = self.num_slices
+        if num_slices is None:
+            dat = self.open_raw_data_as_4d_dask()
+            num_slices = dat.shape[1]
+        return num_slices
+
+    @property
+    def start_volume(self):
+        """Just for backwards compability: Checks for either the old or new key"""
+
+        num_slices = self.cfg_project.config['dataset_params'].get('start_volume', 0)
+        if num_slices is None:
+            num_slices = self.cfg_project.config['deprecated_dataset_params'].get('start_volume', 0)
+        return num_slices
+
+    @property
+    def num_frames(self):
+        # Checks for either the old or new key
+        num_frames = self.cfg_project.config['dataset_params'].get('num_frames', None)
+        if num_frames is None:
+            num_frames = self.cfg_project.config['deprecated_dataset_params'].get('num_frames', None)
+        return num_frames
+
+    def get_num_frames_robust(self):
+        """
+        Tries to read from the config file, but if that fails then read the raw data file
+
+        Returns
+        -------
+
+        """
+        num_slices = self.num_frames
+        if num_slices is None:
+            dat = self.open_raw_data_as_4d_dask()
+            num_slices = dat.shape[0]
+        return num_slices
 
     def __repr__(self):
         return f"Preprocessing settings object with settings: \n\
@@ -645,7 +708,7 @@ def preprocess_all_frames_using_config(config: ModularProjectConfig,
     return preprocess_all_frames(video_dat_4d, p, which_channel, out_fname, DEBUG=DEBUG)
 
 
-def preprocess_all_frames(video_dat_4d: dask.array, p: PreprocessingSettings, which_channel: str, out_fname: str,
+def preprocess_all_frames(video_dat_4d: da, p: PreprocessingSettings, which_channel: str, out_fname: str,
                           DEBUG: bool = False) -> zarr.Array:
     """
     Preprocesses all frames using multithreading, saving directly to an output zarr file
