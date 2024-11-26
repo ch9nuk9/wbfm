@@ -1,9 +1,9 @@
-# DEFAULT definitions (do not edit!)
+# DEFAULT definitions (do not edit unless you know what you are doing!)
 
 # For bounding boxes
 bounding_boxes_fname: dat/bounding_boxes.pickle
 
-# Removing planes, especially flyback
+# Removing planes, especially flyback (default: none)
 raw_number_of_planes: 22
 starting_plane: 0
 
@@ -22,12 +22,13 @@ mini_max_size: 3
 do_mirroring: false
 
 # Rigid alignment (slices to each other, within a volume)
-do_rigid_alignment: true # CHANGE ME; not needed for immobilized projects
+do_rigid_alignment: true # not needed for immobilized projects
 camera_alignment_method: 'data' # Currently only working method; dots and grid are also options
 align_green_red_cameras: true # Not always saved
 gauss_filt_sigma: null # Gaussian blur parameter (Applied before calculating camera alignment, if not null)
 max_project_across_time: true # If true, max project across time before calculating camera alignment
 
+# More complex preprocessing steps (all off by default)
 do_deconvolution: false
 do_sharpening: false
 sharpening_kwargs:

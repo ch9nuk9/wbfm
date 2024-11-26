@@ -1,5 +1,5 @@
 # Default parameters for creating a new project
-# Do not edit!
+# Do not edit unless you know what you are doing!
 # NOTE: these comments will be deleted when moving to a new project!
 
 task_name:
@@ -26,15 +26,15 @@ preprocessed_green: null
 dataset_params:
   # As of January 2022
   red_and_green_mirrored: False
-  segment_and_track_on_green_channel: False
+  segment_and_track_on_green_channel: False  # Optional; may improve performance for dim red channels
 
 deprecated_dataset_params:
   # In time
   start_volume: 0 # SHOULD BE 0 (except special visualizations)
-  bigtiff_start_volume: 0 # CHANGE ME
-  num_frames: null # CHANGE ME
+  bigtiff_start_volume: 0 # The video itself should be changed
+  num_frames: null # Should be set in the metadata of the ndtiff file
   # In z
-  num_slices: 22 # CHANGE ME; after removal of flyback (see preprocessing)
+  num_slices: 22 # Should be set in the metadata of the ndtiff file
 
 physical_units:
   zimmer_fluroscence_um_per_pixel_xy: 0.325
@@ -48,13 +48,10 @@ physical_units:
 
 subfolder_configs:
   preprocessing: dat/preprocessing_config.yaml
-  # Copy from external_libraries package
   segmentation: 1-segmentation/segment_config.yaml
-  # Outputs of this package
   training_data: 2-training_data/training_data_config.yaml
   tracking: 3-tracking/tracking_config.yaml
   traces: 4-traces/traces_config.yaml
-  # Non-pipeline steps
   visualization: visualization/visualization_config.yaml
 
 ###################
