@@ -92,8 +92,6 @@ class PreprocessingSettings:
     background_fname_red: str = None
     background_fname_green: str = None
 
-    background_red: np.ndarray = None
-    background_green: np.ndarray = None
     reset_background: bool = True
     reset_background_per_pixel: int = 75
 
@@ -145,8 +143,6 @@ class PreprocessingSettings:
     verbose: int = 0
 
     def __post_init__(self):
-        if self.do_background_subtraction:
-            self.initialize_background()
         if not self.alpha_is_ready:
             logging.warning("Alpha is not set in the yaml; will have to be calculated from data")
 
@@ -165,18 +161,13 @@ class PreprocessingSettings:
     def psf(self):
         return CustomPSF()
 
-    def initialize_background(self):
-        logging.info("Loading background videos, may take a minute")
-        if self.background_fname_red is None:
-            logging.debug("Didn't find background filename; this will have to be rerun")
-            return
+    @cached_property
+    def background_red(self):
+        self.load_background(self.background_fname_red)
 
-        try:
-            self.background_red = self.load_background(self.background_fname_red)
-            self.background_green = self.load_background(self.background_fname_green)
-        except FileNotFoundError:
-            logging.warning(f"Did not find background files at {self.background_fname_red} "
-                            f"and {self.background_fname_green}")
+    @cached_property
+    def background_green(self):
+        self.load_background(self.background_fname_green)
 
     def find_background_files_from_raw_data_path(self, cfg: ModularProjectConfig, force_search=False):
         if self.background_fname_red is not None:
@@ -224,7 +215,7 @@ class PreprocessingSettings:
         self.cfg_preprocessing.update_self_on_disk()
 
         # Actually load data
-        self.initialize_background()
+        _, _ = self.background_red, self.background_green
 
     def load_background(self, background_fname):
         num_frames = 10
