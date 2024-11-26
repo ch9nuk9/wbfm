@@ -975,11 +975,11 @@ def make_project_like(project_path: str, target_directory: str,
     update_project_config_path(target_project_name)
 
     # Connect the new project to old project config files, if any
+    old_cfg = ModularProjectConfig(project_path)
+    old_project_dir = old_cfg.project_dir
     if steps_to_keep is not None:
         project_updates = dict(subfolder_configs=dict())
-        old_cfg = ModularProjectConfig(project_path)
         all_steps = list(old_cfg.config['subfolder_configs'].keys())
-        old_project_dir = old_cfg.project_dir
 
         for step in all_steps:
             subcfg_fname = old_cfg.config['subfolder_configs'].get(step, None)
@@ -1011,4 +1011,42 @@ def make_project_like(project_path: str, target_directory: str,
     # Also update the snakemake file with the project directory
     update_snakemake_config_path(target_project_name)
 
+    # Specific check: if the data should be included, the old style might still have relative paths
+    if 'preprocessing' in steps_to_keep:
+        # Check if the preprocessed data is found (reload the project)
+        project_config = ModularProjectConfig(str(target_project_name))
+        preprocessing_class = project_config.get_preprocessing_class()
+        fname = preprocessing_class.get_path_to_preprocessed_data(red_not_green=True)
+        if fname is None:
+            # Then there was no preprocessed data, ignore
+            pass
+        elif not os.path.exists(fname):
+            # Then it is not found, and we should update the main config file with absolute paths
+            # But it is the old style, so we need to update project_config not the preprocessing_config
+            # But actually: check that it really is the old style
+            red_fname = project_config.config.get('preprocessed_red', None)
+            assert red_fname is not None, "Expected preprocessed_red in main config file (old style)"
+            assert not Path(red_fname).is_absolute(), f"Expected relative path: {red_fname}"
+            # Make the files absolute, pointing to the old project
+            project_config.config['preprocessed_red'] = os.path.join(old_project_dir, red_fname)
+            green_fname = project_config.config.get('preprocessed_green', None)
+            project_config.config['preprocessed_green'] = os.path.join(old_project_dir, green_fname)
+            project_config.update_self_on_disk()
+
     return target_project_name
+
+
+# def update_config_file_formatting(project_config: ModularProjectConfig):
+#     """
+#     Updates projects based on various formatting changes I've made over time
+#
+#     Parameters
+#     ----------
+#     project_config
+#
+#     Returns
+#     -------
+#
+#     """
+#
+#     # Preprocessed data is now in the preprocessing config, not the main project config
