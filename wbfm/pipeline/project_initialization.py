@@ -213,9 +213,9 @@ def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_
 
 def crop_zarr_using_config(cfg: ModularProjectConfig):
 
-    cfg_preprocessing = cfg.get_preprocessing_class()
-    to_crop = [cfg_preprocessing.get_path_to_preprocessed_data(red_not_green=True),
-               cfg_preprocessing.get_path_to_preprocessed_data(red_not_green=False)]
+    preprocessing_class = cfg.get_preprocessing_class()
+    to_crop = [preprocessing_class.get_path_to_preprocessed_data(red_not_green=True),
+               preprocessing_class.get_path_to_preprocessed_data(red_not_green=False)]
     start_volume = cfg.config['deprecated_dataset_params']['start_volume']
     num_frames = cfg.config['deprecated_dataset_params']['num_frames']
     end_volume = start_volume + num_frames
