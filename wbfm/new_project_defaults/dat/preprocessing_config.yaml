@@ -53,3 +53,7 @@ background_fname_green: null
 
 reset_background: true
 reset_background_per_pixel: 75
+
+# Final output
+preprocessed_red_fname: null
+preprocessed_green_fname: null

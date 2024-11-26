@@ -5,7 +5,10 @@ import logging
 import pickle
 import threading
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
+
+from imutils import MicroscopeDataReader
+from methodtools import lru_cache
 
 import dask.array
 import numpy as np
@@ -17,7 +20,7 @@ from tifffile import tifffile
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from wbfm.utils.external.custom_errors import MustBeFiniteError
+from wbfm.utils.external.custom_errors import MustBeFiniteError, TiffFormatError
 from wbfm.utils.general.preprocessing.deconvolution import ImageScaler, CustomPSF, sharpen_volume_using_dog, \
     sharpen_volume_using_bilateral
 from wbfm.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
@@ -140,11 +143,15 @@ class PreprocessingSettings:
     # Temporary variable to store warp matrices across time
     all_warp_matrices: dict = field(default_factory=dict)
 
+    # Final output (preprocessed data)
+    preprocessed_red_fname: str = None
+    preprocessed_green_fname: str = None
+
     verbose: int = 0
 
     def __post_init__(self):
         if not self.alpha_is_ready:
-            logging.warning("Alpha is not set in the yaml; will have to be calculated from data")
+            self.cfg_preprocessing.logger.warning("Alpha is not set in the yaml; will have to be calculated from data")
 
     @property
     def background_is_ready(self):
@@ -284,19 +291,6 @@ class PreprocessingSettings:
         if do_background_subtraction is not None:
             preprocessing_dict['do_background_subtraction'] = do_background_subtraction
         return PreprocessingSettings(**preprocessing_dict)
-
-    @staticmethod
-    def load_from_config(cfg: ModularProjectConfig, do_background_subtraction=None):
-        fname = cfg.get_preprocessing_config_filename()
-        preprocessing_settings = PreprocessingSettings._load_from_yaml(fname, do_background_subtraction)
-        preprocessing_settings.cfg_preprocessing = cfg.get_preprocessing_config()
-        if not preprocessing_settings.background_is_ready:
-            try:
-                preprocessing_settings.find_background_files_from_raw_data_path(cfg)
-            except FileNotFoundError:
-                logging.warning("Did not find background; turning off background subtraction")
-                preprocessing_settings.do_background_subtraction = False
-        return preprocessing_settings
 
     @property
     def camera_alignment_matrix(self):
@@ -441,6 +435,47 @@ class PreprocessingSettings:
             raise NotImplementedError("Should set PreprocessingSettings.raw_number_of_planes")
         raw_volume = get_single_volume(video_dat_4d, i_time, self.raw_number_of_planes, dtype=self.initial_dtype)
         return raw_volume
+
+    @lru_cache(maxsize=4)
+    def open_raw_data(self, red_not_green=True, actually_open=True) -> Optional[MicroscopeDataReader]:
+        """
+        Open the raw data file, which used to be a .btf file but is now an ndtiff folder
+
+        Note: this returns a MicroscopeDataReader object, and the user should call .dask_array to get the data
+            BUT: this is 6d, not 4d
+
+        Parameters
+        ----------
+        red_not_green - if True, opens the red file, else the green file
+
+        Returns
+        -------
+
+        """
+        # First check btf style
+        fname, is_btf = self.get_raw_data_fname(red_not_green)
+        if fname is None:
+            raise FileNotFoundError("Could not find raw data file")
+
+        # Open using the new DataReader
+        if is_btf:
+            z_slices = self.num_slices
+            if z_slices is None:
+                raise TiffFormatError("Could not find number of z slices in config file; "
+                                      "Required if using .btf files")
+            if actually_open:
+                dat = MicroscopeDataReader(fname, as_raw_tiff=True, raw_tiff_num_slices=z_slices,
+                                           verbose=0)
+            else:
+                dat = None
+        else:
+            # Has metadata already
+            if actually_open:
+                dat = MicroscopeDataReader(fname, as_raw_tiff=False, verbose=0)
+            else:
+                dat = None
+
+        return dat
 
     def __repr__(self):
         return f"Preprocessing settings object with settings: \n\
@@ -602,7 +637,7 @@ def preprocess_all_frames_using_config(config: ModularProjectConfig,
 
     """
     if preprocessing_settings is None:
-        p = PreprocessingSettings.load_from_config(config)
+        p = config.get_preprocessing_class()
     else:
         p = preprocessing_settings
 

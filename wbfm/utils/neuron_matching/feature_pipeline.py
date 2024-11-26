@@ -35,7 +35,7 @@ def build_tracklets_full_video(video_data, video_fname: str, start_volume: int =
     """
 
     # Build frames, then match them
-    preprocessing_settings = PreprocessingSettings.load_from_config(project_config)
+    preprocessing_settings = project_config.get_preprocessing_class()
     end_volume = start_volume + num_frames
     frame_range = list(range(start_volume, end_volume))
     all_frame_dict = calculate_frame_objects_full_video(video_data, external_detections, frame_range,

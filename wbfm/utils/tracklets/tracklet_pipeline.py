@@ -175,7 +175,7 @@ def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
     frame_pair_options = FramePairOptions.load_from_config_file(project_config, training_config)
     frame_pair_options.apply_tanh_to_confidence = False
     # pairwise_matches_params = project_config.get_frame_pair_options(training_config)
-    tracker_params['preprocessing_settings'] = PreprocessingSettings.load_from_config(project_config)
+    tracker_params['preprocessing_settings'] = project_config.get_preprocessing_class()
 
     video_fname = project_config.resolve_relative_path_from_config('preprocessed_red')
 

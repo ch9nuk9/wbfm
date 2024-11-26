@@ -69,7 +69,7 @@ def main(_config, _run):
         generate_legacy_bbox_fname(project_dir)
 
     with safe_cd(project_dir):
-        preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
+        preprocessing_settings = cfg.get_preprocessing_class()
 
         # Very first: calculate the alignment between the red and green channels (camera misalignment)
         preprocessing_settings.calculate_warp_mat(cfg)

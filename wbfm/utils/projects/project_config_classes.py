@@ -280,6 +280,19 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         fname = Path(self.get_preprocessing_config_filename())
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
+    def get_preprocessing_class(self, do_background_subtraction=None):
+        fname = self.get_preprocessing_config_filename()
+        from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
+        preprocessing_settings = PreprocessingSettings._load_from_yaml(fname, do_background_subtraction)
+        preprocessing_settings.cfg_preprocessing = self.get_preprocessing_config()
+        if not preprocessing_settings.background_is_ready:
+            try:
+                preprocessing_settings.find_background_files_from_raw_data_path(self)
+            except FileNotFoundError:
+                self.logger.warning("Did not find background; turning off background subtraction")
+                preprocessing_settings.do_background_subtraction = False
+        return preprocessing_settings
+
     def get_preprocessing_config_filename(self):
         # In newer versions, it is in the dat folder and has an entry in the main config file
         fname = self.config['subfolder_configs'].get('preprocessing', None)
@@ -433,46 +446,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return red_btf_fname, green_btf_fname
 
-    @lru_cache(maxsize=4)
-    def open_raw_data(self, red_not_green=True, actually_open=True) -> Optional[MicroscopeDataReader]:
-        """
-        Open the raw data file, which used to be a .btf file but is now an ndtiff folder
-
-        Note: this returns a MicroscopeDataReader object, and the user should call .dask_array to get the data
-            BUT: this is 6d, not 4d
-
-        Parameters
-        ----------
-        red_not_green - if True, opens the red file, else the green file
-
-        Returns
-        -------
-
-        """
-        # First check btf style
-        fname, is_btf = self.get_raw_data_fname(red_not_green)
-        if fname is None:
-            raise FileNotFoundError("Could not find raw data file")
-
-        # Open using the new DataReader
-        if is_btf:
-            z_slices = self.num_slices
-            if z_slices is None:
-                raise TiffFormatError("Could not find number of z slices in config file; "
-                                      "Required if using .btf files")
-            if actually_open:
-                dat = MicroscopeDataReader(fname, as_raw_tiff=True, raw_tiff_num_slices=z_slices,
-                                           verbose=0)
-            else:
-                dat = None
-        else:
-            # Has metadata already
-            if actually_open:
-                dat = MicroscopeDataReader(fname, as_raw_tiff=False, verbose=0)
-            else:
-                dat = None
-
-        return dat
+    def open_raw_data(self, **kwargs) -> Optional[MicroscopeDataReader]:
+        return self.get_preprocessing_config().open_raw_data(**kwargs)
 
     def open_raw_data_as_4d_dask(self, red_not_green=True):
         dat = self.open_raw_data(red_not_green)

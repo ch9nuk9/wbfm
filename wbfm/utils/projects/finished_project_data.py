@@ -542,7 +542,7 @@ class ProjectData:
         obj = ProjectData(project_dir, cfg, **initialization_kwargs)
 
         obj.all_used_fnames = []
-        preprocessing_settings = PreprocessingSettings.load_from_config(cfg, do_background_subtraction=False)
+        preprocessing_settings = cfg.get_preprocessing_class(do_background_subtraction=False)
 
         red_dat_fname = str(cfg.resolve_relative_path_from_config('preprocessed_red'))
         green_dat_fname = str(cfg.resolve_relative_path_from_config('preprocessed_green'))

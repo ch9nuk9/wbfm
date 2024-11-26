@@ -9,7 +9,7 @@ project_dir: null # Not used after initial creation
 project_path: null # For reference afterwards
 
 ###################
-# Data
+# Raw Data
 ###################
 parent_data_folder: null
 
@@ -19,9 +19,6 @@ green_fname: null
 
 red_background_fname: null
 green_background_fname: null
-
-preprocessed_red: null
-preprocessed_green: null
 
 dataset_params:
   # As of January 2022

@@ -192,7 +192,7 @@ def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_
         if verbose >= 1:
             print("Reusing already preprocessed data")
     elif preprocessing_settings is None:
-        preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
+        preprocessing_settings = cfg.get_preprocessing_class()
         # preprocessing_fname = cfg.config['preprocessing_config']
         # preprocessing_settings = PreprocessingSettings.load_from_yaml(preprocessing_fname)
     if out_fname is None:
@@ -255,7 +255,7 @@ def subtract_background_using_config(cfg: ModularProjectConfig, do_preprocessing
     NOTE: if z-alignment (rotation) is used, then this can cause some artifacts
     """
 
-    preprocessing_settings = PreprocessingSettings.load_from_config(cfg)
+    preprocessing_settings = cfg.get_preprocessing_class()
     num_slices = preprocessing_settings.raw_number_of_planes
     num_frames = 50
     if DEBUG:
