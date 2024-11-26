@@ -448,14 +448,6 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         return red_btf_fname, green_btf_fname
 
-    def open_raw_data(self, **kwargs) -> Optional[MicroscopeDataReader]:
-        """Only for backwards compatibility; function is now in PreprocessingSettings"""
-        return self.get_preprocessing_class().open_raw_data(**kwargs)
-
-    def open_raw_data_as_4d_dask(self, **kwargs) -> Optional[da.Array]:
-        """Only for backwards compatibility; function is now in PreprocessingSettings"""
-        return self.get_preprocessing_class().open_raw_data_as_4d_dask(**kwargs)
-
     def get_raw_data_fname(self, red_not_green) -> Tuple[Optional[str], bool]:
         is_btf = True
         if red_not_green:

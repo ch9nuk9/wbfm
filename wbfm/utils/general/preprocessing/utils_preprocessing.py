@@ -307,7 +307,7 @@ class PreprocessingSettings:
             f"Invalid method found {self.camera_alignment_method}, must be one of {valid_methods}"
 
         if self.camera_alignment_method == 'data':
-            self.calculate_warp_mat_from_btf_files(project_config)
+            self.calculate_warp_mat_from_btf_files()
         elif self.camera_alignment_method == 'dots':
             self.calculate_warp_mat_from_dot_overlay(project_config)
         if self.camera_alignment_method == 'grid':
@@ -388,10 +388,10 @@ class PreprocessingSettings:
         # Save in this object
         self._camera_alignment_matrix = warp_mat
 
-    def calculate_warp_mat_from_btf_files(self, project_config: ModularProjectConfig):
+    def calculate_warp_mat_from_btf_files(self):
         # Directly read and subsample
-        red_dat = project_config.open_raw_data_as_4d_dask(red_not_green=True)
-        green_dat = project_config.open_raw_data_as_4d_dask(red_not_green=False)
+        red_dat = self.open_raw_data_as_4d_dask(red_not_green=True)
+        green_dat = self.open_raw_data_as_4d_dask(red_not_green=False)
         num_frames = red_dat.shape[0]
 
         tspan = np.arange(10, num_frames, 50, dtype=int)
@@ -704,7 +704,7 @@ def preprocess_all_frames_using_config(config: ModularProjectConfig,
     else:
         p = preprocessing_settings
 
-    video_dat_4d = config.open_raw_data_as_4d_dask(red_not_green=(which_channel == 'red'))
+    video_dat_4d = p.open_raw_data_as_4d_dask(red_not_green=(which_channel == 'red'))
     return preprocess_all_frames(video_dat_4d, p, which_channel, out_fname, DEBUG=DEBUG)
 
 
