@@ -129,9 +129,13 @@ def get_triggered_average_modeling_dir():
     return "/lisc/scratch/neurobiology/zimmer/fieseler/paper/triggered_average_dataframes"
 
 
+def all_paper_datatype_codes():
+    return ['gfp', 'immob', '', 'immob_mutant_o2', 'immob_o2', 'immob_o2_hiscl', 'mutant']
+
+
 def load_all_data_as_dataframe():
     # Load each type of data, and then concatenate
-    all_suffixes = ['gfp', 'immob', '', 'immob_mutant_o2', 'immob_o2', 'immob_o2_hiscl', 'mutant']
+    all_suffixes = all_paper_datatype_codes()
     all_data = []
     for suffix in all_suffixes:
         folder_name = get_hierarchical_modeling_dir(suffix=suffix)
@@ -253,6 +257,11 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
     return good_projects_filtered
 
 
+def load_all_paper_datasets():
+    """Note that this doesn't separate by category, just the folder names"""
+    return load_paper_datasets(all_paper_datatype_codes())
+
+
 def _resolve_project_from_worm_id(folder_and_id_dict):
     list_of_all_projects = []
     parent_folder = Path(get_project_parent_folder())
@@ -264,9 +273,6 @@ def _resolve_project_from_worm_id(folder_and_id_dict):
                 if worm_id_str in this_project_folder.name:
                     list_of_all_projects.append(this_project_folder.resolve())
     return list_of_all_projects
-
-# def get_path_to_double_exponential_model():
-#     """Model fit to the forward duration distribution. See fit_multi_exponential_model"""
 
 
 def forward_distribution_statistics():
