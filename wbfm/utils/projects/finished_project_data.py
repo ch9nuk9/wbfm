@@ -1514,7 +1514,8 @@ class ProjectData:
         from wbfm.utils.visualization.napari_from_project_data_class import NapariLayerInitializer
         v = NapariLayerInitializer.add_layers_to_viewer(self, viewer, which_layers,
                                                         to_remove_flyback, check_if_layers_exist,
-                                                        dask_for_segmentation, **kwargs)
+                                                        dask_for_segmentation, error_if_missing_layers=False,
+                                                        **kwargs)
         return v
 
     def get_desynced_seg_and_frame_object_frames(self, verbose=1) -> List[int]:
