@@ -1711,7 +1711,10 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
         _opt['row'] += 1  # Start at the right row
 
     # Right side: trajectory
-    trajectory_plot_list = _make_trajectory_plot(project_data)
+    try:
+        trajectory_plot_list = _make_trajectory_plot(project_data)
+    except NoBehaviorAnnotationsError:
+        trajectory_plot_list = []
 
     # One column with a heatmap, (short) ethogram, and kymograph
     rows = len(row_heights)
@@ -1733,7 +1736,8 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
         fig.add_shape(**opt, row=2, col=1)
 
     ## 3. Kymograph
-    fig.add_trace(kymograph, **kymograph_opt)
+    if kymograph is not None:
+        fig.add_trace(kymograph, **kymograph_opt)
 
     ## 4-10. Behavior traces
     # I am adding multiple traces to a single plot, which the original function wasn't designed for
@@ -1743,6 +1747,8 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
                                 'Body curv.', 'Speed'
                                 ]
     for y_axis_title, trace_names in behavior_alias_dict.items():
+        if len(trace_list) == 0:
+            break
         if not isinstance(trace_names, list):
             trace_names = [trace_names]
         # Loop over each trace
@@ -1904,6 +1910,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     df_pca_modes.columns = col_names
     df_pca_modes.set_index(x, inplace=True)
 
+    has_behavior = True
     try:
         if not behavior_kwargs['fluorescence_fps']:
             _opt = dict(strong_smoothing_before_derivative=True)
@@ -1913,6 +1920,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                                                            signed=True)
     except NoBehaviorAnnotationsError:
         speed = pd.Series(np.zeros(df_pca_modes.shape[0]))
+        has_behavior = False
     # TODO: move the reindexing to the worm posture class itself
     speed = pd.DataFrame(speed)
     try:
@@ -1969,37 +1977,39 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
             trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
 
     else:
-        for i, (name_key, name_list) in enumerate(behavior_alias_dict.items()):
-            # They may be a list of behaviors
-            if not isinstance(name_list, list):
-                name_list = [name_list]
-            legendgroup = name_key if 'Eigen' not in name_key else 'Eigenworms'
-            for single_name in name_list:
-                y = project_data.worm_posture_class.calc_behavior_from_alias(single_name, **behavior_kwargs)
-                # Do not control the line colors here, because we want different ones on one plot
-                # Actually: convert to main behavior-related colors
-                # But first, need to convert to the relevant behavior code (this is a longer string)
-                if 'ventral' in single_name:
-                    code = BehaviorCodes.VENTRAL_TURN
-                    # y *= 1000 # Move to mm instead of um
-                elif 'dorsal' in single_name:
-                    code = BehaviorCodes.DORSAL_TURN
-                    # y *= 1000 # Move to mm instead of um
-                else:
-                    code = BehaviorCodes.UNKNOWN
+        try:
+            for i, (name_key, name_list) in enumerate(behavior_alias_dict.items()):
+                # They may be a list of behaviors
+                if not isinstance(name_list, list):
+                    name_list = [name_list]
+                legendgroup = name_key if 'Eigen' not in name_key else 'Eigenworms'
+                for single_name in name_list:
+                    y = project_data.worm_posture_class.calc_behavior_from_alias(single_name, **behavior_kwargs)
+                    # Do not control the line colors here, because we want different ones on one plot
+                    # Actually: convert to main behavior-related colors
+                    # But first, need to convert to the relevant behavior code (this is a longer string)
+                    if 'ventral' in single_name:
+                        code = BehaviorCodes.VENTRAL_TURN
+                        # y *= 1000 # Move to mm instead of um
+                    elif 'dorsal' in single_name:
+                        code = BehaviorCodes.DORSAL_TURN
+                        # y *= 1000 # Move to mm instead of um
+                    else:
+                        code = BehaviorCodes.UNKNOWN
 
-                legend_name = behavior_name_mapping().get(single_name, single_name)
-                trace_list.append(go.Scatter(y=y, x=y.index,
-                                             name=legend_name, showlegend=showlegend,
-                                             legendgroup=legendgroup, legendgrouptitle=dict(text=legendgroup),
-                                             marker=dict(color=beh_colormap[code]),
-                                             line=dict(width=1)))
+                    legend_name = behavior_name_mapping().get(single_name, single_name)
+                    trace_list.append(go.Scatter(y=y, x=y.index,
+                                                 name=legend_name, showlegend=showlegend,
+                                                 legendgroup=legendgroup, legendgrouptitle=dict(text=legendgroup),
+                                                 marker=dict(color=beh_colormap[code]),
+                                                 line=dict(width=1)))
 
-                # Same options, but additional entries to match length of trace_list
-                trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
-                if DEBUG:
-                    print(f'Adding trace for {single_name} with color {beh_colormap[code]}')
-
+                    # Same options, but additional entries to match length of trace_list
+                    trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
+                    if DEBUG:
+                        print(f'Adding trace for {single_name} with color {beh_colormap[code]}')
+        except NoBehaviorAnnotationsError:
+            pass
     #### Shading on top of the PCA modes
     try:
         beh_vec = project_data.worm_posture_class.beh_annotation(**behavior_kwargs, include_pause=True)
@@ -2015,9 +2025,10 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         trace_shading_opt = options_for_ethogram(beh_vec, shading=True)
     except NoBehaviorAnnotationsError:
         trace_shading_opt = dict()
-    ### Speed plot (below pca modes)
-    trace_list.append(go.Scatter(y=speed.iloc[:, 0], x=speed.index, showlegend=False))
-    trace_opt_list.append(dict(row=num_pca_modes_to_plot + 3, col=1, secondary_y=False))
+    if has_behavior:
+        ### Speed plot (below pca modes)
+        trace_list.append(go.Scatter(y=speed.iloc[:, 0], x=speed.index, showlegend=False))
+        trace_opt_list.append(dict(row=num_pca_modes_to_plot + 3, col=1, secondary_y=False))
     ### PCA weights (same names as pca modes)
     mode_colormap = px.colors.qualitative.Plotly
     weights_list = []
