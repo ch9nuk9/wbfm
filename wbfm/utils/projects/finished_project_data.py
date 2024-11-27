@@ -543,7 +543,7 @@ class ProjectData:
         preprocessing_settings = cfg.get_preprocessing_class(do_background_subtraction=False)
 
         red_dat_fname = preprocessing_settings.get_path_to_preprocessed_data(red_not_green=True)
-        green_dat_fname = preprocessing_settings.get_path_to_preprocessed_data(red_not_green=True)
+        green_dat_fname = preprocessing_settings.get_path_to_preprocessed_data(red_not_green=False)
         red_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['red'])
         green_traces_fname = traces_cfg.resolve_relative_path(traces_cfg.config['traces']['green'])
 
