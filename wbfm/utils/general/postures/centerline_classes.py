@@ -212,7 +212,7 @@ class WormFullVideoPosture:
         # Pad the dataframe with nan if it isn't long enough
         if n > 0:
             new_index_range = df.index.union(
-                range(int(df.index.max()) + step_size, int(df.index.max()) + step_size * (n + 1), step_size))
+                np.arange(int(df.index.max()) + step_size, int(df.index.max()) + step_size * (n + 1), step_size))
             df = df.reindex(new_index_range)
 
         return df
