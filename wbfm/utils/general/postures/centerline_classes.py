@@ -186,9 +186,9 @@ class WormFullVideoPosture:
             self.use_physical_time = use_physical_time  # Save the value
         if use_physical_time:
             if fluorescence_fps:
-                df.index = self._x_physical_time_volumes[:len(df)]
+                df.index = self.x_physical_time_volumes[:len(df)]
             else:
-                df.index = self._x_physical_time_frames[:len(df)]
+                df.index = self.x_physical_time_frames[:len(df)]
         return df
 
     @property
@@ -218,14 +218,14 @@ class WormFullVideoPosture:
         return df
 
     @property
-    def _x_physical_time_frames(self):
+    def x_physical_time_frames(self):
         """Helper for reindexing plots from frames to seconds"""
         x = np.arange(self.num_high_res_frames + 1)
         x = x / self.physical_unit_conversion.frames_per_second
         return x
 
     @property
-    def _x_physical_time_volumes(self):
+    def x_physical_time_volumes(self):
         """Helper for reindexing plots from frames to seconds"""
         x = np.arange(self.num_volumes)
         x = x / self.physical_unit_conversion.volumes_per_second
@@ -585,7 +585,8 @@ class WormFullVideoPosture:
         return df
 
     @lru_cache(maxsize=8)
-    def centerline_absolute_coordinates(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
+    def centerline_absolute_coordinates(self, fluorescence_fps=False, nan_high_dimensional=False,
+                                        **kwargs) -> pd.DataFrame:
         """Returns a multi-index dataframe, where each body segment looks like the stage_position dataframe"""
         if self.centerlineX() is None:
             raise NoBehaviorAnnotationsError("(centerline)")
@@ -601,6 +602,16 @@ class WormFullVideoPosture:
         y_abs = self.stage_position(fluorescence_fps, **kwargs).values[:, 1] + x.T
 
         df = pd.concat([x_abs, y_abs], keys=['X', 'Y']).swaplevel().T
+
+        if nan_high_dimensional:
+            curvature = self.curvature(fluorescence_fps, **kwargs)
+            pca = PCA(n_components=10, whiten=True)
+            df_subset = curvature.iloc[:, 10:-10]
+            df_subset_proj = pca.inverse_transform(pca.fit_transform(df_subset))
+            threshold = 0.2
+            to_nan = np.linalg.norm(df_subset - df_subset_proj, axis=1) > threshold
+            df[to_nan] = np.nan
+
         return df
 
     # @lru_cache(maxsize=8)

@@ -1710,7 +1710,7 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
 
     # Right side: trajectory
     try:
-        trajectory_plot_list = _make_trajectory_plot(project_data)
+        trajectory_plot_list = _make_trajectory_plot(project_data, )
     except NoBehaviorAnnotationsError:
         trajectory_plot_list = []
 
@@ -1889,7 +1889,9 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     if trace_opt is not None:
         default_trace_opt.update(trace_opt)
     df_traces = project_data.calc_default_traces(**default_trace_opt)
-    x = project_data.x_for_plots
+    x_for_plots_volumes = project_data.x_for_plots
+    # x_for_plots_behavior = project_data.worm_posture_class.x_physical_time_frames
+
     df_traces_no_nan = fill_nan_in_dataframe(df_traces.copy(), do_filtering=True)
     # Calculate pca modes, and use them to sort
     pca_weights = PCA(n_components=10)
@@ -1906,7 +1908,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     df_pca_modes = pd.DataFrame(pca_modes.components_[0:num_pca_modes_to_plot, :].T)
     col_names = [f'mode {i}' for i in range(num_pca_modes_to_plot)]
     df_pca_modes.columns = col_names
-    df_pca_modes.set_index(x, inplace=True)
+    df_pca_modes.set_index(x_for_plots_volumes, inplace=True)
 
     has_behavior = True
     try:
@@ -1922,7 +1924,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     # TODO: move the reindexing to the worm posture class itself
     speed = pd.DataFrame(speed)
     try:
-        speed.set_index(x, inplace=True)
+        speed.set_index(x_for_plots_volumes, inplace=True)
     except ValueError:
         # Then we are working in behavioral space, and the x axis should be set properly in the worm_posture class
         pass
@@ -1941,7 +1943,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
     column_widths = [0.7, 0.1, 0.1, 0.1]
 
     ### Main heatmap
-    heatmap = go.Heatmap(y=dat.index, z=dat, x=x,
+    heatmap = go.Heatmap(y=dat.index, z=dat, x=x_for_plots_volumes,
                          zmin=-0.25, zmax=1.25, colorscale='jet', xaxis="x", yaxis="y",
                          coloraxis='coloraxis1')
     heatmap_opt = dict(row=1, col=1)
@@ -2016,7 +2018,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         if len(beh_vec) == df_pca_modes.shape[0] - 1:
             beh_vec = pd.concat([beh_vec, pd.Series([BehaviorCodes.UNKNOWN])])
         try:
-            beh_vec.set_index(x, inplace=True)
+            beh_vec.set_index(x_for_plots_volumes, inplace=True)
         except ValueError:
             # Then we are working in behavioral space, and we don't need this
             pass
@@ -2060,7 +2062,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         if len(beh_vec) == df_pca_modes.shape[0] - 1:
             beh_vec = pd.concat([beh_vec, pd.Series([BehaviorCodes.UNKNOWN])])
         try:
-            beh_vec.set_index(x, inplace=True)
+            beh_vec.set_index(x_for_plots_volumes, inplace=True)
         except ValueError:
             # Then we are working in behavioral space, and we don't need this
             pass
@@ -2199,7 +2201,7 @@ def plot_raw_global_residual(neuron_name):
     pass
 
 
-def _make_trajectory_plot(project_data):
+def _make_trajectory_plot(project_data, **kwargs):
     """
     Make a trajectory plot for the worm
 
@@ -2214,13 +2216,14 @@ def _make_trajectory_plot(project_data):
     -------
 
     """
+    behavior_kwargs = dict(fluorescence_fps=False)
     # xy = project_data.worm_posture_class.stage_position(fluorescence_fps=True).copy()
-    xy = project_data.worm_posture_class.calc_behavior_from_alias('worm_center_position').copy()
+    xy = project_data.worm_posture_class.calc_behavior_from_alias('worm_center_position', **behavior_kwargs).copy()
     xy = xy - xy.iloc[0, :]
 
-    beh = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, simplify_states=True,
+    beh = project_data.worm_posture_class.beh_annotation(simplify_states=True,
                                                          include_head_cast=False, include_collision=False,
-                                                         include_pause=False)
+                                                         include_pause=False, **behavior_kwargs)
 
     df_xy = xy
     df_xy['Behavior'] = beh.values
