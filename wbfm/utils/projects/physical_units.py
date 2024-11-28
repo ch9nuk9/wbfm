@@ -44,6 +44,11 @@ class PhysicalUnitConversion:
     def z_to_xy_ratio(self):
         return self.zimmer_um_per_pixel_z / self.zimmer_fluroscence_um_per_pixel_xy
 
+    @property
+    def grid_spacing(self):
+        return np.array([self.zimmer_fluroscence_um_per_pixel_xy, self.zimmer_fluroscence_um_per_pixel_xy,
+                         self.zimmer_um_per_pixel_z])
+
     def zimmer2physical_fluorescence(self, vol0_zxy: np.ndarray) -> np.ndarray:
         """
         Assumes that z is the 0th dimension, and x/y are 1, 2

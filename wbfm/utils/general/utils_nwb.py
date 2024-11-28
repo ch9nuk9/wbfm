@@ -14,7 +14,8 @@ import pandas as pd
 from datetime import datetime
 from hdmf.backends.hdf5.h5_utils import H5DataIO
 # ndx_mulitchannel_volume is the novel NWB extension for multichannel optophysiology in C. elegans
-from ndx_multichannel_volume import CElegansSubject, OpticalChannelReferences, OpticalChannelPlus, ImagingVolume, MultiChannelVolume
+from ndx_multichannel_volume import CElegansSubject, OpticalChannelReferences, OpticalChannelPlus, ImagingVolume, \
+    MultiChannelVolume, MultiChannelVolumeSeries
 from tifffile import tifffile
 from tqdm.auto import tqdm
 
@@ -45,12 +46,19 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     # Convert the datetime to a string that can be used as a subject_id
     subject_id = session_start_time.strftime("%Y%m%d-%H-%M-%S")
 
-    # Unpack traces
+    # Unpack traces and locations
+    df_traces = project_data.calc_default_traces(min_nonnan=0)
     gce_quant = project_data.red_traces.swaplevel(i=0, j=1, axis=1).copy()
-    # Unpack video
-    red_video = project_data.red_data
+    gce_quant.loc[:, ('intensity_image', slice(None))] = df_traces.values
+    # Unpack videos
+    video_dict = {'red': project_data.red_data, 'green': project_data.green_data}
+    # Unpack metadata
+    raw_data_cfg = project_data.project_config.get_raw_data_config()
+    strain = raw_data_cfg.config.get('strain', 'unknown')
+    physical_units_class = project_data.physical_unit_conversion
 
-    nwb_file = nwb_with_traces_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder)
+    nwb_file = nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, subject_id, strain,
+                                               physical_units_class, output_folder)
     return nwb_file
 
 
@@ -114,20 +122,22 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
     gce_quant = pd.DataFrame(gce_dict)
 
     # Unpack video
-    red_video = None
+    video_dict = {'red': None}
 
-    nwb_file = nwb_with_traces_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder)
+    nwb_file = nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, subject_id, strain,
+                                               physical_units_class=None, output_folder=output_folder)
     return nwb_file
 
 
-def nwb_with_traces_from_components(red_video, gce_quant, session_start_time, subject_id, strain, output_folder):
+def nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, subject_id, strain,
+                                    physical_units_class, output_folder):
     # Initialize and populate the NWB file
     nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
 
     device = _zimmer_microscope_device(nwbfile)
 
     calcium_image_series, imaging_plane, CalcOptChanRefs = initialize_imaging_channels(
-        red_video, nwbfile, device
+        video_dict, nwbfile, device, physical_units_class=physical_units_class
     )
     ImSeg, fluor = convert_traces_to_nwb_format(
         gce_quant, imaging_plane, calcium_image_series
@@ -185,25 +195,47 @@ def initialize_nwb_file(session_start_time, strain, subject_id):
     return nwbfile
 
 
-def initialize_imaging_channels(video_data, nwbfile, device):
-    # if red_video is None:
-    #     return None, None, None
-    # TODO: properly switch between red and green
-    # FREE
-    # grid_spacing = [0.325, 0.325, 1.5]
-    # rate = 3.5  # Volumes per second
-    # IMMOBILIZED
-    grid_spacing = [0.4, 0.4, 0.2]
-    rate = 2.0  # Volumes per second # TODO: get correct rate
-    # GREEN
-    emission_lambda = 525.
-    emission_delta = 50.
-    excitation_lambda = 488.
-    # RED
-    # emission_lambda = 617.
-    # emission_delta = 73.
-    # excitation_lambda = 561.
-    video_shape = video_data.shape if video_data is not None else None
+def laser_properties(channel_str='red'):
+    if channel_str == 'red':
+        # RED
+        emission_lambda = 617.
+        emission_delta = 73.
+        excitation_lambda = 561.
+        laser_tuple = ("mScarlet", )
+    elif channel_str == 'green':
+        # GREEN
+        emission_lambda = 525.
+        emission_delta = 50.
+        excitation_lambda = 488.
+        laser_tuple = ("GFP-GCaMP", )
+    else:
+        raise ValueError(f"Unknown channel string: {channel_str}")
+    laser_description = f'GFP/GCaMP channel, f{excitation_lambda} excitation, {emission_lambda}/{emission_delta}m emission'
+    laser_tuple = laser_tuple + (f"Chroma ET {emission_lambda}/{emission_delta}", f"{excitation_lambda}-{emission_lambda}-{emission_delta}m")
+    return emission_lambda, emission_delta, excitation_lambda, laser_description, laser_tuple
+
+
+def initialize_imaging_channels(video_dict: dict, nwbfile, device, physical_units_class=None):
+    if physical_units_class is None:
+        # STUB FOR IMMOBILIZED (which has very messy metadata
+        logging.warning("No physical units class provided, using default values")
+        grid_spacing = [0.4, 0.4, 0.2]
+        rate = 2.0  # Volumes per second
+    else:
+        grid_spacing = physical_units_class.grid_spacing
+        rate = physical_units_class.volumes_per_second
+
+    # Convert a dictionary of video data into a single multi-channel numpy array
+    # With proper metadata
+    video_list = []
+    CalcChannels = []
+    for key, video in video_dict.items():
+        laser_tuple = laser_properties(key)[-1]
+        CalcChannels.append(laser_tuple)
+        video_list.append(video)
+    video_data = np.stack(video_list, axis=-1)
+    # Reshape to be TXYZC from TZXYC
+    video_data = np.transpose(video_data, [0, 2, 3, 1, 4])
 
     # The DataChunkIterator wraps the data generator function and will stitch together the chunks as it iteratively reads over the full file
     if video_data is not None:
@@ -213,27 +245,47 @@ def initialize_imaging_channels(video_data, nwbfile, device):
             maxshape=None,
             buffer_size=10,
         )
+        wrapped_data = H5DataIO(data=data, compression="gzip", compression_opts=4)
     else:
-        data = H5DataIO(np.zeros((1, 1, 1, 1), dtype=np.uint8), compression='gzip')
+        wrapped_data = H5DataIO(np.zeros((1, 1, 1, 1), dtype=np.uint8), compression='gzip')
 
-    CalcOptChan = OpticalChannelPlus(
-        name='GFP-GCaMP',
-        description=f'GFP/GCaMP channel, f{excitation_lambda} excitation, {emission_lambda}/{emission_delta}m emission',
-        excitation_lambda=excitation_lambda,
-        excitation_range=[excitation_lambda - 1.5, excitation_lambda + 1.5],
-        emission_range=[emission_lambda - emission_delta/2, emission_lambda + emission_delta/2],
-        emission_lambda=emission_lambda
-    )
+    # The loop below takes the list of channels and converts it into a list of OpticalChannelPlus objects which hold the metadata
+    # for the optical channels used in the experiment
+    CalcOptChannels = []
+    CalcOptChanRefData = []
+    for fluor, des, wave in CalcChannels:
+        excite = float(wave.split('-')[0])
+        emiss_mid = float(wave.split('-')[1])
+        emiss_range = float(wave.split('-')[2][:-1])
+        OptChan = OpticalChannelPlus(
+            name=fluor,
+            description=des,
+            excitation_lambda=excite,
+            excitation_range=[excite - 1.5, excite + 1.5],
+            emission_range=[emiss_mid - emiss_range / 2, emiss_mid + emiss_range / 2],
+            emission_lambda=emiss_mid
+        )
+        CalcOptChannels.append(OptChan)
+        CalcOptChanRefData.append(wave)
+
+    # CalcOptChan = OpticalChannelPlus(
+    #     name='GFP-GCaMP',
+    #     description=laser_description,
+    #     excitation_lambda=excitation_lambda,
+    #     excitation_range=[excitation_lambda - 1.5, excitation_lambda + 1.5],
+    #     emission_range=[emission_lambda - emission_delta/2, emission_lambda + emission_delta/2],
+    #     emission_lambda=emission_lambda
+    # )
     # This object just contains references to the order of channels because OptChannels does not preserve ordering
     CalcOptChanRefs = OpticalChannelReferences(
         name='OpticalChannelRefs',
-        channels=[CalcOptChan]
+        channels=CalcOptChanRefData
     )
 
     CalcImagingVolume = ImagingVolume(
         name='CalciumImVol',
         description='Imaging plane used to acquire calcium imaging data',
-        optical_channel_plus=[CalcOptChan],
+        optical_channel_plus=CalcOptChannels,
         order_optical_channels=CalcOptChanRefs,
         device=device,
         location='Worm head',
@@ -241,37 +293,42 @@ def initialize_imaging_channels(video_data, nwbfile, device):
         grid_spacing_unit='um',
         reference_frame='Worm head'
     )
+    # nwbfile.add_imaging_plane(CalcImagingVolume)
+
+    # optical_channel = OpticalChannel(
+    #     name='GFP-GCaMP',
+    #     description=laser_description,
+    #     emission_lambda=emission_lambda
+    # )
+
+    # imaging_plane = nwbfile.create_imaging_plane(
+    #     name='CalciumImPlane',
+    #     description='Imaging plane used to acquire calcium imaging data',
+    #     optical_channel=optical_channel,
+    #     device=device,
+    #     excitation_lambda=excitation_lambda,
+    #     indicator='GFP-GCaMP',
+    #     location='Worm head',
+    #     grid_spacing=grid_spacing,
+    #     grid_spacing_unit='um',
+    #     reference_frame='Worm head'
+    # )
+
+    calcium_image_series = MultiChannelVolumeSeries(
+        name="CalciumImageSeries",
+        description="Raw GCaMP series images",
+        comments="GFP-GCaMP channel is the GCaMP signal, mScarlet is the reference signal",
+        data=wrapped_data,
+        device=device,
+        unit="Voxel gray counts",
+        scan_line_rate=None,  # TODO: what is this?
+        resolution=1., #smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
+        rate=rate,
+        imaging_volume=CalcImagingVolume,
+    )
+
     nwbfile.add_imaging_plane(CalcImagingVolume)
 
-    optical_channel = OpticalChannel(
-        name='GFP-GCaMP',
-        description='GFP/GCaMP channel, 488 excitation, 525/50m emission',
-        emission_lambda=emission_lambda
-    )
-
-    imaging_plane = nwbfile.create_imaging_plane(
-        name='CalciumImPlane',
-        description='Imaging plane used to acquire calcium imaging data',
-        optical_channel=optical_channel,
-        device=device,
-        excitation_lambda=excitation_lambda,
-        indicator='GFP-GCaMP',
-        location='Worm head',
-        grid_spacing=grid_spacing,
-        grid_spacing_unit='um',
-        reference_frame='Worm head'
-    )
-
-    # Use OnePhotonSeries object to store calcium imaging series data
-    calcium_image_series = OnePhotonSeries(
-        name="CalciumImageSeries",
-        data=data,
-        unit="n/a",
-        scan_line_rate=0.5,
-        dimension=video_shape,
-        rate=rate,
-        imaging_plane=imaging_plane,
-    )
     return calcium_image_series, imaging_plane, CalcOptChanRefs
 
 
@@ -326,11 +383,7 @@ def convert_traces_to_nwb_format(gce_quant, imaging_plane,  calcium_image_series
         else:
             blobquant = np.vstack((blobquant, blobarr))
 
-    # print(
-    #     blobquant.shape)  # Now dimensions are blob_ix, time, and data columns (X, Y, Z, gce_quant, ID). We are now ready to add this data to NWB objects.
-
     planesegs = []
-
     for t in tqdm(range(blobquant.shape[1])):
         planeseg = PlaneSegmentation(
             name='Seg_tpoint_' + str(t),
@@ -470,6 +523,7 @@ def finalize_nwb_processing_modules(NeuroPALImSeg, nwbfile):
         # ophys.add(ProcFluor)
 
     return nwbfile
+
 
 def _zimmer_microscope_device(nwbfile):
     device = nwbfile.create_device(
