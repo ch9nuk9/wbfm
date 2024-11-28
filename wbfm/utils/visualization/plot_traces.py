@@ -1635,8 +1635,6 @@ def make_summary_interactive_heatmap_with_kymograph(project_cfg, to_save=True, t
     return fig
 
 
-
-
 def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False, keep_reversal_turns=False,
                                                      crop_x_axis=True, row_heights=None, x_range=None,
                                                      apply_figure_size_settings=True,
@@ -1855,7 +1853,7 @@ def make_full_summary_interactive_plot(project_cfg, to_save=True, to_show=False,
                             xanchor='left',
                             x=-0.13,
                             title=dict(text=r'Neuronal<br>Activity<br>dR/R50', font=dict(size=14))
-                        )),
+                        ), cmin=-0.5, cmax=1.5),
     )
     fig.update_layout(
         showlegend=True,
