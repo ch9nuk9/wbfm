@@ -655,19 +655,29 @@ class ProjectData:
         See https://github.com/focolab/NWBelegans for more information
         """
 
-        from pynwb import NWBHDF5IO
-        nwb_io = NWBHDF5IO(nwb_path, mode='r', load_namespaces=True)
-        nwb_obj = nwb_io.read()
-        # Do not have a project_config class
-        obj = ProjectData(nwb_path, None, **kwargs)
-        # Initialize the relevant fields
-        from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
-        obj.preprocessing_settings = PreprocessingSettings()
-        obj.red_data = nwb_obj.acquisition['CalciumImageSeries'].data[..., 0]
-        obj.green_data = nwb_obj.acquisition['CalciumImageSeries'].data[..., 1]
-        # TODO: Traces
-        # TODO: Segmentation
-        obj.physical_unit_conversion = PhysicalUnitConversion()
+        from pynwb import NWBHDF5IO, NWBFile
+        with NWBHDF5IO(nwb_path, mode='r', load_namespaces=True) as nwb_io:
+            # TODO: do I need to keep this file open?
+            if isinstance(nwb_io, NWBFile):
+                print('NWB file loaded successfully')
+                nwb_obj = nwb_io
+            else:
+                nwb_obj = nwb_io.read()
+            # Do not have a project_config class
+            obj = ProjectData(nwb_path, None, **kwargs)
+            # Initialize the relevant fields
+            from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
+            obj.preprocessing_settings = PreprocessingSettings()
+            obj.red_data = nwb_obj.acquisition['CalciumImageSeries'].data[..., 0]
+            obj.green_data = nwb_obj.acquisition['CalciumImageSeries'].data[..., 1]
+            # TODO: Traces in correct format
+            green = nwb_obj.processing['CalciumActivity']['SignalFluorescence']['SignalCalciumImResponseSeries'].data
+            red = nwb_obj.processing['CalciumActivity']['ReferenceFluorescence']['ReferenceCalciumImResponseSeries'].data
+            obj.red_traces = red
+            obj.green_traces = green
+            # TODO: tracks
+            # TODO: Segmentation
+            obj.physical_unit_conversion = PhysicalUnitConversion()
 
         pass
 

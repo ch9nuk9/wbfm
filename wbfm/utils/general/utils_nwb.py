@@ -8,7 +8,7 @@ import numpy as np
 import scipy
 from matplotlib import pyplot as plt
 from pynwb import NWBFile, NWBHDF5IO
-from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, DfOverF
+from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, DfOverF, Fluorescence
 from hdmf.data_utils import DataChunkIterator
 from dateutil import tz
 import pandas as pd
@@ -49,9 +49,11 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
 
     # Unpack traces and locations
     print("Calculating traces...")
-    df_traces = project_data.calc_default_traces(min_nonnan=0)
-    gce_quant = project_data.red_traces.swaplevel(i=0, j=1, axis=1).copy()
-    gce_quant.loc[:, ('intensity_image', slice(None))] = df_traces.values
+    gce_quant_red = project_data.red_traces.swaplevel(i=0, j=1, axis=1).copy()
+    gce_quant_green = project_data.green_traces.swaplevel(i=0, j=1, axis=1).copy()
+    gce_quant_dict = {'red': gce_quant_red, 'green': gce_quant_green}
+    # df_traces = project_data.calc_default_traces(min_nonnan=0)
+    # gce_quant.loc[:, ('intensity_image', slice(None))] = df_traces.values
     # Unpack videos
     video_dict = {'red': project_data.red_data, 'green': project_data.green_data}
     # Unpack metadata
@@ -60,7 +62,7 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     strain = raw_data_cfg.config.get('strain', 'unknown')
     physical_units_class = project_data.physical_unit_conversion
 
-    nwb_file, fname = nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, subject_id, strain,
+    nwb_file, fname = nwb_with_traces_from_components(video_dict, gce_quant_dict, session_start_time, subject_id, strain,
                                                       physical_units_class, output_folder)
     return nwb_file, fname
 
@@ -132,7 +134,7 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
     return nwb_file
 
 
-def nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, subject_id, strain,
+def nwb_with_traces_from_components(video_dict, gce_quant_dict, session_start_time, subject_id, strain,
                                     physical_units_class, output_folder):
     # Initialize and populate the NWB file
     nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
@@ -142,8 +144,8 @@ def nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, s
     calcium_image_series, CalcOptChanRefs, CalcImagingVolume = initialize_imaging_channels(
         video_dict, nwbfile, device, physical_units_class=physical_units_class
     )
-    ImSeg, SignalFluor = convert_traces_and_segmentation_to_nwb_format(
-        gce_quant, CalcImagingVolume, physical_units_class
+    ImSeg, SignalFluor, RefFluor = convert_traces_and_segmentation_to_nwb_format(
+        gce_quant_dict, CalcImagingVolume, physical_units_class
     )
 
     # Add data under the processed module
@@ -154,6 +156,7 @@ def nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, s
     # Finish
     ophys.add(ImSeg)
     ophys.add(SignalFluor)
+    ophys.add(RefFluor)
     ophys.add(CalcOptChanRefs)
 
     nwbfile.add_acquisition(calcium_image_series)
@@ -210,17 +213,18 @@ def laser_properties(channel_str='red'):
         emission_lambda = 617.
         emission_delta = 73.
         excitation_lambda = 561.
-        laser_tuple = ("mScarlet", )
+        laser_tuple = ("mScarlet",)
     elif channel_str == 'green':
         # GREEN
         emission_lambda = 525.
         emission_delta = 50.
         excitation_lambda = 488.
-        laser_tuple = ("GFP-GCaMP", )
+        laser_tuple = ("GFP-GCaMP",)
     else:
         raise ValueError(f"Unknown channel string: {channel_str}")
     laser_description = f'GFP/GCaMP channel, f{excitation_lambda} excitation, {emission_lambda}/{emission_delta}m emission'
-    laser_tuple = laser_tuple + (f"Chroma ET {emission_lambda}/{emission_delta}", f"{excitation_lambda}-{emission_lambda}-{emission_delta}m")
+    laser_tuple = laser_tuple + (
+    f"Chroma ET {emission_lambda}/{emission_delta}", f"{excitation_lambda}-{emission_lambda}-{emission_delta}m")
     return emission_lambda, emission_delta, excitation_lambda, laser_description, laser_tuple
 
 
@@ -332,9 +336,11 @@ def initialize_imaging_channels(video_dict: dict, nwbfile, device, physical_unit
         device=device,
         unit="Voxel gray counts",
         scan_line_rate=None,  # TODO: what is this?
-        resolution=1., #smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
+        resolution=1.,
+        #smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
         rate=rate,
         imaging_volume=CalcImagingVolume,
+        dimension=None, #  Gives a warning; what should this be?
     )
 
     nwbfile.add_imaging_plane(CalcImagingVolume)
@@ -359,35 +365,34 @@ def _iter_volumes(video_data):
     return
 
 
-def convert_traces_and_segmentation_to_nwb_format(gce_quant, CalcImagingVolume, physical_units_class,
+def convert_traces_and_segmentation_to_nwb_format(gce_quant_dict, CalcImagingVolume, physical_units_class,
                                                   DEBUG=False):
     print("Converting traces and segmentation to nwb format...")
-    gce_quant = convert_tracking_dataframe_to_nwb_format(gce_quant, DEBUG)
-    quant = gce_quant[['X', 'Y', 'Z', 'gce_quant', 'ID', 'T', 'blob_ix']]  # Reorder columns to order we want
+    gce_quant_red = convert_tracking_dataframe_to_nwb_format(gce_quant_dict['red'], DEBUG)
+    gce_quant_green = convert_tracking_dataframe_to_nwb_format(gce_quant_dict['green'], DEBUG)
 
+    # Extract the blobs (with time series) from red and green
     print("Extracting segmentation ids...")
-    blobquant = None
-    for idx in tqdm(gce_quant['blob_ix'].unique(), leave=False):
-        blob = quant[quant['blob_ix'] == idx]
-        blobarr = np.asarray(blob[['X', 'Y', 'Z', 'gce_quant', 'ID']])
-        blobarr = blobarr[np.newaxis, :, :]
-        if blobquant is None:
-            blobquant = blobarr
+    blobquant_red, blobquant_green = None, None
+    for idx in tqdm(gce_quant_red['blob_ix'].unique(), leave=False):
+        blob_red = gce_quant_red[gce_quant_red['blob_ix'] == idx]
+        blobquant_red = _add_blob(blob_red, blobquant_red)
 
-        else:
-            blobquant = np.vstack((blobquant, blobarr))
+        blob_green = gce_quant_green[gce_quant_green['blob_ix'] == idx]
+        blobquant_green = _add_blob(blob_green, blobquant_green)
 
+    # Extract the segmentation from red only
     print("Creating segmentation objects...")
     volsegs = []
-    for t in tqdm(range(blobquant.shape[1]), leave=False):
+    for t in tqdm(range(blobquant_red.shape[1]), leave=False):
         volseg = PlaneSegmentation(
             name='Seg_tpoint_' + str(t),
             description='Neuron segmentation for time point ' + str(t) + ' in calcium image series',
             imaging_plane=CalcImagingVolume
         )
 
-        for i in range(blobquant.shape[0]):
-            voxel_mask = blobquant[i, t, 0:3]  # X, Y, Z columns
+        for i in range(blobquant_red.shape[0]):
+            voxel_mask = blobquant_red[i, t, 0:3]  # X, Y, Z columns
             if np.any(np.isnan(voxel_mask)):
                 # if blob does not exist at time point (nan values in row) we replace values with 0 and set weight to 0
                 voxel_mask = np.asarray([0, 0, 0, 0])
@@ -396,21 +401,38 @@ def convert_traces_and_segmentation_to_nwb_format(gce_quant, CalcImagingVolume, 
             voxel_mask = voxel_mask[np.newaxis, :]
 
             volseg.add_roi(voxel_mask=voxel_mask)
-
         volsegs.append(volseg)
 
     ImSeg = ImageSegmentation(
-        name='CalciumSeriesSegmentation',  # use if tracking neurons across frames (correspondence between segmentations)
+        name='CalciumSeriesSegmentation',
+        # use if tracking neurons across frames (correspondence between segmentations)
         #name = 'CalciumSeriesSegmentationUntracked', # use if not tracking across frames (ie raw segmentation in each frame)
         plane_segmentations=volsegs
     )
 
-    gce_data = np.transpose(
-        blobquant[:, :, 3])  # Take only gce quantification column and transpose so time is in the first dimension
+    # Take only gce quantification column and transpose so time is in the first dimension
+    gce_data_red = np.transpose(blobquant_red[:, :, 3])
+    gce_data_green = np.transpose(blobquant_green[:, :, 3])
 
     rt_region = volsegs[0].create_roi_table_region(
-        description='All segmented neurons associated with calcium image series',
-        region=list(np.arange(blobquant.shape[0]))
+        description='All segmented neurons associated with calcium image series (taken from reference channel)',
+        region=list(np.arange(blobquant_red.shape[0]))
+    )
+
+    # Traces: Red (reference)
+    RefRoiResponse = RoiResponseSeries(
+        #See https://pynwb.readthedocs.io/en/stable/pynwb.ophys.html#pynwb.ophys.RoiResponseSeries for additional key word argument options
+        name='ReferenceCalciumImResponseSeries',
+        description='Fluorescence for reference channel in calcium imaging',
+        data=gce_data_green,  #first dimension should represent time and second dimension should represent ROIs
+        rois=rt_region,
+        unit='integrated image intensity',  #the unit of measurement for the data input here
+        rate=4.0
+    )
+
+    RefFluor = Fluorescence(
+        name='ReferenceFluorescence',
+        roi_response_series=RefRoiResponse
     )
 
     # If you have raw fluorescence values rather than DFoF use the Fluorescence object instead of the DfOverF object to save your RoiResponseSeries
@@ -418,19 +440,34 @@ def convert_traces_and_segmentation_to_nwb_format(gce_quant, CalcImagingVolume, 
         # See https://pynwb.readthedocs.io/en/stable/pynwb.ophys.html#pynwb.ophys.RoiResponseSeries for additional key word argument options
         name='SignalCalciumImResponseSeries',
         description='Ratio fluorescence activity for calcium imaging data',
-        data=gce_data,
+        data=gce_data_red,
         rois=rt_region,
-        unit='dR/R50',
+        unit='integrated image intensity',
         rate=physical_units_class.volumes_per_second,
     )
 
-    SignalFluor = DfOverF(  # Change to Fluorescence if using raw fluorescence
-        name='SignalDFoF',
-        # Change name to SignalRawFluor if using raw fluorescence, rename reference and processed object accordingly
+    SignalFluor = Fluorescence(
+        name='SignalFluorescence',
         roi_response_series=SignalRoiResponse
     )
 
-    return ImSeg, SignalFluor
+    # SignalFluor = DfOverF(  # Change to Fluorescence if using raw fluorescence
+    #     name='SignalDFoF',
+    #     # Change name to SignalRawFluor if using raw fluorescence, rename reference and processed object accordingly
+    #     roi_response_series=SignalRoiResponse
+    # )
+
+    return ImSeg, SignalFluor, RefFluor
+
+
+def _add_blob(blob, blobquant):
+    blobarr = np.asarray(blob[['X', 'Y', 'Z', 'gce_quant', 'ID']])
+    blobarr = blobarr[np.newaxis, :, :]
+    if blobquant is None:
+        blobquant = blobarr
+    else:
+        blobquant = np.vstack((blobquant, blobarr))
+    return blobquant
 
 
 def convert_tracking_dataframe_to_nwb_format(gce_quant, DEBUG=False):
@@ -463,6 +500,8 @@ def convert_tracking_dataframe_to_nwb_format(gce_quant, DEBUG=False):
     if DEBUG:
         print(len(gce_quant['blob_ix'].unique()))  # Count the number of unique blobs in this file
         print(len(gce_quant['T'].unique()))  # Count the number of unique time points in this file
+    gce_quant = gce_quant[['X', 'Y', 'Z', 'gce_quant', 'ID', 'T', 'blob_ix']]  # Reorder columns to order we want
+
     return gce_quant
 
 
@@ -861,7 +900,8 @@ class TestNWB:
                 try:
                     fluor = read_nwbfile.processing['CalciumActivity']['Fluorescence']['GCaMP_activity'].data[:]
                 except KeyError:
-                    fluor = read_nwbfile.processing['CalciumActivity']['SignalDFoF']['SignalCalciumImResponseSeries'].data[:]
+                    fluor = read_nwbfile.processing['CalciumActivity']['SignalDFoF'][
+                                'SignalCalciumImResponseSeries'].data[:]
                 print(f"Size of calcium imaging traces: {fluor.shape}")
                 has_calcium_traces = True
 
@@ -869,7 +909,8 @@ class TestNWB:
                 print(e)
 
             try:
-                calc_seg = read_nwbfile.processing['CalciumActivity']['CalciumSeriesSegmentation']['Seg_tpoint_0'].voxel_mask[:]
+                calc_seg = read_nwbfile.processing['CalciumActivity']['CalciumSeriesSegmentation'][
+                               'Seg_tpoint_0'].voxel_mask[:]
                 has_segmentation = True
             except KeyError as e:
                 print(e)
