@@ -850,7 +850,8 @@ class TestNWB:
             try:
                 calcium_frames = read_nwbfile.acquisition['CalciumImageSeries'].data[0:15, :, :,
                                  :]  # load the first 15 frames of the calcium images
-                size = read_nwbfile.acquisition['CalciumImageSeries'].grid_spacing[:]
+                size = read_nwbfile.acquisition['CalciumImageSeries'].data.shape
+                print(f"Size of calcium imaging data: {size}")
                 has_calcium_imaging = True
             except KeyError as e:
                 print(e)
