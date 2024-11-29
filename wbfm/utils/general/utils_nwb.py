@@ -136,11 +136,11 @@ def nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, s
 
     device = _zimmer_microscope_device(nwbfile)
 
-    calcium_image_series, imaging_plane, CalcOptChanRefs = initialize_imaging_channels(
+    calcium_image_series, CalcOptChanRefs = initialize_imaging_channels(
         video_dict, nwbfile, device, physical_units_class=physical_units_class
     )
     ImSeg, fluor = convert_traces_to_nwb_format(
-        gce_quant, imaging_plane, calcium_image_series
+        gce_quant, ImagingVol, calcium_image_series
     )
     ophys = nwbfile.create_processing_module(
         name='CalciumActivity',
@@ -329,7 +329,7 @@ def initialize_imaging_channels(video_dict: dict, nwbfile, device, physical_unit
 
     nwbfile.add_imaging_plane(CalcImagingVolume)
 
-    return calcium_image_series, imaging_plane, CalcOptChanRefs
+    return calcium_image_series, CalcOptChanRefs
 
 
 # define a data generator function that will yield a single data entry, in our case we are iterating over time points and creating a Z stack of images for each time point
@@ -346,7 +346,7 @@ def _iter_volumes(video_data):
     return
 
 
-def convert_traces_to_nwb_format(gce_quant, imaging_plane,  calcium_image_series,
+def convert_traces_to_nwb_format(gce_quant, ImagingVol,  calcium_image_series,
                                  DEBUG=False):
     # Copy the label column to be blob_ix, but need to manually create the multiindex because it is multiple columns
     new_columns = pd.MultiIndex.from_tuples([('blob_ix', c[1]) for c in gce_quant[['label']].columns])
