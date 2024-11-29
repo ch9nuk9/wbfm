@@ -818,7 +818,7 @@ class TestNWB:
     def __init__(self, nwbfile):
         has_neuropal = False
         has_calcium_imaging = False
-        has_traces = False
+        has_calcium_traces = False
         has_segmentation = False
         with NWBHDF5IO(nwbfile, mode='r', load_namespaces=True) as io:
             if isinstance(io, NWBFile):
@@ -860,8 +860,10 @@ class TestNWB:
                 try:
                     fluor = read_nwbfile.processing['CalciumActivity']['Fluorescence']['GCaMP_activity'].data[:]
                 except KeyError:
-                    fluor = read_nwbfile.processing['CalciumActivity']['SignalDFoF'].roi_response_series['SignalCalciumImResponseSeries'].data[:]
+                    fluor = read_nwbfile.processing['CalciumActivity']['SignalDFoF']['SignalCalciumImResponseSeries'].data[:]
+                print(f"Size of calcium imaging traces: {fluor.shape}")
                 has_calcium_traces = True
+
             except KeyError as e:
                 print(e)
 
@@ -872,7 +874,7 @@ class TestNWB:
                 print(e)
 
         print(f"Found the following data in the NWB file: \n"
-              f"NeuroPAL image: {has_neuropal}\n"
-              f"Video calcium imaging: {has_calcium_imaging}\n"
-              f"Video calcium traces: {has_traces}\n"
-              f"Video segmentation: {has_segmentation}")
+              f"NeuroPAL image:         {has_neuropal}\n"
+              f"Video calcium imaging:  {has_calcium_imaging}\n"
+              f"Video calcium traces:   {has_calcium_traces}\n"
+              f"Video segmentation:     {has_segmentation}")
