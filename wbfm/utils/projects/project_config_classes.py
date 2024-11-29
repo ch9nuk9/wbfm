@@ -339,7 +339,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     def _check_path_and_load_config(self, subconfig_path: Path,
                                     allow_config_to_not_exist: bool = False) -> Dict:
-        if subconfig_path.is_absolute():
+        if is_absolute_in_any_os(str(subconfig_path)):
             project_dir = Path(resolve_mounted_path_in_current_os(str(subconfig_path.parent.parent)))
         else:
             project_dir = Path(self.self_path).parent
