@@ -82,7 +82,7 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
                     print(f"Successfully resolved {raw_path} to {path}")
                 break
             else:
-                if verbose >= 2:
+                if path and verbose >= 2:
                     print(f"Failed to resolve {raw_path} to {path}, continuing...")
         except OSError:
             # Happens when the mounted drive name doesn't exist or has another error
