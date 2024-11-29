@@ -102,8 +102,10 @@ class ConfigFileWithProjectContext:
         return self.resolve_relative_path(val)
 
     def resolve_relative_path(self, val: str) -> Optional[str]:
-        if val is None or Path(val).is_absolute():
+        if val is None:
             return val
+        if Path(val).is_absolute():
+            return resolve_mounted_path_in_current_os(val)
         relative_path = Path(self.project_dir).joinpath(val)
         # Replace any windows slashes with unix slashes
         relative_path = str(relative_path.resolve()).replace('\\', '/')

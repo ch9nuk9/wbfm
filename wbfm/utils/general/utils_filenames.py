@@ -23,6 +23,10 @@ def check_exists(abs_path, allow_overwrite):
 def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
     """
     Removes windows-specific mounted drive names (Y:, D:, etc.) and replaces them with the networked system equivalent
+    Assumes that these mounting drives correspond to specific networked locations:
+    - Y: -> /groups/zimmer
+    - Z: -> /scratch or /lisc/scratch
+    - S: -> /scratch or /lisc/scratch
 
     Does nothing if the path is relative
 
