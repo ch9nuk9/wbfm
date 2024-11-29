@@ -145,15 +145,19 @@ class ProjectData:
         """
         Load values from disk config files if the user did not set them
         """
-        track_cfg = self.project_config.get_tracking_config()
-        if self.precedence_global2tracklet is None:
-            self.precedence_global2tracklet = track_cfg.config['precedence_global2tracklet']
-        if self.precedence_df_tracklets is None:
-            self.precedence_df_tracklets = track_cfg.config['precedence_df_tracklets']
-        if self.precedence_tracks is None:
-            self.precedence_tracks = track_cfg.config['precedence_tracks']
+        if self.project_config is not None:
+            track_cfg = self.project_config.get_tracking_config()
+            if self.precedence_global2tracklet is None:
+                self.precedence_global2tracklet = track_cfg.config['precedence_global2tracklet']
+            if self.precedence_df_tracklets is None:
+                self.precedence_df_tracklets = track_cfg.config['precedence_df_tracklets']
+            if self.precedence_tracks is None:
+                self.precedence_tracks = track_cfg.config['precedence_tracks']
 
-        self.data_cacher = PaperDataCache(self)
+            self.data_cacher = PaperDataCache(self)
+        else:
+            self.logger.warning("ProjectData initialized without a project_config object; "
+                                "if this is from a NWB file, this is expected")
 
     @cached_property
     def intermediate_global_tracks(self) -> pd.DataFrame:
@@ -432,7 +436,10 @@ class ProjectData:
 
     @property
     def logger(self) -> logging.Logger:
-        return self.project_config.logger
+        if self.project_config is None:
+            return logging.getLogger("ProjectData")
+        else:
+            return self.project_config.logger
 
     def load_tracklet_related_properties(self):
         """Helper function for loading cached properties"""
@@ -639,6 +646,30 @@ class ProjectData:
             return project_path
         else:
             raise TypeError("Must pass pathlike or already loaded project data")
+
+    @staticmethod
+    def load_final_project_data_from_nwb(nwb_path: Union[str, os.PathLike], **kwargs):
+        """
+        Like load_final_project_data_from_config, but for NWB files
+
+        See https://github.com/focolab/NWBelegans for more information
+        """
+
+        from pynwb import NWBHDF5IO
+        nwb_io = NWBHDF5IO(nwb_path, mode='r', load_namespaces=True)
+        nwb_obj = nwb_io.read()
+        # Do not have a project_config class
+        obj = ProjectData(nwb_path, None, **kwargs)
+        # Initialize the relevant fields
+        from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
+        obj.preprocessing_settings = PreprocessingSettings()
+        obj.red_data = nwb_obj.acquisition['CalciumImageSeries'].data[..., 0]
+        obj.green_data = nwb_obj.acquisition['CalciumImageSeries'].data[..., 1]
+        # TODO: Traces
+        # TODO: Segmentation
+        obj.physical_unit_conversion = PhysicalUnitConversion()
+
+        pass
 
     def calculate_traces(self, channel_mode: str,
                          calculation_mode: str,

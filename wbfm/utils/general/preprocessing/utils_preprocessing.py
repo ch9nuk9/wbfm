@@ -152,7 +152,8 @@ class PreprocessingSettings:
 
     def __post_init__(self):
         if not self.alpha_is_ready:
-            self.cfg_preprocessing.logger.warning("Alpha is not set in the yaml; will have to be calculated from data")
+            if self.cfg_preprocessing is not None:
+                self.cfg_preprocessing.logger.warning("Alpha is not set in the yaml; will have to be calculated from data")
 
     @property
     def background_is_ready(self):
