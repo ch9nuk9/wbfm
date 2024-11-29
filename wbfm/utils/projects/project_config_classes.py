@@ -1036,19 +1036,3 @@ def make_project_like(project_path: str, target_directory: str,
             project_config.update_self_on_disk()
 
     return target_project_name
-
-
-# def update_config_file_formatting(project_config: ModularProjectConfig):
-#     """
-#     Updates projects based on various formatting changes I've made over time
-#
-#     Parameters
-#     ----------
-#     project_config
-#
-#     Returns
-#     -------
-#
-#     """
-#
-#     # Preprocessed data is now in the preprocessing config, not the main project config

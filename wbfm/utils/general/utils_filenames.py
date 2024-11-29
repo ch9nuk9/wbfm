@@ -394,20 +394,3 @@ def is_folder_ndtiff_format(folder):
         return True
     else:
         return False
-
-
-# def convert_path_to_current_os():
-#     """
-#     Hopefully I don't get into too much of a mess here
-#     Basically, I want to tackle 4 cases:
-#     1. No separators, e.g. just the file name. Do nothing
-#     2. Has only '/' separators, i.e. linux-style. Convert to current os
-#     3. Has only '\\' separators, i.e. windows-style. Convert to current os
-#     4. Has mixed separators. Convert to current os
-#
-#     This is necessary because of the resolve_mounted_path_in_current_os function,
-#
-#     Returns
-#     -------
-#
-#     """
