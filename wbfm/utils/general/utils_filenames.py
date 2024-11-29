@@ -32,11 +32,10 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
 
     Note: This is specific to the Zimmer lab, as of Nov 2023
     """
-    is_abs = is_absolute_in_any_os(raw_path)
-    if not is_abs:
+    if not is_absolute_in_any_os(raw_path):
         return raw_path
 
-    if verbose >= 1:
+    if verbose >= 2:
         print(f"Checking path {raw_path} on os {os.name}...")
 
     machine_is_linux = "ix" in os.name.lower()
@@ -70,18 +69,24 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
         path_is_linux_style = raw_path.startswith(linux_drive)
 
         path = None
-        if machine_is_linux and path_is_windows_style:
-            path = raw_path.replace(win_drive, linux_drive)
-            path = str(Path(path).resolve())
-        elif machine_is_windows and path_is_linux_style:
-            path = raw_path.replace(linux_drive, win_drive)
-            path = str(Path(path).resolve())
+        try:
+            if machine_is_linux and path_is_windows_style:
+                path = raw_path.replace(win_drive, linux_drive)
+                path = str(Path(path).resolve())
+            elif machine_is_windows and path_is_linux_style:
+                path = raw_path.replace(linux_drive, win_drive)
+                path = str(Path(path).resolve())
 
-        if path and os.path.exists(path):
-            # For example on windows, tries Z: and if not found, tries S:
-            if verbose >= 1:
-                print(f"Successfully resolved {raw_path} to {path}")
-            break
+            if path and os.path.exists(path):
+                if verbose >= 1:
+                    print(f"Successfully resolved {raw_path} to {path}")
+                break
+            else:
+                if verbose >= 2:
+                    print(f"Failed to resolve {raw_path} to {path}, continuing...")
+        except OSError:
+            # Happens when the mounted drive name doesn't exist or has another error
+            pass
     else:
         path = raw_path
         if verbose >= 1:
