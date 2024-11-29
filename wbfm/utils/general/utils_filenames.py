@@ -60,7 +60,8 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
         ('Z:', "/scratch"),
         ('Z:', "/lisc/scratch"),
         ('S:', "/scratch"),
-        ('S:', "/lisc/scratch")
+        ('S:', "/lisc/scratch"),
+        (r'//fsscratch.lisc.univie.ac.at/scratch', "/lisc/scratch")
     ]
 
     # Loop through drive name matches, and test each one
