@@ -6,6 +6,7 @@ from pathlib import Path
 import mat73
 import numpy as np
 import scipy
+from matplotlib import pyplot as plt
 from pynwb import NWBFile, NWBHDF5IO
 from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, DfOverF
 from hdmf.data_utils import DataChunkIterator
@@ -391,7 +392,7 @@ def convert_traces_and_segmentation_to_nwb_format(gce_quant, CalcImagingVolume, 
                 # if blob does not exist at time point (nan values in row) we replace values with 0 and set weight to 0
                 voxel_mask = np.asarray([0, 0, 0, 0])
             else:
-                voxel_mask = np.hstack((voxel_mask, 1))  # add weight of one to each blob
+                voxel_mask = np.hstack((voxel_mask, 1))  # add weight (1) to each blob
             voxel_mask = voxel_mask[np.newaxis, :]
 
             volseg.add_roi(voxel_mask=voxel_mask)
@@ -848,8 +849,8 @@ class TestNWB:
                 print(e)
 
             try:
-                calcium_frames = read_nwbfile.acquisition['CalciumImageSeries'].data[0:15, :, :,
-                                 :]  # load the first 15 frames of the calcium images
+                # load the first 15 frames of the calcium images
+                calcium_frames = read_nwbfile.acquisition['CalciumImageSeries'].data[0:15, :, :, :]
                 size = read_nwbfile.acquisition['CalciumImageSeries'].data.shape
                 print(f"Size of calcium imaging data: {size}")
                 has_calcium_imaging = True
@@ -878,3 +879,47 @@ class TestNWB:
               f"Video calcium imaging:  {has_calcium_imaging}\n"
               f"Video calcium traces:   {has_calcium_traces}\n"
               f"Video segmentation:     {has_segmentation}")
+
+
+def plot_image_and_blobs(nwbfile):
+    # Unpack
+    with NWBHDF5IO(nwbfile, mode='r', load_namespaces=True) as io:
+        read_nwbfile = io.read()
+        seg = read_nwbfile.processing['CalciumActivity']['CalciumSeriesSegmentation']['Seg_tpoint_0'].voxel_mask[:]
+        image = read_nwbfile.acquisition['CalciumImageSeries'].data[0, ...]
+
+    # Build variables for plotting
+    blobs = pd.DataFrame.from_records(seg, columns=['X', 'Y', 'Z', 'weight'])
+    blobs = blobs.drop(['weight'], axis=1)
+    blobs = blobs.replace('nan', np.nan, regex=True)
+
+    blobs['x'] = np.round(blobs['x'] / 0.4)
+    blobs['Y'] = np.round(blobs['y'] / 0.4)
+    # print(proc_image.shape)
+
+    RGB = image[:, :, :, :-1]
+
+    print(RGB.shape)
+
+    Zmax = np.max(RGB, axis=2)
+    Ymax = np.max(RGB, axis=1)
+
+    plt.figure()
+
+    plt.imshow(np.transpose(Zmax, [1, 0, 2]))
+    plt.scatter(blobs['x'], blobs['y'], s=5)
+    plt.xlim((0, Zmax.shape[0]))
+    plt.ylim((0, Zmax.shape[1]))
+    plt.gca().set_aspect('equal')
+
+    plt.show()
+
+    plt.figure()
+
+    plt.imshow(np.transpose(Ymax, [1, 0, 2]))
+    plt.scatter(blobs['x'], blobs['z'], s=5)
+    plt.xlim((0, Ymax.shape[0]))
+    plt.ylim((0, Ymax.shape[1]))
+    plt.gca().set_aspect('equal')
+
+    plt.show()
