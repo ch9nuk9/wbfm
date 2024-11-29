@@ -32,7 +32,7 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
 
     Note: This is specific to the Zimmer lab, as of Nov 2023
     """
-    is_abs = PurePosixPath(raw_path).is_absolute() or PureWindowsPath(raw_path).is_absolute()
+    is_abs = is_absolute_in_any_os(raw_path)
     if not is_abs:
         return raw_path
 
@@ -90,6 +90,11 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
     assert path is not None
 
     return path
+
+
+def is_absolute_in_any_os(raw_path: str) -> bool:
+    is_abs = PurePosixPath(raw_path).is_absolute() or PureWindowsPath(raw_path).is_absolute()
+    return is_abs
 
 
 def correct_mounted_path_prefix(path: str, old_prefix='/scratch', new_prefix='/lisc/scratch'):
@@ -389,3 +394,20 @@ def is_folder_ndtiff_format(folder):
         return True
     else:
         return False
+
+
+# def convert_path_to_current_os():
+#     """
+#     Hopefully I don't get into too much of a mess here
+#     Basically, I want to tackle 4 cases:
+#     1. No separators, e.g. just the file name. Do nothing
+#     2. Has only '/' separators, i.e. linux-style. Convert to current os
+#     3. Has only '\\' separators, i.e. windows-style. Convert to current os
+#     4. Has mixed separators. Convert to current os
+#
+#     This is necessary because of the resolve_mounted_path_in_current_os function,
+#
+#     Returns
+#     -------
+#
+#     """

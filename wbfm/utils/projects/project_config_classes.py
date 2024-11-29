@@ -20,7 +20,7 @@ from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
 from wbfm.utils.external.custom_errors import NoBehaviorDataError, TiffFormatError
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
 from wbfm.utils.general.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
-    get_sequential_filename, get_location_of_new_project_defaults
+    get_sequential_filename, get_location_of_new_project_defaults, is_absolute_in_any_os
 from wbfm.utils.projects.utils_project import safe_cd, update_project_config_path, \
     update_snakemake_config_path
 from wbfm.utils.external.utils_yaml import edit_config, load_config
@@ -104,7 +104,7 @@ class ConfigFileWithProjectContext:
     def resolve_relative_path(self, val: str) -> Optional[str]:
         if val is None:
             return val
-        if Path(val).is_absolute():
+        if is_absolute_in_any_os(val):
             return resolve_mounted_path_in_current_os(val)
         relative_path = Path(self.project_dir).joinpath(val)
         # Replace any windows slashes with unix slashes
@@ -221,8 +221,8 @@ class SubfolderConfigFile(ConfigFileWithProjectContext):
     def resolve_relative_path(self, raw_path: Optional[str], prepend_subfolder=False) -> Optional[str]:
         if raw_path is None:
             return None
-        if Path(raw_path).is_absolute():
-            return raw_path
+        if is_absolute_in_any_os(raw_path):
+            return resolve_mounted_path_in_current_os(raw_path)
 
         final_path = self._prepend_subfolder(raw_path, prepend_subfolder)
         # Replace any windows slashes with unix slashes
