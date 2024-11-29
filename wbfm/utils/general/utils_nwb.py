@@ -7,8 +7,7 @@ import mat73
 import numpy as np
 import scipy
 from pynwb import NWBFile, NWBHDF5IO
-from pynwb.ophys import OnePhotonSeries, OpticalChannel, ImageSegmentation, PlaneSegmentation, Fluorescence, \
-    RoiResponseSeries, DfOverF
+from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, DfOverF
 from hdmf.data_utils import DataChunkIterator
 from dateutil import tz
 import pandas as pd
@@ -60,9 +59,9 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     strain = raw_data_cfg.config.get('strain', 'unknown')
     physical_units_class = project_data.physical_unit_conversion
 
-    nwb_file = nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, subject_id, strain,
-                                               physical_units_class, output_folder)
-    return nwb_file
+    nwb_file, fname = nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, subject_id, strain,
+                                                      physical_units_class, output_folder)
+    return nwb_file, fname
 
 
 def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
@@ -142,18 +141,23 @@ def nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, s
     calcium_image_series, CalcOptChanRefs, CalcImagingVolume = initialize_imaging_channels(
         video_dict, nwbfile, device, physical_units_class=physical_units_class
     )
-    ImSeg, fluor = convert_traces_to_nwb_format(
+    ImSeg, SignalFluor = convert_traces_and_segmentation_to_nwb_format(
         gce_quant, CalcImagingVolume, physical_units_class
     )
+
+    # Add data under the processed module
     ophys = nwbfile.create_processing_module(
         name='CalciumActivity',
         description='Calcium time series metadata, segmentation, and fluorescence data'
     )
     # Finish
     ophys.add(ImSeg)
-    ophys.add(fluor)
+    ophys.add(SignalFluor)
     ophys.add(CalcOptChanRefs)
 
+    nwbfile.add_acquisition(calcium_image_series)
+
+    fname = None
     if output_folder:
         fname = os.path.join(output_folder, subject_id + '.nwb')
         logging.info(f"Saving NWB file to {fname}")
@@ -161,7 +165,7 @@ def nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, s
             io.write(nwbfile)
         logging.info(f"Saving successful!")
 
-    return nwbfile
+    return nwbfile, fname
 
 
 def initialize_nwb_file(session_start_time, strain, subject_id):
@@ -354,8 +358,8 @@ def _iter_volumes(video_data):
     return
 
 
-def convert_traces_to_nwb_format(gce_quant, CalcImagingVolume,  physical_units_class,
-                                 DEBUG=False):
+def convert_traces_and_segmentation_to_nwb_format(gce_quant, CalcImagingVolume, physical_units_class,
+                                                  DEBUG=False):
     print("Converting traces and segmentation to nwb format...")
     gce_quant = convert_tracking_dataframe_to_nwb_format(gce_quant, DEBUG)
     quant = gce_quant[['X', 'Y', 'Z', 'gce_quant', 'ID', 'T', 'blob_ix']]  # Reorder columns to order we want
@@ -806,3 +810,68 @@ def convert_segmentation_to_nwb(nwbfile, df):
     NeuroPALImSeg.add_plane_segmentation(vs)
 
     return NeuroPALImSeg
+
+
+class TestNWB:
+    """Copied from: https://github.com/focolab/NWBelegans/blob/main/check_NWB.py"""
+
+    def __init__(self, nwbfile):
+        has_neuropal = False
+        has_calcium_imaging = False
+        has_traces = False
+        has_segmentation = False
+        with NWBHDF5IO(nwbfile, mode='r', load_namespaces=True) as io:
+            if isinstance(io, NWBFile):
+                print('NWB file loaded successfully')
+                read_nwbfile = io
+            else:
+                read_nwbfile = io.read()
+
+            subject = read_nwbfile.subject  # get the metadata about the experiment subject
+            growth_stage = subject.growth_stage
+            try:
+                image = read_nwbfile.acquisition['NeuroPALImageRaw'].data[:]  # get the neuroPAL image as a np array
+                channels = read_nwbfile.acquisition['NeuroPALImageRaw'].RGBW_channels[
+                           :]  # get which channels of the image correspond to which RGBW pseudocolors
+                im_vol = read_nwbfile.acquisition[
+                    'NeuroPALImageRaw'].imaging_volume  # get the metadata associated with the imaging acquisition
+
+                seg = read_nwbfile.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons'].voxel_mask[
+                      :]  # get the locations of neuron centers
+                labels = read_nwbfile.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons']['ID_labels'][:]
+                optchans = im_vol.optical_channel_plus[
+                           :]  # get information about all of the optical channels used in acquisition
+                chan_refs = read_nwbfile.processing['NeuroPAL']['OpticalChannelRefs'].channels[
+                            :]  # get the order of the optical channels in the image
+                has_neuropal = True
+            except KeyError as e:
+                print(e)
+
+            try:
+                calcium_frames = read_nwbfile.acquisition['CalciumImageSeries'].data[0:15, :, :,
+                                 :]  # load the first 15 frames of the calcium images
+                size = read_nwbfile.acquisition['CalciumImageSeries'].grid_spacing[:]
+                has_calcium_imaging = True
+            except KeyError as e:
+                print(e)
+
+            try:
+                try:
+                    fluor = read_nwbfile.processing['CalciumActivity']['Fluorescence']['GCaMP_activity'].data[:]
+                except KeyError:
+                    fluor = read_nwbfile.processing['CalciumActivity']['SignalDFoF'].roi_response_series['SignalCalciumImResponseSeries'].data[:]
+                has_calcium_traces = True
+            except KeyError as e:
+                print(e)
+
+            try:
+                calc_seg = read_nwbfile.processing['CalciumActivity']['CalciumSeriesSegmentation']['Seg_tpoint_0'].voxel_mask[:]
+                has_segmentation = True
+            except KeyError as e:
+                print(e)
+
+        print(f"Found the following data in the NWB file: \n"
+              f"NeuroPAL image: {has_neuropal}\n"
+              f"Video calcium imaging: {has_calcium_imaging}\n"
+              f"Video calcium traces: {has_traces}\n"
+              f"Video segmentation: {has_segmentation}")
