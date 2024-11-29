@@ -7,7 +7,8 @@ import mat73
 import numpy as np
 import scipy
 from pynwb import NWBFile, NWBHDF5IO
-from pynwb.ophys import OnePhotonSeries, OpticalChannel, ImageSegmentation, PlaneSegmentation, Fluorescence, RoiResponseSeries
+from pynwb.ophys import OnePhotonSeries, OpticalChannel, ImageSegmentation, PlaneSegmentation, Fluorescence, \
+    RoiResponseSeries, DfOverF
 from hdmf.data_utils import DataChunkIterator
 from dateutil import tz
 import pandas as pd
@@ -47,12 +48,14 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     subject_id = session_start_time.strftime("%Y%m%d-%H-%M-%S")
 
     # Unpack traces and locations
+    print("Calculating traces...")
     df_traces = project_data.calc_default_traces(min_nonnan=0)
     gce_quant = project_data.red_traces.swaplevel(i=0, j=1, axis=1).copy()
     gce_quant.loc[:, ('intensity_image', slice(None))] = df_traces.values
     # Unpack videos
     video_dict = {'red': project_data.red_data, 'green': project_data.green_data}
     # Unpack metadata
+    print("Calculating metadata...")
     raw_data_cfg = project_data.project_config.get_raw_data_config()
     strain = raw_data_cfg.config.get('strain', 'unknown')
     physical_units_class = project_data.physical_unit_conversion
@@ -136,11 +139,11 @@ def nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, s
 
     device = _zimmer_microscope_device(nwbfile)
 
-    calcium_image_series, CalcOptChanRefs = initialize_imaging_channels(
+    calcium_image_series, CalcOptChanRefs, CalcImagingVolume = initialize_imaging_channels(
         video_dict, nwbfile, device, physical_units_class=physical_units_class
     )
     ImSeg, fluor = convert_traces_to_nwb_format(
-        gce_quant, ImagingVol, calcium_image_series
+        gce_quant, CalcImagingVolume, physical_units_class
     )
     ophys = nwbfile.create_processing_module(
         name='CalciumActivity',
@@ -162,6 +165,7 @@ def nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, s
 
 
 def initialize_nwb_file(session_start_time, strain, subject_id):
+    print("Initializing nwb file...")
     nwbfile = NWBFile(
         session_description='Add a description for the experiment/session. Can be just long form text',
         # Can use any identity marker that is specific to an individual trial. We use date-time to specify trials
@@ -216,6 +220,7 @@ def laser_properties(channel_str='red'):
 
 
 def initialize_imaging_channels(video_dict: dict, nwbfile, device, physical_units_class=None):
+    print("Initializing imaging channels...")
     if physical_units_class is None:
         # STUB FOR IMMOBILIZED (which has very messy metadata
         logging.warning("No physical units class provided, using default values")
@@ -329,51 +334,35 @@ def initialize_imaging_channels(video_dict: dict, nwbfile, device, physical_unit
 
     nwbfile.add_imaging_plane(CalcImagingVolume)
 
-    return calcium_image_series, CalcOptChanRefs
+    return calcium_image_series, CalcOptChanRefs, CalcImagingVolume
 
 
-# define a data generator function that will yield a single data entry, in our case we are iterating over time points and creating a Z stack of images for each time point
 def _iter_volumes(video_data):
-    # Will return a 4d image: ZXYC
+    """
+    Expects a 5d input (TXYZC), will return a 4d image: XYZC
+
+    In other words, no transposing is done here
+
+    """
     if video_data is None:
         return None
 
     # We iterate through all of the timepoints and yield each timepoint back to the DataChunkIterator
     for i in range(video_data.shape[0]):
         # Make sure array ends up as the correct dtype coming out of this function (the dtype that your data was collected as)
-        vol = video_data[i]
-        yield np.transpose(vol, [1, 2, 0])
+        yield video_data[i]
     return
 
 
-def convert_traces_to_nwb_format(gce_quant, ImagingVol,  calcium_image_series,
+def convert_traces_to_nwb_format(gce_quant, CalcImagingVolume,  physical_units_class,
                                  DEBUG=False):
-    # Copy the label column to be blob_ix, but need to manually create the multiindex because it is multiple columns
-    new_columns = pd.MultiIndex.from_tuples([('blob_ix', c[1]) for c in gce_quant[['label']].columns])
-    gce_quant[new_columns] = gce_quant['label'].copy()
-
-    gce_quant.loc[:, ('blob_ix', slice(None))] = gce_quant.loc[:, ('blob_ix', slice(None))].fillna(
-        method='bfill').fillna(method='ffill')
-
-    # Expects a long single-level dataframe
-    gce_quant = gce_quant.stack(level=1, dropna=False).reset_index(level=1, drop=True)  # .dropna(how='all')
-    gce_quant.reset_index(inplace=True)
-
-    # Replace NaN with 0's, because it has to be int in the end
-    gce_quant = gce_quant.fillna(0)
-
-    # Rename columns to be the format of this file
-    gce_quant = gce_quant.rename(
-        columns={'x': 'X', 'y': 'Y', 'z': 'Z', 'intensity_image': 'gce_quant', 'label': 'ID', 'index': 'T',
-                 'blob_ix': 'blob_ix'})
-    if DEBUG:
-        print(len(gce_quant['blob_ix'].unique()))  # Count the number of unique blobs in this file
-        print(len(gce_quant['T'].unique()))  # Count the number of unique time points in this file
-
+    print("Converting traces and segmentation to nwb format...")
+    gce_quant = convert_tracking_dataframe_to_nwb_format(gce_quant, DEBUG)
     quant = gce_quant[['X', 'Y', 'Z', 'gce_quant', 'ID', 'T', 'blob_ix']]  # Reorder columns to order we want
 
+    print("Extracting segmentation ids...")
     blobquant = None
-    for idx in tqdm(gce_quant['blob_ix'].unique()):
+    for idx in tqdm(gce_quant['blob_ix'].unique(), leave=False):
         blob = quant[quant['blob_ix'] == idx]
         blobarr = np.asarray(blob[['X', 'Y', 'Z', 'gce_quant', 'ID']])
         blobarr = blobarr[np.newaxis, :, :]
@@ -383,54 +372,93 @@ def convert_traces_to_nwb_format(gce_quant, ImagingVol,  calcium_image_series,
         else:
             blobquant = np.vstack((blobquant, blobarr))
 
-    planesegs = []
-    for t in tqdm(range(blobquant.shape[1])):
-        planeseg = PlaneSegmentation(
+    print("Creating segmentation objects...")
+    volsegs = []
+    for t in tqdm(range(blobquant.shape[1]), leave=False):
+        volseg = PlaneSegmentation(
             name='Seg_tpoint_' + str(t),
             description='Neuron segmentation for time point ' + str(t) + ' in calcium image series',
-            imaging_plane=imaging_plane,
-            reference_images=calcium_image_series,
+            imaging_plane=CalcImagingVolume
         )
 
         for i in range(blobquant.shape[0]):
             voxel_mask = blobquant[i, t, 0:3]  # X, Y, Z columns
-
-            voxel_mask = np.hstack((voxel_mask, 1))
+            if np.any(np.isnan(voxel_mask)):
+                # if blob does not exist at time point (nan values in row) we replace values with 0 and set weight to 0
+                voxel_mask = np.asarray([0, 0, 0, 0])
+            else:
+                voxel_mask = np.hstack((voxel_mask, 1))  # add weight of one to each blob
             voxel_mask = voxel_mask[np.newaxis, :]
 
-            planeseg.add_roi(voxel_mask=voxel_mask)
+            volseg.add_roi(voxel_mask=voxel_mask)
 
-        planesegs.append(planeseg)
+        volsegs.append(volseg)
 
     ImSeg = ImageSegmentation(
-        name='CalciumSeriesSegmentation',
-        plane_segmentations=planesegs
+        name='CalciumSeriesSegmentation',  # use if tracking neurons across frames (correspondence between segmentations)
+        #name = 'CalciumSeriesSegmentationUntracked', # use if not tracking across frames (ie raw segmentation in each frame)
+        plane_segmentations=volsegs
     )
 
     gce_data = np.transpose(
         blobquant[:, :, 3])  # Take only gce quantification column and transpose so time is in the first dimension
 
-    rt_region = planesegs[0].create_roi_table_region(
+    rt_region = volsegs[0].create_roi_table_region(
         description='All segmented neurons associated with calcium image series',
         region=list(np.arange(blobquant.shape[0]))
     )
 
-    RoiResponse = RoiResponseSeries(
+    # If you have raw fluorescence values rather than DFoF use the Fluorescence object instead of the DfOverF object to save your RoiResponseSeries
+    SignalRoiResponse = RoiResponseSeries(
         # See https://pynwb.readthedocs.io/en/stable/pynwb.ophys.html#pynwb.ophys.RoiResponseSeries for additional key word argument options
-        name='CalciumImResponseSeries',
-        description='Fluorescence activity for calcium imaging data',
+        name='SignalCalciumImResponseSeries',
+        description='Ratio fluorescence activity for calcium imaging data',
         data=gce_data,
         rois=rt_region,
-        unit='',
-        rate=4.0
+        unit='dR/R50',
+        rate=physical_units_class.volumes_per_second,
     )
 
-    fluor = Fluorescence(
-        name='CalciumFluorTimeSeries',
-        roi_response_series=RoiResponse
+    SignalFluor = DfOverF(  # Change to Fluorescence if using raw fluorescence
+        name='SignalDFoF',
+        # Change name to SignalRawFluor if using raw fluorescence, rename reference and processed object accordingly
+        roi_response_series=SignalRoiResponse
     )
 
-    return ImSeg, fluor
+    return ImSeg, SignalFluor
+
+
+def convert_tracking_dataframe_to_nwb_format(gce_quant, DEBUG=False):
+    """
+    Converts my tracking dataframe to the format that the NWB tutorial expects, i.e. the Kato lab standard
+
+    Parameters
+    ----------
+    gce_quant
+    DEBUG
+
+    Returns
+    -------
+
+    """
+    # Copy the label column to be blob_ix, but need to manually create the multiindex because it is multiple columns
+    new_columns = pd.MultiIndex.from_tuples([('blob_ix', c[1]) for c in gce_quant[['label']].columns])
+    gce_quant[new_columns] = gce_quant['label'].copy()
+    gce_quant.loc[:, ('blob_ix', slice(None))] = gce_quant.loc[:, ('blob_ix', slice(None))].fillna(
+        method='bfill').fillna(method='ffill')
+    # Expects a long single-level dataframe
+    gce_quant = gce_quant.stack(level=1, dropna=False).reset_index(level=1, drop=True)  # .dropna(how='all')
+    gce_quant.reset_index(inplace=True)
+    # Replace NaN with 0's, because it has to be int in the end
+    gce_quant = gce_quant.fillna(0)
+    # Rename columns to be the format of this file
+    gce_quant = gce_quant.rename(
+        columns={'x': 'X', 'y': 'Y', 'z': 'Z', 'intensity_image': 'gce_quant', 'label': 'ID', 'index': 'T',
+                 'blob_ix': 'blob_ix'})
+    if DEBUG:
+        print(len(gce_quant['blob_ix'].unique()))  # Count the number of unique blobs in this file
+        print(len(gce_quant['T'].unique()))  # Count the number of unique time points in this file
+    return gce_quant
 
 
 def nwb_from_pedro_format(folder_name: str, output_folder=None):
