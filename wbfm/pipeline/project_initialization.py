@@ -175,9 +175,9 @@ def write_data_subset_using_config(cfg: ModularProjectConfig,
     # Save this name in the config file itself
     if save_fname_in_red_not_green is not None:
         if save_fname_in_red_not_green:
-            edits = {'preprocessed_red': out_fname}
+            edits = {'preprocessed_red_fname': out_fname}
         else:
-            edits = {'preprocessed_green': out_fname}
+            edits = {'preprocessed_green_fname': out_fname}
         preprocessing_settings.cfg_preprocessing.config.update(edits)
         preprocessing_settings.cfg_preprocessing.update_self_on_disk()
 
