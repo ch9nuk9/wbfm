@@ -16,7 +16,7 @@ from datetime import datetime
 from hdmf.backends.hdf5.h5_utils import H5DataIO
 # ndx_mulitchannel_volume is the novel NWB extension for multichannel optophysiology in C. elegans
 from ndx_multichannel_volume import CElegansSubject, OpticalChannelReferences, OpticalChannelPlus, ImagingVolume, \
-    MultiChannelVolume, MultiChannelVolumeSeries
+    MultiChannelVolume, MultiChannelVolumeSeries, SegmentationLabels
 from tifffile import tifffile
 from tqdm.auto import tqdm
 
@@ -55,14 +55,15 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     # df_traces = project_data.calc_default_traces(min_nonnan=0)
     # gce_quant.loc[:, ('intensity_image', slice(None))] = df_traces.values
     # Unpack videos
-    video_dict = {'red': project_data.red_data, 'green': project_data.green_data}
+    calcium_video_dict = {'red': project_data.red_data, 'green': project_data.green_data}
+    segmentation_video = project_data.segmentation
     # Unpack metadata
     print("Calculating metadata...")
     raw_data_cfg = project_data.project_config.get_raw_data_config()
     strain = raw_data_cfg.config.get('strain', 'unknown')
     physical_units_class = project_data.physical_unit_conversion
 
-    nwb_file, fname = nwb_with_traces_from_components(video_dict, gce_quant_dict, session_start_time, subject_id, strain,
+    nwb_file, fname = nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_quant_dict, session_start_time, subject_id, strain,
                                                       physical_units_class, output_folder)
     return nwb_file, fname
 
@@ -134,32 +135,18 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
     return nwb_file
 
 
-def nwb_with_traces_from_components(video_dict, gce_quant_dict, session_start_time, subject_id, strain,
+def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_quant_dict, session_start_time, subject_id, strain,
                                     physical_units_class, output_folder):
     # Initialize and populate the NWB file
     nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
 
     device = _zimmer_microscope_device(nwbfile)
-
-    calcium_image_series, CalcOptChanRefs, CalcImagingVolume = initialize_imaging_channels(
-        video_dict, nwbfile, device, physical_units_class=physical_units_class
+    CalcOptChanRefs, CalcImagingVolume = convert_calcium_videos_to_nwb(
+        nwbfile, calcium_video_dict, device, physical_units_class=physical_units_class
     )
-    ImSeg, SignalFluor, RefFluor = convert_traces_and_segmentation_to_nwb_format(
-        gce_quant_dict, CalcImagingVolume, physical_units_class
+    nwbfile = convert_traces_and_segmentation_to_nwb(
+        nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, CalcOptChanRefs, physical_units_class, device=device
     )
-
-    # Add data under the processed module
-    ophys = nwbfile.create_processing_module(
-        name='CalciumActivity',
-        description='Calcium time series metadata, segmentation, and fluorescence data'
-    )
-    # Finish
-    ophys.add(ImSeg)
-    ophys.add(SignalFluor)
-    ophys.add(RefFluor)
-    ophys.add(CalcOptChanRefs)
-
-    nwbfile.add_acquisition(calcium_image_series)
 
     fname = None
     if output_folder:
@@ -228,7 +215,7 @@ def laser_properties(channel_str='red'):
     return emission_lambda, emission_delta, excitation_lambda, laser_description, laser_tuple
 
 
-def initialize_imaging_channels(video_dict: dict, nwbfile, device, physical_units_class=None):
+def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_units_class=None):
     print("Initializing imaging channels...")
     if physical_units_class is None:
         # STUB FOR IMMOBILIZED (which has very messy metadata
@@ -344,15 +331,18 @@ def initialize_imaging_channels(video_dict: dict, nwbfile, device, physical_unit
     )
 
     nwbfile.add_imaging_plane(CalcImagingVolume)
+    nwbfile.add_acquisition(calcium_image_series)
 
-    return calcium_image_series, CalcOptChanRefs, CalcImagingVolume
+    return CalcOptChanRefs, CalcImagingVolume
 
 
 def _iter_volumes(video_data):
     """
-    Expects a 5d input (TXYZC), will return a 4d image: XYZC
+    Expects a 5d input (TXYZC), yields a 4d image: XYZC
 
     In other words, no transposing is done here
+
+    Note: only actually interates over the first dimension; data could be fewer (e.g. no channel)
 
     """
     if video_data is None:
@@ -365,8 +355,8 @@ def _iter_volumes(video_data):
     return
 
 
-def convert_traces_and_segmentation_to_nwb_format(gce_quant_dict, CalcImagingVolume, physical_units_class,
-                                                  DEBUG=False):
+def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, CalcOptChanRefs,
+                                           physical_units_class, device, DEBUG=False):
     print("Converting traces and segmentation to nwb format...")
     gce_quant_red = convert_tracking_dataframe_to_nwb_format(gce_quant_dict['red'], DEBUG)
     gce_quant_green = convert_tracking_dataframe_to_nwb_format(gce_quant_dict['green'], DEBUG)
@@ -381,43 +371,109 @@ def convert_traces_and_segmentation_to_nwb_format(gce_quant_dict, CalcImagingVol
         blob_green = gce_quant_green[gce_quant_green['blob_ix'] == idx]
         blobquant_green = _add_blob(blob_green, blobquant_green)
 
-    # Extract the segmentation from red only
-    print("Creating segmentation objects...")
-    volsegs = []
-    for t in tqdm(range(blobquant_red.shape[1]), leave=False):
-        volseg = PlaneSegmentation(
-            name='Seg_tpoint_' + str(t),
-            description='Neuron segmentation for time point ' + str(t) + ' in calcium image series',
-            imaging_plane=CalcImagingVolume
-        )
-
-        for i in range(blobquant_red.shape[0]):
-            voxel_mask = blobquant_red[i, t, 0:3]  # X, Y, Z columns
-            if np.any(np.isnan(voxel_mask)):
-                # if blob does not exist at time point (nan values in row) we replace values with 0 and set weight to 0
-                voxel_mask = np.asarray([0, 0, 0, 0])
-            else:
-                voxel_mask = np.hstack((voxel_mask, 1))  # add weight (1) to each blob
-            voxel_mask = voxel_mask[np.newaxis, :]
-
-            volseg.add_roi(voxel_mask=voxel_mask)
-        volsegs.append(volseg)
-
-    ImSeg = ImageSegmentation(
-        name='CalciumSeriesSegmentation',
-        # use if tracking neurons across frames (correspondence between segmentations)
-        #name = 'CalciumSeriesSegmentationUntracked', # use if not tracking across frames (ie raw segmentation in each frame)
-        plane_segmentations=volsegs
+    # TODO: move to keeping the full segmentation data
+    # Build a generator (like the raw data) but for the segmentation data
+    data = DataChunkIterator(
+        data=_iter_volumes(segmentation_video),
+        # this will be the max shape of the final image. Can leave blank or set as the size of your full data if you know that ahead of time
+        maxshape=None,
+        buffer_size=10,
     )
+    wrapped_data = H5DataIO(data=data, compression="gzip", compression_opts=4)
+
+    CalciumSegSeries = MultiChannelVolumeSeries(
+        name="CalciumSeriesSegmentation",
+        description="Series of indexed masks associated with calcium segmentation",
+        comments="Include here whether ROIs are tracked across frames or any other comments",
+        data=wrapped_data,  # data here should be series of indexed masks
+        # Elements below can be kept the same as the CalciumImageSeries defined above
+        device=device,
+        unit="Voxel gray counts",
+        scan_line_rate=2995.,
+        dimension=None, #  Gives a warning; what should this be?,
+        resolution=1.,
+        # smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
+        rate=physical_units_class.volumes_per_second,  # sampling rate in hz
+        imaging_volume=CalcImagingVolume,
+    )
+
+    Seg = PlaneSegmentation(
+        name='Seg_tpoint_0',
+        description='Neuron segmentation for time point 0 in calcium image series',
+        imaging_plane=CalcImagingVolume,
+    )
+
+    for i in range(blobquant_red.shape[0]):
+        voxel_mask = blobquant_red[i, 0, 0:3]  # X, Y, Z columns for time point 0
+        if np.any(np.isnan(voxel_mask)):
+            # if blob does not exist at time point (nan values in row) we replace values with 0 and set weight to 0
+            voxel_mask = np.asarray([0, 0, 0, 0])
+        else:
+            voxel_mask = np.hstack((voxel_mask, 1))  # add weight of one to each blob
+        voxel_mask = voxel_mask[np.newaxis, :]  # add empty new axis to make shape compatible
+
+        Seg.add_roi(voxel_mask=voxel_mask)
+
+    rt_region = Seg.create_roi_table_region(  # add ROIResponseSeries as defined above using this rt_region
+        description='All segmented neurons associated with calcium image series',
+        region=list(np.arange(blobquant_red.shape[0]))
+    )
+
+    FirstFrameSeg = ImageSegmentation(
+        name='SegmentationVol0',
+        plane_segmentations=Seg
+    )
+
+    labels = gce_quant_red.loc[:, 'blob_ix'].values
+    Calclabels = SegmentationLabels(
+        name='NeuronIDs',
+        labels=labels,  # should be array of text labels with the same length as the number of ROIs
+        description='CalciumSegmentationLabels',
+        # Use one of the below to link either the ImageSegmentation, MultiChannelVolume, or MultiChannelVolumeSeries object where
+        # associated ROIs are defined
+        # ImageSegmentation = NeuroPALImSeg,
+        # MCVSegmentation = NeuroPALImSeg,
+        MCVSeriesSegmentation=CalciumSegSeries,
+    )
+
+
+    # Extract the segmentation from red only
+    # print("Creating segmentation objects...")
+    # volsegs = []
+    # for t in tqdm(range(blobquant_red.shape[1]), leave=False):
+    #     volseg = PlaneSegmentation(
+    #         name='Seg_tpoint_' + str(t),
+    #         description='Neuron segmentation for time point ' + str(t) + ' in calcium image series',
+    #         imaging_plane=CalcImagingVolume
+    #     )
+    #
+    #     for i in range(blobquant_red.shape[0]):
+    #         voxel_mask = blobquant_red[i, t, 0:3]  # X, Y, Z columns
+    #         if np.any(np.isnan(voxel_mask)):
+    #             # if blob does not exist at time point (nan values in row) we replace values with 0 and set weight to 0
+    #             voxel_mask = np.asarray([0, 0, 0, 0])
+    #         else:
+    #             voxel_mask = np.hstack((voxel_mask, 1))  # add weight (1) to each blob
+    #         voxel_mask = voxel_mask[np.newaxis, :]
+    #
+    #         volseg.add_roi(voxel_mask=voxel_mask)
+    #     volsegs.append(volseg)
+    #
+    # ImSeg = ImageSegmentation(
+    #     name='CalciumSeriesSegmentation',
+    #     # use if tracking neurons across frames (correspondence between segmentations)
+    #     #name = 'CalciumSeriesSegmentationUntracked', # use if not tracking across frames (ie raw segmentation in each frame)
+    #     plane_segmentations=volsegs
+    # )
 
     # Take only gce quantification column and transpose so time is in the first dimension
     gce_data_red = np.transpose(blobquant_red[:, :, 3])
     gce_data_green = np.transpose(blobquant_green[:, :, 3])
 
-    rt_region = volsegs[0].create_roi_table_region(
-        description='All segmented neurons associated with calcium image series (taken from reference channel)',
-        region=list(np.arange(blobquant_red.shape[0]))
-    )
+    # rt_region = volsegs[0].create_roi_table_region(
+    #     description='All segmented neurons associated with calcium image series (taken from reference channel)',
+    #     region=list(np.arange(blobquant_red.shape[0]))
+    # )
 
     # Traces: Red (reference)
     RefRoiResponse = RoiResponseSeries(
@@ -457,7 +513,23 @@ def convert_traces_and_segmentation_to_nwb_format(gce_quant_dict, CalcImagingVol
     #     roi_response_series=SignalRoiResponse
     # )
 
-    return ImSeg, SignalFluor, RefFluor
+    # Add data under the processed module
+    calcium_imaging_module = nwbfile.create_processing_module(
+        name='CalciumActivity',
+        description='Calcium time series metadata, segmentation, and fluorescence data'
+    )
+
+    # Finish: segmentation
+    calcium_imaging_module.add(CalciumSegSeries)
+    calcium_imaging_module.add(FirstFrameSeg)
+    calcium_imaging_module.add(Calclabels)
+    # Finish: signal time series
+    calcium_imaging_module.add(SignalFluor)
+    calcium_imaging_module.add(RefFluor)
+    # Finish: metdata
+    calcium_imaging_module.add(CalcOptChanRefs)
+
+    return nwbfile
 
 
 def _add_blob(blob, blobquant):
@@ -898,7 +970,7 @@ class TestNWB:
 
             try:
                 try:
-                    fluor = read_nwbfile.processing['CalciumActivity']['Fluorescence']['GCaMP_activity'].data[:]
+                    fluor = read_nwbfile.processing['CalciumActivity']['SignalFluorescence']['SignalCalciumImResponseSeries'].data[:]
                 except KeyError:
                     fluor = read_nwbfile.processing['CalciumActivity']['SignalDFoF'][
                                 'SignalCalciumImResponseSeries'].data[:]
@@ -914,6 +986,14 @@ class TestNWB:
                 has_segmentation = True
             except KeyError as e:
                 print(e)
+            except TypeError:
+                # Then it is a fully saved voxel video
+                try:
+                    calc_seg = read_nwbfile.processing['CalciumActivity']['SegmentationVol0'][
+                                   'Seg_tpoint_0'].voxel_mask[:]
+                    has_segmentation = True
+                except KeyError as e:
+                    print(e)
 
         print(f"Found the following data in the NWB file: \n"
               f"NeuroPAL image:         {has_neuropal}\n"
@@ -926,29 +1006,32 @@ def plot_image_and_blobs(nwbfile):
     # Unpack
     with NWBHDF5IO(nwbfile, mode='r', load_namespaces=True) as io:
         read_nwbfile = io.read()
-        seg = read_nwbfile.processing['CalciumActivity']['CalciumSeriesSegmentation']['Seg_tpoint_0'].voxel_mask[:]
+        try:
+            seg = read_nwbfile.processing['CalciumActivity']['CalciumSeriesSegmentation']['Seg_tpoint_0'].voxel_mask[:]
+        except TypeError:
+            seg = read_nwbfile.processing['CalciumActivity']['SegmentationVol0']['Seg_tpoint_0'].voxel_mask[:]
+        # print(seg)
         image = read_nwbfile.acquisition['CalciumImageSeries'].data[0, ...]
 
     # Build variables for plotting
     blobs = pd.DataFrame.from_records(seg, columns=['X', 'Y', 'Z', 'weight'])
     blobs = blobs.drop(['weight'], axis=1)
     blobs = blobs.replace('nan', np.nan, regex=True)
+    # print(blobs)
 
-    blobs['x'] = np.round(blobs['x'] / 0.4)
-    blobs['Y'] = np.round(blobs['y'] / 0.4)
+    # blobs['x'] = np.round(blobs['x'] / 0.4)
+    # blobs['Y'] = np.round(blobs['y'] / 0.4)
     # print(proc_image.shape)
 
     RGB = image[:, :, :, :-1]
 
-    print(RGB.shape)
-
     Zmax = np.max(RGB, axis=2)
     Ymax = np.max(RGB, axis=1)
 
-    plt.figure()
+    plt.figure(figsize=(100, 100))
 
     plt.imshow(np.transpose(Zmax, [1, 0, 2]))
-    plt.scatter(blobs['x'], blobs['y'], s=5)
+    plt.scatter(blobs['x'], blobs['y'], s=5, alpha=0.25)
     plt.xlim((0, Zmax.shape[0]))
     plt.ylim((0, Zmax.shape[1]))
     plt.gca().set_aspect('equal')
