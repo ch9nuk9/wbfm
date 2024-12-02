@@ -35,7 +35,8 @@ class ReferenceFrame:
     vol_shape: tuple = None
     z_depth: int = None
 
-    preprocessing_settings: PreprocessingSettings = None
+    # From the preprocessing settings
+    alpha_red: float = None
 
     # To be finished with a set of other registered frames
     neuron_ids: list = None  # global neuron index
@@ -89,7 +90,7 @@ class ReferenceFrame:
             dat = raw_dat
         elif raw_dat.dtype == np.uint16:
             # Assume it needs to be scaled
-            dat = (raw_dat * self.preprocessing_settings.alpha_red).astype('uint8')
+            dat = (raw_dat * self.alpha_red).astype('uint8')
         else:
             raise NotImplementedError(f"Datatype should be uint8 or uint16, found {raw_dat.dtype} instead")
         return dat

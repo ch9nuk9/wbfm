@@ -285,6 +285,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     @lru_cache(maxsize=2)
     def get_preprocessing_class(self, do_background_subtraction=None):
+        # Note: this can't be pickled!
+        # https://github.com/cloudpipe/cloudpickle/issues/178
         fname = self.get_preprocessing_config_filename()
         from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
         preprocessing_settings = PreprocessingSettings.load_from_yaml(fname, do_background_subtraction)
