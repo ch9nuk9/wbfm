@@ -372,6 +372,8 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
         blobquant_green = _add_blob(blob_green, blobquant_green)
 
     # TODO: move to keeping the full segmentation data
+    # Convert segmentation video from TZXY to TXYZ
+    segmentation_video = np.transpose(segmentation_video, [0, 2, 3, 1])
     # Build a generator (like the raw data) but for the segmentation data
     data = DataChunkIterator(
         data=_iter_volumes(segmentation_video),
@@ -1028,10 +1030,10 @@ def plot_image_and_blobs(nwbfile):
     Zmax = np.max(RGB, axis=2)
     Ymax = np.max(RGB, axis=1)
 
-    plt.figure(figsize=(100, 100))
+    plt.figure(figsize=(10, 10))
 
     plt.imshow(np.transpose(Zmax, [1, 0, 2]))
-    plt.scatter(blobs['x'], blobs['y'], s=5, alpha=0.25)
+    plt.scatter(blobs['x'], blobs['y'], s=5, alpha=0.5, color='white')
     plt.xlim((0, Zmax.shape[0]))
     plt.ylim((0, Zmax.shape[1]))
     plt.gca().set_aspect('equal')
@@ -1041,7 +1043,47 @@ def plot_image_and_blobs(nwbfile):
     plt.figure()
 
     plt.imshow(np.transpose(Ymax, [1, 0, 2]))
-    plt.scatter(blobs['x'], blobs['z'], s=5)
+    plt.scatter(blobs['x'], blobs['z'], s=5, alpha=0.5, color='white')
+    plt.xlim((0, Ymax.shape[0]))
+    plt.ylim((0, Ymax.shape[1]))
+    plt.gca().set_aspect('equal')
+
+    plt.show()
+
+
+def plot_image_and_segmentation(nwbfile):
+    # Unpack
+    with NWBHDF5IO(nwbfile, mode='r', load_namespaces=True) as io:
+        read_nwbfile = io.read()
+        # Only works if the full segmentation is saved
+        seg = read_nwbfile.processing['CalciumActivity']['CalciumSeriesSegmentation'].data[0, ...]
+        # print(seg)
+        image = read_nwbfile.acquisition['CalciumImageSeries'].data[0, ...]
+
+    # Build variables for plotting
+    RGB = image[:, :, :, :-1]
+
+    Zmax = np.max(RGB, axis=2)
+    seg_zmax = np.max(seg, axis=2)
+
+    Ymax = np.max(RGB, axis=1)
+    seg_ymax = np.max(seg, axis=1)
+
+    plt.figure(figsize=(10, 10))
+
+    plt.imshow(np.transpose(Zmax, [1, 0, 2]))
+    plt.imshow(np.transpose(seg_zmax, [1, 0]), alpha=0.5, cmap='tab20')
+    # plt.scatter(blobs['x'], blobs['y'], s=5, alpha=0.5, color='white')
+    plt.xlim((0, Zmax.shape[0]))
+    plt.ylim((0, Zmax.shape[1]))
+    plt.gca().set_aspect('equal')
+
+    plt.show()
+
+    plt.figure()
+
+    plt.imshow(np.transpose(Ymax, [1, 0, 2]))
+    plt.imshow(np.transpose(seg_ymax, [1, 0]), alpha=0.5, cmap='tab20')
     plt.xlim((0, Ymax.shape[0]))
     plt.ylim((0, Ymax.shape[1]))
     plt.gca().set_aspect('equal')
