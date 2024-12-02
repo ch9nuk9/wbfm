@@ -116,6 +116,6 @@ def main(_config, _run):
         preprocessing_cfg.update_self_on_disk()
 
     if _config['to_zip_zarr_using_7z']:
-        zip_zarr_using_config(cfg)
+        zip_zarr_using_config(preprocessing_settings)
 
     logger.info("Finished.")
