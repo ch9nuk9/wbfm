@@ -116,6 +116,8 @@ def main(_config, _run):
         preprocessing_cfg.update_self_on_disk()
 
     if _config['to_zip_zarr_using_7z']:
+        # Reload the config file to make sure all filenames are correct
+        preprocessing_settings = cfg.get_preprocessing_class()
         zip_zarr_using_config(preprocessing_settings)
 
     logger.info("Finished.")
