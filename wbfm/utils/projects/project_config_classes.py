@@ -54,14 +54,15 @@ class ConfigFileWithProjectContext:
         else:
             self.project_dir = str(Path(self.self_path).parent)
         self.config = load_config(self.self_path)
-        # Convert to default dict, for backwards compatibility with deprecated keys
         if self.config is None:
             if not Path(self.self_path).exists():
                 raise FileNotFoundError(f"Could not find config file {self.self_path}")
             else:
                 raise ValueError(f"Found empty file at {self.self_path}; probably yaml crashed and deleted the file. "
                                  f"There is no way to recover the data, so the file must be recreated manually.")
-        self.config = defaultdict(lambda: defaultdict(lambda: None), self.config)
+        # Convert to default dict, for backwards compatibility with deprecated keys
+        # Actually: this gives problems with pickling, so do not do this
+        # self.config = defaultdict(lambda: defaultdict(lambda: None), self.config)
 
     @property
     def logger(self):

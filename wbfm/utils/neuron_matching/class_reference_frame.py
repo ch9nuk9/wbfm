@@ -17,6 +17,7 @@ from segmentation.util.utils_metadata import DetectedNeurons
 ## Basic class definition
 ##
 
+
 @dataclass
 class ReferenceFrame:
     """ Information for registered reference frames"""
@@ -34,7 +35,7 @@ class ReferenceFrame:
     vol_shape: tuple = None
     z_depth: int = None
 
-    preprocessing_settings: Union[PreprocessingSettings, None] = None
+    preprocessing_settings: PreprocessingSettings = None
 
     # To be finished with a set of other registered frames
     neuron_ids: list = None  # global neuron index
