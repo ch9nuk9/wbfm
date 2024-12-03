@@ -61,6 +61,7 @@ wbfm/notebooks/*.ipynb
 /wbfm/notebooks/presentations_and_grants/manuel_presentation_may_2023/
 /wbfm/notebooks/paper/iframe_figures/
 /wbfm/notebooks/alternative_ideas/*
+/wbfm/notebooks/paper/supplement/all_dataset_summaries/*.pdf
 /wbfm/**/scratch.py
 
 *.svg
@@ -69,4 +70,3 @@ wbfm/notebooks/*.ipynb
 *.nwb
 *.gv
 *.gv.pdf
-
