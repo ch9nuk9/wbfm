@@ -662,9 +662,9 @@ class ProjectData:
         """
 
         from pynwb import NWBHDF5IO, NWBFile
-        # with NWBHDF5IO(nwb_path, mode='r', load_namespaces=True) as nwb_io:
-        from hdmf_zarr import NWBZarrIO
-        with NWBZarrIO(path=nwb_path, mode="r") as nwb_io:
+        with NWBHDF5IO(nwb_path, mode='r', load_namespaces=True) as nwb_io:
+        # from hdmf_zarr import NWBZarrIO
+        # with NWBZarrIO(path=nwb_path, mode="r") as nwb_io:
             # TODO: do I need to keep this file open?
             if isinstance(nwb_io, NWBFile):
                 print('NWB file loaded successfully')

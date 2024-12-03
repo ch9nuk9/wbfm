@@ -6,7 +6,7 @@ from pathlib import Path
 import mat73
 import numpy as np
 import scipy
-from hdmf_zarr import NWBZarrIO
+# from hdmf_zarr import NWBZarrIO
 from matplotlib import pyplot as plt
 from pynwb import NWBFile, NWBHDF5IO
 from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, DfOverF, Fluorescence
@@ -157,8 +157,8 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
     if output_folder:
         fname = os.path.join(output_folder, subject_id + '.nwb.zarr')
         logging.info(f"Saving NWB file to {fname}")
-        # with NWBHDF5IO(fname, mode='w') as io:
-        with NWBZarrIO(path=fname, mode="w") as io:
+        with NWBHDF5IO(fname, mode='w') as io:
+        # with NWBZarrIO(path=fname, mode="w") as io:
             io.write(nwbfile)
         logging.info(f"Saving successful!")
 
@@ -300,12 +300,12 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
         data=wrapped_data,
         device=device,
         unit="Voxel gray counts",
-        scan_line_rate=None,  # TODO: what is this?
+        # scan_line_rate=None,  # TODO: what is this?
         resolution=1.,
         #smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
         rate=rate,
         imaging_volume=CalcImagingVolume,
-        dimension=None, #  Gives a warning; what should this be?
+        # dimension=None, #  Gives a warning; what should this be?
     )
 
     nwbfile.add_imaging_plane(CalcImagingVolume)
@@ -371,7 +371,7 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
         device=device,
         unit="Voxel gray counts",
         scan_line_rate=2995.,
-        dimension=None, #  Gives a warning; what should this be?,
+        # dimension=None, #  Gives a warning; what should this be?,
         resolution=1.,
         # smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
         rate=rate,  # sampling rate in hz
