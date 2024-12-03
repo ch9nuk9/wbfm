@@ -25,6 +25,7 @@ import os
 from dataclasses import dataclass
 from typing import Tuple, Dict, Union, List, Optional
 import numpy as np
+import dask.array as da
 import pandas as pd
 import zarr
 from tqdm.auto import tqdm
@@ -661,38 +662,39 @@ class ProjectData:
         See https://github.com/focolab/NWBelegans for more information
         """
 
-        from pynwb import NWBHDF5IO, NWBFile
-        with NWBHDF5IO(nwb_path, mode='r', load_namespaces=True) as nwb_io:
-        # from hdmf_zarr import NWBZarrIO
-        # with NWBZarrIO(path=nwb_path, mode="r") as nwb_io:
-            # TODO: do I need to keep this file open?
-            if isinstance(nwb_io, NWBFile):
-                print('NWB file loaded successfully')
-                nwb_obj = nwb_io
-            else:
-                nwb_obj = nwb_io.read()
-            # Do not have a project_config class
-            obj = ProjectData(nwb_path, None, **kwargs)
-            # Initialize the relevant fields
-            from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
-            obj.preprocessing_settings = PreprocessingSettings()
-            obj.red_data = nwb_obj.acquisition['CalciumImageSeries'].data[..., 0]
-            obj.green_data = nwb_obj.acquisition['CalciumImageSeries'].data[..., 1]
-            # TODO: Traces in correct format (dataframe with proper column names)
-            green = nwb_obj.processing['CalciumActivity']['SignalFluorescence']['SignalCalciumImResponseSeries'].data
-            red = nwb_obj.processing['CalciumActivity']['ReferenceFluorescence']['ReferenceCalciumImResponseSeries'].data
-            obj.red_traces = red
-            obj.green_traces = green
-            # TODO: tracks
-            obj.segmentation = nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data
+        # Do not use a with block in order to keep the file open
+        # This allows "weak" closing of the file
+        # https://docs.h5py.org/en/stable/high/file.html#closing-files
 
-            p = PhysicalUnitConversion()
-            p.volumes_per_second = nwb_obj.acquisition['CalciumImageSeries'].rate
-            grid_spacing = nwb_obj.acquisition['CalciumImageSeries'].imaging_volume.grid_spacing
-            assert grid_spacing[0] == grid_spacing[1]
-            p.zimmer_fluroscence_um_per_pixel_xy = grid_spacing[0]
-            p.zimmer_um_per_pixel_z = grid_spacing[2]
-            obj.physical_unit_conversion = p
+        from pynwb import NWBHDF5IO, NWBFile
+        nwb_io = NWBHDF5IO(nwb_path, mode='r', load_namespaces=True)
+        if isinstance(nwb_io, NWBFile):
+            print('NWB file loaded successfully')
+            nwb_obj = nwb_io
+        else:
+            nwb_obj = nwb_io.read()
+        # Do not have a project_config class
+        obj = ProjectData(nwb_path, None, **kwargs)
+        # Initialize the relevant fields
+        from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
+        obj.preprocessing_settings = PreprocessingSettings()
+        obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 0])
+        obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 1])
+        # TODO: Traces in correct format (dataframe with proper column names)
+        green = nwb_obj.processing['CalciumActivity']['SignalFluorescence']['SignalCalciumImResponseSeries'].data
+        red = nwb_obj.processing['CalciumActivity']['ReferenceFluorescence']['ReferenceCalciumImResponseSeries'].data
+        obj.red_traces = red
+        obj.green_traces = green
+        # TODO: tracks
+        obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data)
+
+        p = PhysicalUnitConversion()
+        p.volumes_per_second = nwb_obj.acquisition['CalciumImageSeries'].rate
+        grid_spacing = nwb_obj.acquisition['CalciumImageSeries'].imaging_volume.grid_spacing
+        assert grid_spacing[0] == grid_spacing[1]
+        p.zimmer_fluroscence_um_per_pixel_xy = grid_spacing[0]
+        p.zimmer_um_per_pixel_z = grid_spacing[2]
+        obj.physical_unit_conversion = p
 
         return obj
 
