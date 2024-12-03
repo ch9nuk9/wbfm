@@ -681,8 +681,8 @@ class ProjectData:
         obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 0])
         obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 1])
         # TODO: Traces in correct format (dataframe with proper column names)
-        green = nwb_obj.processing['CalciumActivity']['SignalFluorescence']['SignalCalciumImResponseSeries'].data
-        red = nwb_obj.processing['CalciumActivity']['ReferenceFluorescence']['ReferenceCalciumImResponseSeries'].data
+        green = pd.DataFrame(nwb_obj.processing['CalciumActivity']['SignalFluorescence']['SignalCalciumImResponseSeries'].data)
+        red = pd.DataFrame(nwb_obj.processing['CalciumActivity']['ReferenceFluorescence']['ReferenceCalciumImResponseSeries'].data)
         obj.red_traces = red
         obj.green_traces = green
         # TODO: tracks
