@@ -10,7 +10,7 @@ def _unpack_config_file(preprocessing_cfg, segment_cfg, project_cfg, DEBUG):
     # Initializing variables
     if DEBUG:
         num_frames = 1
-    video_path = cfg.get_preprocessing_class().get_path_to_preprocessed_data(red_not_green=True)
+    video_path = project_cfg.get_preprocessing_class().get_path_to_preprocessed_data(red_not_green=True)
     # Generate new filenames if they are not set
     mask_fname = segment_cfg.config['output_masks']
     metadata_fname = segment_cfg.config['output_metadata']
