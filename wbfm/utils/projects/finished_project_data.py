@@ -220,6 +220,9 @@ class ProjectData:
 
         Names are aligned with the final traces
         """
+        if self.project_config is None:
+            self.logger.warning("ProjectData initialized without a project_config object; final tracks can't be loaded")
+            return None
         tracking_cfg = self.project_config.get_tracking_config()
 
         # Manual annotations take precedence by default
@@ -360,6 +363,9 @@ class ProjectData:
     def _load_df_tracklets(self, dryrun=False) -> Tuple[pd.DataFrame, str]:
         if self.verbose >= 1 and not dryrun:
             self.logger.info("First time loading all the tracklets, may take a while...")
+        if self.project_config is None:
+            self.logger.warning("ProjectData initialized without a project_config object; tracklets can't be loaded")
+            return None, None
         train_cfg = self.project_config.get_training_config()
         track_cfg = self.project_config.get_tracking_config()
         # Manual annotations take precedence by default
@@ -656,7 +662,9 @@ class ProjectData:
         """
 
         from pynwb import NWBHDF5IO, NWBFile
-        with NWBHDF5IO(nwb_path, mode='r', load_namespaces=True) as nwb_io:
+        # with NWBHDF5IO(nwb_path, mode='r', load_namespaces=True) as nwb_io:
+        from hdmf_zarr import NWBZarrIO
+        with NWBZarrIO(path=nwb_path, mode="r") as nwb_io:
             # TODO: do I need to keep this file open?
             if isinstance(nwb_io, NWBFile):
                 print('NWB file loaded successfully')
@@ -670,16 +678,23 @@ class ProjectData:
             obj.preprocessing_settings = PreprocessingSettings()
             obj.red_data = nwb_obj.acquisition['CalciumImageSeries'].data[..., 0]
             obj.green_data = nwb_obj.acquisition['CalciumImageSeries'].data[..., 1]
-            # TODO: Traces in correct format
+            # TODO: Traces in correct format (dataframe with proper column names)
             green = nwb_obj.processing['CalciumActivity']['SignalFluorescence']['SignalCalciumImResponseSeries'].data
             red = nwb_obj.processing['CalciumActivity']['ReferenceFluorescence']['ReferenceCalciumImResponseSeries'].data
             obj.red_traces = red
             obj.green_traces = green
             # TODO: tracks
-            # TODO: Segmentation
-            obj.physical_unit_conversion = PhysicalUnitConversion()
+            obj.segmentation = nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data
 
-        pass
+            p = PhysicalUnitConversion()
+            p.volumes_per_second = nwb_obj.acquisition['CalciumImageSeries'].rate
+            grid_spacing = nwb_obj.acquisition['CalciumImageSeries'].imaging_volume.grid_spacing
+            assert grid_spacing[0] == grid_spacing[1]
+            p.zimmer_fluroscence_um_per_pixel_xy = grid_spacing[0]
+            p.zimmer_um_per_pixel_z = grid_spacing[2]
+            obj.physical_unit_conversion = p
+
+        return obj
 
     def calculate_traces(self, channel_mode: str,
                          calculation_mode: str,
@@ -1583,6 +1598,9 @@ class ProjectData:
 
         """
         # Manual annotations take precedence by default
+        if self.project_config is None:
+            self.logger.warning("No project config found; cannot load manual annotations")
+            return None
         excel_fname = self.get_default_manual_annotation_fname()
         try:
             possible_fnames = dict(excel=excel_fname,
@@ -2050,6 +2068,12 @@ class ProjectData:
         return label
 
     @property
+    def raw_data_dir(self):
+        if self.project_config is None:
+            return None
+        return self.project_config.get_behavior_raw_parent_folder_from_red_fname()[0]
+
+    @property
     def x_lim(self):
         """
         Returns first and last element of self.x_for_plots
@@ -2062,7 +2086,7 @@ class ProjectData:
 Project data for directory:\n\
 {self.project_dir} \n\
 With raw data in directory:\n\
-{self.project_config.get_behavior_raw_parent_folder_from_red_fname()[0]} \n\
+{self.raw_data_dir} \n\
 See self.worm_posture_class for information on behavioral parameters\
 \n\
 Found the following data files:\n\

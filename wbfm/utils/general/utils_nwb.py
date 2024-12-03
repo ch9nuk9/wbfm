@@ -6,6 +6,7 @@ from pathlib import Path
 import mat73
 import numpy as np
 import scipy
+from hdmf_zarr import NWBZarrIO
 from matplotlib import pyplot as plt
 from pynwb import NWBFile, NWBHDF5IO
 from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, DfOverF, Fluorescence
@@ -154,9 +155,10 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
 
     fname = None
     if output_folder:
-        fname = os.path.join(output_folder, subject_id + '.nwb')
+        fname = os.path.join(output_folder, subject_id + '.nwb.zarr')
         logging.info(f"Saving NWB file to {fname}")
-        with NWBHDF5IO(fname, mode='w') as io:
+        # with NWBHDF5IO(fname, mode='w') as io:
+        with NWBZarrIO(path=fname, mode="w") as io:
             io.write(nwbfile)
         logging.info(f"Saving successful!")
 
@@ -337,6 +339,8 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
     gce_quant_red = convert_tracking_dataframe_to_nwb_format(gce_quant_dict['red'], DEBUG)
     gce_quant_green = convert_tracking_dataframe_to_nwb_format(gce_quant_dict['green'], DEBUG)
 
+    rate = physical_units_class.volumes_per_second
+
     # Extract the blobs (with time series) from red and green
     print("Extracting segmentation ids...")
     blobquant_red, blobquant_green = None, None
@@ -347,7 +351,6 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
         blob_green = gce_quant_green[gce_quant_green['blob_ix'] == idx]
         blobquant_green = _add_blob(blob_green, blobquant_green)
 
-    # TODO: move to keeping the full segmentation data
     # Convert segmentation video from TZXY to TXYZ
     segmentation_video = np.transpose(segmentation_video, [0, 2, 3, 1])
     # Build a generator (like the raw data) but for the segmentation data
@@ -371,7 +374,7 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
         dimension=None, #  Gives a warning; what should this be?,
         resolution=1.,
         # smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
-        rate=physical_units_class.volumes_per_second,  # sampling rate in hz
+        rate=rate,  # sampling rate in hz
         imaging_volume=CalcImagingVolume,
     )
 
@@ -426,7 +429,7 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
         data=gce_data_green,  #first dimension should represent time and second dimension should represent ROIs
         rois=rt_region,
         unit='integrated image intensity',  #the unit of measurement for the data input here
-        rate=physical_units_class.volumes_per_second
+        rate=rate
     )
 
     RefFluor = Fluorescence(
@@ -442,7 +445,7 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
         data=gce_data_red,
         rois=rt_region,
         unit='integrated image intensity',
-        rate=physical_units_class.volumes_per_second,
+        rate=rate,
     )
 
     SignalFluor = Fluorescence(
@@ -891,13 +894,13 @@ class TestNWB:
                 im_vol = read_nwbfile.acquisition[
                     'NeuroPALImageRaw'].imaging_volume  # get the metadata associated with the imaging acquisition
 
-                seg = read_nwbfile.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons'].voxel_mask[
-                      :]  # get the locations of neuron centers
+                # get the locations of neuron centers
+                seg = read_nwbfile.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons'].voxel_mask[:]
                 labels = read_nwbfile.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons']['ID_labels'][:]
-                optchans = im_vol.optical_channel_plus[
-                           :]  # get information about all of the optical channels used in acquisition
-                chan_refs = read_nwbfile.processing['NeuroPAL']['OpticalChannelRefs'].channels[
-                            :]  # get the order of the optical channels in the image
+                # get information about all of the optical channels used in acquisition
+                optchans = im_vol.optical_channel_plus[:]
+                # get the order of the optical channels in the image
+                chan_refs = read_nwbfile.processing['NeuroPAL']['OpticalChannelRefs'].channels[:]
                 has_neuropal = True
             except KeyError as e:
                 print(e)
