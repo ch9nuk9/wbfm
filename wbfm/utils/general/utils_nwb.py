@@ -52,8 +52,12 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     gce_quant_red = project_data.red_traces.swaplevel(i=0, j=1, axis=1).copy()
     gce_quant_green = project_data.green_traces.swaplevel(i=0, j=1, axis=1).copy()
     gce_quant_dict = {'red': gce_quant_red, 'green': gce_quant_green}
-    # df_traces = project_data.calc_default_traces(min_nonnan=0)
-    # gce_quant.loc[:, ('intensity_image', slice(None))] = df_traces.values
+    # Store just the background subtracting red or green traces, because we don't want to store the object volume
+    df_traces_red = project_data.calc_default_traces(min_nonnan=0, channel_mode='red')
+    gce_quant_red.loc[:, ('intensity_image', slice(None))] = df_traces_red.values
+    df_traces_green = project_data.calc_default_traces(min_nonnan=0, channel_mode='green')
+    gce_quant_green.loc[:, ('intensity_image', slice(None))] = df_traces_green.values
+
     # Unpack videos
     calcium_video_dict = {'red': project_data.red_data, 'green': project_data.green_data}
     segmentation_video = project_data.segmentation
@@ -269,14 +273,6 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
         CalcOptChannels.append(OptChan)
         CalcOptChanRefData.append(wave)
 
-    # CalcOptChan = OpticalChannelPlus(
-    #     name='GFP-GCaMP',
-    #     description=laser_description,
-    #     excitation_lambda=excitation_lambda,
-    #     excitation_range=[excitation_lambda - 1.5, excitation_lambda + 1.5],
-    #     emission_range=[emission_lambda - emission_delta/2, emission_lambda + emission_delta/2],
-    #     emission_lambda=emission_lambda
-    # )
     # This object just contains references to the order of channels because OptChannels does not preserve ordering
     CalcOptChanRefs = OpticalChannelReferences(
         name='OpticalChannelRefs',
@@ -294,26 +290,6 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
         grid_spacing_unit='um',
         reference_frame='Worm head'
     )
-    # nwbfile.add_imaging_plane(CalcImagingVolume)
-
-    # optical_channel = OpticalChannel(
-    #     name='GFP-GCaMP',
-    #     description=laser_description,
-    #     emission_lambda=emission_lambda
-    # )
-
-    # imaging_plane = nwbfile.create_imaging_plane(
-    #     name='CalciumImPlane',
-    #     description='Imaging plane used to acquire calcium imaging data',
-    #     optical_channel=optical_channel,
-    #     device=device,
-    #     excitation_lambda=excitation_lambda,
-    #     indicator='GFP-GCaMP',
-    #     location='Worm head',
-    #     grid_spacing=grid_spacing,
-    #     grid_spacing_unit='um',
-    #     reference_frame='Worm head'
-    # )
 
     calcium_image_series = MultiChannelVolumeSeries(
         name="CalciumImageSeries",
@@ -438,44 +414,9 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
         MCVSeriesSegmentation=CalciumSegSeries,
     )
 
-
-    # Extract the segmentation from red only
-    # print("Creating segmentation objects...")
-    # volsegs = []
-    # for t in tqdm(range(blobquant_red.shape[1]), leave=False):
-    #     volseg = PlaneSegmentation(
-    #         name='Seg_tpoint_' + str(t),
-    #         description='Neuron segmentation for time point ' + str(t) + ' in calcium image series',
-    #         imaging_plane=CalcImagingVolume
-    #     )
-    #
-    #     for i in range(blobquant_red.shape[0]):
-    #         voxel_mask = blobquant_red[i, t, 0:3]  # X, Y, Z columns
-    #         if np.any(np.isnan(voxel_mask)):
-    #             # if blob does not exist at time point (nan values in row) we replace values with 0 and set weight to 0
-    #             voxel_mask = np.asarray([0, 0, 0, 0])
-    #         else:
-    #             voxel_mask = np.hstack((voxel_mask, 1))  # add weight (1) to each blob
-    #         voxel_mask = voxel_mask[np.newaxis, :]
-    #
-    #         volseg.add_roi(voxel_mask=voxel_mask)
-    #     volsegs.append(volseg)
-    #
-    # ImSeg = ImageSegmentation(
-    #     name='CalciumSeriesSegmentation',
-    #     # use if tracking neurons across frames (correspondence between segmentations)
-    #     #name = 'CalciumSeriesSegmentationUntracked', # use if not tracking across frames (ie raw segmentation in each frame)
-    #     plane_segmentations=volsegs
-    # )
-
     # Take only gce quantification column and transpose so time is in the first dimension
     gce_data_red = np.transpose(blobquant_red[:, :, 3])
     gce_data_green = np.transpose(blobquant_green[:, :, 3])
-
-    # rt_region = volsegs[0].create_roi_table_region(
-    #     description='All segmented neurons associated with calcium image series (taken from reference channel)',
-    #     region=list(np.arange(blobquant_red.shape[0]))
-    # )
 
     # Traces: Red (reference)
     RefRoiResponse = RoiResponseSeries(
@@ -485,7 +426,7 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
         data=gce_data_green,  #first dimension should represent time and second dimension should represent ROIs
         rois=rt_region,
         unit='integrated image intensity',  #the unit of measurement for the data input here
-        rate=4.0
+        rate=physical_units_class.volumes_per_second
     )
 
     RefFluor = Fluorescence(
