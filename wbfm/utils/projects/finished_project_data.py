@@ -474,7 +474,9 @@ class ProjectData:
     @cached_property
     def num_frames(self) -> int:
         """Note that this is cached so that a user can overwrite the number of frames"""
-        num_frames = self.project_config.num_frames
+        num_frames = None
+        if self.project_config is not None:
+            num_frames = self.project_config.num_frames
         if num_frames is None:
             # Then try calculate from the processed data, not the raw
             if self.red_data is not None:
