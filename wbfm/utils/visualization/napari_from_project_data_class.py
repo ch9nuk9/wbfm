@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import zarr
 from tqdm.auto import tqdm
+import dask.array as da
 
 from wbfm.gui.utils.utils_gui import change_viewer_time_point
 from wbfm.utils.external.custom_errors import MissingAnalysisError
@@ -154,16 +155,18 @@ class NapariLayerInitializer:
 
         if 'Red data' in which_layers:
             layer_name = 'Red data'
+            contrast_high = NapariLayerInitializer._get_contrast_limits(project_data, red_not_green=True)
             viewer.add_image(project_data.red_data, name=layer_name, opacity=0.5, colormap='PiYG',
-                             contrast_limits=[0, 2*np.max(project_data.red_data[0]+1)],
+                             contrast_limits=[0, contrast_high],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
             layers_actually_added.append(layer_name)
         if 'Green data' in which_layers:
             layer_name = 'Green data'
+            contrast_high = NapariLayerInitializer._get_contrast_limits(project_data, red_not_green=False)
             viewer.add_image(project_data.green_data, name=layer_name, opacity=0.5, colormap='green',
                              visible=force_all_visible,
-                             contrast_limits=[0, 2*np.max(project_data.green_data[0]+1)],
+                             contrast_limits=[0, contrast_high],
                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
                              experimental_clipping_planes=clipping_list)
             layers_actually_added.append(layer_name)
@@ -286,6 +289,14 @@ class NapariLayerInitializer:
                 project_data.logger.warning(message)
 
         return viewer
+
+    @staticmethod
+    def _get_contrast_limits(project_data, red_not_green=True):
+        data = project_data.red_data if red_not_green else project_data.green_data
+        if isinstance(data, zarr.Array):
+            return 2 * np.max(data[0] + 1)
+        elif isinstance(data, da.Array):
+            return 2 * np.max(data[0].compute() + 1)
 
 
 def take_screenshot_using_project(project_data, additional_layers: List[list], base_layers=None, t_target=None,

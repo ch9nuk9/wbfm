@@ -199,7 +199,7 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
 
     fname = None
     if output_folder:
-        fname = os.path.join(output_folder, subject_id + '.nwb.zarr')
+        fname = os.path.join(output_folder, subject_id + '.nwb')
         logging.info(f"Saving NWB file to {fname}")
         with NWBHDF5IO(fname, mode='w') as io:
         # with NWBZarrIO(path=fname, mode="w") as io:

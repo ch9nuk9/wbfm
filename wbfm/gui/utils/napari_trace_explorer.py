@@ -23,7 +23,7 @@ from numpy.linalg import LinAlgError
 from tqdm.auto import tqdm
 from PyQt5.QtWidgets import QApplication, QProgressDialog
 from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
-from wbfm.utils.external.custom_errors import NoBehaviorAnnotationsError
+from wbfm.utils.external.custom_errors import NoBehaviorAnnotationsError, IncompleteConfigFileError
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
@@ -61,8 +61,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     _disable_callbacks = False
 
     def __init__(self, project_data: ProjectData, app: QApplication, **kwargs):
-        check_all_needed_data_for_step(project_data.project_config,
-                                       step_index=5, raise_error=True, training_data_required=False)
+        try:
+            check_all_needed_data_for_step(project_data.project_config,
+                                           step_index=5, raise_error=True, training_data_required=False)
+        except IncompleteConfigFileError:
+            # This error means that the project is an alternate style, which is likely fine
+            pass
         for k, v in kwargs.items():
             setattr(self, k, v)
         if self.load_tracklets:
@@ -97,9 +101,12 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.current_subplot_xlim = None
         self.zoom_opt = {'zoom': None, 'ind_within_layer': 0, 'layer_is_full_size_and_single_neuron': False,
                          'layer_name': 'final_track'}
-        # self.logger = project_data.project_config.setup_global_logger('trace_explorer.log')
-        self.logger = project_data.project_config.setup_logger('trace_explorer.log')
-        project_data.tracklet_annotator.logger = self.logger
+        try:
+            self.logger = project_data.project_config.setup_logger('trace_explorer.log')
+        except AttributeError:
+            self.logger = project_data.logger
+        if self.load_tracklets:
+            project_data.tracklet_annotator.logger = self.logger
         self.logger.debug("Finished initializing Trace Explorer object")
 
         self.traces_mode_calculation_options = ['integration', 'z', 'volume']
@@ -2012,16 +2019,16 @@ def napari_trace_explorer_from_config(project_path: str, app=None,
     else:
         started_new_app = False
 
-    # Build object that has all the data
+    # Build project class that has all the data
     initialization_kwargs = dict(use_custom_padded_dataframe=False,
                                  force_tracklets_to_be_sparse=force_tracklets_to_be_sparse,
                                  set_up_tracklet_interactivity=load_tracklets)
-    project_data = ProjectData.load_final_project_data_from_config(project_path,
-                                                                   to_load_tracklets=load_tracklets,
-                                                                   to_load_interactivity=load_tracklets,
-                                                                   to_load_segmentation_metadata=True,
-                                                                   to_load_frames=load_tracklets,  # This is used for ground truth comparison, which requires tracklets
-                                                                   initialization_kwargs=initialization_kwargs)
+    project_data = ProjectData.load_final_project_data(project_path,
+                                                       to_load_tracklets=load_tracklets,
+                                                       to_load_interactivity=load_tracklets,
+                                                       to_load_segmentation_metadata=True,
+                                                       to_load_frames=load_tracklets,  # This is used for ground truth comparison, which requires tracklets
+                                                       initialization_kwargs=initialization_kwargs)
     if DEBUG:
         logging.debug(project_data)
     # If I don't set this to false, need to debug custom dataframe here

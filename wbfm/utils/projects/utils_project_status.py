@@ -3,7 +3,7 @@ import os.path as osp
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from wbfm.utils.external.custom_errors import AnalysisOutOfOrderError
+from wbfm.utils.external.custom_errors import AnalysisOutOfOrderError, IncompleteConfigFileError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_project import safe_cd
 
@@ -24,6 +24,12 @@ def check_all_needed_data_for_step(project_config: ModularProjectConfig,
                                    raise_error=True,
                                    training_data_required=True,
                                    verbose=1):
+    if project_config is None:
+        logging.warning("No project config provided; cannot check data")
+        if raise_error:
+            raise IncompleteConfigFileError("No project config provided; cannot check data")
+        else:
+            return True
     flag = True
     if step_index > 0:
         flag = check_preprocessed_data(project_config, verbose)

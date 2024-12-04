@@ -622,6 +622,38 @@ class ProjectData:
         return obj
 
     @staticmethod
+    def load_final_project_data(project_path, **kwargs):
+        """
+        Wrapper function that dispatches to the correct loading function based on the input:
+        load_final_project_data_from_nwb:
+            - str (path to .nwb file)
+        (otherwise): load_final_project_data_from_config:
+            - ModularProjectConfig
+            - str (path to project directory)
+            - str (path to project_config.yaml)
+
+        If it is already a project, return it as-is
+
+
+        Parameters
+        ----------
+        project_path
+        kwargs
+
+        Returns
+        -------
+
+        """
+        if isinstance(project_path, str):
+            if project_path.endswith('.nwb'):
+                # Most kwargs are ignored here
+                initialization_kwargs = kwargs.get('initialization_kwargs', dict())
+                assert kwargs.get('load_tracklets', False) is False, "Tracklets are not supported for NWB files"
+                return ProjectData.load_final_project_data_from_nwb(project_path, **initialization_kwargs)
+        else:
+            return ProjectData.load_final_project_data_from_config(project_path, **kwargs)
+
+    @staticmethod
     def load_final_project_data_from_config(project_path: Union[str, os.PathLike, ModularProjectConfig],
                                             **kwargs):
         """
@@ -667,25 +699,24 @@ class ProjectData:
         # https://docs.h5py.org/en/stable/high/file.html#closing-files
 
         from pynwb import NWBHDF5IO, NWBFile
+        from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
+        from wbfm.utils.general.utils_nwb import convert_nwb_to_trace_dataframe
+
         nwb_io = NWBHDF5IO(nwb_path, mode='r', load_namespaces=True)
         if isinstance(nwb_io, NWBFile):
             print('NWB file loaded successfully')
             nwb_obj = nwb_io
         else:
             nwb_obj = nwb_io.read()
-        # Do not have a project_config class
+        # Do not have a project_config class (will give warnings)
         obj = ProjectData(nwb_path, None, **kwargs)
         # Initialize the relevant fields
-        from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
         obj.preprocessing_settings = PreprocessingSettings()
         obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 0])
         obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 1])
-        # TODO: Traces in correct format (dataframe with proper column names)
-        from wbfm.utils.general.utils_nwb import convert_nwb_to_trace_dataframe
         both_df_traces = convert_nwb_to_trace_dataframe(nwb_obj)
         obj.red_traces = both_df_traces['Reference']
         obj.green_traces = both_df_traces['Signal']
-        # TODO: tracks
         obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data)
 
         p = PhysicalUnitConversion()
