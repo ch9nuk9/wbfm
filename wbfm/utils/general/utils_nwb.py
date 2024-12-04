@@ -22,10 +22,12 @@ from tifffile import tifffile
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 
 
-def create_vol_seg_centers(name, description, ImagingVolume, positions, labels=None, reference_images=None):
-    '''
+def create_vol_seg_centers(name, description, ImagingVolume, positions,
+                           labels=None, reference_images=None) -> PlaneSegmentation:
+    """
     Use this function to create volume segmentation where each ROI is coordinates
     for a single neuron center in XYZ space.
 
@@ -35,7 +37,7 @@ def create_vol_seg_centers(name, description, ImagingVolume, positions, labels=N
     Labels should be an array of cellIDs in the same order as the neuron positions.
 
     From: https://github.com/focolab/NWBelegans/blob/main/NWB_convert.py#L817
-    '''
+    """
 
     vs = PlaneSegmentation(
         name=name,
@@ -63,8 +65,8 @@ def create_vol_seg_centers(name, description, ImagingVolume, positions, labels=N
             data=labels,
             index=True
         )
-
     return vs
+
 
 def nwb_using_project_data(project_data: ProjectData, include_image_data=False, output_folder=None):
     """
@@ -420,10 +422,15 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
         imaging_volume=CalcImagingVolume,
     )
 
+    print("Extracting segmentation coordinates...")
     volsegs = []
-    for t in range(blobquant_red.shape[1]):
+    for t in tqdm(range(blobquant_red.shape[1]), leave=False):
         blobs = np.squeeze(blobquant_red[:, t, 0:3])
         IDs = np.squeeze(blobquant_red[:, t, 4])
+        # I think the labels as strings mess things up
+        # Later the labels are converted to lists of single characters... but otherwise gives a ValueError
+        # ... so I'll just use the strings but ignore that column and use the actual dataframe index as ID
+        # labels = np.where(IDs != 0, IDs, -1)
         labels = IDs.astype(str)
         labels = np.where(labels != 'nan', labels, '')
 
@@ -433,12 +440,13 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
 
         volsegs.append(volseg)
 
-    CalcImSeg = ImageSegmentation(
-        name='CalciumSeriesSegmentationROIS',
-        plane_segmentations=volsegs
+    CalcImSegCoords = ImageSegmentation(
+        name='CalciumSeriesSegmentationCoords',
+        plane_segmentations=volsegs,
+        # reference_images=one_p_series,  # optional
     )
 
-    # Do not repeat ids for all time points
+    # Do not repeat ids for all time points, just save t=0
     calc_IDs = np.squeeze(blobquant_red[:, 0, 4])
     calc_labels = calc_IDs.astype(str)
     calc_labels = np.where(calc_labels != 'nan', calc_labels, '')
@@ -446,8 +454,8 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
     Calclabels = SegmentationLabels(
         name='NeuronIDs',
         labels=calc_labels,
-        description='Calcium ROI segmentation labels',
-        ImageSegmentation=CalcImSeg,
+        description='Calcium segmentation labels with xyz coordinates',
+        ImageSegmentation=CalcImSegCoords,
         # MCVSeriesSegmentation=CalcImSeg,
     )
 
@@ -455,7 +463,6 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
         description='Segmented neurons associated with calcium image series. This rt_region uses the location of the neurons at the first time point',
         region=list(np.arange(blobquant_red.shape[0]))
     )
-
 
     # Take only gce quantification column and transpose so time is in the first dimension
     gce_data_red = np.transpose(blobquant_red[:, :, 3])
@@ -509,11 +516,11 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
     calcium_imaging_module.add(CalciumSegSeries)
     # calcium_imaging_module.add(FirstFrameSeg)
     calcium_imaging_module.add(Calclabels)
-    calcium_imaging_module.add(CalcImSeg)
+    calcium_imaging_module.add(CalcImSegCoords)
     # Finish: signal time series
     calcium_imaging_module.add(SignalFluor)
     calcium_imaging_module.add(RefFluor)
-    # Finish: metdata
+    # Finish: metadata
     calcium_imaging_module.add(CalcOptChanRefs)
 
     return nwbfile
@@ -576,19 +583,38 @@ def convert_nwb_to_trace_dataframe(nwbfile):
     -------
 
     """
-    # Extract the information as long vectors
-    rois = nwbfile.processing['CalciumActivity']['SignalFluorescence']['SignalCalciumImResponseSeries'].rois
+    # Rois are the same for both channels
+    rois = nwbfile.processing['CalciumActivity']['CalciumSeriesSegmentationCoords'].plane_segmentations
 
-    xyz = pd.DataFrame(rois.table.voxel_mask.data[:])
-    traces = nwbfile.processing['CalciumActivity']['SignalFluorescence']['SignalCalciumImResponseSeries'].data
-    labels = nwbfile.processing['CalciumActivity']['SegmentationLabels']['NeuronIDs'].labels
-    # Reshape labels to be like traces (it is a long list)
-    labels = np.reshape(labels, traces.shape)
+    all_dfs = {}
+    for channel in ['Signal', 'Reference']:
+        # Extract the information as long vectors
+        red = nwbfile.processing['CalciumActivity'][f'{channel}Fluorescence'][f'{channel}CalciumImResponseSeries'].data
+        _all_dfs = {}
+        for name, r in tqdm(rois.items()):
+            rois_list = r.voxel_mask.data[:]
+            # This loop keeps the ids
+            df = pd.DataFrame()
+            df[['x', 'y', 'z', 'weight']] = np.array([r.astype(int) for r_inner in rois_list for r in r_inner]).reshape(-1,
+                                                                                                                        4)
+            _all_dfs[int(name.split('_')[-1])] = df
+        df_traces = pd.concat(_all_dfs, axis=1)
+        # Add labels
+        for n in df_traces.columns.get_level_values(0).unique():
+            df_traces.loc[:, (n, 'label')] = np.array(df_traces.index) + 1
+        id_mapping = {n: int2name_neuron(n + 1) for n in df_traces.index}
+        df_traces = df_traces.rename(index=id_mapping)
+        df_traces = df_traces.unstack().swaplevel(0, 2).unstack().T.replace(0, np.nan).copy()
 
-    # Convert to a tall dataframe
-    df_tall = pd.concat([xyz, pd.DataFrame(traces), pd.DataFrame(labels)], axis=1)
-    # Convert to a multiindex columned dataframe, with neuron names as columns
-    df = df_tall.set_index(['X', 'Y', 'Z', 'image_intensity', 'label']).unstack()
+        # Add traces
+        red = pd.DataFrame(red)
+        red = red.rename(columns=id_mapping)
+        red = pd.concat({'image_intensity': red}, axis=1).swaplevel(0, 1, axis=1)
+
+        df_traces = df_traces.join(red).sort_index()
+        all_dfs[channel] = df_traces
+
+    return all_dfs
 
 
 def nwb_from_pedro_format(folder_name: str, output_folder=None):
