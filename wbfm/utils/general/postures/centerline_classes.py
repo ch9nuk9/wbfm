@@ -1844,6 +1844,9 @@ class WormFullVideoPosture:
         # Get the relevant foldernames from the project
         # The exact files may not be in the config, so try to find them
         project_config = project_data.project_config
+        if project_config is None:
+            project_data.logger.warning("No project config found; returning empty posture class")
+            return WormFullVideoPosture()
 
         # Use the project data class to check for tracking failures
         invalid_idx = project_data.estimate_tracking_failures_from_project()

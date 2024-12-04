@@ -167,6 +167,9 @@ class ProjectData:
 
         Names are aligned with the final traces
         """
+        if self.project_config is None:
+            self.logger.warning("ProjectData initialized without a project_config object; intermediate tracks can't be loaded")
+            return None
         tracking_cfg = self.project_config.get_tracking_config()
 
         # Manual annotations take precedence by default

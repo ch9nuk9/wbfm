@@ -24,6 +24,7 @@ from tqdm.auto import tqdm
 from PyQt5.QtWidgets import QApplication, QProgressDialog
 from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
 from wbfm.utils.external.custom_errors import NoBehaviorAnnotationsError, IncompleteConfigFileError
+from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.projects.utils_neuron_names import int2name_neuron
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
@@ -258,7 +259,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         try:
             unique_behaviors = self.dat.worm_posture_class.all_found_behaviors(convert_to_strings=True,
                                                                                fluorescence_fps=True)
-        except NoBehaviorAnnotationsError:
+        except (NoBehaviorAnnotationsError, AttributeError):
             unique_behaviors = []
         unique_behaviors.insert(0, 'none')
         self.changeSubplotShading.addItems(unique_behaviors)
@@ -272,7 +273,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.changeReferenceTrace = QtWidgets.QComboBox()
         neuron_names_and_none = self.dat.neuron_names
         neuron_names_and_none.insert(0, "None")
-        neuron_names_and_none.extend(self.dat.worm_posture_class.beh_aliases_stable())
+        neuron_names_and_none.extend(WormFullVideoPosture.beh_aliases_stable())
         self.changeReferenceTrace.addItems(neuron_names_and_none)
         self.changeReferenceTrace.currentIndexChanged.connect(self.update_reference_trace)
         self.formlayout3.addRow("Reference trace:", self.changeReferenceTrace)

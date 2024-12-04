@@ -171,14 +171,15 @@ class NapariLayerInitializer:
                              experimental_clipping_planes=clipping_list)
             layers_actually_added.append(layer_name)
         if 'Raw segmentation' in which_layers:
-            layer_name = 'Raw segmentation'
-            seg_array = zarr.array(project_data.raw_segmentation)
-            viewer.add_labels(seg_array, name=layer_name,
-                              scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=force_all_visible,
-                              rendering='translucent')
-            layers_actually_added.append(layer_name)
-            # The rendering cannot be initialized to translucent_no_depth, so we do it here
-            viewer.layers[layer_name].blending = 'translucent_no_depth'
+            if project_data.raw_segmentation is not None:
+                layer_name = 'Raw segmentation'
+                seg_array = zarr.array(project_data.raw_segmentation)
+                viewer.add_labels(seg_array, name=layer_name,
+                                  scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=force_all_visible,
+                                  rendering='translucent')
+                layers_actually_added.append(layer_name)
+                # The rendering cannot be initialized to translucent_no_depth, so we do it here
+                viewer.layers[layer_name].blending = 'translucent_no_depth'
         if 'Colored segmentation' in which_layers:
             layer_name = 'Colored segmentation'
             if project_data.segmentation is None:
