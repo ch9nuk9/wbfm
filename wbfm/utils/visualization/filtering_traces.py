@@ -142,8 +142,12 @@ def filter_linear_interpolation(y: pd.Series, window=15):
 
 def _get_y_and_vol(df_tmp, i, column_name):
     try:
-        y_raw = df_tmp[i][column_name]
-        vol = df_tmp[i]['area']
+        _df = df_tmp[i]
+        y_raw = _df[column_name]
+        if 'area' in _df:
+            vol = _df['area']
+        else:
+            vol = None
     except KeyError:
         # Then we just have a single level, and don't have the volume
         y_raw = df_tmp[i]
@@ -195,7 +199,7 @@ def trace_from_dataframe_factory(calculation_mode, background_per_pixel, bleach_
                 # Otherwise we manually bleach and background correct
                 y_raw, vol = _get_y_and_vol(df_tmp, i, column_name)
 
-                if background_per_pixel > 0:
+                if background_per_pixel is not None and background_per_pixel > 0:
                     if vol is None:
                         logging.warning("Background subtraction requested, but volume was not included in the dataframe")
                         y = y_raw

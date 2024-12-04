@@ -606,10 +606,10 @@ def convert_nwb_to_trace_dataframe(nwbfile):
         df_traces = df_traces.rename(index=id_mapping)
         df_traces = df_traces.unstack().swaplevel(0, 2).unstack().T.replace(0, np.nan).copy()
 
-        # Add traces
+        # Add traces (column name is from opencv)
         red = pd.DataFrame(red)
         red = red.rename(columns=id_mapping)
-        red = pd.concat({'image_intensity': red}, axis=1).swaplevel(0, 1, axis=1)
+        red = pd.concat({'intensity_image': red}, axis=1).swaplevel(0, 1, axis=1)
 
         df_traces = df_traces.join(red).sort_index()
         all_dfs[channel] = df_traces

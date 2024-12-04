@@ -717,10 +717,13 @@ class ProjectData:
         obj.preprocessing_settings = PreprocessingSettings()
         obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 0])
         obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 1])
+        # Save the traces, and the tracks using the same dataframes (they all have xyz info)
         both_df_traces = convert_nwb_to_trace_dataframe(nwb_obj)
         obj.red_traces = both_df_traces['Reference']
         obj.green_traces = both_df_traces['Signal']
         obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data)
+
+        obj.final_tracks = both_df_traces['Reference']
 
         p = PhysicalUnitConversion()
         p.volumes_per_second = nwb_obj.acquisition['CalciumImageSeries'].rate
@@ -766,6 +769,11 @@ class ProjectData:
         else:
             kwargs['background_per_pixel'] = self.background_per_pixel
 
+        if self.project_config is not None:
+            alternate_dataframe_folder = self.project_config.get_visualization_config().absolute_subfolder
+        else:
+            alternate_dataframe_folder = None
+
         self._trace_plotter = TracePlotter(
             self.red_traces,
             self.green_traces,
@@ -775,7 +783,7 @@ class ProjectData:
             remove_outliers=remove_outliers,
             filter_mode=filter_mode,
             bleach_correct=bleach_correct,
-            alternate_dataframe_folder=self.project_config.get_visualization_config().absolute_subfolder,
+            alternate_dataframe_folder=alternate_dataframe_folder,
             **kwargs
         )
         y = self._trace_plotter.calculate_traces(neuron_name)
