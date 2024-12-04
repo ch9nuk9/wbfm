@@ -15,7 +15,8 @@ from wbfm.utils.general.utils_paper import PaperDataCache, apply_figure_settings
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
-from wbfm.utils.external.custom_errors import NoMatchesError, NoNeuronsError, NoBehaviorAnnotationsError
+from wbfm.utils.external.custom_errors import NoMatchesError, NoNeuronsError, NoBehaviorAnnotationsError, \
+    IncompleteConfigFileError
 from wbfm.utils.general.postprocessing.utils_imputation import impute_missing_values_in_dataframe
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
@@ -392,6 +393,9 @@ class ProjectData:
     @cached_property
     def tracklet_annotator(self) -> TrackletAndSegmentationAnnotator:
         """Custom class that implements manual modification of tracklets and segmentation"""
+        if self.project_config is None:
+            self.logger.warning("ProjectData initialized without a project_config object; tracklet annotator can't be loaded")
+            return None
         tracking_cfg = self.project_config.get_tracking_config()
         training_cfg = self.project_config.get_training_config()
         # fname = tracking_cfg.resolve_relative_path_from_config('global2tracklet_matches_fname')
@@ -1664,7 +1668,9 @@ class ProjectData:
         self.df_manual_tracking_fname = fname
         return df_manual_tracking
 
-    def get_default_manual_annotation_fname(self):
+    def get_default_manual_annotation_fname(self) -> Optional[str]:
+        if self.project_config is None:
+            raise IncompleteConfigFileError("No project config found; cannot load or save manual annotations")
         track_cfg = self.project_config.get_tracking_config()
         excel_fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.xlsx", prepend_subfolder=True)
         return excel_fname
@@ -1688,8 +1694,10 @@ class ProjectData:
             # Fill the first column with the default names
             df['Neuron ID'] = self.neuron_names
             df['Certainty'] = 0
-
-            fname = self.get_default_manual_annotation_fname()
+            try:
+                fname = self.get_default_manual_annotation_fname()
+            except IncompleteConfigFileError:
+                return None
         elif not self.df_manual_tracking_fname.endswith('.xlsx'):
             # Make sure the output is excel even if the input isn't
             fname = str(Path(self.df_manual_tracking_fname).with_suffix('.xlsx'))

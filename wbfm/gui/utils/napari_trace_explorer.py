@@ -454,7 +454,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     @property
     def raw_seg_layer(self):
-        return self.viewer.layers['Raw segmentation']
+        try:
+            return self.viewer.layers['Raw segmentation']
+        except KeyError:
+            return None
 
     @property
     def colored_seg_layer(self):
@@ -548,13 +551,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                                          f"{next_tracklet}_current": 'plot'}
         return which_tracklets_to_update
 
-    def subplot_update_dict_for_tracklet_modification(self):
-        # The current tracklet may already be matched, so there are two lines that need to be updated
-        last_tracklet = self.dat.tracklet_annotator.current_tracklet_name
-        which_tracklets_to_update = {last_tracklet: 'replot',
-                                     f"{last_tracklet}_current": 'replot'}
-        return which_tracklets_to_update
-
     def get_dict_for_tracklet_save(self, tracklet_name):
         # Remove tracklet as black, but then replot as colored
         which_tracklets_to_update = {f"{tracklet_name}_current": 'remove',
@@ -592,16 +588,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def update_neuron_in_tracklet_annotator(self):
         self.dat.tracklet_annotator.current_neuron = self.changeNeuronDropdown.currentText()
 
-    # def update_segmentation_options(self):
-    #     self.dat.tracklet_annotator.segmentation_options = dict(
-    #         which_neuron_keeps_original=self.splitSegmentationKeepOriginalIndexButton.currentText(),
-    #         # method=self.splitSegmentationMethodButton.currentText(),
-    #         x_split_local_coord=self.splitSegmentationManualSliceButton.value()
-    #     )
-
     def update_interactivity(self):
         to_be_interactive = self.changeInteractivityCheckbox.isChecked()
-        self.dat.tracklet_annotator.is_currently_interactive = to_be_interactive
+        if self.dat.tracklet_annotator is not None:
+            self.dat.tracklet_annotator.is_currently_interactive = to_be_interactive
 
         if to_be_interactive:
             self.groupBox3TrackletCorrection.setTitle("Tracklet Correction (currently enabled)")
@@ -716,23 +706,24 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.zoom_using_current_neuron_or_tracklet()
 
         layer_to_add_callback = self.raw_seg_layer
-        added_segmentation_callbacks = [
-            self.update_segmentation_status_label,
-            self.toggle_highlight_selected_neuron
-        ]
-        added_tracklet_callbacks = [
-            self.change_tracklets_from_click,
-            self.set_segmentation_layer_invisible
-        ]
-        select_neuron_callback = self.select_neuron
-        self.dat.tracklet_annotator.connect_tracklet_clicking_callback(
-            layer_to_add_callback,
-            self.viewer,
-            added_segmentation_callbacks=added_segmentation_callbacks,
-            added_tracklet_callbacks=added_tracklet_callbacks,
-            select_neuron_callback=select_neuron_callback
-        )
-        self.update_neuron_in_tracklet_annotator()
+        if layer_to_add_callback is not None:
+            added_segmentation_callbacks = [
+                self.update_segmentation_status_label,
+                self.toggle_highlight_selected_neuron
+            ]
+            added_tracklet_callbacks = [
+                self.change_tracklets_from_click,
+                self.set_segmentation_layer_invisible
+            ]
+            select_neuron_callback = self.select_neuron
+            self.dat.tracklet_annotator.connect_tracklet_clicking_callback(
+                layer_to_add_callback,
+                self.viewer,
+                added_segmentation_callbacks=added_segmentation_callbacks,
+                added_tracklet_callbacks=added_tracklet_callbacks,
+                select_neuron_callback=select_neuron_callback
+            )
+            self.update_neuron_in_tracklet_annotator()
 
         # Also add interactivity to the colored segmentation layer, for selecting neurons
         self.add_neuron_selection_callback()
@@ -1744,7 +1735,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.raw_seg_layer.visible = True
 
     def set_segmentation_layer_do_not_show_selected_label(self):
-        self.raw_seg_layer.show_selected_label = False
+        if self.raw_seg_layer is not None:
+            self.raw_seg_layer.show_selected_label = False
 
     def time_changed_callbacks(self):
         # Check to make sure there was actually a change
