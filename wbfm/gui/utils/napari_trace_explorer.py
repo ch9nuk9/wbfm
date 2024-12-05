@@ -586,6 +586,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         zoom_using_layer_in_viewer(self.viewer, **self.zoom_opt)
 
     def update_neuron_in_tracklet_annotator(self):
+        if self.dat.tracklet_annotator is None:
+            return
         self.dat.tracklet_annotator.current_neuron = self.changeNeuronDropdown.currentText()
 
     def update_interactivity(self):
@@ -608,6 +610,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def update_gt_correction_interactivity(self):
         # Initialize them as interactive or not
+        if self.dat.tracklet_annotator is None:
+            return
         to_be_interactive = self.dat.tracklet_annotator.gt_mismatches is not None
         if to_be_interactive:
             to_be_interactive = len(self.dat.tracklet_annotator.gt_mismatches[self.current_neuron_name]) > 0
