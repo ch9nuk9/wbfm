@@ -724,14 +724,14 @@ class ProjectData:
         # Initialize the relevant fields
         obj.preprocessing_settings = PreprocessingSettings()
         # Transpose data from TXYZC to TZXY (splitting the channel)
-        obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 0]).transpose((0, 3, 1, 2))
-        obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 1]).transpose((0, 3, 1, 2))
+        obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
+        obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 1].transpose((0, 3, 1, 2))
         # Save the traces, and the tracks using the same dataframes (they all have xyz info)
         both_df_traces = convert_nwb_to_trace_dataframe(nwb_obj)
         obj.red_traces = both_df_traces['Reference']
         obj.green_traces = both_df_traces['Signal']
         # Transpose data from TXYZ to TZXY
-        obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data[:]).transpose((0, 3, 1, 2))
+        obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
 
         obj.final_tracks = both_df_traces['Reference']
 
