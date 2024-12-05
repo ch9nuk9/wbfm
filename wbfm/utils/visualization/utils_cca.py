@@ -161,7 +161,8 @@ class CCAPlotter:
         X_r, Y_r, cca = self.calc_cca(**kwargs)
         return cca.inverse_transform(X_r, Y_r)
 
-    def calc_r_squared(self, use_pca=False, n_components: Union[int, list] = 1, use_behavior=False, **kwargs):
+    def calc_r_squared(self, use_pca=False, n_components: Union[int, list] = 1, use_behavior=False,
+                       DEBUG=False, **kwargs):
         if isinstance(n_components, list):
             all_r_squared, r_squared_per_row = {}, {}
             for i in n_components:
@@ -205,6 +206,12 @@ class CCAPlotter:
         residual_variance_per_row = (X - X_r_recon).var(axis=0)
         total_variance_per_row = X.var(axis=0)
         r_squared_per_row = 1 - residual_variance_per_row / total_variance_per_row
+        if DEBUG:
+            print(f"Settings: binary_behaviors={kwargs.get('binary_behaviors', False)}, use_pca={use_pca}, n_components={n_components}")
+            print(f"total_variance_per_row: {total_variance_per_row}")
+            print(f"residual_variance_per_row: {residual_variance_per_row}")
+            print(f"mean per row: {X.mean(axis=0)}")
+            print(f"mean reconstruction per row: {X_r_recon.mean(axis=0)}")
 
         return r_squared, r_squared_per_row
 
