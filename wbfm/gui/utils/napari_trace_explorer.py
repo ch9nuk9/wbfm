@@ -628,11 +628,15 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         """
         # For some reason the progress bar doesn't show up until after the first segmentation_metadata call,
         # ... even if I add sleep and etc.
-        dict_of_saving_callbacks = {
-            'segmentation_metadata': self.dat.segmentation_metadata.overwrite_original_detection_file,
-            'tracklets': self.dat.tracklet_annotator.save_manual_matches_to_disk,
-            'segmentation': self.dat.modify_segmentation_on_disk_using_buffer
-        }
+        if self.dat.segmentation_metadata is not None:
+            dict_of_saving_callbacks = {
+                'segmentation_metadata': self.dat.segmentation_metadata.overwrite_original_detection_file,
+                'tracklets': self.dat.tracklet_annotator.save_manual_matches_to_disk,
+                'segmentation': self.dat.modify_segmentation_on_disk_using_buffer
+            }
+        else:
+            dict_of_saving_callbacks = {}
+
         if self.manualNeuronNameEditor is not None:
             dict_of_saving_callbacks['manual_ids'] = self.manualNeuronNameEditor.save_df_to_disk
         progress = QProgressDialog("Saving to disk, you may quit when finished", None,
@@ -655,6 +659,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         with self.dat.tracklet_annotator.saving_lock:
             # Set any None values to True; this means nothing was done
             all_flags = {k: v if v is not None else True for k, v in all_flags.items()}
+            if len(all_flags) == 0:
+                self.logger.error("No saving steps were attempted!")
+                self.logger.error("If this is a NWB project, then modifications cannot be saved yet!")
             if not all(all_flags.values()):
                 self.logger.error("Failed to save at least one step to disk!")
                 self.logger.error(f"'False' means failed step: {all_flags}")
