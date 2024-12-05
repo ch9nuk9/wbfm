@@ -288,7 +288,7 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
     video_data = np.stack(video_list, axis=-1)
     # Reshape to be TXYZC from TZXYC
     video_data = np.transpose(video_data, [0, 2, 3, 1, 4])
-    chunk_shape = list(video_data.shape[1:])  # One time point, one channel
+    chunk_shape = list(video_data.shape[1:][:-1])  # Remove time point and channel
     chunk_shape.append(1)  # Add the channel
     chunk_shape.insert(0, 1)  # Add the time point
 
@@ -297,8 +297,8 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
         data = CustomDataChunkIterator(
             array=video_data,
             # this will be the max shape of the final image. Can leave blank or set as the size of your full data if you know that ahead of time
-            maxshape=None,
-            buffer_size=10,
+            # maxshape=None,
+            # buffer_size=10,
             chunk_shape=tuple(chunk_shape)
         )
         wrapped_data = H5DataIO(data=data, compression="gzip", compression_opts=4)
@@ -409,8 +409,8 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
     data = CustomDataChunkIterator(
         array=segmentation_video,
         # this will be the max shape of the final image. Can leave blank or set as the size of your full data if you know that ahead of time
-        maxshape=None,
-        buffer_size=10,
+        # maxshape=None,
+        # buffer_size=10,
         chunk_shape=tuple(chunk_shape)
     )
     wrapped_data = H5DataIO(data=data, compression="gzip", compression_opts=4)
