@@ -12,15 +12,27 @@
 #SBATCH --gres=gpu:1
 #SBATCH --partition=basic  # The basic partition has computers with single GPUs, instead of multiple
 
+# Helper function to display a help message
+function show_help {
+    echo "Usage: $0 -t project_path -n is_dry_run -s step_reference"
+    echo "  -t project_path: path to the project directory"
+    echo "  -n is_dry_run: whether to run the command or just print it"
+    echo "  -s step_reference: reference to the step to run (see single_step_dispatcher.sbatch for the list of steps)"
+    echo "  -a args: additional arguments to pass to the script; only used for 3-barlow"
+    echo "  -h: display this help message"
+}
+
 pwd; hostname; date
 
 # Get all user flags
-while getopts t:n:s: flag
+while getopts t:n:s:a:h flag
 do
     case "${flag}" in
         t) project_path=${OPTARG};;
         n) is_dry_run=${OPTARG};;
         s) step_reference=${OPTARG};;
+        a) args=${OPTARG};;
+        h) show_help;;
         *) raise error "Unknown flag"
     esac
 done
@@ -37,17 +49,16 @@ CMD_DICT["2b"]="2b-match_adjacent_volumes.py"
 CMD_DICT["2c"]="2c-postprocess_matches_to_tracklets.py"
 CMD_DICT["3a"]="3a-track_using_superglue.py"
 CMD_DICT["3b"]="3b-match_tracklets_and_tracks_using_neuron_initialization.py"
-CMD_DICT["3-alt"]="alternate/3-track_using_clustering.py"
 CMD_DICT["4"]="4-make_final_traces.py"
 CMD_DICT["4-alt"]="alternate/4c-extract_full_traces.py"
 
 # Requires additional path to model, currently hardcoded
-CMD_DICT["4+barlow_track"]="postprocessing/4+track_using_barlow.py"
+CMD_DICT["3-barlow"]="alternate/3-track_using_barlow.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
 FULL_CMD="$CMD with project_path=$project_path"
 
-if [ "$step_reference" = "4+barlow_track" ]; then
+if [ "$step_reference" = "3-barlow" ]; then
   FULL_CMD="$FULL_CMD model_fname=/lisc/scratch/neurobiology/zimmer/wbfm/TrainedBarlow/barlow_ZIM2165_Gcamp7b_worm1-2022_11_28_from_search/trial_0/resnet50.pth"
 fi
 
