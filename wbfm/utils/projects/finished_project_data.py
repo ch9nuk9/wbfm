@@ -659,6 +659,8 @@ class ProjectData:
                 initialization_kwargs = kwargs.get('initialization_kwargs', dict())
                 assert kwargs.get('load_tracklets', False) is False, "Tracklets are not supported for NWB files"
                 return ProjectData.load_final_project_data_from_nwb(project_path, **initialization_kwargs)
+            else:
+                return ProjectData.load_final_project_data_from_config(project_path, **kwargs)
         else:
             return ProjectData.load_final_project_data_from_config(project_path, **kwargs)
 
@@ -729,7 +731,7 @@ class ProjectData:
         obj.red_traces = both_df_traces['Reference']
         obj.green_traces = both_df_traces['Signal']
         # Transpose data from TXYZ to TZXY
-        obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
+        obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data[:]).transpose((0, 3, 1, 2))
 
         obj.final_tracks = both_df_traces['Reference']
 

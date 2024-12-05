@@ -10,7 +10,7 @@ import scipy
 from matplotlib import pyplot as plt
 from pynwb import NWBFile, NWBHDF5IO
 from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, DfOverF, Fluorescence
-from hdmf.data_utils import DataChunkIterator
+from hdmf.data_utils import GenericDataChunkIterator
 from dateutil import tz
 import pandas as pd
 from datetime import datetime
@@ -288,14 +288,18 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
     video_data = np.stack(video_list, axis=-1)
     # Reshape to be TXYZC from TZXYC
     video_data = np.transpose(video_data, [0, 2, 3, 1, 4])
+    chunk_shape = list(video_data.shape[1:])  # One time point, one channel
+    chunk_shape.append(1)  # Add the channel
+    chunk_shape.insert(0, 1)  # Add the time point
 
     # The DataChunkIterator wraps the data generator function and will stitch together the chunks as it iteratively reads over the full file
     if video_data is not None:
-        data = DataChunkIterator(
-            data=_iter_volumes(video_data),
+        data = CustomDataChunkIterator(
+            array=video_data,
             # this will be the max shape of the final image. Can leave blank or set as the size of your full data if you know that ahead of time
             maxshape=None,
             buffer_size=10,
+            chunk_shape=tuple(chunk_shape)
         )
         wrapped_data = H5DataIO(data=data, compression="gzip", compression_opts=4)
     else:
@@ -398,12 +402,16 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
 
     # Convert segmentation video from TZXY to TXYZ
     segmentation_video = np.transpose(segmentation_video, [0, 2, 3, 1])
+    chunk_shape = list(segmentation_video.shape[1:])  # One time point
+    chunk_shape.insert(0, 1)  # Add the time point
+
     # Build a generator (like the raw data) but for the segmentation data
-    data = DataChunkIterator(
-        data=_iter_volumes(segmentation_video),
+    data = CustomDataChunkIterator(
+        array=segmentation_video,
         # this will be the max shape of the final image. Can leave blank or set as the size of your full data if you know that ahead of time
         maxshape=None,
         buffer_size=10,
+        chunk_shape=tuple(chunk_shape)
     )
     wrapped_data = H5DataIO(data=data, compression="gzip", compression_opts=4)
 
@@ -1128,3 +1136,26 @@ def plot_image_and_segmentation(nwbfile):
     plt.gca().set_aspect('equal')
 
     plt.show()
+
+
+class CustomDataChunkIterator(GenericDataChunkIterator):
+    """
+    Needed because the non-abstract default DataChunkIterator doesn't allow chunk_shape specification
+    See: https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataChunkIterator
+
+    Code copied from tutorial: https://hdmf.readthedocs.io/en/stable/tutorials/plot_generic_data_chunk_tutorial.html
+
+    I think I don't need to define a __next__ method because numpy + chunk_size takes care of it
+    """
+    def __init__(self, array: np.ndarray, **kwargs):
+        self.array = array
+        super().__init__(**kwargs)
+
+    def _get_data(self, selection):
+        return self.array[selection]
+
+    def _get_maxshape(self):
+        return self.array.shape
+
+    def _get_dtype(self):
+        return self.array.dtype

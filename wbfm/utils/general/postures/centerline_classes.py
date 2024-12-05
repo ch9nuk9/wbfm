@@ -1851,7 +1851,8 @@ class WormFullVideoPosture:
         # Use the project data class to check for tracking failures
         invalid_idx = project_data.estimate_tracking_failures_from_project()
 
-        bigtiff_start_volume = project_config.config['deprecated_dataset_params'].get('bigtiff_start_volume', 0)
+        old_params = project_config.config.get('deprecated_dataset_params', {})
+        bigtiff_start_volume = old_params.get('bigtiff_start_volume', 0)
         opt = dict(bigtiff_start_volume=bigtiff_start_volume,
                    num_volumes=project_data.num_frames,
                    project_config=project_config,
