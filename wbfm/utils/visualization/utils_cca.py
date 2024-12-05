@@ -3,13 +3,14 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Tuple, Union
-
+from sklearn.pipeline import Pipeline
 import numpy as np
 import pandas as pd
 from ipywidgets import interact
 from sklearn.cross_decomposition import CCA
 import plotly.express as px
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
@@ -79,10 +80,15 @@ class CCAPlotter:
 
     def _truncate_using_pca(self, df_traces, n_components=None):
         X = fill_nan_in_dataframe(df_traces, do_filtering=False)
-        X -= X.mean()
-        pca = PCA(n_components=n_components, whiten=False)
-        X = pca.fit_transform(X)
-        return X, pca
+
+        # Make a pipeline that subtracts the mean and then does PCA
+        pipe = Pipeline([
+            ('subtract_mean', StandardScaler(with_mean=True, with_std=False)),
+            ('pca', PCA(n_components=n_components, whiten=False))
+        ])
+        X = pipe.fit_transform(X)
+
+        return X, pipe
 
     @property
     def df_traces(self):
@@ -157,23 +163,24 @@ class CCAPlotter:
 
     def calc_r_squared(self, use_pca=False, n_components: Union[int, list] = 1, use_behavior=False, **kwargs):
         if isinstance(n_components, list):
-            all_r_squared = {}
+            all_r_squared, r_squared_per_row = {}, {}
             for i in n_components:
-                all_r_squared[i] = self.calc_r_squared(use_pca, i, use_behavior=use_behavior, **kwargs)
-            return all_r_squared
+                all_r_squared[i], r_squared_per_row[i] = self.calc_r_squared(use_pca, i, use_behavior=use_behavior, **kwargs)
+            return all_r_squared, r_squared_per_row
         # First, calculate the reconstruction
         if use_behavior:
             binary_behaviors = kwargs.get('binary_behaviors', False)
-            X = self._get_beh_df(binary_behaviors=binary_behaviors)
+            X = self._get_beh_df(binary_behaviors=binary_behaviors, raw_not_truncated=True)
         else:
             X = self._df_traces  # Use the non-truncated traces
 
         if use_pca:
             # See calc_pca_modes
-            X = fill_nan_in_dataframe(X, do_filtering=False)
-            X -= X.mean()
-            pca = PCA(n_components=n_components, whiten=False)
-            X_r_recon = pca.inverse_transform(pca.fit_transform(X))
+            pipe = Pipeline([
+                ('subtract_mean', StandardScaler(with_mean=True, with_std=False)),
+                ('pca', PCA(n_components=n_components, whiten=False))
+            ])
+            X_r_recon = pipe.inverse_transform(pipe.fit_transform(X))
         else:
             X_r_recon, Y_r_recon = self.calc_cca_reconstruction(n_components=n_components, **kwargs)
             if use_behavior:
@@ -192,8 +199,14 @@ class CCAPlotter:
         # Then, calculate the r-squared (either behavior or traces)
         residual_variance = (X - X_r_recon).var().sum()
         total_variance = X.var().sum()
+        r_squared = 1 - residual_variance / total_variance
 
-        return 1 - residual_variance / total_variance
+        # Also calculate the variance explained per row
+        residual_variance_per_row = (X - X_r_recon).var(axis=0)
+        total_variance_per_row = X.var(axis=0)
+        r_squared_per_row = 1 - residual_variance_per_row / total_variance_per_row
+
+        return r_squared, r_squared_per_row
 
     def calc_mode_dot_product(self, mode=0, binary_behaviors=False, **kwargs):
         """
@@ -370,8 +383,8 @@ class CCAPlotter:
         else:
             X_r, Y_r, cca = self.calc_cca(n_components=3, binary_behaviors=binary_behaviors, sparse_tau=sparse_tau)
             n_components = list(np.arange(1, modes_to_plot[-1] + 1))
-            var_explained_cumulative = self.calc_r_squared(use_pca=False, n_components=n_components,
-                                                           binary_behaviors=binary_behaviors)
+            var_explained_cumulative, _ = self.calc_r_squared(use_pca=False, n_components=n_components,
+                                                              binary_behaviors=binary_behaviors)
             # Undo the cumulative calculation
             # Note: unlike PCA, the first component is 1-indexed
             var_explained = var_explained_cumulative.copy()
@@ -586,16 +599,19 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, melt=Tr
         if isinstance(r_squared_kwargs['n_components'], list):
             # Then do recursively
             all_r_squared = []
+            all_r_squared_per_row = {}
             n_components_list = r_squared_kwargs['n_components'].copy()
             for n_components in tqdm(n_components_list):
                 r_squared_kwargs['n_components'] = n_components
-                all_cca_classes, df_r_squared = calc_r_squared_for_all_projects(all_projects, r_squared_kwargs, melt, **kwargs)
+                all_cca_classes, df_r_squared, r_squared_per_row = calc_r_squared_for_all_projects(all_projects, r_squared_kwargs, melt, **kwargs)
                 df_r_squared['n_components'] = n_components
                 all_r_squared.append(df_r_squared)
-            return all_cca_classes, pd.concat(all_r_squared)
+                all_r_squared_per_row[n_components] = r_squared_per_row
+            return all_cca_classes, pd.concat(all_r_squared), all_r_squared_per_row
 
     all_cca_classes = {}
     all_r_squared = defaultdict(dict)
+    all_r_squared_per_row = defaultdict(dict)
 
     opt_dict = {'PCA': dict(use_pca=True),
                 'CCA': dict(use_pca=False),
@@ -606,14 +622,30 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, melt=Tr
         all_cca_classes[name] = cca_plotter
         for opt_name, opt in opt_dict.items():
             opt.update(r_squared_kwargs)
-            all_r_squared[name][opt_name] = cca_plotter.calc_r_squared(**opt)
+            all_r_squared[name][opt_name], all_r_squared_per_row[name][opt_name] = cca_plotter.calc_r_squared(**opt)
 
     df_r_squared = pd.DataFrame(all_r_squared).T
+    # Also plot the variance explained per row
+
+    # Flatten the nested dictionary and then convert to a DataFrame
+    flat_data = []
+    for outer_key, level1_dict in all_r_squared_per_row.items():
+        for level1_key, level2_dict in level1_dict.items():
+            for level2_key, level3_dict in level2_dict.items():
+                for level3_key, value in level3_dict.items():
+                    flat_data.append({
+                        'Components': outer_key,
+                        'Dataset Name': level1_key,
+                        'Method': level2_key,
+                        'Behavior Variable': level3_key,
+                        'Variance explained': value
+                    })
+    df_all_r_squared_per_row = pd.DataFrame(flat_data)
 
     if melt:
         df_r_squared = df_r_squared.melt(var_name='Method', value_name='Variance Explained')
 
-    return all_cca_classes, df_r_squared
+    return all_cca_classes, df_r_squared, df_all_r_squared_per_row
 
 
 def calc_mode_correlation_for_all_projects(all_projects, correlation_kwargs=None, **kwargs):
