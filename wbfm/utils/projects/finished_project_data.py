@@ -728,7 +728,8 @@ class ProjectData:
         both_df_traces = convert_nwb_to_trace_dataframe(nwb_obj)
         obj.red_traces = both_df_traces['Reference']
         obj.green_traces = both_df_traces['Signal']
-        obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data)
+        # Transpose data from TXYZ to TZXY
+        obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
 
         obj.final_tracks = both_df_traces['Reference']
 
