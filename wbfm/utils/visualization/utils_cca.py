@@ -614,7 +614,23 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, melt=Tr
                 df_r_squared['n_components'] = n_components
                 all_r_squared.append(df_r_squared)
                 all_r_squared_per_row[n_components] = r_squared_per_row
-            return all_cca_classes, pd.concat(all_r_squared), all_r_squared_per_row
+
+            # Flatten the nested dictionary and then convert to a DataFrame
+            flat_data = []
+            beh_name_mapping = behavior_name_mapping(shorten=True)
+            for outer_key, level1_dict in all_r_squared_per_row.items():
+                for level1_key, level2_dict in level1_dict.items():
+                    for level2_key, level3_dict in level2_dict.items():
+                        for level3_key, value in level3_dict.items():
+                            flat_data.append({
+                                'Components': outer_key,
+                                'Dataset Name': level1_key,
+                                'Method': level2_key,
+                                'Behavior Variable': beh_name_mapping.get(level3_key, level3_key),
+                                'Cumulative Variance explained': value
+                            })
+            df_all_r_squared_per_row = pd.DataFrame(flat_data)
+            return all_cca_classes, pd.concat(all_r_squared), df_all_r_squared_per_row
 
     all_cca_classes = {}
     all_r_squared = defaultdict(dict)
@@ -632,28 +648,11 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, melt=Tr
             all_r_squared[name][opt_name], all_r_squared_per_row[name][opt_name] = cca_plotter.calc_r_squared(**opt)
 
     df_r_squared = pd.DataFrame(all_r_squared).T
-    # Also plot the variance explained per row
-
-    # Flatten the nested dictionary and then convert to a DataFrame
-    flat_data = []
-    beh_name_mapping = behavior_name_mapping(shorten=True)
-    for outer_key, level1_dict in all_r_squared_per_row.items():
-        for level1_key, level2_dict in level1_dict.items():
-            for level2_key, level3_dict in level2_dict.items():
-                for level3_key, value in level3_dict.items():
-                    flat_data.append({
-                        'Components': outer_key,
-                        'Dataset Name': level1_key,
-                        'Method': level2_key,
-                        'Behavior Variable': beh_name_mapping[level3_key],
-                        'Cumulative Variance explained': value
-                    })
-    df_all_r_squared_per_row = pd.DataFrame(flat_data)
 
     if melt:
         df_r_squared = df_r_squared.melt(var_name='Method', value_name='Variance Explained')
 
-    return all_cca_classes, df_r_squared, df_all_r_squared_per_row
+    return all_cca_classes, df_r_squared, all_r_squared_per_row
 
 
 def calc_mode_correlation_for_all_projects(all_projects, correlation_kwargs=None, **kwargs):
