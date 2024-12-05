@@ -98,9 +98,10 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     gce_quant_green = project_data.green_traces.swaplevel(i=0, j=1, axis=1).copy()
     gce_quant_dict = {'red': gce_quant_red, 'green': gce_quant_green}
     # Store just the background subtracting red or green traces, because we don't want to store the object volume
-    df_traces_red = project_data.calc_default_traces(min_nonnan=0, channel_mode='red')
+    trace_opt = dict(min_nonnan=0, remove_tail_neurons=False, filter_mode="no_filtering")
+    df_traces_red = project_data.calc_default_traces(channel_mode='red', **trace_opt)
     gce_quant_red.loc[:, ('intensity_image', slice(None))] = df_traces_red.values
-    df_traces_green = project_data.calc_default_traces(min_nonnan=0, channel_mode='green')
+    df_traces_green = project_data.calc_default_traces(channel_mode='green', **trace_opt)
     gce_quant_green.loc[:, ('intensity_image', slice(None))] = df_traces_green.values
 
     # Unpack videos

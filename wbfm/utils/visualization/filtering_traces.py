@@ -302,7 +302,7 @@ def filter_trace_using_mode(y, filter_mode="no_filtering"):
         y = filter_tv_diff(y)
     elif filter_mode == "bilateral":
         y = filter_bilateral(y, win_size=7, sigma_d=2.0, sigma_i=0.1)
-    elif filter_mode == "no_filtering":
+    elif filter_mode == "no_filtering" or filter_mode is None or filter_mode == "":
         pass
     else:
         logging.warning(f"Unrecognized filter mode: {filter_mode}")
