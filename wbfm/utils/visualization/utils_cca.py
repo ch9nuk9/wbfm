@@ -155,14 +155,19 @@ class CCAPlotter:
         X_r, Y_r, cca = self.calc_cca(**kwargs)
         return cca.inverse_transform(X_r, Y_r)
 
-    def calc_r_squared(self, use_pca=False, n_components: Union[int, list] = 1, **kwargs):
+    def calc_r_squared(self, use_pca=False, n_components: Union[int, list] = 1, use_behavior=False, **kwargs):
         if isinstance(n_components, list):
             all_r_squared = {}
             for i in n_components:
-                all_r_squared[i] = self.calc_r_squared(use_pca, i, **kwargs)
+                all_r_squared[i] = self.calc_r_squared(use_pca, i, use_behavior=use_behavior, **kwargs)
             return all_r_squared
         # First, calculate the reconstruction
-        X = self._df_traces  # Use the non-truncated traces
+        if use_behavior:
+            binary_behaviors = kwargs.get('binary_behaviors', False)
+            X = self._get_beh_df(binary_behaviors=binary_behaviors)
+        else:
+            X = self._df_traces  # Use the non-truncated traces
+
         if use_pca:
             # See calc_pca_modes
             X = fill_nan_in_dataframe(X, do_filtering=False)
@@ -171,11 +176,20 @@ class CCAPlotter:
             X_r_recon = pca.inverse_transform(pca.fit_transform(X))
         else:
             X_r_recon, Y_r_recon = self.calc_cca_reconstruction(n_components=n_components, **kwargs)
-            if self.preprocess_traces_using_pca:
-                # Transform the reconstructed traces back to the original space
-                X_r_recon = self._pca_traces.inverse_transform(X_r_recon)
+            if use_behavior:
+                # Binary behaviors are not transformed using PCA
+                binary_behaviors = kwargs.get('binary_behaviors', False)
+                if self.preprocess_behavior_using_pca and not binary_behaviors:
+                    # Transform the reconstructed behaviors back to the original space
+                    Y_r_recon = self._pca_beh.inverse_transform(Y_r_recon)
+                # Later, only X is used
+                X_r_recon = Y_r_recon
+            else:
+                if self.preprocess_traces_using_pca:
+                    # Transform the reconstructed traces back to the original space
+                    X_r_recon = self._pca_traces.inverse_transform(X_r_recon)
 
-        # Then, calculate the r-squared
+        # Then, calculate the r-squared (either behavior or traces)
         residual_variance = (X - X_r_recon).var().sum()
         total_variance = X.var().sum()
 
@@ -206,7 +220,10 @@ class CCAPlotter:
         df_x_pca = df_x_pca / np.linalg.norm(df_x_pca)  # PCA is already 1 dimensional
         return df_x.values.dot(df_x_pca.values)[0]
 
-    def _get_beh_df(self, binary_behaviors, raw_not_truncated=False):
+    def _get_beh_df(self, binary_behaviors, raw_not_truncated=None):
+        if raw_not_truncated is None:
+            raw_not_truncated = not self.preprocess_behavior_using_pca
+
         if binary_behaviors:
             Y = self.df_beh_binary
         else:
