@@ -172,6 +172,19 @@ rule combine_tracking_and_tracklets:
     run:
         _run_helper("3b-match_tracklets_and_tracks_using_neuron_initialization", str(input.cfg))
 
+# Alternate tracker that doesn't need tracklets
+rule barlow_tracking:
+    input:
+        cfg=project_cfg_fname,
+        metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle"),
+        frames=os.path.join(project_dir, "2-training_data/raw/frame_dat.pickle"),
+    output:
+        tracks_global=os.path.join(project_dir, "3-tracking/barlow_tracker/df_barlow_tracks.h5"),
+    threads: 48
+    run:
+        _run_helper("pipeline_alternate/3-track_using_barlow.py", str(input.cfg))
+
+
 #
 # Traces
 #
