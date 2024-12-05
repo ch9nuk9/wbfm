@@ -721,8 +721,9 @@ class ProjectData:
         obj = ProjectData(nwb_path, None, **kwargs)
         # Initialize the relevant fields
         obj.preprocessing_settings = PreprocessingSettings()
-        obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 0])
-        obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 1])
+        # Transpose data from TXYZC to TZXY (splitting the channel)
+        obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 0]).transpose((0, 3, 1, 2))
+        obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data[..., 1]).transpose((0, 3, 1, 2))
         # Save the traces, and the tracks using the same dataframes (they all have xyz info)
         both_df_traces = convert_nwb_to_trace_dataframe(nwb_obj)
         obj.red_traces = both_df_traces['Reference']
