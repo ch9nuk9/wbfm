@@ -742,6 +742,7 @@ class ProjectData:
         p.zimmer_fluroscence_um_per_pixel_xy = grid_spacing[0]
         p.zimmer_um_per_pixel_z = grid_spacing[2]
         obj.physical_unit_conversion = p
+        obj._nwb_io = nwb_io
 
         return obj
 
