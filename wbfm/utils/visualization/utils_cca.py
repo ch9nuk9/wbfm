@@ -14,7 +14,7 @@ from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
-from wbfm.utils.general.utils_paper import apply_figure_settings
+from wbfm.utils.general.utils_paper import apply_figure_settings, behavior_name_mapping
 from wbfm.utils.general.utils_filenames import get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
@@ -629,6 +629,7 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, melt=Tr
 
     # Flatten the nested dictionary and then convert to a DataFrame
     flat_data = []
+    beh_name_mapping = behavior_name_mapping(shorten=True)
     for outer_key, level1_dict in all_r_squared_per_row.items():
         for level1_key, level2_dict in level1_dict.items():
             for level2_key, level3_dict in level2_dict.items():
@@ -637,8 +638,8 @@ def calc_r_squared_for_all_projects(all_projects, r_squared_kwargs=None, melt=Tr
                         'Components': outer_key,
                         'Dataset Name': level1_key,
                         'Method': level2_key,
-                        'Behavior Variable': level3_key,
-                        'Variance explained': value
+                        'Behavior Variable': beh_name_mapping[level3_key],
+                        'Cumulative Variance explained': value
                     })
     df_all_r_squared_per_row = pd.DataFrame(flat_data)
 

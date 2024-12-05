@@ -234,17 +234,17 @@ def apply_figure_settings(fig=None, width_factor=1, height_factor=1, plotly_not_
 
 def behavior_name_mapping(shorten=False):
     name_mapping = dict(
-        signed_middle_body_speed='Speed',
+        signed_middle_body_speed='Velocity',
         dorsal_only_head_curvature='Dorsal head curvature',
         ventral_only_head_curvature='Ventral head curvature',
-        dorsal_only_body_curvature='Dorsal curvature',
-        ventral_only_body_curvature='Ventral curvature',
+        dorsal_only_body_curvature='Dorsal body curvature',
+        ventral_only_body_curvature='Ventral body curvature',
         FWD='Forward crawling',
         REV='Backward crawling',
         VENTRAL_TURN='Ventral turning',
         DORSAL_TURN='Dorsal turning',
         UNKNOWN='Unknown',
-        rev='Reversal',
+        rev='FWD/REV state',
         dorsal_turn='Dorsal turn',
         ventral_turn='Ventral turn',
         self_collision='Self-collision',
