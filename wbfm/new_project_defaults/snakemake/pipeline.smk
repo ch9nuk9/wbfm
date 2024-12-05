@@ -188,14 +188,17 @@ rule barlow_tracking:
 #
 # Traces
 #
+# See this for branching function: https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#snakefiles-branch-function
+# Note that branch was only added in version 8+ of snakemake, which requires python 3.9 for 8.0 and 3.11 for others :(
 rule extract_full_traces:
     input:
         cfg=project_cfg_fname,
-        tracks_combined=branch(
-            config['use_barlow_tracker'],
-            os.path.join(project_dir, "3-tracking/barlow_tracker/df_barlow_tracks.h5"),
-            os.path.join(project_dir, "3-tracking/postprocessing/combined_3d_tracks.h5")
-        ),
+        tracks_combined=os.path.join(project_dir, "3-tracking/postprocessing/combined_3d_tracks.h5"),
+        # tracks_combined=branch(
+        #     config['use_barlow_tracker'],
+        #     os.path.join(project_dir, "3-tracking/barlow_tracker/df_barlow_tracks.h5"),
+        #     os.path.join(project_dir, "3-tracking/postprocessing/combined_3d_tracks.h5")
+        # ),
         metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle"),
     output:
         os.path.join(project_dir, "4-traces/all_matches.pickle"),
