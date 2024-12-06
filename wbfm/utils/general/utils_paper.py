@@ -84,8 +84,10 @@ def plotly_paper_color_discrete_map():
                  1: mode_cmap[0], 2: mode_cmap[1], 3: mode_cmap[2], 4: mode_cmap[3], 5: mode_cmap[4],
                  # Role types, which are connected to behavior
                  'Inter, fwd': beh_cmap[BehaviorCodes.FWD], 'Inter, Forward': beh_cmap[BehaviorCodes.FWD],
+                 'Motor, Forward': beh_cmap[BehaviorCodes.FWD], 'Forward': beh_cmap[BehaviorCodes.FWD],
                  'Inter, rev': beh_cmap[BehaviorCodes.REV], 'Inter, Reverse': beh_cmap[BehaviorCodes.REV],
-                 'Sensory': beh_cmap[BehaviorCodes.SELF_COLLISION],
+                 'Motor, Reverse': beh_cmap[BehaviorCodes.REV], 'Reverse': beh_cmap[BehaviorCodes.REV],
+                 'Sensory': beh_cmap[BehaviorCodes.SELF_COLLISION], 'Other': beh_cmap[BehaviorCodes.SELF_COLLISION],
                  'Interneuron': beh_cmap[BehaviorCodes.STIMULUS],
                  'Motor': beh_cmap[BehaviorCodes.QUIESCENCE],
                  'Motor, Ventral': beh_cmap[BehaviorCodes.VENTRAL_TURN],

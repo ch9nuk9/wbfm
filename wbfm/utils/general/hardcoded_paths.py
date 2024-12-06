@@ -469,14 +469,20 @@ def _role_of_neurons():
     return c_elegans_neurons
 
 
-def role_of_neuron_dict(only_fwd_rev=False, include_modulatory=False, include_ventral_dorsal=False):
-    # Build a dictionary with the role of each neuron, from names to roles
-    # Use the high level info in _role_of_neurons
+def role_of_neuron_dict(only_fwd_rev=False, include_fwd_rev=False,
+                        include_modulatory=False, include_ventral_dorsal=False) -> dict:
+    """
+    Build a dictionary with the role of each neuron, from names to roles
+    Use the high level info in _role_of_neurons
+
+    Note that neurons with no roles will not be included in the dictionary, and will get the default value (empty string)
+
+    """
     role_dict = defaultdict(list)
     for role, info in _role_of_neurons().items():
 
         if role in ['Forward', 'Reverse']:
-            if not only_fwd_rev:
+            if not only_fwd_rev and not include_fwd_rev:
                 continue
         elif only_fwd_rev:
             continue
@@ -503,10 +509,11 @@ def role_of_neuron_dict(only_fwd_rev=False, include_modulatory=False, include_ve
             for k in keys:
                 role_dict[k].append(role)
     # Combine all roles, if multiple, into a single string
+    role_dict_str = defaultdict(str)
     for k, v in role_dict.items():
-        role_dict[k] = ', '.join(v) if len(v) > 1 else v[0]
+        role_dict_str[k] = ', '.join(v) if len(v) > 1 else v[0]
 
-    return role_dict
+    return role_dict_str
 
 
 def get_triggered_average_dataframe_fname(trigger_type, do_downshift=False, do_hiscl=False, do_immob=False,

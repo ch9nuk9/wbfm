@@ -207,6 +207,7 @@ def build_final_likelihood(mu, sigma, y, nu=100):
 
 
 def build_sigmoid_term(x, force_positive_slope=True):
+    # NOT USED
     # Sigmoid (hierarchy) term
     if force_positive_slope:
         log_sigmoid_slope = pm.Normal('log_sigmoid_slope', mu=0, sigma=1)  # Using log-amplitude for positivity
