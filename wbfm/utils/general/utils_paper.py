@@ -90,8 +90,8 @@ def plotly_paper_color_discrete_map():
                  'Sensory': beh_cmap[BehaviorCodes.SELF_COLLISION], 'Other': beh_cmap[BehaviorCodes.SELF_COLLISION],
                  'Interneuron': beh_cmap[BehaviorCodes.STIMULUS],
                  'Motor': beh_cmap[BehaviorCodes.QUIESCENCE],
-                 'Motor, Ventral': beh_cmap[BehaviorCodes.VENTRAL_TURN],
-                 'Motor, Dorsal': beh_cmap[BehaviorCodes.DORSAL_TURN]
+                 'Motor, Ventral': beh_cmap[BehaviorCodes.VENTRAL_TURN], 'Ventral': beh_cmap[BehaviorCodes.VENTRAL_TURN],
+                 'Motor, Dorsal': beh_cmap[BehaviorCodes.DORSAL_TURN], 'Dorsal': beh_cmap[BehaviorCodes.DORSAL_TURN]
                  }
     # Add alternative names
     for k, v in data_type_name_mapping().items():
