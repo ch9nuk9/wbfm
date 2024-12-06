@@ -41,12 +41,14 @@ config.update(hardcoded_paths["behavior_paths"])
 print(f"Loaded snakemake config file with parameters: {config}")
 
 
-def _run_helper(script_name, project_path):
+def _run_helper(script_name, project_path, **kwargs):
     """Runs a script with a given name that can't be imported directly (e.g. because it starts with a number)"""
     import importlib
     print("Running script: ", script_name)
     _module = importlib.import_module(f"wbfm.scripts.{script_name}")
-    _module.ex.run(config_updates=dict(project_path=project_path))
+    config_updates = dict(project_path=project_path)
+    config_updates.update(kwargs)
+    _module.ex.run(config_updates=config_updates)
 
 
 def _cleanup_helper(output_path):
@@ -55,6 +57,18 @@ def _cleanup_helper(output_path):
         return temporary(output_path)
     else:
         return output_path
+
+# See this for branching function: https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#snakefiles-branch-function
+# Note that branch was only added in version 8+ of snakemake, which requires python 3.9 for 8.0 and 3.11 for others :(
+
+# Alternate: function to split the branches
+# https://stackoverflow.com/questions/40510347/can-snakemake-avoid-ambiguity-when-two-different-rule-paths-can-generate-a-given
+def _choose_tracker():
+    if config['use_barlow_tracker']:
+        return os.path.join(project_dir, "3-tracking/barlow_tracker/df_barlow_tracks.h5")
+    else:
+        return os.path.join(project_dir, "3-tracking/postprocessing/combined_3d_tracks.h5")
+
 
 
 #
@@ -182,23 +196,13 @@ rule barlow_tracking:
         tracks_global=os.path.join(project_dir, "3-tracking/barlow_tracker/df_barlow_tracks.h5"),
     threads: 48
     run:
-        _run_helper("pipeline_alternate.3-track_using_barlow", str(input.cfg))
+        _run_helper("pipeline_alternate.3-track_using_barlow", str(input.cfg),
+            model_fname=config["barlow_model_path"])
 
 
 #
 # Traces
 #
-# Alternate: function to split the branches
-# https://stackoverflow.com/questions/40510347/can-snakemake-avoid-ambiguity-when-two-different-rule-paths-can-generate-a-given
-def _choose_tracker():
-    if config['use_barlow_tracker']:
-        return os.path.join(project_dir, "3-tracking/barlow_tracker/df_barlow_tracks.h5")
-    else:
-        return os.path.join(project_dir, "3-tracking/postprocessing/combined_3d_tracks.h5")
-
-
-# See this for branching function: https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#snakefiles-branch-function
-# Note that branch was only added in version 8+ of snakemake, which requires python 3.9 for 8.0 and 3.11 for others :(
 rule extract_full_traces:
     input:
         cfg=project_cfg_fname,
