@@ -15,7 +15,7 @@ from wbfm.utils.external.custom_errors import UnknownValueError
 def check_exists(abs_path, allow_overwrite):
     if Path(abs_path).exists():
         if allow_overwrite:
-            logging.warning("Overwriting existing file")
+            logging.warning(f"Overwriting existing file at {abs_path}")
         else:
             raise FileExistsError
 
