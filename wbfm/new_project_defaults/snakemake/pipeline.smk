@@ -182,7 +182,7 @@ rule barlow_tracking:
         tracks_global=os.path.join(project_dir, "3-tracking/barlow_tracker/df_barlow_tracks.h5"),
     threads: 48
     run:
-        _run_helper("pipeline_alternate.3-track_using_barlow.py", str(input.cfg))
+        _run_helper("pipeline_alternate.3-track_using_barlow", str(input.cfg))
 
 
 #
