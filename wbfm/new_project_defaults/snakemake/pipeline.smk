@@ -188,12 +188,22 @@ rule barlow_tracking:
 #
 # Traces
 #
+# Alternate: function to split the branches
+# https://stackoverflow.com/questions/40510347/can-snakemake-avoid-ambiguity-when-two-different-rule-paths-can-generate-a-given
+def _choose_tracker():
+    if config['use_barlow_tracker']:
+        return os.path.join(project_dir, "3-tracking/barlow_tracker/df_barlow_tracks.h5")
+    else:
+        return os.path.join(project_dir, "3-tracking/postprocessing/combined_3d_tracks.h5")
+
+
 # See this for branching function: https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#snakefiles-branch-function
 # Note that branch was only added in version 8+ of snakemake, which requires python 3.9 for 8.0 and 3.11 for others :(
 rule extract_full_traces:
     input:
         cfg=project_cfg_fname,
-        tracks_combined=os.path.join(project_dir, "3-tracking/postprocessing/combined_3d_tracks.h5"),
+        tracks_combined=_choose_tracker(),
+        # tracks_combined=os.path.join(project_dir, "3-tracking/postprocessing/combined_3d_tracks.h5"),
         # tracks_combined=branch(
         #     config['use_barlow_tracker'],
         #     os.path.join(project_dir, "3-tracking/barlow_tracker/df_barlow_tracks.h5"),
@@ -208,6 +218,24 @@ rule extract_full_traces:
     threads: 56
     run:
         _run_helper("4-make_final_traces", str(input.cfg))
+
+
+
+# See this for branching function: https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#snakefiles-branch-function
+# Note that branch was only added in version 8+ of snakemake, which requires python 3.9 for 8.0 and 3.11 for others :(
+# rule extract_full_traces_barlow:
+#     input:
+#         cfg=project_cfg_fname,
+#         tracks_combined=os.path.join(project_dir, "3-tracking/barlow_tracker/df_barlow_tracks.h5"),
+#         metadata=os.path.join(project_dir, "1-segmentation/metadata.pickle"),
+#     output:
+#         os.path.join(project_dir, "4-traces/all_matches.pickle"),
+#         os.path.join(project_dir, "4-traces/red_traces.h5"),
+#         os.path.join(project_dir, "4-traces/green_traces.h5"),
+#         masks=os.path.join(project_dir, "4-traces/reindexed_masks.zarr.zip")
+#     threads: 56
+#     run:
+#         _run_helper("4-make_final_traces", str(input.cfg))
 
 
 #
