@@ -523,7 +523,6 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
 
     # Finish: segmentation
     calcium_imaging_module.add(CalciumSegSeries)
-    # calcium_imaging_module.add(FirstFrameSeg)
     calcium_imaging_module.add(Calclabels)
     calcium_imaging_module.add(CalcImSegCoords)
     # Finish: signal time series
