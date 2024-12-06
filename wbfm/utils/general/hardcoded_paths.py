@@ -447,10 +447,13 @@ def _role_of_neurons():
             'RID', 'RIM'
         ],
     'Forward': [
-        'AVB', 'RIB', 'DB1-DB7', 'VB1-VB11', 'RME', 'RMEV', 'RMED', 'RID', 'SIAV', 'SIAD'
+        'AVB', 'RIB', 'DB1-DB7', 'VB1-VB11', 'RME', 'RMEV', 'RMED', 'RID', 'SIAV', 'SIAD',
+        'RMDD',
+        'SMDD', 'SMDV', 'URAD',  # Only in freely moving
         ],
     'Reverse': [
         'AVA', 'AIB', 'RIM', 'DA1-DA9', 'VA1-VA12', 'AVE', 'RIA', 'URYD', 'URYV',
+        'RMDV',
         ],
     'Dorsal': [
         'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'SMDD', 'RMEV', 'SIAD', 'SAAD', 'RMDD'
@@ -469,7 +472,7 @@ def _role_of_neurons():
     return c_elegans_neurons
 
 
-def role_of_neuron_dict(only_fwd_rev=False, include_fwd_rev=False,
+def role_of_neuron_dict(only_fwd_rev=False, include_fwd_rev=False, include_basic=True,
                         include_modulatory=False, include_ventral_dorsal=False) -> dict:
     """
     Build a dictionary with the role of each neuron, from names to roles
@@ -488,6 +491,8 @@ def role_of_neuron_dict(only_fwd_rev=False, include_fwd_rev=False,
             continue
 
         if role in ['Ventral', 'Dorsal'] and not include_ventral_dorsal:
+            continue
+        if role in ['Sensory', 'Interneuron', 'Motor'] and not include_basic:
             continue
         if role == 'Modulatory' and not include_modulatory:
             continue
