@@ -560,9 +560,11 @@ var_names2 = ["sigmoid_term"]
 
 all_dfs = {}
 for n in tqdm(neurons_to_plot):
+    # Original set of variables
     dat = az.extract(all_traces[n], group='posterior', var_names=var_names, filter_vars='like')
     all_dfs[n] = [dat.to_dataframe().drop(columns=['chain', 'draw']).median()]
     
+    # Variables with specific postprocessing
     dat = az.extract(all_traces[n], group='posterior', var_names=var_names2, filter_vars='like')
     dat_sigmoid = dat.to_dataframe().drop(columns=['chain', 'draw'])
     dat_sigmoid_quantile = dat_sigmoid.quantile(0.8)#.rename('sigmoid_term_quantile')
@@ -570,6 +572,7 @@ for n in tqdm(neurons_to_plot):
     dat_sigmoid_variance = dat_sigmoid.var()
     dat_sigmoid_variance.index = ['sigmoid_term_variance']
     all_dfs[n].extend([dat_sigmoid.median(), dat_sigmoid_quantile, dat_sigmoid_variance])
+    
     all_dfs[n] = pd.concat(all_dfs[n])
 
 
@@ -579,7 +582,7 @@ for n in tqdm(neurons_to_plot):
 # df_to_plot_with_var
 
 
-# In[69]:
+# In[30]:
 
 
 # Add final columns
@@ -599,19 +602,19 @@ df_params['Neuron Type'] = list(pd.Series(df_params.index).map(role_of_neuron_di
 df_params.head()
 
 
-# In[70]:
+# In[31]:
 
 
 # px.histogram(df_params['sigmoid_term_variance'])
 
 
-# In[71]:
+# In[32]:
 
 
 # px.scatter(df_params['hyper_pca0_amplitude'])
 
 
-# In[72]:
+# In[33]:
 
 
 # fig = px.scatter_matrix(df_params, width=1000, height=1000)
@@ -619,7 +622,7 @@ df_params.head()
 # fig.show()
 
 
-# In[84]:
+# In[86]:
 
 
 from wbfm.utils.general.hardcoded_paths import role_of_neuron_dict
@@ -630,12 +633,13 @@ df_params['Neuron Type'] = pd.Series(df_params.index).map(role_of_neuron_dict(in
 
 # r = df_params['log_amplitude_mu']
 df_params['text'] = np.array(df_params.index)
+df_params['text_complete'] = np.array(df_params.index)
 df_params.loc[df_params['r'] < 0.1, 'text'] = ''
 # size = 3*np.ones(len(df_params.index))
 # size[r < 0.2] = 1
 
 
-# In[85]:
+# In[35]:
 
 
 fig = px.scatter_polar(df_params[df_params['Neuron Type'].str.contains('Motor')], r='r', theta='phase_shift', direction='counterclockwise', start_angle=0,
@@ -679,11 +683,11 @@ if to_save:
     
 
 
-# In[86]:
+# In[87]:
 
 
 fig = px.scatter_polar(df_params, r='r', theta='phase_shift', direction='counterclockwise', start_angle=0,
-                       text='text',
+                       text='text_complete',
                        color='Neuron Type', 
                        color_discrete_map=plotly_paper_color_discrete_map(),
                        size='Relative Hierarchy Score', size_max=15, #log_r=True,
@@ -725,7 +729,7 @@ if to_save:
 
 # ### Same, but no text
 
-# In[87]:
+# In[37]:
 
 
 
@@ -769,7 +773,291 @@ if to_save:
     
 
 
+# ## Sigmoid slope
+
 # In[38]:
+
+
+df_params.head()
+
+
+# In[39]:
+
+
+# Just plot slope median and variance
+fig = px.scatter(df_params.sort_values(by='sigmoid_term'), y='sigmoid_term', x='sigmoid_term_variance',#x=df_params.index,
+            text=df_params.index)
+
+apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
+fig.show()
+
+
+# In[88]:
+
+
+# Get the full posterior and plot
+# var_names2 = ["hyper_pca0_amplitude"]
+var_names2 = ["hyper_pca0_amplitude", #"hyper_pca1_amplitude", 
+              'eigenworm3_coefficient', 'eigenworm4_coefficient']
+
+all_dfs_hierarchy = {}
+for n in tqdm(neurons_to_plot):
+    dat = az.extract(all_traces[n], group='posterior', var_names=var_names2, filter_vars='like')
+    dat_hierarchy = dat.to_dataframe().drop(columns=['chain', 'draw'])
+    
+    all_dfs_hierarchy[n] = dat_hierarchy
+    # all_dfs_hierarchy[n] = np.squeeze(dat_hierarchy.values)
+# df_hierarchy = pd.DataFrame(all_dfs_hierarchy)
+df_hierarchy = pd.concat(all_dfs_hierarchy, axis=1).swaplevel(0, 1, axis=1)
+
+
+# In[89]:
+
+
+df_hierarchy.head()
+
+
+# In[90]:
+
+
+# median_order = df_hierarchy.median().sort_values()
+
+# fig = px.box(df_hierarchy[median_order.index])#, color=df_params['Neuron Type'])
+# apply_figure_settings(fig, width_factor=1.0, height_factor=0.25)
+# fig.show()
+
+
+# In[91]:
+
+
+df_hierarchy_melt = df_hierarchy.melt(var_name=['Variable', 'Neuron Name'], value_name='PC1 Coefficient', value_vars=df_hierarchy.columns.tolist())
+# df_hierarchy_melt['Neuron Type'] = df_hierarchy_melt['Neuron Name'].map(df_params['Neuron Type'].to_dict())
+# df_hierarchy_melt['Neuron Type'] = df_hierarchy_melt['Neuron Name'].map(role_of_neuron_dict(include_fwd_rev=True, include_ventral_dorsal=True, include_basic=False)).replace('', 'Other')
+df_hierarchy_melt['Neuron Type'] = df_hierarchy_melt['Neuron Name'].map(role_of_neuron_dict(only_fwd_rev=True)).replace('', 'Other')
+df_hierarchy_melt['Neuron Type Complex'] = df_hierarchy_melt['Neuron Name'].map(role_of_neuron_dict(include_fwd_rev=True, include_ventral_dorsal=True, include_basic=False)).replace('', 'Other')
+df_hierarchy_melt['Neuron Type VD'] = df_hierarchy_melt['Neuron Name'].map(role_of_neuron_dict(include_ventral_dorsal=True)).replace('', 'Other')
+
+
+# In[92]:
+
+
+df_hierarchy_melt['Neuron Type'].unique()
+
+
+# In[93]:
+
+
+df_hierarchy_melt['Variable'].unique()
+
+
+# In[94]:
+
+
+ordering = df_hierarchy_melt[df_hierarchy_melt['Variable'] == 'hyper_pca0_amplitude'].groupby('Neuron Name')['PC1 Coefficient'].median().sort_values()
+
+_df = df_hierarchy_melt[df_hierarchy_melt['Variable']=='hyper_pca0_amplitude']
+
+fig = px.box(_df, y='PC1 Coefficient', x='Neuron Name', color='Neuron Type', #facet_row='Variable',
+            category_orders={'Neuron Name': ordering.index}, color_discrete_map=plotly_paper_color_discrete_map())
+apply_figure_settings(fig, width_factor=0.6, height_factor=0.2)
+fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black")
+fig.update_layout(boxmode = "overlay") # Remove offset caused by invisible multiple types per neuron name
+fig.update_yaxes(title_text='Hierarchy<br>Parameter')
+fig.update_xaxes(title_text='', tickfont_size=10)
+
+fig.update_layout(
+    legend=dict(
+        itemsizing='constant',  # Display legend items as colored boxes and text
+        x=0.63,  # Adjust the x position of the legend
+        y=0.5, #0.54,  # Adjust the y position of the legend
+        bgcolor='rgba(0, 0, 0, 0.00)',  # Set the background color of the legend
+        bordercolor='Black',  # Set the border color of the legend
+        borderwidth=1,  # Set the border width of the legend
+        font=dict(size=base_font_size)  # Set the font size of the legend text
+    )
+)
+
+
+fig.show()
+
+to_save = True
+if to_save:
+    fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", 'sigmoid_coefficient_basic_colors.png')
+    fig.write_image(fname, scale=3)
+    fname = Path(fname).with_suffix('.svg')
+    fig.write_image(fname)
+    fname = Path(fname).with_suffix('.html')
+    fig.write_html(fname)
+
+
+# In[95]:
+
+
+# ordering = df_hierarchy_melt[df_hierarchy_melt['Variable'] == 'hyper_pca0_amplitude'].groupby('Neuron Name')['PC1 Coefficient'].median().sort_values()
+
+# _df = df_hierarchy_melt[df_hierarchy_melt['Variable']=='hyper_pca0_amplitude']
+
+# fig = px.box(_df, y='PC1 Coefficient', x='Neuron Name', color='Neuron Type Complex', #facet_row='Variable',
+#             category_orders={'Neuron Name': ordering.index}, color_discrete_map=plotly_paper_color_discrete_map())
+# apply_figure_settings(fig, width_factor=1.0, height_factor=0.2)
+# fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black")
+# fig.update_layout(boxmode = "overlay") # Remove offset caused by invisible multiple types per neuron name
+# fig.update_yaxes(title_text='Hierarchy<br>Parameter')
+# fig.update_xaxes(title_text='')
+
+# fig.show()
+
+
+# to_save = True
+# if to_save:
+#     fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", 'sigmoid_coefficient_more_colors.png')
+#     fig.write_image(fname, scale=3)
+#     fname = Path(fname).with_suffix('.svg')
+#     fig.write_image(fname)
+#     fname = Path(fname).with_suffix('.html')
+#     fig.write_html(fname)
+
+
+# In[102]:
+
+
+state_to_plot = 'eigenworm3_coefficient'
+
+ordering = df_hierarchy_melt[df_hierarchy_melt['Variable'] == state_to_plot].groupby('Neuron Name')['PC1 Coefficient'].median().sort_values()
+
+_df = df_hierarchy_melt[df_hierarchy_melt['Variable']==state_to_plot]
+
+fig = px.box(_df, y='PC1 Coefficient', x='Neuron Name', color='Neuron Type VD', #facet_row='Variable',
+            category_orders={'Neuron Name': ordering.index}, color_discrete_map=plotly_paper_color_discrete_map())
+apply_figure_settings(fig, width_factor=0.5, height_factor=0.2)
+fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black")
+fig.update_layout(boxmode = "overlay", showlegend=False) # Remove offset caused by invisible multiple types per neuron name
+fig.update_yaxes(title_text='Eigenworm 3')
+fig.update_xaxes(title_text='', tickfont_size=10)
+fig.show()
+
+to_save = True
+if to_save:
+    fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", f'{state_to_plot}.png')
+    fig.write_image(fname, scale=3)
+    fname = Path(fname).with_suffix('.svg')
+    fig.write_image(fname)
+    fname = Path(fname).with_suffix('.html')
+    fig.write_html(fname)
+
+
+# In[101]:
+
+
+state_to_plot = 'eigenworm4_coefficient'
+
+ordering = df_hierarchy_melt[df_hierarchy_melt['Variable'] == state_to_plot].groupby('Neuron Name')['PC1 Coefficient'].median().sort_values()
+
+_df = df_hierarchy_melt[df_hierarchy_melt['Variable']==state_to_plot]
+
+fig = px.box(_df, y='PC1 Coefficient', x='Neuron Name', color='Neuron Type VD', #facet_row='Variable',
+            category_orders={'Neuron Name': ordering.index}, color_discrete_map=plotly_paper_color_discrete_map())
+apply_figure_settings(fig, width_factor=0.5, height_factor=0.2)
+fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black")
+fig.update_layout(boxmode = "overlay", showlegend=False) # Remove offset caused by invisible multiple types per neuron name
+fig.update_yaxes(title_text='Eigenworm 4')
+fig.update_xaxes(title_text='', tickfont_size=10)
+fig.show()
+
+to_save = True
+if to_save:
+    fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", f'{state_to_plot}.png')
+    fig.write_image(fname, scale=3)
+    fname = Path(fname).with_suffix('.svg')
+    fig.write_image(fname)
+    fname = Path(fname).with_suffix('.html')
+    fig.write_html(fname)
+
+
+# In[98]:
+
+
+# # Using facet row to show everything
+# ordering = df_hierarchy_melt[df_hierarchy_melt['Variable'] == 'hyper_pca0_amplitude'].groupby('Neuron Name')['PC1 Coefficient'].median().sort_values()
+
+# _df = df_hierarchy_melt.copy()
+
+# fig = px.box(_df, y='PC1 Coefficient', x='Neuron Name', color='Neuron Type Complex', facet_row='Variable',
+#             category_orders={'Neuron Name': ordering.index}, color_discrete_map=plotly_paper_color_discrete_map())
+# apply_figure_settings(fig, width_factor=1.0, height_factor=0.25)
+# fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black")
+# fig.update_layout(boxmode = "overlay") # Remove offset caused by invisible multiple types per neuron name
+# fig.update_yaxes(matches=None)
+# # Row ids are flipped in facet row plots
+# fig.update_yaxes(title_text='Hierarchy<br>Parameter', row=2)
+# fig.update_yaxes(title_text='Eigenworm 3<br>Coefficient', row=1)
+# fig.for_each_annotation(lambda a: a.update(text=""))
+
+# fig.show()
+
+
+# to_save = True
+# if to_save:
+#     fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/bayesian_modeling/plots", 'sigmoid_coefficient_and_eigenworm.png')
+#     fig.write_image(fname, scale=3)
+#     fname = Path(fname).with_suffix('.svg')
+#     fig.write_image(fname)
+#     fname = Path(fname).with_suffix('.html')
+#     fig.write_html(fname)
+
+
+# In[ ]:
+
+
+
+
+
+# In[50]:
+
+
+
+# _df = df_hierarchy_melt.copy()
+# def _normalize_cols(df_sub):
+#     df_sub['normalized_var'] = df_sub['PC1 Coefficient'] / df_sub['PC1 Coefficient'].var()
+#     return df_sub
+
+# _df = _df.groupby('Neuron Name').apply(_normalize_cols)
+# _df['to_plot'] = _df['PC1 Coefficient']
+# idx = _df['Variable']=='eigenworm3_coefficient'
+# _df.loc[idx, 'to_plot'] = _df.loc[idx, 'normalized_var']
+# fig = px.box(_df, y='to_plot', x='Neuron Name', color='Neuron Type Complex', facet_row='Variable',
+#             category_orders={'Neuron Name': ordering.index}, color_discrete_map=plotly_paper_color_discrete_map())
+# apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
+# fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black")
+# fig.update_layout(boxmode = "overlay") # Remove offset caused by invisible multiple types per neuron name
+# fig.update_yaxes(matches=None)
+# # Row ids are flipped in facet row plots
+# fig.update_yaxes(title_text='Hierarchy<br>Parameter', row=2)
+# fig.update_yaxes(title_text='Eigenworm 3<br>Coefficient', row=1)
+# fig.for_each_annotation(lambda a: a.update(text=""))
+
+# fig.show()
+
+
+# In[51]:
+
+
+# az.plot_forest([all_traces[n] for n in neurons_to_plot], model_names=neurons_to_plot,
+#                var_names=['pca0_amplitude'], combined=True,
+#               filter_vars='like', kind='ridgeplot', figsize=(9, 7), ridgeplot_overlap=3)
+
+
+# In[99]:
+
+
+# az.plot_forest([all_traces[n] for n in neurons_to_plot], model_names=neurons_to_plot,
+#                var_names=['hyper_pca0_amplitude'], combined=True,
+#               filter_vars='like', kind='ridgeplot', figsize=(9, 7), ridgeplot_overlap=3)
+
+
+# ## Scratch: other model parameters
+
+# In[53]:
 
 
 
@@ -781,7 +1069,7 @@ if to_save:
 #               filter_vars='like', figsize=(9, 7))
 
 
-# In[39]:
+# In[54]:
 
 
 # # Look at one neuron specifically which seems weird
@@ -794,7 +1082,7 @@ if to_save:
 # az.plot_trace(all_traces_gcamp['VB02'], **opt);
 
 
-# In[40]:
+# In[55]:
 
 
 # fig = px.scatter(df_params.sort_values(by='self_collision_coefficient'), y='self_collision_coefficient', #x=df_params.index,
@@ -804,7 +1092,7 @@ if to_save:
 # fig.show()
 
 
-# In[41]:
+# In[56]:
 
 
 # fig = px.scatter(df_params.sort_values(by='speed_coefficient'), y='speed_coefficient', #x=df_params.index,
@@ -814,7 +1102,7 @@ if to_save:
 # fig.show()
 
 
-# In[42]:
+# In[57]:
 
 
 # fig = px.scatter(df_params, y='self_collision_coefficient', x='speed_coefficient',
@@ -824,7 +1112,7 @@ if to_save:
 # fig.show()
 
 
-# In[43]:
+# In[58]:
 
 
 # fig = px.scatter(df_params, x='dorsal_only_head_curvature_coefficient', y='ventral_only_head_curvature_coefficient',
@@ -834,7 +1122,7 @@ if to_save:
 # fig.show()
 
 
-# In[44]:
+# In[59]:
 
 
 # fig = px.scatter(df_params, x='dorsal_only_body_curvature_coefficient', y='ventral_only_body_curvature_coefficient',
@@ -844,7 +1132,7 @@ if to_save:
 # fig.show()
 
 
-# In[45]:
+# In[60]:
 
 
 fig = px.scatter(df_params, x='eigenworm3_coefficient', y='eigenworm4_coefficient',
@@ -854,7 +1142,7 @@ apply_figure_settings(fig, width_factor=1.0, height_factor=0.3)
 fig.show()
 
 
-# In[46]:
+# In[61]:
 
 
 # az.plot_density([all_traces_gcamp[n] for n in neurons_to_plot], data_labels=neurons_to_plot ,
@@ -876,7 +1164,7 @@ fig.show()
 
 # ## Check the variables used
 
-# In[47]:
+# In[62]:
 
 
 # import arviz as az
@@ -890,13 +1178,13 @@ fig.show()
             
 
 
-# In[48]:
+# In[63]:
 
 
 # test_trace
 
 
-# In[49]:
+# In[64]:
 
 
 # all_traces_gcamp['URXL']
@@ -904,19 +1192,19 @@ fig.show()
 
 # ## Debugging: look at time series reconstruction
 
-# In[50]:
+# In[65]:
 
 
 from wbfm.utils.external.utils_arviz import plot_ts, plot_model_elements
 
 
-# In[51]:
+# In[66]:
 
 
 fig = plot_model_elements(all_traces_gcamp['URXL'])
 
 
-# In[52]:
+# In[67]:
 
 
 idata = all_traces['URXL']
@@ -925,7 +1213,7 @@ idata = all_traces['VB02']
 dat2 = np.mean(np.mean(idata.posterior_predictive['sigmoid_term'], axis=0), axis=0)
 
 
-# In[53]:
+# In[68]:
 
 
 # fig = px.box(pd.DataFrame({'URXL': pd.Series(dat), 'VB02': pd.Series(dat2)}))
@@ -935,21 +1223,21 @@ dat2 = np.mean(np.mean(idata.posterior_predictive['sigmoid_term'], axis=0), axis
 
 # # Model explanation (simplified cartoon)
 
-# In[54]:
+# In[69]:
 
 
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 
-# In[55]:
+# In[70]:
 
 
 fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
 Xy = pd.read_hdf(fname)
 
 
-# In[56]:
+# In[71]:
 
 
 fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28"
@@ -958,7 +1246,7 @@ project_data = ProjectData.load_final_project_data_from_config(fname, verbose=0)
 dataset_name = "ZIM2165_Gcamp7b_worm1-2022_11_28"
 
 
-# In[57]:
+# In[72]:
 
 
 # dataset_name = Xy_ind_range.index[i_dataset]
@@ -967,20 +1255,20 @@ project_data.use_physical_time = True
 x_range = [0, 120]
 
 
-# In[58]:
+# In[73]:
 
 
 df_to_plot = Xy.loc[idx, :].reset_index(drop=True)
 df_to_plot.index = project_data.x_for_plots#[:-1]
 
 
-# In[59]:
+# In[74]:
 
 
 df_to_plot.head()
 
 
-# In[60]:
+# In[75]:
 
 
 # SECOND STYLE: two plots on one 
@@ -1030,7 +1318,7 @@ for y_name in ['VB02']:
 
 # # Debug scores
 
-# In[61]:
+# In[76]:
 
 
 _df = df_gfp
@@ -1050,13 +1338,13 @@ no_label_idx = np.logical_and(x < 5, y < 8)  # Displays some blue-only text
 df_to_plot = pd.DataFrame({'Hierarchy Score': x, 'Behavior Score': y, 'text': text_labels, 'neuron_name': x.index})
 
 
-# In[62]:
+# In[77]:
 
 
 df.head()
 
 
-# In[63]:
+# In[78]:
 
 
 df_weight = df.pivot(columns='model_type', index='neuron_name', values='elpd_diff').copy()#.reset_index()
@@ -1069,31 +1357,31 @@ df_weight = pd.concat([df_weight, df_weight2])
 # df_weight['
 
 
-# In[64]:
+# In[79]:
 
 
 px.scatter(df_weight, x='nonhierarchical', y='null', color='datatype', text=df_weight.index)
 
 
-# In[65]:
+# In[80]:
 
 
 # df[df['model_type'] == 'hierarchical_pca']
 
 
-# In[66]:
+# In[81]:
 
 
 df[df['neuron_name'] == 'AVAL']
 
 
-# In[67]:
+# In[82]:
 
 
 df_gfp[df_gfp['neuron_name'] == 'AVAL']
 
 
-# In[68]:
+# In[83]:
 
 
 df
