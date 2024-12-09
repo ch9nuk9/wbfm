@@ -7,7 +7,7 @@
 
 
 
-# In[1]:
+# In[11]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -25,7 +25,7 @@ import os
 import seaborn as sns
 
 
-# In[2]:
+# In[12]:
 
 
 from sklearn.decomposition import PCA
@@ -37,7 +37,7 @@ from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map
 import plotly.express as px
 
 
-# In[3]:
+# In[13]:
 
 
 # fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
@@ -46,7 +46,7 @@ fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/
 project_data_gcamp = ProjectData.load_final_project_data_from_config(fname)
 
 
-# In[4]:
+# In[14]:
 
 
 # Load multiple datasets
@@ -54,13 +54,13 @@ from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 all_projects_gcamp = load_paper_datasets('gcamp')
 
 
-# In[5]:
+# In[15]:
 
 
 all_projects_gfp = load_paper_datasets('gfp')
 
 
-# In[6]:
+# In[16]:
 
 
 output_folder = "multiproject_behavior_quantifications"
@@ -90,7 +90,7 @@ column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, pha
         additional_shaded_states=additional_shaded_states, showlegend=False)
 
 
-# In[9]:
+# In[ ]:
 
 
 fig = make_summary_interactive_kymograph_with_behavior(project_data_gcamp, to_save=False, to_show=True,
@@ -147,14 +147,14 @@ get_ipython().run_line_magic('debug', '')
 
 # ## Trajectory
 
-# In[ ]:
+# In[29]:
 
 
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 
-# In[ ]:
+# In[30]:
 
 
 xy = project_data_gcamp.worm_posture_class.stage_position(fluorescence_fps=True).copy()
@@ -601,13 +601,13 @@ for x, t in zip(states, titles):
 
 # # Histogram of post-reversal head bend peaks
 
-# In[ ]:
+# In[17]:
 
 
 from wbfm.utils.general.utils_paper import apply_figure_settings
 
 
-# In[ ]:
+# In[18]:
 
 
 # For each project, get the positive and negative post reversal peaks
@@ -650,7 +650,7 @@ for name, p in tqdm(all_projects_gcamp.items()):
     final_dorsal_dict[name] = dorsal_to_keep
 
 
-# In[ ]:
+# In[19]:
 
 
 # For now, ignore the dataset they came from
@@ -663,27 +663,28 @@ df_turns = pd.concat([df_ventral, df_dorsal])
 df_turns.columns = ['Amplitude', 'Turn Direction']
 
 
-# In[ ]:
+# In[20]:
 
 
 beh_list = [BehaviorCodes.VENTRAL_TURN, BehaviorCodes.DORSAL_TURN]
 cmap = [BehaviorCodes.ethogram_cmap()[beh] for beh in beh_list]
 
 
-# In[ ]:
+# In[27]:
 
 
 df_turns['Amplitude'] = df_turns['Amplitude'].abs()
 
 fig = px.histogram(df_turns, color="Turn Direction", histnorm='probability', color_discrete_sequence=cmap,
                   barmode='overlay')
-fig.update_layout(xaxis=dict(title="Peak Head Curvature"), showlegend=False)
+fig.update_layout(xaxis=dict(title="Peak Head Curvature (1/μm)"), showlegend=False)
+fig.update_layout(yaxis=dict(title="Probability"), showlegend=False)
 fig.update_traces(xbins=dict( # bins used for histogram
     # start=0.0,
     # end=60.0,
-    size=0.002
+    size=0.001
 ))
-apply_figure_settings(fig, width_factor=0.3, height_factor=0.12, plotly_not_matplotlib=True)
+apply_figure_settings(fig, width_factor=0.32, height_factor=0.12, plotly_not_matplotlib=True)
 
 fig.show()
 
@@ -693,12 +694,12 @@ fig.write_image(fname, scale=3)
 fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[ ]:
+# In[28]:
 
 
 fig = px.pie(df_turns, names="Turn Direction", color_discrete_sequence=cmap)
 
-apply_figure_settings(fig, width_factor=0.25, height_factor=0.2, plotly_not_matplotlib=True)
+apply_figure_settings(fig, width_factor=0.15, height_factor=0.1, plotly_not_matplotlib=True)
 fig.update_layout(showlegend=False)
 fig.show()
 
@@ -708,7 +709,7 @@ fig.write_image(fname, scale=3)
 fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[ ]:
+# In[23]:
 
 
 # fname = os.path.join(output_folder, "df_dorsal_ventral.h5")

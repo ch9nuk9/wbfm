@@ -6,5 +6,8 @@
 
 # Usage:
 # ./convert_all_jupyter_notebooks_to_py.sh /path/to/target/folder
+#
+# Example for paper notebooks:
+# bash /home/charles/Current_work/repos/dlc_for_wbfm/wbfm/scripts/hardcoded_protocols/convert_all_jupyter_notebooks_to_py.sh /home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper
 
 find "$1" -not -path '*/.*' -name "*.ipynb" -exec jupyter nbconvert --to script {} \;

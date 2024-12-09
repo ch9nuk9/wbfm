@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[4]:
 
 
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -13,7 +13,7 @@ get_ipython().run_line_magic('load_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 
 
-# In[2]:
+# In[5]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -32,7 +32,7 @@ import seaborn as sns
 import plotly.express as px
 
 
-# In[3]:
+# In[6]:
 
 
 from sklearn.decomposition import PCA
@@ -42,12 +42,100 @@ from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivari
 from wbfm.utils.traces.gui_kymograph_correlations import build_all_gui_dfs_multineuron_correlations
 
 
-# In[14]:
+# In[7]:
 
 
 # Same individual: fm and immob
 fname = '/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28'
 project_data_fm2immob_fm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+
+# In[8]:
+
+
+from wbfm.utils.projects.finished_project_data import plot_pca_projection_3d_from_project
+
+
+# In[ ]:
+
+
+plot_pca_projection_3d_from_project(project_data_fm2immob_fm, include_time_series_subplot=False)
+
+
+# In[78]:
+
+
+from wbfm.utils.visualization.utils_export_videos import save_video_of_pca_plot_with_behavior
+save_video_of_pca_plot_with_behavior(project_data_fm2immob_fm, t_max=100)
+
+
+# In[75]:
+
+
+
+
+
+# In[65]:
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+import time
+
+# Turn on interactive mode
+plt.ion()
+
+# Initialize the figure and axis
+fig, ax = plt.subplots()
+
+# Set up the initial data
+x = np.linspace(0, 2 * np.pi, 100)
+y = np.sin(x)
+(line,) = ax.plot(x, y, label="Sin Wave")
+
+# Set limits and labels
+ax.set_xlim(0, 2 * np.pi)
+ax.set_ylim(-1.5, 1.5)
+ax.set_xlabel("x")
+ax.set_ylabel("y")
+ax.legend()
+
+# Update loop
+for i in range(100):
+    # Shift the sine wave
+    y = np.sin(x + i * 0.1)
+    
+    # Update the line data
+    line.set_data(x, y)
+    
+    # Redraw the canvas
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+    
+    # Pause for a short duration to see the animation
+    time.sleep(0.001)
+    plt.pause(0.001)
+
+plt.ioff()
+plt.show()
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # In[15]:

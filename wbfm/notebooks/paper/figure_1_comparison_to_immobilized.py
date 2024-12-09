@@ -393,7 +393,7 @@ fig.savefig(fname.replace(".png", ".svg"), transparent=True)
 
 # # PCA weights across wbfm and immob
 
-# In[ ]:
+# In[38]:
 
 
 from wbfm.utils.visualization.utils_cca import calc_pca_weights_for_all_projects
@@ -402,13 +402,13 @@ from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 
 
-# In[ ]:
+# In[39]:
 
 
 neuron_names = neurons_with_confident_ids()
 
 
-# In[ ]:
+# In[40]:
 
 
 
@@ -416,7 +416,7 @@ wbfm_weights = calc_pca_weights_for_all_projects(all_projects_gcamp, use_paper_o
                                                 neuron_names=neuron_names)
 
 
-# In[ ]:
+# In[41]:
 
 
 immob_weights = calc_pca_weights_for_all_projects(all_projects_immob, use_paper_options=True, combine_left_right=True,
@@ -471,7 +471,7 @@ immob_weights = calc_pca_weights_for_all_projects(all_projects_immob, use_paper_
 
 # ## FM and immob on same plot
 
-# In[ ]:
+# In[37]:
 
 
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
@@ -479,7 +479,7 @@ from wbfm.utils.general.utils_paper import data_type_name_mapping, plotly_paper_
 import plotly.graph_objects as go
 
 
-# In[ ]:
+# In[42]:
 
 
 names_to_keep = set(wbfm_weights.columns).intersection(immob_weights.columns)
@@ -491,7 +491,7 @@ df_both['Dataset Type'] = df_both['dataset_type'].map(data_type_name_mapping())
 df_both['neuron_name'].unique()
 
 
-# In[ ]:
+# In[43]:
 
 
 
@@ -566,13 +566,13 @@ fig.write_image(fname)
 # 3. 
 # 
 
-# In[ ]:
+# In[44]:
 
 
 from wbfm.utils.general.hardcoded_paths import intrinsic_definition
 
 
-# In[ ]:
+# In[45]:
 
 
 from scipy import stats
@@ -604,13 +604,13 @@ df_significant_diff['significance_corrected_diff'] = output[0]
 df_significant_diff.head()
 
 
-# In[ ]:
+# In[46]:
 
 
 # %debug
 
 
-# In[ ]:
+# In[47]:
 
 
 
@@ -626,7 +626,7 @@ df_significant_diff.head()
 # fig.show()
 
 
-# In[ ]:
+# In[48]:
 
 
 # Process p value comparisons to 0
@@ -653,23 +653,10 @@ df_4states.columns = ['Result']
 df_4states.head()
 
 
-# In[ ]:
+# In[85]:
 
 
 df_4states_counts = df_4states['Result'].value_counts().reset_index()
-
-# name_mapping = {
-#     'gcamp_True_immob_True_same_sign_True': 'Same encoding in both',
-#     'gcamp_True_immob_True_same_sign_False': 'Encoding switches',
-#     'gcamp_True_immob_False_same_sign_False': 'Encoding switches',
-#     'gcamp_False_immob_True_same_sign_False': 'Fwd in immob only',
-#     'gcamp_True_immob_False_same_sign_True': 'Manifold in FM only',
-#     'gcamp_False_immob_False_same_sign_False': 'No manifold',
-#     'gcamp_False_immob_False_same_sign_True': 'No manifold',
-#     'gcamp_False_immob_True_same_sign_True': 'Manifold in immob only',
-# }
-# df_4states_counts['Result_long'] = df_4states_counts['Result'].map(name_mapping)
-# df_4states['Result_long'] = df_4states['Result'].map(name_mapping)
 
 
 df_4states_counts['Result_simple'] = df_4states_counts['Result'].map(intrinsic_definition)
@@ -677,24 +664,25 @@ df_4states['Result_simple'] = df_4states['Result'].map(intrinsic_definition)
 
 d2 = px.colors.qualitative.Dark2
 s2 = px.colors.qualitative.Set2
-cmap = {'Rev in both': d2[1],
-       'Rev in FM only': s2[1],
-       'Fwd in both': d2[0],
-       'Fwd in FM only': s2[0],
-       'No manifold': s2[-1],
-       # 'Rev in immob only': s2[-1],
-       # 'Fwd in immob only': s2[-1]
-       }
+# cmap = {'Rev in both': d2[1],
+#        'Rev in FM only': s2[1],
+#        'Fwd in both': d2[0],
+#        'Fwd in FM only': s2[0],
+#        'No manifold': s2[-1],
+#        # 'Rev in immob only': s2[-1],
+#        # 'Fwd in immob only': s2[-1]
+#        }
 
 d3 = px.colors.qualitative.D3
 cmap = {'Intrinsic': d3[4],
+       'No manifold': d3[-3],
+       'Freely moving only': d3[0],
+       'Immobilized only': d3[2],
        'Rev in FM only': d3[0],
        'Fwd in both': d3[4],
        'Freely moving only': d3[0],
-       'No manifold': d3[-3],
        'Rev in immob only': d3[2],
-       'Fwd in immob only': d3[2],
-       'Freely moving only': d3[0]
+       'Fwd in immob only': d3[2]
        }
 
 # Drop uninteresting rows
@@ -709,6 +697,7 @@ fig.update_layout(legend=dict(
     xanchor="left",
     x=0.2
 ))
+fig.update_traces(texttemplate='%{percent:.2p}')
 
 # fig.update_traces(
 #         textposition="outside",
@@ -722,16 +711,22 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-# In[ ]:
-
-
-df_4states.sort_values(by='Result')
-
-
-# In[ ]:
+# In[51]:
 
 
 df_4states['Result_simple'].value_counts()
+
+
+# ### Add english language column and export
+
+# In[89]:
+
+
+from wbfm.utils.general.hardcoded_paths import intrinsic_categories_short_description
+df_4states['Result_description'] = df_4states['Result'].map(intrinsic_categories_short_description())
+
+fname = 'intro/intrinsic_categories.xlsx'
+df_4states.sort_values(by='Result_description').drop(columns='Result').to_excel(fname)
 
 
 # # Variance explained by mode 1 across neurons
