@@ -171,6 +171,10 @@ class WormFullVideoPosture:
             # Optional postprocessing
             if reset_index:
                 df.reset_index(drop=True, inplace=True)
+            if use_physical_time is None:
+                use_physical_time = not reset_index
+            elif use_physical_time and reset_index:
+                raise DataSynchronizationError("Cannot reset index and use physical time")
             # Shorten to the correct length, if necessary. Note that we have to check for series or dataframe
             if needs_subsampling:
                 df = self._shorten_to_trace_length(df)
@@ -939,7 +943,12 @@ class WormFullVideoPosture:
         if is_already_fluorescence_fps:
             reset_index = True
         self.check_requested_frame_rate(fluorescence_fps, manual_annotation=use_manual_annotation)
-        beh = self.convert_index_to_physical_time(beh, fluorescence_fps=is_already_fluorescence_fps)
+        beh = beh.copy()
+        if reset_index:
+            beh.reset_index(inplace=True, drop=True)
+        else:
+            beh = self.convert_index_to_physical_time(beh, fluorescence_fps=is_already_fluorescence_fps,
+                                                      use_physical_time=True)
 
         # Add additional annotations from other files
         # These functions might give an error when called, so loop as a list of functions first
@@ -1156,7 +1165,8 @@ class WormFullVideoPosture:
             speed_mm_per_s = remove_outliers_via_rolling_mean(pd.Series(speed_mm_per_s), window)
             speed_mm_per_s = pd.Series(speed_mm_per_s).interpolate()
         if signed:
-            speed_mm_per_s = self.flip_of_vector_during_state(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
+            speed_mm_per_s = self.flip_of_vector_during_state(speed_mm_per_s, fluorescence_fps=fluorescence_fps,
+                                                              reset_index=reset_index)
         if clip_unrealistic_values:
             thresh = 0.5
             speed_mm_per_s = speed_mm_per_s.clip(lower=-thresh, upper=thresh)
@@ -1352,11 +1362,11 @@ class WormFullVideoPosture:
         # assert tdelta_s > 0, f"Calculated negative delta time ({tdelta_s}); was there a power outage or something?"
         # return tdelta_s
 
-    def flip_of_vector_during_state(self, vector, fluorescence_fps=False, state=BehaviorCodes.REV) -> pd.Series:
+    def flip_of_vector_during_state(self, vector, fluorescence_fps=False, state=BehaviorCodes.REV, reset_index=False) -> pd.Series:
         """By default changes sign during reversal"""
         BehaviorCodes.assert_is_valid(state)
         rev_ind = BehaviorCodes.vector_equality(
-            self.beh_annotation(fluorescence_fps=fluorescence_fps, reset_index=False), state)
+            self.beh_annotation(fluorescence_fps=fluorescence_fps, reset_index=reset_index), state)
         velocity = copy.copy(vector)
         vecolity, rev_ind = force_same_indexing(velocity, rev_ind)
         velocity[rev_ind] *= -1
