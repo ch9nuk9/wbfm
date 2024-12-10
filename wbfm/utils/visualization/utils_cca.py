@@ -72,20 +72,26 @@ class CCAPlotter:
         df_beh = df_beh / beh_std
         self._df_beh = df_beh
         if self.preprocess_behavior_using_pca:
-            X, pca = self._truncate_using_pca(df_beh, n_components=self.truncate_behavior_to_n_components)
+            X, pca = self._truncate_using_pca(df_beh, n_components=self.truncate_behavior_to_n_components,
+                                              subtract_mean=False)
             self._df_beh_truncated = pd.DataFrame(X, index=df_beh.index)
             self._pca_beh = pca
         # No filtering
         self.df_beh_binary = self.project_data.calc_default_behaviors(binary_behaviors=True)
 
-    def _truncate_using_pca(self, df_traces, n_components=None):
+    def _truncate_using_pca(self, df_traces, n_components=None, subtract_mean=True):
         X = fill_nan_in_dataframe(df_traces, do_filtering=False)
 
         # Make a pipeline that subtracts the mean and then does PCA
-        pipe = Pipeline([
-            ('subtract_mean', StandardScaler(with_mean=True, with_std=False)),
-            ('pca', PCA(n_components=n_components, whiten=False))
-        ])
+        if subtract_mean:
+            pipe = Pipeline([
+                ('subtract_mean', StandardScaler(with_mean=True, with_std=False)),
+                ('pca', PCA(n_components=n_components, whiten=False))
+            ])
+        else:
+            pipe = Pipeline([
+                ('pca', PCA(n_components=n_components, whiten=False))
+            ])
         X = pipe.fit_transform(X)
 
         return X, pipe
@@ -288,6 +294,15 @@ class CCAPlotter:
             if sort_trace_weights:
                 x = x.sort_values(ascending=False)
             fig = px.bar(x)
+            fig.show()
+
+            if self.preprocess_traces_using_pca:
+                fig = px.line(self._df_traces_truncated, title=f'PCA modes from traces')
+                self.project_data.shade_axis_using_behavior(plotly_fig=fig)
+                fig.show()
+
+            fig = px.line(self._df_beh, title=f'Raw behavior data')
+            self.project_data.shade_axis_using_behavior(plotly_fig=fig)
             fig.show()
 
         interact(f, i=(0, X_r.shape[1] - 1))
