@@ -2092,7 +2092,6 @@ class ProjectData:
         # Also set the internal behavioral class to use physical time
         self.worm_posture_class.use_physical_time = value
 
-
     @property
     def _x_physical_time(self):
         """Helper for reindexing plots from volumes to seconds"""
