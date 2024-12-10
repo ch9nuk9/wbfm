@@ -1464,7 +1464,7 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     else:
         fig.update_yaxes(dict(showticklabels=True, showgrid=True, title='Head<br>Curvature'), col=1, row=3)
         fig.update_yaxes(dict(showticklabels=True, showgrid=True, title='Body<br>Curvature'), col=1, row=4)
-        fig.update_yaxes(dict(showticklabels=True, showgrid=True, title='Speed<br>(mm/s)', range=[-0.25, 0.15]), col=1, row=5)
+        fig.update_yaxes(dict(showticklabels=True, showgrid=True, title='Velocity<br>(mm/s)', range=[-0.25, 0.15]), col=1, row=5)
     # Move the subplot titles down
     # fig.update_annotations(yshift=-7)
 
@@ -1493,7 +1493,7 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
                             y=0.75,
                             xanchor='left',
                             x=1.01,
-                            title=dict(text=r'Curvature (1/µm)', font=dict(size=14))
+                            title=dict(text=r'Curvature (1/mm)', font=dict(size=14))
                         )),
     )
     fig.update_layout(
@@ -1990,10 +1990,10 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                     # But first, need to convert to the relevant behavior code (this is a longer string)
                     if 'ventral' in single_name:
                         code = BehaviorCodes.VENTRAL_TURN
-                        # y *= 1000 # Move to mm instead of um
+                        y *= 1000  # Move to mm instead of um
                     elif 'dorsal' in single_name:
                         code = BehaviorCodes.DORSAL_TURN
-                        # y *= 1000 # Move to mm instead of um
+                        y *= 1000  # Move to mm instead of um
                     else:
                         code = BehaviorCodes.UNKNOWN
 

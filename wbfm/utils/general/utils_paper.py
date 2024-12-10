@@ -91,7 +91,9 @@ def plotly_paper_color_discrete_map():
                  'Interneuron': beh_cmap[BehaviorCodes.STIMULUS],
                  'Motor': beh_cmap[BehaviorCodes.QUIESCENCE],
                  'Motor, Ventral': beh_cmap[BehaviorCodes.VENTRAL_TURN], 'Ventral': beh_cmap[BehaviorCodes.VENTRAL_TURN],
-                 'Motor, Dorsal': beh_cmap[BehaviorCodes.DORSAL_TURN], 'Dorsal': beh_cmap[BehaviorCodes.DORSAL_TURN]
+                 'Ventral body': beh_cmap[BehaviorCodes.VENTRAL_TURN], 'Ventral head': beh_cmap[BehaviorCodes.VENTRAL_TURN],
+                 'Motor, Dorsal': beh_cmap[BehaviorCodes.DORSAL_TURN], 'Dorsal': beh_cmap[BehaviorCodes.DORSAL_TURN],
+                 'Dorsal body': beh_cmap[BehaviorCodes.DORSAL_TURN], 'Dorsal head': beh_cmap[BehaviorCodes.DORSAL_TURN],
                  }
     # Add alternative names
     for k, v in data_type_name_mapping().items():
@@ -246,7 +248,7 @@ def behavior_name_mapping(shorten=False):
         VENTRAL_TURN='Ventral turning',
         DORSAL_TURN='Dorsal turning',
         UNKNOWN='Unknown',
-        rev='FWD/REV state',
+        rev='FWD-REV State',
         dorsal_turn='Dorsal turn',
         ventral_turn='Ventral turn',
         self_collision='Self-collision',
