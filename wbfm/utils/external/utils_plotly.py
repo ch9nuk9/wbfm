@@ -282,7 +282,7 @@ def get_nonoverlapping_text_positions(x, y, all_text, fig, weight=100, k=None, a
 
 
 def combine_plotly_figures(all_figs, show_legends: List[bool] = None, force_yref_paper=True,
-                           DEBUG=False, **kwargs):
+                           horizontal=True, DEBUG=False, **kwargs):
     """
     Combine multiple plotly figures into a single figure, all on one row
 
@@ -297,27 +297,35 @@ def combine_plotly_figures(all_figs, show_legends: List[bool] = None, force_yref
 
     """
 
+    if horizontal:
+        opt = dict(rows=1, cols=len(all_figs), shared_yaxes=True, horizontal_spacing=0.01)
+    else:
+        opt = dict(rows=len(all_figs), cols=1, shared_xaxes=True, vertical_spacing=0.01)
+
     fig = make_subplots(
-        rows=1, cols=len(all_figs),
-        shared_yaxes=True,
-        horizontal_spacing=0.01, **kwargs
+        **opt, **kwargs
     )
     if DEBUG:
         print(f"Creating subplots with {len(all_figs)} columns")
 
     for old_fig, i_col in zip(all_figs, range(1, len(all_figs) + 1)):
+        if horizontal:
+            opt = dict(row=1, col=i_col)
+        else:
+            opt = dict(row=i_col, col=1)
+
         for trace in old_fig.data:
             if show_legends is not None:
                 trace.showlegend = show_legends[i_col - 1]
-            fig.add_trace(trace, 1, i_col)
+            fig.add_trace(trace, **opt)
             if DEBUG:
                 print(f"Adding trace to row 1, col {i_col}")
         for annotation in old_fig.layout.annotations:
-            fig.add_annotation(annotation, row=1, col=i_col)
+            fig.add_annotation(annotation, **opt)
         for shape in old_fig.layout.shapes:
-            fig.add_shape(shape, row=1, col=i_col)
-        fig.update_xaxes(old_fig.layout.xaxis, row=1, col=i_col)
-        fig.update_yaxes(old_fig.layout.yaxis, row=1, col=i_col)
+            fig.add_shape(shape, **opt)
+        fig.update_xaxes(old_fig.layout.xaxis, **opt)
+        fig.update_yaxes(old_fig.layout.yaxis, **opt)
 
     # Force the yref for shapes to be 'paper', which is turned off by default in subplots
     # https://community.plotly.com/t/drawing-vertical-line-on-histogram-in-subplot-but-yref-paper-is-not-working/31581/3
