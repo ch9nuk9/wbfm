@@ -336,7 +336,7 @@ def combine_plotly_figures(all_figs, show_legends: List[bool] = None, force_yref
     return fig
 
 
-def add_annotation_lines(df_idx_range, neuron_name, fig, is_immobilized=False, DEBUG=False):
+def add_annotation_lines(df_idx_range, neuron_name, fig, is_immobilized=False, is_residual=False, DEBUG=False):
     """Based on a dataframe with start and end times for annotations, add bars to a plotly figure"""
     if df_idx_range is not None:
         # If there is a dynamic time window used for the ttest, then add a bar as an annotation
@@ -351,6 +351,8 @@ def add_annotation_lines(df_idx_range, neuron_name, fig, is_immobilized=False, D
                 y0 = 0.95
             elif is_immobilized:
                 color = _cmap['immob']
+            elif is_residual:
+                color = _cmap['residual']
             else:
                 color = _cmap['Wild Type']
             if DEBUG:

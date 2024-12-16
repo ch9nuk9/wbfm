@@ -516,14 +516,16 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              xlim=None, ylim=None, min_lines=2, round_y_ticks=False,
                                              show_title=False, show_x_ticks=True, show_y_ticks=True,
                                              show_y_label=True, show_y_label_only_export=False, show_x_label=True, color=None, is_mutant=False,
-                                             z_score=False, fig_kwargs=None, legend=False, i_figure=3,
+                                             z_score=False, fig_kwargs=None, annotation_kwargs=None,
+                                             legend=False, i_figure=3,
                                              apply_changes_even_if_no_trace=True, show_individual_lines=False,
                                              return_individual_traces=False, use_plotly=False,
-                                             df_idx_range=None, is_immobilized=False,
-                                             width_factor_addition=0, height_factor_addition=0,
+                                             df_idx_range=None, width_factor_addition=0, height_factor_addition=0,
                                              to_show=True, fig_opt=None, DEBUG=False):
         if fig_kwargs is None:
             fig_kwargs = {}
+        if annotation_kwargs is None:
+            annotation_kwargs = {}
         if color is None:
             color = self.get_color_from_data_type(trigger_type, is_mutant=is_mutant)
         df_subset = self.get_traces_single_neuron(neuron_name, trigger_type,
@@ -645,7 +647,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                     else:
                         fig.update_layout(xaxis_title=None)
                     # Add line annotations if there is a dynamic ttest
-                    fig = add_annotation_lines(df_idx_range, neuron_name, fig, is_immobilized)
+                    fig = add_annotation_lines(df_idx_range, neuron_name, fig, **annotation_kwargs)
 
             # Final saving
             if output_folder is not None:
@@ -1194,6 +1196,9 @@ def plot_ttests_from_triggered_average_classes(neuron_list: List[str],
     is_immobilized = 'stimulus' in trigger_type.lower()
     if is_immobilized:
         cmap['Wild Type'] = cmap['immob']
+    is_residual = 'residual' in trigger_type.lower()
+    if is_residual:
+        cmap['Wild Type'] = cmap['residual']
 
     df_p_values['is_immobilized'] = is_immobilized
     df_boxplot['is_immobilized'] = is_immobilized
@@ -1235,7 +1240,6 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
                                                            is_mutant_vec: List[bool],
                                                            trigger_type: str,
                                                            df_idx_range: pd.DataFrame = None,
-                                                           is_immobilized: bool = False,
                                                            output_dir=None,
                                                            to_show=False,
                                                            DEBUG=False,
@@ -1264,7 +1268,7 @@ def plot_triggered_averages_from_triggered_average_classes(neuron_list: List[str
                 fig, ax = obj.plot_triggered_average_single_neuron(neuron_name, trigger_type, is_mutant=is_mutant,
                                                                    fig=fig, ax=ax, show_x_label=show_x_label,
                                                                    output_folder=output_dir, df_idx_range=df_idx_range,
-                                                                   is_immobilized=is_immobilized, **kwargs)
+                                                                   **kwargs)
 
             all_figs[neuron_name] = fig
             if to_show:
