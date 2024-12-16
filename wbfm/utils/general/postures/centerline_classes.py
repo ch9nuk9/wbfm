@@ -142,6 +142,8 @@ class WormFullVideoPosture:
         if df is None:
             return df
         else:
+            df = df.copy()
+
             self.check_requested_frame_rate(fluorescence_fps, manual_annotation=manual_annotation)
             # Logic to determine if it is possible to downsample
             if force_downsampling:
@@ -174,7 +176,7 @@ class WormFullVideoPosture:
             if use_physical_time is None:
                 use_physical_time = not reset_index
             elif use_physical_time and reset_index:
-                raise DataSynchronizationError("Cannot reset index and use physical time")
+                raise DataSynchronizationError("reset_index", "use_physical_time")
             # Shorten to the correct length, if necessary. Note that we have to check for series or dataframe
             if needs_subsampling:
                 df = self._shorten_to_trace_length(df)
@@ -184,7 +186,7 @@ class WormFullVideoPosture:
         return df
 
     def convert_index_to_physical_time(self, df, fluorescence_fps, use_physical_time=None):
-        # Convert to physical time
+        # Convert to physical time, if requested
         if use_physical_time is None:
             use_physical_time = self.use_physical_time
             self.use_physical_time = use_physical_time  # Save the value
@@ -439,7 +441,7 @@ class WormFullVideoPosture:
 
         # Hardcoded thresholds for what "slow" body curvature is
         # df_freq = self.hilbert_frequency(fluorescence_fps=False)
-        # df_pause = df_freq.T.copy()
+        # df_pause = df_freq.T
         # df_pause[df_pause.abs() > 0.05] = 0
         # df_pause[df_pause.abs() > 0] = 1
         # _raw_vector = df_pause.iloc[5:10].mean()
