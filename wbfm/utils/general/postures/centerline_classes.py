@@ -254,7 +254,6 @@ class WormFullVideoPosture:
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
         return df
 
-    @lru_cache(maxsize=8)
     def centerlineX(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_centerlineX
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
@@ -264,7 +263,6 @@ class WormFullVideoPosture:
     def _raw_centerlineX(self):
         return read_if_exists(self.filename_x, reader=pd.read_csv, header=None)
 
-    @lru_cache(maxsize=8)
     def centerlineY(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_centerlineY
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
@@ -274,7 +272,6 @@ class WormFullVideoPosture:
     def _raw_centerlineY(self):
         return read_if_exists(self.filename_y, reader=pd.read_csv, header=None)
 
-    @lru_cache(maxsize=8)
     def curvature(self, fluorescence_fps=False, rename_columns=False, **kwargs) -> pd.DataFrame:
         df = self._raw_curvature
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
@@ -282,7 +279,6 @@ class WormFullVideoPosture:
             df.columns = [f"segment_{i + 1:03d}" for i in df.columns]
         return df
 
-    @lru_cache(maxsize=8)
     def head_smoothed_curvature(self, fluorescence_fps=False, start_segment=1, final_segment=20,
                                 **kwargs) -> pd.DataFrame:
         df = self._raw_curvature
@@ -313,7 +309,6 @@ class WormFullVideoPosture:
         df = df / um_per_pixel
         return df
 
-    @lru_cache(maxsize=8)
     def hilbert_amplitude(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_hilbert_amplitude
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
@@ -323,7 +318,6 @@ class WormFullVideoPosture:
     def _raw_hilbert_amplitude(self):
         return read_if_exists(self.filename_hilbert_amplitude, reader=pd.read_csv, header=None)
 
-    @lru_cache(maxsize=8)
     def hilbert_phase(self, fluorescence_fps=False, mod_2pi=True, **kwargs) -> pd.DataFrame:
         df = self._raw_hilbert_phase
         if df is None:
@@ -333,7 +327,6 @@ class WormFullVideoPosture:
             df = (df % (2 * math.pi))
         return df
 
-    @lru_cache(maxsize=8)
     def hilbert_phase_derivative(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self.hilbert_phase(fluorescence_fps, mod_2pi=False, **kwargs)
         df = df.diff(axis=0)
@@ -345,7 +338,6 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_hilbert_phase, reader=pd.read_csv, header=None,
                               raise_warning=True)
 
-    @lru_cache(maxsize=8)
     def hilbert_frequency(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_hilbert_frequency
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
@@ -356,7 +348,6 @@ class WormFullVideoPosture:
         return read_if_exists(self.filename_hilbert_frequency, reader=pd.read_csv, header=None,
                               raise_warning=True)
 
-    @lru_cache(maxsize=8)
     def hilbert_carrier(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         df = self._raw_hilbert_carrier
         df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
@@ -494,7 +485,6 @@ class WormFullVideoPosture:
         BehaviorCodes.assert_all_are_valid(_raw_vector)
         return _raw_vector
 
-    @lru_cache(maxsize=8)
     def worm_length(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         """"""
         df = self._raw_worm_length
@@ -552,7 +542,7 @@ class WormFullVideoPosture:
 
         return _raw_vector
 
-    @lru_cache(maxsize=8)
+    # @lru_cache(maxsize=8)
     def _head_cast_annotation(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         """This is intended to be summed with the main behavioral vector"""
         df = self._raw_head_cast_annotation
@@ -575,7 +565,7 @@ class WormFullVideoPosture:
         BehaviorCodes.assert_all_are_valid(_raw_vector)
         return _raw_vector
 
-    @lru_cache(maxsize=8)
+    # @lru_cache(maxsize=8)
     def stage_position(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         """Units of mm"""
         df = self._raw_stage_position
@@ -590,7 +580,7 @@ class WormFullVideoPosture:
         df.index = pd.DatetimeIndex(df.index)
         return df
 
-    @lru_cache(maxsize=8)
+    # @lru_cache(maxsize=8)
     def centerline_absolute_coordinates(self, fluorescence_fps=False, nan_high_dimensional=False,
                                         **kwargs) -> pd.DataFrame:
         """Returns a multi-index dataframe, where each body segment looks like the stage_position dataframe"""
@@ -675,7 +665,6 @@ class WormFullVideoPosture:
             self._beh_annotation = BehaviorCodes.load_using_dict_mapping(self._beh_annotation)
         return self._beh_annotation
 
-    @lru_cache(maxsize=8)
     def manual_beh_annotation(self, fluorescence_fps=False, keep_reversal_turns=True, **kwargs) -> \
             Optional[pd.DataFrame]:
         df = self._raw_manual_beh_annotation
