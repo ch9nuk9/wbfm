@@ -2109,7 +2109,10 @@ def napari_behavior_explorer_from_config(project_path, fluorescence_fps=True, DE
         aspect = 24
     mpl_widget = PlotQWidget()
     static_ax = mpl_widget.canvas.fig.subplots()
-    static_ax.imshow(df_kymo.T, aspect=aspect, vmin=-0.01, vmax=0.01, cmap='RdBu')
+    # Get vmin and vmax dynamically
+    vmin = np.nanquantile(df_kymo.values, 0.01)
+    vmax = np.nanquantile(df_kymo.values, 0.99)
+    static_ax.imshow(df_kymo.T, aspect=aspect, vmin=vmin, vmax=vmax, cmap='RdBu')
     viewer.window.add_dock_widget(mpl_widget, area='bottom')
 
     # Callback: click on the kymograph to change the viewer time
