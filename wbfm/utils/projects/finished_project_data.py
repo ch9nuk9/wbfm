@@ -2565,3 +2565,38 @@ def plot_frequencies_for_fm_and_immob_projects(all_projects_wbfm, all_projects_i
         plt.savefig(fname)
 
     return df_pxx_wbfm, df_pxx_immob, all_pxx_wbfm, all_pxx_immob
+
+
+def rename_manual_id_in_project(project_data: ProjectData, name_mapping: Dict[str, str]):
+    """
+    Renames a set of manual ids in project_data using the dictionary name_mapping
+
+    Parameters
+    ----------
+    project_data
+    name_mapping
+
+    Returns
+    -------
+
+    """
+
+    # Make sure project is loaded
+    project_data = ProjectData.load_final_project_data(project_data)
+
+    # Load the previous mappings
+    previous2raw = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0, flip_names_and_ids=True,
+                                                                 remove_unnamed_neurons=True)
+    previous2new = {}
+
+    # Check if any updates are applicable
+    for previous_manual_id, new_manual_id in name_mapping.items():
+        if previous_manual_id in previous2raw.keys():
+            previous2new[previous_manual_id] = new_manual_id
+        else:
+            project_data.logger.debug(f"Did not find previous id {previous_manual_id} in previous2raw")
+
+    # If any updates, then also need to update the cached dataframes with traces
+    if len(previous2new) > 0:
+        # Check which cached dataframes actually exist
+        project_data.data_cacher.rename_columns_in_exisiting_cached_dataframes()
