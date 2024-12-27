@@ -1706,6 +1706,8 @@ class ProjectData:
         elif not self.df_manual_tracking_fname.endswith('.xlsx'):
             # Make sure the output is excel even if the input isn't
             fname = str(Path(self.df_manual_tracking_fname).with_suffix('.xlsx'))
+            self.logger.warning(f"Found manual annotation file at ({self.df_manual_tracking_fname}), but will save as ",
+                                f"excel file at ({fname})")
         else:
             fname = self.df_manual_tracking_fname
 
@@ -2599,8 +2601,10 @@ def rename_manual_ids_in_project(project_data: ProjectData, name_mapping: Dict[s
     # If any updates, then also need to update the cached dataframes with traces
     if len(previous2new) > 0:
         # Update the manual annotation file
-        # df = project_data.df_manual_tracking.rename(columns=previous2new)
-        # manual_annotation_fname = project_data.df_manual_tracking_fname
-        # df.to_excel(manual_annotation_fname, index=False)
+        df = project_data.df_manual_tracking
+        for col in ['ID1', 'ID2']:
+            df[col] = df[col].replace(previous2new)
+        manual_annotation_fname = project_data.df_manual_tracking_fname
+        df.to_excel(manual_annotation_fname, index=False)
         # Update cached traces
         project_data.data_cacher.rename_columns_in_exisiting_cached_dataframes(previous2new)
