@@ -84,5 +84,11 @@ def cache_to_disk_class(cache_filename_method: str,
                     logging.warning(f'Could not save cache file {cache_filename} to disk. '
                                     f'Permission denied. Continuing without saving.')
                 return output
+
+        # For later debugging or introspection
+        wrapper._decorator_args = dict(cache_filename_method=cache_filename_method,
+                                       func_load_from_disk=func_load_from_disk,
+                                       func_save_to_disk=func_save_to_disk,
+                                       cache_kwargs=cache_kwargs)
         return wrapper
     return decorator
