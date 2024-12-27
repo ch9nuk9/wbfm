@@ -375,6 +375,8 @@ class PaperDataCache:
         """
 
         all_possible_cached_methods = self._list_of_paper_trace_methods()
+        self.project_data.logger.info(f'Updating cached dataframes with name mapping: {previous2new}')
+
         for cache_method in all_possible_cached_methods:
             # Get the filename that would be used to save the file
             cache_filename_method = cache_method._decorator_args['cache_filename_method']
@@ -386,7 +388,6 @@ class PaperDataCache:
                 df = cache_method()
                 # Rename columns
                 df = df.rename(columns=previous2new)
-                self.project_data.logger.debug(f'Updating cached dataframe with name mapping: {previous2new}')
                 # Save the file
                 func_save_to_disk = cache_method._decorator_args['func_save_to_disk']
                 func_save_to_disk(cache_filename, df)

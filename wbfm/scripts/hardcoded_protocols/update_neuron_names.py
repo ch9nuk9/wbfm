@@ -1,0 +1,12 @@
+from tqdm.auto import tqdm
+
+from wbfm.utils.general.hardcoded_paths import load_all_paper_datasets
+from wbfm.utils.projects.finished_project_data import rename_manual_ids_in_project
+
+if __name__ == '__main__':
+    # Load ALL of the paper projects and update the neuron names
+    # This is a one-time operation, and will take a while
+    all_projects_dict = load_all_paper_datasets()
+    name_mapping = {'IL2LL': 'IL2L', 'IL1LL': 'IL1L', 'IL2LR': 'IL2R', 'IL1LR': 'IL1R'}
+    for project_name, project in tqdm(all_projects_dict.items()):
+        rename_manual_ids_in_project(project, name_mapping)

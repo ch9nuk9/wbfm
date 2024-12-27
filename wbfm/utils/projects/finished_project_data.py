@@ -2567,7 +2567,7 @@ def plot_frequencies_for_fm_and_immob_projects(all_projects_wbfm, all_projects_i
     return df_pxx_wbfm, df_pxx_immob, all_pxx_wbfm, all_pxx_immob
 
 
-def rename_manual_id_in_project(project_data: ProjectData, name_mapping: Dict[str, str]):
+def rename_manual_ids_in_project(project_data: ProjectData, name_mapping: Dict[str, str]):
     """
     Renames a set of manual ids in project_data using the dictionary name_mapping
 
@@ -2598,5 +2598,9 @@ def rename_manual_id_in_project(project_data: ProjectData, name_mapping: Dict[st
 
     # If any updates, then also need to update the cached dataframes with traces
     if len(previous2new) > 0:
-        # Check which cached dataframes actually exist
-        project_data.data_cacher.rename_columns_in_exisiting_cached_dataframes()
+        # Update the manual annotation file
+        # df = project_data.df_manual_tracking.rename(columns=previous2new)
+        # manual_annotation_fname = project_data.df_manual_tracking_fname
+        # df.to_excel(manual_annotation_fname, index=False)
+        # Update cached traces
+        project_data.data_cacher.rename_columns_in_exisiting_cached_dataframes(previous2new)
