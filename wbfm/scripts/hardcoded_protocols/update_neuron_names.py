@@ -10,6 +10,7 @@ if __name__ == '__main__':
     name_mapping = {'IL2LL': 'IL2L', 'IL1LL': 'IL1L', 'IL2LR': 'IL2R', 'IL1LR': 'IL1R'}
     all_errors = []
     for project_name, project in tqdm(all_projects_dict.items()):
+        print(project.project_dir)
         try:
             rename_manual_ids_in_project(project, name_mapping)
         except PermissionError as e:

@@ -1822,7 +1822,7 @@ class ProjectData:
         # Check that there are no duplicates within the values
         value_counts = pd.Series(name_mapping.values()).value_counts()
         message = f"Duplicate values found in neuron_name_to_manual_id_mapping: " \
-                  f"{list(value_counts[value_counts > 1].index)} (dataset: {self.shortened_name})"
+                  f"{list(value_counts[value_counts > 1].index)} (dataset: {self.project_dir})"
         if len(value_counts[value_counts > 1]) > 0:
             if error_on_duplicate:
                 raise ValueError(message)
@@ -2607,4 +2607,4 @@ def rename_manual_ids_in_project(project_data: ProjectData, name_mapping: Dict[s
         manual_annotation_fname = project_data.df_manual_tracking_fname
         df.to_excel(manual_annotation_fname, index=False)
         # Update cached traces
-        project_data.data_cacher.rename_columns_in_exisiting_cached_dataframes(previous2new)
+        project_data.data_cacher.rename_columns_in_existing_cached_dataframes(previous2new)
