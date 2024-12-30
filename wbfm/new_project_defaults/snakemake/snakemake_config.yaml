@@ -47,7 +47,7 @@ fourcc : 0 #codec
 fps : 83
 
 # rule create centerline
-nose : "nose" # how was the nose annotated as in DLC model? e.g. head, nose, Head, Nose, etc..
+nose : "head" # how was the nose annotated as in DLC model? e.g. head, nose, Head, Nose, etc..
 tail : "tail" # how was the tail annotated as in DLC model?
 num_splines : 100
 

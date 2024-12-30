@@ -486,7 +486,7 @@ rule create_centerline:
     params:
         output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
         number_of_neighbours = "1",
-        nose = config['head'],  # Should actually be the nose
+        nose = config['nose'],  # Should actually be the nose
         tail = config['tail'],
         num_splines = config['num_splines'],
         fill_with_DLC = "1"
