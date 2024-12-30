@@ -11,7 +11,7 @@ from scipy import signal
 from scipy.signal import detrend
 from sklearn.decomposition import PCA
 
-from wbfm.utils.general.utils_paper import PaperDataCache, apply_figure_settings
+from wbfm.utils.general.utils_paper import PaperDataCache, apply_figure_settings, paper_trace_settings
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
@@ -2608,3 +2608,43 @@ def rename_manual_ids_in_project(project_data: ProjectData, name_mapping: Dict[s
         df.to_excel(manual_annotation_fname, index=False)
         # Update cached traces
         project_data.data_cacher.rename_columns_in_existing_cached_dataframes(previous2new)
+
+
+def rename_manual_ids_from_excel_in_project(project_data: ProjectData):
+    """
+    Similar to rename_manual_ids_in_project, but instead of a given update dictionary, assumes that the excel file is
+    correct. Then it updates all the cached dataframes with the new names.
+
+    Note that in order to fix duplicate ids, it
+
+    Parameters
+    ----------
+    project_data
+
+    Returns
+    -------
+
+    """
+
+    # Make sure project is loaded
+    project_data = ProjectData.load_final_project_data(project_data)
+
+    # Instead of using the dictionary (which has updates), use the current (outdated) columns of the trace dataframe
+    # Then convert back to original names, then finally to the new updated names
+    opt = paper_trace_settings()
+    df_old_manual_names = project_data.calc_default_traces(**opt)
+    opt['rename_neurons_using_manual_ids'] = False
+    df_raw_names = project_data.calc_default_traces(**opt)
+
+    raw2new = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0)
+
+    # Combine the mappings
+    raw2previous = {k: v for k, v in zip(df_raw_names.columns, df_old_manual_names.columns)}
+    previous2new = {}
+    for raw_id in raw2new.keys():
+        previous_id = raw2previous[raw_id]
+        new_id = raw2new[raw_id]
+        previous2new[previous_id] = new_id
+
+    # Update cached traces
+    project_data.data_cacher.rename_columns_in_existing_cached_dataframes(previous2new)
