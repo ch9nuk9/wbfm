@@ -86,6 +86,13 @@ worm_unet:
     cpus_per_task: 24
     gres: shard:32
 
+sam2_segment:
+    time: 1-08:00:00
+    partition: basic,gpu
+    mem: 0
+    cpus_per_task: 24
+    gres: shard:32
+
 coil_unet:
     time: 1-08:00:00
     partition: basic,gpu

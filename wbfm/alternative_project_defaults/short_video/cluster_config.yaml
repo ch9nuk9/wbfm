@@ -69,6 +69,11 @@ worm_unet:
     cpus_per_task: 24
     gres: shard:32
 
+sam2_segment:
+    mem: 0
+    cpus_per_task: 24
+    gres: shard:32
+
 coil_unet:
     mem: 0
     cpus_per_task: 24
