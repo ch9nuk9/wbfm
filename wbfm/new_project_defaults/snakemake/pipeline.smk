@@ -763,4 +763,8 @@ rule make_heatmap_with_behavior_video:
     output:
         figure=os.path.join(output_visualization_directory, "heatmap_with_behavior.mp4")
     run:
-        _run_helper("visualization.4+make_heatmap_with_behavior_video", str(input.cfg))
+        try:
+            _run_helper("visualization.4+make_heatmap_with_behavior_video", str(input.cfg))
+        except FileNotFoundError:
+            logging.warning("Could not find the behavior data, so an empty file will be created")
+            open(output.figure, 'w').close()
