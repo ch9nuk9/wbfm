@@ -5,7 +5,7 @@ import sys
 import time
 import traceback
 
-from wbfm.utils.general.hardcoded_paths import load_paper_datasets
+from wbfm.utils.general.hardcoded_paths import load_paper_datasets, load_all_paper_datasets
 from wbfm.utils.projects.finished_project_data import ProjectData
 from submitit import AutoExecutor, LocalJob, DebugJob
 
@@ -39,13 +39,8 @@ def main(run_locally=False, DEBUG=False):
     """
     print("Starting with options: run_locally=", run_locally, "DEBUG=", DEBUG)
     # Load all paths to datasets used in the paper
-    all_paths_gcamp = load_paper_datasets(['gcamp', 'hannah_O2_fm'], only_load_paths=True)
-    all_paths_gfp = load_paper_datasets(['gfp'], only_load_paths=True)
-    all_paths_immob = load_paper_datasets(['immob'], only_load_paths=True)
+    all_project_paths = load_all_paper_datasets(only_load_paths=True)
 
-    all_project_paths = all_paths_gcamp.copy()
-    all_project_paths.update(all_paths_gfp)
-    all_project_paths.update(all_paths_immob)
     if DEBUG:
         # Just one project
         k = list(all_project_paths.keys())[0]

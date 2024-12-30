@@ -258,9 +258,9 @@ def load_paper_datasets(genotype: Union[str, list] = 'gcamp', require_behavior=F
     return good_projects_filtered
 
 
-def load_all_paper_datasets():
+def load_all_paper_datasets(**kwargs):
     """Note that this doesn't separate by category, just the folder names"""
-    return load_paper_datasets(all_paper_datatype_codes())
+    return load_paper_datasets(all_paper_datatype_codes(), **kwargs)
 
 
 def _resolve_project_from_worm_id(folder_and_id_dict):
