@@ -666,7 +666,7 @@ class ProjectData:
 
     @staticmethod
     def load_final_project_data_from_config(project_path: Union[str, os.PathLike, ModularProjectConfig],
-                                            **kwargs):
+                                            force_reload=False, **kwargs):
         """
         Main constructor that accepts multiple input formats
         This includes an already initialized ProjectData class, in which case this function returns
@@ -693,7 +693,12 @@ class ProjectData:
             args = ProjectData.unpack_config_file(project_path)
             return ProjectData._load_data_from_configs(*args, **kwargs)
         elif isinstance(project_path, ProjectData):
-            return project_path
+            if force_reload:
+                # Reload fully from disk, not a project_config class
+                project_path = project_path.project_dir
+                return ProjectData.load_final_project_data_from_config(project_path, **kwargs)
+            else:
+                return project_path
         else:
             raise TypeError("Must pass pathlike or already loaded project data")
 
@@ -2569,7 +2574,8 @@ def plot_frequencies_for_fm_and_immob_projects(all_projects_wbfm, all_projects_i
     return df_pxx_wbfm, df_pxx_immob, all_pxx_wbfm, all_pxx_immob
 
 
-def rename_manual_ids_in_project(project_data: ProjectData, name_mapping: Dict[str, str]):
+def rename_manual_ids_in_project(project_data: ProjectData, name_mapping: Dict[str, str],
+                                 always_update_cached_dataframes=True):
     """
     Renames a set of manual ids in project_data using the dictionary name_mapping
 
@@ -2606,11 +2612,14 @@ def rename_manual_ids_in_project(project_data: ProjectData, name_mapping: Dict[s
             df[col] = df[col].replace(previous2new)
         manual_annotation_fname = project_data.df_manual_tracking_fname
         df.to_excel(manual_annotation_fname, index=False)
-        # Update cached traces
-        project_data.data_cacher.rename_columns_in_existing_cached_dataframes(previous2new)
+
+    if len(previous2new) > 0 or always_update_cached_dataframes:
+        # Make sure the project gets the new manual ids from disk
+        project_data = ProjectData.load_final_project_data(project_data, force_reload=True)
+        rename_manual_ids_from_excel_in_project(project_data)
 
 
-def rename_manual_ids_from_excel_in_project(project_data: ProjectData):
+def rename_manual_ids_from_excel_in_project(project_data: ProjectData, dryrun=False):
     """
     Similar to rename_manual_ids_in_project, but instead of a given update dictionary, assumes that the excel file is
     correct. Then it updates all the cached dataframes with the new names.
@@ -2642,9 +2651,12 @@ def rename_manual_ids_from_excel_in_project(project_data: ProjectData):
     raw2previous = {k: v for k, v in zip(df_raw_names.columns, df_old_manual_names.columns)}
     previous2new = {}
     for raw_id in raw2new.keys():
-        previous_id = raw2previous[raw_id]
+        previous_id = raw2previous.get(raw_id, raw_id)  # This has some dropped names, which should be the same
         new_id = raw2new[raw_id]
         previous2new[previous_id] = new_id
 
     # Update cached traces
-    project_data.data_cacher.rename_columns_in_existing_cached_dataframes(previous2new)
+    if not dryrun:
+        project_data.data_cacher.rename_columns_in_existing_cached_dataframes(previous2new)
+    else:
+        print(f"Modifications to be made: {[(k, v) for k, v in previous2new.items() if k!=v]}")
