@@ -42,8 +42,8 @@ print(f"Loaded snakemake config file with parameters: {config}")
 
 # For the deeplabcut network, get the shuffle parameter from the string
 network_name = config["head_tail_dlc_name"]
-# Looks like DLCwbfm_headtailpharNov20-trainset95shuffle2, and we want the 2 at the end
-shuffle_index = network_name.split("shuffle")[-1]
+# Looks like DLC_resnet50_DLCwbfm_headtailpharNov20shuffle2_450000, and we want the 2 after the shuffle
+shuffle_index = int(network_name.split("shuffle")[1].split("_")[0])
 
 def _run_helper(script_name, project_path, **kwargs):
     """Runs a script with a given name that can't be imported directly (e.g. because it starts with a number)"""
