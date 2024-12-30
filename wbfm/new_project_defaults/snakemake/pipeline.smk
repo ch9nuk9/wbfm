@@ -22,6 +22,11 @@ if not snakemake.__version__.startswith("7.32"):
 project_config = ModularProjectConfig(project_cfg_fname)
 output_visualization_directory = project_config.get_visualization_config().absolute_subfolder
 
+# For the deeplabcut network, get the shuffle parameter from the string
+network_name = config["head_tail_dlc_name"]
+# Looks like DLCwbfm_headtailpharNov20-trainset95shuffle2, and we want the 2 at the end
+shuffle_index = network_name.split("shuffle")[-1]
+
 try:
     raw_data_dir, raw_data_subfolder, output_behavior_dir, background_img, background_video, behavior_btf = \
         project_config.get_folders_for_behavior_pipeline()
@@ -321,6 +326,67 @@ rule worm_unet:
             '-w', str(params.weights_path),
         ])
 
+rule sam2_segment:
+    input:
+        avi_path=f"{output_behavior_dir}/raw_stack.avi",  # Output of tiff2avi
+        dlc_csv=f"{output_behavior_dir}/raw_stack"+config["head_tail_dlc_name"]+".csv"
+    output:
+        output_file=_cleanup_helper(f"{output_behavior_dir}/raw_stack_mask.btf"),
+    params:
+        column_names=["pharynx"],
+        model_path=config["sam2_model"],
+        sam2_conda_env_name=config["sam2_conda_env_name"],
+        dlc_network_name=config["head_tail_dlc_name"],
+        batch_size=400
+    shell:
+        """
+        # Activate the environment
+        source /lisc/app/conda/miniforge3/bin/activate {params.sam2_conda_env_name}
+
+        # Display the temporary directory being used
+        echo "Using temporary directory: $TMPDIR"
+
+        # Copy input files to the temporary directory with verification
+        cp {input.avi_path} $TMPDIR/track.avi
+        while [ ! -f $TMPDIR/track.avi ] || [ ! -s $TMPDIR/track.avi ]; do
+            sleep 1
+            echo "Waiting for avi file to be fully copied..."
+        done
+
+        cp {input.dlc_csv} $TMPDIR/track{params.dlc_network_name}.csv
+        while [ ! -f $TMPDIR/track{params.dlc_network_name}.csv ] || [ ! -s $TMPDIR/track{params.dlc_network_name}.csv ]; do
+            sleep 1
+            echo "Waiting for CSV file to be fully copied..."
+        done
+
+        # Add a small delay to ensure filesystem sync
+        sleep 2
+
+        # Run the script within the temporary directory
+        python -c "from SAM2_snakemake_scripts.sam2_video_processing_from_jpeg_batch_pipeline import main; main(['-video_path', '$TMPDIR/track.avi', '-output_file_path', '$TMPDIR/track_mask.btf', '-DLC_csv_file_path', '$TMPDIR/track{params.dlc_network_name}.csv', '-column_names', '{params.column_names}', '-SAM2_path', '{params.model_path}', '--batch_size', '{params.batch_size}'])"
+
+        # Verify output file exists and wait for it to be fully written
+        while [ ! -f $TMPDIR/track_mask.btf ] || [ ! -s $TMPDIR/track_mask.btf ]; do
+            sleep 1
+            echo "Waiting for output file to be fully written..."
+        done
+
+        # Add a small delay before moving
+        sleep 2
+
+        # Move the output file back to the final output path
+        mv $TMPDIR/track_mask.btf {output.output_file}
+
+        # Verify the move completed successfully
+        while [ ! -f {output.output_file} ] || [ ! -s {output.output_file} ]; do
+            sleep 1
+            echo "Waiting for final file move to complete..."
+        done
+
+        # Clean up the temporary directory
+        rm -rf $TMPDIR/*
+        """
+
 rule binarize:
     input:
         input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented.btf"
@@ -342,8 +408,8 @@ rule binarize:
 
 rule coil_unet:
     input:
-        binary_input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask.btf",
-        raw_input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
+        binary_input_img = f"{output_behavior_dir}/raw_stack_mask.btf",  # From the SAM2 segmentation
+        raw_input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"  # Does not need to match the other segmentation; needs to match the training of the coil unet
     params:
         weights_path= config["coiled_shape_unet_model"]
     output:
@@ -380,12 +446,12 @@ rule binarize_coil:
 
 rule tiff2avi:
     input:
-        input_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.btf"
+        input_img = behavior_btf if os.path.exists(behavior_btf) else raw_data_subfolder
     params:
         fourcc = config["fourcc"], #"0",
         fps = config["fps"] # "167"
     output:
-        avi = _cleanup_helper(f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.avi")
+        avi = _cleanup_helper(f"{output_behavior_dir}/raw_stack.avi")
     run:
         from imutils.src import imutils_parser_main
 
@@ -399,28 +465,29 @@ rule tiff2avi:
 
 rule dlc_analyze_videos:
     input:
-        input_avi = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised.avi"
+        input_avi = f"{output_behavior_dir}/raw_stack.avi"
     params:
         dlc_model_configfile_path = config["head_tail_dlc_project"],
         dlc_network_string = config["head_tail_dlc_name"], # Is this used?
         dlc_conda_env = config["dlc_conda_env_name_only_dlc"]
     output:
-        hdf5_file = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["head_tail_dlc_name"]+".h5"
+        hdf5_file = f"{output_behavior_dir}/raw_stack"+config["head_tail_dlc_name"]+".h5",
+        csv_file = f"{output_behavior_dir}/raw_stack"+config["head_tail_dlc_name"]+".csv"
     shell:
         """
-        source /lisc/app/conda/miniconda3/bin/activate {params.dlc_conda_env}
-        python -c "import deeplabcut; deeplabcut.analyze_videos('{params.dlc_model_configfile_path}', '{input.input_avi}', videotype='avi', gputouse=0)"
+        source /lisc/app/conda/miniforge3/bin/activate {params.dlc_conda_env}
+        python -c "import deeplabcut; deeplabcut.analyze_videos('{params.dlc_model_configfile_path}', '{input.input_avi}', videotype='avi', gputouse=0, save_as_csv=True, shuffle={shuffle_index})"
         """
 
 rule create_centerline:
     input:
-        input_binary_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented_mask.btf",
-        hdf5_file = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised"+config["head_tail_dlc_name"]+".h5"
+        input_binary_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented_mask.btf",  # From the coil unet, not directly from the SAM2 segmentation
+        hdf5_file = f"{output_behavior_dir}/raw_stack"+config["head_tail_dlc_name"]+".h5"
 
     params:
         output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
         number_of_neighbours = "1",
-        nose = config['nose'],
+        nose = config['head'],  # Should actually be the nose
         tail = config['tail'],
         num_splines = config['num_splines'],
         fill_with_DLC = "1"

@@ -34,3 +34,6 @@ behavior_paths:
     dlc_conda_env_name_only_dlc: deeplabcut-2.3.10
     # PCA model (used for curvature analysis)
     pca_model: /lisc/scratch/neurobiology/zimmer/wbfm/code/centerline_behavior_annotation/centerline_behavior_annotation/curvature/models/1738_20230403_eigenworm_PCA_bodypart_30_to_80.pkl
+    # SAM2 related paths
+    sam2_model: /lisc/scratch/neurobiology/zimmer/schaar/code/github/segment-anything-2
+    sam2_conda_env_name: /lisc/scratch/neurobiology/zimmer/.conda/envs/SAM2_shared
