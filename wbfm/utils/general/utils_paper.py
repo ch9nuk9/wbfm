@@ -349,15 +349,19 @@ class PaperDataCache:
         else:
             return self.calc_paper_traces_no_interpolation()
 
-    def _list_of_paper_trace_methods(self):
+    def _list_of_paper_trace_methods(self, return_filenames=False):
         """
         A list of the class methods that can be used to calculate traces for the paper
 
         Note that via ._decorator_args, the arguments used to cache the data are also saved
         """
-        return [self.calc_paper_traces, self.calc_paper_traces_r20, self.calc_paper_traces_red,
-                self.calc_paper_traces_green, self.calc_paper_traces_no_interpolation,
-                self.calc_paper_traces_residual, self.calc_paper_traces_global, self.calc_paper_traces_global_1]
+        method_names = [self.calc_paper_traces, self.calc_paper_traces_r20, self.calc_paper_traces_red,
+                        self.calc_paper_traces_green, self.calc_paper_traces_no_interpolation,
+                        self.calc_paper_traces_residual, self.calc_paper_traces_global, self.calc_paper_traces_global_1]
+        if return_filenames:
+            return [m._decorator_args['cache_filename_method'] for m in method_names]
+        else:
+            return method_names
 
     def rename_columns_in_existing_cached_dataframes(self, previous2new: Dict[str, str]):
         """
@@ -611,9 +615,7 @@ class PaperDataCache:
         """
         possible_fnames = []
         if delete_traces:
-            possible_fnames.append(self.paper_traces_cache_fname())
-            possible_fnames.append(self.paper_traces_residual_cache_fname())
-            possible_fnames.append(self.paper_traces_global_cache_fname())
+            possible_fnames.extend(self._list_of_paper_trace_methods(return_filenames=True))
         if delete_invalid_indices:
             possible_fnames.append(self.invalid_indices_cache_fname())
         for fname in possible_fnames:

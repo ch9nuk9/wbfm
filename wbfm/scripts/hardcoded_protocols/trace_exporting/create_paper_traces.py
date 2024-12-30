@@ -10,10 +10,12 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 from submitit import AutoExecutor, LocalJob, DebugJob
 
 
-def load_project_and_create_traces(project_path):
+def load_project_and_create_traces(project_path, remove_old_traces=True):
     # Try to properly log; see https://github.com/facebookresearch/hydra/issues/2664
     try:
         p = ProjectData.load_final_project_data_from_config(project_path)
+        if remove_old_traces:
+            p.data_cacher.clear_disk_cache(delete_invalid_indices=False, delete_traces=True)
         output = p.calc_all_paper_traces()
     except BaseException as e:
         traceback.print_exc(file=sys.stderr)
