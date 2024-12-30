@@ -22,11 +22,6 @@ if not snakemake.__version__.startswith("7.32"):
 project_config = ModularProjectConfig(project_cfg_fname)
 output_visualization_directory = project_config.get_visualization_config().absolute_subfolder
 
-# For the deeplabcut network, get the shuffle parameter from the string
-network_name = config["head_tail_dlc_name"]
-# Looks like DLCwbfm_headtailpharNov20-trainset95shuffle2, and we want the 2 at the end
-shuffle_index = network_name.split("shuffle")[-1]
-
 try:
     raw_data_dir, raw_data_subfolder, output_behavior_dir, background_img, background_video, behavior_btf = \
         project_config.get_folders_for_behavior_pipeline()
@@ -45,6 +40,10 @@ hardcoded_paths = load_hardcoded_neural_network_paths()
 config.update(hardcoded_paths["behavior_paths"])
 print(f"Loaded snakemake config file with parameters: {config}")
 
+# For the deeplabcut network, get the shuffle parameter from the string
+network_name = config["head_tail_dlc_name"]
+# Looks like DLCwbfm_headtailpharNov20-trainset95shuffle2, and we want the 2 at the end
+shuffle_index = network_name.split("shuffle")[-1]
 
 def _run_helper(script_name, project_path, **kwargs):
     """Runs a script with a given name that can't be imported directly (e.g. because it starts with a number)"""
