@@ -1144,12 +1144,10 @@ class ProjectData:
         return self.data_cacher.paper_trace_dispatcher(channel_mode=channel_mode, residual_mode=residual_mode, **kwargs)
 
     def calc_all_paper_traces(self):
-        # Primarily for caching
-        df_traces = self.calc_paper_traces()
-        df_traces_r20 = self.calc_paper_traces(channel_mode='dr_over_r_20')
-        df_res = self.calc_paper_traces(residual_mode='pca')
-        df_global = self.calc_paper_traces(residual_mode='pca_global')
-        return df_traces, df_traces_r20, df_res, df_global
+        all_methods = self.data_cacher.list_of_paper_trace_methods()
+        all_methods_fnames = self.data_cacher.list_of_paper_trace_methods(return_simple_names=True)
+        all_traces_dict = {name: method() for name, method in zip(all_methods_fnames, all_methods)}
+        return all_traces_dict
 
     @lru_cache(maxsize=16)
     def calc_raw_traces(self, neuron_names: tuple, **opt: dict):

@@ -349,7 +349,7 @@ class PaperDataCache:
         else:
             return self.calc_paper_traces_no_interpolation()
 
-    def _list_of_paper_trace_methods(self, return_filenames=False):
+    def list_of_paper_trace_methods(self, return_filenames=False, return_simple_names=False):
         """
         A list of the class methods that can be used to calculate traces for the paper
 
@@ -358,8 +358,12 @@ class PaperDataCache:
         method_names = [self.calc_paper_traces, self.calc_paper_traces_r20, self.calc_paper_traces_red,
                         self.calc_paper_traces_green, self.calc_paper_traces_no_interpolation,
                         self.calc_paper_traces_residual, self.calc_paper_traces_global, self.calc_paper_traces_global_1]
-        if return_filenames:
-            return [m._decorator_args['cache_filename_method'] for m in method_names]
+        if return_simple_names or return_filenames:
+            list_cache_filename_methods = [m._decorator_args['cache_filename_method'] for m in method_names]
+            if return_filenames:
+                return [getattr(self, m)() for m in list_cache_filename_methods]
+            else:
+                return [m.replace('_cache_fname', '') for m in list_cache_filename_methods]
         else:
             return method_names
 
@@ -378,7 +382,7 @@ class PaperDataCache:
 
         """
 
-        all_possible_cached_methods = self._list_of_paper_trace_methods()
+        all_possible_cached_methods = self.list_of_paper_trace_methods()
         self.project_data.logger.info(f'Updating cached dataframes with name mapping: {previous2new}')
 
         for cache_method in all_possible_cached_methods:
@@ -615,7 +619,7 @@ class PaperDataCache:
         """
         possible_fnames = []
         if delete_traces:
-            possible_fnames.extend(self._list_of_paper_trace_methods(return_filenames=True))
+            possible_fnames.extend(self.list_of_paper_trace_methods(return_filenames=True))
         if delete_invalid_indices:
             possible_fnames.append(self.invalid_indices_cache_fname())
         for fname in possible_fnames:

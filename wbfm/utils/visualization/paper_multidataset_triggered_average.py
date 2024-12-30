@@ -964,9 +964,14 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         return fig, axes
 
     def _load_triple_traces(self):
-        df_traces, df_traces_r20, df_traces_residual, df_traces_global = self.project.calc_all_paper_traces()
+        all_traces_dict = self.project.calc_all_paper_traces()
+
         if self.trace_options.get('channel_mode', 'dr_over_r_50') == 'dr_over_r_20':
-            df_traces = df_traces_r20
+            df_traces = all_traces_dict['paper_traces_r20']
+        else:
+            df_traces = all_traces_dict['paper_traces']
+        df_traces_residual = all_traces_dict['paper_traces_residual']
+        df_traces_global = all_traces_dict['paper_traces_global']
         return df_traces, df_traces_residual, df_traces_global
 
     def _save_fig(self, neuron_name, output_foldername, trigger_type, plotly_fig=None):
