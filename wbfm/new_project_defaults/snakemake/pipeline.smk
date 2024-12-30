@@ -467,7 +467,7 @@ rule dlc_analyze_videos:
         input_avi = f"{output_behavior_dir}/raw_stack.avi"
     params:
         dlc_model_configfile_path = config["head_tail_dlc_project"],
-        dlc_network_string = config["head_tail_dlc_name"], # Is this used?
+        dlc_network_string = config["head_tail_dlc_name"],
         dlc_conda_env = config["dlc_conda_env_name_only_dlc"]
     output:
         hdf5_file = f"{output_behavior_dir}/raw_stack"+config["head_tail_dlc_name"]+".h5",
