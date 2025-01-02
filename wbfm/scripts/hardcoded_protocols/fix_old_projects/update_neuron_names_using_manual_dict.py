@@ -13,7 +13,7 @@ if __name__ == '__main__':
         print(project.project_dir)
         try:
             rename_manual_ids_in_project(project, name_mapping)
-        except PermissionError as e:
+        except (PermissionError, OSError) as e:
             all_errors.append(e)
         except ValueError as e:
             # This one is unusual, and should be investigated
