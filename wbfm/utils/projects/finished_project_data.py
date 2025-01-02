@@ -1671,9 +1671,13 @@ class ProjectData:
         possible_fnames = {k: str(v) for k, v in possible_fnames.items()}
         # fname_precedence = ['excel', 'csv', 'h5']  # This precedence is used because humans may have added things
         fname_precedence = ['newest']
-        df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                      this_reader=read_if_exists, na_filter=False)
-        self.df_manual_tracking_fname = fname
+        try:
+            df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
+                                                                          this_reader=read_if_exists, na_filter=False)
+            self.df_manual_tracking_fname = fname
+        except ValueError:
+            self.df_manual_tracking_fname = ''
+            return None
         return df_manual_tracking
 
     def get_default_manual_annotation_fname(self) -> Optional[str]:
