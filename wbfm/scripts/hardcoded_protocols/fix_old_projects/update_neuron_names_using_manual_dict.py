@@ -17,7 +17,10 @@ if __name__ == '__main__':
             all_errors.append(e)
         except ValueError as e:
             # This one is unusual, and should be investigated
-            print(project.df_manual_ids.columns)
+            try:
+                print(project.df_manual_ids.columns)
+            except AttributeError:
+                print("No manual ids found")
             raise e
         except (NoNeuronsError, AttributeError) as e:
             print(f"No neurons found for project: {project_name}")
