@@ -85,7 +85,7 @@ def main(run_locally=False, keep_old_traces=True, DEBUG=False):
             if job.done() or type(job) in [LocalJob, DebugJob]:
                 # The log file isn't being produced, so print the stdout instead
                 result = job.result()
-                print(f"Job {job} finished with result shape: {result['result'][0].shape}")
+                print(f"Job {job} finished with result shape: {result['result']['paper_traces'].shape}")
                 jobs.remove(job)
 
         # Sleep for a bit before checking the jobs again to avoid overloading the cluster.
