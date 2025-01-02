@@ -10,11 +10,11 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 from submitit import AutoExecutor, LocalJob, DebugJob
 
 
-def load_project_and_create_traces(project_path, remove_old_traces=True):
+def load_project_and_create_traces(project_path, keep_old_traces=True):
     # Try to properly log; see https://github.com/facebookresearch/hydra/issues/2664
     try:
         p = ProjectData.load_final_project_data_from_config(project_path)
-        if remove_old_traces:
+        if not keep_old_traces:
             p.data_cacher.clear_disk_cache(delete_invalid_indices=False, delete_traces=True)
         output = p.calc_all_paper_traces()
     except BaseException as e:
@@ -26,7 +26,7 @@ def load_project_and_create_traces(project_path, remove_old_traces=True):
     return {'result': output}
 
 
-def main(run_locally=False, remove_old_traces=True, DEBUG=False):
+def main(run_locally=False, keep_old_traces=True, DEBUG=False):
     """
     Create traces for all projects in the paper, caching them in the project folder.
 
@@ -71,7 +71,7 @@ def main(run_locally=False, remove_old_traces=True, DEBUG=False):
         # Make a new folder in the parent folder
         # Add the baseline parameters, and save in this folder
         print(f"Submitting job to build paper traces for {name}")
-        job = executor.submit(load_project_and_create_traces, project_path, remove_old_traces)
+        job = executor.submit(load_project_and_create_traces, project_path, keep_old_traces)
         jobs.append(job)
         if DEBUG:
             break
@@ -99,8 +99,8 @@ def main(run_locally=False, remove_old_traces=True, DEBUG=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--run_locally', action='store_true', help='Run the jobs locally')
-    parser.add_argument('--remove_old_traces', action='store_true', help='Delete previously run traces')
+    parser.add_argument('--keep_old_traces', action='store_true', help='Delete previously run traces')
     parser.add_argument('--DEBUG', action='store_true', help='Run the jobs locally')
     args = parser.parse_args()
 
-    main(run_locally=args.run_locally, remove_old_traces=args.remove_old_traces, DEBUG=args.DEBUG)
+    main(run_locally=args.run_locally, keep_old_traces=args.keep_old_traces, DEBUG=args.DEBUG)
