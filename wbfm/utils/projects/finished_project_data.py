@@ -2606,6 +2606,8 @@ def rename_manual_ids_in_project(project_data: ProjectData, name_mapping: Dict[s
     if len(previous2new) > 0:
         # Update the manual annotation file
         df = project_data.df_manual_tracking
+        if df is None:
+            raise NoNeuronsError("No manual annotation file found")
         for col in ['ID1', 'ID2']:
             df[col] = df[col].replace(previous2new)
         manual_annotation_fname = project_data.df_manual_tracking_fname
