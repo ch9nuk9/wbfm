@@ -19,7 +19,7 @@ if __name__ == '__main__':
             # This one is unusual, and should be investigated
             print(project.df_manual_ids.columns)
             raise e
-        except NoNeuronsError as e:
+        except (NoNeuronsError, AttributeError) as e:
             print(f"No neurons found for project: {project_name}")
             all_errors.append(e)
     print(f"All errors: {all_errors}")
