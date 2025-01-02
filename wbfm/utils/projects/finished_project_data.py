@@ -2615,6 +2615,8 @@ def rename_manual_ids_in_project(project_data: ProjectData, name_mapping: Dict[s
         for col in ['ID1', 'ID2']:
             df[col] = df[col].replace(previous2new)
         manual_annotation_fname = project_data.df_manual_tracking_fname
+        print(f"Saving manual annotation file to {manual_annotation_fname} with size:")
+        df.info(memory_usage='deep')
         df.to_excel(manual_annotation_fname, index=False)
 
     if len(previous2new) > 0 or always_update_cached_dataframes:
