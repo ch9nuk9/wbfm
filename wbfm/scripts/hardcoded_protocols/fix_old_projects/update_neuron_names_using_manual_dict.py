@@ -8,13 +8,13 @@ if __name__ == '__main__':
     # This is a one-time operation, and will take a while
     all_projects_dict = load_all_paper_datasets()
     name_mapping = {'IL2LL': 'IL2L', 'IL1LL': 'IL1L', 'IL2LR': 'IL2R', 'IL1LR': 'IL1R'}
-    all_errors = []
-    for project_name, project in tqdm(all_projects_dict.items()):
+    all_errors = {}
+    for i, (project_name, project) in tqdm(enumerate(all_projects_dict.items())):
         print(project.project_dir)
         try:
             rename_manual_ids_in_project(project, name_mapping)
         except (PermissionError, OSError) as e:
-            all_errors.append(e)
+            all_errors[(i, project_name)] = e
         except ValueError as e:
             # This one is unusual, and should be investigated
             try:
@@ -24,5 +24,5 @@ if __name__ == '__main__':
             raise e
         except (NoNeuronsError, AttributeError) as e:
             print(f"No neurons found for project: {project_name}")
-            all_errors.append(e)
+            all_errors[(i, project_name)] = e
     print(f"All errors: {all_errors}")
