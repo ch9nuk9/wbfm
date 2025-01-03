@@ -54,6 +54,25 @@ Xy = load_all_data_as_dataframe()
 Xy.head()
 
 
+# In[26]:
+
+
+Xy['dataset_type'].unique()
+
+
+# In[54]:
+
+
+idx = Xy['IL1LL'].dropna().index
+Xy.loc[idx, 'dataset_name'].unique()
+
+
+# In[51]:
+
+
+[print(x) for x in Xy.columns.unique() if 'neuron' not in x and 'manifold' not in x]
+
+
 # # FFT of VB02 in immob and freely moving
 
 # In[6]:
@@ -64,20 +83,20 @@ from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map, appl
 from wbfm.utils.external.utils_plotly import plotly_plot_mean_and_shading
 
 
-# In[30]:
+# In[7]:
 
 
 output_folder = 'multiplexing'
 
 
-# In[40]:
+# In[8]:
 
 
 from scipy import signal
 fs = 3.5
 
 
-# In[66]:
+# In[44]:
 
 
 def package_df_for_fft(neuron_name):
@@ -96,23 +115,26 @@ def package_df_for_fft(neuron_name):
     _df = pxx_vb02_explode.copy()
     _df = _df[_df['dataset_type'] != 'gfp']
     _df['dataset_type'] = _df['dataset_type'].map(data_type_name_mapping())
+    err
+    _df = _df.dropna()
+    print(f"Found the following dataset types: {_df['dataset_type'].unique()}")
     
     return _df.dropna()
 
 
-# In[67]:
+# In[45]:
 
 
-df.head()
+# df.head()
 
 
-# In[71]:
+# In[46]:
 
 
-px.line(df[df['dataset_type'] == 'Freely Moving (GCaMP)'].reset_index(), x='freq', y='pxx', color='dataset_name',)
+# px.line(df[df['dataset_type'] == 'Freely Moving (GCaMP)'].reset_index(), x='freq', y='pxx', color='dataset_name',)
 
 
-# In[70]:
+# In[47]:
 
 
 # Do not plot gfp
@@ -126,10 +148,10 @@ for n in neurons_to_plot:
     df = package_df_for_fft(n)
     print(n)
 
-    fig = plotly_plot_mean_and_shading(df, x='freq', y='pxx', color='dataset_type',
+    fig = plotly_plot_mean_and_shading(df, x='freq', y='pxx', color='dataset_type', #line_name=n,
                                       cmap = plotly_paper_color_discrete_map(), title=n)
     fig.update_xaxes(range=[0, 0.4], title='Frequency (Hz)')
-    fig.update_yaxes(title='Normalized<br> power')
+    fig.update_yaxes(title='Normalized<br>power')
     fig.update_layout(
         showlegend=(n=='VB02'),
         legend=dict(
@@ -153,7 +175,19 @@ for n in neurons_to_plot:
     break
 
 
-# In[24]:
+# In[ ]:
+
+
+df['dataset_type'].unique()
+
+
+# In[48]:
+
+
+get_ipython().run_line_magic('debug', '')
+
+
+# In[ ]:
 
 
 # # Do not plot gfp
@@ -199,20 +233,20 @@ for n in neurons_to_plot:
 
 # ## Sanity check: fft of small vb02 time series
 
-# In[73]:
+# In[ ]:
 
 
 Xy['dataset_name'].unique()
 
 
-# In[76]:
+# In[ ]:
 
 
 y = Xy[Xy['dataset_name']=='ZIM2165_Gcamp7b_worm1-2022_11_28']['VB02'].reset_index(drop=True)
 px.line(y)
 
 
-# In[79]:
+# In[ ]:
 
 
 y_subset = y.iloc[900:1100].values
@@ -250,7 +284,7 @@ px.line(y=pxx, x=output[0])
 
 # # Use projects
 
-# In[74]:
+# In[ ]:
 
 
 # Load multiple datasets
@@ -258,13 +292,13 @@ from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 all_projects_gcamp = load_paper_datasets(['gcamp', 'hannah_O2_fm'])
 
 
-# In[75]:
+# In[ ]:
 
 
 all_projects_gfp = load_paper_datasets('gfp')
 
 
-# In[76]:
+# In[ ]:
 
 
 all_projects_immob = load_paper_datasets('immob')

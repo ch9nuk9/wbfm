@@ -7,7 +7,7 @@
 
 
 
-# In[11]:
+# In[1]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -25,7 +25,7 @@ import os
 import seaborn as sns
 
 
-# In[12]:
+# In[2]:
 
 
 from sklearn.decomposition import PCA
@@ -37,7 +37,7 @@ from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map
 import plotly.express as px
 
 
-# In[13]:
+# In[14]:
 
 
 # fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
@@ -46,7 +46,7 @@ fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/
 project_data_gcamp = ProjectData.load_final_project_data_from_config(fname)
 
 
-# In[14]:
+# In[15]:
 
 
 # Load multiple datasets
@@ -54,13 +54,13 @@ from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 all_projects_gcamp = load_paper_datasets('gcamp')
 
 
-# In[15]:
+# In[16]:
 
 
 all_projects_gfp = load_paper_datasets('gfp')
 
 
-# In[16]:
+# In[17]:
 
 
 output_folder = "multiproject_behavior_quantifications"
@@ -68,14 +68,14 @@ output_folder = "multiproject_behavior_quantifications"
 
 # # Example dataset with zoom in
 
-# In[7]:
+# In[4]:
 
 
 from wbfm.utils.visualization.plot_traces import make_summary_interactive_kymograph_with_behavior
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 
-# In[8]:
+# In[7]:
 
 
 from wbfm.utils.visualization.plot_traces import build_all_plot_variables_for_summary_plot
@@ -90,7 +90,7 @@ column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, pha
         additional_shaded_states=additional_shaded_states, showlegend=False)
 
 
-# In[ ]:
+# In[11]:
 
 
 fig = make_summary_interactive_kymograph_with_behavior(project_data_gcamp, to_save=False, to_show=True,
@@ -105,7 +105,7 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[ ]:
+# In[12]:
 
 
 fps = project_data_gcamp.physical_unit_conversion.frames_per_second
@@ -122,7 +122,7 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[ ]:
+# In[13]:
 
 
 fig = make_summary_interactive_kymograph_with_behavior(project_data_gcamp, to_save=False, to_show=True,
@@ -139,7 +139,7 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[ ]:
+# In[6]:
 
 
 get_ipython().run_line_magic('debug', '')
@@ -147,59 +147,63 @@ get_ipython().run_line_magic('debug', '')
 
 # ## Trajectory
 
-# In[29]:
+# In[18]:
 
 
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.general.utils_paper import behavior_name_mapping
 
 
-# In[30]:
+# In[32]:
 
 
-xy = project_data_gcamp.worm_posture_class.stage_position(fluorescence_fps=True).copy()
+xy = project_data_gcamp.worm_posture_class.calc_behavior_from_alias('worm_center_position').copy()
+# xy = project_data_gcamp.worm_posture_class.stage_position(fluorescence_fps=True).copy()
 xy = xy - xy.iloc[0, :]
 
 beh = project_data_gcamp.worm_posture_class.beh_annotation(fluorescence_fps=True, simplify_states=True,
-                                                           include_head_cast=False, include_collision=False, include_pause=False)
+                                                           include_head_cast=False, include_collision=False, include_pause=True)
 
 df_xy = xy
 df_xy['Behavior'] = beh.values
+# df_xy['Behavior'] = df_xy['Behavior'].map(lambda x: behavior_name_mapping()[x.name])
+df_xy.head()
 
 
-# In[ ]:
+# In[39]:
 
 
-import plotly.graph_objects as go
+# import plotly.graph_objects as go
 
-df_xy['size'] = 1
+# df_xy['size'] = 1
 
-fig = px.scatter(df_xy, x='X', y='Y')
-fig.update_yaxes(dict(title="Distance (mm)"))
-fig.update_xaxes(dict(title="Distance (mm)"))
+# fig = px.scatter(df_xy, x='X', y='Y')
+# fig.update_yaxes(dict(title="Distance (mm)"))
+# fig.update_xaxes(dict(title="Distance (mm)"))
 
-fig.add_trace(go.Scatter(x=[0], y=[0], marker=dict(
-                    color='green',
-                    size=5
-                ), name='start'))
+# fig.add_trace(go.Scatter(x=[0], y=[0], marker=dict(
+#                     color='green',
+#                     size=5
+#                 ), name='start'))
 
-fig.add_trace(go.Scatter(x=[xy.iloc[-1, 0]], y=[xy.iloc[-1, 1]], marker=dict(
-                    color='red',
-                    size=5), name='end'
-                ))
-apply_figure_settings(fig, width_factor=0.8, height_factor=0.25, plotly_not_matplotlib=True)
+# fig.add_trace(go.Scatter(x=[xy.iloc[-1, 0]], y=[xy.iloc[-1, 1]], marker=dict(
+#                     color='red',
+#                     size=5), name='end'
+#                 ))
+# apply_figure_settings(fig, width_factor=0.5, height_factor=0.25, plotly_not_matplotlib=True)
 
-fig.update_traces(marker=dict(line=dict(width=0)))
-fig.show()
+# fig.update_traces(marker=dict(line=dict(width=0)))
+# fig.show()
 
     
-fname = f"trajectory.png"
-fname = os.path.join("behavior", fname)
-fig.write_image(fname, scale=3)
-fig.write_image(fname.replace(".png", ".svg"))
+# fname = f"trajectory.png"
+# fname = os.path.join("behavior", fname)
+# fig.write_image(fname, scale=3)
+# fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[ ]:
+# In[41]:
 
 
 import plotly.graph_objects as go
@@ -216,14 +220,14 @@ for i, state_code in enumerate(state_codes):
         continue
     phase_plot_list.append(
                 go.Scatter(x=df_out[col_names[0][i]], y=df_out[col_names[1][i]], mode='lines',
-                             name=state_code.full_name, line=dict(color=ethogram_cmap.get(state_code, None), width=4)))
+                             name=behavior_name_mapping()[state_code.full_name], line=dict(color=ethogram_cmap.get(state_code, None), width=4)))
 
 fig = go.Figure()
 fig.add_traces(phase_plot_list)
 
 # fig = px.scatter(df_xy, x='X', y='Y', color='Behavior')
-fig.update_yaxes(dict(title="Distance (mm)"))
-fig.update_xaxes(dict(title="Distance (mm)"))
+fig.update_yaxes(dict(title="Distance (mm)"), scaleanchor= 'x')
+fig.update_xaxes(dict(title="Distance (mm)"), )#range=[-1, 1])
 
 fig.add_trace(go.Scatter(x=[0], y=[0], marker=dict(
                     color='black', symbol='x',
@@ -234,7 +238,7 @@ fig.add_trace(go.Scatter(x=[xy.iloc[-1, 0]], y=[xy.iloc[-1, 1]], marker=dict(
                     color='black',
                     size=10), name='end'
                 ))
-apply_figure_settings(fig, width_factor=0.75, height_factor=0.25, plotly_not_matplotlib=True)
+apply_figure_settings(fig, width_factor=0.5, height_factor=0.25, plotly_not_matplotlib=True)
 
 fig.update_traces(marker=dict(line=dict(width=0)))
 fig.show()
@@ -244,12 +248,6 @@ fname = f"trajectory.png"
 fname = os.path.join("behavior", fname)
 fig.write_image(fname, scale=3)
 fig.write_image(fname.replace(".png", ".svg"))
-
-
-# In[ ]:
-
-
-1
 
 
 # ## NOT USING: Behavior transition diagram
@@ -410,7 +408,7 @@ for x in speed_types:
     fig.update_layout(showlegend=True)
     # fig.update_yaxes(dict(title="Probability", range=[0, 0.019]))
     fig.update_yaxes(dict(title="Probability", range=[0, 0.029]))
-    fig.update_xaxes(dict(title="Speed (mm/s)", range=[-0.25, 0.19]))
+    fig.update_xaxes(dict(title="Velocity (mm/s)", range=[-0.25, 0.19]))
     fig.update_xaxes(dict(title=""), row=2, col=1)
     
     fig.update_traces(xbins=dict( # bins used for histogram
@@ -601,13 +599,13 @@ for x, t in zip(states, titles):
 
 # # Histogram of post-reversal head bend peaks
 
-# In[17]:
+# In[11]:
 
 
 from wbfm.utils.general.utils_paper import apply_figure_settings
 
 
-# In[18]:
+# In[12]:
 
 
 # For each project, get the positive and negative post reversal peaks
@@ -650,7 +648,7 @@ for name, p in tqdm(all_projects_gcamp.items()):
     final_dorsal_dict[name] = dorsal_to_keep
 
 
-# In[19]:
+# In[28]:
 
 
 # For now, ignore the dataset they came from
@@ -661,30 +659,42 @@ df_dorsal['Turn Direction'] = 'Dorsal'
 
 df_turns = pd.concat([df_ventral, df_dorsal])
 df_turns.columns = ['Amplitude', 'Turn Direction']
+df_turns['Amplitude'] *= 1000  # Change to 1/mm
 
 
-# In[20]:
+# In[29]:
 
 
 beh_list = [BehaviorCodes.VENTRAL_TURN, BehaviorCodes.DORSAL_TURN]
 cmap = [BehaviorCodes.ethogram_cmap()[beh] for beh in beh_list]
 
 
-# In[27]:
+# In[38]:
 
 
 df_turns['Amplitude'] = df_turns['Amplitude'].abs()
 
 fig = px.histogram(df_turns, color="Turn Direction", histnorm='probability', color_discrete_sequence=cmap,
                   barmode='overlay')
-fig.update_layout(xaxis=dict(title="Peak Head Curvature (1/μm)"), showlegend=False)
+fig.update_layout(xaxis=dict(title="Peak Head Curvature (1/mm)"), showlegend=False)
 fig.update_layout(yaxis=dict(title="Probability"), showlegend=False)
 fig.update_traces(xbins=dict( # bins used for histogram
     # start=0.0,
     # end=60.0,
-    size=0.001
+    size=1
 ))
-apply_figure_settings(fig, width_factor=0.32, height_factor=0.12, plotly_not_matplotlib=True)
+fig.update_yaxes(range=[0, 0.25])
+
+fig.update_layout(
+    showlegend=True,
+    legend=dict(
+      yanchor="middle",
+      y=1.75,
+      xanchor="left",
+      x=0.5
+    )
+)
+apply_figure_settings(fig, width_factor=0.32, height_factor=0.14, plotly_not_matplotlib=True)
 
 fig.show()
 

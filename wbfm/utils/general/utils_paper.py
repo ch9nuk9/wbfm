@@ -383,7 +383,7 @@ class PaperDataCache:
         """
 
         all_possible_cached_methods = self.list_of_paper_trace_methods()
-        self.project_data.logger.info(f'Updating cached dataframes with name mapping: {previous2new}')
+        # self.project_data.logger.info(f'Updating cached dataframes with name mapping: {previous2new}')
 
         for cache_method in all_possible_cached_methods:
             # Get the filename that would be used to save the file

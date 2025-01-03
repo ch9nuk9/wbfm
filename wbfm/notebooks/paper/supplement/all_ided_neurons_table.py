@@ -7,7 +7,7 @@
 
 
 
-# In[10]:
+# In[1]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -25,7 +25,7 @@ import os
 import seaborn as sns
 
 
-# In[11]:
+# In[2]:
 
 
 from sklearn.decomposition import PCA
@@ -38,7 +38,7 @@ from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 from wbfm.utils.general.utils_filenames import add_name_suffix
 
 
-# In[12]:
+# In[3]:
 
 
 # # Load multiple datasets
@@ -47,52 +47,65 @@ from wbfm.utils.general.utils_filenames import add_name_suffix
 # # all_projects_gfp = load_paper_datasets('gfp')
 
 
-# In[13]:
+# In[4]:
 
 
 # all_projects_immob = load_paper_datasets('immob')
 
 
-# In[14]:
+# In[5]:
 
 
 # all_projects_immob_O2 = load_paper_datasets('hannah_O2_immob')
 
 
-# In[15]:
+# In[6]:
 
 
 from wbfm.utils.general.hardcoded_paths import load_all_data_as_dataframe
 
 
-# In[16]:
+# In[7]:
 
 
 get_hierarchical_modeling_dir()
 
 
-# In[17]:
+# In[8]:
 
 
 Xy = load_all_data_as_dataframe()
 
 
-# In[18]:
+# In[9]:
 
 
 Xy['fwd'].unique()
 
 
+# In[29]:
+
+
+Xy.loc[:, ['dataset_name', 'IL2LL']].dropna()['dataset_name'].unique()
+
+
+# In[27]:
+
+
+idx = Xy['dataset_name'] == 'ZIM2319_GFP_worm6-2022-12-10'
+Xy.loc[idx, 'IL2LL'].dropna()
+
+
 # # Plot ided neurons, counted by dataset and colored by datatype
 
-# In[19]:
+# In[10]:
 
 
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map, data_type_name_mapping
 
 
-# In[20]:
+# In[11]:
 
 
 def func(col):
@@ -107,7 +120,7 @@ Xy_count = Xy.apply(func)
 Xy_count
 
 
-# In[32]:
+# In[12]:
 
 
 non_nan_groups = Xy.groupby(['dataset_name', 'dataset_type'])[neurons_with_confident_ids()].agg(lambda x: x.count() > 0).reset_index()
@@ -121,13 +134,13 @@ non_nan_fraction = (non_nan_totals.T / non_nan_totals.max(axis=1)).T
 non_nan_fraction = non_nan_fraction.reset_index().melt(id_vars='dataset_type', var_name='neuron_name', value_name='count')
 
 
-# In[33]:
+# In[13]:
 
 
-non_nan_totals
+print(non_nan_totals)
 
 
-# In[34]:
+# In[14]:
 
 
 non_nan_melt.columns = ['Dataset Type', 'Neuron Name', 'Count']
@@ -137,13 +150,13 @@ non_nan_fraction.columns = ['Dataset Type', 'Neuron Name', 'Count']
 non_nan_fraction['Dataset Type'] = non_nan_fraction['Dataset Type'].map(data_type_name_mapping())
 
 
-# In[35]:
+# In[15]:
 
 
 non_nan_melt[non_nan_melt['Neuron Name'] == 'AIBR']
 
 
-# In[36]:
+# In[16]:
 
 
 
@@ -173,7 +186,7 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[37]:
+# In[17]:
 
 
 # Same, but no grid and with horizontal lines where the total number of datasets are
@@ -214,7 +227,7 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[38]:
+# In[18]:
 
 
 
@@ -238,7 +251,7 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[39]:
+# In[19]:
 
 
 non_nan_fraction['Neuron Name'].value_counts()
@@ -246,7 +259,7 @@ non_nan_fraction['Neuron Name'].value_counts()
 
 # ## Export to an excel sheet, with total numbers
 
-# In[40]:
+# In[20]:
 
 
 id_export = non_nan_totals.copy()
@@ -255,7 +268,7 @@ id_export.index = id_export.index.map(data_type_name_mapping(include_mutant=True
 # id_export.head()
 
 
-# In[41]:
+# In[21]:
 
 
 
@@ -265,7 +278,7 @@ id_export.to_excel(fname)
 
 # # Boxplot of IDed neurons per dataset
 
-# In[42]:
+# In[22]:
 
 
 non_nan_groups_melt = non_nan_groups.melt(id_vars=['dataset_type', 'dataset_name'])
@@ -277,7 +290,7 @@ non_nan_id_per_dataset['Dataset Type'] = non_nan_id_per_dataset['Dataset Type'].
 non_nan_id_per_dataset
 
 
-# In[43]:
+# In[23]:
 
 
 fig = px.box(non_nan_id_per_dataset, x='Dataset Type', y='Number of IDed neurons', color='Dataset Type', 
@@ -326,30 +339,30 @@ fig.write_image(fname)
 
 # # Freely moving: ID'ed neurons
 
-# In[ ]:
+# In[24]:
 
 
-all_ids = defaultdict(int)
+# all_ids = defaultdict(int)
 
-for name, proj in tqdm(all_projects_gcamp.items()):
-    df_traces = proj.calc_default_traces(use_paper_options=True)
-    neuron_columns = [c for c in df_traces.columns if 'neuron' not in c]
-    for c in neuron_columns:
-        all_ids[c] += 1
-
-
-# In[ ]:
-
-
-df_ids = pd.DataFrame(all_ids, index=[0]).T.sort_values(0, ascending=False)
-px.scatter(df_ids)
+# for name, proj in tqdm(all_projects_gcamp.items()):
+#     df_traces = proj.calc_default_traces(use_paper_options=True)
+#     neuron_columns = [c for c in df_traces.columns if 'neuron' not in c]
+#     for c in neuron_columns:
+#         all_ids[c] += 1
 
 
 # In[ ]:
 
 
-fname = os.path.join('ids', 'id_counts.csv')
-df_ids.to_csv(fname)
+# df_ids = pd.DataFrame(all_ids, index=[0]).T.sort_values(0, ascending=False)
+# px.scatter(df_ids)
+
+
+# In[ ]:
+
+
+# fname = os.path.join('ids', 'id_counts.csv')
+# df_ids.to_csv(fname)
 
 
 # # Immobilized: ID'ed neurons
@@ -357,27 +370,27 @@ df_ids.to_csv(fname)
 # In[ ]:
 
 
-all_ids = defaultdict(int)
+# all_ids = defaultdict(int)
 
-for name, proj in tqdm(all_projects_immob.items()):
-    df_traces = proj.calc_default_traces(use_paper_options=True)
-    neuron_columns = [c for c in df_traces.columns if 'neuron' not in c]
-    for c in neuron_columns:
-        all_ids[c] += 1
-
-
-# In[ ]:
-
-
-df_ids = pd.DataFrame(all_ids, index=[0]).T.sort_values(0, ascending=False)
-px.scatter(df_ids)
+# for name, proj in tqdm(all_projects_immob.items()):
+#     df_traces = proj.calc_default_traces(use_paper_options=True)
+#     neuron_columns = [c for c in df_traces.columns if 'neuron' not in c]
+#     for c in neuron_columns:
+#         all_ids[c] += 1
 
 
 # In[ ]:
 
 
-fname = os.path.join('ids', 'id_counts_immob.csv')
-df_ids.to_csv(fname)
+# df_ids = pd.DataFrame(all_ids, index=[0]).T.sort_values(0, ascending=False)
+# px.scatter(df_ids)
+
+
+# In[ ]:
+
+
+# fname = os.path.join('ids', 'id_counts_immob.csv')
+# df_ids.to_csv(fname)
 
 
 # # Immobilized with O2 stimulus: ID'ed neurons
@@ -385,61 +398,61 @@ df_ids.to_csv(fname)
 # In[ ]:
 
 
-all_ids = defaultdict(int)
+# all_ids = defaultdict(int)
 
-for name, proj in tqdm(all_projects_immob_O2.items()):
-    df_traces = proj.calc_default_traces(use_paper_options=True)
-    neuron_columns = [c for c in df_traces.columns if 'neuron' not in c]
-    for c in neuron_columns:
-        all_ids[c] += 1
-
-
-# In[ ]:
-
-
-df_ids = pd.DataFrame(all_ids, index=[0]).T.sort_values(0, ascending=False)
-px.scatter(df_ids)
+# for name, proj in tqdm(all_projects_immob_O2.items()):
+#     df_traces = proj.calc_default_traces(use_paper_options=True)
+#     neuron_columns = [c for c in df_traces.columns if 'neuron' not in c]
+#     for c in neuron_columns:
+#         all_ids[c] += 1
 
 
 # In[ ]:
 
 
-fname = os.path.join('ids', 'id_counts_immob_O2.csv')
-df_ids.to_csv(fname)
+# df_ids = pd.DataFrame(all_ids, index=[0]).T.sort_values(0, ascending=False)
+# px.scatter(df_ids)
+
+
+# In[ ]:
+
+
+# fname = os.path.join('ids', 'id_counts_immob_O2.csv')
+# df_ids.to_csv(fname)
 
 
 # # Same but with simple dataframes, not full projects
 
-# In[63]:
+# In[ ]:
 
 
-from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
-# fname = 'data.h5'
+# from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
+# # fname = 'data.h5'
 
-fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
-Xy = pd.read_hdf(fname)
+# fname = os.path.join(get_hierarchical_modeling_dir(), 'data.h5')
+# Xy = pd.read_hdf(fname)
 
-fname = os.path.join(get_hierarchical_modeling_dir(gfp=True), 'data.h5')
-Xy_gfp = pd.read_hdf(fname)
-
-
-# In[64]:
+# fname = os.path.join(get_hierarchical_modeling_dir(gfp=True), 'data.h5')
+# Xy_gfp = pd.read_hdf(fname)
 
 
-def get_counts(Xy):
-    all_ids = np.ceil(Xy.count() / Xy.shape[0] * len(Xy['dataset_name'].unique()))
-    strs_to_drop = ['neuron', 'eigenworm', 'pca', 'name', 'time', 'curvature', 'manifold',
-                   'fwd', 'speed', 'collision']
-    for s in strs_to_drop:
-        all_ids = all_ids[~all_ids.index.str.contains(s)]
-    all_ids = all_ids.sort_values()
-    return all_ids
-
-all_ids = get_counts(Xy)
-all_ids_gfp = get_counts(Xy_gfp)
+# In[ ]:
 
 
-# In[66]:
+# def get_counts(Xy):
+#     all_ids = np.ceil(Xy.count() / Xy.shape[0] * len(Xy['dataset_name'].unique()))
+#     strs_to_drop = ['neuron', 'eigenworm', 'pca', 'name', 'time', 'curvature', 'manifold',
+#                    'fwd', 'speed', 'collision']
+#     for s in strs_to_drop:
+#         all_ids = all_ids[~all_ids.index.str.contains(s)]
+#     all_ids = all_ids.sort_values()
+#     return all_ids
+
+# all_ids = get_counts(Xy)
+# all_ids_gfp = get_counts(Xy_gfp)
+
+
+# In[ ]:
 
 
 # px.scatter(all_ids_gfp)
@@ -462,45 +475,39 @@ all_ids_gfp = get_counts(Xy_gfp)
 # In[ ]:
 
 
-all_num_ids = defaultdict(int)
+# all_num_ids = defaultdict(int)
 
-for name, proj in tqdm(all_projects_gcamp.items()):
-    df_traces = proj.calc_default_traces(use_paper_options=True)
-    neuron_columns = [c for c in df_traces.columns if 'neuron' not in c]
-    if 'RMED' not in neuron_columns:
-        print(name)
-    if 'AQ' in neuron_columns:
-        print(name)
-    all_num_ids[name] = len(neuron_columns)
-
-
-# In[ ]:
-
-
-p = all_projects_gcamp['ZIM2165_Gcamp7b_worm2-2022-12-10']
-df = p.calc_default_traces(use_paper_options=True)
+# for name, proj in tqdm(all_projects_gcamp.items()):
+#     df_traces = proj.calc_default_traces(use_paper_options=True)
+#     neuron_columns = [c for c in df_traces.columns if 'neuron' not in c]
+#     if 'RMED' not in neuron_columns:
+#         print(name)
+#     if 'AQ' in neuron_columns:
+#         print(name)
+#     all_num_ids[name] = len(neuron_columns)
 
 
 # In[ ]:
 
 
-all_num_ids = defaultdict(int)
-
-for name, proj in tqdm(all_projects_immob.items()):
-    df_traces = proj.calc_default_traces(use_paper_options=True)
-    neuron_columns = [c for c in df_traces.columns if 'neuron' not in c]
-    if 'RMED' not in neuron_columns:
-        print(name)
-    if 'AQ' in neuron_columns:
-        print(name)
-    all_num_ids[name] = len(neuron_columns)
-min(list(all_num_ids.values()))
+# p = all_projects_gcamp['ZIM2165_Gcamp7b_worm2-2022-12-10']
+# df = p.calc_default_traces(use_paper_options=True)
 
 
 # In[ ]:
 
 
-all_num_ids
+# all_num_ids = defaultdict(int)
+
+# for name, proj in tqdm(all_projects_immob.items()):
+#     df_traces = proj.calc_default_traces(use_paper_options=True)
+#     neuron_columns = [c for c in df_traces.columns if 'neuron' not in c]
+#     if 'RMED' not in neuron_columns:
+#         print(name)
+#     if 'AQ' in neuron_columns:
+#         print(name)
+#     all_num_ids[name] = len(neuron_columns)
+# min(list(all_num_ids.values()))
 
 
 # In[ ]:

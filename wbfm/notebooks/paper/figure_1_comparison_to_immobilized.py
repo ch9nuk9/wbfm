@@ -138,7 +138,7 @@ for project_dict in tqdm([all_projects_gcamp, all_projects_gfp, all_projects_imm
 # project_data_fm2immob_immob.data_cacher.clear_disk_cache(delete_invalid_indices=False, delete_traces=True)
 
 
-# In[15]:
+# In[14]:
 
 
 # # Also for FM to IMMOB datasets
@@ -155,40 +155,40 @@ for project_dict in tqdm([all_projects_gcamp, all_projects_gfp, all_projects_imm
 
 # ## Heatmaps: immobilized and WBFM
 
-# In[16]:
+# In[15]:
 
 
 from wbfm.utils.visualization.plot_traces import make_summary_interactive_heatmap_with_pca, make_summary_heatmap_and_subplots
 
 
-# In[22]:
+# In[16]:
 
 
 # project_data_gcamp.use_physical_x_axis = True
 # project_data_immob.use_physical_x_axis = True
 
 
-# In[ ]:
+# In[17]:
 
 
 # NOT USED (combined plot)
 # fig = make_summary_interactive_heatmap_with_pca(project_data_gcamp, to_save=True, to_show=True, output_folder="intro/example_summary_plots_wbfm")
 
 
-# In[ ]:
+# In[18]:
 
 
 # Print number of neurons
 project_data_gcamp.calc_paper_traces().shape
 
 
-# In[ ]:
+# In[19]:
 
 
 # fig = make_summary_interactive_heatmap_with_pca(project_data_immob, to_save=True, to_show=True, output_folder="example_summary_plots_immob")
 
 
-# In[ ]:
+# In[20]:
 
 
 # USED: different figures for each
@@ -196,7 +196,7 @@ fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp, trace_opt=dic
                                                base_height=[0.25, 0.2], base_width=0.6, output_folder="intro/example_summary_plots_wbfm")
 
 
-# In[ ]:
+# In[21]:
 
 
 # # Comparison: interpolated values
@@ -204,7 +204,7 @@ fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp, trace_opt=dic
 #                                                output_folder="intro/example_summary_plots_wbfm")
 
 
-# In[ ]:
+# In[22]:
 
 
 # fig1, fig2 = make_summary_heatmap_and_subplots(project_data_immob, trace_opt=dict(use_paper_options=True), include_speed_subplot=False,
@@ -240,46 +240,46 @@ project_data_immob2.use_physical_x_axis = True
 project_data_immob2.calc_paper_traces().shape
 
 
-# In[34]:
+# In[27]:
 
 
 fig1, fig2 = make_summary_heatmap_and_subplots(project_data_immob2, trace_opt=dict(use_paper_options=True, interpolate_nan=True, verbose=True), include_speed_subplot=False,
                                                to_save=True, to_show=True, output_folder="intro/fm_to_immob/immob")
 
 
-# In[35]:
+# In[28]:
 
 
 project_data_gcamp2.calc_paper_traces().shape
 
 
-# In[36]:
+# In[29]:
 
 
 fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp2, trace_opt=dict(use_paper_options=True, interpolate_nan=True, verbose=True), include_speed_subplot=False,
                                                to_save=True, to_show=True, output_folder="intro/fm_to_immob/fm")
 
 
-# In[ ]:
+# In[30]:
 
 
 # trace_opt=dict(use_paper_options=True, interpolate_nan=False, verbose=True)
 # df = project_data_fm2immob_fm.calc_default_traces(**trace_opt)
 
 
-# In[ ]:
+# In[31]:
 
 
 # project_data_immob2.calc_paper_traces()
 
 
-# In[ ]:
+# In[32]:
 
 
 # project_data_immob2.tail_neuron_names()
 
 
-# In[ ]:
+# In[33]:
 
 
 # # Test: include tail neurons
@@ -291,7 +291,7 @@ fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp2, trace_opt=di
 
 # ### Just plot the legend for reversal shading
 
-# In[ ]:
+# In[34]:
 
 
 from wbfm.utils.general.utils_paper import export_legend_for_paper
@@ -300,7 +300,7 @@ fname = 'intro/reversal_legend.png'
 export_legend_for_paper(reversal_shading=True, fname=fname)
 
 
-# In[ ]:
+# In[35]:
 
 
 
@@ -310,12 +310,12 @@ export_legend_for_paper(reversal_shading=True, fname=fname, include_self_collisi
 
 # ## Triggered average examples
 
-# In[ ]:
+# In[39]:
 
 
 # from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
 from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages
-from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior, shade_triggered_average
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, shade_using_behavior
 from wbfm.utils.visualization.utils_plot_traces import plot_triggered_averages
 
 
@@ -325,15 +325,15 @@ from wbfm.utils.visualization.utils_plot_traces import plot_triggered_averages
 
 
 
-# In[ ]:
+# In[41]:
 
 
-plot_triggered_averages([project_data_gcamp, project_data_immob], output_foldername="intro/basic_triggered_average")
+# plot_triggered_averages([project_data_gcamp, project_data_immob], output_foldername="intro/basic_triggered_average")
 
 
 # ## PCA variance explained plot of all datasets
 
-# In[ ]:
+# In[42]:
 
 
 from wbfm.utils.visualization.multiproject_wrappers import get_all_variance_explained
@@ -341,13 +341,13 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
 
 
-# In[ ]:
+# In[43]:
 
 
 gcamp_var, gfp_var, immob_var, gcamp_var_sum, gfp_var_sum, immob_var_sum = get_all_variance_explained(all_projects_gcamp, all_projects_gfp, all_projects_immob)
 
 
-# In[ ]:
+# In[44]:
 
 
 fig, ax = plt.subplots(dpi=200, figsize=(5,5))
@@ -393,7 +393,7 @@ fig.savefig(fname.replace(".png", ".svg"), transparent=True)
 
 # # PCA weights across wbfm and immob
 
-# In[38]:
+# In[45]:
 
 
 from wbfm.utils.visualization.utils_cca import calc_pca_weights_for_all_projects
@@ -402,13 +402,13 @@ from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 
 
-# In[39]:
+# In[46]:
 
 
 neuron_names = neurons_with_confident_ids()
 
 
-# In[40]:
+# In[47]:
 
 
 
@@ -416,14 +416,14 @@ wbfm_weights = calc_pca_weights_for_all_projects(all_projects_gcamp, use_paper_o
                                                 neuron_names=neuron_names)
 
 
-# In[41]:
+# In[48]:
 
 
 immob_weights = calc_pca_weights_for_all_projects(all_projects_immob, use_paper_options=True, combine_left_right=True,
                                                  neuron_names=neuron_names)
 
 
-# In[ ]:
+# In[49]:
 
 
 # # Create a list of colors to highlight BAG
@@ -447,7 +447,7 @@ immob_weights = calc_pca_weights_for_all_projects(all_projects_immob, use_paper_
 # fig.write_image(fname)
 
 
-# In[ ]:
+# In[50]:
 
 
 # # Create a list of colors to highlight BAG
@@ -471,7 +471,7 @@ immob_weights = calc_pca_weights_for_all_projects(all_projects_immob, use_paper_
 
 # ## FM and immob on same plot
 
-# In[37]:
+# In[51]:
 
 
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
@@ -479,7 +479,7 @@ from wbfm.utils.general.utils_paper import data_type_name_mapping, plotly_paper_
 import plotly.graph_objects as go
 
 
-# In[42]:
+# In[52]:
 
 
 names_to_keep = set(wbfm_weights.columns).intersection(immob_weights.columns)
@@ -491,7 +491,7 @@ df_both['Dataset Type'] = df_both['dataset_type'].map(data_type_name_mapping())
 df_both['neuron_name'].unique()
 
 
-# In[43]:
+# In[53]:
 
 
 
@@ -566,13 +566,13 @@ fig.write_image(fname)
 # 3. 
 # 
 
-# In[44]:
+# In[54]:
 
 
 from wbfm.utils.general.hardcoded_paths import intrinsic_definition
 
 
-# In[45]:
+# In[55]:
 
 
 from scipy import stats
@@ -604,13 +604,13 @@ df_significant_diff['significance_corrected_diff'] = output[0]
 df_significant_diff.head()
 
 
-# In[46]:
+# In[56]:
 
 
 # %debug
 
 
-# In[47]:
+# In[57]:
 
 
 
@@ -626,7 +626,7 @@ df_significant_diff.head()
 # fig.show()
 
 
-# In[48]:
+# In[58]:
 
 
 # Process p value comparisons to 0
@@ -653,7 +653,7 @@ df_4states.columns = ['Result']
 df_4states.head()
 
 
-# In[85]:
+# In[59]:
 
 
 df_4states_counts = df_4states['Result'].value_counts().reset_index()
@@ -711,7 +711,7 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-# In[51]:
+# In[60]:
 
 
 df_4states['Result_simple'].value_counts()
@@ -719,7 +719,7 @@ df_4states['Result_simple'].value_counts()
 
 # ### Add english language column and export
 
-# In[89]:
+# In[61]:
 
 
 from wbfm.utils.general.hardcoded_paths import intrinsic_categories_short_description
@@ -733,13 +733,13 @@ df_4states.sort_values(by='Result_description').drop(columns='Result').to_excel(
 # 
 # i.e. the cumulative histogram, with error bar per dataset
 
-# In[ ]:
+# In[62]:
 
 
 from wbfm.utils.visualization.multiproject_wrappers import build_dataframe_of_variance_explained
 
 
-# In[ ]:
+# In[63]:
 
 
 trace_opt = dict(use_paper_options=True, interpolate_nan=True)
@@ -766,13 +766,13 @@ df_var_exp = pd.concat(all_dfs, axis=0)
 df_var_exp.head()
 
 
-# In[ ]:
+# In[64]:
 
 
 df_var_exp[(df_var_exp['dataset_name'] == '2022-11-23_worm10') & (df_var_exp['neuron_name'] == 'ALA')]
 
 
-# In[ ]:
+# In[65]:
 
 
 # px.histogram(df_var_exp, color='dataset_name', x='fraction_variance_explained', cumulative=True, 
@@ -780,7 +780,7 @@ df_var_exp[(df_var_exp['dataset_name'] == '2022-11-23_worm10') & (df_var_exp['ne
 #              barmode='overlay', histnorm='percent')
 
 
-# In[ ]:
+# In[66]:
 
 
 df_var_exp_hist = df_var_exp.copy()
@@ -811,7 +811,7 @@ long_vars.reset_index(drop=True, inplace=True)
 long_vars.head()
 
 
-# In[ ]:
+# In[67]:
 
 
 # px.line(long_vars, x='fraction_count', 
@@ -819,7 +819,7 @@ long_vars.head()
 #        facet_row='Type of data')
 
 
-# In[ ]:
+# In[68]:
 
 
 from wbfm.utils.external.utils_plotly import plotly_plot_mean_and_shading
@@ -865,19 +865,19 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[ ]:
+# In[69]:
 
 
 # %debug
 
 
-# In[ ]:
+# In[70]:
 
 
 long_vars['Type of data'].unique()
 
 
-# In[ ]:
+# In[71]:
 
 
 from wbfm.utils.external.utils_plotly import plotly_plot_mean_and_shading

@@ -16,7 +16,7 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_jupyter import executing_in_notebook
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.external.custom_errors import NoMatchesError, NoNeuronsError, NoBehaviorAnnotationsError, \
-    IncompleteConfigFileError
+    IncompleteConfigFileError, DataSynchronizationError
 from wbfm.utils.general.postprocessing.utils_imputation import impute_missing_values_in_dataframe
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
@@ -1664,7 +1664,8 @@ class ProjectData:
             possible_fnames = dict(excel=excel_fname,
                                    csv_old=Path(excel_fname).with_suffix('.csv'),
                                    csv=Path(excel_fname).with_name(self.shortened_name).with_suffix('.csv'),
-                                   h5=Path(excel_fname).with_name(self.shortened_name).with_suffix('.h5'))
+                                   h5=Path(excel_fname).with_name(self.shortened_name).with_suffix('.h5'),
+                                   h5_backup=Path(excel_fname).with_suffix('.h5'))
         except ValueError:
             self.df_manual_tracking_fname = ''
             return None
@@ -1674,10 +1675,32 @@ class ProjectData:
         try:
             df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
                                                                           this_reader=read_if_exists, na_filter=False)
-            self.df_manual_tracking_fname = fname
         except ValueError:
-            self.df_manual_tracking_fname = ''
-            return None
+            # Then the file was corrupted... try to load from the h5 file (don't worry about other file types)
+            fname = possible_fnames['h5_backup']
+            if Path(fname).exists():
+                df_manual_tracking = pd.read_hdf(fname)
+                # Confirm that the excel file exists but was corrupt
+                if Path(excel_fname).exists():
+                    try:
+                        _ = pd.read_excel(excel_fname)
+                        raise DataSynchronizationError("Corrupt excel file, but was able to read it the second time")
+                    except ValueError:
+                        # This is expected from the first read, and we want to fix the file
+                        df_manual_tracking.to_excel(excel_fname, index=False)
+                        self.logger.warning(
+                            f"Found corrupted manual annotation file ({excel_fname}), overwriting from h5 file")
+
+                        # And then actually read this file, so we don't touch the backup
+                        df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
+                                                                                        this_reader=read_if_exists, na_filter=False)
+            else:
+                self.logger.warning(
+                    f"Found corrupted manual annotation file ({excel_fname}), with no backup h5 file; returning None")
+
+                fname = ''
+                df_manual_tracking = None
+        self.df_manual_tracking_fname = fname
         return df_manual_tracking
 
     def get_default_manual_annotation_fname(self) -> Optional[str]:
