@@ -1664,7 +1664,8 @@ class ProjectData:
             possible_fnames = dict(excel=excel_fname,
                                    csv_old=Path(excel_fname).with_suffix('.csv'),
                                    csv=Path(excel_fname).with_name(self.shortened_name).with_suffix('.csv'),
-                                   h5=Path(excel_fname).with_name(self.shortened_name).with_suffix('.h5'))
+                                   h5=Path(excel_fname).with_name(self.shortened_name).with_suffix('.h5'),
+                                   h5_backup=Path(excel_fname).with_suffix('.h5'))
         except ValueError:
             self.df_manual_tracking_fname = ''
             return None
@@ -1676,7 +1677,7 @@ class ProjectData:
                                                                           this_reader=read_if_exists, na_filter=False)
         except ValueError:
             # Then the file was corrupted... try to load from the h5 file (don't worry about other file types)
-            fname = possible_fnames['h5']
+            fname = possible_fnames['h5_backup']
             if Path(fname).exists():
                 df_manual_tracking = pd.read_hdf(fname)
                 # Confirm that the excel file exists but was corrupt
@@ -1689,6 +1690,10 @@ class ProjectData:
                         df_manual_tracking.to_excel(excel_fname, index=False)
                         self.logger.warning(
                             f"Found corrupted manual annotation file ({excel_fname}), overwriting from h5 file")
+
+                        # And then actually read this file, so we don't touch the backup
+                        df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
+                                                                                        this_reader=read_if_exists, na_filter=False)
             else:
                 self.logger.warning(
                     f"Found corrupted manual annotation file ({excel_fname}), with no backup h5 file; returning None")
@@ -1696,7 +1701,6 @@ class ProjectData:
                 fname = ''
                 df_manual_tracking = None
         self.df_manual_tracking_fname = fname
-
         return df_manual_tracking
 
     def get_default_manual_annotation_fname(self) -> Optional[str]:
