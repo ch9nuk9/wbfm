@@ -92,8 +92,8 @@ Xy.loc[:, ['dataset_name', 'IL2LL']].dropna()['dataset_name'].unique()
 # In[27]:
 
 
-idx = Xy['dataset_name'] == 'ZIM2319_GFP_worm6-2022-12-10'
-Xy.loc[idx, 'IL2LL'].dropna()
+# idx = Xy['dataset_name'] == 'ZIM2319_GFP_worm6-2022-12-10'
+# Xy.loc[idx, 'IL2LL'].dropna()
 
 
 # # Plot ided neurons, counted by dataset and colored by datatype
