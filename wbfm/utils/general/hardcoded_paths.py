@@ -418,7 +418,7 @@ def neurons_with_confident_ids(combine_left_right=False):
                     'SIAVL', 'SIAVR', 'SAAVL', 'SAAVR', 'SIADL', 'SIADR', 'RIAL', 'RIAR',
                     'RMDDL', 'RMDDR', #'AVFL', 'AVFR',
                     'AWBL', 'AWBR',
-                    'IL1LL', 'IL1LR', 'IL2LL', 'IL2LR',
+                    'IL1L', 'IL1R', 'IL2L', 'IL2R',
                     'ALA', 'RIS', 'AQR', 'RMDVL', 'RMDVR', 'URXL', 'URXR',
                     'VB01', 'VB02', 'VB03', 'DB01', 'DB02', 'VA01', 'VA02', 'DA01', 'DD01',
                     'RIBL', 'RIBR', 'RMEL', 'RMER', 'RMED', 'RMEV', 'RID', 'AVBL', 'AVBR']
