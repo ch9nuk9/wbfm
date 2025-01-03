@@ -8,7 +8,7 @@ from wbfm.utils.visualization.multiproject_wrappers import build_trace_time_seri
     build_pca_time_series_from_multiple_projects
 
 
-def export_data_for_hierarchical_model(suffix='', skip_if_exists=True):
+def export_data_for_hierarchical_model(suffix='', skip_if_exists=True, delete_if_exists=False):
     """
     Loads the relevant projects, and exports both behavior and traces to a single .h5 file
 
@@ -20,9 +20,16 @@ def export_data_for_hierarchical_model(suffix='', skip_if_exists=True):
     data_dir = get_hierarchical_modeling_dir(suffix=suffix)
     output_fname = os.path.join(data_dir, 'data.h5')
     print(f"Exporting data to {output_fname} with suffix {suffix}")
-    if skip_if_exists and os.path.exists(output_fname):
-        print(f"File {output_fname} already exists, skipping")
-        return
+    if os.path.exists(output_fname):
+        if skip_if_exists:
+            print(f"File {output_fname} already exists, skipping")
+            return
+        elif delete_if_exists:
+            print(f"File {output_fname} already exists, deleting")
+            os.remove(output_fname)
+        else:
+            raise FileExistsError(f"File {output_fname} already exists; set delete_if_exists=True to overwrite"
+                                  f" or skip_if_exists=True to skip")
 
     # Load projects from the suffix
     all_projects = load_paper_datasets(suffix)

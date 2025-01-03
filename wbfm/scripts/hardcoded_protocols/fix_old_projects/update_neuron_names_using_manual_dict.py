@@ -20,7 +20,7 @@ if __name__ == '__main__':
             try:
                 print(project.df_manual_ids.columns)
             except AttributeError:
-                print(f"No manual ids found for project: {project_name}")
+                print(f"No manual ids found for peroject: {project_name}")
             raise e
         except (NoNeuronsError, AttributeError) as e:
             print(f"No neurons found for project: {project_name}")
