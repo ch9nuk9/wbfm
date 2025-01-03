@@ -299,14 +299,16 @@ fig.show()
 # In[ ]:
 
 
-trigger_types = [('global_rev', 'Reversal Triggered'), 
-                ('residual_collision', 'Collision Triggered')]
+# Actually plotted in the O2 multiplexing notebook
 
-for trigger_type, title in trigger_types:
-    triggered_average_gcamp_plotter.plot_triggered_average_single_neuron('BAGL', trigger_type, 
-                                                                         title=title, show_title=True,
-                                                                         output_folder='/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing/wbfm_trigger',
-                                                                        fig_opt=dict(width_factor=0.5,height_factor=0.2))
+# trigger_types = [('global_rev', 'Reversal Triggered'), 
+#                 ('residual_collision', 'Collision Triggered')]
+
+# for trigger_type, title in trigger_types:
+#     triggered_average_gcamp_plotter.plot_triggered_average_single_neuron('BAGL', trigger_type, 
+#                                                                          title=title, show_title=True,
+#                                                                          output_folder='/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing/wbfm_trigger',
+#                                                                         fig_opt=dict(width_factor=0.5,height_factor=0.2))
 
 
 # ## All O2 neurons

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[4]:
+# In[1]:
 
 
 from wbfm.utils.projects.finished_project_data import ProjectData
@@ -13,7 +13,7 @@ get_ipython().run_line_magic('load_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 
 
-# In[5]:
+# In[2]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -32,7 +32,7 @@ import seaborn as sns
 import plotly.express as px
 
 
-# In[6]:
+# In[3]:
 
 
 from sklearn.decomposition import PCA
@@ -42,18 +42,243 @@ from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivari
 from wbfm.utils.traces.gui_kymograph_correlations import build_all_gui_dfs_multineuron_correlations
 
 
+# In[6]:
+
+
+from wbfm.utils.visualization.multiproject_wrappers import build_trace_time_series_from_multiple_projects
+from wbfm.utils.general.hardcoded_paths import load_paper_datasets
+all_projects = load_paper_datasets('')
+# df_all_traces = build_trace_time_series_from_multiple_projects(all_projects, use_paper_options=True)
+
+
 # In[7]:
 
 
+# %debug
+
+
+# In[ ]:
+
+
 # Same individual: fm and immob
-fname = '/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28'
+# fname = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28'
+# fname = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/muscle_hiscl_o2_stimulation/2024-05-24_17-31_muisclehiscl_7b_o2_stim_worm2-2024-05-24'
+fname = '/lisc/scratch/neurobiology/zimmer/fieseler/wbfm_projects/muscle_hiscl_o2_stimulation/2024-05-24_18-20_muisclehiscl_7b_o2_stim_worm4-2024-05-24/project_config.yaml'
 project_data_fm2immob_fm = ProjectData.load_final_project_data_from_config(fname, verbose=0)
+
+
+# In[ ]:
+
+
+df_manual_names = project_data_fm2immob_fm.calc_default_traces(min_nonnan=0.75, rename_neurons_using_manual_ids=True, manual_id_confidence_threshold=0)
+df_manual_names.head()
+
+
+# In[ ]:
+
+
+'URADR' in df_manual_names
+
+
+# In[ ]:
+
+
+output = project_data_fm2immob_fm.calc_all_paper_traces()
+
+
+# In[ ]:
+
+
+pd.Series(df_manual_names.columns).value_counts().unique()
+
+
+# In[ ]:
+
+
+df_raw_names = project_data_fm2immob_fm.calc_default_traces(min_nonnan=0.75, rename_neurons_using_manual_ids=False)
+df_raw_names.head()
+
+
+# In[ ]:
+
+
+all_possible_cached_methods = project_data_fm2immob_fm.data_cacher.list_of_paper_trace_methods(return_simple_names=True)
+all_possible_cached_methods
+
+
+# In[ ]:
+
+
+all_possible_cached_methods[0].__dict__
+
+
+# In[ ]:
+
+
+'URADR' in project_data_fm2immob_fm.neuron_name_to_manual_id_mapping(confidence_threshold=0, remove_unnamed_neurons=True, flip_names_and_ids=True,
+                                                                   error_on_duplicate=True)
+
+
+# In[10]:
+
+
+from wbfm.utils.projects.finished_project_data import rename_manual_ids_in_project, rename_manual_ids_from_excel_in_project
+
+
+# In[ ]:
+
+
+rename_manual_ids_from_excel_in_project(project_data_fm2immob_fm, dryrun=True)
+
+
+# In[ ]:
+
+
+from rich import print
+
+print(project_data_fm2immob_fm.data_cacher.calc_paper_traces_global._decorator_args)
+
+
+# In[ ]:
+
+
+# print(project_data_fm2immob_fm.data_cacher.calc_paper_traces().head)
+print(project_data_fm2immob_fm.data_cacher.calc_paper_traces._decorator_args)
+
+
+# In[ ]:
+
+
+rename_manual_ids_in_project(project_data_fm2immob_fm, {'IL2LL': 'IL2L', 'IL1LL': 'IL1L',
+                                                      'IL2LR': 'IL2R', 'IL1LR': 'IL1R'})
+
+
+# In[ ]:
+
+
+df = project_data_fm2immob_fm.df_manual_tracking.copy()
+df['ID1'] = df['ID1'].replace({'IL2LL': 'IL2L', 'IL1LL': 'IL1L',
+                                                      'IL2LR': 'IL2R', 'IL1LR': 'IL1R'})
+df['ID1'].value_counts()
+
+
+# In[ ]:
+
+
+project_data_fm2immob_fm.df_manual_tracking_fname
+
+
+# In[ ]:
+
+
+# err
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+df_all_traces.columns.unique()
+
+
+# In[ ]:
+
+
+[print(x) for x in df_all_traces.columns.unique() if 'neuron' not in x]
+
+
+# In[ ]:
+
+
+idx = df_all_traces['IL1LL'].dropna().index
+df_all_traces.loc[idx, 'dataset_name'].unique()
+
+
+# In[ ]:
+
+
+idx = df_all_traces['IL1L'].index
+df_all_traces.loc[idx, 'dataset_name'].unique()
 
 
 # In[8]:
 
 
-from wbfm.utils.projects.finished_project_data import plot_pca_projection_3d_from_project
+df = all_projects['2023-11-21_15-05_wt_worm5-2023-11-21'].calc_paper_traces()
+df['IL1L'], df['IL1LL']
+
+
+# In[31]:
+
+
+# p = all_projects['2023-11-21_15-05_wt_worm5-2023-11-21']
+
+for name, p in tqdm(all_projects.items()):
+    rename_manual_ids_in_project(p, {'IL2LL': 'IL2L', 'IL1LL': 'IL1L',
+                                                      'IL2LR': 'IL2R', 'IL1LR': 'IL1R'})
+
+
+# In[29]:
+
+
+del p.df_manual_tracking
+p.df_manual_tracking['ID1'].unique()
+
+
+# In[22]:
+
+
+p.df_manual_tracking_fname
+
+
+# In[18]:
+
+
+fname = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/freely_moving_wt/2023-11-21_14-46_wt_worm4-2023-11-21/3-tracking/manual_annotation/manual_annotation.h5'
+df_id = pd.read_hdf(fname)
+
+
+# In[19]:
+
+
+df_id.head()
+
+
+# In[16]:
+
+
+fname_out = '/lisc/scratch/neurobiology/zimmer/brenner/wbfm_projects/analyze/freely_moving_wt/2023-11-21_14-46_wt_worm4-2023-11-21/3-tracking/manual_annotation/manual_annotation.xlsx'
+df_id.to_excel(fname_out, index=False)
+
+
+# In[20]:
+
+
+df_id2 = pd.read_excel(fname_out)
+df_id2
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
@@ -62,20 +287,20 @@ from wbfm.utils.projects.finished_project_data import plot_pca_projection_3d_fro
 plot_pca_projection_3d_from_project(project_data_fm2immob_fm, include_time_series_subplot=False)
 
 
-# In[78]:
+# In[ ]:
 
 
 from wbfm.utils.visualization.utils_export_videos import save_video_of_pca_plot_with_behavior
 save_video_of_pca_plot_with_behavior(project_data_fm2immob_fm, t_max=100)
 
 
-# In[75]:
+# In[ ]:
 
 
 
 
 
-# In[65]:
+# In[ ]:
 
 
 import matplotlib.pyplot as plt
@@ -138,7 +363,7 @@ plt.show()
 
 
 
-# In[15]:
+# In[ ]:
 
 
 df_traces = project_data_fm2immob_fm.calc_paper_traces(interpolate_nan=True)
@@ -151,7 +376,7 @@ df_traces_nan = project_data_fm2immob_fm.calc_paper_traces(interpolate_nan=False
 
 
 
-# In[3]:
+# In[ ]:
 
 
 import numpy as np
@@ -172,13 +397,13 @@ np.insert(xd, 0, x[0])
 
 
 
-# In[16]:
+# In[ ]:
 
 
 px.imshow(df_traces.T)
 
 
-# In[17]:
+# In[ ]:
 
 
 px.imshow(df_traces_nan.T)
@@ -196,7 +421,7 @@ px.imshow(df_traces_nan.T)
 
 
 
-# In[18]:
+# In[ ]:
 
 
 # Load multiple datasets
@@ -204,13 +429,13 @@ from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 all_projects_O2_immob = load_paper_datasets('immob_o2')
 
 
-# In[24]:
+# In[ ]:
 
 
 all_projects_O2_immob_mutant = load_paper_datasets('hannah_O2_immob_mutant')
 
 
-# In[19]:
+# In[ ]:
 
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
@@ -223,7 +448,7 @@ from wbfm.utils.visualization.paper_multidataset_triggered_average import PaperE
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 
-# In[20]:
+# In[ ]:
 
 
 opt = dict(calculate_residual=False, calculate_global=False, calculate_turns=False,
@@ -239,7 +464,7 @@ triggered_average_gcamp_plotter_immob_downshift = PaperMultiDatasetTriggeredAver
                                                                                     trigger_opt=dict(fixed_num_points_after_event=40, trigger_on_downshift=True, ind_delay=6))
 
 
-# In[25]:
+# In[ ]:
 
 
 # Immob mutant
@@ -248,7 +473,7 @@ triggered_average_gcamp_plotter_immob_mutant = PaperMultiDatasetTriggeredAverage
                                                                                  trigger_opt=dict(fixed_num_points_after_event=40, ind_delay=6))
 
 
-# In[26]:
+# In[ ]:
 
 
 # summary_function = lambda x, **kwargs: np.nanquantile(x, 0.99, **kwargs)
@@ -307,7 +532,7 @@ _combine_and_save(all_figs_box, all_figs_trig, all_figs_examples=None, suffix='-
 
 
 
-# In[2]:
+# In[ ]:
 
 
 import pandas as pd
@@ -320,7 +545,7 @@ fname = '/lisc/scratch/neurobiology/zimmer/Pidde/WBFM/projects/19062024/2024-06-
 df = pd.read_hdf(fname)
 
 
-# In[4]:
+# In[ ]:
 
 
 # fname = "/home/charles/Current_work/collaboration/konstantinos/adult_1030.nd2"
@@ -329,7 +554,7 @@ df = pd.read_hdf(fname)
 # v = napari.view_image(img)
 
 
-# In[4]:
+# In[ ]:
 
 
 img.shape
@@ -341,7 +566,7 @@ img.shape
 
 
 
-# In[2]:
+# In[ ]:
 
 
 # all_projects_O2_immob = load_paper_datasets('hannah_O2_immob')
@@ -354,7 +579,7 @@ img.shape
 
 
 
-# In[9]:
+# In[ ]:
 
 
 # fname = "/lisc/scratch/neurobiology/zimmer/wbfm/test_projects/freely_moving/pytest-raw/project_config.yaml"
@@ -364,13 +589,13 @@ p = ProjectData.load_final_project_data_from_config(fname)
 # p.project_config.get_folders_for_behavior_pipeline()
 
 
-# In[11]:
+# In[ ]:
 
 
 p.neuron_name_to_manual_id_mapping(confidence_threshold=0, remove_unnamed_neurons=True, remove_duplicates=False)
 
 
-# In[5]:
+# In[ ]:
 
 
 # fname = "/lisc/scratch/neurobiology/zimmer/Pidde/WBFM/projects/13062024/2024-06-13_17-42_control_worm10_wflyback-2024-06-13/project_config.yaml"
@@ -381,13 +606,13 @@ p2 = ProjectData.load_final_project_data_from_config(fname)
 # p.use_physical_time = True
 
 
-# In[9]:
+# In[ ]:
 
 
 p2.project_config.get_folders_for_behavior_pipeline()
 
 
-# In[15]:
+# In[ ]:
 
 
 from imutils.src.imfunctions import stack_z_projection
@@ -403,13 +628,13 @@ stack_z_projection(
 )
 
 
-# In[10]:
+# In[ ]:
 
 
 from imutils.src.imfunctions import stack_subtract_background
 
 
-# In[17]:
+# In[ ]:
 
 
 input_ndtiff = '/lisc/scratch/neurobiology/zimmer/EvaGratzl/WBFM/raw/18072024/EvasRecordings/2024-07-18_17-53_2per_L4_200_worm1/2024-07-18_17-53_2per_L4_200_worm1_BH'
@@ -419,7 +644,7 @@ background_img = '/lisc/scratch/neurobiology/zimmer/EvaGratzl/WBFM/projects/1807
 stack_subtract_background(input_ndtiff, output_filepath, background_img)
 
 
-# In[19]:
+# In[ ]:
 
 
 from imutils import MicroscopeDataReader
@@ -439,7 +664,7 @@ _ = MicroscopeDataReader(background_parent_folder, as_raw_tiff=False)
 
 
 
-# In[8]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('debug', '')
@@ -451,7 +676,7 @@ get_ipython().run_line_magic('debug', '')
 p.project_config.get_behavior_raw_parent_folder_from_red_fname()
 
 
-# In[5]:
+# In[ ]:
 
 
 BehaviorCodes.plot_behaviors(p.worm_posture_class.beh_annotation(fluorescence_fps=True, use_manual_annotation=True))
@@ -684,7 +909,7 @@ print(isinstance(MyFlags.FOO, MyFlags))  # Output: True
 
 
 
-# In[20]:
+# In[ ]:
 
 
 from scipy.interpolate import RegularGridInterpolator
@@ -706,7 +931,7 @@ xg, yg ,zg = np.meshgrid(x, y, z, indexing='ij')#, sparse=True)
 data = f(xg, yg, zg)
 
 
-# In[21]:
+# In[ ]:
 
 
 data.shape, xg.shape, yg.shape, zg.shape
