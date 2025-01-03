@@ -137,7 +137,7 @@ non_nan_fraction = non_nan_fraction.reset_index().melt(id_vars='dataset_type', v
 # In[13]:
 
 
-non_nan_totals
+print(non_nan_totals)
 
 
 # In[14]:
