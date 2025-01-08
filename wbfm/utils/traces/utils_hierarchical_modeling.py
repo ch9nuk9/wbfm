@@ -56,12 +56,12 @@ def export_data_for_hierarchical_model(suffix='', skip_if_exists=True, delete_if
     df_all_pca.rename(columns={i: f'pca_{i}' for i in range(4)}, inplace=True)
 
     # Get manifold in two ways: pc1 subtraction and pc1 and 2 subtraction (original)
-    df_all_manifold = build_trace_time_series_from_multiple_projects(all_projects,
-                                                                     use_paper_options=True, residual_mode='pca_global')
+    df_all_manifold = build_trace_time_series_from_multiple_projects(all_projects, use_paper_options=True,
+                                                                     interpolate_nan=True, residual_mode='pca_global')
     df_all_manifold.sort_values(['dataset_name', 'local_time'], inplace=True)
     # New
-    df_all_manifold1 = build_trace_time_series_from_multiple_projects(all_projects,
-                                                                      use_paper_options=True,
+    df_all_manifold1 = build_trace_time_series_from_multiple_projects(all_projects, use_paper_options=True,
+                                                                      interpolate_nan=True,
                                                                       residual_mode='pca_global_1')
     df_all_manifold1.sort_values(['dataset_name', 'local_time'], inplace=True)
 

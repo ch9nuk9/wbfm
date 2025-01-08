@@ -347,6 +347,12 @@ class PaperDataCache:
             else:
                 raise ValueError(f"Unknown residual mode: {residual_mode}")
         else:
+            if residual_mode is not None:
+                raise ValueError("All residual modes require nan interpolation; "
+                                 f"got incompatible residual_mode: {residual_mode} with interpolate_nan=False")
+            if channel_mode != 'dr_over_r_50':
+                raise ValueError(f"Only dr_over_r_50 is supported without nan interpolation; "
+                                 f"got incompatible channel_mode: {channel_mode}")
             return self.calc_paper_traces_no_interpolation()
 
     def list_of_paper_trace_methods(self, return_filenames=False, return_simple_names=False):
