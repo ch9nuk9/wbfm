@@ -14,7 +14,8 @@ from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir, ge
 
 
 def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', residual_mode='pca_global',
-                        sample_posterior=True, use_additional_behaviors=False, DEBUG=False) -> Tuple[pd.DataFrame, Dict, Dict]:
+                        sample_posterior=True, use_additional_behaviors=False,
+                        dryrun=False, DEBUG=False) -> Tuple[pd.DataFrame, Dict, Dict]:
     """
     Fit multiple models to the same data, to be used for model comparison
 
@@ -42,7 +43,6 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', residu
     except KeyError as e:
         print(f"Skipping {neuron_name} because there is no valid data (KeyError: {e})")
         return None, None, None
-    global_manifold = df_model['x'].values
     pca_modes = df_model[['x_pca0', 'x_pca1']].values
     y = df_model['y'].values
     curvature = df_model[curvature_terms_to_use].values
@@ -75,15 +75,6 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', residu
         mu = pm.Deterministic('mu', intercept + curvature_term)
         likelihood = build_final_likelihood(mu, sigma, y)
 
-    # with pm.Model(coords=coords) as hierarchical_model:
-    #     # Curvature multiplied by sigmoid
-    #     intercept, sigma = build_baseline_priors()#**dim_opt)
-    #     sigmoid_term = build_sigmoid_term(global_manifold)
-    #     curvature_term = build_curvature_term(curvature, **dim_opt)
-    #
-    #     mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term)
-    #     likelihood = build_final_likelihood(mu, sigma, y)
-
     with pm.Model(coords=coords) as hierarchical_pca_model:
         # Curvature multiplied by sigmoid
         intercept, sigma = build_baseline_priors()#**dim_opt)
@@ -94,63 +85,13 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', residu
         likelihood = build_final_likelihood(mu, sigma, y)
 
     coords.update({'time': np.arange(len(y))})
-    with pm.Model(coords=coords) as hierarchical_pca_model_with_drift:
-        # Curvature multiplied by sigmoid
-        intercept, sigma = build_baseline_priors()#**dim_opt)
-        sigmoid_term = build_sigmoid_term_pca(pca_modes, **dim_opt)
-        curvature_term = build_curvature_term(curvature, curvature_terms_to_use=curvature_terms_to_use, **dim_opt)
-        # num_points = len(y)
 
-        # sigma_alpha = pm.Exponential("sigma_alpha", len(y)/2.0)
-
-        drift_term = pm.GaussianRandomWalk(
-            "alpha", sigma=0.01, init_dist=pm.Normal.dist(0, 1), dims="time"
-        )
-        # drift_term = build_drift_term(**dim_opt)
-
-        # Works if the drift term is gp.latent (VERY SLOW) or a random walk
-        mu = pm.Deterministic('mu', intercept + sigmoid_term * curvature_term + drift_term)
-        likelihood = build_final_likelihood(mu, sigma, y)
-    #
-    #     # Works if the gp is .marginal
-    #     eta = 2.0
-    #     lengthscale = 500
-    #     cov = eta ** 2 * pm.gp.cov.ExpQuad(1, lengthscale)
-    #     mu_func = lambda X: intercept + sigmoid_term[X] * curvature_term[X]
-    #     # Add white noise to stabilise
-    #     cov += pm.gp.cov.WhiteNoise(1e-6)
-    #     # Actual gp, then make it a function
-    #     gp = pm.gp.Marginal(cov_func=cov, mean_func=mu_func)
-    #
-    #     likelihood = gp.marginal_likelihood('y', X=np.arange(num_points), y=y, noise=sigma)
-
-    # New: just have rectification with given fwd/rev, not using a sigmoid term
-    # fwd_idx, fwd_values = df_model.fwd.factorize()
-    # coords = {'fwd': fwd_values}
-    # dims = 'fwd'
-    # dim_opt = dict(dims=dims, dataset_name_idx=fwd_idx)
-    # with pm.Model(coords=coords) as rectified_model:
-    #     # Full model
-    #     intercept, sigma = build_baseline_priors()
-    #     curvature_term = build_curvature_term(curvature, **dim_opt)
-    #
-    #     mu = pm.Deterministic('mu', intercept + curvature_term)
-    #     likelihood = build_final_likelihood(mu, sigma, y)
-
-    # Run inference on final set of models
-    # all_models = {'null': null_model,
-    #               'nonhierarchical': nonhierarchical_model,
-    #               'hierarchical': hierarchical_model,
-    #               'rectified': rectified_model,
-    #               'hierarchical_pca': hierarchical_pca_model}
     all_models = {'hierarchical_pca': hierarchical_pca_model,
                   'null': null_model,
                   'nonhierarchical': nonhierarchical_model}
-    # all_models = {'hierarchical_pca_model_with_drift': hierarchical_pca_model_with_drift,
-    #               'hierarchical_pca': hierarchical_pca_model,
-    #               'null': null_model,
-    #               'nonhierarchical': nonhierarchical_model}
     all_traces = {}
+    if dryrun:
+        return pd.DataFrame(), all_traces, all_models
     # base_names_to_sample = {'y', 'sigmoid_term', 'curvature_term', 'phase_shift', 'sigmoid_slope'}
     for name, model in all_models.items():
         with model:
@@ -178,7 +119,6 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', residu
     for name, trace in all_traces.items():
         loo = az.loo(trace)
         all_loo[name] = loo
-
     df_compare = az.compare(all_loo)
 
     return df_compare, all_traces, all_models
