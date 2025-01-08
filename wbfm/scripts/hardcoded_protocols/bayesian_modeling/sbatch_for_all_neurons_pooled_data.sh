@@ -177,7 +177,7 @@ echo "Running model for neuron: \$task_string with command: $CMD"
 
 # Fix issues with multiple pymc instances, see:
 # https://github.com/pymc-devs/pymc/issues/1463
-export PYTENSOR_FLAGS="base_compiledir=\$TMPDIR/\$task_string/.pytensor"
+export PYTENSOR_FLAGS="base_compiledir=\$TMPDIR/.pytensor"
 
 python $CMD --neuron_name \$task_string > $LOG_DIR/log_\$task_string.txt
 EOF
