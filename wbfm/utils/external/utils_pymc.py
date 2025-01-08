@@ -39,8 +39,8 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', residu
     try:
         df_model = get_dataframe_for_single_neuron(Xy, neuron_name, dataset_name=dataset_name,
                                                    curvature_terms=curvature_terms_to_use, residual_mode=residual_mode)
-    except KeyError:
-        print(f"Skipping {neuron_name} because there is no valid data")
+    except KeyError as e:
+        print(f"Skipping {neuron_name} because there is no valid data (KeyError: {e})")
         return None, None, None
     global_manifold = df_model['x'].values
     pca_modes = df_model[['x_pca0', 'x_pca1']].values
@@ -48,7 +48,7 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', residu
     curvature = df_model[curvature_terms_to_use].values
 
     if df_model.shape[0] == 0:
-        print(f"Skipping {neuron_name} because there is no valid data")
+        print(f"Skipping {neuron_name} because there is no valid data (shape is 0)")
         return None, None, None
 
     if dataset_name == 'all':
@@ -354,10 +354,10 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
     if curvature_terms is None:
         curvature_terms = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
     # First, extract data, z-score, and drop na values
-    # Allow gating based on the global component
+    # Allow gating based on the global component of the neuron itself (not used)
     x = _Xy[f'{neuron_name}_manifold']
     x = (x - x.mean()) / x.std()  # z-score
-    # Alternative: include the pca modes
+    # Alternative: include the pca modes (currently used)
     x_pca0 = _Xy[f'pca_0']
     x_pca0 = (x_pca0 - x_pca0.mean()) / x_pca0.std()  # z-score
     x_pca1 = _Xy[f'pca_1']
@@ -373,6 +373,9 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
     else:
         raise ValueError(f"Unknown residual mode {residual_mode}; should be None, 'pca_global', or 'pca_global_1'")
     y = (y - y.mean()) / y.std()  # z-score
+    if y.std() == 0:
+        raise ValueError(f"Standard deviation of y is 0 for {neuron_name} in {dataset_name} and residual_mode {residual_mode}... "
+                         f"This could be due to no data, or a bug in the residual calculation")
     # Interesting covariate
     curvature = _Xy[curvature_terms]
     curvature = (curvature - curvature.mean()) / curvature.std()  # z-score
@@ -385,6 +388,7 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None,
     if additional_columns is not None:
         all_dfs.append(_Xy[additional_columns])
     df_model = pd.concat(all_dfs, axis=1)
+    print(f"Number of non-nan values per column: {df_model.count()}")
     df_model = df_model.dropna()
     print(f"Loaded {df_model.shape[0]} samples for {neuron_name} in {dataset_name}")
     return df_model

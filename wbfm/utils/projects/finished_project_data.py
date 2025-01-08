@@ -972,8 +972,9 @@ class ProjectData:
         -------
 
         """
-        # Loads data from cache
-        # There are currently 3 cached versions of the data, depending on the residual option
+        # Loads data from cache (actually used for the paper)
+        # There are currently several cached versions of the data, depending on the residual, interpolation,
+        # and channel options
         if use_paper_options:
             channel_mode = kwargs.get('channel_mode', 'dr_over_r_50')
             df = self.calc_paper_traces(channel_mode=channel_mode, residual_mode=residual_mode,
