@@ -10,7 +10,8 @@ import arviz as az
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
 
-def plot_ts(idata, y='y', y_hat='y', num_samples=100, title='', confidence_interval=0.68, to_show=True):
+def plot_ts(idata, y='y', y_hat='y', num_samples=100, title='', confidence_interval=0.68, to_show=True,
+            color_yhat=None, color_obs=None):
     """
     My implementation of the plot_ts function from ArviZ, which doesn't work for me.
 
@@ -33,6 +34,11 @@ def plot_ts(idata, y='y', y_hat='y', num_samples=100, title='', confidence_inter
         for key in idata:
             plot_ts(idata[key], y=y, y_hat=y_hat, num_samples=num_samples, title=key, to_show=to_show)
         return
+
+    if color_yhat is None:
+        color_yhat = px.colors.qualitative.D3[1]
+    if color_obs is None:
+        color_obs = px.colors.qualitative.D3[0]
 
     # Build everything in a big dataframe, which will be used to plot everything
     y_obs = idata.observed_data.y
@@ -58,19 +64,20 @@ def plot_ts(idata, y='y', y_hat='y', num_samples=100, title='', confidence_inter
     fig = go.Figure()
     # Average of the samples
     fig.add_trace(go.Scatter(x=df.index, y=df.iloc[:, :-1].mean(axis=1), mode='lines', name='y_hat',
-                             line=dict(color='gray', width=2)))
+                             line=dict(color=color_yhat, width=2), opacity=0.75))
     # Confidence interval
     lower_bound = df.iloc[:, :-1].quantile(0.5 - confidence_interval / 2, axis=1)
     upper_bound = df.iloc[:, :-1].quantile(0.5 + confidence_interval / 2, axis=1)
     fig.add_trace(go.Scatter(x=df.index, y=lower_bound, mode='lines', name='y_hat',
-                             line=dict(color='gray', width=1), showlegend=False))
+                             line=dict(color=color_yhat, width=1), showlegend=False,
+                             opacity=0.5))
     fig.add_trace(go.Scatter(x=df.index, y=upper_bound, mode='lines', name='y_hat',
-                             line=dict(color='gray', width=1), fill='tonexty',
-                             showlegend=False))
+                             line=dict(color=color_yhat, width=1), fill='tonexty',
+                             showlegend=False, opacity=0.5))
 
     # Observed
     fig.add_trace(go.Scatter(x=df.index, y=df['observed'], mode='lines', name='observed',
-                             line=dict(color='black', width=2)))
+                             line=dict(color=color_obs, width=2)))
 
     fig.update_layout(title=title)
 
