@@ -1,5 +1,6 @@
 import logging
 import os
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Tuple, Dict
 
@@ -543,6 +544,62 @@ def do_hierarchical_ttest(neuron_name, do_immob=False, do_mutant=False, do_downs
     # Save the trace
     base_fname = base_fname.replace('.png', '.zarr')
     trace.to_zarr(os.path.join(output_dir, base_fname))
+
+
+@dataclass
+class ExamplePymcPlotter:
+    """
+    Uses the same data as the bayesian simulation, but with custom parameters (for plotting purposes)
+
+    An alternative is to do prior predictive simulations, but then there is no control over the exact parameters
+    """
+
+    Xy: pd.DataFrame
+    neuron_name: str
+    dataset_name: str = 'all'
+    residual_mode: str = 'pca_global'
+    curvature_terms_to_use: list = field(default_factory=lambda: ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3'])
+
+    def __post_init__(self):
+        self.df = get_dataframe_for_single_neuron(self.Xy, self.neuron_name, self.curvature_terms_to_use,
+                                                  dataset_name=self.dataset_name, residual_mode=self.residual_mode)
+
+    def model_radial_coordinates(self, eigenworm12_amplitude: float=0, eigenworm12_phase:float=0,
+                                 eigenworm34_amplitudes=None,
+                                 pca_amplitudes=None, inflection_point: float=0, intercept=0):
+        """
+        Evaluate a simulated model with the given parameters, using radial coordinates for eigenworms12
+
+        Assumes 4 eigenworms are used
+
+        Returns
+        -------
+
+        """
+        if eigenworm34_amplitudes is None:
+            eigenworm34_amplitudes = [0, 0]
+        if pca_amplitudes is None:
+            pca_amplitudes = [0, 0]
+
+        # Build the curvature (behavior) term
+        eig1 = eigenworm12_amplitude * pm.math.cos(eigenworm12_phase)
+        eig2 = eigenworm12_amplitude * pm.math.sin(eigenworm12_phase)
+        coefficients_vec = np.array([eig1, eig2, *eigenworm34_amplitudes])
+        curvature = self.df[self.curvature_terms_to_use].values
+
+        curvature_term = curvature @ coefficients_vec
+
+        # Build the pca (sigmoid) term
+        pca_modes = self.df[['x_pca0', 'x_pca1']].values
+        pca_term = pca_modes @ pca_amplitudes
+
+        x = pca_term - inflection_point
+        sigmoid_term = 1.0 / (1.0 - np.exp(-x))
+
+        # Combine
+        mu = intercept + sigmoid_term * curvature_term
+
+        return mu
 
 
 if __name__ == '__main__':
