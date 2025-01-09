@@ -21,7 +21,7 @@ def export_data_for_oded_lab():
 
     # Remove manifold and pca columns
     cols_to_remove = [col for col in df_all.columns if 'manifold' in col or 'pca' in col or "'" in col or 'eigenworm' in col or '/' in col]
-    cols_to_remove += ['vb02_curvature', 'AVABL']
+    cols_to_remove += ['curvature_vb02', 'AVABL']
     df_all.drop(columns=cols_to_remove, inplace=True)
     df_all = pd.DataFrame(df_all)
 

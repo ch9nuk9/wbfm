@@ -53,7 +53,7 @@ def calculate_residual_subtract_nmf(df: pd.DataFrame, n_components=2) -> Tuple[p
 #
 
 def rectified_linear_model_on_all_datasets(df_all_traces, df_all_pca, df_all_behavior,
-                                           beh_feature='vb02_curvature', y_name='VB02'):
+                                           beh_feature='curvature_vb02', y_name='VB02'):
     """
     Run a rectified linear model on all datasets
 

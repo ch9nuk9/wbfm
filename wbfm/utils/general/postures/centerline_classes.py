@@ -774,8 +774,9 @@ class WormFullVideoPosture:
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(do_abs=False,
                                                      start_segment=5, end_segment=30, **kwargs)
-        elif behavior_alias == 'vb02_curvature':
-            # Segment 15 is the hardcoded location of the vb02 neuron
+        elif behavior_alias == 'cuvature_vb02':
+            # Segment 15 is the hardcoded (approximate) location of the vb02 neuron
+            # Note that there can be significant difference between individuals
             self.check_has_full_kymograph()
             y = self.curvature(**kwargs).loc[:, 15]
         elif behavior_alias == 'quantile_curvature':
@@ -889,6 +890,11 @@ class WormFullVideoPosture:
             i = int(behavior_alias[-1])
             y = pd.Series(self.eigenworms[:, i])
             y = self._validate_and_downsample(y, **kwargs)
+        elif isinstance(behavior_alias, str) and 'curvature' in behavior_alias:
+            # Assume the string is 'curvature' followed by a number, e.g. 'curvature_10'
+            self.check_has_full_kymograph()
+            i = int(behavior_alias.split('_')[-1])
+            y = self.curvature(**kwargs).loc[:, i]
         else:
             # Check if there is a BehaviorCodes enum with this name
             try:
