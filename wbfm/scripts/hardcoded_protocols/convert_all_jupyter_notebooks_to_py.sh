@@ -6,9 +6,9 @@
 
 # Hardcoded for the paper notebooks (general version below)
 # For paper notebooks:
-bash /home/charles/Current_work/repos/dlc_for_wbfm/wbfm/scripts/hardcoded_protocols/convert_all_jupyter_notebooks_to_py.sh /home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper
+#bash /home/charles/Current_work/repos/dlc_for_wbfm/wbfm/scripts/hardcoded_protocols/convert_all_jupyter_notebooks_to_py.sh /home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper
 
 # Usage:
 # ./convert_all_jupyter_notebooks_to_py.sh /path/to/target/folder
 # General command:
-# find "$1" -not -path '*/.*' -name "*.ipynb" -exec jupyter nbconvert --to script {} \;
+ find "$1" -not -path '*/.*' -name "*.ipynb" -exec jupyter nbconvert --to script {} \;
