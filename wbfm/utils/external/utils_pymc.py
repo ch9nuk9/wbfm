@@ -582,8 +582,8 @@ class ExamplePymcPlotter:
             pca_amplitudes = [0, 0]
 
         # Build the curvature (behavior) term
-        eig1 = eigenworm12_amplitude * pm.math.cos(eigenworm12_phase)
-        eig2 = eigenworm12_amplitude * pm.math.sin(eigenworm12_phase)
+        eig1 = eigenworm12_amplitude * np.cos(eigenworm12_phase)
+        eig2 = eigenworm12_amplitude * np.sin(eigenworm12_phase)
         coefficients_vec = np.array([eig1, eig2, *eigenworm34_amplitudes])
         curvature = self.df[self.curvature_terms_to_use].values
 
@@ -594,12 +594,13 @@ class ExamplePymcPlotter:
         pca_term = pca_modes @ pca_amplitudes
 
         x = pca_term - inflection_point
-        sigmoid_term = 1.0 / (1.0 - np.exp(-x))
+        sigmoid_term = 1.0 / (1.0 + np.exp(-x))
 
         # Combine
         mu = intercept + sigmoid_term * curvature_term
+        df = pd.DataFrame({'y': mu, 'sigmoid_term': sigmoid_term, 'curvature_term': curvature_term})
 
-        return mu
+        return df
 
 
 if __name__ == '__main__':
