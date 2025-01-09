@@ -169,6 +169,7 @@ cat << EOF > $SLURM_SCRIPT
 #SBATCH --mem=64G
 #SBATCH --cpus-per-task=6
 #SBATCH --partition=short,basic
+#SBATCH --license=scratch-highio
 
 # Reproduce the list for the subfile
 my_list=(${neuron_list[@]})
