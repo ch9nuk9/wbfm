@@ -6,6 +6,7 @@
 function show_help {
   echo "Usage: $0 [-g] [-r] [-h] <gfp>"
   echo "  -g: Use GFP data"
+  echo "  -s: Use simple eigenworms (1 and 2 only)"
   echo "  -r: Trace mode; should be one of 'None', 'pca_global', 'pca_global_1'"
   echo "  -h: Show this help message"
 }
@@ -13,10 +14,11 @@ function show_help {
 # Get all user flags
 use_gfp="false"
 use_raw_trace="false"
-while getopts gr: flag
+while getopts gsr: flag
 do
     case "${flag}" in
         g) use_gfp="true";;
+        s) simple_eigenworms="true";;
         r) residual_mode=${OPTARG};;
         h) show_help
            exit 0;;
@@ -155,6 +157,10 @@ if [ "$use_gfp" == "true" ]; then
   NUM_HOURS=6
 else
   NUM_HOURS=18
+fi
+
+if [ "$simple_eigenworms" == "true" ]; then
+  CMD="$CMD --simple_eigenworms"
 fi
 
 if [ "$residual_mode" ]; then
