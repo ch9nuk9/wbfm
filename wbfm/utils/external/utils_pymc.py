@@ -17,6 +17,7 @@ from wbfm.utils.external.utils_pandas import get_dataframe_for_single_neuron
 
 def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', residual_mode='pca_global',
                         sample_posterior=True, use_additional_behaviors=False,
+                        use_additional_eigenworms=True,
                         dryrun=False, DEBUG=False) -> Tuple[pd.DataFrame, Dict, Dict]:
     """
     Fit multiple models to the same data, to be used for model comparison
@@ -31,7 +32,9 @@ def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', residu
 
     """
     rng = 424242
-    curvature_terms_to_use = ['eigenworm0', 'eigenworm1', 'eigenworm2', 'eigenworm3']
+    curvature_terms_to_use = ['eigenworm0', 'eigenworm1']
+    if use_additional_eigenworms:
+        curvature_terms_to_use.extend(['eigenworm2', 'eigenworm3'])
     if use_additional_behaviors:
         # curvature_terms_to_use = curvature_terms_to_use[:2]
         curvature_terms_to_use.extend([#'dorsal_only_body_curvature', 'dorsal_only_head_curvature',
@@ -284,7 +287,8 @@ def build_drift_term(dims=None, dataset_name_idx=None):
     return drift_term
 
 
-def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True, residual_mode='pca_global'):
+def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True, residual_mode='pca_global',
+         use_additional_eigenworms=True):
     """
     Runs for hardcoded data location for a single neuron
 
@@ -336,7 +340,8 @@ def main(neuron_name=None, do_gfp=False, dataset_name='all', skip_if_exists=True
 
     # Fit models
     df_compare, all_traces, all_models = fit_multiple_models(Xy, neuron_name, dataset_name=dataset_name,
-                                                             residual_mode=residual_mode, DEBUG=False)
+                                                             residual_mode=residual_mode,
+                                                             use_additional_eigenworms=use_additional_eigenworms)
 
     if df_compare is None:
         print(f"Skipping {neuron_name} because there is no valid data")
@@ -561,6 +566,7 @@ if __name__ == '__main__':
     parser.add_argument('--residual_mode', type=str, default='pca_global')
     # Boolean
     parser.add_argument('--do_gfp', action='store_true')
+    parser.add_argument('--simple_eigenworms', action='store_true')
 
     args = parser.parse_args()
 
@@ -568,4 +574,5 @@ if __name__ == '__main__':
     if residual_mode == 'None':
         residual_mode = None
 
-    main(neuron_name=args.neuron_name, do_gfp=args.do_gfp, residual_mode=residual_mode)
+    main(neuron_name=args.neuron_name, do_gfp=args.do_gfp, residual_mode=residual_mode,
+         use_additional_eigenworms=not args.simple_eigenworms)
