@@ -1,7 +1,7 @@
 
 channels:
   - conda-forge
-  - defaults
+  - nodefaults
 dependencies:
   - python=3.9
   - pymc
@@ -17,3 +17,4 @@ dependencies:
       - ruamel.yaml
       - arviz
       - tqdm
+      - tifffile==2023.7.10

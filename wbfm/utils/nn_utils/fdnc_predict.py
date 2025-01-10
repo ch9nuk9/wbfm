@@ -20,7 +20,7 @@ import torch
 
 from wbfm.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
-from wbfm.utils.projects.utils_neuron_names import int2name_neuron
+from wbfm.utils.external.utils_neuron_names import int2name_neuron
 
 default_package_path = "/lisc/scratch/neurobiology/zimmer/fieseler/github_repos/fDNC_Neuron_ID"
 

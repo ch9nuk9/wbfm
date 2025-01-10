@@ -26,7 +26,7 @@ from wbfm.gui.utils.utils_gui_matplot import PlotQWidget
 from wbfm.utils.external.custom_errors import NoBehaviorAnnotationsError, IncompleteConfigFileError
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
-from wbfm.utils.projects.utils_neuron_names import int2name_neuron
+from wbfm.utils.external.utils_neuron_names import int2name_neuron
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.gui.utils.utils_gui import zoom_using_layer_in_viewer, change_viewer_time_point, \
     zoom_using_viewer, add_fps_printer, on_close, NeuronNameEditor

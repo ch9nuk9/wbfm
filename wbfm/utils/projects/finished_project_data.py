@@ -21,7 +21,7 @@ from wbfm.utils.general.postprocessing.utils_imputation import impute_missing_va
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from wbfm.utils.neuron_matching.matches_class import MatchesWithConfidence, get_mismatches
-from wbfm.utils.projects.utils_neuron_names import int2name_neuron
+from wbfm.utils.external.utils_neuron_names import int2name_neuron
 import os
 from dataclasses import dataclass
 from typing import Tuple, Dict, Union, List, Optional

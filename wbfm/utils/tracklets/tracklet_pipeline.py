@@ -8,7 +8,6 @@ from typing import Union
 import numpy as np
 import pandas as pd
 
-from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair, FramePairOptions
 from wbfm.utils.nn_utils.superglue import SuperGlueUnpacker
 from wbfm.utils.nn_utils.worm_with_classifier import WormWithSuperGlueClassifier
@@ -16,7 +15,7 @@ from segmentation.util.utils_metadata import DetectedNeurons
 
 from wbfm.utils.neuron_matching.feature_pipeline import match_all_adjacent_frames
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet, int2name_tracklet
+from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet, int2name_tracklet
 from wbfm.utils.tracklets.high_performance_pandas import delete_tracklets_using_ground_truth, PaddedDataFrame, \
     get_names_from_df, check_if_heterogenous_columns, get_next_name_generator, split_multiple_tracklets
 from wbfm.utils.tracklets.tracklet_class import TrackedWorm

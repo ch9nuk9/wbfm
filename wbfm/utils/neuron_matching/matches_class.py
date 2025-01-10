@@ -10,7 +10,7 @@ from networkx import Graph, NetworkXError
 from wbfm.utils.external.utils_pandas import accuracy_of_matches
 from wbfm.utils.external.custom_errors import NoMatchesError
 from wbfm.utils.general.distance_functions import dist2conf
-from wbfm.utils.projects.utils_neuron_names import int2name_neuron, int2name_using_mode
+from wbfm.utils.external.utils_neuron_names import int2name_neuron, int2name_using_mode
 from scipy.optimize import linear_sum_assignment
 
 

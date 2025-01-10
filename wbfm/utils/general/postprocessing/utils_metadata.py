@@ -7,7 +7,7 @@ import pandas as pd
 from skimage import measure
 from tqdm.auto import tqdm
 
-from wbfm.utils.projects.utils_neuron_names import int2name_using_mode
+from wbfm.utils.external.utils_neuron_names import int2name_using_mode
 
 
 def region_props_all_volumes(reindexed_masks, red_video, green_video,

@@ -10,7 +10,7 @@ import zarr
 from skimage.measure import regionprops
 
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.projects.utils_neuron_names import int2name_neuron
+from wbfm.utils.external.utils_neuron_names import int2name_neuron
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.external.custom_errors import NoMatchesError
 from tqdm.auto import tqdm

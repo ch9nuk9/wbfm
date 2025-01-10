@@ -20,7 +20,7 @@ from wbfm.utils.external.utils_pandas import dataframe_to_dataframe_zxy_format, 
 from wbfm.utils.external.custom_errors import AnalysisOutOfOrderError, DataSynchronizationError
 from wbfm.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
 from wbfm.utils.general.utils_filenames import lexigraphically_sort
-from wbfm.utils.projects.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
+from wbfm.utils.external.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
 from segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 

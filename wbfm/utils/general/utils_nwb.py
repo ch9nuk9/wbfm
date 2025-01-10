@@ -9,7 +9,7 @@ import scipy
 # from hdmf_zarr import NWBZarrIO
 from matplotlib import pyplot as plt
 from pynwb import NWBFile, NWBHDF5IO
-from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, DfOverF, Fluorescence
+from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, Fluorescence
 from hdmf.data_utils import GenericDataChunkIterator
 from dateutil import tz
 import pandas as pd
@@ -22,7 +22,7 @@ from tifffile import tifffile
 from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.projects.utils_neuron_names import int2name_neuron
+from wbfm.utils.external.utils_neuron_names import int2name_neuron
 
 
 def create_vol_seg_centers(name, description, ImagingVolume, positions,

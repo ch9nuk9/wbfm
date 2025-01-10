@@ -10,7 +10,7 @@ from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
 from wbfm.utils.external.custom_errors import ParameterTooStringentError
 from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
-from wbfm.utils.projects.utils_neuron_names import int2name_tracklet
+from wbfm.utils.external.utils_neuron_names import int2name_tracklet
 
 
 def best_tracklet_covering_from_my_matches(df, num_frames_needed, num_frames,

@@ -6,7 +6,7 @@ from tqdm.auto import tqdm
 from sklearn.mixture import GaussianMixture
 
 from wbfm.utils.general.utils_filenames import pickle_load_binary
-from wbfm.utils.projects.utils_neuron_names import name2int_neuron_and_tracklet
+from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet
 
 
 def double_gaussian_mixture_model_to_histogram(neuron, pixel_values_dict_red):
