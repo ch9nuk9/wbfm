@@ -8,7 +8,6 @@ from typing import Dict, List, Union
 import plotly.express as px
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from matplotlib import pyplot as plt
 from numpy.linalg import LinAlgError
 from scipy.signal import detrend
@@ -149,6 +148,7 @@ class MultiProjectBehaviorPlotterWithBehavior(MultiProjectWrapperWithBehavior):
         -------
 
         """
+        import seaborn as sns
 
         all_dfs = self.calc_per_neuron_df(which_channel)
 
