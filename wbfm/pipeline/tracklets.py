@@ -8,7 +8,7 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from wbfm.utils.projects.utils_consolidation import consolidate_tracklets, save_consolidated_tracklets
 from wbfm.utils.projects.utils_project import safe_cd
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.tracklet_pipeline import _unpack_config_frame2frame_matches, _save_matches_and_frames, \
     build_frame_pairs_using_superglue, _unpack_config_for_tracklets, postprocess_matches_to_tracklets, \
     filter_tracklets_using_volume, save_all_tracklets

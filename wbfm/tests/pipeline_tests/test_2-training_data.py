@@ -4,7 +4,7 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.tests.unit_tests.global_vars_for_tests import project_path
 

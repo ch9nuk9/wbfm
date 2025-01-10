@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from wbfm.utils.tracklets.high_performance_pandas import delete_tracklets_using_ground_truth, \
+from wbfm.utils.general.high_performance_pandas import delete_tracklets_using_ground_truth, \
     dataframe_equal_including_nan
 
 

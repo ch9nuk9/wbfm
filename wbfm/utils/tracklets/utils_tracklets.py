@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df, get_next_name_generator, \
+from wbfm.utils.general.high_performance_pandas import get_names_from_df, get_next_name_generator, \
     split_single_sparse_tracklet, split_multiple_tracklets
 from wbfm.utils.external.custom_errors import NoMatchesError, AnalysisOutOfOrderError
 from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet, \

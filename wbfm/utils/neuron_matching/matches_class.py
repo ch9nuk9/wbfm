@@ -6,12 +6,16 @@ from typing import List, Tuple, Dict
 import networkx as nx
 import numpy as np
 from networkx import Graph, NetworkXError
+from tqdm.asyncio import tqdm
 
 from wbfm.utils.external.utils_pandas import accuracy_of_matches
 from wbfm.utils.external.custom_errors import NoMatchesError
 from wbfm.utils.general.distance_functions import dist2conf
 from wbfm.utils.external.utils_neuron_names import int2name_neuron, int2name_using_mode
 from scipy.optimize import linear_sum_assignment
+
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.postprocessing.postprocessing_utils import distance_between_2_tracks, num_inliers_between_tracks
 
 
 @dataclass
@@ -491,3 +495,32 @@ def accuracy_of_matches_from_classes(gt_matches: MatchesWithConfidence, model_ma
     model_m = model_matches.matches_without_conf
 
     return accuracy_of_matches(gt_m, model_m)
+
+
+def matches_between_tracks(df1, df2, user_inlier_mode=False,
+                           dist2conf_gamma=1.0,
+                           inlier_gamma=10.0) -> MatchesWithConfidence:
+    coords = ['z', 'x', 'y']
+
+    # Find matches between neuron names
+    leifer_names = get_names_from_df(df1)
+    track_names = get_names_from_df(df2)
+
+    zxy1 = [df1[name][coords].to_numpy() for name in leifer_names]
+    zxy2 = [df2[name][coords].to_numpy() for name in track_names]
+
+    num_i, num_j = len(zxy1), len(zxy2)
+    all_dist = np.zeros((num_i, num_j))
+
+    # Have to do a custom loop because the input is 3d and cdist crashes
+    if user_inlier_mode:
+        f = lambda i, j: distance_between_2_tracks(zxy1[i], zxy2[j])
+    else:
+        f = lambda i, j: inlier_gamma / num_inliers_between_tracks(zxy1[i], zxy2[j])
+    for i in tqdm(range(num_i), leave=False):
+        for j in range(num_j):
+            all_dist[i, j] = f(i, j)
+
+    matches_with_conf = MatchesWithConfidence.matches_from_distance_matrix(all_dist, gamma=dist2conf_gamma)
+
+    return matches_with_conf

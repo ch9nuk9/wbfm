@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture, WormReferencePosture
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df, empty_dataframe_like
+from wbfm.utils.general.high_performance_pandas import get_names_from_df, empty_dataframe_like
 from wbfm.utils.neuron_matching.class_frame_pair import calc_FramePair_from_Frames
 from wbfm.utils.neuron_matching.matches_class import MatchesWithConfidence
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons, TrackedWorm

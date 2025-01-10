@@ -10,7 +10,6 @@ from tqdm.auto import tqdm
 from wbfm.utils.external.utils_pandas import to_sparse_multiindex, \
     get_contiguous_blocks_from_column
 from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet, int2name_using_mode
-from wbfm.utils.tracklets.utils_splitting import TrackletSplitter
 
 
 class PaddedDataFrame(pd.DataFrame):
@@ -164,6 +163,7 @@ class PaddedDataFrame(pd.DataFrame):
         split_mode = split_mode.lower()
         assert split_mode in possible_modes, f"Found split_mode={split_mode}, but it must be one of {possible_modes}"
         if split_mode == 'jump':
+            from wbfm.utils.tracklets.utils_splitting import TrackletSplitter
             tracklet_splitter = TrackletSplitter(verbose=verbose)
 
         all_names = get_names_from_df(self)

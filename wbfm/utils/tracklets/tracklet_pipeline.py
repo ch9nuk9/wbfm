@@ -16,7 +16,7 @@ from segmentation.util.utils_metadata import DetectedNeurons
 from wbfm.utils.neuron_matching.feature_pipeline import match_all_adjacent_frames
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet, int2name_tracklet
-from wbfm.utils.tracklets.high_performance_pandas import delete_tracklets_using_ground_truth, PaddedDataFrame, \
+from wbfm.utils.general.high_performance_pandas import delete_tracklets_using_ground_truth, PaddedDataFrame, \
     get_names_from_df, check_if_heterogenous_columns, get_next_name_generator, split_multiple_tracklets
 from wbfm.utils.tracklets.tracklet_class import TrackedWorm
 from wbfm.utils.tracklets.utils_tracklets import build_tracklets_dfs, \

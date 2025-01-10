@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List, Dict
 import numpy as np
 import pandas as pd
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict
 from wbfm.utils.projects.finished_project_data import ProjectData
 from scipy.spatial.distance import squareform, pdist

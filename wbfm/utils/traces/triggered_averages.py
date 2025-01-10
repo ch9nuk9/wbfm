@@ -32,7 +32,7 @@ from wbfm.utils.external.utils_matplotlib import paired_boxplot_from_dataframes
 from wbfm.utils.external.utils_jupyter import check_plotly_rendering
 from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading, plot_with_shading_plotly
 

@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.tracklet_class import TrackedWorm, DetectedTrackletsAndNeurons
 from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
 

@@ -12,7 +12,7 @@ import cloudpickle
 from matplotlib import pyplot as plt
 from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir, get_triggered_average_modeling_dir, \
     get_triggered_average_dataframe_fname
-from wbfm.utils.traces.utils_hierarchical_modeling import get_dataframe_for_single_neuron
+from wbfm.utils.external.utils_pandas import get_dataframe_for_single_neuron
 
 
 def fit_multiple_models(Xy, neuron_name, dataset_name='2022-11-23_worm8', residual_mode='pca_global',

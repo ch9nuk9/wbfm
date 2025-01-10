@@ -1,6 +1,6 @@
 from tqdm.auto import tqdm
 import argparse
-from wbfm.utils.traces.utils_hierarchical_modeling import export_data_for_hierarchical_model
+from wbfm.utils.traces.utils_hierarchical_model_data_export import export_data_for_hierarchical_model
 
 if __name__ == '__main__':
     # Get args

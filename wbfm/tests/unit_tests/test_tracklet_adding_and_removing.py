@@ -1,10 +1,8 @@
 import unittest
 import random
-import hypothesis.strategies as st
-from hypothesis import given
 
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 
 
 class TestTrackletAddingAndRemoving(unittest.TestCase):

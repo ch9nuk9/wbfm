@@ -10,8 +10,7 @@ import numpy as np
 import pandas as pd
 import tifffile
 
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
-from wbfm.utils.neuron_matching.matches_class import MatchesWithConfidence
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from scipy import ndimage as ndi
 
 from wbfm.utils.general.postprocessing.base_cropping_utils import get_crop_coords3d, get_crop_coords
@@ -390,35 +389,6 @@ def distance_between_2_tracks(u, v):
 def num_inliers_between_tracks(u, v, inlier_threshold=1e-2):
     dist = np.sqrt(np.sum(np.square(u - v), axis=1))
     return len(np.where(dist < inlier_threshold)[0])
-
-
-def matches_between_tracks(df1, df2, user_inlier_mode=False,
-                           dist2conf_gamma=1.0,
-                           inlier_gamma=10.0) -> MatchesWithConfidence:
-    coords = ['z', 'x', 'y']
-
-    # Find matches between neuron names
-    leifer_names = get_names_from_df(df1)
-    track_names = get_names_from_df(df2)
-
-    zxy1 = [df1[name][coords].to_numpy() for name in leifer_names]
-    zxy2 = [df2[name][coords].to_numpy() for name in track_names]
-
-    num_i, num_j = len(zxy1), len(zxy2)
-    all_dist = np.zeros((num_i, num_j))
-
-    # Have to do a custom loop because the input is 3d and cdist crashes
-    if user_inlier_mode:
-        f = lambda i, j: distance_between_2_tracks(zxy1[i], zxy2[j])
-    else:
-        f = lambda i, j: inlier_gamma / num_inliers_between_tracks(zxy1[i], zxy2[j])
-    for i in tqdm(range(num_i), leave=False):
-        for j in range(num_j):
-            all_dist[i, j] = f(i, j)
-
-    matches_with_conf = MatchesWithConfidence.matches_from_distance_matrix(all_dist, gamma=dist2conf_gamma)
-
-    return matches_with_conf
 
 
 def remove_outliers_to_combine_tracks(all_dfs_renamed: List[pd.DataFrame]):

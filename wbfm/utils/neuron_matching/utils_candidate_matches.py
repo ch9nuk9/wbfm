@@ -10,7 +10,7 @@ from wbfm.utils.general.utils_networkx import calc_bipartite_matches_using_netwo
     unpack_node_name, is_one_neuron_per_frame
 from wbfm.utils.neuron_matching.utils_matching import calc_bipartite_from_positions
 from scipy.sparse import coo_matrix
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 
 
 ##

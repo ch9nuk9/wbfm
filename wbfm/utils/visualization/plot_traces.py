@@ -24,7 +24,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 import matplotlib.style as mplstyle
 from plotly.subplots import make_subplots
 from plotly import graph_objects as go

@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import sklearn
 
-from wbfm.utils.tracklets.high_performance_pandas import insert_value_in_sparse_df, get_names_from_df
+from wbfm.utils.general.high_performance_pandas import insert_value_in_sparse_df, get_names_from_df
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import OneClassSVM

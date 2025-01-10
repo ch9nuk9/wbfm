@@ -7,7 +7,7 @@ from tqdm.auto import tqdm
 from segmentation.util.utils_metadata import DetectedNeurons
 
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.external.custom_errors import ParameterTooStringentError
 from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.external.utils_neuron_names import int2name_tracklet

@@ -2,7 +2,6 @@ import os
 from collections import defaultdict
 
 import numpy as np
-from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
 from wbfm.utils.general.postprocessing.utils_metadata import region_props_all_volumes, \
@@ -12,7 +11,7 @@ from wbfm.utils.projects.project_config_classes import SubfolderConfigFile, Modu
 from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.traces.traces_pipeline import _unpack_configs_for_traces, match_segmentation_and_tracks, \
     _unpack_configs_for_extraction, _save_traces_as_hdf_and_update_configs
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.plot_traces import make_default_summary_plots_using_config
 from wbfm.utils.visualization.utils_segmentation import _unpack_config_reindexing, reindex_segmentation
 

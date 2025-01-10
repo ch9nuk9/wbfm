@@ -4,7 +4,7 @@ import os
 import pickle
 from collections import defaultdict
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -14,8 +14,7 @@ import torch
 from torch.utils.data import Dataset, random_split, DataLoader
 from tqdm.auto import tqdm
 
-from wbfm.utils.external.utils_pandas import cast_int_or_nan
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df, get_names_of_columns_that_exist_at_t
+from wbfm.utils.general.high_performance_pandas import get_names_from_df, get_names_of_columns_that_exist_at_t
 from wbfm.utils.projects.finished_project_data import ProjectData
 
 

@@ -17,7 +17,7 @@ from matplotlib import pyplot as plt
 
 from wbfm.utils.external.custom_errors import DataSynchronizationError
 from wbfm.utils.general.utils_piecewise import predict_using_rolling_ransac_filter_single_trace
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet_within_sparse_dataframe, get_tracklet_at_time
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons

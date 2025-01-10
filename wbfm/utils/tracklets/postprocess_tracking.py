@@ -11,7 +11,7 @@ from ppca import PPCA
 from sklearn.metrics.pairwise import nan_euclidean_distances
 from tqdm.auto import tqdm
 
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 
 
 def normalize_3d(all_dist):

@@ -6,7 +6,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, fill_missing_indices_with_nan
-from wbfm.utils.tracklets.high_performance_pandas import get_next_name_generator
+from wbfm.utils.general.high_performance_pandas import get_next_name_generator
 from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
 
 

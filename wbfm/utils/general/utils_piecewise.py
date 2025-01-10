@@ -5,11 +5,10 @@ import pandas as pd
 import scipy
 from matplotlib import pyplot as plt
 from sklearn.linear_model import RANSACRegressor
-from sklearn.preprocessing import StandardScaler
 from statsmodels.tools import add_constant
 from tqdm.auto import tqdm
 
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 
 ##
 # Top level functions with pre-made filtering options

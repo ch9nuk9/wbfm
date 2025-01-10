@@ -7,7 +7,7 @@ from hypothesis.stateful import RuleBasedStateMachine, rule, invariant
 from wbfm.utils.external.utils_pandas import get_times_of_conflicting_dataframes
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 
 
 class AnnotatorTests(RuleBasedStateMachine):

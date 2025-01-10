@@ -6,12 +6,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.external.custom_errors import NoMatchesError, NoNeuronsError
 from wbfm.utils.general.utils_networkx import calc_bipartite_from_candidates
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
-from wbfm.utils.general.postprocessing.postprocessing_utils import matches_between_tracks, \
-    remove_outliers_to_combine_tracks
+from wbfm.utils.general.postprocessing.postprocessing_utils import remove_outliers_to_combine_tracks
+from wbfm.utils.neuron_matching.matches_class import matches_between_tracks
 from wbfm.utils.general.utils_filenames import get_sequential_filename
 from wbfm.utils.projects.utils_project import safe_cd
 from fDNC.src.DNC_predict import pre_matt, predict_matches, filter_matches, predict_label

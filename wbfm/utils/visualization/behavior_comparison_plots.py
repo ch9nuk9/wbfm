@@ -34,7 +34,7 @@ from wbfm.utils.external.utils_matplotlib import paired_boxplot_from_dataframes
 from wbfm.utils.projects.finished_project_data import ProjectData
 import statsmodels.api as sm
 from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.plot_traces import make_grid_plot_from_project
 

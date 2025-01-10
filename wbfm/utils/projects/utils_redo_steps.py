@@ -15,7 +15,7 @@ from segmentation.util.utils_metadata import DetectedNeurons
 
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.general.utils_filenames import add_name_suffix
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 
 
 def remap_tracklets_to_new_segmentation(project_data: ProjectData,

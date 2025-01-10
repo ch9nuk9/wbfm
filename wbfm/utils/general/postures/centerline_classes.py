@@ -33,7 +33,7 @@ from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.general.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
     assign_id_based_on_closest_onset_in_split_lists, calc_time_series_from_starts_and_ends
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, \
     filter_gaussian_moving_average, fill_nan_in_dataframe
 from wbfm.utils.general.hardcoded_paths import forward_distribution_statistics, reverse_distribution_statistics

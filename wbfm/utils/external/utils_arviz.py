@@ -197,7 +197,7 @@ def sample_posterior_predictive(neuron_name, trace, is_gfp=False):
 
         Xy = pd.read_hdf(data_fname)
         # Rebuild the model, which is required to build the posterior predictive
-        from wbfm.utils.traces.utils_hierarchical_modeling import get_dataframe_for_single_neuron
+        from wbfm.utils.external.utils_pandas import get_dataframe_for_single_neuron
         curvature_terms = ['eigenworm0', 'eigenworm1', 'eigenworm2']
         df_model = get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=curvature_terms)
         x = df_model['x'].values

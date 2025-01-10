@@ -6,9 +6,9 @@ import logging
 import os
 import warnings
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import random
-from typing import Dict, Optional, List, Union, Tuple
+from typing import Dict, Optional, List, Tuple
 import plotly.graph_objects as go
 
 import numpy as np
@@ -19,17 +19,16 @@ from statsmodels.stats.multitest import multipletests
 from tqdm.auto import tqdm
 from wbfm.utils.external.utils_matplotlib import round_yticks
 
-from wbfm.utils.external.utils_pandas import split_flattened_index, combine_columns_with_suffix, calc_closest_index
+from wbfm.utils.external.utils_pandas import split_flattened_index, combine_columns_with_suffix
 from wbfm.utils.external.utils_plotly import float2rgba, add_annotation_lines
-from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, add_behavior_shading_to_plot, \
-    shade_using_behavior_plotly
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, add_behavior_shading_to_plot
 from wbfm.utils.general.utils_paper import apply_figure_settings, paper_trace_settings, plotly_paper_color_discrete_map, \
     plot_box_multi_axis
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_dict_of_projects, \
     ClusteredTriggeredAverages, plot_triggered_average_from_matrix_low_level, \
     calc_p_value_using_ttest_triggered_average, FullDatasetTriggeredAverages
-from wbfm.utils.tracklets.high_performance_pandas import get_names_from_df
+from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation, convert_channel_mode_to_axis_label
 
 
