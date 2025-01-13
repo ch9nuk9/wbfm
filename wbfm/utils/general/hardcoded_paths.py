@@ -437,7 +437,7 @@ def _role_of_neurons():
         ],
     'Interneuron': [
             'AIA', 'AIB', 'AIZ', 'AVA', 'AVE', 'AVB', 'AVD', 'AVG', 'RIM', 'ALA',
-            'RIB', 'RIC', 'RIA', 'AUA', 'RIG', 'RIF', 'RIS', 'AIM', 'DVA', 'HSN', 'PVQ', 'RID', 'SAAV', 'SAAD'
+            'RIB', 'RIC', 'RIA', 'AUA', 'RIG', 'RIF', 'RIS', 'AIM', 'DVA', 'HSN', 'PVQ', 'RID', 'SAAV', 'SAAD', 'RIV'
         ],
     'Motor': [
             'DA1-DA9', 'DB1-DB7', 'DD1-DD6', 'VD1-VD13', 'VA1-VA12', 'VB1-VB11',
