@@ -38,11 +38,13 @@ def export_data_for_hierarchical_model(suffix='', skip_if_exists=True, delete_if
     df_all_traces.sort_values(['dataset_name', 'local_time'], inplace=True)
 
     if not do_immobilized:
-        behavior_names = ['curvature_vb02', 'curvature_5', 'curvature_10', 'curvature_15', 'curvature_20',
+        behavior_names = ['curvature_vb02', #'curvature_5', 'curvature_10', 'curvature_15', 'curvature_20',
                           'fwd', 'speed', 'ventral_only_head_curvature', 'dorsal_only_head_curvature',
                           'ventral_only_body_curvature', 'dorsal_only_body_curvature', 'self_collision',
                           'head_signed_curvature', 'summed_curvature',
                           'worm_nose_peak_frequency', 'worm_head_peak_frequency', 'worm_body_peak_frequency']
+        # Also include the entire kymograph
+        behavior_names += [f'curvature_{i}' for i in range(100)]
         df_all_behavior = build_behavior_time_series_from_multiple_projects(all_projects, behavior_names=behavior_names)
         df_all_behavior.sort_values(['dataset_name', 'local_time'], inplace=True)
         df_all_behavior['fwd'] = df_all_behavior['fwd'].astype(int)
@@ -58,7 +60,7 @@ def export_data_for_hierarchical_model(suffix='', skip_if_exists=True, delete_if
     df_all_manifold = build_trace_time_series_from_multiple_projects(all_projects, use_paper_options=True,
                                                                      interpolate_nan=True, residual_mode='pca_global')
     df_all_manifold.sort_values(['dataset_name', 'local_time'], inplace=True)
-    # New
+    # Different calculation of the manifold
     df_all_manifold1 = build_trace_time_series_from_multiple_projects(all_projects, use_paper_options=True,
                                                                       interpolate_nan=True,
                                                                       residual_mode='pca_global_1')
