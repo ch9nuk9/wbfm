@@ -40,10 +40,6 @@ hardcoded_paths = load_hardcoded_neural_network_paths()
 config.update(hardcoded_paths["behavior_paths"])
 print(f"Loaded snakemake config file with parameters: {config}")
 
-# For the deeplabcut network, get the shuffle parameter from the string
-network_name = config["head_tail_dlc_name"]
-# Looks like DLC_resnet50_DLCwbfm_headtailpharNov20shuffle2_450000, and we want the 2 after the shuffle
-shuffle_index = int(network_name.split("shuffle")[1].split("_")[0])
 
 def _run_helper(script_name, project_path, **kwargs):
     """Runs a script with a given name that can't be imported directly (e.g. because it starts with a number)"""
@@ -328,14 +324,13 @@ rule worm_unet:
 rule sam2_segment:
     input:
         avi_path=f"{output_behavior_dir}/raw_stack.avi",  # Output of tiff2avi
-        dlc_csv=f"{output_behavior_dir}/raw_stack"+config["head_tail_dlc_name"]+".csv"
+        dlc_csv=f"{output_behavior_dir}/raw_stack_dlc.csv"
     output:
         output_file=_cleanup_helper(f"{output_behavior_dir}/raw_stack_mask.btf"),
     params:
         column_names=["pharynx"],
         model_path=config["sam2_model"],
         sam2_conda_env_name=config["sam2_conda_env_name"],
-        dlc_network_name=config["head_tail_dlc_name"],
         batch_size=400
     shell:
         """
@@ -352,8 +347,8 @@ rule sam2_segment:
             echo "Waiting for avi file to be fully copied..."
         done
 
-        cp {input.dlc_csv} $TMPDIR/track{params.dlc_network_name}.csv
-        while [ ! -f $TMPDIR/track{params.dlc_network_name}.csv ] || [ ! -s $TMPDIR/track{params.dlc_network_name}.csv ]; do
+        cp {input.dlc_csv} $TMPDIR/track_dlc.csv
+        while [ ! -f $TMPDIR/track_dlc.csv ] || [ ! -s $TMPDIR/track_dlc.csv ]; do
             sleep 1
             echo "Waiting for CSV file to be fully copied..."
         done
@@ -362,7 +357,7 @@ rule sam2_segment:
         sleep 2
 
         # Run the script within the temporary directory
-        python -c "from SAM2_snakemake_scripts.sam2_video_processing_from_jpeg_batch_pipeline import main; main(['-video_path', '$TMPDIR/track.avi', '-output_file_path', '$TMPDIR/track_mask.btf', '-DLC_csv_file_path', '$TMPDIR/track{params.dlc_network_name}.csv', '-column_names', '{params.column_names}', '-SAM2_path', '{params.model_path}', '--batch_size', '{params.batch_size}'])"
+        python -c "from SAM2_snakemake_scripts.sam2_video_processing_from_jpeg_batch_pipeline import main; main(['-video_path', '$TMPDIR/track.avi', '-output_file_path', '$TMPDIR/track_mask.btf', '-DLC_csv_file_path', '$TMPDIR/track_dlc.csv', '-column_names', '{params.column_names}', '-SAM2_path', '{params.model_path}', '--batch_size', '{params.batch_size}'])"
 
         # Verify output file exists and wait for it to be fully written
         while [ ! -f $TMPDIR/track_mask.btf ] || [ ! -s $TMPDIR/track_mask.btf ]; do
@@ -464,18 +459,18 @@ rule tiff2avi:
 
 rule dlc_analyze_videos:
     input:
+        # Will save the output in the same folder as the input by default
         input_avi = f"{output_behavior_dir}/raw_stack.avi"
     params:
         dlc_model_configfile_path = config["head_tail_dlc_project"],
-        dlc_network_string = config["head_tail_dlc_name"],
         dlc_conda_env = config["dlc_conda_env_name_only_dlc"]
     output:
-        hdf5_file = f"{output_behavior_dir}/raw_stack"+config["head_tail_dlc_name"]+".h5",
-        csv_file = f"{output_behavior_dir}/raw_stack"+config["head_tail_dlc_name"]+".csv"
+        hdf5_file = f"{output_behavior_dir}/raw_stack_dlc.h5",
+        csv_file = f"{output_behavior_dir}/raw_stack_dlc.csv"
     shell:
         """
         source /lisc/app/conda/miniforge3/bin/activate {params.dlc_conda_env}
-        python -c "import deeplabcut; deeplabcut.analyze_videos('{params.dlc_model_configfile_path}', '{input.input_avi}', videotype='avi', gputouse=0, save_as_csv=True, shuffle={shuffle_index})"
+        python -c "import deeplabcut; deeplabcut.analyze_videos('{params.dlc_model_configfile_path}', '{input.input_avi}', videotype='avi', gputouse=0, save_as_csv=True)"
         """
 
 rule create_centerline:
