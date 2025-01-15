@@ -31,6 +31,7 @@ from plotly import graph_objects as go
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 import plotly.express as px
+from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map
 
 
 ##
@@ -1965,7 +1966,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         kymograph_opt = dict()
 
     ### Individual traces modes
-    mode_colormap = px.colors.qualitative.Plotly
+    mode_colormap = plotly_paper_color_discrete_map()
     beh_colormap = BehaviorCodes.ethogram_cmap(include_custom=True)
     trace_list = []
     trace_opt_list = []
@@ -1973,7 +1974,7 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
         for i, col in enumerate(col_names):
             # Traces are pca modes
             trace_list.append(go.Scatter(y=df_pca_modes[col], x=df_pca_modes.index,
-                                         line=dict(color=mode_colormap[i], width=2), showlegend=False))
+                                         line=dict(color=mode_colormap[i+1], width=2), showlegend=False))
             trace_opt_list.append(dict(row=i + 3, col=1, secondary_y=False))
 
     else:

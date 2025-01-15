@@ -49,7 +49,8 @@ def plotly_paper_color_discrete_map():
     """
     base_cmap = px.colors.qualitative.D3
     pca_cmap = px.colors.qualitative.Safe
-    mode_cmap = px.colors.qualitative.Plotly
+    # mode_cmap = px.colors.qualitative.Plotly
+    mode_cmap = px.colors.qualitative.Safe
     from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
     beh_cmap = BehaviorCodes.ethogram_cmap(include_collision=True, include_quiescence=True, include_reversal_turns=True,
                                            include_custom=True, include_stimulus=True)
@@ -105,12 +106,12 @@ def plotly_paper_color_discrete_map():
 def export_legend_for_paper(fname=None, frameon=True, reversal_shading=False, include_self_collision=False):
     if not reversal_shading:
         cmap = plotly_paper_color_discrete_map()
-        labels = ['Freely Moving', 'Reversal State', 'gcy-31, gcy-35, gcy-9']
+        labels = ['Freely Moving', 'Backward Crawling', 'gcy-31, gcy-35, gcy-9']
         colors = [cmap[l] for l in labels]
     else:
         from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
         # Just plot the gray background
-        labels = ['Reversal State']
+        labels = ['Backward Crawling']
         colors = [BehaviorCodes.shading_cmap_func(BehaviorCodes.REV)]
         if include_self_collision:
             labels.append('Self-collision')
@@ -249,7 +250,7 @@ def behavior_name_mapping(shorten=False):
         VENTRAL_TURN='Ventral turning',
         DORSAL_TURN='Dorsal turning',
         UNKNOWN='Unknown',
-        rev='FWD-REV State',
+        rev='Fwd-Bwd State',
         dorsal_turn='Dorsal turn',
         ventral_turn='Ventral turn',
         self_collision='Self-collision',
