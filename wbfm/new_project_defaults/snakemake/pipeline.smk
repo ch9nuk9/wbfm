@@ -470,7 +470,9 @@ rule dlc_analyze_videos:
     shell:
         """
         source /lisc/app/conda/miniforge3/bin/activate {params.dlc_conda_env}
-        python -c "import deeplabcut; deeplabcut.analyze_videos('{params.dlc_model_configfile_path}', '{input.input_avi}', videotype='avi', gputouse=0, save_as_csv=True)"
+        # Also rename the output file to the expected name
+        # We don't actually know the name without querying deeplabcut, so just rename it
+        python -c "import deeplabcut, os; fname = deeplabcut.analyze_videos('{params.dlc_model_configfile_path}', '{input.input_avi}', videotype='avi', gputouse=0, save_as_csv=True); os.rename(f'{output_behavior_dir}/{fname}.h5', '{output_behavior_dir}/{raw_stack_dlc}.h5'); os.rename(f'{output_behavior_dir}/{fname}.csv', '{output_behavior_dir}/{raw_stack_dlc}.csv')"
         """
 
 rule create_centerline:
