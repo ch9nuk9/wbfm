@@ -476,7 +476,7 @@ rule dlc_analyze_videos:
 rule create_centerline:
     input:
         input_binary_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented_mask.btf",  # From the coil unet, not directly from the SAM2 segmentation
-        hdf5_file = f"{output_behavior_dir}/raw_stack"+config["head_tail_dlc_name"]+".h5"
+        hdf5_file = f"{output_behavior_dir}/raw_stack_dlc.h5"
 
     params:
         output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
