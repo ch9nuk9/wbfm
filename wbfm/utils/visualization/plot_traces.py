@@ -1290,8 +1290,12 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
 
     # Turn ticks on for speed, but decrease number of ticks because the size is too small
     fig2.update_yaxes(dict(showticklabels=True, showgrid=True, griddash='dash', gridcolor='black'),
-                      range=[-0.22, 0.22], tickmode='array', tickvals=[-0.2, 0, 0.2],
+                      range=[-0.22, 0.22], tickmode='array', tickvals=[-0.1, 0, 0.1],
                       row=5, overwrite=True)
+    # Add a horizontal "divider" line to separate speed
+    fig2.add_shape(type='line', x0=0, x1=1, y0=0.2, y1=0.2,
+                   line=dict(color='black', width=2), row=5, col=1)
+
     fig2.update_xaxes(dict(showticklabels=True, title='Time (seconds)'), row=num_ethogram_rows, col=1, overwrite=True, )
     # Remove black lines for all but bottom subplot
     for i in range(1, num_ethogram_rows):
@@ -1303,10 +1307,9 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
 
     # Use the y axis as titles... but make them smaller
     # fig2.update_yaxes(dict(title=dict(text='PCA <br> modes', font=dict(size=12))), row=3, overwrite=True)
-    # fig2.update_yaxes(dict(title=dict(text='PC1', font=dict(size=12))), row=2, overwrite=True, tickangle=-90)
-    # fig2.update_yaxes(dict(title=dict(text='PC2', font=dict(size=12))), row=3, overwrite=True, tickangle=-90)
-    # fig2.update_yaxes(dict(title=dict(text='PC3', font=dict(size=12))), row=4, overwrite=True, tickangle=-90)
-    fig2.update_yaxes(dict(title=dict(text='First 3 PCA<br>Components', font=dict(size=12))), row=3, overwrite=True, tickangle=-90)
+    fig2.update_yaxes(dict(title=dict(text='  <br>1', font=dict(size=12))), row=2, overwrite=True, tickangle=-90)
+    fig2.update_yaxes(dict(title=dict(text='PCA Modes<br>2', font=dict(size=12))), row=3, overwrite=True, tickangle=-90)
+    fig2.update_yaxes(dict(title=dict(text='  <br>3', font=dict(size=12))), row=4, overwrite=True, tickangle=-90)
     fig2.update_yaxes(dict(title=dict(text='Speed <br> (mm/s)', font=dict(size=12))), row=5, overwrite=True)
 
     # For now, don't build the rest of the figures

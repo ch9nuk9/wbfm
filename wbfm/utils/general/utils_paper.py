@@ -83,7 +83,7 @@ def plotly_paper_color_discrete_map():
                  'CCA': pca_cmap[3], 'Continuous': pca_cmap[3],
                  'CCA Discrete': pca_cmap[5], 'CCA\n Discrete': pca_cmap[5], 'Discrete': pca_cmap[5],
                  # Individual modes, which are again different
-                 1: mode_cmap[0], 2: mode_cmap[1], 3: mode_cmap[2], 4: mode_cmap[3], 5: mode_cmap[4],
+                 1: mode_cmap[4], 2: mode_cmap[5], 3: mode_cmap[0], 4: mode_cmap[10], 5: mode_cmap[8],
                  # Role types, which are connected to behavior
                  'Inter, fwd': beh_cmap[BehaviorCodes.FWD], 'Inter, Forward': beh_cmap[BehaviorCodes.FWD],
                  'Motor, Forward': beh_cmap[BehaviorCodes.FWD], 'Forward': beh_cmap[BehaviorCodes.FWD],
