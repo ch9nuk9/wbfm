@@ -443,13 +443,15 @@ rule dlc_analyze_videos:
     shell:
         """
         source /lisc/app/conda/miniforge3/bin/activate {params.dlc_conda_env}
-        python -c "import deeplabcut; deeplabcut.analyze_videos('{params.dlc_model_configfile_path}', '{input.input_avi}', videotype='avi', gputouse=0, save_as_csv=True)"
+        # Also rename the output file to the expected name
+        # We don't actually know the name without querying deeplabcut, so just rename it
+        python -c "import deeplabcut, os; fname = deeplabcut.analyze_videos('{params.dlc_model_configfile_path}', '{input.input_avi}', videotype='avi', gputouse=0, save_as_csv=True); print('Produced raw files with name: ' + fname); os.rename(f'{output_behavior_dir}/raw_stack'+fname+'.h5', '{output_behavior_dir}/raw_stack_dlc.h5'); os.rename(f'{output_behavior_dir}/raw_stack'+fname+'.csv', '{output_behavior_dir}/raw_stack_dlc.csv')"
         """
 
 rule create_centerline:
     input:
         input_binary_img = f"{output_behavior_dir}/raw_stack_AVG_background_subtracted_normalised_worm_segmented_mask_coil_segmented_mask.btf",  # From the coil unet, not directly from the SAM2 segmentation
-        hdf5_file = f"{output_behavior_dir}/raw_stack"+config["head_tail_dlc_name"]+".h5"
+        hdf5_file = f"{output_behavior_dir}/raw_stack_dlc.h5"
 
     params:
         output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
