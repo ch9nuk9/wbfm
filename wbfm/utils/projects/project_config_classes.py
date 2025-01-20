@@ -698,12 +698,19 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             Optional[str]:
         # First, get intermediate folder: anything with 'background'
         background_parent_folder = glob.glob(f"{multiday_parent_folder}/*background*")
-        if len(background_parent_folder) != 1:
-            msg = f"Found no or more than one background folder(s): {background_parent_folder}"
+        found_one_folder = True
+        msg = ''
+        if len(background_parent_folder) > 1:
+            found_one_folder = False
+            msg = f"Found more than one background folders in the parent folder: {background_parent_folder}"
+        elif len(background_parent_folder) == 0:
+            found_one_folder = False
+            msg = f"Found no background folder in the parent folder: {background_parent_folder}"
+        if not found_one_folder:
+            self.logger.error(msg)
             if crash_if_no_background:
                 raise RawDataFormatError(msg)
             else:
-                self.logger.warning(msg)
                 return None
         # Second, actual background folder
         background_parent_folder = background_parent_folder[0]
