@@ -103,10 +103,31 @@ def plotly_paper_color_discrete_map():
     return cmap_dict
 
 
-def export_legend_for_paper(fname=None, frameon=True, reversal_shading=False, include_self_collision=False):
-    if not reversal_shading:
+def intrinsic_categories_color_discrete_map():
+    d3 = px.colors.qualitative.D3
+    cmap = {'Intrinsic': d3[4],
+            'No manifold': d3[-3],
+            'Freely moving only': d3[0],
+            'Immobilized only': d3[2],
+            'Rev in FM only': d3[0],
+            'Fwd in both': d3[4],
+            'Freely moving only': d3[0],
+            'Rev in immob only': d3[2],
+            'Fwd in immob only': d3[2]
+            }
+    return cmap
+
+def export_legend_for_paper(fname=None, frameon=True, ethogram=False, reversal_shading=False, include_self_collision=False):
+    if ethogram:
+        from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
+        cmap = BehaviorCodes.ethogram_cmap(use_plotly_style_strings=False)
+        labels = [BehaviorCodes.FWD, BehaviorCodes.REV, BehaviorCodes.VENTRAL_TURN, BehaviorCodes.DORSAL_TURN,
+                  BehaviorCodes.PAUSE]
+        colors = [cmap[k] for k in labels]
+        labels = [behavior_name_mapping()[k.name] for k in labels]
+    elif not reversal_shading:
         cmap = plotly_paper_color_discrete_map()
-        labels = ['Freely Moving', 'Backward Crawling', 'gcy-31, gcy-35, gcy-9']
+        labels = ['Freely Moving', 'Reversal State', 'gcy-31, gcy-35, gcy-9']
         colors = [cmap[l] for l in labels]
     else:
         from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
