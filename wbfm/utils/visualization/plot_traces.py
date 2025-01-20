@@ -1204,7 +1204,7 @@ def make_summary_interactive_heatmap_with_pca(project_cfg, to_save=True, to_show
 
 
 def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, trace_opt=None,
-                                      include_speed_subplot=True,
+                                      include_speed_subplot=True, ethogram_on_top=False,
                                       output_folder=None, base_width=0.5, base_height=0.3, **kwargs):
     """
     Similar to make_summary_interactive_heatmap_with_pca, but saves each subplot separately for more control
@@ -1241,15 +1241,24 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
         project_data, num_pca_modes_to_plot, trace_opt=trace_opt, **kwargs)
 
     # Build figure 1: heatmap
-    fig1 = make_subplots()
+    if ethogram_on_top:
+        _opt = dict(rows=2, row_heights=[0.9, 0.1], vertical_spacing=0.0)
+    else:
+        _opt = dict(rows=1)
+    fig1 = make_subplots(**_opt)
     fig1.add_trace(heatmap, **heatmap_opt)
     fig1.update_layout(showlegend=False, autosize=False, #**plotly_opt,
                        coloraxis=dict(colorscale="jet"))
     apply_figure_settings(fig1, width_factor=base_width[0], height_factor=base_height[0], plotly_not_matplotlib=True)
-    # Remove ticks
+    # Keep ticks (only last row) when plotting separately
     fig1.update_xaxes(dict(showticklabels=False, showgrid=False), col=1, overwrite=True, matches='x')
+    fig1.update_xaxes(dict(showticklabels=True, showgrid=False), title='Seconds',
+                      col=1, row=2 if ethogram_on_top else 1, overwrite=True, matches='x')
+    # Remove ticks
     fig1.update_yaxes(dict(showticklabels=False, showgrid=True), title="Neurons",
-                      col=1, overwrite=True)
+                      col=1, row=1, overwrite=True)
+    fig1.update_yaxes(dict(showticklabels=False, showgrid=False), title="",
+                      col=1, row=2, overwrite=True)
     fig1.update_coloraxes(cmin=-0.25, cmax=0.75, colorbar=dict(
         # thickness=10,
         title=dict(text=r'ΔR / R₅₀', **font_dict)
@@ -1258,15 +1267,25 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     # fig1.update_traces(colorbar=dict(thickness=5))
 
     # Build figure 2: Ethogram with PCA modes
-    num_ethogram_rows = 5 if include_speed_subplot else 4
-    if not include_speed_subplot:
-        subplot_titles = ["", "", "", ""]
-    else:
-        subplot_titles = ["", "", "", "", ""]
+    num_ethogram_rows = 4
+    if include_speed_subplot:
+        num_ethogram_rows += 1
+    if include_speed_subplot:
+        num_ethogram_rows -= 1
+    subplot_titles = [""]*num_ethogram_rows
     fig2 = make_subplots(rows=num_ethogram_rows, cols=1, shared_xaxes=True, shared_yaxes=False,
                          subplot_titles=subplot_titles, vertical_spacing=0.0)
+
+    # Add to top or bottom
+    if ethogram_on_top:
+        _fig = fig1
+        _row = 2
+    else:
+        _fig = fig2
+        _row = 1
     for opt in ethogram_opt:
-        fig2.add_shape(**opt, row=1, col=1)
+        _fig.add_shape(**opt, row=_row, col=1)
+    # All on second
     for i, (trace, trace_opt) in enumerate(zip(trace_list, trace_opt_list)):
         if not include_speed_subplot and i >= num_pca_modes_to_plot:
             break
