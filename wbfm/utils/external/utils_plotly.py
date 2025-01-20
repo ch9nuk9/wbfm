@@ -186,9 +186,59 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
     return fig
 
 
-def hex2rgba(hex_color, alpha=0.2):
-    fillcolor = f"rgba{tuple(int(hex_color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)) + (alpha,)}"
+def hex2rgba(hex_color, alpha=0.2, return_tuple=False):
+    fillcolor = tuple(int(hex_color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4))
+    if alpha is not None:
+        fillcolor = fillcolor + (alpha,)
+    if not return_tuple:
+        fillcolor = f"rgba{fillcolor}"
     return fillcolor
+
+
+def rgba2hex(rgba_color):
+    rgba_color = rgba_color.replace('rgba', '').replace(' ', '').replace('(', '').replace(')', '')
+    rgba_color = rgba_color.split(',')
+    hex_color = '#'
+    # Alpha is prepended
+    if len(rgba_color) == 4:
+        hex_color = f'{int(float(rgba_color[3])*255):02x}'
+    for i in range(3):
+        hex_color += f'{int(rgba_color[i]):02x}'
+    return hex_color
+
+
+def pastelize_color(hex_color, mix_fraction=0.2, return_hex=True):
+    """Make a color more pastel by mixing it with white."""
+    rgb_color = hex2rgba(hex_color, alpha=None, return_tuple=True)
+    mix_color = (255, 255, 255)
+    mixed_rgb = mix_rgba(rgb_color, mix_color, mix_fraction, return_hex)
+    return mixed_rgb
+
+
+def darken_color(hex_color, mix_fraction=0.2, return_hex=True):
+    """Make a color darker by mixing it with black."""
+    rgb_color = hex2rgba(hex_color, alpha=None, return_tuple=True)
+    mix_color = (0, 0, 0)
+    mixed_rgb = mix_rgba(rgb_color, mix_color, mix_fraction, return_hex)
+    return mixed_rgb
+
+
+def mute_color(hex_color, mix_fraction=0.2, return_hex=True):
+    """Make a color darker by mixing it with black."""
+    rgb_color = hex2rgba(hex_color, alpha=None, return_tuple=True)
+    mix_color = (128, 128, 128)
+    mixed_rgb = mix_rgba(rgb_color, mix_color, mix_fraction, return_hex)
+    return mixed_rgb
+
+
+def mix_rgba(rgb_color, mix_color, mix_fraction, return_hex=True):
+    mixed_rgb = tuple(
+        int(np.clip((1 - mix_fraction) * c + mix_fraction * m, 0, 255)) for c, m in zip(rgb_color, mix_color)
+    )
+    mixed_rgb = f"rgba{mixed_rgb}"
+    if return_hex:
+        mixed_rgb = rgba2hex(mixed_rgb)
+    return mixed_rgb
 
 
 def float2rgba(float_color, alpha=0.2):

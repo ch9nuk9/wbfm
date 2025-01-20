@@ -13,6 +13,7 @@ from wbfm.utils.external.utils_matplotlib import export_legend
 from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 
 from wbfm.utils.utils_cache import cache_to_disk_class
+from wbfm.utils.external.utils_plotly import rgba2hex, hex2rgba, pastelize_color, darken_color, mute_color
 
 
 def paper_trace_settings():
@@ -103,7 +104,7 @@ def plotly_paper_color_discrete_map():
     return cmap_dict
 
 
-def intrinsic_categories_color_discrete_map():
+def intrinsic_categories_color_discrete_map(return_hex=True, mix_fraction = 0.0):
     d3 = px.colors.qualitative.D3
     cmap = {'Intrinsic': d3[4],
             'No manifold': d3[-3],
@@ -115,6 +116,13 @@ def intrinsic_categories_color_discrete_map():
             'Rev in immob only': d3[2],
             'Fwd in immob only': d3[2]
             }
+    # Map everything to be more pastel
+    if mix_fraction is not None and mix_fraction != 0:
+        if mix_fraction < 0:
+            add_alpha = lambda hex_col: mute_color(hex_col, -mix_fraction, return_hex=return_hex)
+        else:
+            add_alpha = lambda hex_col: pastelize_color(hex_col, mix_fraction, return_hex=return_hex)
+        cmap = {k: add_alpha(v) for k, v in cmap.items()}
     return cmap
 
 def export_legend_for_paper(fname=None, frameon=True, ethogram=False, reversal_shading=False, include_self_collision=False):
