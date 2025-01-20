@@ -361,3 +361,28 @@ def add_annotation_lines(df_idx_range, neuron_name, fig, is_immobilized=False, i
             fig.add_shape(type="rect", x0=row['start'], y0=y0, x1=row['end'], y1=y0,
                           line=dict(color=color, width=2), xref='x', yref='paper', layer='below')
     return fig
+
+
+def colored_text(text, color, bold=False):
+    """
+    Figure should be updated by extracting original text, defining colors, and then updating the layout:
+
+    ticktext = [colored_text(t, c) for t, c in text2colors.items()]
+    fig.update_layout(
+    yaxis=dict(tickmode='array', ticktext=ticktext, tickvals=ticks)
+    )
+
+    Parameters
+    ----------
+    text
+    color
+
+    Returns
+    -------
+
+    From: https://stackoverflow.com/questions/58183962/how-to-color-ticktext-in-plotly
+    """
+    if not bold:
+        return f"<span style='color:{str(color)}'> {str(text)} </span>"
+    else:
+        return f"<span style='color:{str(color)}'> <b>{str(text)}</b> </span>"
