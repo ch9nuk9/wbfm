@@ -957,6 +957,8 @@ def make_binary_vector_from_starts_and_ends(starts, ends, original_vals, pad_nan
     -------
 
     """
+    if original_vals is None:
+        raise ValueError("original_vals must be provided (otherwise the target length is unknown)")
 
     # Split pad_nan_points if it has different values for starts and ends
     if isinstance(pad_nan_points, (list, tuple)):

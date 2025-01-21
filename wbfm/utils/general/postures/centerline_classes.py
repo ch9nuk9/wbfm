@@ -251,7 +251,8 @@ class WormFullVideoPosture:
     def template_vector(self, fluorescence_fps=False, **kwargs) -> pd.Series:
         """Defines the expected length for the behavioral vectors, with all nan"""
         df = pd.Series(index=range(self.num_high_res_frames))
-        df = self._validate_and_downsample(df, fluorescence_fps, **kwargs)
+        df = self._validate_and_downsample(df, fluorescence_fps, force_downsampling=fluorescence_fps,
+                                           **kwargs)
         return df
 
     def centerlineX(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
@@ -659,7 +660,9 @@ class WormFullVideoPosture:
 
         """
         if self._beh_annotation is None:
-            self._beh_annotation, _ = parse_behavior_annotation_file(behavior_fname=self.filename_beh_annotation)
+            template_vector = self.template_vector(fluorescence_fps=self.beh_annotation_already_converted_to_fluorescence_fps)
+            self._beh_annotation, _ = parse_behavior_annotation_file(behavior_fname=self.filename_beh_annotation,
+                                                                     template_vector=template_vector)
         if isinstance(self._beh_annotation, pd.DataFrame):
             self._beh_annotation = self._beh_annotation.annotation
         if self._beh_annotation is not None:
@@ -2358,6 +2361,7 @@ def parse_behavior_annotation_file(cfg: ModularProjectConfig = None, behavior_fn
                 df_behavior_annotations = pd.read_csv(behavior_fname)
                 behavior_annotations = df_behavior_annotations['Annotation']
             elif "AVAL_manual_annotation" in str(behavior_fname) or "AVAR_manual_annotation" in str(behavior_fname):
+                logging.warning(f"Reading using manual annotation from Itamar's tracify package")
                 # From Itamar's tracify package, which saves only the starts and ends
                 # IN THE SECONDS, not trace frame rate
                 fps = 3.47
