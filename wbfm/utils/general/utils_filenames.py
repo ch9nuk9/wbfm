@@ -361,7 +361,6 @@ def get_bigtiff_fname_from_folder(folder_fname, channel_to_check=0):
 
 
 def get_both_bigtiff_fnames_from_parent_folder(parent_data_folder):
-    logging.warning("Use of bigtiff is deprecated; use ndtiff instead")
     green_bigtiff_fname, red_bigtiff_fname = None, None
     for subfolder in Path(parent_data_folder).iterdir():
         if subfolder.is_file():
@@ -372,7 +371,7 @@ def get_both_bigtiff_fnames_from_parent_folder(parent_data_folder):
             green_bigtiff_fname = get_bigtiff_fname_from_folder(subfolder, channel_to_check=1)
 
     if green_bigtiff_fname is None or red_bigtiff_fname is None:
-        logging.warning(f"Did not find one of: {(green_bigtiff_fname, red_bigtiff_fname)}")
+        logging.error(f"Did not find one of: {(green_bigtiff_fname, red_bigtiff_fname)} in {parent_data_folder}")
 
     return green_bigtiff_fname, red_bigtiff_fname
 
@@ -390,7 +389,8 @@ def get_ndtiff_fnames_from_parent_folder(parent_data_folder):
                 green_ndtiff_fname = str(subfolder)
 
     if green_ndtiff_fname is None or red_ndtiff_fname is None:
-        logging.warning(f"Did not find one of: {(green_ndtiff_fname, red_ndtiff_fname)}")
+        logging.warning(f"Did not find at least one of the ndtiff files: {(green_ndtiff_fname, red_ndtiff_fname)} in "
+                        f"{parent_data_folder}")
 
     return green_ndtiff_fname, red_ndtiff_fname
 

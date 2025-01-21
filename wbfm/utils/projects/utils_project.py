@@ -120,6 +120,7 @@ def update_project_config_path(abs_dir_name, project_config_updates=None):
     if project_config_updates is None:
         project_config_updates = dict(project_path=str(project_fname))
     edit_config(str(project_fname), project_config_updates)
+    return project_fname
 
 
 def update_snakemake_config_path(abs_dir_name):

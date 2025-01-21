@@ -19,7 +19,7 @@ from wbfm.utils.projects.utils_project import get_project_name, safe_cd, update_
     update_snakemake_config_path
 
 
-def build_project_structure_from_config(_config: dict, logger: logging.Logger) -> None:
+def build_project_structure_from_config(_config: dict, logger: logging.Logger = None) -> None:
     """
     Builds a project from passed user data, which determines:
         The location and name of the new project
@@ -29,13 +29,20 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
 
     Parameters
     ----------
-    _config
+    _config: dict with the following:
+        Raw data information, meaning either of the following:
+            parent_data_folder - the folder containing the raw data
+            green_bigtiff_fname AND red_bigtiff_fname - the individual channel bigtiff files
+        Project location, i.e.:
+            project_dir - the parent folder where the new project will be created
     logger
 
     Returns
     -------
 
     """
+    if logger is None:
+        logger = logging.getLogger(__name__)
 
     # If the user just passed the parent raw data folder, then convert that into green and red
     parent_data_folder = _config.get('parent_data_folder', None)
@@ -64,8 +71,7 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
             red_fname = osp.join(parent_data_folder, red_fname)
 
         if is_btf:
-            logging.warning("Found bigtiff files, which are deprecated."
-                            " Attempting to continue, but may not work ")
+            logging.warning("Found bigtiff files, which are deprecated.")
             _config['green_bigtiff_fname'] = green_fname
             _config['red_bigtiff_fname'] = red_fname
         else:
@@ -85,10 +91,12 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger) -
     copytree(src, abs_new_project_name)
 
     # Update the copied project config with the new dest folder
-    update_project_config_path(abs_new_project_name, _config)
+    project_fname = update_project_config_path(abs_new_project_name, _config)
 
     # Also update the snakemake file with the project directory
     update_snakemake_config_path(abs_new_project_name)
+
+    return project_fname
 
 
 def _check_if_search_succeeded(_config, green_fname, red_fname):
