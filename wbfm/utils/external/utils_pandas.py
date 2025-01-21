@@ -974,6 +974,14 @@ def make_binary_vector_from_starts_and_ends(starts, ends, original_vals, pad_nan
 
 
 def extend_binary_vector(binary_state: pd.Series, alt_binary_state: pd.Series) -> pd.Series:
+    """
+    Extends the binary state to end at the next end of the alt state
+
+    Useful if there is a core state that is allowed to extend into another state if they overlap, which is stored in
+    alt_binary_state. Example:
+        alt_binary_state = BehaviorCodes.vector_equality(behavioral_annotation, allowed_succeeding_state)
+        binary_state = extend_binary_vector(binary_state, alt_binary_state)
+    """
     starts, ends = get_contiguous_blocks_from_column(binary_state, already_boolean=True)
     _, alt_ends = get_contiguous_blocks_from_column(alt_binary_state, already_boolean=True)
     for i in range(len(ends)):
@@ -994,7 +1002,19 @@ def extend_binary_vector(binary_state: pd.Series, alt_binary_state: pd.Series) -
     return binary_state
 
 
-def pad_events_in_binary_vector(vec, pad_length=(1, 1)):
+def pad_events_in_binary_vector(vec: pd.Series, pad_length=(1, 1)):
+    """
+    Pads a binary vector with a certain number of points before and after each event
+
+    Parameters
+    ----------
+    vec
+    pad_length
+
+    Returns
+    -------
+
+    """
     starts, ends = get_contiguous_blocks_from_column(vec, already_boolean=True)
     vec_padded = make_binary_vector_from_starts_and_ends(starts, ends, vec, pad_nan_points=pad_length)
     return vec_padded
