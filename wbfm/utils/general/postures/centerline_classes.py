@@ -538,7 +538,8 @@ class WormFullVideoPosture:
         _, rev_ends = self.get_starts_and_ends_of_behavior(BehaviorCodes.REV, include_turns=False,
                                                            fluorescence_fps=False)
 
-        _raw_vector = annotate_turns_from_reversal_ends(rev_ends, y_curvature)
+        pad_up_to = self.physical_unit_conversion.frames_per_volume
+        _raw_vector = annotate_turns_from_reversal_ends(rev_ends, y_curvature, pad_up_to=pad_up_to)
 
         return _raw_vector
 

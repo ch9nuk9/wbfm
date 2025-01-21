@@ -1270,7 +1270,7 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     num_ethogram_rows = 4
     if include_speed_subplot:
         num_ethogram_rows += 1
-    if include_speed_subplot:
+    if ethogram_on_top:
         num_ethogram_rows -= 1
     subplot_titles = [""]*num_ethogram_rows
     fig2 = make_subplots(rows=num_ethogram_rows, cols=1, shared_xaxes=True, shared_yaxes=False,
@@ -1279,18 +1279,20 @@ def make_summary_heatmap_and_subplots(project_cfg, to_save=True, to_show=False, 
     # Add to top or bottom
     if ethogram_on_top:
         _fig = fig1
-        _row = 2
+        ethogram_row = 2
+        ethogram_trace_offset = 1
     else:
         _fig = fig2
-        _row = 1
+        ethogram_row = 1
+        ethogram_trace_offset = 2
     for opt in ethogram_opt:
-        _fig.add_shape(**opt, row=_row, col=1)
+        _fig.add_shape(**opt, row=ethogram_row, col=1)
     # All on second
     for i, (trace, trace_opt) in enumerate(zip(trace_list, trace_opt_list)):
         if not include_speed_subplot and i >= num_pca_modes_to_plot:
             break
         trace_opt.pop('row')
-        fig2.add_trace(trace, **trace_opt, row=i+2)
+        fig2.add_trace(trace, **trace_opt, row=i+ethogram_trace_offset)
         num_before_adding_shapes = len(fig2.layout.shapes)
         for shade_opt in trace_shading_opt:
             shade_opt['y1'] = 1.0

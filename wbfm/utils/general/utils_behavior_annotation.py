@@ -25,6 +25,7 @@ import plotly.graph_objects as go
 from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe, filter_gaussian_moving_average
 from wbfm.utils.general.hardcoded_paths import get_summary_visualization_dir
+from wbfm.utils.external.utils_pandas import pad_events_in_binary_vector
 
 
 class BehaviorCodes(Flag):
@@ -1844,7 +1845,7 @@ def combine_pair_of_ided_neurons(df_traces, base_name='AVA'):
     return y
 
 
-def annotate_turns_from_reversal_ends(rev_ends, y_curvature: pd.Series):
+def annotate_turns_from_reversal_ends(rev_ends, y_curvature: pd.Series, pad_up_to=None):
     """
     Uses the reversal ends and curvature to annotate turns in the following way:
     1. A turn starts at the end of the reversal
@@ -1893,12 +1894,13 @@ def annotate_turns_from_reversal_ends(rev_ends, y_curvature: pd.Series):
     # _raw_ventral = remove_short_state_changes(_raw_ventral, min_length=30)
     # _raw_dorsal = remove_short_state_changes(_raw_dorsal, min_length=30)
     #
-    # # Pad the edges of the surviving states
-    # _raw_ventral = pad_events_in_binary_vector(_raw_ventral, pad_length=30)
-    # _raw_dorsal = pad_events_in_binary_vector(_raw_dorsal, pad_length=30)
     # Combine
     _raw_ventral = make_binary_vector_from_starts_and_ends(ventral_starts, ventral_ends, y_curvature)
     _raw_dorsal = make_binary_vector_from_starts_and_ends(dorsal_starts, dorsal_ends, y_curvature)
+    # Pad the edges of the surviving states so that they aren't completely removed after downsampling
+    _raw_ventral = pad_events_in_binary_vector(pd.Series(_raw_ventral), pad_up_to=pad_up_to)
+    _raw_dorsal = pad_events_in_binary_vector(pd.Series(_raw_dorsal), pad_up_to=pad_up_to)
+
     _raw_vector = pd.Series(_raw_ventral.astype(int) - _raw_dorsal.astype(int))
     _raw_vector = _raw_vector.replace(1, BehaviorCodes.VENTRAL_TURN)
     _raw_vector = _raw_vector.replace(0, BehaviorCodes.NOT_ANNOTATED)

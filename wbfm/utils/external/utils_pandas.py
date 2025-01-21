@@ -940,7 +940,7 @@ def save_valid_ind_1d_or_2d(df, valid_ind):
     return df
 
 
-def make_binary_vector_from_starts_and_ends(starts, ends, original_vals, pad_nan_points=0):
+def make_binary_vector_from_starts_and_ends(starts, ends, original_vals, pad_nan_points=0, pad_up_to=None):
     """
     Makes a binary vector from a list of starts and ends
 
@@ -968,6 +968,9 @@ def make_binary_vector_from_starts_and_ends(starts, ends, original_vals, pad_nan
     for s, e in zip(starts, ends):
         s = np.clip(s - pad_nan_points_start, a_min=0, a_max=len(original_vals))
         e = np.clip(e + pad_nan_points_end, a_min=0, a_max=len(original_vals))
+        if pad_up_to is not None and e-s < pad_up_to:
+            # Pad only the end
+            e = np.clip(s + pad_up_to, a_min=0, a_max=len(original_vals))
         idx_boolean[s:e] = 1
 
     return idx_boolean
@@ -1002,7 +1005,7 @@ def extend_binary_vector(binary_state: pd.Series, alt_binary_state: pd.Series) -
     return binary_state
 
 
-def pad_events_in_binary_vector(vec: pd.Series, pad_length=(1, 1)):
+def pad_events_in_binary_vector(vec: pd.Series, **kwargs):
     """
     Pads a binary vector with a certain number of points before and after each event
 
@@ -1016,7 +1019,7 @@ def pad_events_in_binary_vector(vec: pd.Series, pad_length=(1, 1)):
 
     """
     starts, ends = get_contiguous_blocks_from_column(vec, already_boolean=True)
-    vec_padded = make_binary_vector_from_starts_and_ends(starts, ends, vec, pad_nan_points=pad_length)
+    vec_padded = make_binary_vector_from_starts_and_ends(starts, ends, vec, **kwargs)
     return vec_padded
 
 
