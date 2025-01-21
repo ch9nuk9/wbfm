@@ -449,7 +449,7 @@ class PreprocessingSettings:
         return raw_volume
 
     @lru_cache(maxsize=4)
-    def open_raw_data(self, red_not_green=True, actually_open=True) -> Optional[MicroscopeDataReader]:
+    def _open_raw_data(self, red_not_green=True, actually_open=True) -> Optional[MicroscopeDataReader]:
         """
         Open the raw data file, which used to be a .btf file but is now an ndtiff folder
 
@@ -490,7 +490,7 @@ class PreprocessingSettings:
         return dat
 
     def open_raw_data_as_4d_dask(self, red_not_green=True) -> Optional[da.Array]:
-        dat = self.open_raw_data(red_not_green)
+        dat = self._open_raw_data(red_not_green)
         if dat is None:
             return None
         dat_out = da.squeeze(dat.dask_array)

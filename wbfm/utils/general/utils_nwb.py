@@ -23,6 +23,7 @@ from tqdm.auto import tqdm
 
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.external.utils_neuron_names import int2name_neuron
+from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 
 
 def create_vol_seg_centers(name, description, ImagingVolume, positions,
@@ -92,6 +93,20 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     # Convert the datetime to a string that can be used as a subject_id
     subject_id = session_start_time.strftime("%Y%m%d-%H-%M-%S")
 
+    # Unpack metadata (no matter what the stage of the project is)
+    print("Calculating metadata...")
+    raw_data_cfg = project_data.project_config.get_raw_data_config()
+    strain = raw_data_cfg.config.get('strain', 'unknown')
+    physical_units_class = project_data.physical_unit_conversion
+
+    flag = check_all_needed_data_for_step(project_data.project_config, 5, raise_error=False,
+                                          verbose=0)
+    if not flag:
+        logging.info("Project data is incomplete, will save only the raw data")
+        nwbfile, fname = nwb_only_raw_data(project_data, session_start_time, subject_id, strain,
+                                           physical_units_class, output_folder)
+        return nwbfile, fname
+
     # Unpack traces and locations
     print("Calculating traces...")
     gce_quant_red = project_data.red_traces.swaplevel(i=0, j=1, axis=1).copy()
@@ -107,11 +122,6 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     # Unpack videos
     calcium_video_dict = {'red': project_data.red_data, 'green': project_data.green_data}
     segmentation_video = project_data.segmentation
-    # Unpack metadata
-    print("Calculating metadata...")
-    raw_data_cfg = project_data.project_config.get_raw_data_config()
-    strain = raw_data_cfg.config.get('strain', 'unknown')
-    physical_units_class = project_data.physical_unit_conversion
 
     nwb_file, fname = nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_quant_dict, session_start_time, subject_id, strain,
                                                       physical_units_class, output_folder)
@@ -210,6 +220,43 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
     return nwbfile, fname
 
 
+def nwb_only_raw_data(project_data, session_start_time, subject_id, strain, physical_units_class,
+                      output_folder=None):
+    """
+    Convert a ProjectData class to an NWB h5 file, but only include the raw data.
+
+    Parameters
+    ----------
+    project_data
+
+    Returns
+    -------
+
+    """
+    # Unpack videos from project_data
+    p = project_data.project_config.get_preprocessing_class()
+    raw_video_dict = {'red': p.open_raw_data_as_4d_dask(red_not_green=True),
+                      'green': p.open_raw_data_as_4d_dask(red_not_green=False)}
+
+    # NWB file
+    nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
+
+    device = _zimmer_microscope_device(nwbfile)
+    CalcOptChanRefs, CalcImagingVolume = convert_calcium_videos_to_nwb(
+        nwbfile, raw_video_dict, device, physical_units_class=physical_units_class, raw_videos=True
+    )
+
+    fname = None
+    if output_folder:
+        fname = os.path.join(output_folder, subject_id + '.nwb')
+        logging.info(f"Saving NWB file to {fname}")
+        with NWBHDF5IO(fname, mode='w') as io:
+            io.write(nwbfile)
+        logging.info(f"Saving successful!")
+
+    return nwbfile, fname
+
+
 def initialize_nwb_file(session_start_time, strain, subject_id):
     print("Initializing nwb file...")
     nwbfile = NWBFile(
@@ -266,7 +313,8 @@ def laser_properties(channel_str='red'):
     return emission_lambda, emission_delta, excitation_lambda, laser_description, laser_tuple
 
 
-def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_units_class=None):
+def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_units_class=None,
+                                  raw_videos=False):
     print("Initializing imaging channels...")
     if physical_units_class is None:
         # STUB FOR IMMOBILIZED (which has very messy metadata
@@ -343,7 +391,7 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
     )
 
     calcium_image_series = MultiChannelVolumeSeries(
-        name="CalciumImageSeries",
+        name="CalciumImageSeries" if not raw_videos else "RawCalciumImageSeries",
         description="Raw GCaMP series images",
         comments="GFP-GCaMP channel is the GCaMP signal, mScarlet is the reference signal",
         data=wrapped_data,
@@ -359,6 +407,8 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
 
     nwbfile.add_imaging_plane(CalcImagingVolume)
     nwbfile.add_acquisition(calcium_image_series)
+    # Add imaging metadata
+    calcium_image_series.add_child(CalcOptChanRefs)
 
     return CalcOptChanRefs, CalcImagingVolume
 
@@ -1151,7 +1201,7 @@ class CustomDataChunkIterator(GenericDataChunkIterator):
         super().__init__(**kwargs)
 
     def _get_data(self, selection):
-        return self.array[selection]
+        return np.array(self.array[selection])
 
     def _get_maxshape(self):
         return self.array.shape
