@@ -409,8 +409,6 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
 
     nwbfile.add_imaging_plane(CalcImagingVolume)
     nwbfile.add_acquisition(calcium_image_series)
-    # Add imaging metadata
-    calcium_image_series.add_child(CalcOptChanRefs)
 
     return CalcOptChanRefs, CalcImagingVolume
 
