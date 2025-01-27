@@ -24,6 +24,7 @@ from tqdm.auto import tqdm
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.external.utils_neuron_names import int2name_neuron
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
+from wbfm.utils.general.utils_filenames import get_sequential_filename
 
 
 def create_vol_seg_centers(name, description, ImagingVolume, positions,
@@ -212,6 +213,7 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
     if output_folder:
         fname = os.path.join(output_folder, subject_id + '.nwb')
         logging.info(f"Saving NWB file to {fname}")
+        fname = get_sequential_filename(fname)
         with NWBHDF5IO(fname, mode='w') as io:
         # with NWBZarrIO(path=fname, mode="w") as io:
             io.write(nwbfile)
