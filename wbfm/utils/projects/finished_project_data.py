@@ -728,25 +728,34 @@ class ProjectData:
         obj = ProjectData(nwb_path, None, **kwargs)
         # Initialize the relevant fields
         obj.preprocessing_settings = PreprocessingSettings()
-        # Transpose data from TXYZC to TZXY (splitting the channel)
-        obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
-        obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 1].transpose((0, 3, 1, 2))
-        # Save the traces, and the tracks using the same dataframes (they all have xyz info)
-        both_df_traces = convert_nwb_to_trace_dataframe(nwb_obj)
-        obj.red_traces = both_df_traces['Reference']
-        obj.green_traces = both_df_traces['Signal']
-        # Transpose data from TXYZ to TZXY
-        obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
+        if 'CalciumImageSeries' in nwb_obj.acquisition:
+            # Transpose data from TXYZC to TZXY (splitting the channel)
+            obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
+            obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 1].transpose((0, 3, 1, 2))
 
-        obj.final_tracks = both_df_traces['Reference']
+        # Note that there should always be 'CalciumActivity' but it may be a stub
+        try:
+            # Load the traces, and the tracks using the same dataframes (they all have xyz info)
+            both_df_traces = convert_nwb_to_trace_dataframe(nwb_obj)
+            obj.red_traces = both_df_traces['Reference']
+            obj.green_traces = both_df_traces['Signal']
+            # Transpose data from TXYZ to TZXY
+            obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
+
+            obj.final_tracks = both_df_traces['Reference']
+        except KeyError:
+            pass
 
         p = PhysicalUnitConversion()
-        p.volumes_per_second = nwb_obj.acquisition['CalciumImageSeries'].rate
-        grid_spacing = nwb_obj.acquisition['CalciumImageSeries'].imaging_volume.grid_spacing
-        assert grid_spacing[0] == grid_spacing[1]
-        p.zimmer_fluroscence_um_per_pixel_xy = grid_spacing[0]
-        p.zimmer_um_per_pixel_z = grid_spacing[2]
-        obj.physical_unit_conversion = p
+        if 'CalciumImageSeries' in nwb_obj.acquisition:
+            p.volumes_per_second = nwb_obj.acquisition['CalciumImageSeries'].rate
+            grid_spacing = nwb_obj.acquisition['CalciumImageSeries'].imaging_volume.grid_spacing
+            assert grid_spacing[0] == grid_spacing[1], "Grid should be isotropic in xy"
+            p.zimmer_fluroscence_um_per_pixel_xy = grid_spacing[0]
+            p.zimmer_um_per_pixel_z = grid_spacing[2]
+            obj.physical_unit_conversion = p
+
+        # Save the raw object
         obj._nwb_io = nwb_io
 
         return obj
