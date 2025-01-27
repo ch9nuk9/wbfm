@@ -89,15 +89,26 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
         logging.warning("No output folder specified, will not save final output (this is a dry run)")
 
     # Unpack variables from project_data
-    # TODO: proper date
-    session_start_time = datetime(2022, 11, 27, 21, 41, 10, tzinfo=tz.gettz("Europe/Vienna"))
-    # Convert the datetime to a string that can be used as a subject_id
-    subject_id = session_start_time.strftime("%Y%m%d-%H-%M-%S")
+    # Everything in the zimmer lab is produced with a time stamp saved in the filename of the raw data folder
+    # Like this: 2022-11-27_15-14_ZIM2165_worm1_GC7b_Ch0-BH
+    # So, we will try to parse it:
+    try:
+        raw_dir = project_data.raw_data_dir
+        year_month_day, hour_minute, strain, subject_id, _ = raw_dir.split('_')
+        year, month, day = year_month_day.split('-')
+        hour, minute = hour_minute.split('-')
+        session_start_time = datetime(int(year), int(month), int(day), int(hour), int(minute), 0, tzinfo=tz.gettz("Europe/Vienna"))
+    except:
+        session_start_time = datetime(2022, 11, 27, 21, 41, 10, tzinfo=tz.gettz("Europe/Vienna"))
+        # Convert the datetime to a string that can be used as a default subject_id
+        subject_id = session_start_time.strftime("%Y%m%d-%H-%M-%S")
+        strain = None
 
     # Unpack metadata (no matter what the stage of the project is)
     print("Calculating metadata...")
     raw_data_cfg = project_data.project_config.get_raw_data_config()
-    strain = raw_data_cfg.config.get('strain', 'unknown')
+    if strain is None:
+        strain = raw_data_cfg.config.get('strain', 'unknown')
     physical_units_class = project_data.physical_unit_conversion
 
     flag = check_all_needed_data_for_step(project_data.project_config, 5, raise_error=False,
