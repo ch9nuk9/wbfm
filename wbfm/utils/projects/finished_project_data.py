@@ -724,14 +724,22 @@ class ProjectData:
             nwb_obj = nwb_io
         else:
             nwb_obj = nwb_io.read()
+
         # Do not have a project_config class (will give warnings)
         obj = ProjectData(nwb_path, None, **kwargs)
+
         # Initialize the relevant fields
         obj.preprocessing_settings = PreprocessingSettings()
         if 'CalciumImageSeries' in nwb_obj.acquisition:
             # Transpose data from TXYZC to TZXY (splitting the channel)
             obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
             obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 1].transpose((0, 3, 1, 2))
+        if 'RawCalciumImageSeries' in nwb_obj.acquisition:
+            # Load this, but it's not actually part of the main ProjectData class
+            # Transpose data from TXYZC to TZXY (splitting the channel)
+            obj.preprocessing_settings._raw_red_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
+            obj.preprocessing_settings._raw_green_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data)[..., 1].transpose(
+                (0, 3, 1, 2))
 
         # Note that there should always be 'CalciumActivity' but it may be a stub
         try:

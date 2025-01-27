@@ -18,6 +18,7 @@ from ruamel.yaml import YAML
 from scipy import ndimage as ndi
 from tifffile import tifffile
 from tqdm.auto import tqdm
+from types import SimpleNamespace
 
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.external.custom_errors import MustBeFiniteError, TiffFormatError
@@ -147,6 +148,10 @@ class PreprocessingSettings:
     # Final output (preprocessed data)
     preprocessed_red_fname: str = None
     preprocessed_green_fname: str = None
+
+    # If loading from a non-traditional structure (e.g. NWB file), then the raw data is directly loaded to this class
+    _raw_red_data: da.Array = None
+    _raw_green_data: da.Array = None
 
     verbose: int = 0
 
@@ -464,10 +469,20 @@ class PreprocessingSettings:
         -------
 
         """
-        # First check btf style
-        fname, is_btf = self.cfg_project.get_raw_data_fname(red_not_green)
+        # First check filename style
+        if self.cfg_project is not None:
+            fname, is_btf = self.cfg_project.get_raw_data_fname(red_not_green)
+        else:
+            fname, is_btf = None, False
+
+        # If not found, check if the data is directly loaded to this class
         if fname is None:
-            raise FileNotFoundError("Could not find raw data file")
+            if red_not_green and self._raw_red_data is not None:
+                return SimpleNamespace(dask_array=self._raw_red_data)
+            elif not red_not_green and self._raw_green_data is not None:
+                return SimpleNamespace(dask_array=self._raw_green_data)
+            else:
+                raise FileNotFoundError("Could not find raw data file")
 
         # Open using the new DataReader
         if is_btf:
