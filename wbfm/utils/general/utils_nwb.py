@@ -248,6 +248,14 @@ def nwb_only_raw_data(project_data, session_start_time, subject_id, strain, phys
         nwbfile, raw_video_dict, device, physical_units_class=physical_units_class, raw_videos=True
     )
 
+    # Create a stub processing module, because I'm not sure where else the CalcOptChanRefs should go
+    calcium_imaging_module = nwbfile.create_processing_module(
+        name='CalciumActivity',
+        description='Calcium time series metadata, segmentation, and fluorescence data (STUB)'
+    )
+    calcium_imaging_module.add(CalcOptChanRefs)
+
+    # Save the NWB file
     fname = None
     if output_folder:
         fname = os.path.join(output_folder, subject_id + '.nwb')
