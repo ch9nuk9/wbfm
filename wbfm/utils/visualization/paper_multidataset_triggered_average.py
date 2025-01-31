@@ -897,7 +897,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         return dict(dpi=300, figsize=(10/3, 10/2), gridspec_kw={'wspace': 0.0, 'hspace': 0.0})
 
     def plot_triple_traces(self, neuron_name, title=False, legend=False, round_y_ticks=False,
-                           output_foldername=None, **kwargs):
+                           output_foldername=None, combine_lr=False, **kwargs):
         """
         Plot the three traces (raw, global, residual) on the same plot.
         If output_foldername is not None, save the plot in that folder.
@@ -911,7 +911,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
         -------
 
         """
-        df_traces, df_traces_residual, df_traces_global = self._load_triple_traces()
+        df_traces, df_traces_residual, df_traces_global = self._load_triple_traces(combine_lr=combine_lr)
 
         fig_opt = self.get_figure_opt()
         fig, axes = plt.subplots(**fig_opt, nrows=3, ncols=1)
@@ -962,15 +962,19 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         return fig, axes
 
-    def _load_triple_traces(self):
+    def _load_triple_traces(self, combine_lr=False):
         all_traces_dict = self.project.calc_all_paper_traces()
 
         if self.trace_options.get('channel_mode', 'dr_over_r_50') == 'dr_over_r_20':
-            df_traces = all_traces_dict['paper_traces_r20']
+            df_traces = all_traces_dict['paper_traces_r20'].copy()
         else:
-            df_traces = all_traces_dict['paper_traces']
-        df_traces_residual = all_traces_dict['paper_traces_residual']
-        df_traces_global = all_traces_dict['paper_traces_global']
+            df_traces = all_traces_dict['paper_traces'].copy()
+        df_traces_residual = all_traces_dict['paper_traces_residual'].copy()
+        df_traces_global = all_traces_dict['paper_traces_global'].copy()
+        if combine_lr:
+            df_traces = combine_columns_with_suffix(df_traces)
+            df_traces_residual = combine_columns_with_suffix(df_traces_residual)
+            df_traces_global = combine_columns_with_suffix(df_traces_global)
         return df_traces, df_traces_residual, df_traces_global
 
     def _save_fig(self, neuron_name, output_foldername, trigger_type, plotly_fig=None):
