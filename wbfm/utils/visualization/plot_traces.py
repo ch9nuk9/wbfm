@@ -111,10 +111,6 @@ def make_grid_plot_from_project(project_data: ProjectData,
         opt['filter_mode'] = 'rolling_mean'
         for mode in all_modes:
             make_grid_plot_from_project(channel_mode=mode, **opt)
-        # Do share-y versions, with filtering but not colors
-        opt['share_y_axis'] = True
-        for mode in all_modes:
-            make_grid_plot_from_project(channel_mode=mode, **opt)
         return
 
     # Set up initial variables
@@ -844,7 +840,7 @@ class ClickableGridPlot:
 
 
 def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwargs=None, trace_kwargs=None,
-                               also_plot_zscore=True, neuron_names_to_plot=None):
+                               also_plot_zscore=False, neuron_names_to_plot=None):
     """
     Uses seaborn to make a heatmap, including clustering of the traces
 
@@ -943,14 +939,6 @@ def make_default_summary_plots_using_config(project_cfg):
     except (np.linalg.LinAlgError, ValueError, NoNeuronsError) as e:
         # For test projects, this will fail due to too little data
         logger.warning("Failed to make PC1 grid plot; if this is a test project this may be expected")
-        logger.info(e)
-        pass
-    # Also make a residual plot
-    try:
-        trace_kwargs = dict(residual_mode='pca')
-        make_grid_plot_from_project(proj_dat, **grid_opt, trace_kwargs=trace_kwargs)
-    except (np.linalg.LinAlgError, ValueError, NoNeuronsError) as e:
-        logging.warning("Failed to make residual grid plot; if this is a test project this may be expected")
         logger.info(e)
         pass
 
