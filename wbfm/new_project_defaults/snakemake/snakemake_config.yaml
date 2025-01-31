@@ -72,3 +72,7 @@ hilbert_averaging_window : 83
 # rule fft
 sampling_frequency: 83
 fft_averaging_window: 83
+
+# Path to neural network for dlc tracking
+# Comment out to use the system default (see wbfm_config.yaml)
+head_tail_dlc_project: /lisc/scratch/neurobiology/zimmer/zimmer_DLC/DLC_projects/DLCwbfm_headtailphar-Eva-2024-11-20/config.yaml

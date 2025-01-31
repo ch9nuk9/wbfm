@@ -20,15 +20,14 @@ tracking_paths:
     tracklet_model_name: superglue_neurons_5_datasets_adjacent_07_11_uint16.ckpt
 
 
-# OPTIONAL
-
 # Behavior pipeline networks and PCA model (not needed if only analyzing traces)
 behavior_paths:
     # Unets
     main_unet_model: /lisc/scratch/neurobiology/zimmer/centerline_pipeline/neural_networks/unet_worm.hdf5
     coiled_shape_unet_model: /lisc/scratch/neurobiology/zimmer/centerline_pipeline/neural_networks/unet_worm_coil.hdf5
-    # DLC
+    # DLC network; by default this is overwritten by the snakemake_config.yaml file
     head_tail_dlc_project: /lisc/scratch/neurobiology/zimmer/zimmer_DLC/DLC_projects/DLCwbfm_headtailphar-Eva-2024-11-20/config.yaml
+    # DLC conda environment
     dlc_conda_env_name: /lisc/scratch/neurobiology/zimmer/.conda/envs/deeplabcut_imutils
     dlc_conda_env_name_only_dlc: deeplabcut-2.3.10
     # PCA model (used for curvature analysis)

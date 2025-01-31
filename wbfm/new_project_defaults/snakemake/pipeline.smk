@@ -37,7 +37,10 @@ except (NoBehaviorDataError, RawDataFormatError):
 
 # Additionally update the paths used for the behavior pipeline (note that this needs to be loaded even if behavior is not run)
 hardcoded_paths = load_hardcoded_neural_network_paths()
-config.update(hardcoded_paths["behavior_paths"])
+# Update the config with the hardcoded paths, but keep the original config if any matching keys are found
+_config = hardcoded_paths["behavior_paths"]
+_config.update(config)
+config = _config
 print(f"Loaded snakemake config file with parameters: {config}")
 
 
