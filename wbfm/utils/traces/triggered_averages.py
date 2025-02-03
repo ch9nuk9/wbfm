@@ -104,7 +104,7 @@ def plot_triggered_average_from_matrix_low_level(triggered_avg_matrix, ind_prece
             if show_horizontal_line:
                 ax.axhline(raw_trace_mean, c='black', ls='--')
             if show_vertical_line:
-                ax.axvline(x=x_for_vertical_line, color='r', ls='--')
+                ax.axvline(x=x_for_vertical_line, color='black', ls='--')
         else:
             ax.autoscale()
         if xlim is not None and ax is not None:
