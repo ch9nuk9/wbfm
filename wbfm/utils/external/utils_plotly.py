@@ -102,10 +102,11 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
     if color is not None and len(df[color].unique()) > 1:
         # Assume we want to subset the dataframe by the color list
         fig = None
-        for group in df[color].unique():
+        default_position_list = ['top left', 'bottom right', 'top right', 'bottom left']
+        for i, group in enumerate(df[color].unique()):
             _df = df[df[color] == group]
             # Alternate annotation_position by default
-            annotation_position = 'bottom right' if annotation_position == 'top left' else 'top left'
+            annotation_position = default_position_list[i % len(default_position_list)]
 
             fig = plotly_plot_mean_and_shading(_df, x, y, color=color, line_name=group,
                                                add_individual_lines=False, cmap=cmap, fig=fig,
@@ -140,7 +141,8 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
     # Shade the standard deviation area
     opt = dict()
     if cmap is not None:
-        opt['fillcolor'] = hex2rgba(cmap[line_name])
+        # opt['fillcolor'] = hex2rgba(cmap[line_name])
+        opt['fillcolor'] = cmap[line_name]
     else:
         opt['fillcolor'] = 'rgba(0,100,80,0.2)'
 
