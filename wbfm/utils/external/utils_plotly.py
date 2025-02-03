@@ -141,8 +141,10 @@ def plotly_plot_mean_and_shading(df, x, y, color=None, line_name='Mean', add_ind
     # Shade the standard deviation area
     opt = dict()
     if cmap is not None:
-        # opt['fillcolor'] = hex2rgba(cmap[line_name])
-        opt['fillcolor'] = cmap[line_name]
+        if '#' in cmap[line_name]:
+            opt['fillcolor'] = hex2rgba(cmap[line_name])
+        else:
+            opt['fillcolor'] = add_alpha_to_rgb(cmap[line_name])
     else:
         opt['fillcolor'] = 'rgba(0,100,80,0.2)'
 
@@ -197,8 +199,12 @@ def hex2rgba(hex_color, alpha=0.2, return_tuple=False):
     return fillcolor
 
 
+def add_alpha_to_rgb(rgb_color, alpha=0.2):
+    return hex2rgba(rgba2hex(rgb_color), alpha=alpha)
+
+
 def rgba2hex(rgba_color):
-    rgba_color = rgba_color.replace('rgba', '').replace(' ', '').replace('(', '').replace(')', '')
+    rgba_color = rgba_color.replace('rgba', '').replace('rgb', '').replace(' ', '').replace('(', '').replace(')', '')
     rgba_color = rgba_color.split(',')
     hex_color = '#'
     # Alpha is prepended

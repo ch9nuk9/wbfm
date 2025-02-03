@@ -41,6 +41,8 @@ def plotly_paper_color_discrete_map():
     """
     To be used with the color_discrete_map argument of plotly.express functions
 
+    # TODO: this sometimes returns hex, and sometimes rgba... unfortunately, plotly has the same inconsistency
+
     Parameters
     ----------
 
