@@ -823,7 +823,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 # Removing the last half of the desired window length (so the window can't be clipped)
                 # And only look at positive values (this is the after part)
                 # Note that the .loc[:-idx_half_window] gives a bug, thus the need for .iloc
-                df_subset_after = df_subset.loc[0:].iloc[half_window:, :-half_window]
+                df_subset_after = df_subset.loc[0:].iloc[half_window:-half_window]
+                if df_subset_after.empty:
+                    raise ValueError("No data after the event")
                 idx_max = df_subset_after.rolling(window=5, center=True).mean().mean(axis=1).idxmax()
                 # Get the window around the smoothed max value
                 idx_range = [idx_max - idx_half_window, idx_max + idx_half_window]
@@ -834,6 +836,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                     print(neuron_name)
                     print(f"idx_max of smoothed time series: {idx_max}")
                     print(f"possible indices: {df_subset_after.index}")
+                    print(f"df_subset_after: {df_subset_after}")
                     print(f"idx_half_window: {idx_half_window}")
                     # print(f"Means before: {means_before}; Means after: {means_after}")
             else:
