@@ -14,13 +14,12 @@ dependencies:
   - opencv
   - scikit-image
   - lmfit
-  - pyqt5
-  - pyqt5-tools
   - zarr
   - matplotlib
   - scikit-learn
-  - napari
+  - napari[all]
   - openpyxl
+  - plotly
   - pip:
     - tables
     - statsmodels
