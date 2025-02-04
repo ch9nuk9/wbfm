@@ -972,18 +972,22 @@ class WormFullVideoPosture:
                 beh_funcs_to_add.append(self._turn_annotation)
             if include_head_cast:
                 beh_funcs_to_add.append(self._head_cast_annotation)
-            if include_stimulus:
-                beh_funcs_to_add.append(self._stimulus)
+        if include_stimulus:
+            beh_funcs_to_add.append(self._stimulus)
         num_warnings = 0
         if DEBUG:
             print("Behavior before any additional annotations")
             print(beh)
         correct_index = beh.index
         for beh_func in beh_funcs_to_add:
+            if DEBUG:
+                print("Attempting to add behavior: ", beh_func.__name__)
             try:
                 # This should not be fluorescence fps, unless the downsampling below is not used
                 # i.e. unless the entire behavior annotation is low-res, meaning there is no downsampling
                 this_beh = beh_func(fluorescence_fps=is_already_fluorescence_fps, reset_index=reset_index)
+                if DEBUG:
+                    print("Attempting to add behavior: ", beh)
                 if this_beh is None:
                     continue
                 if not this_beh.index[:len(correct_index)].equals(correct_index):

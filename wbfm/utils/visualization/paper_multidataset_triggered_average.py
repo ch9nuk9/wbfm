@@ -30,6 +30,7 @@ from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_fr
     calc_p_value_using_ttest_triggered_average, FullDatasetTriggeredAverages
 from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation, convert_channel_mode_to_axis_label
+from wbfm.utils.external.custom_errors import NoBehaviorAnnotationsError
 
 
 @dataclass
@@ -249,7 +250,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                                                          trace_opt=trace_opt)
                 self.dataset_clusterer_dict[trigger_type] = out[0]
                 self.intermediates_dict[trigger_type] = out[1]
-            except (IndexError, KeyError):
+            except (IndexError, KeyError, NoBehaviorAnnotationsError):
                 print(f"Trigger type {trigger_type} failed; this may be because the data is immobilized")
 
         # Optional
