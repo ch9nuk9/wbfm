@@ -694,8 +694,13 @@ class WormFullVideoPosture:
         -------
 
         """
-        fluorescence_fps = self.manual_beh_annotation_already_converted_to_fluorescence_fps
-        template_vector = self.template_vector(fluorescence_fps=fluorescence_fps, force_downsampling=fluorescence_fps)
+        try:
+            fluorescence_fps = self.manual_beh_annotation_already_converted_to_fluorescence_fps
+            template_vector = self.template_vector(fluorescence_fps=fluorescence_fps, force_downsampling=fluorescence_fps)
+        except NoBehaviorAnnotationsError:
+            # This means we are an immobilized dataset, and we have no other annotation except the manual annotation
+            # Thus the behavior annotation file should be a full time series, and not need a template
+            template_vector = None
         df, _ = parse_behavior_annotation_file(behavior_fname=self.filename_manual_beh_annotation,
                                                template_vector=template_vector,
                                                convert_to_behavior_codes=True)
@@ -1991,12 +1996,13 @@ class WormFullVideoPosture:
         # Note that these may have additional behaviors annotated that are not in the automatic annotation
         return all_files
 
-    def shade_using_behavior(self, **kwargs):
+    def shade_using_behavior(self, use_manual_annotation=False, **kwargs):
         """Takes care of fps conversion and new vs. old annotation format"""
+        beh_annotation_opts = dict(fluorescence_fps = True, use_manual_annotation=use_manual_annotation)
         try:
             if kwargs.get('plotly_fig', None) is not None:
                 # For now only works with fluorescence fps
-                bh = self.beh_annotation(fluorescence_fps=True, reset_index=True)
+                bh = self.beh_annotation(reset_index=True, **beh_annotation_opts)
                 # Rename plotly_fig to fig
                 kwargs['fig'] = kwargs.pop('plotly_fig')
                 # Remove matplotlib specific kwargs
@@ -2004,7 +2010,7 @@ class WormFullVideoPosture:
                 kwargs.pop('plot_fig', None)
                 shade_using_behavior_plotly(bh, **kwargs)
             else:
-                bh = self.beh_annotation(fluorescence_fps=True)
+                bh = self.beh_annotation(**beh_annotation_opts)
                 shade_using_behavior(bh, **kwargs)
         except (NoBehaviorAnnotationsError, AttributeError):
             pass
