@@ -524,6 +524,28 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              width_factor_addition=0, height_factor_addition=0,
                                              height_factor=None, width_factor=None,
                                              to_show=True, fig_opt=None, DEBUG=False):
+        if isinstance(trigger_type, list):
+            # Plot stacked
+            raise NotImplementedError("Not sure why this isn't working (just hspace)")
+            _opts = locals().copy()
+            fig, axes = plt.subplots(nrows=len(trigger_type), **self.get_fig_opt())
+            _opts.pop('trigger_type')
+            _opts.pop('self')
+            _opts['output_folder'] = None
+            _opts['to_show'] = False
+            for i, (t, ax) in enumerate(zip(trigger_type, list(axes))):
+                _opts['ax'] = ax
+                _opts['fig'] = fig
+                self.plot_triggered_average_single_neuron(trigger_type=t, **_opts)
+            apply_figure_settings(fig=fig, width_factor=width_factor, height_factor=height_factor, plotly_not_matplotlib=False)
+            plt.subplots_adjust(hspace=0)
+            # Save after last iteration
+            self._save_triggered_average(fig, neuron_name, output_folder, show_y_label_only_export, t,
+                                         use_plotly, y_label=None)
+            if to_show:
+                plt.show()
+            return
+
         if fig_kwargs is None:
             fig_kwargs = {}
         if annotation_kwargs is None:
@@ -605,9 +627,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             # Update title and ticks
             if not use_plotly:
                 if z_score:
-                    plt.ylabel("Amplitude (z-scored)")
+                    ax.set_ylabel("Amplitude (z-scored)")
                 else:
-                    plt.ylabel(y_label)
+                    ax.set_ylabel(y_label)
                 if show_title:
                     if title is None:
                         title = self.get_title_from_trigger_type(trigger_type)
@@ -676,24 +698,28 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                     fig_opt['width_factor'] = width_factor
                 apply_figure_settings(fig, plotly_not_matplotlib=use_plotly, **fig_opt)
 
-                title = self.get_title_from_trigger_type(trigger_type)
-                fname = title.replace(" ", "_").replace(",", "").lower()
-                fname = os.path.join(output_folder, f'{neuron_name}-{fname}.png')
-
-                if not use_plotly:
-                    plt.tight_layout()
-                    plt.savefig(fname, transparent=True)
-                    plt.savefig(fname.replace(".png", ".svg"))
-                else:
-                    fname = fname.replace(".png", "-plotly.png")
-                    fig.write_image(fname.replace(".png", ".svg"))
-                    fig.write_image(fname, scale=7)
-
-                    # Special option to change the returned figure only
-                    if show_y_label_only_export:
-                        fig.update_yaxes(title=y_label)
+                self._save_triggered_average(fig, neuron_name, output_folder, show_y_label_only_export, trigger_type,
+                                             use_plotly, y_label)
 
         return fig, ax
+
+    def _save_triggered_average(self, fig, neuron_name, output_folder, show_y_label_only_export, trigger_type,
+                                use_plotly, y_label):
+        title = self.get_title_from_trigger_type(trigger_type)
+        fname = title.replace(" ", "_").replace(",", "").lower()
+        fname = os.path.join(output_folder, f'{neuron_name}-{fname}.png')
+        if not use_plotly:
+            plt.tight_layout()
+            plt.savefig(fname, transparent=True)
+            plt.savefig(fname.replace(".png", ".svg"))
+        else:
+            fname = fname.replace(".png", "-plotly.png")
+            fig.write_image(fname.replace(".png", ".svg"))
+            fig.write_image(fname, scale=7)
+
+            # Special option to change the returned figure only
+            if show_y_label_only_export:
+                fig.update_yaxes(title=y_label)
 
     def _get_shading_from_trigger_name(self, trigger_type):
         if 'rectified_rev' in trigger_type:
