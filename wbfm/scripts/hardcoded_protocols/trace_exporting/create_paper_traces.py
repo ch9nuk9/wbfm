@@ -99,7 +99,7 @@ def main(run_locally=False, keep_old_traces=True, DEBUG=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--run_locally', action='store_true', help='Run the jobs locally')
-    parser.add_argument('--keep_old_traces', action='store_true', help='Delete previously run traces')
+    parser.add_argument('--keep_old_traces', action='store_true', help='Keep previously run traces')
     parser.add_argument('--DEBUG', action='store_true', help='Run the jobs locally')
     args = parser.parse_args()
 
