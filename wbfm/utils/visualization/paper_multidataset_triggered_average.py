@@ -377,6 +377,24 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(title_mapping.keys())}')
         return title_mapping[trigger_type]
 
+    def _get_xlabel_from_trigger_type(self, trigger_type):
+        title_mapping = {'raw_rev': 'Time relative to\nReversal (s)',
+                         'raw_fwd': 'Time relative to\nForward (s)',
+                         'raw_vt': 'Time relative to\nVentral Turn (s)',
+                         'raw_dt': 'Time relative to\nDorsal Turn (s)',
+                         'global_rev': 'Time relative to\nReversal (s)',
+                         'global_fwd': 'Time relative to\nForward (s)',
+                         'residual': 'Time relative to\nventral undulation (s)',
+                         'residual_collision': 'Time relative to\nself-collision (s)',
+                         'residual_rectified_fwd': 'Time relative to\nventral undulation (s)',
+                         'residual_rectified_rev': 'Time relative to\nventral undulation (s)',
+                         'kymo': 'Time (s)',
+                         'stimulus': 'Time (s)',
+                         'self_collision': 'Time relative to\nself-collision (s)',}
+        if trigger_type not in title_mapping:
+            raise ValueError(f'Invalid trigger type: {trigger_type}; must be one of {list(title_mapping.keys())}')
+        return title_mapping[trigger_type]
+
     def get_trace_difference_auc(self, neuron0, neuron1, trigger_type, num_iters=100, z_score=False, norm_type='corr',
                                  shuffle_dataset_pairs=True, return_individual_traces=False):
         """
@@ -526,7 +544,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              to_show=True, fig_opt=None, DEBUG=False):
         if isinstance(trigger_type, list):
             # Plot stacked
-            raise NotImplementedError("Not sure why this isn't working (just hspace)")
+            # raise NotImplementedError("Not sure why this isn't working (just hspace)")
             _opts = locals().copy()
             fig, axes = plt.subplots(nrows=len(trigger_type), **self.get_fig_opt())
             _opts.pop('trigger_type')
@@ -541,7 +559,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
             plt.subplots_adjust(hspace=0)
             # Save after last iteration
             self._save_triggered_average(fig, neuron_name, output_folder, show_y_label_only_export, t,
-                                         use_plotly, y_label=None)
+                                         use_plotly, y_label=None, tight_layout=False)
             if to_show:
                 plt.show()
             return
@@ -651,6 +669,8 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                 if not show_x_label:
                     ax.set_xlabel('')
                     height_factor_addition -= 0.04
+                else:
+                    ax.set_xlabel(self._get_xlabel_from_trigger_type(trigger_type))
                 # These things affect the width
                 if not show_y_ticks:
                     ax.set_yticks([])
@@ -704,12 +724,13 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         return fig, ax
 
     def _save_triggered_average(self, fig, neuron_name, output_folder, show_y_label_only_export, trigger_type,
-                                use_plotly, y_label):
+                                use_plotly, y_label, tight_layout=True):
         title = self.get_title_from_trigger_type(trigger_type)
         fname = title.replace(" ", "_").replace(",", "").lower()
         fname = os.path.join(output_folder, f'{neuron_name}-{fname}.png')
         if not use_plotly:
-            plt.tight_layout()
+            if tight_layout:
+                plt.tight_layout()
             plt.savefig(fname, transparent=True)
             plt.savefig(fname.replace(".png", ".svg"))
         else:
