@@ -520,7 +520,9 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                              legend=False, i_figure=3,
                                              apply_changes_even_if_no_trace=True, show_individual_lines=False,
                                              return_individual_traces=False, use_plotly=False,
-                                             df_idx_range=None, width_factor_addition=0, height_factor_addition=0,
+                                             df_idx_range=None,
+                                             width_factor_addition=0, height_factor_addition=0,
+                                             height_factor=None, width_factor=None,
                                              to_show=True, fig_opt=None, DEBUG=False):
         if fig_kwargs is None:
             fig_kwargs = {}
@@ -667,6 +669,11 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
                                            height_factor=0.1 + height_factor_addition)
                     else:
                         raise NotImplementedError(f"i_figure={i_figure} not implemented")
+                # Overwrite other options
+                if height_factor is not None:
+                    fig_opt['height_factor'] = height_factor
+                if width_factor is not None:
+                    fig_opt['width_factor'] = width_factor
                 apply_figure_settings(fig, plotly_not_matplotlib=use_plotly, **fig_opt)
 
                 title = self.get_title_from_trigger_type(trigger_type)
@@ -955,7 +962,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
 
         if round_y_ticks:
             for ax in axes:
-                round_yticks(ax)
+                round_yticks(ax, **kwargs.get('round_yticks_kwargs', {}))
 
         width_factor = kwargs.get('width_factor', 0.25)
         height_factor = kwargs.get('height_factor', 0.3)
