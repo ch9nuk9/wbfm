@@ -712,7 +712,7 @@ class PaperMultiDatasetTriggeredAverage(PaperColoredTracePlotter):
         df = self.get_df_triggered_from_trigger_type(trigger_type, return_individual_traces=return_individual_traces)
         # Get the full names of all the neurons with this name
         # Names will be like '2022-11-23_worm9_BAGL' and we are checking for 'BAGL'
-        neuron_names = [n for n in list(df.columns) if neuron_name in n]
+        neuron_names = [n for n in list(df.columns) if neuron_name in n and f'{neuron_name}_' not in n]
         if DEBUG:
             print(f"Found {len(neuron_names)} neurons with name {neuron_name}")
             print(f"Neuron names: {neuron_names}")
