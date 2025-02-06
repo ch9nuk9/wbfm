@@ -1,14 +1,17 @@
 from pynwb import NWBFile, NWBHDF5IO
+import argparse
+import os
 
 
 class TestNWB:
-    """Copied from: https://github.com/focolab/NWBelegans/blob/main/check_NWB.py"""
+    """
+    Updates from Andrew Kirjner
+
+    Copied (with minor chnages) from Zimmer wbfm's copy from: https://github.com/focolab/NWBelegans/blob/main/check_NWB.py
+
+    """
 
     def __init__(self, nwbfile):
-        has_neuropal = False
-        has_calcium_imaging = False
-        has_calcium_traces = False
-        has_segmentation = False
         with NWBHDF5IO(nwbfile, mode='r', load_namespaces=True) as io:
             if isinstance(io, NWBFile):
                 print('NWB file loaded successfully')
@@ -16,8 +19,38 @@ class TestNWB:
             else:
                 read_nwbfile = io.read()
 
-            subject = read_nwbfile.subject  # get the metadata about the experiment subject
-            growth_stage = subject.growth_stage
+            print("\n=== File Structure ===")
+            print("\nGeneral Metadata:")
+            print(f"Session ID: {read_nwbfile.session_id}")
+            print(f"Session Description: {read_nwbfile.session_description}")
+            print(f"Identifier: {read_nwbfile.identifier}")
+
+            if read_nwbfile.subject is not None:
+                print("\nSubject Information:")
+                print(f"Subject ID: {read_nwbfile.subject.subject_id}")
+                print(f"Growth Stage: {getattr(read_nwbfile.subject, 'growth_stage', 'Not specified')}")
+
+            print("\nAcquisition Groups:")
+            for name, acq in read_nwbfile.acquisition.items():
+                print(f"- {name}: {type(acq).__name__}")
+                if hasattr(acq, 'data'):
+                    try:
+                        shape = acq.data.shape
+                        print(f"  Shape: {shape}")
+                    except:
+                        print("  Shape: Not available")
+
+            print("\nProcessing Modules:")
+            for module_name, module in read_nwbfile.processing.items():
+                print(f"\n- Module: {module_name}")
+                for data_interface_name, data_interface in module.data_interfaces.items():
+                    print(f"  - {data_interface_name}: {type(data_interface).__name__}")
+
+            # Now run the original tests
+            has_neuropal = False
+            has_calcium_imaging = False
+            has_calcium_traces = False
+            has_segmentation = False
             try:
                 image = read_nwbfile.acquisition['NeuroPALImageRaw'].data[:]  # get the neuroPAL image as a np array
                 channels = read_nwbfile.acquisition['NeuroPALImageRaw'].RGBW_channels[
@@ -47,7 +80,8 @@ class TestNWB:
 
             try:
                 try:
-                    fluor = read_nwbfile.processing['CalciumActivity']['SignalFluorescence']['SignalCalciumImResponseSeries'].data[:]
+                    fluor = read_nwbfile.processing['CalciumActivity']['SignalFluorescence'][
+                                'SignalCalciumImResponseSeries'].data[:]
                 except KeyError:
                     fluor = read_nwbfile.processing['CalciumActivity']['SignalDFoF'][
                                 'SignalCalciumImResponseSeries'].data[:]
@@ -77,3 +111,23 @@ class TestNWB:
               f"Video calcium imaging:  {has_calcium_imaging}\n"
               f"Video calcium traces:   {has_calcium_traces}\n"
               f"Video segmentation:     {has_segmentation}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Test an NWB file and check its contents')
+    parser.add_argument('--nwb_file', '-n', help='Path to the NWB file to test')
+    args = parser.parse_args()
+
+    # Expand user path if it contains ~
+    nwb_path = args.nwb_file
+
+    if not os.path.exists(nwb_path):
+        print(f"Error: File {nwb_path} does not exist")
+        return
+
+    # Create instance and test the file
+    tester = TestNWB(nwb_path)
+
+
+if __name__ == '__main__':
+    main()
