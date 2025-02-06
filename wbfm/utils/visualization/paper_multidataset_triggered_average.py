@@ -1140,6 +1140,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
                 ax.set_xticks([])
                 height_factor = 0.1
             ax.set_xlim(kwargs.get('xlim', self.xlim))
+            ax.set_ylim(kwargs.get('ylim', self.ylim))
             if round_y_ticks:
                 round_yticks(ax)
             self.project.shade_axis_using_behavior(ax, **shading_kwargs)
@@ -1172,7 +1173,11 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
             self.project.shade_axis_using_behavior(plotly_fig=fig, **shading_kwargs)
             fig.update_xaxes(range=self.xlim)
             y = df_traces[neuron_name][self.xlim[0]:self.xlim[1]]
-            fig.update_yaxes(range=[y.min()-np.abs(0.1*y.min()), y.max()+np.abs(0.1*y.max())])
+            ylim = kwargs.get('ylim', self.ylim)
+            if ylim is None:
+                fig.update_yaxes(range=[y.min()-np.abs(0.1*y.min()), y.max()+np.abs(0.1*y.max())])
+            else:
+                fig.update_yaxes(range=ylim)
 
         width_factor = kwargs.get('width_factor', 0.25)
         apply_figure_settings(fig=fig, width_factor=width_factor, height_factor=height_factor,
