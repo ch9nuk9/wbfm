@@ -716,7 +716,7 @@ class ProjectData:
 
         from pynwb import NWBHDF5IO, NWBFile
         from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
-        from wbfm.utils.general.utils_nwb import convert_nwb_to_trace_dataframe
+        from wbfm.utils.nwb.utils_nwb import convert_nwb_to_trace_dataframe
 
         nwb_io = NWBHDF5IO(nwb_path, mode='r', load_namespaces=True)
         if isinstance(nwb_io, NWBFile):
