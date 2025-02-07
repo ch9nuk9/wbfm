@@ -128,7 +128,7 @@ def intrinsic_categories_color_discrete_map(return_hex=True, mix_fraction = 0.0)
     return cmap
 
 def export_legend_for_paper(fname=None, frameon=True, ethogram=False, reversal_shading=False,
-                            include_self_collision=False, triple_plots=False, bayesian_supp=False, o2_supp=False):
+                            include_self_collision=False, triple_plots=False, o2=True, bayesian_supp=False, o2_supp=False):
     if ethogram:
         from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
         cmap = BehaviorCodes.ethogram_cmap(use_plotly_style_strings=False)
@@ -153,11 +153,11 @@ def export_legend_for_paper(fname=None, frameon=True, ethogram=False, reversal_s
         colors.extend(colors2)
     elif o2_supp:
         cmap = plotly_paper_color_discrete_map()
-        labels = ['Freely Moving', 'Immobilized', 'Reversal State', 'gcy-31, gcy-35, gcy-9']
+        labels = ['Freely Moving', 'Immobilized', 'gcy-31, gcy-35, gcy-9']
         colors = [cmap[l] for l in labels]
-    elif not reversal_shading:
+    elif o2:
         cmap = plotly_paper_color_discrete_map()
-        labels = ['Freely Moving', 'Reversal State', 'gcy-31, gcy-35, gcy-9']
+        labels = ['Freely Moving', 'gcy-31, gcy-35, gcy-9']
         colors = [cmap[l] for l in labels]
     else:
         from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
