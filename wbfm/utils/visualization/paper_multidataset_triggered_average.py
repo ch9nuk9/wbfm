@@ -1180,6 +1180,7 @@ class PaperExampleTracePlotter(PaperColoredTracePlotter):
                 fig.update_yaxes(range=ylim)
 
         width_factor = kwargs.get('width_factor', 0.25)
+        height_factor = kwargs.get('height_factor', height_factor)
         apply_figure_settings(fig=fig, width_factor=width_factor, height_factor=height_factor,
                               plotly_not_matplotlib=use_plotly)
 
