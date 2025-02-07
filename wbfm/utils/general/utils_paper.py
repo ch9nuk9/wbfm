@@ -127,7 +127,8 @@ def intrinsic_categories_color_discrete_map(return_hex=True, mix_fraction = 0.0)
         cmap = {k: add_alpha(v) for k, v in cmap.items()}
     return cmap
 
-def export_legend_for_paper(fname=None, frameon=True, ethogram=False, reversal_shading=False, include_self_collision=False):
+def export_legend_for_paper(fname=None, frameon=True, ethogram=False, reversal_shading=False,
+                            include_self_collision=False, triple_plots=False, bayesian_supp=False, o2_supp=False):
     if ethogram:
         from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
         cmap = BehaviorCodes.ethogram_cmap(use_plotly_style_strings=False)
@@ -135,6 +136,25 @@ def export_legend_for_paper(fname=None, frameon=True, ethogram=False, reversal_s
                   BehaviorCodes.PAUSE]
         colors = [cmap[k] for k in labels]
         labels = [behavior_name_mapping()[k.name] for k in labels]
+    elif triple_plots:
+        from wbfm.utils.visualization.paper_multidataset_triggered_average import PaperColoredTracePlotter
+        cmap = PaperColoredTracePlotter.get_color_from_data_type
+        labels = ['Raw', 'Global', 'Residual']
+        colors = [PaperColoredTracePlotter.get_color_from_data_type(l.lower()) for l in labels]
+    elif bayesian_supp:
+        from wbfm.utils.visualization.paper_multidataset_triggered_average import PaperColoredTracePlotter
+        cmap = PaperColoredTracePlotter.get_color_from_data_type
+        labels = ['Global (Freely moving)']
+        colors = [PaperColoredTracePlotter.get_color_from_data_type('global')]
+        cmap2 = plotly_paper_color_discrete_map()
+        labels2 = ['Freely Moving', 'Immobilized']
+        colors2 = [cmap2[l] for l in labels2]
+        labels.extend(labels2)
+        colors.extend(colors2)
+    elif o2_supp:
+        cmap = plotly_paper_color_discrete_map()
+        labels = ['Freely Moving', 'Immobilized', 'Reversal State', 'gcy-31, gcy-35, gcy-9']
+        colors = [cmap[l] for l in labels]
     elif not reversal_shading:
         cmap = plotly_paper_color_discrete_map()
         labels = ['Freely Moving', 'Reversal State', 'gcy-31, gcy-35, gcy-9']
