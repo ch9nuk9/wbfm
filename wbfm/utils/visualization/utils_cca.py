@@ -24,6 +24,7 @@ from methodtools import lru_cache
 import cca_zoo.models as scc_mod
 
 from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 
 
 @dataclass
@@ -750,8 +751,9 @@ def calc_cca_weights_for_all_projects(all_projects, which_mode=0, weights_kwargs
 
 
 def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_using_top_weight=True,
-                                      neuron_names=None, drop_unlabeled_neurons=True,
-                                      min_datasets_present=5, combine_left_right=False,
+                                      neuron_names=None, include_only_confident_ids=False,
+                                      drop_unlabeled_neurons=True,
+                                      min_datasets_present=0, combine_left_right=False,
                                       **kwargs):
     """
     Similar to calc_cca_weights_for_all_projects, but for PCA
@@ -769,6 +771,8 @@ def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_u
     -------
 
     """
+    if include_only_confident_ids and neuron_names is not None:
+        raise NotImplementedError("Cannot use include_only_confident_ids and neuron_names together")
     all_weights = defaultdict(dict)
     trace_opt = kwargs.copy()
 
@@ -782,6 +786,9 @@ def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_u
     if neuron_names is not None:
         # Allow neuron_names to include additional column names
         df_weights = df_weights.loc[:, df_weights.columns.isin(neuron_names)]
+    # Keep a subset of neurons that have confident ids
+    if include_only_confident_ids:
+        df_weights = df_weights.loc[:, df_weights.columns.isin(neurons_with_confident_ids())]
     # Drop all neurons that contain 'neuron' in the name
     if drop_unlabeled_neurons:
         df_weights = df_weights.loc[:, ~df_weights.columns.str.contains('neuron')]
