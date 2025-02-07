@@ -428,7 +428,7 @@ triggered_average_gcamp_plotter_immob_downshift = PaperMultiDatasetTriggeredAver
                                                                                     trigger_opt=dict(fixed_num_points_after_event=40, trigger_on_downshift=True, ind_delay=6))
 
 
-# In[36]:
+# In[ ]:
 
 
 # trigger_types = [#('raw_rev', 'Reversal'),
@@ -455,7 +455,7 @@ triggered_average_gcamp_plotter_immob_downshift = PaperMultiDatasetTriggeredAver
 #                 raise e
 
 
-# In[37]:
+# In[ ]:
 
 
 # # Plot all on one plot
@@ -477,7 +477,7 @@ triggered_average_gcamp_plotter_immob_downshift = PaperMultiDatasetTriggeredAver
 
 # # Immob muscle hiscl
 
-# In[38]:
+# In[ ]:
 
 
 # triggered_average_gcamp_plotter_immob_hiscl = PaperMultiDatasetTriggeredAverage(all_projects_O2_hiscl, calculate_residual=False, calculate_global=False, calculate_turns=False,
@@ -494,7 +494,7 @@ triggered_average_gcamp_plotter_immob_downshift = PaperMultiDatasetTriggeredAver
 
 # # FM_mutant
 
-# In[39]:
+# In[ ]:
 
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
@@ -502,7 +502,7 @@ from wbfm.utils.visualization.paper_multidataset_triggered_average import PaperM
 from wbfm.utils.general.utils_behavior_annotation import approximate_behavioral_annotation_using_pc1
 
 
-# In[40]:
+# In[ ]:
 
 
 # triggered_average_gcamp_plotter_fm_mutant = PaperMultiDatasetTriggeredAverage(all_projects_O2_fm_mutant, calculate_residual=False, calculate_global=False, calculate_turns=False, calculate_self_collision=True,
@@ -511,7 +511,7 @@ from wbfm.utils.general.utils_behavior_annotation import approximate_behavioral_
 #                                                                    )
 
 
-# In[41]:
+# In[ ]:
 
 
 # trigger_types = [('raw_rev', 'Reversal'),
@@ -537,7 +537,7 @@ from wbfm.utils.general.utils_behavior_annotation import approximate_behavioral_
 #                 raise e
 
 
-# In[42]:
+# In[ ]:
 
 
 # # Plot all on one plot
@@ -559,7 +559,7 @@ from wbfm.utils.general.utils_behavior_annotation import approximate_behavioral_
 
 # # immob_mutant
 
-# In[43]:
+# In[ ]:
 
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
@@ -567,7 +567,7 @@ from wbfm.utils.visualization.paper_multidataset_triggered_average import PaperM
 from wbfm.utils.general.utils_behavior_annotation import approximate_behavioral_annotation_using_pc1
 
 
-# In[44]:
+# In[ ]:
 
 
 # triggered_average_gcamp_plotter_immob_mutant = PaperMultiDatasetTriggeredAverage(all_projects_O2_immob_mutant, calculate_residual=False, calculate_global=False, calculate_turns=False,
@@ -576,7 +576,7 @@ from wbfm.utils.general.utils_behavior_annotation import approximate_behavioral_
 #                                                                    )
 
 
-# In[45]:
+# In[ ]:
 
 
 # trigger_types = [('raw_rev', 'Reversal'),
@@ -603,7 +603,7 @@ from wbfm.utils.general.utils_behavior_annotation import approximate_behavioral_
 #                 # raise e
 
 
-# In[46]:
+# In[ ]:
 
 
 # # Plot all on one plot
@@ -624,7 +624,7 @@ from wbfm.utils.general.utils_behavior_annotation import approximate_behavioral_
 
 # ## Same but downshift
 
-# In[47]:
+# In[ ]:
 
 
 triggered_average_gcamp_plotter_immob_mutant_downshift = PaperMultiDatasetTriggeredAverage(all_projects_O2_immob_mutant, calculate_residual=False, calculate_global=False, calculate_turns=False,
@@ -632,7 +632,7 @@ triggered_average_gcamp_plotter_immob_mutant_downshift = PaperMultiDatasetTrigge
                                                                    calculate_stimulus=True, trigger_opt=dict(fixed_num_points_after_event=30, trigger_on_downshift=True, ind_delay=6))
 
 
-# In[48]:
+# In[ ]:
 
 
 # trigger_types = [#('raw_rev', 'Reversal'),
@@ -659,7 +659,7 @@ triggered_average_gcamp_plotter_immob_mutant_downshift = PaperMultiDatasetTrigge
 #                 # raise e
 
 
-# In[49]:
+# In[ ]:
 
 
 # # Plot all on one plot
@@ -681,7 +681,7 @@ triggered_average_gcamp_plotter_immob_mutant_downshift = PaperMultiDatasetTrigge
 
 # # Both WT and mutant on the same plot
 
-# In[50]:
+# In[ ]:
 
 
 # # URX type neuron, i.e. responds to O2 upshift and forward behavior
@@ -716,7 +716,7 @@ triggered_average_gcamp_plotter_immob_mutant_downshift = PaperMultiDatasetTrigge
         
 
 
-# In[51]:
+# In[ ]:
 
 
 # # Type 2: BAG-type, which responds to O2 downshift and reversals
@@ -752,7 +752,7 @@ triggered_average_gcamp_plotter_immob_mutant_downshift = PaperMultiDatasetTrigge
         
 
 
-# In[52]:
+# In[ ]:
 
 
 # # IL neurons, i.e. responds to O2 upshift and forward behavior, BUT only in hiscl
@@ -796,7 +796,7 @@ triggered_average_gcamp_plotter_immob_mutant_downshift = PaperMultiDatasetTrigge
 
 # ## Just export legend
 
-# In[56]:
+# In[ ]:
 
 
 # from wbfm.utils.general.utils_paper import export_legend_for_paper
@@ -847,7 +847,7 @@ triggered_average_gcamp_plotter_immob_mutant_downshift = PaperMultiDatasetTrigge
 
 # # Final version: combine triggered averages, ttests, and example traces together
 
-# In[57]:
+# In[36]:
 
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
@@ -862,7 +862,7 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 # ## Load all classes
 
-# In[58]:
+# In[37]:
 
 
 # Make sure physical indices are set
@@ -871,7 +871,7 @@ for this_dict in list_of_all_dicts:
         p.use_physical_time = True
 
 
-# In[68]:
+# In[38]:
 
 
 opt = dict(calculate_global=False, calculate_turns=False,
@@ -886,13 +886,7 @@ triggered_average_gcamp_plotter_fm_mutant = PaperMultiDatasetTriggeredAverage(al
                                                                               trigger_opt=dict(fixed_num_points_after_event=40), calculate_residual=True, **opt)
 
 
-# In[ ]:
-
-
-
-
-
-# In[ ]:
+# In[70]:
 
 
 
@@ -901,11 +895,11 @@ opt = dict(calculate_residual=False, calculate_global=False, calculate_turns=Fal
 
 # Immob (no O2; only used for final export)
 triggered_average_gcamp_plotter_immob_no_O2 = PaperMultiDatasetTriggeredAverage(all_projects_immob, **opt,
-                                                                         trigger_opt=dict(fixed_num_points_after_event=40, ind_delay=6),
+                                                                         trigger_opt=dict(fixed_num_points_after_event=40, ind_delay=6, use_manual_annotation=True),
                                                                          calculate_stimulus=False)
 
 
-# In[ ]:
+# In[71]:
 
 
 opt = dict(calculate_residual=False, calculate_global=False, calculate_turns=False,
@@ -913,28 +907,34 @@ opt = dict(calculate_residual=False, calculate_global=False, calculate_turns=Fal
 
 # Immob (with O2)
 triggered_average_gcamp_plotter_immob = PaperMultiDatasetTriggeredAverage(all_projects_O2_immob, **opt,
-                                                                         trigger_opt=dict(fixed_num_points_after_event=40, ind_delay=6),
+                                                                         trigger_opt=dict(fixed_num_points_after_event=40, ind_delay=6, use_manual_annotation=True),
                                                                          calculate_stimulus=True)
 
 triggered_average_gcamp_plotter_immob_downshift = PaperMultiDatasetTriggeredAverage(all_projects_O2_immob, **opt,
                                                                                     calculate_stimulus=True,
-                                                                                    trigger_opt=dict(fixed_num_points_after_event=40, trigger_on_downshift=True, ind_delay=6))
+                                                                                    trigger_opt=dict(fixed_num_points_after_event=40, trigger_on_downshift=True, ind_delay=6, use_manual_annotation=True))
 
 
 # In[ ]:
 
 
+# %debug
+
+
+# In[72]:
+
+
 # Immob mutant
 triggered_average_gcamp_plotter_immob_mutant = PaperMultiDatasetTriggeredAverage(all_projects_O2_immob_mutant, **opt, 
                                                                                  calculate_stimulus=True, 
-                                                                                 trigger_opt=dict(fixed_num_points_after_event=40, ind_delay=6))
+                                                                                 trigger_opt=dict(fixed_num_points_after_event=40, ind_delay=6, use_manual_annotation=True))
 
 triggered_average_gcamp_plotter_immob_mutant_downshift = PaperMultiDatasetTriggeredAverage(all_projects_O2_immob_mutant, **opt,
-                                                                   calculate_stimulus=True, trigger_opt=dict(fixed_num_points_after_event=40, trigger_on_downshift=True, ind_delay=6))
+                                                                   calculate_stimulus=True, trigger_opt=dict(fixed_num_points_after_event=40, trigger_on_downshift=True, ind_delay=6, use_manual_annotation=True))
 
 # Immob Hiscl
 triggered_average_gcamp_plotter_immob_hiscl = PaperMultiDatasetTriggeredAverage(all_projects_O2_hiscl, **opt, calculate_stimulus=True, 
-                                                                                trigger_opt=dict(fixed_num_points_after_event=40, ind_delay=6))
+                                                                                trigger_opt=dict(fixed_num_points_after_event=40, ind_delay=6, use_manual_annotation=True))
 
 
 # In[ ]:
@@ -951,7 +951,7 @@ triggered_average_gcamp_plotter_immob_hiscl = PaperMultiDatasetTriggeredAverage(
 
 # ## Actually plot
 
-# In[ ]:
+# In[73]:
 
 
 project_data_gcamp = all_projects_O2_fm['ZIM2165_Gcamp7b_worm1-2022_11_28']
@@ -959,7 +959,7 @@ project_data_gcamp = all_projects_O2_fm['ZIM2165_Gcamp7b_worm1-2022_11_28']
 project_data_gcamp2 = all_projects_O2_fm['2023-11-30_14-31_wt_worm5_FM-2023-11-30']
 
 
-# In[ ]:
+# In[74]:
 
 
 trace_options = dict(channel_mode='dr_over_r_20')
@@ -970,7 +970,7 @@ wbfm_plotter2 = PaperExampleTracePlotter(project_data_gcamp2, xlim=[0, 120], tra
 
 # ### Example traces (left column); shared regardless of ttests
 
-# In[ ]:
+# In[75]:
 
 
 
@@ -992,7 +992,7 @@ for i, neuron in enumerate(neuron_list):
         pass
 
 
-# In[ ]:
+# In[76]:
 
 
 # Second set of neurons
@@ -1011,7 +1011,7 @@ for i, neuron in enumerate(neuron_list):
 
 # ### Helper function
 
-# In[74]:
+# In[122]:
 
 
 from wbfm.utils.general.utils_paper import apply_figure_settings
@@ -1028,7 +1028,7 @@ opt = dict(show_title=True, #output_dir=output_dir,
            use_plotly=True, to_show=False)
 
 
-def _combine_and_save(all_figs_box, all_figs_trig, all_figs_examples, width_factor=0.9, is_supp=False, to_show=True, suffix='', is_immobilized=True, **kwargs):
+def _combine_and_save(all_figs_box, all_figs_trig, all_figs_examples, width_factor=None, is_supp=False, to_show=True, suffix='', is_immobilized=True, **kwargs):
     for key in all_figs_box.keys():
         print(key)
         if all_figs_examples is not None:
@@ -1047,7 +1047,7 @@ def _combine_and_save(all_figs_box, all_figs_trig, all_figs_examples, width_fact
                                          show_legends=[False, False], 
                                          column_widths=[0.3, 0.7], **kwargs)
             # All of these are supp by default
-            apply_figure_settings(fig, width_factor=0.45, height_factor=0.12)
+            apply_figure_settings(fig, width_factor=0.45 if width_factor is None else width_factor, height_factor=0.12)
         if output_dir is not None:
             fname = os.path.join(output_dir, f'{key}-{trigger_type}-supp_{is_supp}-combined_triggered_average_ttests-{suffix}.png')
             fig.write_image(fname, scale=3)
@@ -1059,7 +1059,7 @@ def _combine_and_save(all_figs_box, all_figs_trig, all_figs_examples, width_fact
 
 # ### triggered averages (middle column) and ttests (right column) for all conditions
 
-# In[ ]:
+# In[115]:
 
 
 # Shared variables
@@ -1071,16 +1071,16 @@ trigger_immob_dir = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebook
 trigger_immob_downshift_dir = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing/o2_trigger_immob_downshift'
 
 is_mutant_vec = [True, False]
-neuron_list_fwd = ['AQR', 'URX', 'AUA', 'IL1L', 'IL2L']#, 'RMDV']
+neuron_list_fwd = ['AQR', 'URX', 'AUA', 'IL1', 'IL2']#, 'RMDV']
 neuron_list_upshift = ['AQR', 'URX', 'AUA']#,'RMDV']
-neuron_list_hiscl = ['IL1L', 'IL2L']
+neuron_list_hiscl = ['IL1', 'IL2']
 neuron_list_rev = ['BAG']
 
 
 # ### Calculate all p values and subplots
 # Note: these p values will not be used directly, because they need to be corrected across conditions
 
-# In[ ]:
+# In[116]:
 
 
 ## FWD (most neurons)
@@ -1089,14 +1089,14 @@ trigger_type = 'raw_fwd'
 all_figs_trig_fwd, df_boxplot_fwd, df_p_values_fwd, df_idx_range_fwd = plot_ttests_from_triggered_average_classes(neuron_list_fwd, plotter_classes, is_mutant_vec, 
                                                                                     trigger_type, output_dir=None, to_show=False,
                                                                                     ttest_kwargs=ttest_kwargs)
-all_figs_box_fwd = plot_triggered_averages_from_triggered_average_classes(neuron_list_fwd, plotter_classes, is_mutant_vec, trigger_type, df_idx_range, 
+all_figs_box_fwd = plot_triggered_averages_from_triggered_average_classes(neuron_list_fwd, plotter_classes, is_mutant_vec, trigger_type, df_idx_range_fwd, 
                                                                       return_individual_traces=False, output_dir=None, **opt)
 ## REV (only BAG)
 plotter_classes = [triggered_average_gcamp_plotter_fm_mutant, triggered_average_gcamp_plotter]
 trigger_type = 'raw_rev'
 all_figs_trig_rev, df_boxplot_rev, df_p_values_rev, df_idx_range_rev = plot_ttests_from_triggered_average_classes(neuron_list_rev, plotter_classes, is_mutant_vec, 
                                                                                trigger_type, output_dir=None, to_show=False, ttest_kwargs=ttest_kwargs)
-all_figs_box_rev = plot_triggered_averages_from_triggered_average_classes(neuron_list_rev, plotter_classes, is_mutant_vec, trigger_type, df_idx_range, 
+all_figs_box_rev = plot_triggered_averages_from_triggered_average_classes(neuron_list_rev, plotter_classes, is_mutant_vec, trigger_type, df_idx_range_rev, 
                                                                       output_dir=None, **opt)
 ## IMMOB (upshift is same as fwd without ILs, downshift is same as REV, i.e. just BAG)
 trigger_type = 'stimulus'
@@ -1104,26 +1104,32 @@ plotter_classes = [triggered_average_gcamp_plotter_immob_mutant, triggered_avera
 all_figs_trig_immob_up, df_boxplot_immob_up, df_p_values_immob_up, df_idx_range_immob_up = plot_ttests_from_triggered_average_classes(neuron_list_upshift, plotter_classes, is_mutant_vec, 
                                                                                trigger_type, output_dir=None, to_show=False, ttest_kwargs=ttest_kwargs)
 title = 'Stimulus'
-all_figs_box_immob_up = plot_triggered_averages_from_triggered_average_classes(neuron_list_upshift, plotter_classes, is_mutant_vec, trigger_type, df_idx_range, 
-                                                                      **opt, output_dir=None, is_immobilized=True)
+all_figs_box_immob_up = plot_triggered_averages_from_triggered_average_classes(neuron_list_upshift, plotter_classes, is_mutant_vec, trigger_type, df_idx_range_immob_up, 
+                                                                      **opt, output_dir=None)
 # Downshift
 trigger_type = 'stimulus'
 plotter_classes = [triggered_average_gcamp_plotter_immob_mutant_downshift, triggered_average_gcamp_plotter_immob_downshift]
 all_figs_trig_immob_down, df_boxplot_immob_down, df_p_values_immob_down, df_idx_range_immob_down = plot_ttests_from_triggered_average_classes(neuron_list_rev, plotter_classes, is_mutant_vec, 
                                                                                trigger_type, output_dir=None, to_show=False, ttest_kwargs=ttest_kwargs)
 title = 'Stimulus'
-all_figs_box_immob_down = plot_triggered_averages_from_triggered_average_classes(neuron_list_rev, plotter_classes, is_mutant_vec, trigger_type, df_idx_range, 
-                                                                      **opt, output_dir=None, is_immobilized=True)
+all_figs_box_immob_down = plot_triggered_averages_from_triggered_average_classes(neuron_list_rev, plotter_classes, is_mutant_vec, trigger_type, df_idx_range_immob_down, 
+                                                                      **opt, output_dir=None)
 ## Special: hiscl of ILs only
 trigger_type = 'stimulus'
 plotter_classes = [triggered_average_gcamp_plotter_immob_hiscl]
 all_figs_trig_hiscl, df_boxplot_hiscl, df_p_values_hiscl, df_idx_range_hiscl = plot_ttests_from_triggered_average_classes(neuron_list_hiscl, plotter_classes, [False], 
                                                                                trigger_type, output_dir=None, to_show=False, ttest_kwargs=ttest_kwargs)
-all_figs_box_hiscl = plot_triggered_averages_from_triggered_average_classes(neuron_list_hiscl, plotter_classes, [False], trigger_type, df_idx_range, 
-                                                                      **opt, output_dir=None, is_immobilized=True)
+all_figs_box_hiscl = plot_triggered_averages_from_triggered_average_classes(neuron_list_hiscl, plotter_classes, [False], trigger_type, df_idx_range_hiscl, 
+                                                                      **opt, output_dir=None)
 
 
-# In[ ]:
+# In[117]:
+
+
+# %debug
+
+
+# In[118]:
 
 
 # NOT USED
@@ -1160,7 +1166,7 @@ all_figs_box_hiscl = plot_triggered_averages_from_triggered_average_classes(neur
 
 # ### Properly correct the p values, replot the subplots, then plot everything
 
-# In[ ]:
+# In[119]:
 
 
 from statsmodels.stats.multitest import multipletests
@@ -1171,7 +1177,7 @@ df_p_values_fm = df_p_values_all[~df_p_values_all.is_immobilized]
 df_p_values_immob = df_p_values_all[df_p_values_all.is_immobilized]
 
 
-# In[ ]:
+# In[120]:
 
 
 # Replot panels; mostly copied from above code, but now using these p values
@@ -1218,7 +1224,7 @@ all_figs_box_hiscl = plot_triggered_averages_from_triggered_average_classes(neur
                                                                       **opt, output_dir=trigger_immob_dir, annotation_kwargs=dict(is_immobilized=True))
 
 
-# In[ ]:
+# In[123]:
 
 
 # Combine and actually plot,
@@ -1237,7 +1243,7 @@ _combine_and_save(all_figs_box_immob_down, all_figs_trig_immob_down, all_figs_ex
 
 # ## Export for alternative modeling
 
-# In[ ]:
+# In[100]:
 
 
 # Add gfp class, just for exporting
@@ -1249,7 +1255,7 @@ triggered_average_gcamp_plotter_GFP = PaperMultiDatasetTriggeredAverage(all_proj
                                                                         trigger_opt=dict(fixed_num_points_after_event=40), calculate_residual=True)
 
 
-# In[ ]:
+# In[136]:
 
 
 from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
@@ -1286,13 +1292,13 @@ for name, trigger_class in tqdm(all_classes.items()):
         df_combined.to_hdf(fname, key='df_with_missing')
 
 
-# In[ ]:
+# In[102]:
 
 
 # df_combined['AVA'].head()
 
 
-# In[ ]:
+# In[103]:
 
 
 # df = triggered_average_gcamp_plotter.get_df_triggered_from_trigger_type_all_traces_as_df('raw_rev', melt_neuron='AVAL')
@@ -1305,14 +1311,14 @@ for name, trigger_class in tqdm(all_classes.items()):
 
 # # Also export an excel with number of IDs and events
 
-# In[ ]:
+# In[137]:
 
 
 from wbfm.utils.general.hardcoded_paths import get_triggered_average_dataframe_fname, get_all_trigger_suffixes, get_triggered_average_modeling_dir
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 
 
-# In[ ]:
+# In[138]:
 
 
 all_trigger_suffixes = get_all_trigger_suffixes()
@@ -1331,13 +1337,13 @@ for suffix in tqdm(all_trigger_suffixes):
         pass
 
 
-# In[ ]:
+# In[139]:
 
 
 # all_dfs.keys()
 
 
-# In[ ]:
+# In[145]:
 
 
 from wbfm.utils.general.hardcoded_paths import excel_event_full_description
@@ -1398,13 +1404,13 @@ df['Description'] = pd.Series(df.index).astype(str).map(excel_event_full_descrip
 df = df[df.Description != 'DROP']
 
 
-# In[ ]:
+# In[146]:
 
 
-# df['Description']
+# df['DB01']
 
 
-# In[ ]:
+# In[147]:
 
 
 
@@ -1414,7 +1420,7 @@ df.to_excel(fname)
 
 # # Alternative: collision-triggered averages (only showing BAG)
 
-# In[84]:
+# In[110]:
 
 
 ttest_kwargs=dict(dynamic_window_center=True, dynamic_window_length=6)
@@ -1434,991 +1440,72 @@ all_figs_box_col = plot_triggered_averages_from_triggered_average_classes(neuron
                                                                       output_dir=None, annotation_kwargs=dict(is_residual=True), **opt)
 
 
-# In[85]:
+# In[114]:
 
 
-_combine_and_save(all_figs_box_col, all_figs_trig_col, all_figs_examples=None, to_show=True, suffix='collision')
+_combine_and_save(all_figs_box_col, all_figs_trig_col, all_figs_examples=None, to_show=True, suffix='collision', width_factor=0.5)
 
 
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# # Debug
-
-# ## Before and after boxplots
-
-# In[ ]:
-
-
-from wbfm.utils.external.utils_pandas import reindex_with_new_diff
-
-
-# In[ ]:
-
-
-means_before, means_after, idx_range = triggered_average_gcamp_plotter.get_boxplot_before_and_after('BAG', 'raw_fwd', 
-                                                                                                    dynamic_window_center=True, dynamic_window_length=6, DEBUG=True)
-idx_range
-
-
-# In[ ]:
-
-
-get_ipython().run_line_magic('debug', '')
-
-
-# ## Triggered average of one neuron
-
-# In[ ]:
-
-
-neuron_list = ['BAG']
-
-ttest_kwargs=dict(dynamic_window_center=True, dynamic_window_length=6)
-opt = dict(show_title=True, #output_dir=output_dir, 
-           min_lines=1, xlim=[-5, 12], show_individual_lines=False,
-           round_y_ticks=False, show_y_ticks=True, i_figure=4,  
-           use_plotly=True, to_show=True)
-
-##
-## FWD
-##
-is_mutant_vec = [True, False]
-plotter_classes = [triggered_average_gcamp_plotter_fm_mutant, triggered_average_gcamp_plotter]
-trigger_type = 'raw_fwd'
-all_figs_trig, df_boxplot, df_p_values, df_idx_range = plot_ttests_from_triggered_average_classes(neuron_list, plotter_classes, is_mutant_vec, 
-                                                                                    trigger_type, output_dir=None, to_show=True,
-                                                                                    ttest_kwargs=ttest_kwargs, DEBUG=True)
-all_figs_box = plot_triggered_averages_from_triggered_average_classes(neuron_list, plotter_classes, is_mutant_vec, trigger_type, df_idx_range, 
-                                                                      return_individual_traces=False, output_dir=None, **opt, DEBUG=True)
-
-
-# In[ ]:
-
-
-# all_figs_box['BAG']
-
-
-# In[ ]:
-
-
-df_idx_range
-
-
-# In[ ]:
-
-
-# p = all_projects_O2_immob['2024-09-30_11-31_ZIM2165_immob_o2_worm1-2024-09-30']
-# df_traces = p.calc_paper_traces()
-# # Update the index, and see if it updates the cache
-# good_diff = df_traces_good.index[1] - df_traces_good.index[0]
-# idx = reindex_with_new_diff(df_traces.index, good_diff)
-# df_traces.index = idx
-# df_traces = p.calc_paper_traces()
-
-# px.line(df_traces['AQR'])
-
-
-# In[ ]:
-
-
-# # Update indices so I don't have to rerun everything
-# for p in all_projects_O2_immob.values():
-#     df_traces = p.calc_paper_traces(channel_mode='dr_over_r_20')
-#     idx = reindex_with_new_diff(df_traces.index, good_diff)
-#     df_traces.index = idx
-
-
-# ### Single neuron traces: do the triggered averages make sense?
-
-# In[ ]:
-
-
-all_aqr = {}
-for name, p in all_projects_O2_immob.items():
-    df_traces = p.calc_paper_traces(channel_mode='dr_over_r_20')
-    all_aqr[name] = df_traces['AQR']
-px.line(pd.DataFrame(all_aqr))
-
-
-# In[ ]:
-
-
-px.line(pd.DataFrame(all_aqr)['2024-09-30_12-01_ZIM2165_immob_o2_worm2-2024-09-30'])
-
-
-# In[ ]:
-
-
-# list(pd.DataFrame(all_aqr)['2024-09-30_12-01_ZIM2165_immob_o2_worm2-2024-09-30'].values)
-
-
-# In[ ]:
-
-
-p = all_projects_O2_immob['2023-09-07_16-11_CaMP7b_O2_worm1-2023-09-07']
-df_traces_good = p.calc_paper_traces()
-px.line(df_traces_good['AQR'])
-
-
-# In[ ]:
-
-
-df_traces.index
-
-
-# In[ ]:
-
-
-df_traces_good.index
-
-
-# In[ ]:
-
-
-y = triggered_average_gcamp_plotter_immob.get_traces_single_neuron('AQR', 'stimulus')
-px.line(y)
-
-
-# ## Calculate p value using other methods
-
-# In[ ]:
-
-
-# summary_function = lambda x, **kwargs: np.nanquantile(x, 0.99, **kwargs)
-# summary_function = np.nanmax
-summary_function = None
-neuron_list = ['AQR', 'URX', 'AUA', 'BAG', 'ANTIcor', 'RMDV', 'IL1L', 'IL2L']
-
-# output_dir = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing/o2_trigger_wt_and_mutant_with_ttests'
-opt = dict(show_title=True, output_dir=None, min_lines=1, xlim=[-5, 12], show_individual_lines=False,
-           round_y_ticks=False, show_x_label=True, show_y_ticks=True, show_y_label=False, i_figure=4,  
-           use_plotly=True, to_show=False)
-##
-## IMMOB
-##
-trigger_type = 'stimulus'
-plotter_classes = [triggered_average_gcamp_plotter_immob_mutant, triggered_average_gcamp_plotter_immob]
-is_mutant_vec = [True, False]
-output_dir = None
-all_figs_box, df_boxplot, df_p_values, df_idx_range = plot_ttests_from_triggered_average_classes(neuron_list, plotter_classes, is_mutant_vec, 
-                                                                               trigger_type, output_dir=output_dir, to_show=False,
-                                                                                   ttest_kwargs=dict(dynamic_window_center=True, dynamic_window_length=5, DEBUG=False))
-title = 'Stimulus'
-all_figs_trig = plot_triggered_averages_from_triggered_average_classes(neuron_list, plotter_classes, is_mutant_vec, trigger_type, df_idx_range, 
-                                                                       **opt, is_immobilized=True)
-
-# Combine and actually plot
-_combine_and_save(all_figs_trig, all_figs_box, all_figs_examples=None, suffix='-upshift')
-
-
-# In[ ]:
-
-
-get_ipython().run_line_magic('debug', '')
-
-
-# In[ ]:
-
-
-fig = all_figs_trig['AQR']
-y0 = 0.75
-color = 'black'
-fig.add_shape(type="rect", x0=0, y0=y0, x1=2, y1=y0,
-              line=dict(color=color, width=1), yref='paper')
-fig.show()
-
-
-# In[ ]:
-
-
-
-fig.show()
-
-
-# In[ ]:
-
-
-fig = all_figs_box['AQR']
-fig.show()
-
-
-# In[ ]:
-
-
-# idx = np.logical_and(df_boxplot['neuron'] == 'AQR', ~df_boxplot['is_mutant'])
-
-# px.box(df_boxplot[idx], y='mean', color='before', points='all')
-
-
-# In[ ]:
-
-
-df_boxplot[idx]
-
-
-# In[ ]:
-
-
-df_boxplot[idx]
-
-
-# ## Calculate p value using zeta stats, not median
-
-# In[ ]:
-
-
-from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages
-
-
-# In[ ]:
-
-
-# p = all_projects_O2_immob['2023-09-07_16-11_CaMP7b_O2_worm1-2023-09-07']
-p = all_projects_O2_fm['2023-11-21_15-05_wt_worm5-2023-11-21']
-p.use_physical_time = True
-
-triggered_avg_class = FullDatasetTriggeredAverages.load_from_project(p, trace_opt=dict(use_paper_options=True), 
-                                                                     trigger_opt=dict(state=BehaviorCodes.REV, min_duration=10))
-                                                                     # trigger_opt=dict(state=BehaviorCodes.STIMULUS, trigger_on_downshift=True, ind_delay=0))
-
-
-# In[ ]:
-
-
-triggered_avg_class.significance_calculation_method = 'zeta'
-
-
-# In[ ]:
-
-
-neuron_names = ['AQR', 'URX', 'AUA', 'BAG', 'ANTIcor', 'RMDV', 'IL1L', 'IL2L']
-
-names_to_keep, all_p_values, all_effect_sizes = triggered_avg_class.which_neurons_are_significant(neuron_names=neuron_names, combine_left_right=True)
-
-
-# In[ ]:
-
-
-get_ipython().run_line_magic('debug', '')
-
-
-# In[ ]:
-
-
-all_p_values
-
-
-# In[ ]:
-
-
-# pd.concat(all_effect_sizes)
-
-
-# In[ ]:
-
-
-# px.box(pd.concat(all_effect_sizes), color='baseline', x='name', y='zeta_value')
-
-
-# In[ ]:
-
-
-
-
-
-# ### Zeta, but for all datasets
-
-# In[ ]:
-
-
-neuron_names = ['AQR', 'URX', 'AUA', 'BAG', 'ANTIcor', 'RMDV', 'IL1L', 'IL2L']
-
-names_to_keep, all_p_values, all_effect_sizes = triggered_average_gcamp_plotter.calc_significance_using_mode(
-    neuron_names=neuron_names, trigger_type='raw_fwd', combine_left_right=True, significance_calculation_method='zeta',
-    num_baseline_lines=200
-)
-
-
-# In[ ]:
-
-
-# df_p_values = pd.DataFrame.unstack(pd.DataFrame(all_p_values)).reset_index()
-# df_p_values.columns = ['dataset_name', 'neuron_name', 'p_value']
-# px.box(df_p_values, x='neuron_name', y='p_value')
-
-
-# In[ ]:
-
-
-pd.DataFrame(all_p_values)
-
-
-# In[ ]:
-
-
-df_effect_sizes = pd.concat(all_effect_sizes).reset_index(level=0).reset_index(drop=True)
-px.box(df_effect_sizes, facet_row='neuron_name', y='zeta_value', color='baseline', x='level_0', height=4000)
-
-
-# ## All traces version of triggered averages
-
-# In[ ]:
-
-
-# URX type neuron, i.e. responds to O2 upshift and forward behavior
-neuron_list = ['AQR', 'BAGL', 'BAGR']
-is_mutant_vec = [False, True]
-
-# trigger_type = 'stimulus'
-# plotter_classes = [triggered_average_gcamp_plotter_immob, 
-#                   # triggered_average_gcamp_plotter_immob_mutant
-#                   ]
-
-trigger_type = 'raw_rev'
-plotter_classes = [triggered_average_gcamp_plotter, 
-                   # triggered_average_gcamp_plotter_fm_mutant
-                  ]
-
-for neuron in neuron_list:
-    fig, ax = None, None
-    print(neuron)
-    for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
-        fig, ax = obj.plot_triggered_average_single_neuron(neuron, trigger_type, 
-                                                         # title=f"O2 Upshift", show_title=True, #ylim=[-0.05, 0.5],
-                                                         output_folder=None,
-                                                         min_lines=1, xlim=[-5, 12], ax=ax, fig=fig, use_plotly=True, 
-                                                           round_y_ticks=True, show_y_ticks=True, show_y_label=False, 
-                                                         i_figure=4, is_mutant=is_mutant, show_x_ticks=('URX' in neuron),
-                                                          show_individual_lines=False, return_individual_traces=False, DEBUG=False)
-    fig.show()
-    break
-
-
-trigger_type = 'raw_fwd'
-plotter_classes = [triggered_average_gcamp_plotter, triggered_average_gcamp_plotter_fm_mutant]
-for neuron in neuron_list:
-    fig, ax = None, None
-    for obj, is_mutant in zip(plotter_classes, is_mutant_vec):
-        fig, ax = obj.plot_triggered_average_single_neuron(neuron, trigger_type, 
-                                                         title=f"Forward Triggered", show_title=True, #ylim=[-0.05, 0.5],
-                                                         output_folder=None,
-                                                         min_lines=1, xlim=[-5, 12], ax=ax, fig=fig, round_y_ticks=True, show_y_label=False,
-                                                         i_figure=4, is_mutant=is_mutant, show_x_ticks=('URX' in neuron), DEBUG=False, use_plotly=True)
-        fig.show()
-        break
-    break
-    
-
-
-# ### Immob with a subset of events
-
-# In[ ]:
-
-
-obj = triggered_average_gcamp_plotter_immob.intermediates_dict['stimulus'][0]['2023-09-19_15-00_worm5-2023-09-19']
-# obj.ind_class.idx_onsets
-
-dict_of_events_to_keep = {506: True,  693: True,  881: True, 1068: True}
-
-
-# In[ ]:
-
-
-# This will break the non-stimulus triggered averages, but that's fine
-triggered_average_gcamp_plotter_immob2 = PaperMultiDatasetTriggeredAverage(all_projects_O2_immob, **opt,
-                                                                         trigger_opt=dict(fixed_num_points_after_event=40, ind_delay=6, 
-                                                                                         dict_of_events_to_keep=dict_of_events_to_keep),
-                                                                         calculate_stimulus=True)
-
-triggered_average_gcamp_plotter_immob_mutant2 = PaperMultiDatasetTriggeredAverage(all_projects_O2_immob_mutant, **opt, 
-                                                                                 calculate_stimulus=True, 
-                                                                                 trigger_opt=dict(fixed_num_points_after_event=40, ind_delay=6,
-                                                                                                 dict_of_events_to_keep=dict_of_events_to_keep))
-
-
-# In[ ]:
-
-
-# Triggered averages (original)
-neuron_list = ['AQR', 'BAG']
-trigger_type = 'stimulus'
-plotter_classes = [triggered_average_gcamp_plotter_immob, triggered_average_gcamp_plotter_immob_mutant]
-all_figs_trig, df_boxplot, df_p_values = plot_ttests_from_triggered_average_classes(neuron_list, plotter_classes, is_mutant_vec, 
-                                                                               trigger_type, output_dir=None, to_show=True, DEBUG=False)
-
-
-# In[ ]:
-
-
-# Triggered averages (only first 4 events)
-neuron_list = ['AQR', 'BAG']
-trigger_type = 'stimulus'
-plotter_classes = [triggered_average_gcamp_plotter_immob2, triggered_average_gcamp_plotter_immob_mutant2]
-all_figs_trig, df_boxplot, df_p_values = plot_ttests_from_triggered_average_classes(neuron_list, plotter_classes, is_mutant_vec, 
-                                                                               trigger_type, output_dir=None, to_show=True, DEBUG=False)
-
-
-# In[ ]:
-
-
-# fig = all_figs_trig['AQR']
-
-# add_p_value_annotation(fig, x_label='all', show_ns=True, show_only_stars=True, separate_boxplot_fig=False,
-#                        precalculated_p_values=df_p_values['p_value_corrected'].to_dict(),
-#                        height_mode='top_of_data', has_multicategory_index=True, DEBUG=False)
-
-
-# In[ ]:
-
-
-from wbfm.utils.visualization.paper_multidataset_triggered_average import _calc_p_value
-_calc_p_value(df_boxplot, groupby_columns=['neuron', 'is_mutant_str'])
-
-
-# In[ ]:
-
-
-df_boxplot[(df_boxplot['neuron'] == 'AQR') & (~df_boxplot['is_mutant'])]
-
-
-# In[ ]:
-
-
-import scipy
-
-df = df_boxplot
-
-func = lambda x: scipy.stats.ttest_rel(x[x['before']]['mean'], x[~x['before']]['mean'])[1]
-df_groupby = df.dropna().groupby(['neuron', 'is_mutant_str'])
-df_pvalue = df_groupby.apply(func).to_frame()
-df_pvalue.columns = ['p_value']
-df_pvalue.reset_index(level=1)
-
-
-# In[ ]:
-
-
-from statsmodels.stats.multitest import multipletests
-df_p_values['p_value_corrected'] = multipletests(df_p_values['p_value'].values.squeeze(),
-                                                     method='fdr_bh', alpha=0.05)[1]
-df_p_values
-
-
-# In[ ]:
-
-
-before, after = triggered_average_gcamp_plotter_immob.get_boxplot_before_and_after('AQR', 'stimulus', same_size_window=False)
-scipy.stats.ttest_rel(before, after)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# ## All traces from a single dataframe
-
-# In[ ]:
-
-
-df = triggered_average_gcamp_plotter.get_df_triggered_from_trigger_type_all_traces_as_df(trigger_type, melt_neuron='BAGL')
-
-
-# In[ ]:
+# ## Legends for everything
 
+# In[125]:
 
-df_tmp = triggered_average_gcamp_plotter.intermediates_dict[trigger_type][2]['ZIM2165_Gcamp7b_worm1-2022_11_28_BAGL']
-px.line(df_tmp.T)
 
+from wbfm.utils.general.utils_paper import export_legend_for_paper
 
-# In[ ]:
-
-
-px.line(df[df['trial_idx'].astype(int) < 3], x='index', color='dataset_name', y='value', facet_row='trial_idx', height=1000)
-
-
-# ### Why are the amplitudes different from the raw traces??
-
-# In[ ]:
-
-
-from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
-
-
-# In[ ]:
-
-
-trigger_avg_class = triggered_average_gcamp_plotter.intermediates_dict[trigger_type][0]['ZIM2165_Gcamp7b_worm1-2022_11_28']
-trigger_avg_class.ind_class.mean_subtract, trigger_avg_class.ind_class.z_score, trigger_avg_class.ind_class.normalize_amplitude_at_onset
-
-
-# In[ ]:
-
-
-# p = all_projects_O2_fm['ZIM2165_Gcamp7b_worm1-2022_11_28']
-p = project_data_gcamp
-df_traces_original = p.calc_default_traces(use_paper_options=True)
-
-
-# In[ ]:
-
-
-fig = px.line(trigger_avg_class.df_traces, y=['BAGL', 'BAGR'])
-fig.show()
-
-df_combine = combine_columns_with_suffix(trigger_avg_class.df_traces, DEBUG=True)
-
-fig = px.line(df_combine, y='BAG')
-fig.show()
-
-# fig = px.line(df_traces_original, y='BAGL')
-# fig.show()
-
-# all_figs_examples['BAG'].show()
-
-# fig, ax = wbfm_plotter.plot_single_trace('BAGL', use_plotly=True)
-# fig.show()
-# fig, ax = wbfm_plotter.plot_single_trace('BAGR', use_plotly=True)
-# fig.show()
-
-# fig = px.line(wbfm_plotter.get_df_from_data_type('raw'), y='BAG')
-# fig.show()
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# ## Debugging: triggered average on single dataset
-
-# In[ ]:
-
-
-# p = all_projects_O2_immob['2023-09-19_11-42_worm1-2023-09-19']
-
-
-# In[ ]:
-
-
-from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages
-
-
-# In[ ]:
-
-
-# p = all_projects_O2_immob['2023-09-07_16-11_CaMP7b_O2_worm1-2023-09-07']
-p = all_projects_O2_fm['2023-11-21_15-05_wt_worm5-2023-11-21']
-p.use_physical_time = True
-
-triggered_avg_class = FullDatasetTriggeredAverages.load_from_project(p, trace_opt=dict(use_paper_options=True), 
-                                                                     trigger_opt=dict(state=BehaviorCodes.REV, min_duration=10))
-                                                                     # trigger_opt=dict(state=BehaviorCodes.STIMULUS, trigger_on_downshift=True, ind_delay=0))
-
-
-# In[ ]:
-
-
-df = triggered_avg_class.triggered_average_matrix_from_name('BAGR')
-
-
-# In[ ]:
-
-
-px.line(df.T)
-
-
-# In[ ]:
-
-
-triggered_avg_matrix = triggered_avg_class.triggered_average_matrix_from_name('BAGR')
-triggered_avg, triggered_lower_std, triggered_upper_std, triggered_avg_counts = triggered_avg_class.ind_class.calc_triggered_average_stats(triggered_avg_matrix)
-
-
-# In[ ]:
-
-
-triggered_avg
-
-
-# In[ ]:
-
-
-triggered_avg = np.nanmedian(triggered_avg_matrix, axis=0)
-# Use quantiles that would be same as std if the distribution were normal
-# https://tidsskriftet.no/en/2020/06/medisin-og-tall/mean-and-standard-deviation-or-median-and-quartiles
-# triggered_upper_std = np.nanquantile(triggered_avg_matrix, 0.84, axis=0)
-# triggered_lower_std = np.nanquantile(triggered_avg_matrix, 0.16, axis=0)
-std = np.nanstd(triggered_avg_matrix, axis=0)
-triggered_upper_std = triggered_avg_matrix.mean(axis=0) + std
-triggered_lower_std = triggered_avg_matrix.mean(axis=0) - std
-
-
-# In[ ]:
-
-
-std
-
-
-# In[ ]:
-
-
-triggered_avg_matrix.mean(axis=0)
-
-
-# In[ ]:
-
 
-triggered_upper_std
+# In[127]:
 
 
-# In[ ]:
-
-
-# triggered_avg_class.plot_events_over_trace('AVAL')
-# p.shade_axis_using_behavior()
-
-
-# In[ ]:
-
-
-px.histogram(triggered_avg_class.ind_class.all_state_durations(), nbins=10)
-
-
-# In[ ]:
-
-
-triggered_avg_class.plot_events_over_trace('URXR')
-
-
-# In[ ]:
-
-
-triggered_avg_delay_class = FullDatasetTriggeredAverages.load_from_project(p, trace_opt=dict(use_paper_options=False, rename_neurons_using_manual_ids=True, high_pass_bleach_correct=False, manual_id_confidence_threshold=0), 
-                                                                     trigger_opt=dict(state=BehaviorCodes.STIMULUS, trigger_on_downshift=True, ind_delay=6))
-
-
-# In[ ]:
-
-
-triggered_avg_delay_class.plot_events_over_trace('AQR')
-
-
-# In[ ]:
-
-
-ax = triggered_avg_delay_class.plot_single_neuron_triggered_average('BAG')
-triggered_avg_class.plot_single_neuron_triggered_average('BAG', ax=ax)
-
-
-# In[ ]:
-
-
-# triggered_avg_delay_class.plot_single_neuron_triggered_average('BAG', DEBUG=True)
-triggered_avg_delay_class.triggered_average_matrix_from_name('BAGL', DEBUG=True)
-
-
-# In[ ]:
-
-
-triggered_avg_class.triggered_average_matrix_from_name('BAGL', DEBUG=True)
-
-
-# In[ ]:
-
-
-# triggered_avg_class.ind_class.to_nan_points_of_state_before_point, triggered_avg_delay_class.ind_class.to_nan_points_of_state_before_point
-
-
-# In[ ]:
-
-
-triggered_avg_delay_class.ind_class._get_invalid_states_for_prior_index_removal()
-
-
-# In[ ]:
-
-
-triggered_avg_class.ind_class._get_invalid_states_for_prior_index_removal()
-
-
-# In[ ]:
-
-
-triggered_avg_class.plot_single_neuron_triggered_average('BAG', DEBUG=True)
-
-
-# In[ ]:
-
-
-
+output_foldername = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing'
+fname = os.path.join(output_foldername, 'o2_supp_legend.png')
+export_legend_for_paper(fname, o2_supp=True)
 
 
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-triggered_avg_delay_class
-
-
-# In[ ]:
-
-
-triggered_avg_class
-
-
-# In[ ]:
-
-
-df_stim = triggered_avg_delay_class.ind_class.cleaned_binary_state.reset_index(drop=True).astype(int)
-df_stim.index = triggered_avg_class.df_traces.index
-df = pd.concat([df_stim, triggered_avg_class.df_traces], axis=1)
-
-fig = px.line(df, y=['RMDVR', 'URXR', 'BAGL', 'AQR', 'PQR', 'ANTIcorL', 0])
-fig.show()
-
-# fname = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing/o2_trigger_immob'
-
-
-# In[ ]:
-
-
-triggered_avg_class.ind_class.idx_onsets, triggered_avg_delay_class.ind_class.idx_onsets
-
-
-# In[ ]:
-
-
-y = triggered_avg_class.df_traces['URXR']
-list(y.index)[500]
-
+# In[128]:
 
-# In[ ]:
-
-
-all_projects_O2_immob['2023-09-07_16-11_CaMP7b_O2_worm1-2023-09-07']
-
-
-# In[ ]:
-
-
-p.physical_unit_conversion
-
-
-# # Better filtering settings
-
-# In[ ]:
-
-
-triggered_average_gcamp_plotter2 = PaperMultiDatasetTriggeredAverage(all_projects_O2_fm, calculate_residual=False, calculate_global=False, calculate_turns=False, calculate_self_collision=False,
-                                                                   trace_opt=dict(use_paper_options=True), 
-                                                                    trigger_opt=dict(min_duration=4, gap_size_to_remove=4, max_num_points_after_event=40, fixed_num_points_after_event=None)
-                                                                   )
-
-
-# In[ ]:
-
 
-dataset_triggered_class = triggered_average_gcamp_plotter2.intermediates_dict['raw_rev'][0]['2023-11-21_15-05_wt_worm5-2023-11-21']
+output_foldername = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing'
+fname = os.path.join(output_foldername, 'triple_plots_legend.png')
+export_legend_for_paper(fname, triple_plots=True)
 
 
-# In[ ]:
+# In[129]:
 
 
-# dataset_triggered_class.ind_class.gap_size_to_remove = 4
+output_foldername = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing'
+fname = os.path.join(output_foldername, 'o2_legend.png')
+export_legend_for_paper(fname, o2=True)
 
 
 # In[ ]:
-
 
-p = all_projects_O2_fm['2023-11-21_15-05_wt_worm5-2023-11-21']
-trig = dataset_triggered_class.ind_class.cleaned_binary_state.values.astype(int)
-rev = p.worm_posture_class.calc_behavior_from_alias('REV').values + 0.1
-
-px.line({'rev': rev, 'trig': trig})
-
-
-# In[ ]:
 
 
-dataset_triggered_class.ind_class.fixed_num_points_after_event
 
 
 # In[ ]:
 
 
-# dataset_triggered_class.ind_class.triggered_average_indices(DEBUG=True)
 
 
-# In[ ]:
-
-
-fig = triggered_average_gcamp_plotter2.plot_events_over_trace('AVAL', 'raw_rev', dataset_name='2023-11-21_15-05_wt_worm5-2023-11-21')
-
 
 # In[ ]:
 
 
-# from ipywidgets import interact
-# df = triggered_average_gcamp_plotter2.get_df_triggered_from_trigger_type_all_traces_as_df('raw_fwd', melt_neuron='AUAL')
 
-# def f(dataset_name):
-#     fig = px.line(df[df['dataset_name']==dataset_name], x='index', y='value', color='trial_idx')
-#     fig.show()
-    
-# # interact(f, dataset_name=df['dataset_name'].unique())
 
 
-# ## Look at time vs. trial vs. individual variability
-
 # In[ ]:
 
 
-# All trials, all datasets, all time points
-df = triggered_average_gcamp_plotter2.get_df_triggered_from_trigger_type_all_traces_as_df('raw_fwd', melt_neuron='AUAL')
 
-df.head()
 
 
 # In[ ]:
-
 
-# Median across trials
-df_grouped = df.groupby(['dataset_name', 'index', 'before']).median().reset_index()
-# print(df_grouped.head())
-px.box(df_grouped, x='dataset_name', y='value', color='before', points='all', height=1000,
-       category_orders={'before': [True, False]})
-
-
-# In[ ]:
 
 
-# Median across time
-df_grouped2 = df_grouped.groupby(['dataset_name', 'before']).median().reset_index()
-print(df_grouped2.head())
-fig = px.box(df_grouped2, x='before', y='value', color='before', points='all',
-             category_orders={'before': [True, False]})
-# add_p_value_annotation(fig, x_label='all', DEBUG=True, separate_boxplot_fig=True)
-fig.show()
 
 
 # In[ ]:

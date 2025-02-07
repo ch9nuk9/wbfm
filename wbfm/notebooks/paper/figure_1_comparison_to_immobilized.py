@@ -186,17 +186,25 @@ project_data_gcamp.calc_paper_traces().shape
 
 
 # fig = make_summary_interactive_heatmap_with_pca(project_data_immob, to_save=True, to_show=True, output_folder="example_summary_plots_immob")
+##del project_data_gcamp.worm_posture_class
 
 
 # In[20]:
 
 
 # USED: different figures for each
-fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp, trace_opt=dict(use_paper_options=True, interpolate_nan=True), to_save=True, to_show=True, 
+fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp, trace_opt=dict(use_paper_options=True, interpolate_nan=True), 
+                                               to_save=True, to_show=True, 
                                                base_height=[0.25, 0.2], base_width=0.6, output_folder="intro/example_summary_plots_wbfm")
 
 
 # In[21]:
+
+
+# %debug
+
+
+# In[22]:
 
 
 # # Comparison: interpolated values
@@ -204,7 +212,7 @@ fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp, trace_opt=dic
 #                                                output_folder="intro/example_summary_plots_wbfm")
 
 
-# In[22]:
+# In[23]:
 
 
 # fig1, fig2 = make_summary_heatmap_and_subplots(project_data_immob, trace_opt=dict(use_paper_options=True), include_speed_subplot=False,
@@ -213,20 +221,20 @@ fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp, trace_opt=dic
 
 # ## Heatmaps (actually figure 2): comparing fm to immob
 
-# In[23]:
+# In[24]:
 
 
 from wbfm.utils.visualization.plot_traces import make_summary_interactive_heatmap_with_pca, make_summary_heatmap_and_subplots
 
 
-# In[24]:
+# In[25]:
 
 
 project_data_gcamp2.use_physical_x_axis = True
 project_data_immob2.use_physical_x_axis = True
 
 
-# In[25]:
+# In[26]:
 
 
 # from wbfm.utils.general.utils_behavior_annotation import approximate_behavioral_annotation_using_pc1
@@ -234,52 +242,53 @@ project_data_immob2.use_physical_x_axis = True
 # approximate_behavioral_annotation_using_pc1(project_data_fm2immob_fm)  # This is an old dataset and the behavior was deleted
 
 
-# In[26]:
-
-
-project_data_immob2.calc_paper_traces().shape
-
-
 # In[27]:
 
 
-fig1, fig2 = make_summary_heatmap_and_subplots(project_data_immob2, trace_opt=dict(use_paper_options=True, interpolate_nan=True, verbose=True), include_speed_subplot=False,
-                                               to_save=True, to_show=True, output_folder="intro/fm_to_immob/immob")
+##del project_data_immob2.worm_posture_class
 
 
 # In[28]:
 
 
+fig1, fig2 = make_summary_heatmap_and_subplots(project_data_immob2, trace_opt=dict(use_paper_options=True, interpolate_nan=True, verbose=True), include_speed_subplot=False,
+                                               to_save=True, to_show=True, base_width=0.55, output_folder="intro/fm_to_immob/immob",
+                                              ethogram_on_top=True)
+
+
+# In[ ]:
+
+
 project_data_gcamp2.calc_paper_traces().shape
 
 
-# In[29]:
+# In[ ]:
 
 
 fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp2, trace_opt=dict(use_paper_options=True, interpolate_nan=True, verbose=True), include_speed_subplot=False,
-                                               to_save=True, to_show=True, output_folder="intro/fm_to_immob/fm")
+                                               to_save=True, to_show=True, base_width=0.55, ethogram_on_top=True, output_folder="intro/fm_to_immob/fm")
 
 
-# In[30]:
+# In[ ]:
 
 
 # trace_opt=dict(use_paper_options=True, interpolate_nan=False, verbose=True)
 # df = project_data_fm2immob_fm.calc_default_traces(**trace_opt)
 
 
-# In[31]:
+# In[ ]:
 
 
 # project_data_immob2.calc_paper_traces()
 
 
-# In[32]:
+# In[ ]:
 
 
 # project_data_immob2.tail_neuron_names()
 
 
-# In[33]:
+# In[ ]:
 
 
 # # Test: include tail neurons
@@ -291,7 +300,7 @@ fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp2, trace_opt=di
 
 # ### Just plot the legend for reversal shading
 
-# In[34]:
+# In[29]:
 
 
 from wbfm.utils.general.utils_paper import export_legend_for_paper
@@ -300,7 +309,7 @@ fname = 'intro/reversal_legend.png'
 export_legend_for_paper(reversal_shading=True, fname=fname)
 
 
-# In[35]:
+# In[30]:
 
 
 
@@ -308,9 +317,18 @@ fname = 'intro/reversal_and_collision_legend.png'
 export_legend_for_paper(reversal_shading=True, fname=fname, include_self_collision=True)
 
 
+# In[31]:
+
+
+from wbfm.utils.general.utils_paper import export_legend_for_paper
+
+fname = 'intro/ethogram_legend.png'
+export_legend_for_paper(ethogram=True, fname=fname)
+
+
 # ## Triggered average examples
 
-# In[39]:
+# In[32]:
 
 
 # from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
@@ -325,7 +343,7 @@ from wbfm.utils.visualization.utils_plot_traces import plot_triggered_averages
 
 
 
-# In[41]:
+# In[33]:
 
 
 # plot_triggered_averages([project_data_gcamp, project_data_immob], output_foldername="intro/basic_triggered_average")
@@ -333,7 +351,7 @@ from wbfm.utils.visualization.utils_plot_traces import plot_triggered_averages
 
 # ## PCA variance explained plot of all datasets
 
-# In[42]:
+# In[34]:
 
 
 from wbfm.utils.visualization.multiproject_wrappers import get_all_variance_explained
@@ -341,13 +359,13 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
 
 
-# In[43]:
+# In[35]:
 
 
 gcamp_var, gfp_var, immob_var, gcamp_var_sum, gfp_var_sum, immob_var_sum = get_all_variance_explained(all_projects_gcamp, all_projects_gfp, all_projects_immob)
 
 
-# In[44]:
+# In[36]:
 
 
 fig, ax = plt.subplots(dpi=200, figsize=(5,5))
@@ -393,7 +411,7 @@ fig.savefig(fname.replace(".png", ".svg"), transparent=True)
 
 # # PCA weights across wbfm and immob
 
-# In[45]:
+# In[37]:
 
 
 from wbfm.utils.visualization.utils_cca import calc_pca_weights_for_all_projects
@@ -402,28 +420,34 @@ from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 
 
-# In[46]:
-
-
-neuron_names = neurons_with_confident_ids()
-
-
-# In[47]:
+# In[68]:
 
 
 
 wbfm_weights = calc_pca_weights_for_all_projects(all_projects_gcamp, use_paper_options=True, combine_left_right=True,
-                                                neuron_names=neuron_names)
+                                                 include_only_confident_ids=True)
 
 
-# In[48]:
+# In[69]:
 
 
 immob_weights = calc_pca_weights_for_all_projects(all_projects_immob, use_paper_options=True, combine_left_right=True,
-                                                 neuron_names=neuron_names)
+                                                  include_only_confident_ids=True)
 
 
-# In[49]:
+# In[130]:
+
+
+len(neurons_with_confident_ids())
+
+
+# In[132]:
+
+
+len(neurons_with_confident_ids(combine_left_right=True))
+
+
+# In[41]:
 
 
 # # Create a list of colors to highlight BAG
@@ -447,7 +471,7 @@ immob_weights = calc_pca_weights_for_all_projects(all_projects_immob, use_paper_
 # fig.write_image(fname)
 
 
-# In[50]:
+# In[42]:
 
 
 # # Create a list of colors to highlight BAG
@@ -471,15 +495,17 @@ immob_weights = calc_pca_weights_for_all_projects(all_projects_immob, use_paper_
 
 # ## FM and immob on same plot
 
-# In[51]:
+# In[70]:
 
 
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
 from wbfm.utils.general.utils_paper import data_type_name_mapping, plotly_paper_color_discrete_map
 import plotly.graph_objects as go
+from wbfm.utils.general.utils_paper import intrinsic_categories_color_discrete_map
+from wbfm.utils.external.utils_plotly import colored_text
 
 
-# In[52]:
+# In[128]:
 
 
 names_to_keep = set(wbfm_weights.columns).intersection(immob_weights.columns)
@@ -488,40 +514,44 @@ immob_melt = immob_weights.melt(var_name='neuron_name', value_name='PC1 weight')
 df_both = pd.concat([wbfm_melt, immob_melt], axis=0)
 df_both = df_both[df_both['neuron_name'].isin(names_to_keep)]
 df_both['Dataset Type'] = df_both['dataset_type'].map(data_type_name_mapping())
-df_both['neuron_name'].unique()
 
+# Color xticks by later pie chart colors
+# Load from disk from previous run
+# NOTE: IF UPDATING NEURONS: this will remove neurons, which then will not get into the pie chart later
+df_categories = pd.read_excel('intro/intrinsic_categories.xlsx')
+df_categories['Result_simple_color'] = df_categories['Result_simple'].map(intrinsic_categories_color_discrete_map(return_hex=False))
+df_both = pd.merge(df_both, df_categories, on='neuron_name', validate='many_to_one')
+df_both['neuron_name_html'] = df_both.apply(lambda x: colored_text(x['neuron_name'], x['Result_simple_color'], bold=True), axis=1)
 
-# In[53]:
-
-
-
-fig = px.box(df_both, y='PC1 weight', x='neuron_name', color='Dataset Type', 
+# Plot
+fig = px.box(df_both, y='PC1 weight', x='neuron_name_html', 
+             color='Dataset Type', 
             color_discrete_map=plotly_paper_color_discrete_map(),
             category_orders={'Dataset Type': ['Immobilized (GCaMP)', 'Freely Moving (GCaMP)']})
 
 add_p_value_annotation(fig, x_label='all', show_ns=False, show_only_stars=True, permutations=1000,
                       height_mode='top_of_data')#, _format=dict(text_height=0.075))
-apply_figure_settings(fig, width_factor=0.8, height_factor=0.3, plotly_not_matplotlib=True)
+apply_figure_settings(fig, width_factor=0.83, height_factor=0.3, plotly_not_matplotlib=True)
 
 fig.update_layout(legend=dict(
     yanchor="top",
-    y=0.8,
+    y=0.85,
     xanchor="left",
     x=0.6
 ))
 # Add a fake trace to get a legend entry for GFP
-dummy_data = go.Box(
-    x=[None],
-    y=[None],
-    # mode="markers",
-    name="Freely Moving (GFP)",
-    #fillcolor='gray', 
-    line=dict(color='gray')
-    # marker=dict(size=7, color="gray"),
-)
-fig.add_trace(dummy_data)
+# dummy_data = go.Box(
+#     x=[None],
+#     y=[None],
+#     # mode="markers",
+#     name="Freely Moving (GFP)",
+#     #fillcolor='gray', 
+#     line=dict(color='gray')
+#     # marker=dict(size=7, color="gray"),
+# )
+# fig.add_trace(dummy_data)
 
-fig.update_yaxes(dict(title="PC1 weight"), zeroline=True, zerolinewidth=1, zerolinecolor="black")
+fig.update_yaxes(dict(title="PC1 weight"), zeroline=True, zerolinewidth=1, zerolinecolor="black", range=[-0.2, 0.55])
 fig.update_xaxes(dict(title="Neuron Name"))
 fig.show()
 
@@ -529,6 +559,30 @@ fname = os.path.join("intro", 'fm_and_immob_pca_weights.png')
 fig.write_image(fname, scale=3)
 fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
+
+
+# In[115]:
+
+
+# df_both[df_both['neuron_name']=='DD01']
+
+
+# In[104]:
+
+
+'DD01' in names_to_keep
+
+
+# In[105]:
+
+
+# df_categories
+
+
+# In[116]:
+
+
+# immob_melt[immob_melt['neuron_name']=='DD01']
 
 
 # ## Pie chart summarizing above
@@ -566,13 +620,13 @@ fig.write_image(fname)
 # 3. 
 # 
 
-# In[54]:
+# In[107]:
 
 
 from wbfm.utils.general.hardcoded_paths import intrinsic_definition
 
 
-# In[55]:
+# In[108]:
 
 
 from scipy import stats
@@ -604,13 +658,13 @@ df_significant_diff['significance_corrected_diff'] = output[0]
 df_significant_diff.head()
 
 
-# In[56]:
+# In[109]:
 
 
 # %debug
 
 
-# In[57]:
+# In[110]:
 
 
 
@@ -626,7 +680,7 @@ df_significant_diff.head()
 # fig.show()
 
 
-# In[58]:
+# In[111]:
 
 
 # Process p value comparisons to 0
@@ -653,43 +707,21 @@ df_4states.columns = ['Result']
 df_4states.head()
 
 
-# In[59]:
+# In[129]:
 
+
+from wbfm.utils.general.utils_paper import intrinsic_categories_color_discrete_map
 
 df_4states_counts = df_4states['Result'].value_counts().reset_index()
-
-
 df_4states_counts['Result_simple'] = df_4states_counts['Result'].map(intrinsic_definition)
 df_4states['Result_simple'] = df_4states['Result'].map(intrinsic_definition)
-
-d2 = px.colors.qualitative.Dark2
-s2 = px.colors.qualitative.Set2
-# cmap = {'Rev in both': d2[1],
-#        'Rev in FM only': s2[1],
-#        'Fwd in both': d2[0],
-#        'Fwd in FM only': s2[0],
-#        'No manifold': s2[-1],
-#        # 'Rev in immob only': s2[-1],
-#        # 'Fwd in immob only': s2[-1]
-#        }
-
-d3 = px.colors.qualitative.D3
-cmap = {'Intrinsic': d3[4],
-       'No manifold': d3[-3],
-       'Freely moving only': d3[0],
-       'Immobilized only': d3[2],
-       'Rev in FM only': d3[0],
-       'Fwd in both': d3[4],
-       'Freely moving only': d3[0],
-       'Rev in immob only': d3[2],
-       'Fwd in immob only': d3[2]
-       }
 
 # Drop uninteresting rows
 # df_4states_counts = df_4states_counts.drop(df_4states_counts[df_4states_counts['Result'].str.contains('No')].index)
 # df_4states_counts = df_4states_counts.drop(df_4states_counts[df_4states_counts['Result'].str.contains('immob only')].index)
 
-fig = px.pie(df_4states_counts, names='Result_simple', values='count', color='Result_simple', color_discrete_map=cmap)
+fig = px.pie(df_4states_counts, names='Result_simple', values='count', color='Result_simple', 
+             color_discrete_map=intrinsic_categories_color_discrete_map())
 apply_figure_settings(fig, width_factor=0.2, height_factor=0.2)
 fig.update_layout(legend=dict(
     yanchor="top",
@@ -711,7 +743,7 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-# In[60]:
+# In[113]:
 
 
 df_4states['Result_simple'].value_counts()
@@ -719,7 +751,7 @@ df_4states['Result_simple'].value_counts()
 
 # ### Add english language column and export
 
-# In[61]:
+# In[114]:
 
 
 from wbfm.utils.general.hardcoded_paths import intrinsic_categories_short_description
@@ -733,13 +765,15 @@ df_4states.sort_values(by='Result_description').drop(columns='Result').to_excel(
 # 
 # i.e. the cumulative histogram, with error bar per dataset
 
-# In[62]:
+# In[80]:
 
 
 from wbfm.utils.visualization.multiproject_wrappers import build_dataframe_of_variance_explained
+from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map
+from wbfm.utils.general.utils_paper import apply_figure_settings
 
 
-# In[63]:
+# In[81]:
 
 
 trace_opt = dict(use_paper_options=True, interpolate_nan=True)
@@ -766,13 +800,13 @@ df_var_exp = pd.concat(all_dfs, axis=0)
 df_var_exp.head()
 
 
-# In[64]:
+# In[82]:
 
 
 df_var_exp[(df_var_exp['dataset_name'] == '2022-11-23_worm10') & (df_var_exp['neuron_name'] == 'ALA')]
 
 
-# In[65]:
+# In[83]:
 
 
 # px.histogram(df_var_exp, color='dataset_name', x='fraction_variance_explained', cumulative=True, 
@@ -780,7 +814,7 @@ df_var_exp[(df_var_exp['dataset_name'] == '2022-11-23_worm10') & (df_var_exp['ne
 #              barmode='overlay', histnorm='percent')
 
 
-# In[66]:
+# In[84]:
 
 
 df_var_exp_hist = df_var_exp.copy()
@@ -811,7 +845,7 @@ long_vars.reset_index(drop=True, inplace=True)
 long_vars.head()
 
 
-# In[67]:
+# In[85]:
 
 
 # px.line(long_vars, x='fraction_count', 
@@ -819,7 +853,7 @@ long_vars.head()
 #        facet_row='Type of data')
 
 
-# In[68]:
+# In[86]:
 
 
 from wbfm.utils.external.utils_plotly import plotly_plot_mean_and_shading
@@ -865,19 +899,19 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[69]:
+# In[87]:
 
 
 # %debug
 
 
-# In[70]:
+# In[88]:
 
 
 long_vars['Type of data'].unique()
 
 
-# In[71]:
+# In[89]:
 
 
 from wbfm.utils.external.utils_plotly import plotly_plot_mean_and_shading
@@ -935,22 +969,10 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-# In[ ]:
+# In[90]:
 
 
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
+# %debug
 
 
 # In[ ]:
@@ -979,72 +1001,12 @@ fig.write_image(fname)
 
 # # Scratch
 
-# # Other
+# ## Where is DD01?
 
-# ## Plateau in PC1 and speed during reversals
-
-# In[ ]:
+# In[91]:
 
 
-
-
-from wbfm.utils.external.utils_pandas import calc_eventwise_cooccurrence_matrix
-
-
-# In[ ]:
-
-
-# p = project_data_gcamp
-
-df_all_occurances = []
-for name, p in tqdm(all_projects_gcamp.items()):
-    speed_plateau_state, _ = p.worm_posture_class.calc_piecewise_linear_plateau_state(replace_nan=True)
-    pc1_plateau_state, _ = p.calc_plateau_state_using_pc1(replace_nan=True)
-
-    rev_state = p.worm_posture_class.calc_behavior_from_alias('rev').astype(int)
-    df = pd.DataFrame({'speed': speed_plateau_state, 'pc1': pc1_plateaus, 'rev': rev_state})
-    df = df.fillna(False)
-
-    df_occur = calc_eventwise_cooccurrence_matrix(df, 'speed', 'pc1', 'rev')
-    df_occur['dataset'] = name
-    df_all_occurances.append(df_occur)
-df_all_cooccurances = pd.concat(df_all_occurances)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-
-disp = ConfusionMatrixDisplay.from_predictions(df_all_cooccurances['speed'], df_all_cooccurances['pc1'],
-                                              display_labels=['no plateau', 'plateau'], normalize='all')
-plt.xlabel('Speed')
-plt.ylabel('PC1')
-plt.show()
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
+'DD01' in wbfm_weights, 'DD01' in immob_weights
 
 
 # In[ ]:
