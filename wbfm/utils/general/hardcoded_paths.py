@@ -423,7 +423,8 @@ def neurons_with_confident_ids(combine_left_right=False):
                     'VB01', 'VB02', 'VB03', 'DB01', 'DB02', 'VA01', 'VA02', 'DA01', 'DD01',
                     'RIBL', 'RIBR', 'RMEL', 'RMER', 'RMED', 'RMEV', 'RID', 'AVBL', 'AVBR']
     if combine_left_right:
-        neuron_names = [n[:-1] if (n[-1] in ['L', 'R'] and len(n) > 3) else n for n in neuron_names ]
+        neuron_names = [n[:-1] if (n[-1] in ['L', 'R'] and len(n) > 3) else n for n in neuron_names]
+        neuron_names = list(set(neuron_names))
     return neuron_names
 
 
