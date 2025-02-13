@@ -222,17 +222,17 @@ rule extract_full_traces:
 
 
 # TODO: FINISH
-rule make_grid_plots_with_behavior:
-    input:
-        cfg=project_cfg_fname,
-        masks=os.path.join(project_dir, "4-traces/reindexed_masks.zarr.zip")
-    output:
-        os.path.join(project_dir, "4-traces/all_matches.pickle"),
-        os.path.join(project_dir, "4-traces/red_traces.h5"),
-        os.path.join(project_dir, "4-traces/green_traces.h5"),
-    threads: 56
-    run:
-        _run_helper("make_default_summary_plots_using_config", str(input.cfg))
+# rule make_grid_plots_with_behavior:
+#     input:
+#         cfg=project_cfg_fname,
+#         masks=os.path.join(project_dir, "4-traces/reindexed_masks.zarr.zip")
+#     output:
+#         os.path.join(project_dir, "4-traces/all_matches.pickle"),
+#         os.path.join(project_dir, "4-traces/red_traces.h5"),
+#         os.path.join(project_dir, "4-traces/green_traces.h5"),
+#     threads: 56
+#     run:
+#         _run_helper("make_default_summary_plots_using_config", str(input.cfg))
 
 
 #
