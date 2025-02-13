@@ -208,23 +208,17 @@ all_cca_classes, df_r_squared_melt, r_squared_per_row = calc_r_squared_for_all_p
 # In[21]:
 
 
-get_ipython().run_line_magic('debug', '')
-
-
-# In[22]:
-
-
 df_r_squared_melt.head()
 
 
-# In[23]:
+# In[22]:
 
 
 # df_r_squared_melt = df_r_squared.melt(var_name='Model Type', value_name='Variance explained')
 # df_r_squared_melt
 
 
-# In[24]:
+# In[23]:
 
 
 from wbfm.utils.external.utils_plotly import plotly_plot_mean_and_shading
@@ -234,7 +228,7 @@ fig = px.box(df_r_squared_melt, x='n_components', color='Method', y='Variance Ex
              color_discrete_map=plotly_paper_color_discrete_map())#, title="Reconstruction quality for single modes")
 
 apply_figure_settings(fig, width_factor=0.4, height_factor=0.2)
-fig.update_yaxes(title='Variance Explained<br>(cumulative)', 
+fig.update_yaxes(title='Neuronal Variance<br>Explained (cumulative)', 
                  range=[0, 1.1])#, showgrid=True, overwrite=True)
 fig.update_xaxes(title='Number of components')
 fig.update_layout(showlegend=True)
@@ -249,7 +243,7 @@ if to_save:
 fig.show()
 
 
-# In[25]:
+# In[24]:
 
 
 # fig = paired_boxplot_from_dataframes(df_r_squared.T, num_rows=3, add_median_line=False)
@@ -264,9 +258,145 @@ fig.show()
 # plt.savefig(fname)
 
 
-# ## Also calculate variance explained of behavior time series
+# ## Variance explained per neuron (cumulative plot)
+
+# In[25]:
+
+
+from wbfm.utils.visualization.utils_cca import calc_r_squared_for_all_projects
+from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map
+from wbfm.utils.general.utils_paper import apply_figure_settings
+
 
 # In[26]:
+
+
+# _, df_r_squared, r_squared_per_row = calc_r_squared_for_all_projects(all_projects_gcamp, r_squared_kwargs=dict(n_components=[1, 2, 3]), 
+#                                                                 preprocess_traces_using_pca=True, truncate_traces_to_n_components=5, trace_kwargs=dict(use_paper_options=True),
+#                                                                melt=True)
+
+
+# In[27]:
+
+
+_df = r_squared_per_row.rename(columns={'Behavior Variable': 'Neuron Name'})[r_squared_per_row['Components'] == 2]
+_df
+
+
+# In[28]:
+
+
+df_var_exp = _df.copy()
+df_var_exp_hist = _df.copy()
+
+# Get counts of neurons in each bin
+bins = np.linspace(0, 1, 51)
+func = lambda Z: np.cumsum(np.histogram(Z, bins=bins)[0])
+df_var_exp_hist = df_var_exp_hist.groupby(['Dataset Name', 'Method'])['Cumulative Variance explained'].apply(func)
+
+# Explode to long form
+long_vars = (df_var_exp_hist / df_var_exp_hist.apply(max)).reset_index().explode('Cumulative Variance explained').reset_index(drop=True)
+
+# Just remake the bins
+fraction_count = df_var_exp_hist.apply(lambda x: bins[1:]).reset_index().explode('Cumulative Variance explained').reset_index(drop=True).rename(columns={'Cumulative Variance explained': 'bins'})
+long_vars['bins'] = fraction_count['bins']
+
+long_vars
+
+
+# In[29]:
+
+
+from wbfm.utils.external.utils_plotly import plotly_plot_mean_and_shading
+
+opt = dict(x='bins', y='Cumulative Variance explained', color='Method', 
+           cmap=plotly_paper_color_discrete_map()
+          )
+
+fig = None
+g = ['CCA', 'CCA Discrete']
+df_subset = long_vars[(long_vars['Method'].isin(g))]
+fig = plotly_plot_mean_and_shading(df_subset, fig=fig, **opt,
+                                   x_intersection_annotation=0.5)
+
+fig.update_xaxes(title='Var. explained (fraction)', range=[0, 1.05])
+fig.update_yaxes(title='Fraction of neurons <br> (cumulative)', range=[0, 1.05])
+fig.update_layout(
+        showlegend=False,
+        legend=dict(
+            title='Mode',
+          yanchor="middle",
+          y=0.25,
+          xanchor="left",
+          x=0.6
+        )
+    )# fig.update_traces(line=dict(color=plotly_paper_color_discrete_map()['PCA']))
+# fig.update_traces(name='1 + 2', selector=dict(name='2'))
+
+apply_figure_settings(fig, width_factor=0.3, height_factor=0.2)
+
+fig.show()
+
+to_save = True
+if to_save:
+    output_foldername = 'intro/dimensionality'
+    fname = os.path.join(output_foldername, 'variance_explained_by_cca_cumulative.png')
+    fig.write_image(fname, scale=3)
+    fname = Path(fname).with_suffix('.svg')
+    fig.write_image(fname)
+
+
+# In[30]:
+
+
+plotly_paper_color_discrete_map()['PCA']
+
+
+# In[31]:
+
+
+long_vars.groupby(['Dataset Name', 'Method']).apply(np.cumsum)
+
+
+# In[32]:
+
+
+df_var_exp_hist
+
+
+# In[33]:
+
+
+df_var_exp_hist.reset_index().explode('Cumulative Variance explained').groupby(['Dataset Name', 'Method']).cumcount()
+
+
+# In[34]:
+
+
+df_var_exp_hist.reset_index().explode('Cumulative Variance explained')
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# ## Also calculate variance explained of behavior time series
+
+# In[35]:
 
 
 all_cca_classes_beh, df_r_squared_melt_beh, all_r_squared_per_row_beh = calc_r_squared_for_all_projects(all_projects_gcamp, 
@@ -275,19 +405,19 @@ all_cca_classes_beh, df_r_squared_melt_beh, all_r_squared_per_row_beh = calc_r_s
                                                                melt=True)
 
 
-# In[27]:
+# In[36]:
 
 
 df_r_squared_melt_beh.head()
 
 
-# In[28]:
+# In[37]:
 
 
 # all_r_squared_per_row_beh
 
 
-# In[29]:
+# In[38]:
 
 
 # from wbfm.utils.external.utils_plotly import plotly_plot_mean_and_shading
@@ -312,7 +442,7 @@ df_r_squared_melt_beh.head()
 # fig.show()
 
 
-# In[30]:
+# In[39]:
 
 
 # from wbfm.utils.general.utils_paper import behavior_name_mapping
@@ -338,7 +468,7 @@ df_r_squared_melt_beh.head()
 # df
 
 
-# In[31]:
+# In[40]:
 
 
 # fig = px.box(df[df['Method'] != 'PCA'], y='Cumulative Variance explained', color='Components', x='Behavior Variable', facet_col='Method')
@@ -347,7 +477,7 @@ df_r_squared_melt_beh.head()
 # fig.show()
 
 
-# In[32]:
+# In[41]:
 
 
 df = all_r_squared_per_row_beh
@@ -387,20 +517,20 @@ for method in df['Method'].unique():
 
 # ## Also do ttests
 
-# In[33]:
+# In[42]:
 
 
 # df_r_squared.head()
 
 
-# In[34]:
+# In[43]:
 
 
 # from scipy.stats import ttest_ind
 # from itertools import combinations
 
 
-# In[35]:
+# In[44]:
 
 
 # cols = list(df_r_squared.columns)
@@ -422,7 +552,7 @@ for method in df['Method'].unique():
 
 # # Calculate dot product between the pca and cca modes
 
-# In[36]:
+# In[45]:
 
 
 all_dots = {i+1: {name: c.calc_mode_dot_product(i) for name, c in tqdm(all_cca_classes.items())} for i in range(3)}
@@ -436,13 +566,13 @@ df_all_dots_discrete['Comparison Method'] = 'CCA Discrete'
 df_all_dots = pd.concat([df_all_dots, df_all_dots_discrete])
 
 
-# In[37]:
+# In[46]:
 
 
 df_all_dots['PCA-CCA similarity'] = df_all_dots['PCA-CCA similarity'].abs()
 
 
-# In[38]:
+# In[47]:
 
 
 
@@ -453,7 +583,7 @@ fig = px.box(df_all_dots, x='Component', y='PCA-CCA similarity', color='Comparis
 fig.update_yaxes(title='PCA-CCA similarity', range=[0, 1.1])
 fig.update_layout(showlegend=False)
 
-apply_figure_settings(fig, width_factor=0.4, height_factor=0.2)
+apply_figure_settings(fig, width_factor=0.2, height_factor=0.2)
 
 fig.show()
 
@@ -467,7 +597,7 @@ if to_save:
 
 # # Supp: Look at the correlation of the modes across datasets
 
-# In[39]:
+# In[48]:
 
 
 from wbfm.utils.visualization.utils_cca import calc_mode_correlation_for_all_projects
@@ -475,13 +605,13 @@ from wbfm.utils.external.utils_matplotlib import paired_boxplot_from_dataframes
 from wbfm.utils.general.utils_paper import apply_figure_settings
 
 
-# In[40]:
+# In[49]:
 
 
 output_folder = 'cca'
 
 
-# In[41]:
+# In[50]:
 
 
 all_cca_classes3, df_mode_correlations, df_mode_correlations_binary = calc_mode_correlation_for_all_projects(all_projects_gcamp, correlation_kwargs=dict(n_components=5),
@@ -489,14 +619,14 @@ all_cca_classes3, df_mode_correlations, df_mode_correlations_binary = calc_mode_
                                                                                                              trace_kwargs=dict(use_paper_options=True))
 
 
-# In[42]:
+# In[51]:
 
 
 df_mode_correlations.index = np.arange(1, 6)
 df_mode_correlations_binary.index = np.arange(1, 6)
 
 
-# In[43]:
+# In[52]:
 
 
 # fig = paired_boxplot_from_dataframes(df_mode_correlations, num_rows=5, add_median_line=False)
@@ -512,7 +642,7 @@ df_mode_correlations_binary.index = np.arange(1, 6)
 # plt.savefig(fname)
 
 
-# In[44]:
+# In[53]:
 
 
 # fig = paired_boxplot_from_dataframes(df_mode_correlations_binary, num_rows=5, add_median_line=False)
@@ -528,7 +658,7 @@ df_mode_correlations_binary.index = np.arange(1, 6)
 # plt.savefig(fname)
 
 
-# In[45]:
+# In[54]:
 
 
 df0 = df_mode_correlations.T.copy()
@@ -539,17 +669,28 @@ df1['Behavior type'] = 'Discrete'
 df_mode_combined = pd.concat([df0, df1])
 
 
-# In[46]:
+# In[55]:
 
 
-fig = px.box(df_mode_combined, color='Behavior type',
+fig = px.box(df_mode_combined.drop(columns=[4, 5]), color='Behavior type',
              color_discrete_map=plotly_paper_color_discrete_map())
 
-fig.update_xaxes(title="CCA Mode index")
-fig.update_yaxes(title="Correlation <br> of latent space")
+fig.update_xaxes(title="Component")
+fig.update_yaxes(title="Correlation of <br> CCA latent spaces")
 fig.update_layout(showlegend=False)
 
-apply_figure_settings(fig, width_factor=0.5, height_factor=0.3)
+apply_figure_settings(fig, width_factor=0.2, height_factor=0.2)
+
+# fig.update_layout(
+#     showlegend=True,
+#     legend=dict(
+#       yanchor="top",
+#       y=1,
+#       xanchor="right",
+#       x=1.0
+#     )
+# )
+
 fig.show()
 
 
@@ -561,19 +702,19 @@ fig.write_image(fname)
 
 # ## Also do t-tests
 
-# In[47]:
+# In[56]:
 
 
 from scipy.stats import ttest_ind
 
 
-# In[48]:
+# In[57]:
 
 
 df_mode_correlations
 
 
-# In[49]:
+# In[58]:
 
 
 # a = df_mode_correlations.loc[1, :]
@@ -583,7 +724,7 @@ df_mode_correlations
 # print(f"Ttest for correlations of mode 0: {result.pvalue}")
 
 
-# In[50]:
+# In[59]:
 
 
 # a = df_mode_correlations.loc[2, :]
@@ -595,7 +736,7 @@ df_mode_correlations
 
 # # Get the neural and behavioral weights across datasets
 
-# In[51]:
+# In[60]:
 
 
 from wbfm.utils.visualization.utils_cca import calc_cca_weights_for_all_projects
@@ -606,7 +747,7 @@ from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
 output_folder = 'cca'
 
 
-# In[52]:
+# In[61]:
 
 
 all_cca_classes1, df_weights1, df_weights_binary1 = calc_cca_weights_for_all_projects(all_projects_gcamp, which_mode=0, min_datasets_present=6,
@@ -617,7 +758,7 @@ all_cca_classes1, df_weights1, df_weights_binary1 = calc_cca_weights_for_all_pro
                                                                                    trace_kwargs=dict(use_paper_options=True))
 
 
-# In[53]:
+# In[62]:
 
 
 # df_weights1 = df_weights1[[c for c in df_weights1.columns if c in neurons_with_confident_ids(combine_left_right=True)]]
@@ -638,7 +779,7 @@ all_cca_classes1, df_weights1, df_weights_binary1 = calc_cca_weights_for_all_pro
 #     fig.write_image(fname)
 
 
-# In[54]:
+# In[63]:
 
 
 # df_weights_binary1 = df_weights_binary1[[c for c in df_weights_binary1.columns if c in neurons_with_confident_ids(combine_left_right=True)]]
@@ -656,7 +797,7 @@ all_cca_classes1, df_weights1, df_weights_binary1 = calc_cca_weights_for_all_pro
 # fig.write_image(fname)
 
 
-# In[55]:
+# In[64]:
 
 
 # Both modes together
@@ -669,7 +810,7 @@ df_both1.columns = ['Dataset Name', 'Neuron', 'Weight', 'Behavior Type']
 # df_both1
 
 
-# In[56]:
+# In[65]:
 
 
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
@@ -679,7 +820,7 @@ fig = px.box(df_both1[df_both1['Neuron'].isin(neurons_to_plot)], x='Neuron', y='
              color_discrete_map=plotly_paper_color_discrete_map())
 
 apply_figure_settings(fig, width_factor=1.0, height_factor=0.2, plotly_not_matplotlib=True)
-fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black", title="Weight<br>(Component 1)")
+fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black", title="CCA Weight<br>(Component 1)")
 # fig.update_xaxes(title="", tickfont_size=12)
 
 fig.update_layout(legend=dict(
@@ -696,7 +837,7 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-# In[57]:
+# In[66]:
 
 
 add_p_value_annotation(fig, x_label='all', show_only_stars=True)
@@ -705,7 +846,7 @@ fig.show()
 
 # ## SUPP: Same but for mode 2
 
-# In[58]:
+# In[67]:
 
 
 all_cca_classes2, df_weights2, df_weights_binary2 = calc_cca_weights_for_all_projects(all_projects_gcamp, which_mode=1, min_datasets_present=6,
@@ -717,7 +858,7 @@ all_cca_classes2, df_weights2, df_weights_binary2 = calc_cca_weights_for_all_pro
                                                                                    trace_kwargs=dict(use_paper_options=True))
 
 
-# In[59]:
+# In[68]:
 
 
 df_weights2 = df_weights2[[c for c in df_weights2.columns if c in neurons_with_confident_ids(combine_left_right=True)]]
@@ -737,7 +878,7 @@ df_weights2 = df_weights2[[c for c in df_weights2.columns if c in neurons_with_c
 #     fig.write_image(fname)
 
 
-# In[60]:
+# In[69]:
 
 
 df_weights_binary2 = df_weights_binary2[[c for c in df_weights_binary2.columns if c in neurons_with_confident_ids(combine_left_right=True)]]
@@ -755,7 +896,7 @@ df_weights_binary2 = df_weights_binary2[[c for c in df_weights_binary2.columns i
 # fig.write_image(fname)
 
 
-# In[61]:
+# In[70]:
 
 
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
@@ -775,7 +916,7 @@ fig = px.box(df_both2[df_both2['Neuron'].isin(neurons_to_plot)], x='Neuron', y='
              color_discrete_map=plotly_paper_color_discrete_map())
 
 apply_figure_settings(fig, width_factor=1.0, height_factor=0.3, plotly_not_matplotlib=True)
-fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black", title="Weight (mode 2)")
+fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black", title="CCA Weight (mode 2)")
 fig.update_xaxes(title="", tickfont_size=12)
 
 fig.update_layout(legend=dict(
@@ -794,7 +935,7 @@ fig.write_image(fname)
 
 # ## SUPP: Same but for mode 3
 
-# In[62]:
+# In[71]:
 
 
 all_cca_classes3, df_weights3, df_weights_binary3 = calc_cca_weights_for_all_projects(all_projects_gcamp, which_mode=2, min_datasets_present=5,
@@ -806,24 +947,24 @@ all_cca_classes3, df_weights3, df_weights_binary3 = calc_cca_weights_for_all_pro
                                                                                    trace_kwargs=dict(use_paper_options=True))
 
 
-# In[63]:
+# In[72]:
 
 
-df_weights3 = df_weights3[[c for c in df_weights3.columns if c in neurons_with_confident_ids(combine_left_right=True)]]
+# df_weights3 = df_weights3[[c for c in df_weights3.columns if c in neurons_with_confident_ids(combine_left_right=True)]]
 
-fig = px.box(df_weights3, color_discrete_sequence=[plotly_paper_color_discrete_map()['CCA']])#, title="CCA weights of mode 3 across recordings")
-apply_figure_settings(fig, width_factor=1.0, height_factor=0.2, plotly_not_matplotlib=True)
-fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black", title="Weight <br> (mode 3)")
-fig.update_xaxes(title="")
-fig.show()
+# fig = px.box(df_weights3, color_discrete_sequence=[plotly_paper_color_discrete_map()['CCA']])#, title="CCA weights of mode 3 across recordings")
+# apply_figure_settings(fig, width_factor=1.0, height_factor=0.2, plotly_not_matplotlib=True)
+# fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black", title="Weight <br> (mode 3)")
+# fig.update_xaxes(title="")
+# fig.show()
 
-fname = os.path.join(output_folder, 'paired_boxplot_neural_weights3.png')
-fig.write_image(fname, scale=3)
-fname = Path(fname).with_suffix('.svg')
-fig.write_image(fname)
+# fname = os.path.join(output_folder, 'paired_boxplot_neural_weights3.png')
+# fig.write_image(fname, scale=3)
+# fname = Path(fname).with_suffix('.svg')
+# fig.write_image(fname)
 
 
-# In[64]:
+# In[73]:
 
 
 # fig = px.box(df_weights_binary, title="CCA weights of mode 3 across recordings (binary)")
@@ -835,13 +976,13 @@ fig.write_image(fname)
 
 # ## Same but for behavior weights
 
-# In[65]:
+# In[74]:
 
 
 from wbfm.utils.general.utils_paper import behavior_name_mapping
 
 
-# In[66]:
+# In[75]:
 
 
 all_cca_classes_beh1, df_weights_beh1, df_weights_binary_beh1 = calc_cca_weights_for_all_projects(all_projects_gcamp, which_mode=0, min_datasets_present=5,
@@ -851,13 +992,13 @@ all_cca_classes_beh1, df_weights_beh1, df_weights_binary_beh1 = calc_cca_weights
                                                                                    trace_kwargs=dict(use_paper_options=True))
 
 
-# In[67]:
+# In[76]:
 
 
 df_weights_beh1.rename(columns=behavior_name_mapping(shorten=True)).head()
 
 
-# In[68]:
+# In[77]:
 
 
 fig = px.box(df_weights_beh1.rename(columns=behavior_name_mapping(shorten=True)), color_discrete_sequence=[plotly_paper_color_discrete_map()['CCA']])
@@ -875,7 +1016,7 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-# In[69]:
+# In[78]:
 
 
 cmap = px.colors.qualitative.Plotly
@@ -897,25 +1038,25 @@ fig.write_image(fname)
 
 # ### Debug
 
-# In[70]:
+# In[79]:
 
 
 # px.line(all_cca_classes_beh1['2022-11-23_worm10']._df_beh)
 
 
-# In[71]:
+# In[80]:
 
 
 # px.line(all_cca_classes_beh1['2022-11-23_worm10']._df_traces_truncated)
 
 
-# In[72]:
+# In[81]:
 
 
 c = all_cca_classes_beh1['2022-11-23_worm10']
 
 
-# In[73]:
+# In[82]:
 
 
 opt = dict(binary_behaviors=False)
@@ -938,7 +1079,7 @@ behavior_weights
 
 # ## Supp: behavior
 
-# In[74]:
+# In[83]:
 
 
 all_cca_classes_beh2, df_weights_beh2, df_weights_binary_beh2 = calc_cca_weights_for_all_projects(all_projects_gcamp, which_mode=1, min_datasets_present=5,
@@ -948,12 +1089,12 @@ all_cca_classes_beh2, df_weights_beh2, df_weights_binary_beh2 = calc_cca_weights
                                                                                    trace_kwargs=dict(use_paper_options=True))
 
 
-# In[75]:
+# In[84]:
 
 
 fig = px.box(df_weights_beh2.rename(columns=behavior_name_mapping(shorten=True)), color_discrete_sequence=[plotly_paper_color_discrete_map()['CCA']])
 apply_figure_settings(fig, width_factor=0.25, height_factor=0.3, plotly_not_matplotlib=True)
-fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black", title="Weight <br> (mode 2)")
+fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black", title="CCA Weight <br> (mode 2)")
 fig.update_xaxes(title="")
 fig.show()
 
@@ -963,13 +1104,13 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-# In[76]:
+# In[85]:
 
 
 fig = px.box(df_weights_binary_beh2.rename(columns=behavior_name_mapping(shorten=True)), color_discrete_sequence=[plotly_paper_color_discrete_map()['Discrete']])
 
 apply_figure_settings(fig, width_factor=0.25, height_factor=0.3, plotly_not_matplotlib=True)
-fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black", title="Weight <br> (discrete mode 2)")
+fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor="black", title="CCA Weight <br> (discrete mode 2)")
 fig.update_xaxes(title="")
 fig.show()
 
@@ -979,7 +1120,7 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-# In[77]:
+# In[86]:
 
 
 all_cca_classes_beh3, df_weights_beh3, df_weights_binary_beh3 = calc_cca_weights_for_all_projects(all_projects_gcamp, which_mode=2, min_datasets_present=5,
@@ -989,7 +1130,7 @@ all_cca_classes_beh3, df_weights_beh3, df_weights_binary_beh3 = calc_cca_weights
                                                                                    trace_kwargs=dict(use_paper_options=True))
 
 
-# In[78]:
+# In[87]:
 
 
 fig = px.box(df_weights_beh3.rename(columns=behavior_name_mapping(shorten=True)), color_discrete_sequence=[plotly_paper_color_discrete_map()['CCA']])
@@ -1018,7 +1159,7 @@ fig.write_image(fname)
 
 # # Scratch: Color code the CCA space
 
-# In[79]:
+# In[88]:
 
 
 # behavior_list = ['signed_speed_angular', 'ventral_only_body_curvature', 'ventral_only_head_curvature', 'dorsal_only_body_curvature', 'dorsal_only_head_curvature']
@@ -1053,7 +1194,7 @@ fig.write_image(fname)
 
 # # Scratch: Make sure mode 1 is actually the FWD/REV mode
 
-# In[80]:
+# In[89]:
 
 
 # for name, obj in all_cca_classes.items():
@@ -1084,37 +1225,37 @@ fig.write_image(fname)
 
 # # Scratch: Visualize modes
 
-# In[81]:
+# In[90]:
 
 
 from wbfm.utils.visualization.utils_cca import CCAPlotter
 
 
-# In[82]:
+# In[91]:
 
 
 cca_plotter3 = CCAPlotter(project_data_gcamp, preprocess_traces_using_pca=True, truncate_traces_to_n_components=5, preprocess_behavior_using_pca=True)
 
 
-# In[83]:
+# In[92]:
 
 
 fig = cca_plotter3.visualize_modes_and_weights(binary_behaviors=False, n_components=3)
 
 
-# In[84]:
+# In[93]:
 
 
 cca_plotter4 = CCAPlotter(project_data_gcamp, preprocess_traces_using_pca=False, truncate_traces_to_n_components=5, preprocess_behavior_using_pca=True)
 
 
-# In[85]:
+# In[94]:
 
 
 # fig = cca_plotter4.visualize_modes_and_weights(binary_behaviors=False, n_components=5)
 
 
-# In[86]:
+# In[95]:
 
 
 # fig = cca_plotter.plot()
@@ -1122,14 +1263,14 @@ cca_plotter4 = CCAPlotter(project_data_gcamp, preprocess_traces_using_pca=False,
 
 # # Scratch: Visualize across all datasets
 
-# In[87]:
+# In[96]:
 
 
 # all_cca_classes, df_r_squared = calc_r_squared_for_all_projects(all_projects_gcamp, r_squared_kwargs=dict(n_components=1), 
 #                                                                 preprocess_traces_using_pca=True, truncate_traces_to_n_components=None)
 
 
-# In[88]:
+# In[97]:
 
 
 # # Same GUI but for all datasets
@@ -1142,14 +1283,14 @@ cca_plotter4 = CCAPlotter(project_data_gcamp, preprocess_traces_using_pca=False,
 # interact(f, dataset_name=list(all_cca_classes.keys()))
 
 
-# In[89]:
+# In[98]:
 
 
 # all_cca_classes2, df_r_squared2 = calc_r_squared_for_all_projects(all_projects_gcamp, r_squared_kwargs=dict(n_components=1), 
 #                                                                 preprocess_traces_using_pca=False, preprocess_behavior_using_pca=False)
 
 
-# In[90]:
+# In[99]:
 
 
 # # Same GUI but for all datasets
@@ -1164,32 +1305,32 @@ cca_plotter4 = CCAPlotter(project_data_gcamp, preprocess_traces_using_pca=False,
 
 # # Scratch: look at the angle of rotation 
 
-# In[91]:
+# In[100]:
 
 
 from wbfm.utils.visualization.utils_cca import CCAPlotter
 from scipy.spatial.transform import Rotation
 
 
-# In[92]:
+# In[101]:
 
 
 cca_plotter3 = CCAPlotter(project_data_gcamp, truncate_traces_to_n_components=3, preprocess_behavior_using_pca=False)
 
 
-# In[93]:
+# In[102]:
 
 
 X_r, Y_r, cca = cca_plotter3.calc_cca(n_components=1)
 
 
-# In[94]:
+# In[103]:
 
 
 # r = Rotation.from_matrix(cca.x_rotations_)
 
 
-# In[95]:
+# In[104]:
 
 
 cca.x_weights_, cca.x_loadings_

@@ -7,11 +7,11 @@
 
 
 
-# In[1]:
+# In[45]:
 
 
-# get_ipython().run_line_magic('load_ext', 'autoreload')
-# get_ipython().run_line_magic('autoreload', '2')
+get_ipython().run_line_magic('load_ext', 'autoreload')
+get_ipython().run_line_magic('autoreload', '2')
 import matplotlib.pyplot as plt
 from wbfm.utils.projects.finished_project_data import ProjectData
 import napari
@@ -83,29 +83,57 @@ Xy = load_all_data_as_dataframe()
 Xy['fwd'].unique()
 
 
-# In[29]:
+# In[10]:
 
 
-# Xy.loc[:, ['dataset_name', 'IL2LL']].dropna()['dataset_name'].unique()
+'IL1LL' in Xy
 
 
-# In[27]:
+# In[47]:
 
 
-# idx = Xy['dataset_name'] == 'ZIM2319_GFP_worm6-2022-12-10'
-# Xy.loc[idx, 'IL2LL'].dropna()
+# Xy['dataset_name'].unique()
+
+
+# In[46]:
+
+
+# _Xy = Xy.loc[Xy['dataset_name'].apply(lambda x: 'hiscl' in x), :].dropna().copy()
+# cols = _Xy.columns
+# for c in cols:
+#     if 'manifold' not in c and 'IL' in c.upper():
+#         print(c)
+#         print(Xy[[c, 'dataset_name']].dropna()['dataset_name'].unique())
+
+
+# In[13]:
+
+
+Xy['dataset_name'].apply(lambda x: 'hiscl' in x)
+
+
+# In[14]:
+
+
+_Xy[['IL2L', 'dataset_name']]
+
+
+# In[15]:
+
+
+c
 
 
 # # Plot ided neurons, counted by dataset and colored by datatype
 
-# In[10]:
+# In[16]:
 
 
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map, data_type_name_mapping
 
 
-# In[11]:
+# In[17]:
 
 
 def func(col):
@@ -120,7 +148,7 @@ Xy_count = Xy.apply(func)
 Xy_count
 
 
-# In[12]:
+# In[18]:
 
 
 non_nan_groups = Xy.groupby(['dataset_name', 'dataset_type'])[neurons_with_confident_ids()].agg(lambda x: x.count() > 0).reset_index()
@@ -134,13 +162,13 @@ non_nan_fraction = (non_nan_totals.T / non_nan_totals.max(axis=1)).T
 non_nan_fraction = non_nan_fraction.reset_index().melt(id_vars='dataset_type', var_name='neuron_name', value_name='count')
 
 
-# In[13]:
+# In[19]:
 
 
 print(non_nan_totals)
 
 
-# In[14]:
+# In[20]:
 
 
 non_nan_melt.columns = ['Dataset Type', 'Neuron Name', 'Count']
@@ -150,13 +178,13 @@ non_nan_fraction.columns = ['Dataset Type', 'Neuron Name', 'Count']
 non_nan_fraction['Dataset Type'] = non_nan_fraction['Dataset Type'].map(data_type_name_mapping())
 
 
-# In[15]:
+# In[21]:
 
 
 non_nan_melt[non_nan_melt['Neuron Name'] == 'AIBR']
 
 
-# In[16]:
+# In[22]:
 
 
 
@@ -186,7 +214,7 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[17]:
+# In[23]:
 
 
 # Same, but no grid and with horizontal lines where the total number of datasets are
@@ -227,7 +255,7 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[18]:
+# In[24]:
 
 
 
@@ -251,7 +279,7 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[19]:
+# In[25]:
 
 
 non_nan_fraction['Neuron Name'].value_counts()
@@ -259,7 +287,7 @@ non_nan_fraction['Neuron Name'].value_counts()
 
 # ## Export to an excel sheet, with total numbers
 
-# In[20]:
+# In[26]:
 
 
 id_export = non_nan_totals.copy()
@@ -268,7 +296,7 @@ id_export.index = id_export.index.map(data_type_name_mapping(include_mutant=True
 # id_export.head()
 
 
-# In[21]:
+# In[27]:
 
 
 
@@ -278,7 +306,7 @@ id_export.to_excel(fname)
 
 # # Boxplot of IDed neurons per dataset
 
-# In[22]:
+# In[28]:
 
 
 non_nan_groups_melt = non_nan_groups.melt(id_vars=['dataset_type', 'dataset_name'])
@@ -290,7 +318,7 @@ non_nan_id_per_dataset['Dataset Type'] = non_nan_id_per_dataset['Dataset Type'].
 non_nan_id_per_dataset
 
 
-# In[23]:
+# In[29]:
 
 
 fig = px.box(non_nan_id_per_dataset, x='Dataset Type', y='Number of IDed neurons', color='Dataset Type', 
@@ -339,7 +367,7 @@ fig.write_image(fname)
 
 # # Freely moving: ID'ed neurons
 
-# In[24]:
+# In[30]:
 
 
 # all_ids = defaultdict(int)
@@ -351,14 +379,14 @@ fig.write_image(fname)
 #         all_ids[c] += 1
 
 
-# In[ ]:
+# In[31]:
 
 
 # df_ids = pd.DataFrame(all_ids, index=[0]).T.sort_values(0, ascending=False)
 # px.scatter(df_ids)
 
 
-# In[ ]:
+# In[32]:
 
 
 # fname = os.path.join('ids', 'id_counts.csv')
@@ -367,7 +395,7 @@ fig.write_image(fname)
 
 # # Immobilized: ID'ed neurons
 
-# In[ ]:
+# In[33]:
 
 
 # all_ids = defaultdict(int)
@@ -379,14 +407,14 @@ fig.write_image(fname)
 #         all_ids[c] += 1
 
 
-# In[ ]:
+# In[34]:
 
 
 # df_ids = pd.DataFrame(all_ids, index=[0]).T.sort_values(0, ascending=False)
 # px.scatter(df_ids)
 
 
-# In[ ]:
+# In[35]:
 
 
 # fname = os.path.join('ids', 'id_counts_immob.csv')
@@ -395,7 +423,7 @@ fig.write_image(fname)
 
 # # Immobilized with O2 stimulus: ID'ed neurons
 
-# In[ ]:
+# In[36]:
 
 
 # all_ids = defaultdict(int)
@@ -407,14 +435,14 @@ fig.write_image(fname)
 #         all_ids[c] += 1
 
 
-# In[ ]:
+# In[37]:
 
 
 # df_ids = pd.DataFrame(all_ids, index=[0]).T.sort_values(0, ascending=False)
 # px.scatter(df_ids)
 
 
-# In[ ]:
+# In[38]:
 
 
 # fname = os.path.join('ids', 'id_counts_immob_O2.csv')
@@ -423,7 +451,7 @@ fig.write_image(fname)
 
 # # Same but with simple dataframes, not full projects
 
-# In[ ]:
+# In[39]:
 
 
 # from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
@@ -436,7 +464,7 @@ fig.write_image(fname)
 # Xy_gfp = pd.read_hdf(fname)
 
 
-# In[ ]:
+# In[40]:
 
 
 # def get_counts(Xy):
@@ -452,7 +480,7 @@ fig.write_image(fname)
 # all_ids_gfp = get_counts(Xy_gfp)
 
 
-# In[ ]:
+# In[41]:
 
 
 # px.scatter(all_ids_gfp)
@@ -472,7 +500,7 @@ fig.write_image(fname)
 
 # # Scratch: Do any projects have no IDs?
 
-# In[ ]:
+# In[42]:
 
 
 # all_num_ids = defaultdict(int)
@@ -487,14 +515,14 @@ fig.write_image(fname)
 #     all_num_ids[name] = len(neuron_columns)
 
 
-# In[ ]:
+# In[43]:
 
 
 # p = all_projects_gcamp['ZIM2165_Gcamp7b_worm2-2022-12-10']
 # df = p.calc_default_traces(use_paper_options=True)
 
 
-# In[ ]:
+# In[44]:
 
 
 # all_num_ids = defaultdict(int)

@@ -72,7 +72,7 @@ all_projects_immob = load_paper_datasets('immob')
 from wbfm.utils.visualization.multiproject_wrappers import build_trace_time_series_from_multiple_projects
 
 
-# In[8]:
+# In[7]:
 
 
 df_traces_gcamp = build_trace_time_series_from_multiple_projects(all_projects_gcamp, use_paper_options=True)
@@ -82,7 +82,7 @@ df_traces_immob = build_trace_time_series_from_multiple_projects(all_projects_im
 
 # ## Define "active" based on a gfp cutoff
 
-# In[9]:
+# In[8]:
 
 
 # Get the threshold
@@ -93,13 +93,13 @@ active_threshold
 
 # # Get number of "active" neurons in each dataset
 
-# In[10]:
+# In[9]:
 
 
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
 
 
-# In[11]:
+# In[10]:
 
 
 def get_active_neurons_per_dataset(df_traces):
@@ -117,7 +117,7 @@ def get_active_neurons_per_dataset(df_traces):
     return active_neurons_per_dataset, total_neurons_per_dataset, fraction_active_neurons_per_dataset
 
 
-# In[12]:
+# In[11]:
 
 
 active_neurons_gcamp, total_neurons_gcamp, fraction_active_neurons_gcamp = get_active_neurons_per_dataset(df_traces_gcamp)
@@ -125,7 +125,7 @@ active_neurons_gfp, total_neurons_gfp, fraction_active_neurons_gfp = get_active_
 active_neurons_immob, total_neurons_immob, fraction_active_neurons_immob = get_active_neurons_per_dataset(df_traces_immob)
 
 
-# In[13]:
+# In[12]:
 
 
 column_names = ['Active Neurons', 'Total Neurons']
@@ -145,7 +145,7 @@ df_all_active = pd.concat([df_all_active, _df, _df2])
 df_all_active.head()
 
 
-# In[14]:
+# In[13]:
 
 
 fig = px.scatter(df_all_active, x='Total Neurons', y='Active Neurons', color='Datatype',
@@ -164,7 +164,7 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[15]:
+# In[14]:
 
 
 
@@ -173,7 +173,7 @@ if to_save:
 # fig = px.box(df)
 
 
-# In[16]:
+# In[15]:
 
 
 df = pd.DataFrame({'Freely Moving (GCaMP)': fraction_active_neurons_gcamp, 'Immobilized (GCaMP)': fraction_active_neurons_immob,
@@ -198,13 +198,13 @@ if to_save:
 
 # # Define categories based on if they are active in immob
 
-# In[17]:
+# In[16]:
 
 
 from wbfm.utils.general.hardcoded_paths import list_of_gas_sensing_neurons
 
 
-# In[18]:
+# In[17]:
 
 
 # Get the active ID'ed neurons
@@ -219,7 +219,7 @@ neurons_active_and_ided_in_immob = set(num_active_per_ID[num_active_per_ID > 0.4
 len(neurons_active_and_ided_in_immob)
 
 
-# In[19]:
+# In[18]:
 
 
 df_group = df_traces_gcamp.drop(columns=['local_time']).groupby('dataset_name')
@@ -235,7 +235,7 @@ neurons_active_and_ided_in_fm = set(num_active_per_ID[num_active_per_ID > 0.4*nu
 len(neurons_active_and_ided_in_fm)
 
 
-# In[20]:
+# In[19]:
 
 
 neurons_active_in_both = neurons_active_and_ided_in_fm.intersection(neurons_active_and_ided_in_immob)
@@ -246,7 +246,7 @@ gas_sensing_neurons = list_of_gas_sensing_neurons()
 len(neurons_active_in_both), len(neurons_active_in_only_fm), len(neurons_active_in_only_immob), len(gas_sensing_neurons)
 
 
-# In[21]:
+# In[20]:
 
 
 # 3-step boxplot: All active, ided + non-ided, ided shared + ided unique
@@ -265,7 +265,7 @@ neurons_active_in_only_fm_and_ided_in_fm_per_dataset = active_ind.loc[:, list(ne
 neurons_active_gas_sensing_and_ided_in_fm_per_dataset = active_ind.loc[:, [name in gas_sensing_neurons for name in active_ind.columns]].T.sum()
 
 
-# In[22]:
+# In[21]:
 
 
 df = pd.DataFrame({#'Total active neurons': active_neurons_gcamp, 
@@ -292,7 +292,7 @@ if to_save:
 
 # # Define categories based on participation in the global manifold
 
-# In[44]:
+# In[22]:
 
 
 from wbfm.utils.visualization.utils_cca import calc_pca_weights_for_all_projects
@@ -302,13 +302,13 @@ from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 
 # ## Immob
 
-# In[24]:
+# In[23]:
 
 
 df_var_exp_immob = build_dataframe_of_variance_explained(all_projects_immob, use_paper_options=True)
 
 
-# In[25]:
+# In[ ]:
 
 
 manifold_threshold = 0.5
@@ -329,7 +329,7 @@ len(neurons_active_and_ided_in_immob), len(neurons_active_and_manifold_in_immob)
 
 # ## FM
 
-# In[26]:
+# In[ ]:
 
 
 df_weights_pc0_gcamp = calc_pca_weights_for_all_projects(all_projects_gcamp, which_mode=0, 
@@ -337,13 +337,13 @@ df_weights_pc0_gcamp = calc_pca_weights_for_all_projects(all_projects_gcamp, whi
                                                         use_paper_options=True)
 
 
-# In[27]:
+# In[ ]:
 
 
 df_var_exp_gcamp = build_dataframe_of_variance_explained(all_projects_gcamp, use_paper_options=True)
 
 
-# In[28]:
+# In[ ]:
 
 
 # Get long dataframe, to be used for final pie chart
@@ -366,14 +366,14 @@ melt_on_vars = ['dataset_name', 'neuron_name']
 # print(df_active_melt['variable'].unique(), df_var_exp_gcamp_melt['variable'].unique())
 
 
-# In[29]:
+# In[ ]:
 
 
 df_var_exp_gcamp_melt = df_var_exp_gcamp_melt.merge(df_active_melt, on=melt_on_vars)
 df_var_exp_gcamp_melt.head()
 
 
-# In[45]:
+# In[ ]:
 
 
 # Add columns for the relevant categories
@@ -385,7 +385,7 @@ df_var_exp_gcamp_melt['is_o2'] = df_var_exp_gcamp_melt['neuron_name'].apply(lamb
 df_var_exp_gcamp_melt['active_in_immob'] = df_var_exp_gcamp_melt['neuron_name'].apply(lambda x: x in neurons_active_and_manifold_in_immob)
 
 
-# In[50]:
+# In[ ]:
 
 
 df_var_exp_gcamp_melt['category'] = np.nan
@@ -400,13 +400,13 @@ df_var_exp_gcamp_melt['marker_size'] = [0.3 if c=='Not Identified' else 1 for c 
 print(df_var_exp_gcamp_melt['category'].value_counts())
 
 
-# In[54]:
+# In[ ]:
 
 
 df_var_exp_gcamp_melt[df_var_exp_gcamp_melt['category']=='Manifold in Freely Moving only']['neuron_name'].unique()
 
 
-# In[52]:
+# In[ ]:
 
 
 from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map, apply_figure_settings
@@ -429,7 +429,7 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[53]:
+# In[ ]:
 
 
 interesting_idx = (df_var_exp_gcamp_melt['variance'] > active_threshold) &     (df_var_exp_gcamp_melt['fraction_variance_explained'] > 0.5)

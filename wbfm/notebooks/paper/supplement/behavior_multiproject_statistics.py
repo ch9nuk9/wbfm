@@ -37,7 +37,7 @@ from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map
 import plotly.express as px
 
 
-# In[14]:
+# In[3]:
 
 
 # fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/2022-11-27_spacer_7b_2per_agar/ZIM2165_Gcamp7b_worm1-2022_11_28/project_config.yaml"
@@ -46,7 +46,7 @@ fname = "/scratch/neurobiology/zimmer/fieseler/wbfm_projects/manually_annotated/
 project_data_gcamp = ProjectData.load_final_project_data_from_config(fname)
 
 
-# In[15]:
+# In[4]:
 
 
 # Load multiple datasets
@@ -54,13 +54,13 @@ from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 all_projects_gcamp = load_paper_datasets('gcamp')
 
 
-# In[16]:
+# In[5]:
 
 
 all_projects_gfp = load_paper_datasets('gfp')
 
 
-# In[17]:
+# In[6]:
 
 
 output_folder = "multiproject_behavior_quantifications"
@@ -68,14 +68,14 @@ output_folder = "multiproject_behavior_quantifications"
 
 # # Example dataset with zoom in
 
-# In[4]:
+# In[7]:
 
 
 from wbfm.utils.visualization.plot_traces import make_summary_interactive_kymograph_with_behavior
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 
-# In[7]:
+# In[8]:
 
 
 from wbfm.utils.visualization.plot_traces import build_all_plot_variables_for_summary_plot
@@ -90,7 +90,7 @@ column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, pha
         additional_shaded_states=additional_shaded_states, showlegend=False)
 
 
-# In[11]:
+# In[9]:
 
 
 fig = make_summary_interactive_kymograph_with_behavior(project_data_gcamp, to_save=False, to_show=True,
@@ -105,7 +105,7 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[12]:
+# In[10]:
 
 
 fps = project_data_gcamp.physical_unit_conversion.frames_per_second
@@ -122,7 +122,7 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[13]:
+# In[11]:
 
 
 fig = make_summary_interactive_kymograph_with_behavior(project_data_gcamp, to_save=False, to_show=True,
@@ -139,7 +139,7 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[6]:
+# In[12]:
 
 
 get_ipython().run_line_magic('debug', '')
@@ -147,7 +147,7 @@ get_ipython().run_line_magic('debug', '')
 
 # ## Trajectory
 
-# In[18]:
+# In[13]:
 
 
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
@@ -155,7 +155,7 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.general.utils_paper import behavior_name_mapping
 
 
-# In[32]:
+# In[14]:
 
 
 xy = project_data_gcamp.worm_posture_class.calc_behavior_from_alias('worm_center_position').copy()
@@ -171,7 +171,7 @@ df_xy['Behavior'] = beh.values
 df_xy.head()
 
 
-# In[39]:
+# In[15]:
 
 
 # import plotly.graph_objects as go
@@ -203,7 +203,7 @@ df_xy.head()
 # fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[41]:
+# In[16]:
 
 
 import plotly.graph_objects as go
@@ -252,7 +252,7 @@ fig.write_image(fname.replace(".png", ".svg"))
 
 # ## NOT USING: Behavior transition diagram
 
-# In[ ]:
+# In[17]:
 
 
 # dot, df_probabilities, df_raw_number = project_data_gcamp.worm_posture_class.plot_behavior_transition_diagram(output_folder='behavior')
@@ -262,7 +262,7 @@ fig.write_image(fname.replace(".png", ".svg"))
 
 # ## Displacement
 
-# In[ ]:
+# In[18]:
 
 
 from collections import defaultdict
@@ -298,20 +298,20 @@ def calc_displacement_dataframes(all_projects):
     return df_displacement_gcamp
 
 
-# In[ ]:
+# In[19]:
 
 
 df_displacement_gcamp = calc_displacement_dataframes(all_projects_gcamp)
 df_displacement_gfp = calc_displacement_dataframes(all_projects_gfp)
 
 
-# In[ ]:
+# In[20]:
 
 
 df_displacement_gfp.shape
 
 
-# In[ ]:
+# In[21]:
 
 
 df_displacement_gcamp['genotype'] = 'gcamp'
@@ -320,7 +320,7 @@ df_displacement_gfp['genotype'] = 'gfp'
 df_displacement = pd.concat([df_displacement_gcamp, df_displacement_gfp])
 
 
-# In[ ]:
+# In[22]:
 
 
 # fig = px.histogram(df_displacement, x='net', color='genotype', nbins=40)
@@ -331,14 +331,14 @@ df_displacement = pd.concat([df_displacement_gcamp, df_displacement_gfp])
 # fig.show()
 
 
-# In[ ]:
+# In[23]:
 
 
 # fig = px.histogram(df_displacement, x='net', facet_row='genotype', color='genotype', nbins=30)
 # fig.show()
 
 
-# In[ ]:
+# In[24]:
 
 
 # Alternative: boxplot with scatter plot
@@ -357,7 +357,7 @@ fig.write_image(fname)
 fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[ ]:
+# In[25]:
 
 
 # fig = px.histogram(df_displacement, x='cumulative', facet_row='genotype', color='genotype', nbins=30)
@@ -366,14 +366,14 @@ fig.write_image(fname.replace(".png", ".svg"))
 
 # ## Speed, in several different ways
 
-# In[ ]:
+# In[26]:
 
 
 from wbfm.utils.visualization.plot_summary_statistics import calc_speed_dataframe
 from wbfm.utils.general.utils_paper import apply_figure_settings
 
 
-# In[ ]:
+# In[27]:
 
 
 df_speed_gcamp = calc_speed_dataframe(all_projects_gcamp)
@@ -386,7 +386,7 @@ df_speed_gfp = calc_speed_dataframe(all_projects_gfp)
 
 
 
-# In[ ]:
+# In[28]:
 
 
 from wbfm.utils.general.utils_paper import data_type_name_mapping
@@ -424,7 +424,7 @@ for x in speed_types:
     fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[ ]:
+# In[29]:
 
 
 # fname = os.path.join(output_folder, "df_speed.h5")
@@ -433,26 +433,26 @@ for x in speed_types:
 
 # ## Reversal and forward durations
 
-# In[ ]:
+# In[30]:
 
 
 from wbfm.utils.visualization.plot_summary_statistics import calc_durations_dataframe
 
 
-# In[ ]:
+# In[31]:
 
 
 df_duration_gcamp = calc_durations_dataframe(all_projects_gcamp)
 df_duration_gfp = calc_durations_dataframe(all_projects_gfp)
 
 
-# In[ ]:
+# In[32]:
 
 
 # %debug
 
 
-# In[ ]:
+# In[33]:
 
 
 df_duration_gcamp['genotype'] = 'gcamp'
@@ -465,13 +465,13 @@ df_duration['BehaviorCodes.FWD'] /= fps
 df_duration['BehaviorCodes.REV'] /= fps
 
 
-# In[ ]:
+# In[34]:
 
 
 df_duration.columns
 
 
-# In[ ]:
+# In[35]:
 
 
 
@@ -513,7 +513,7 @@ for x, t in zip(states, titles):
     fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[ ]:
+# In[36]:
 
 
 
@@ -531,7 +531,7 @@ fig = px.histogram(df_duration.melt(id_vars=['dataset_name', 'genotype']),
 
 
 
-# In[ ]:
+# In[37]:
 
 
 # fname = os.path.join(output_folder, "df_durations.h5")
@@ -540,20 +540,20 @@ fig = px.histogram(df_duration.melt(id_vars=['dataset_name', 'genotype']),
 
 # ## Reversal and forward frequency
 
-# In[ ]:
+# In[38]:
 
 
 from wbfm.utils.visualization.plot_summary_statistics import calc_onset_frequency_dataframe
 
 
-# In[ ]:
+# In[39]:
 
 
 df_frequency_gcamp = calc_onset_frequency_dataframe(all_projects_gcamp)
 df_frequency_gfp = calc_onset_frequency_dataframe(all_projects_gfp)
 
 
-# In[ ]:
+# In[40]:
 
 
 df_frequency_gcamp['genotype'] = 'gcamp'
@@ -565,7 +565,7 @@ df_frequency = pd.concat([df_frequency_gcamp, df_frequency_gfp])
 # df_frequency['BehaviorCodes.REV'] /= fps
 
 
-# In[ ]:
+# In[41]:
 
 
 
@@ -599,13 +599,13 @@ for x, t in zip(states, titles):
 
 # # Histogram of post-reversal head bend peaks
 
-# In[11]:
+# In[42]:
 
 
 from wbfm.utils.general.utils_paper import apply_figure_settings
 
 
-# In[12]:
+# In[43]:
 
 
 # For each project, get the positive and negative post reversal peaks
@@ -648,7 +648,7 @@ for name, p in tqdm(all_projects_gcamp.items()):
     final_dorsal_dict[name] = dorsal_to_keep
 
 
-# In[28]:
+# In[44]:
 
 
 # For now, ignore the dataset they came from
@@ -662,14 +662,14 @@ df_turns.columns = ['Amplitude', 'Turn Direction']
 df_turns['Amplitude'] *= 1000  # Change to 1/mm
 
 
-# In[29]:
+# In[45]:
 
 
 beh_list = [BehaviorCodes.VENTRAL_TURN, BehaviorCodes.DORSAL_TURN]
 cmap = [BehaviorCodes.ethogram_cmap()[beh] for beh in beh_list]
 
 
-# In[38]:
+# In[46]:
 
 
 df_turns['Amplitude'] = df_turns['Amplitude'].abs()
@@ -704,7 +704,7 @@ fig.write_image(fname, scale=3)
 fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[28]:
+# In[47]:
 
 
 fig = px.pie(df_turns, names="Turn Direction", color_discrete_sequence=cmap)
@@ -719,7 +719,7 @@ fig.write_image(fname, scale=3)
 fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[23]:
+# In[48]:
 
 
 # fname = os.path.join(output_folder, "df_dorsal_ventral.h5")
@@ -734,14 +734,14 @@ fig.write_image(fname.replace(".png", ".svg"))
 
 # # Histograms of new ventral annotations
 
-# In[ ]:
+# In[49]:
 
 
 from wbfm.utils.external.utils_pandas import get_dataframe_of_transitions
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 
-# In[ ]:
+# In[50]:
 
 
 beh_vec = project_data_gcamp.worm_posture_class.beh_annotation(fluorescence_fps=True)
@@ -750,7 +750,7 @@ beh_vec = [b.value for b in beh_vec]
 df_transition = get_dataframe_of_transitions(beh_vec, convert_to_probabilities=True)
 
 
-# In[ ]:
+# In[51]:
 
 
 mapper = lambda val: BehaviorCodes(val).name
@@ -759,7 +759,7 @@ df_transition = df_transition#.rename(columns=mapper).rename(index=mapper)
 df_transition
 
 
-# In[ ]:
+# In[52]:
 
 
 # For each project, get the transition probability dataframe
@@ -774,7 +774,7 @@ for name, p in tqdm(all_projects_gcamp.items()):
 df_all_transitions = sum(all_transitions)
 
 
-# In[ ]:
+# In[53]:
 
 
 mapper = lambda val: BehaviorCodes(val).name
@@ -786,13 +786,13 @@ df.columns.name = None
 df
 
 
-# In[ ]:
+# In[54]:
 
 
 px.bar(df.loc['REV', :])
 
 
-# In[ ]:
+# In[55]:
 
 
 import plotly.graph_objs as go
@@ -846,21 +846,21 @@ fig.write_image(fname.replace(".png", ".svg"))
 
 # ### Frequency
 
-# In[ ]:
+# In[56]:
 
 
 from wbfm.utils.visualization.plot_summary_statistics import calc_onset_frequency_dataframe
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 
-# In[ ]:
+# In[57]:
 
 
 df_frequency_gcamp = calc_onset_frequency_dataframe(all_projects_gcamp, states=[BehaviorCodes.SLOWING])
 df_frequency_gfp = calc_onset_frequency_dataframe(all_projects_gfp, states=[BehaviorCodes.SLOWING])
 
 
-# In[ ]:
+# In[58]:
 
 
 df_frequency_gcamp['genotype'] = 'gcamp'
@@ -869,7 +869,7 @@ df_frequency_gfp['genotype'] = 'gfp'
 df_frequency = pd.concat([df_frequency_gcamp, df_frequency_gfp])
 
 
-# In[ ]:
+# In[59]:
 
 
 states = ['BehaviorCodes.SLOWING']

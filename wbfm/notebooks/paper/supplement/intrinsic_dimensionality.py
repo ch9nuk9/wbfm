@@ -67,7 +67,7 @@ from collections import defaultdict
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
 
 
-# In[7]:
+# In[34]:
 
 
 
@@ -89,7 +89,7 @@ for proj_type, proj_dict in all_all_projects.items():
         for i, m in enumerate(tqdm(methods, leave=False)):
             try:
                 model = m()
-                data = proj.calc_default_traces(use_paper_options=True)
+                data = proj.calc_default_traces(use_paper_options=True, interpolate_nan=True)
                 gid1 = model.fit(data).dimension_
                 all_dim[name][i] = gid1
             except ValueError:
@@ -104,7 +104,7 @@ for proj_type, proj_dict in all_all_projects.items():
     all_all_dim.append(df_all_dim)
 
 
-# In[8]:
+# In[35]:
 
 
 df_all_all_dim = pd.concat(all_all_dim)
@@ -112,7 +112,7 @@ df_all_all_dim.columns = [i[:-2] if i != 'datatype' else i for i in df_all_all_d
 df_all_all_dim.head()
 
 
-# In[9]:
+# In[36]:
 
 
 fig = px.box(df_all_all_dim, points='all', color='datatype', color_discrete_map=plotly_paper_color_discrete_map())
@@ -131,13 +131,13 @@ fig.show()
 
 # ## For main: pool across methods
 
-# In[11]:
+# In[37]:
 
 
 # df_all_all_dim.drop(columns='TwoNN').melt(id_vars='datatype')['datatype'].unique()
 
 
-# In[12]:
+# In[38]:
 
 
 from wbfm.utils.general.utils_paper import data_type_name_mapping
@@ -165,7 +165,7 @@ fig.show()
 
 # ### Instead: each method is a single data point (median across datasets)
 
-# In[25]:
+# In[39]:
 
 
 df = df_all_all_dim.reset_index().melt(id_vars=['datatype', 'index'])
@@ -182,7 +182,7 @@ df_dim_combined['datatype'] = df_dim_combined['datatype'].map(data_type_name_map
 df_dim_combined.head()
 
 
-# In[27]:
+# In[112]:
 
 
 from wbfm.utils.general.utils_paper import data_type_name_mapping
@@ -190,13 +190,26 @@ from wbfm.utils.general.utils_paper import data_type_name_mapping
 fig = px.box(df_dim_combined, y='value', #x='datatype',
              color='datatype', color_discrete_map=plotly_paper_color_discrete_map(),
             category_orders={'datatype': ['Freely Moving (GFP)', 'Freely Moving (GCaMP)', 'Immobilized (GCaMP)']})
-apply_figure_settings(fig=fig, width_factor=0.2, height_factor=0.25)
-fig.update_yaxes(title='Estimated<br>dimensionality'), #showgrid=True, gridwidth=1, griddash='dash', gridcolor='black', overwrite=True)
+apply_figure_settings(fig=fig, width_factor=0.22, height_factor=0.25)
+fig.update_yaxes(title='Dimensionality', overwrite=True), #showgrid=True, gridwidth=1, griddash='dash', gridcolor='black', overwrite=True)
 fig.update_xaxes(range=[-0.4,0.4])
 
-fig.update_xaxes(title='Dataset')
-fig.update_layout(showlegend=False)
-# fig.update_traces(width = 0.1)
+fig.update_xaxes(title='Dataset Type')
+fig.update_layout(showlegend=True,
+        legend=dict(
+            title='',
+            xanchor='center',
+            x=0.5,  # Adjust the x position of the legend
+            # xref='paper',
+            y=1.5, #0.54,  # Adjust the y position of the legend
+            # yref='paper',
+            bgcolor='rgba(0, 0, 0, 0.00)',  # Set the background color of the legend
+            # bordercolor='Black',  # Set the border color of the legend
+            # borderwidth=1,  # Set the border width of the legend
+            # font=dict(size=12)  # Set the font size of the legend text
+        ),
+                  # margin=dict(t=75)
+)
 
 fname = os.path.join("/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/supplement/intrinsic_dimension", 'raw_data_combined.png')
 fig.write_image(fname, scale=3)
@@ -206,21 +219,21 @@ fig.write_image(fname)
 fig.show()
 
 
-# In[21]:
+# In[105]:
 
 
-df_dim_combined['datatype'].unique()
+print(fig.layout)
 
 
 # # Also calculate the dimensionality of the CCA projection space
 
-# In[12]:
+# In[42]:
 
 
 from wbfm.utils.visualization.utils_cca import CCAPlotter
 
 
-# In[13]:
+# In[43]:
 
 
 
@@ -232,7 +245,7 @@ methods = [skdim.id.CorrInt, #skdim.id.DANCo, #skdim.id.ESS,
           ]
 
 
-# In[14]:
+# In[44]:
 
 
 # project_data_gcamp.use_physical_x_axis = True
@@ -240,13 +253,13 @@ methods = [skdim.id.CorrInt, #skdim.id.DANCo, #skdim.id.ESS,
 # cca_plotter = CCAPlotter(project_data_gcamp, truncate_traces_to_n_components=5, preprocess_behavior_using_pca=True, trace_kwargs=dict(use_paper_options=True))
 
 
-# In[15]:
+# In[45]:
 
 
 # X_r, Y_r, cca = self.calc_cca(n_components=5, binary_behaviors=False)
 
 
-# In[16]:
+# In[46]:
 
 
 
@@ -266,7 +279,7 @@ for name, proj in tqdm(all_projects_gcamp.items()):
 df_cca_dim = pd.DataFrame(cca_dim)
 
 
-# In[8]:
+# In[47]:
 
 
 method_names = [str(method).split('.')[-1][:-2] for method in methods]
@@ -274,7 +287,7 @@ df_cca_dim.index=method_names
 # df_cca_dim.head()
 
 
-# In[7]:
+# In[48]:
 
 
 # fig = px.box(df_cca_dim.T, points='all', color_discrete_map=plotly_paper_color_discrete_map(),
@@ -294,7 +307,7 @@ df_cca_dim.index=method_names
 
 # ### Binary dimensionality
 
-# In[19]:
+# In[49]:
 
 
 
@@ -313,14 +326,14 @@ for name, proj in tqdm(all_projects_gcamp.items()):
 df_cca_dim_binary = pd.DataFrame(cca_dim_binary)
 
 
-# In[20]:
+# In[50]:
 
 
 method_names = [str(method).split('.')[-1][:-2] for method in methods]
 df_cca_dim_binary.index=method_names
 
 
-# In[6]:
+# In[51]:
 
 
 # fig = px.box(df_cca_dim_binary.T, points='all', color_discrete_map=plotly_paper_color_discrete_map(),
@@ -340,7 +353,7 @@ df_cca_dim_binary.index=method_names
 
 # ### Both on one graph
 
-# In[23]:
+# In[52]:
 
 
 df0 = df_cca_dim.copy().T
@@ -351,13 +364,13 @@ df1['behavior type'] = 'Discrete'
 df_cca_both = pd.concat([df0, df1])
 
 
-# In[24]:
+# In[53]:
 
 
 df_cca_both.head()
 
 
-# In[26]:
+# In[54]:
 
 
 fig = px.box(df_cca_both, points='all', color='behavior type')
@@ -374,7 +387,7 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-# In[32]:
+# In[55]:
 
 
 # fig = px.scatter(df_cca_both, color='behavior type', marginal_y='box')
@@ -397,53 +410,4 @@ fig.write_image(fname)
 
 
 
-
-
-# # Look at the intrinsic dimensionality using a bunch of methods
-
-# In[6]:
-
-
-import skdim
-from collections import defaultdict
-
-
-# In[ ]:
-
-
-
-# methods = [skdim.id.CorrInt, #skdim.id.DANCo, #skdim.id.ESS, 
-#            skdim.id.FisherS, skdim.id.KNN, skdim.id.lPCA, skdim.id.MADA, skdim.id.MiND_ML, skdim.id.MLE, skdim.id.MOM, skdim.id.TLE, skdim.id.TwoNN
-#           ]
-
-# all_dim = {}
-# for name, proj in tqdm(all_projects_gcamp.items()):
-#     all_dim[name] = defaultdict()
-#     for i, m in enumerate(tqdm(methods, leave=False)):
-#         try:
-#             model = m()
-#             data = proj.calc_default_traces(use_paper_options=True)
-#             gid1 = model.fit(data).dimension_
-#             all_dim[name][i] = gid1
-#         except ValueError:
-#             all_dim[name][i] = np.nan
-
-
-# In[ ]:
-
-
-# method_names = [str(method).split('.')[-1] for method in methods]
-
-
-# In[ ]:
-
-
-# df_all_dim = pd.DataFrame(all_dim)
-# df_all_dim.index=method_names
-
-
-# In[ ]:
-
-
-# px.box(df_all_dim.T, points='all')
 
