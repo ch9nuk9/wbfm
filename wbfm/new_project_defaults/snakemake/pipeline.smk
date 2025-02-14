@@ -324,9 +324,10 @@ rule sam2_segment:
         batch_size=400
     shell:
         """
-        # Activate the environment
+        # Activate the environment and the correct cuda
         source /lisc/app/conda/miniforge3/bin/activate {params.sam2_conda_env_name}
-
+        module load cuda-toolkit/12.6.3
+        
         # Display the temporary directory being used
         echo "Using temporary directory: $TMPDIR"
 
@@ -460,6 +461,7 @@ rule dlc_analyze_videos:
     shell:
         """
         source /lisc/app/conda/miniforge3/bin/activate {params.dlc_conda_env}
+        module load cuda-toolkit/12.6.3
         # Also rename the output file to the expected name
         # We don't actually know the name without querying deeplabcut, so just rename it
         python -c "import deeplabcut, os; fname = deeplabcut.analyze_videos('{params.dlc_model_configfile_path}', '{input.input_avi}', videotype='avi', gputouse=0, save_as_csv=True); print('Produced raw files with name: ' + fname); os.rename(f'{output_behavior_dir}/raw_stack'+fname+'.h5', '{output_behavior_dir}/raw_stack_dlc.h5'); os.rename(f'{output_behavior_dir}/raw_stack'+fname+'.csv', '{output_behavior_dir}/raw_stack_dlc.csv')"
