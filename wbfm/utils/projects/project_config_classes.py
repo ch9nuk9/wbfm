@@ -650,7 +650,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
         # See if the .btf file has already been produced... unfortunately this is a modification of the raw data folder
         # Assume that any .btf file is the correct one, IF it doesn't have 'AVG' in the name (refers to background subtraction)
-        btf_file = [f for f in os.listdir(behavior_raw_folder) if f.endswith(".btf") and 'AVG' not in f]
+        btf_file = [f for f in os.listdir(behavior_raw_folder) if f.endswith(".btf") and 'AVG' not in f and
+                    os.path.isfile(f)]
         if len(btf_file) == 1:
             btf_file = btf_file[0]
             self.logger.info(f".btf file already produced: {btf_file}")
@@ -696,8 +697,9 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     def _get_background_parent_folder(self, multiday_parent_folder, suffix='BH', crash_if_no_background=True) -> \
             Optional[str]:
-        # First, get intermediate folder: anything with 'background'
-        background_parent_folder = glob.glob(f"{multiday_parent_folder}/*background*")
+        # First, get intermediate folder: anything with 'background' (only folders)
+        background_parent_folder = [f for f in os.listdir(multiday_parent_folder) if 'background' in f and
+                                    os.path.isdir(f)]
         found_one_folder = True
         msg = ''
         if len(background_parent_folder) > 1:
@@ -712,9 +714,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                 raise RawDataFormatError(msg)
             else:
                 return None
-        # Second, actual background folder
+        # Second, actual background folder (only folders)
         background_parent_folder = background_parent_folder[0]
-        specific_background_parent_folder = glob.glob(f"{background_parent_folder}/*background*{suffix}*")
+        specific_background_parent_folder = [f for f in os.listdir(background_parent_folder) if 'background' in f and
+                                             suffix in f and os.path.isdir(f)]
         if len(specific_background_parent_folder) != 1:
             msg = (f"Found no or more than one specific background folder(s) for channel {suffix}: "
                    f"{specific_background_parent_folder}")

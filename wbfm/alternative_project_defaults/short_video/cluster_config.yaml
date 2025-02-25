@@ -59,7 +59,6 @@ tiff2avi:
     cpus_per_task: 2
 
 dlc_analyze_videos:
-    mem: 0
     cpus_per_task: 24
     gres: shard:32
 
@@ -72,17 +71,14 @@ normalize_img:
     cpus_per_task: 8
 
 worm_unet:
-    mem: 0
     cpus_per_task: 24
     gres: shard:32
 
 sam2_segment:
-    mem: 0
     cpus_per_task: 24
     gres: shard:32
 
 coil_unet:
-    mem: 0
     cpus_per_task: 24
     gres: shard:32
 
