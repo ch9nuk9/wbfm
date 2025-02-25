@@ -788,7 +788,7 @@ def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_u
         df_weights = df_weights.loc[:, df_weights.columns.isin(neuron_names)]
     # Keep a subset of neurons that have confident ids
     if include_only_confident_ids:
-        df_weights = df_weights.loc[:, df_weights.columns.isin(neurons_with_confident_ids())]
+        df_weights = df_weights.loc[:, df_weights.columns.isin(neurons_with_confident_ids(combine_left_right=combine_left_right))]
     # Drop all neurons that contain 'neuron' in the name
     if drop_unlabeled_neurons:
         df_weights = df_weights.loc[:, ~df_weights.columns.str.contains('neuron')]
