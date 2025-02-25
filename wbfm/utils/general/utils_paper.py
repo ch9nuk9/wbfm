@@ -115,7 +115,8 @@ def intrinsic_categories_color_discrete_map(return_hex=True, mix_fraction = 0.0)
             'Rev in FM only': d3[0],
             'Fwd in both': d3[4],
             'Rev in immob only': d3[2],
-            'Fwd in immob only': d3[2]
+            'Fwd in immob only': d3[2],
+            'Encoding switches': d3[6] # Pink
             }
     # Map everything to be more pastel
     if mix_fraction is not None and mix_fraction != 0:
