@@ -2,6 +2,7 @@ import concurrent
 import logging
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
+from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
 
 import tables
 from methodtools import lru_cache
@@ -1195,7 +1196,7 @@ class ProjectData:
         return df
 
     def calc_pca_modes(self, n_components=10, flip_pc1_to_have_reversals_high=True, return_pca_weights=False,
-                       return_pca_object=False, multiply_by_variance=False, **trace_kwargs) \
+                       return_pca_object=False, multiply_by_variance=False, combine_left_right=False, **trace_kwargs) \
             -> Tuple[pd.DataFrame, np.array]:
         """
         Calculates the PCA modes of the traces, and optionally flips the first mode to have reversals high
@@ -1219,6 +1220,8 @@ class ProjectData:
         trace_kwargs['rename_neurons_using_manual_ids'] = True
 
         X = self.calc_default_traces(**trace_kwargs)
+        if combine_left_right:
+            X = combine_columns_with_suffix(X, suffixes=['L', 'R'], how='mean')
         X = fill_nan_in_dataframe(X, do_filtering=False)
         X -= X.mean()
         pca = PCA(n_components=n_components, whiten=False)

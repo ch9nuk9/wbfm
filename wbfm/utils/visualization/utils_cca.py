@@ -777,7 +777,7 @@ def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_u
     trace_opt = kwargs.copy()
 
     for name, p in tqdm(all_projects.items()):
-        trace_weights, _ = p.calc_pca_modes(return_pca_weights=True, **trace_opt)
+        trace_weights, _ = p.calc_pca_modes(return_pca_weights=True, combine_left_right=combine_left_right, **trace_opt)
         all_weights[name] = trace_weights.T.loc[which_mode, :]
 
     df_weights = pd.DataFrame(all_weights).T
@@ -800,10 +800,6 @@ def calc_pca_weights_for_all_projects(all_projects, which_mode=0, correct_sign_u
     if correct_sign_using_top_weight:
         sign_vec = np.sign(df_weights.iloc[:, df_weights.abs().sum().argmax()])
         df_weights = df_weights.mul(sign_vec, axis='index')
-
-    # Combine pairs
-    if combine_left_right:
-        df_weights = combine_columns_with_suffix(df_weights, suffixes=['L', 'R'], how='mean')
 
     # Sort them by the signed median weight
     df_weights = df_weights.reindex(df_weights.median().sort_values(ascending=False).index, axis=1)
