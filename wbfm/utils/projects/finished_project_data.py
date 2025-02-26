@@ -679,10 +679,10 @@ class ProjectData:
                 project_data.logger.info(f"Found nwb file at {nwb_filename}")
                 initialization_kwargs = kwargs.get('initialization_kwargs', dict())
                 project_data_nwb = ProjectData.load_final_project_data_from_nwb(nwb_filename, **initialization_kwargs)
-                # TODO: Combine projects
                 # For now, only allow raw data to be loaded from the nwb file
-                if project_data_nwb.project_config.get_preprocessing_class().has_raw_data:
-                    pass
+                nwb_preprocessing_class = project_data_nwb.project_config.get_preprocessing_class()
+                if nwb_preprocessing_class.has_raw_data:
+                    project_data.project_config._preprocessing_class = nwb_preprocessing_class
             else:
                 project_data.logger.info(f"Found no nwb file, continuing")
 
