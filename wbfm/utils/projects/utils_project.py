@@ -17,18 +17,16 @@ from wbfm.utils.general.utils_filenames import get_location_of_new_project_defau
 #####################
 
 
-def get_project_name(_config: dict, basename=None) -> str:
+def get_project_name(basename=None, experimenter='', task='') -> str:
     # Use current time
     if basename is None:
         project_name = datetime.now().strftime("%Y_%m_%d")
     else:
         project_name = basename
-    exp = _config.get('experimenter', '')
-    task = _config.get('task_name', '')
     if task is not None and task != '':
         project_name = f"{task}-" + project_name
-    if exp is not None and exp != '':
-        project_name = f"{exp}-" + project_name
+    if experimenter is not None and experimenter != '':
+        project_name = f"{experimenter}-" + project_name
 
     return project_name
 
@@ -127,3 +125,9 @@ def update_snakemake_config_path(abs_dir_name):
     snakemake_fname = osp.join(abs_dir_name, 'snakemake', 'snakemake_config.yaml')
     snakemake_updates = {'project_dir': str(abs_dir_name)}
     edit_config(snakemake_fname, snakemake_updates)
+
+
+def update_nwb_config_path(abs_dir_name, nwb_filename):
+    nwb_fname = osp.join(abs_dir_name, 'nwb', 'nwb_config.yaml')
+    nwb_updates = {'nwb_filename': str(nwb_filename)}
+    edit_config(nwb_fname, nwb_updates)

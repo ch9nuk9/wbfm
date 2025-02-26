@@ -1,6 +1,7 @@
 import concurrent
 import logging
 import os
+import shutil
 from os import path as osp
 from pathlib import Path
 from shutil import copytree
@@ -19,7 +20,7 @@ from wbfm.utils.general.utils_filenames import get_sequential_filename, add_name
     get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder, \
     get_ndtiff_fnames_from_parent_folder, generate_output_data_names
 from wbfm.utils.projects.utils_project import get_project_name, safe_cd, update_project_config_path, \
-    update_snakemake_config_path
+    update_snakemake_config_path, update_nwb_config_path
 
 
 def build_project_structure_from_config(_config: dict, logger: logging.Logger = None) -> None:
@@ -83,21 +84,55 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger = 
 
     # Build the full project name using the date the data was taken
     basename = Path(red_fname).name.split('_')[0]
-    parent_folder = _config['project_dir']
-    rel_new_project_name = get_project_name(_config, basename)
-    abs_new_project_name = osp.join(parent_folder, rel_new_project_name)
-    abs_new_project_name = get_sequential_filename(abs_new_project_name)
+    project_config_updates = _config
+
+    abs_new_project_name = build_project_name(basename, project_config_updates)
     logger.info(f"Building new project at: {abs_new_project_name}")
 
+    project_fname, _ = build_project_structure(project_config_updates, abs_new_project_name)
+
+    return project_fname
+
+
+def build_project_name(basename, project_config_updates):
+    parent_folder = project_config_updates['project_dir']
+    experimenter = project_config_updates.get('experimenter', '')
+    task = project_config_updates.get('task_name', '')
+    rel_new_project_name = get_project_name(basename, experimenter=experimenter, task=task)
+    abs_new_project_name = osp.join(parent_folder, rel_new_project_name)
+    abs_new_project_name = get_sequential_filename(abs_new_project_name)
+    abs_new_project_name = str(Path(abs_new_project_name).resolve())
+    return abs_new_project_name
+
+
+def build_project_structure(project_config_updates, basename=None):
+    """project_config_updates must at least have project_dir as a string"""
+    project_folder_abs = build_project_name(basename, project_config_updates)
     # Uses the pip installed package location
     src = get_location_of_new_project_defaults()
-    copytree(src, abs_new_project_name)
-
+    copytree(src, project_folder_abs)
     # Update the copied project config with the new dest folder
-    project_fname = update_project_config_path(abs_new_project_name, _config)
-
+    project_fname = update_project_config_path(project_folder_abs, project_config_updates)
     # Also update the snakemake file with the project directory
-    update_snakemake_config_path(abs_new_project_name)
+    update_snakemake_config_path(project_folder_abs)
+    return project_fname, project_folder_abs
+
+
+def build_project_structure_from_nwb_file(config, nwb_file, copy_nwb_file=False):
+    """
+    This mostly just copies the empty project structure and then copies (or moves) the nwb into it
+    """
+    project_fname, project_folder_abs = build_project_structure(config)
+
+    # Move or copy the nwb file
+    target_nwb_filename = os.path.join(project_folder_abs, 'nwb', Path(nwb_file).name)
+    if copy_nwb_file:
+        shutil.copy(nwb_file, target_nwb_filename)
+    else:
+        shutil.move(nwb_file, target_nwb_filename)
+
+    # Update the config file
+    update_nwb_config_path(project_folder_abs, target_nwb_filename)
 
     return project_fname
 

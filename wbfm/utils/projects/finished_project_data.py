@@ -632,7 +632,7 @@ class ProjectData:
         return obj
 
     @staticmethod
-    def load_final_project_data(project_path, **kwargs):
+    def load_final_project_data(project_path, allow_hybrid_loading=False, **kwargs):
         """
         Wrapper function that dispatches to the correct loading function based on the input:
         load_final_project_data_from_nwb:
@@ -654,16 +654,35 @@ class ProjectData:
         -------
 
         """
+        loaded_via_nwb = False
         if isinstance(project_path, str):
             if project_path.endswith('.nwb'):
                 # Most kwargs are ignored here
                 initialization_kwargs = kwargs.get('initialization_kwargs', dict())
                 assert kwargs.get('load_tracklets', False) is False, "Tracklets are not supported for NWB files"
-                return ProjectData.load_final_project_data_from_nwb(project_path, **initialization_kwargs)
+                project_data = ProjectData.load_final_project_data_from_nwb(project_path, **initialization_kwargs)
+                loaded_via_nwb = True
             else:
-                return ProjectData.load_final_project_data_from_config(project_path, **kwargs)
+                project_data = ProjectData.load_final_project_data_from_config(project_path, **kwargs)
         else:
-            return ProjectData.load_final_project_data_from_config(project_path, **kwargs)
+            project_data = ProjectData.load_final_project_data_from_config(project_path, **kwargs)
+
+        # Hybrid loading using both styles:
+        #   If the project was loaded via a config file path, but has steps missing, then try to also load the nwb
+        if not loaded_via_nwb and allow_hybrid_loading:
+            project_data.logger.info("Found missing data when loading from project config, "
+                                     "attempting to load remaining steps from nwb file")
+            cfg_nwb = project_data.project_config.get_nwb_config()
+            nwb_filename = cfg_nwb.resolve_relative_path_from_config('nwb_filename')
+            if nwb_filename is not None:
+                project_data.logger.info(f"Found nwb file at {nwb_filename}")
+                initialization_kwargs = kwargs.get('initialization_kwargs', dict())
+                project_data_nwb = self.load_final_project_data_from_nwb(**initialization_kwargs)
+                # Combine projects
+            else:
+                project_data.logger.info(f"Found no nwb file, continuing")
+
+        return project_data
 
     @staticmethod
     def load_final_project_data_from_config(project_path: Union[str, os.PathLike, ModularProjectConfig],
@@ -2201,7 +2220,7 @@ With raw data in directory:\n\
 See self.worm_posture_class for information on behavioral parameters\
 \n\
 Found the following data files:\n\
-============Raw Videos=================\n\
+============Preprocessed Videos========\n\
 red_data:                 {self.red_data is not None}\n\
 green_data:               {self.green_data is not None}\n\
 ============Segmentation===============\n\
