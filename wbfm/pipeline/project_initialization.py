@@ -9,12 +9,15 @@ import tifffile
 import zarr
 from PIL import Image, UnidentifiedImageError
 from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
+from wbfm.utils.general.preprocessing.bounding_boxes import generate_legacy_bbox_fname, \
+    calculate_bounding_boxes_from_cfg_and_save
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings, \
     preprocess_all_frames_using_config, background_subtract_single_channel
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
-from wbfm.utils.general.utils_filenames import get_sequential_filename, add_name_suffix, get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder, \
-    get_ndtiff_fnames_from_parent_folder
+from wbfm.utils.general.utils_filenames import get_sequential_filename, add_name_suffix, \
+    get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder, \
+    get_ndtiff_fnames_from_parent_folder, generate_output_data_names
 from wbfm.utils.projects.utils_project import get_project_name, safe_cd, update_project_config_path, \
     update_snakemake_config_path
 
@@ -306,3 +309,73 @@ def calculate_total_number_of_frames_from_bigtiff(cfg):
         cfg.logger.debug(f"Calculated number of frames: {num_frames}")
         cfg.config['deprecated_dataset_params']['num_frames'] = num_frames
         cfg.update_self_on_disk()
+
+
+def preprocess_fluorescence_data(cfg, to_zip_zarr_using_7z, DEBUG):
+    options = {'tiff_not_zarr': False,
+               'pad_to_align_with_original': False,
+               'use_preprocessed_data': False,
+               'DEBUG': DEBUG}
+    logger = cfg.logger
+    project_dir = cfg.project_dir
+    cfg.config['project_dir'] = project_dir
+    preprocessing_cfg = cfg.get_preprocessing_config()
+    red_output_fname, green_output_fname = generate_output_data_names(cfg)
+    # Open the raw data using the config file directly
+    _, is_btf = cfg.get_raw_data_fname(red_not_green=True)
+    if is_btf:
+        calculate_total_number_of_frames_from_bigtiff(cfg)
+    bbox_fname = preprocessing_cfg.config.get('bounding_boxes_fname', None)
+    if bbox_fname is None:
+        generate_legacy_bbox_fname(project_dir)
+    with safe_cd(project_dir):
+        preprocessing_settings = cfg.get_preprocessing_class()
+
+        # Very first: calculate the alignment between the red and green channels (camera misalignment)
+        preprocessing_settings.calculate_warp_mat(cfg)
+        green_name = Path(green_output_fname)
+        fname = green_name.parent / (green_name.stem + "_camera_alignment.pickle")
+        preprocessing_settings.path_to_camera_alignment_matrix = fname
+
+        # Second: within-stack alignment using the red channel, which will be saved to disk
+        options['out_fname'] = red_output_fname
+        options['save_fname_in_red_not_green'] = True
+        # Location: same as the preprocessed red channel (possibly not the bigtiff)
+        red_name = Path(options['out_fname'])
+        fname = red_name.parent / (red_name.stem + "_preprocessed.pickle")
+        preprocessing_settings.path_to_previous_warp_matrices = fname
+
+        if Path(options['out_fname']).exists() and fname.exists():
+            logger.info("Preprocessed red already exists; skipping to green")
+        else:
+            logger.info("Preprocessing red...")
+            preprocessing_settings.do_mirroring = False
+            assert preprocessing_settings.to_save_warp_matrices
+            write_data_subset_using_config(cfg, preprocessing_settings=preprocessing_settings,
+                                           which_channel='red', **options)
+
+        # Third the green channel will read the warp matrices per-volume (step 2) and between cameras (step 1)
+        logger.info("Preprocessing green...")
+        options['out_fname'] = green_output_fname
+        options['save_fname_in_red_not_green'] = False
+        preprocessing_settings.to_use_previous_warp_matrices = True
+        if cfg.config['dataset_params']['red_and_green_mirrored']:
+            preprocessing_settings.do_mirroring = True
+        write_data_subset_using_config(cfg, preprocessing_settings=preprocessing_settings,
+                                       which_channel='green', **options)
+
+        # Save the warp matrices (camera and per-volume) to disk if needed further
+        preprocessing_settings.save_all_warp_matrices()
+
+        # Also saving bounding boxes for future segmentation (speeds up and dramatically reduces false positives)
+        Path(bbox_fname).parent.mkdir(parents=True, exist_ok=True)
+        calculate_bounding_boxes_from_cfg_and_save(cfg, bbox_fname, red_not_green=True)
+
+        bbox_fname = preprocessing_cfg.unresolve_absolute_path(bbox_fname)
+        preprocessing_cfg.config['bounding_boxes_fname'] = bbox_fname
+        preprocessing_cfg.update_self_on_disk()
+    if to_zip_zarr_using_7z:
+        # Reload the config file to make sure all filenames are correct
+        preprocessing_settings = cfg.get_preprocessing_class()
+        zip_zarr_using_config(preprocessing_settings)
+    logger.info("Finished.")
