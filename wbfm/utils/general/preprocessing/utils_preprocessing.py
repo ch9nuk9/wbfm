@@ -601,22 +601,25 @@ class PreprocessingSettings:
         return str(fname)
 
     def __repr__(self):
-        return f"Preprocessing settings object with settings: \n\
+        return f"========================================================= \n\
+Preprocessing settings object with settings: \n\
     Data settings: \n\
-    raw_number_of_planes = {self.raw_number_of_planes} \n\
-    starting_plane = {self.starting_plane} \n\
+        raw_number_of_planes = {self.raw_number_of_planes} \n\
+        starting_plane = {self.starting_plane} \n\
     Filtering:  \n\
-    do_background_subtraction = {self.do_background_subtraction} \n\
-    reset_background = {self.reset_background} \n\
-    reset_background_per_pixel = {self.reset_background_per_pixel} \n\
+        do_background_subtraction = {self.do_background_subtraction} \n\
+        reset_background = {self.reset_background} \n\
+        reset_background_per_pixel = {self.reset_background_per_pixel} \n\
     Rigid alignment (slices to each other): \n\
-    do_rigid_alignment = {self.do_rigid_alignment} \n\
-    Rigid alignment (green to red channel) \n\
-    align_green_red_cameras = {self.align_green_red_cameras} \n\
-    camera_alignment_method = {self.camera_alignment_method} \n\
+        do_rigid_alignment = {self.do_rigid_alignment} \n\
+        Rigid alignment (green to red channel) \n\
+        align_green_red_cameras = {self.align_green_red_cameras} \n\
+        camera_alignment_method = {self.camera_alignment_method} \n\
     Deconvolution and other things (experimental): \n\
-    do_sharpening = {self.do_sharpening} \n\
-    sharpening_kwargs = {self.sharpening_kwargs} \n\
+        do_sharpening = {self.do_sharpening} \n\
+        sharpening_kwargs = {self.sharpening_kwargs} \n\
+    Raw data shape: \n\
+         {self.open_raw_data_as_4d_dask().shape}\n\
 "
 
 
