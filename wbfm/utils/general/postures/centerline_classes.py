@@ -2375,7 +2375,7 @@ def parse_behavior_annotation_file(cfg: ModularProjectConfig = None, behavior_fn
                 # From Itamar's tracify package, which saves only the starts and ends
                 # IN THE SECONDS, not trace frame rate
                 fps = 3.47
-                logging.warning(f"Assuming that the manual annotation is in the seconds, and using fps={fps}")
+                logging.warning(f"Assuming that the manual annotation is the seconds, and using fps={fps}")
                 starts_ends = (pd.read_csv(behavior_fname) * fps).astype(int)
                 behavior_annotations = make_binary_vector_from_starts_and_ends(starts_ends['start'], starts_ends['end'],
                                                                                original_vals=template_vector)
