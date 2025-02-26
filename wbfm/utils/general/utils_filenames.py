@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from pip._internal.commands.show import search_packages_info
 
-from wbfm.utils.external.custom_errors import UnknownValueError
+from wbfm.utils.external.custom_errors import UnknownValueError, RawDataFormatError
 
 
 def check_exists(abs_path, allow_overwrite):
@@ -329,10 +329,22 @@ def generate_output_data_names(cfg):
     -------
 
     """
-    fname, is_btf = cfg.get_raw_data_fname(red_not_green=True)
-    out_fname_red = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.stem}_preprocessed.zarr")))
-    fname, is_btf = cfg.get_raw_data_fname(red_not_green=False)
-    out_fname_green = str(cfg.resolve_relative_path(os.path.join("dat", f"{fname.stem}_preprocessed.zarr")))
+    red_fname, is_btf = cfg.get_raw_data_fname(red_not_green=True)
+    green_fname, is_btf = cfg.get_raw_data_fname(red_not_green=False)
+    if red_fname is None:
+        # Then there is no raw data directly found, but it may be in a nwb file, so use that as the stem
+        try:
+            nwb_cfg = cfg.get_nwb_config()
+            nwb_filename = nwb_cfg.config['nwb_filename']
+            if nwb_filename is None:
+                raise FileNotFoundError(nwb_filename)
+            else:
+                red_fname = Path(add_name_suffix(nwb_filename, '_red'))
+                green_fname = Path(add_name_suffix(nwb_filename, '_green'))
+        except FileNotFoundError as e:
+            raise RawDataFormatError(f"Could not find either raw data files or nwb file; original error: {e}")
+    out_fname_red = str(cfg.resolve_relative_path(os.path.join("dat", f"{red_fname.stem}_preprocessed.zarr")))
+    out_fname_green = str(cfg.resolve_relative_path(os.path.join("dat", f"{green_fname.stem}_preprocessed.zarr")))
     return out_fname_red, out_fname_green
 
 
