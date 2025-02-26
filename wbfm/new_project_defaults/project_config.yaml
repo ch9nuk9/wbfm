@@ -47,6 +47,7 @@ subfolder_configs:
   tracking: 3-tracking/tracking_config.yaml
   traces: 4-traces/traces_config.yaml
   visualization: visualization/visualization_config.yaml
+  nwb: nwb/nwb_config.yaml
 
 ###################
 # Other
