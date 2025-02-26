@@ -30,6 +30,7 @@ from wbfm.utils.projects.project_config_classes import ModularProjectConfig, Con
 from wbfm.utils.general.utils_filenames import add_name_suffix
 from wbfm.utils.external.utils_yaml import edit_config
 from wbfm.utils.general.video_and_data_conversion.import_video_as_array import get_single_volume
+from wbfm.utils.projects.utils_project import RawFluorescenceData
 
 
 def background_subtract_single_channel(raw_fname, background_fname, num_frames, num_slices, preprocessing_settings,
@@ -74,7 +75,7 @@ def read_background(background_fname, num_frames, num_slices, preprocessing_sett
 
 
 @dataclass
-class PreprocessingSettings:
+class PreprocessingSettings(RawFluorescenceData):
     """
     Holds settings that will be applied to a video (.tiff or .btf)
 
@@ -148,10 +149,6 @@ class PreprocessingSettings:
     # Final output (preprocessed data)
     preprocessed_red_fname: str = None
     preprocessed_green_fname: str = None
-
-    # If loading from a non-traditional structure (e.g. NWB file), then the raw data is directly loaded to this class
-    _raw_red_data: da.Array = None
-    _raw_green_data: da.Array = None
 
     verbose: int = 0
 
@@ -514,6 +511,14 @@ class PreprocessingSettings:
         return dat_out
 
     @property
+    def has_raw_data(self):
+        try:
+            _ = self.open_raw_data_as_4d_dask()
+            return True
+        except FileNotFoundError:
+            return False
+
+    @property
     def num_slices(self):
         """Just for backwards compability: Checks for either the old or new key"""
         num_slices = self.cfg_project.config['dataset_params'].get('num_slices', None)
@@ -618,8 +623,8 @@ Preprocessing settings object with settings: \n\
     Deconvolution and other things (experimental): \n\
         do_sharpening = {self.do_sharpening} \n\
         sharpening_kwargs = {self.sharpening_kwargs} \n\
-    Raw data shape: \n\
-         {self.open_raw_data_as_4d_dask().shape}\n\
+    Has raw data: \n\
+         {self.has_raw_data}\n\
 "
 
 

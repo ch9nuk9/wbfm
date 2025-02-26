@@ -7,6 +7,8 @@ from contextlib import contextmanager
 from datetime import datetime
 from os import path as osp
 from pathlib import Path
+from dataclasses import dataclass
+import dask.array as da
 
 from wbfm.utils.external.utils_yaml import edit_config, load_config
 from wbfm.utils.general.utils_filenames import get_location_of_new_project_defaults
@@ -131,3 +133,11 @@ def update_nwb_config_path(abs_dir_name, nwb_filename):
     nwb_fname = osp.join(abs_dir_name, 'nwb', 'nwb_config.yaml')
     nwb_updates = {'nwb_filename': str(nwb_filename)}
     edit_config(nwb_fname, nwb_updates)
+
+
+@dataclass
+class RawFluorescenceData:
+
+    # If loading from a non-traditional structure (e.g. NWB file), then the raw data is directly loaded to this class
+    _raw_red_data: da.Array = None
+    _raw_green_data: da.Array = None

@@ -22,7 +22,7 @@ from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_log
 from wbfm.utils.general.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
     get_sequential_filename, get_location_of_new_project_defaults, is_absolute_in_any_os
 from wbfm.utils.projects.utils_project import safe_cd, update_project_config_path, \
-    update_snakemake_config_path
+    update_snakemake_config_path, RawFluorescenceData
 from wbfm.utils.external.utils_yaml import edit_config, load_config
 from wbfm.utils.general.hardcoded_paths import default_raw_data_config
 from wbfm.utils.external.custom_errors import RawDataFormatError
@@ -47,22 +47,30 @@ class ConfigFileWithProjectContext:
     log_to_file: bool = True
 
     def __post_init__(self):
-        if Path(self.self_path).is_dir():
-            # Then it was a folder, and we should find the config file inside
-            self.project_dir = self.self_path
-            self.self_path = str(Path(self.self_path).joinpath('project_config.yaml'))
+        if self.self_path is None:
+            logging.warning("self_path is None; some functionality will not work")
+            self.config = dict()
         else:
-            self.project_dir = str(Path(self.self_path).parent)
-        self.config = load_config(self.self_path)
-        if self.config is None:
-            if not Path(self.self_path).exists():
-                raise FileNotFoundError(f"Could not find config file {self.self_path}")
+            if Path(self.self_path).is_dir():
+                # Then it was a folder, and we should find the config file inside
+                self.project_dir = self.self_path
+                self.self_path = str(Path(self.self_path).joinpath('project_config.yaml'))
             else:
-                raise ValueError(f"Found empty file at {self.self_path}; probably yaml crashed and deleted the file. "
-                                 f"There is no way to recover the data, so the file must be recreated manually.")
-        # Convert to default dict, for backwards compatibility with deprecated keys
-        # Actually: this gives problems with pickling, so do not do this
-        # self.config = defaultdict(lambda: defaultdict(lambda: None), self.config)
+                self.project_dir = str(Path(self.self_path).parent)
+            self.config = load_config(self.self_path)
+            if self.config is None:
+                if not Path(self.self_path).exists():
+                    raise FileNotFoundError(f"Could not find config file {self.self_path}")
+                else:
+                    raise ValueError(f"Found empty file at {self.self_path}; probably yaml crashed and deleted the file. "
+                                     f"There is no way to recover the data, so the file must be recreated manually.")
+            # Convert to default dict, for backwards compatibility with deprecated keys
+            # Actually: this gives problems with pickling, so do not do this
+            # self.config = defaultdict(lambda: defaultdict(lambda: None), self.config)
+
+    @property
+    def has_valid_self_path(self):
+        return self.self_path is not None
 
     @property
     def logger(self):
@@ -71,8 +79,11 @@ class ConfigFileWithProjectContext:
         return self._logger
 
     def setup_logger(self, relative_log_filename: str):
-        log_filename = self.resolve_relative_path(os.path.join('log', relative_log_filename))
-        self._logger = setup_logger_object(log_filename, self.log_to_file)
+        if self.has_valid_self_path:
+            log_filename = self.resolve_relative_path(os.path.join('log', relative_log_filename))
+            self._logger = setup_logger_object(log_filename, self.log_to_file)
+        else:
+            self._logger = logging.getLogger('project_config')
         return self._logger
 
     def setup_global_logger(self, relative_log_filename: str):
@@ -262,6 +273,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     """
 
+    _preprocessing_class: RawFluorescenceData = None
+
     def get_segmentation_config(self) -> SubfolderConfigFile:
         fname = Path(self.config['subfolder_configs']['segmentation'])
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
@@ -283,10 +296,13 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         fname = Path(self.get_preprocessing_config_filename())
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
-    @lru_cache(maxsize=2)
     def get_preprocessing_class(self, do_background_subtraction=None):
         # Note: this can't be pickled!
         # https://github.com/cloudpipe/cloudpickle/issues/178
+
+        if self._preprocessing_class is not None:
+            return self._preprocessing_class
+
         fname = self.get_preprocessing_config_filename()
         from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
         preprocessing_settings = PreprocessingSettings.load_from_yaml(fname, do_background_subtraction)
@@ -298,6 +314,9 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             except FileNotFoundError:
                 self.logger.warning("Did not find background; turning off background subtraction")
                 preprocessing_settings.do_background_subtraction = False
+
+        self._preprocessing_class = preprocessing_settings
+
         return preprocessing_settings
 
     def get_preprocessing_config_filename(self):

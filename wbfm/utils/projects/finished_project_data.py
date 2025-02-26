@@ -148,7 +148,7 @@ class ProjectData:
         """
         Load values from disk config files if the user did not set them
         """
-        if self.project_config is not None:
+        if self.project_config.has_valid_self_path:
             track_cfg = self.project_config.get_tracking_config()
             if self.precedence_global2tracklet is None:
                 self.precedence_global2tracklet = track_cfg.config['precedence_global2tracklet']
@@ -169,7 +169,7 @@ class ProjectData:
 
         Names are aligned with the final traces
         """
-        if self.project_config is None:
+        if not self.project_config.has_valid_self_path:
             self.logger.warning("ProjectData initialized without a project_config object; intermediate tracks can't be loaded")
             return None
         tracking_cfg = self.project_config.get_tracking_config()
@@ -226,7 +226,7 @@ class ProjectData:
 
         Names are aligned with the final traces
         """
-        if self.project_config is None:
+        if not self.project_config.has_valid_self_path:
             self.logger.warning("ProjectData initialized without a project_config object; final tracks can't be loaded")
             return None
         tracking_cfg = self.project_config.get_tracking_config()
@@ -369,7 +369,7 @@ class ProjectData:
     def _load_df_tracklets(self, dryrun=False) -> Tuple[pd.DataFrame, str]:
         if self.verbose >= 1 and not dryrun:
             self.logger.info("First time loading all the tracklets, may take a while...")
-        if self.project_config is None:
+        if not self.project_config.has_valid_self_path:
             self.logger.warning("ProjectData initialized without a project_config object; tracklets can't be loaded")
             return None, None
         train_cfg = self.project_config.get_training_config()
@@ -394,7 +394,7 @@ class ProjectData:
     @cached_property
     def tracklet_annotator(self) -> TrackletAndSegmentationAnnotator:
         """Custom class that implements manual modification of tracklets and segmentation"""
-        if self.project_config is None:
+        if not self.project_config.has_valid_self_path:
             self.logger.warning("ProjectData initialized without a project_config object; tracklet annotator can't be loaded")
             return None
         tracking_cfg = self.project_config.get_tracking_config()
@@ -669,16 +669,20 @@ class ProjectData:
 
         # Hybrid loading using both styles:
         #   If the project was loaded via a config file path, but has steps missing, then try to also load the nwb
-        if not loaded_via_nwb and allow_hybrid_loading:
-            project_data.logger.info("Found missing data when loading from project config, "
+        has_raw_data = project_data.project_config.get_preprocessing_class().has_raw_data
+        if not loaded_via_nwb and allow_hybrid_loading and not has_raw_data:
+            project_data.logger.info("Missing raw data when loading from project config, "
                                      "attempting to load remaining steps from nwb file")
             cfg_nwb = project_data.project_config.get_nwb_config()
             nwb_filename = cfg_nwb.resolve_relative_path_from_config('nwb_filename')
             if nwb_filename is not None:
                 project_data.logger.info(f"Found nwb file at {nwb_filename}")
                 initialization_kwargs = kwargs.get('initialization_kwargs', dict())
-                project_data_nwb = self.load_final_project_data_from_nwb(**initialization_kwargs)
-                # Combine projects
+                project_data_nwb = ProjectData.load_final_project_data_from_nwb(nwb_filename, **initialization_kwargs)
+                # TODO: Combine projects
+                # For now, only allow raw data to be loaded from the nwb file
+                if project_data_nwb.project_config.get_preprocessing_class().has_raw_data:
+                    pass
             else:
                 project_data.logger.info(f"Found no nwb file, continuing")
 
@@ -745,11 +749,13 @@ class ProjectData:
         else:
             nwb_obj = nwb_io.read()
 
-        # Do not have a project_config class (will give warnings)
-        obj = ProjectData(nwb_path, None, **kwargs)
+        # Dummy project_config class (will give warnings)
+        project_config = ModularProjectConfig(None)
+        obj = ProjectData(nwb_path, project_config, **kwargs)
 
         # Initialize the relevant fields
-        obj.preprocessing_settings = PreprocessingSettings()
+        preprocessing_settings = PreprocessingSettings()
+        obj.project_config._preprocessing_class = preprocessing_settings
         if 'CalciumImageSeries' in nwb_obj.acquisition:
             # Transpose data from TXYZC to TZXY (splitting the channel)
             obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
@@ -757,8 +763,8 @@ class ProjectData:
         if 'RawCalciumImageSeries' in nwb_obj.acquisition:
             # Load this, but it's not actually part of the main ProjectData class
             # Transpose data from TXYZC to TZXY (splitting the channel)
-            obj.preprocessing_settings._raw_red_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
-            obj.preprocessing_settings._raw_green_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data)[..., 1].transpose(
+            preprocessing_settings._raw_red_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
+            preprocessing_settings._raw_green_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data)[..., 1].transpose(
                 (0, 3, 1, 2))
 
         # Note that there should always be 'CalciumActivity' but it may be a stub
@@ -822,7 +828,7 @@ class ProjectData:
         else:
             kwargs['background_per_pixel'] = self.background_per_pixel
 
-        if self.project_config is not None:
+        if self.project_config.has_valid_self_path:
             alternate_dataframe_folder = self.project_config.get_visualization_config().absolute_subfolder
         else:
             alternate_dataframe_folder = None
@@ -1696,7 +1702,7 @@ class ProjectData:
 
         """
         # Manual annotations take precedence by default
-        if self.project_config is None:
+        if not self.project_config.has_valid_self_path:
             self.logger.warning("No project config found; cannot load manual annotations")
             return None
         excel_fname = self.get_default_manual_annotation_fname()
