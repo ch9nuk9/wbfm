@@ -70,7 +70,7 @@ def create_vol_seg_centers(name, description, ImagingVolume, positions,
     return vs
 
 
-def nwb_using_project_data(project_data: ProjectData, include_image_data=False, output_folder=None):
+def nwb_using_project_data(project_data: ProjectData, include_image_data=False, output_folder=None, DEBUG=False):
     """
     Convert a ProjectData class to an NWB h5 file, optionally including all raw image data.
 
@@ -85,8 +85,13 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
 
     """
 
-    if output_folder is None:
-        logging.warning("No output folder specified, will not save final output (this is a dry run)")
+    if DEBUG:
+        logging.warning("DEBUG mode; will not save final output (this is a dry run)")
+        output_folder = None
+    elif output_folder is None:
+        # Save within the project_data folder
+        cfg_nwb = project_data.project_config.get_nwb_config()
+        output_folder = cfg_nwb.absolute_subfolder
 
     # Unpack variables from project_data
     # Everything in the zimmer lab is produced with a time stamp saved in the filename of the raw data folder
@@ -137,6 +142,10 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
 
     nwb_file, fname = nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_quant_dict, session_start_time, subject_id, strain,
                                                       physical_units_class, output_folder)
+    # Update in the project config
+    cfg_nwb.config['nwb_filename'] = fname
+    cfg_nwb.update_self_on_disk()
+
     return nwb_file, fname
 
 

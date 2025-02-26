@@ -310,7 +310,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return fname
 
     def get_behavior_config(self) -> SubfolderConfigFile:
-        fname = Path(self.project_dir).joinpath('behavior', 'behavior_config.yaml')
+        fname = Path(self.project_dir).joinpath('behavior', 'nwb_config.yaml')
         if not fname.exists():
             # self.logger.warning("Project does not have a behavior config file")
             raise FileNotFoundError
@@ -339,6 +339,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             self._logger.warning(f"Could not find file {fname}; "
                                  f"Using hardcoded default raw data config: {cfg}")
             return SubfolderConfigFile(self_path=None, config=cfg, project_dir=self.project_dir)
+
+    def get_nwb_config(self) -> SubfolderConfigFile:
+        fname = Path(self.config['subfolder_configs'].get('nwb', 'nwb'))
+        return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
     def _check_path_and_load_config(self, subconfig_path: Path,
                                     allow_config_to_not_exist: bool = False) -> Dict:
@@ -794,7 +798,7 @@ def update_path_to_behavior_in_config(cfg: ModularProjectConfig):
         pass
 
     # Then make a new folder, file, and fill it
-    fname = Path(cfg.project_dir).joinpath('behavior', 'behavior_config.yaml')
+    fname = Path(cfg.project_dir).joinpath('behavior', 'nwb_config.yaml')
     fname.parent.mkdir(exist_ok=False)
     behavior_cfg = SubfolderConfigFile(self_path=str(fname), config={}, project_dir=cfg.project_dir, subfolder='behavior')
 
