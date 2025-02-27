@@ -22,7 +22,6 @@ dependencies:
   - torchaudio
   - cudatoolkit=10.0.130
   - cudnn=7.6.5
-  - opencv=4.5
   - matplotlib
   - torchvision
   - scikit-learn
@@ -40,6 +39,7 @@ dependencies:
   - plotly
   - pip:
     - tifffile==2023.7.10
+    - opencv-contrib-python
     - tables
     - networkx
     - tensorflow
