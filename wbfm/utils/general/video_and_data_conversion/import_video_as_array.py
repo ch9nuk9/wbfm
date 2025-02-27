@@ -60,14 +60,16 @@ def get_single_volume(fname: typing.Union[str, Path, tifffile.TiffFile, Microsco
     -------
 
     """
-    # Convert to page coordinates
-    start_ind = num_slices * which_vol
-    key = range(start_ind, start_ind + num_slices)
     if type(fname) == str:
+        # Convert to page coordinates
+        start_ind = num_slices * which_vol
+        key = range(start_ind, start_ind + num_slices)
         dat = (alpha * tifffile.imread(fname, key=key)).astype(dtype)
     elif type(fname) == tifffile.TiffFile:
+        # Convert to page coordinates
+        start_ind = num_slices * which_vol
+        key = range(start_ind, start_ind + num_slices)
         dat = np.array([(alpha * (fname.pages[i].asarray())).astype(dtype) for i in key])
-        # dat = (alpha*np.array(fname.pages[start_ind:start_ind+num_slices])).astype(dtype)
     elif type(fname) == MicroscopeDataReader:
         # This should already be the correct shape, so we use which_vol directly
         dat = fname.dask_array[0, which_vol, 0, ...].compute().astype(dtype)
