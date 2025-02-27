@@ -669,7 +669,8 @@ class ProjectData:
 
         # Hybrid loading using both styles:
         #   If the project was loaded via a config file path, but has steps missing, then try to also load the nwb
-        has_raw_data = project_data.project_config.get_preprocessing_class().has_raw_data
+        preprocessing_class = project_data.project_config.get_preprocessing_class()
+        has_raw_data = preprocessing_class.has_raw_data
         if not loaded_via_nwb and allow_hybrid_loading and not has_raw_data:
             project_data.logger.info("Missing raw data when loading from project config, "
                                      "attempting to load remaining steps from nwb file")
@@ -682,6 +683,9 @@ class ProjectData:
                 # For now, only allow raw data to be loaded from the nwb file
                 nwb_preprocessing_class = project_data_nwb.project_config.get_preprocessing_class()
                 if nwb_preprocessing_class.has_raw_data:
+                    # Merge the classes (data from nwb, proper config file links from project)
+                    nwb_preprocessing_class.cfg_preprocessing = preprocessing_class.cfg_preprocessing
+                    nwb_preprocessing_class.cfg_project = preprocessing_class.cfg_project
                     project_data.project_config._preprocessing_class = nwb_preprocessing_class
                     project_data.logger.info(f"Successfully imported raw data from nwb file")
             else:
