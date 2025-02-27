@@ -67,6 +67,8 @@ class FramePairOptions:
     # New: rotation of the entire image as preprocessing
     preprocess_using_global_rotation: bool = False
 
+    _already_warned = False  # To avoid spamming installation warnings
+
     def __post_init__(self):
         # All of this is for the deprecated fdnc method... will be removed
         try:
@@ -139,8 +141,6 @@ class FramePair:
     _pts0_preprocessed: np.ndarray = None
     _dat0: np.ndarray = None
     _dat1: np.ndarray = None
-
-    _already_warned = False  # To avoid spamming installation warnings
 
     @property
     def all_candidate_matches(self) -> list:
@@ -665,7 +665,7 @@ class FramePair:
             from fDNC.src.DNC_predict import predict_matches
         except ImportError:
             logging.warning("fDNC is not installed. Skipping prediction using this method")
-            self._already_warned = True
+            self.options._already_warned = True
         # New: n0 may be rigidly prealigned
         n0, n1 = self.pts0_preprocessed, self.pts1.copy()
         template_pos = self.options.physical_unit_conversion.zimmer2leifer(np.array(n0))
