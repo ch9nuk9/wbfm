@@ -15,6 +15,7 @@ from wbfm.utils.general.preprocessing.bounding_boxes import generate_legacy_bbox
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings, \
     preprocess_all_frames_using_config, background_subtract_single_channel
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
+from wbfm.utils.projects.finished_project_data import ProjectData
 
 from wbfm.utils.general.utils_filenames import get_sequential_filename, add_name_suffix, \
     get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder, \
@@ -347,6 +348,10 @@ def calculate_total_number_of_frames_from_bigtiff(cfg):
 
 
 def preprocess_fluorescence_data(cfg, to_zip_zarr_using_7z, DEBUG):
+    # Load the project, to make sure even if raw data is in a weird format it works
+    project_data = ProjectData.load_final_project_data(cfg, allow_hybrid_loading=True)
+    cfg = project_data.project_config
+
     options = {'tiff_not_zarr': False,
                'pad_to_align_with_original': False,
                'use_preprocessed_data': False,
