@@ -102,30 +102,6 @@ def filter_exponential_moving_average(y: pd.Series, span=17) -> pd.Series:
     return y.ewm(span=span, min_periods=1).mean()
 
 
-def filter_bilateral(y: pd.Series, win_size=7, sigma_d=2.0, sigma_i=0.1):
-    """
-    The default parameters work well for a dr / r20 trace with a range of approximately 0-1
-    If the range is much larger (e.g. raw green values), this will not have any effect
-
-    Note: this requires an external package which is not cloned by default
-
-    Parameters
-    ----------
-    y
-    win_size
-    sigma_d
-    sigma_i
-
-    Returns
-    -------
-
-    """
-    from wbfm.utils.external.ts_spatial_filter.tsfilt import BilateralFilter
-    filt = BilateralFilter(win_size=win_size, sigma_d=sigma_d, sigma_i=sigma_i)
-    y = filt.fit_transform(np.array(y))
-    return pd.Series(y)
-
-
 def filter_tv_diff(y: pd.Series, gamma=0.0015):
     """Gamma chosen by manual inspection of sharp and shallow traces"""
     import pynumdiff # Import locally because it has a loud warning about cvxpy
@@ -300,8 +276,6 @@ def filter_trace_using_mode(y, filter_mode="no_filtering"):
     elif filter_mode == "tvdiff":
         assert all(~np.isnan(y)), "tvdiff doesn't work with nans"
         y = filter_tv_diff(y)
-    elif filter_mode == "bilateral":
-        y = filter_bilateral(y, win_size=7, sigma_d=2.0, sigma_i=0.1)
     elif filter_mode == "no_filtering" or filter_mode is None or filter_mode == "":
         pass
     else:

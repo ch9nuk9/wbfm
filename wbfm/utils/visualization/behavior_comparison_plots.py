@@ -97,7 +97,6 @@ class NeuronEncodingBase:
             channel_key = key
             if '_filt' in key:
                 channel_key = key.replace('_filt', '')
-                new_opt['filter_mode'] = 'bilateral'
             if self.use_residual_traces:
                 new_opt['interpolate_nan'] = True
                 new_opt['residual_mode'] = 'pca'
@@ -1327,7 +1326,7 @@ class MarkovRegressionModel:
         project_data = ProjectData.load_final_project_data_from_config(self.project_path)
         self.project_data = project_data
 
-        kwargs = dict(channel_mode='dr_over_r_20', min_nonnan=0.9, filter_mode='bilateral')
+        kwargs = dict(channel_mode='dr_over_r_20', min_nonnan=0.9)
         self.df = project_data.calc_default_traces(interpolate_nan=True, **kwargs)
 
     def get_valid_ind_and_trace(self) -> Tuple[np.ndarray, pd.Series]:

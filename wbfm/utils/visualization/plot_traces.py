@@ -578,7 +578,6 @@ def plot_compare_two_calculation_methods(project_data, neuron_name, variable_dic
     default_kwargs = dict(
         channel_mode='dr_over_r_20',
         calculation_mode='integration',
-        filter_mode='bilateral',
         remove_outliers=True
     )
     default_kwargs.update(kwargs)

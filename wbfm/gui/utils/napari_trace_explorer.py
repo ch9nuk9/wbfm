@@ -211,7 +211,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Change trace filtering (dropdown)
         self.changeTraceFilteringDropdown = QtWidgets.QComboBox()
         self.changeTraceFilteringDropdown.addItems(['no_filtering', 'rolling_mean', 'linear_interpolation',
-                                                    'strong_rolling_mean', 'gaussian_moving_average', 'bilateral'])
+                                                    'strong_rolling_mean', 'gaussian_moving_average'])
         self.changeTraceFilteringDropdown.setCurrentText('rolling_mean')
         self.changeTraceFilteringDropdown.currentIndexChanged.connect(self.update_trace_subplot)
         self.formlayout3.addRow("Trace filtering:", self.changeTraceFilteringDropdown)
