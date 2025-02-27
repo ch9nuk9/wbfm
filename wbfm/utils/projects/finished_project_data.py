@@ -687,6 +687,7 @@ class ProjectData:
                     nwb_preprocessing_class.cfg_preprocessing = preprocessing_class.cfg_preprocessing
                     nwb_preprocessing_class.cfg_project = preprocessing_class.cfg_project
                     project_data.project_config._preprocessing_class = nwb_preprocessing_class
+                    project_data._nwb_io = project_data_nwb._nwb_io
                     project_data.logger.info(f"Successfully imported raw data from nwb file")
             else:
                 project_data.logger.info(f"Found no nwb file, continuing")
