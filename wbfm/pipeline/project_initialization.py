@@ -126,10 +126,10 @@ def build_project_structure_from_nwb_file(config, nwb_file, copy_nwb_file=False)
 
     # Move or copy the nwb file
     target_nwb_filename = os.path.join(project_folder_abs, 'nwb', Path(nwb_file).name)
-    if copy_nwb_file:
-        shutil.copy(nwb_file, target_nwb_filename)
-    else:
-        shutil.move(nwb_file, target_nwb_filename)
+    # For some reason shutil.move gives a later error, so just copy
+    shutil.copy(nwb_file, target_nwb_filename)
+    if not copy_nwb_file:
+        os.remove(nwb_file)
 
     # Update the config file
     update_nwb_config_path(project_folder_abs, target_nwb_filename)
