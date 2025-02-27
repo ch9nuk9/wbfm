@@ -54,8 +54,8 @@ def match_all_adjacent_frames_using_config(project_config: ModularProjectConfig,
     all_frame_dict = project_data.raw_frames
 
     # Intermediate products: pairwise matches between frames
-    _, tracker_params, frame_pair_options, _ = _unpack_config_frame2frame_matches(
-        DEBUG, project_config, training_config)
+    _, tracker_params, frame_pair_options, _ = _unpack_config_frame2frame_matches(project_data, training_config,
+                                                                                  DEBUG)
     start_volume = tracker_params['start_volume']
     end_volume = start_volume + tracker_params['num_frames']
     project_config.logger.info(f"Calculating Frame pairs for frames: {start_volume + 1} to {end_volume}")
@@ -155,14 +155,15 @@ def _unpack_config_for_tracklets(training_config, segmentation_config):
     return all_frame_dict, all_frame_pairs, z_threshold, min_confidence, segmentation_metadata, postprocessing_params
 
 
-def _unpack_config_frame2frame_matches(DEBUG, project_config, training_config):
+def _unpack_config_frame2frame_matches(project_data, training_config, DEBUG):
+    project_config = project_data.project_config
     # Get options
     tracker_params = training_config.config['tracker_params'].copy()
     tracker_params['project_config'] = project_config
     if 'num_frames' in training_config.config['tracker_params']:
         tracker_params['num_frames'] = training_config.config['tracker_params']['num_frames']
     else:
-        tracker_params['num_frames'] = project_config.get_num_frames_robust()
+        tracker_params['num_frames'] = project_data.num_frames
     if DEBUG:
         tracker_params['num_frames'] = 5
     if 'start_volume' in training_config.config['tracker_params']:

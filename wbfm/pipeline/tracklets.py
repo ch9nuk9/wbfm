@@ -33,12 +33,10 @@ def build_frames_and_adjacent_matches_using_config(project_config: ModularProjec
     project_data = ProjectData.load_final_project_data_from_config(project_config)
     raw_fname = training_config.resolve_relative_path(os.path.join('raw', 'clust_df_dat.pickle'),
                                                       prepend_subfolder=True)
-    # if os.path.exists(raw_fname):
-    #     raise FileExistsError(f"Found old raw data at {raw_fname}; either rename or skip this step to reuse")
 
     # Intermediate products: pairwise matches between frames
     video_fname, tracker_params, frame_pair_options, track_on_green_channel = _unpack_config_frame2frame_matches(
-        DEBUG, project_config, training_config)
+        project_data, training_config, DEBUG)
     if track_on_green_channel:
         video_data = project_data.green_data
     else:
@@ -89,10 +87,11 @@ def build_frame_objects_using_config(project_config: ModularProjectConfig,
 
     """
     logging.info(f"Producing per-volume ReferenceFrame objects")
-    video_fname, tracker_params, _, track_on_green_channel = _unpack_config_frame2frame_matches(DEBUG, project_config, training_config)
-
     project_data = ProjectData.load_final_project_data_from_config(project_config,
                                                                    to_load_frames=only_calculate_desynced)
+    video_fname, tracker_params, _, track_on_green_channel = _unpack_config_frame2frame_matches(project_data,
+                                                                                                training_config, DEBUG)
+
     if track_on_green_channel:
         video_data = project_data.green_data
     else:
