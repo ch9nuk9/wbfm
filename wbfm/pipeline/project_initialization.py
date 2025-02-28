@@ -249,9 +249,12 @@ def _unpack_config_for_data_subset(cfg, out_fname, preprocessing_settings, save_
             out_fname = os.path.join(project_dir, "data_subset.zarr")
     else:
         out_fname = os.path.join(project_dir, out_fname)
-    start_volume = cfg.config['deprecated_dataset_params'].get('bigtiff_start_volume', None)
+    params = cfg.config.get('deprecated_dataset_params', {})
+    start_volume = params.get('bigtiff_start_volume', None)
     if start_volume is None:
         start_volume = 0
+        if 'deprecated_dataset_params' not in cfg.config:
+            cfg.config['deprecated_dataset_params'] = {}
         cfg.config['deprecated_dataset_params']['bigtiff_start_volume'] = 0  # Will be written to disk later
     else:
         logging.warning("Found a start_volume, but this is deprecated. Attempting to continue, but may not work.")
@@ -263,8 +266,11 @@ def crop_zarr_using_config(cfg: ModularProjectConfig):
     preprocessing_class = cfg.get_preprocessing_class()
     to_crop = [preprocessing_class.get_path_to_preprocessed_data(red_not_green=True),
                preprocessing_class.get_path_to_preprocessed_data(red_not_green=False)]
-    start_volume = cfg.config['deprecated_dataset_params']['start_volume']
-    num_frames = cfg.config['deprecated_dataset_params']['num_frames']
+    params = cfg.config.get('deprecated_dataset_params', {})
+    start_volume = params.get('start_volume', 0)
+    num_frames = params.get('num_frames', None)
+    if num_frames is None:
+        raise ValueError("Must pass number of frames to crop")
     end_volume = start_volume + num_frames
 
     new_fnames = []
@@ -280,6 +286,8 @@ def crop_zarr_using_config(cfg: ModularProjectConfig):
     # Also update config file
     for field, name in zip(fields, new_fnames):
         cfg.config[field] = str(name)
+    if 'deprecated_dataset_params' not in cfg.config:
+        cfg.config['deprecated_dataset_params'] = {}
     cfg.config['deprecated_dataset_params']['start_volume'] = 0
     cfg.config['deprecated_dataset_params']['bigtiff_start_volume'] = start_volume
 
@@ -343,6 +351,8 @@ def calculate_total_number_of_frames_from_bigtiff(cfg):
         num_volumes = calculate_number_of_volumes_from_tiff_file(num_raw_slices, red_bigtiff_fname)
         num_frames = int(num_volumes)
         cfg.logger.debug(f"Calculated number of frames: {num_frames}")
+        if 'deprecated_dataset_params' not in cfg.config:
+            cfg.config['deprecated_dataset_params'] = {}
         cfg.config['deprecated_dataset_params']['num_frames'] = num_frames
         cfg.update_self_on_disk()
 

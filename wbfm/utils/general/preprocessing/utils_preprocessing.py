@@ -522,7 +522,7 @@ class PreprocessingSettings(RawFluorescenceData):
     def num_slices(self):
         """Just for backwards compability: Checks for either the old or new key"""
         num_slices = self.cfg_project.config['dataset_params'].get('num_slices', None)
-        if num_slices is None:
+        if num_slices is None and 'deprecated_dataset_params' in self.cfg_project.config:
             num_slices = self.cfg_project.config['deprecated_dataset_params'].get('num_slices', None)
         return num_slices
 
@@ -545,7 +545,7 @@ class PreprocessingSettings(RawFluorescenceData):
         """Just for backwards compability: Checks for either the old or new key"""
 
         num_slices = self.cfg_project.config['dataset_params'].get('start_volume', 0)
-        if num_slices is None:
+        if num_slices is None and 'deprecated_dataset_params' in self.cfg_project.config:
             num_slices = self.cfg_project.config['deprecated_dataset_params'].get('start_volume', 0)
         return num_slices
 
@@ -553,7 +553,7 @@ class PreprocessingSettings(RawFluorescenceData):
     def num_frames(self):
         # Checks for either the old or new key
         num_frames = self.cfg_project.config['dataset_params'].get('num_frames', None)
-        if num_frames is None:
+        if num_frames is None and 'deprecated_dataset_params' in self.cfg_project.config:
             num_frames = self.cfg_project.config['deprecated_dataset_params'].get('num_frames', None)
         return num_frames
 
