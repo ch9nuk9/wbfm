@@ -726,7 +726,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             Optional[str]:
         # First, get intermediate folder: anything with 'background' (only folders)
         background_parent_folder = [f for f in os.listdir(multiday_parent_folder) if 'background' in f and
-                                    os.path.isdir(f)]
+                                    os.path.isdir(os.path.join(multiday_parent_folder,f))]
         found_one_folder = True
         msg = ''
         if len(background_parent_folder) > 1:
@@ -742,9 +742,9 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             else:
                 return None
         # Second, actual background folder (only folders)
-        background_parent_folder = background_parent_folder[0]
+        background_parent_folder = os.path.join(multiday_parent_folder, background_parent_folder[0])
         specific_background_parent_folder = [f for f in os.listdir(background_parent_folder) if 'background' in f and
-                                             suffix in f and os.path.isdir(f)]
+                                             suffix in f and os.path.isdir(os.path.join(background_parent_folder,f))]
         if len(specific_background_parent_folder) != 1:
             msg = (f"Found no or more than one specific background folder(s) for channel {suffix}: "
                    f"{specific_background_parent_folder}")
@@ -754,7 +754,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                 self.logger.warning(msg)
                 return None
         else:
-            specific_background_parent_folder = specific_background_parent_folder[0]
+            specific_background_parent_folder = os.path.join(background_parent_folder,
+                                                             specific_background_parent_folder[0])
         return specific_background_parent_folder
 
     def _find_individual_background_files(self, background_parent_folder, crash_if_no_background):
