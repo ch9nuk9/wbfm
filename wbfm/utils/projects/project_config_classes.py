@@ -329,7 +329,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return fname
 
     def get_behavior_config(self) -> SubfolderConfigFile:
-        fname = Path(self.project_dir).joinpath('behavior', 'nwb_config.yaml')
+        fname = Path(self.project_dir).joinpath('behavior', 'behavior_config.yaml')
         if not fname.exists():
             # self.logger.warning("Project does not have a behavior config file")
             raise FileNotFoundError
@@ -362,7 +362,9 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
     def get_nwb_config(self) -> SubfolderConfigFile:
         fname = Path(self.config['subfolder_configs'].get('nwb', None))
         if fname is None:
-            raise FileNotFoundError("No path to a nwb config file was found in the project_config.yaml file")
+            fname = Path(self.project_dir).joinpath('nwb', 'nwb_config.yaml')
+            if not fname.exists():
+                raise FileNotFoundError("No path to a nwb config file was found in the project_config.yaml file")
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
     def _check_path_and_load_config(self, subconfig_path: Path,
