@@ -795,6 +795,28 @@ def package_bayesian_df_for_plot(df, df_normalization=None,
     return df_to_plot
 
 
+def add_figure_panel_references_to_df(df):
+    """For each type of data, add the relevant figure panel references"""
+    ref = 'Figure panel references'
+    df.at['num_datasets_freely_moving_gcamp', ref] = '1K; 2C; 3A-L; 4A-E; S2C; S5E; S7A-O; S8A-F'
+    df.at['raw_rev', ref] = '4A; S8A'
+    df.at['raw_fwd', ref] = '4B,C; S8B-F'
+    df.at['self_collision', ref] = '4E'
+    df.at['residual', ref] = '4E'
+    df.at['residual_rectified_fwd', ref] = '3E-H'
+    df.at['residual_rectified_rev', ref] = '3E-H'
+
+    df.at['num_datasets_immob_gcamp', ref] = '2C,G; S2C; S7A-H; S8A-C,F'
+    df.at['num_datasets_mutant_immob', ref] = '4A-C; S8A-C,F'
+    df.at['immob-stimulus', ref] = '4A-C; S8B,C,F'
+    df.at['immob_mutant-stimulus', ref] = 'S8B,C,F'
+    df.at['immob_downshift-stimulus', ref] = 'S9A'
+    df.at['immob_mutant_downshift-stimulus', ref] = 'S9A'
+    df.at['immob_hiscl-stimulus', ref] = 'S8D,E'
+
+    df.at['num_datasets_gfp', ref] = '3I; S4D-E'
+
+
 if __name__ == '__main__':
     # Generate the paper plots for the main paper projects
     all_projects_gcamp = load_paper_datasets(genotype=['gcamp', 'hannah_O2_fm'])
