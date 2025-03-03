@@ -87,7 +87,7 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger = 
     basename = Path(red_fname).name.split('_')[0]
     project_config_updates = _config
 
-    project_fname, _ = build_project_structure(project_config_updates, abs_new_project_name)
+    project_fname, _ = build_project_structure(project_config_updates, basename)
 
     return project_fname
 
