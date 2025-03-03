@@ -9,7 +9,7 @@
 #   bash create_multiple_projects_from_data_parent_folder.sh -t <DATA_PARENT_FOLDER> -p <PROJECT_PARENT_FOLDER> -n <is_dry_run>
 #
 # Example:
-#   bash create_multiple_projects_from_data_parent_folder.sh -t/lisc/scratch/neurobiology/zimmer/wbfm/data -p/lisc/scratch/neurobiology/zimmer/wbfm/projects
+#   bash create_multiple_projects_from_data_parent_folder.sh -t /lisc/scratch/neurobiology/zimmer/wbfm/data -p/lisc/scratch/neurobiology/zimmer/wbfm/projects
 
 # Get all user flags
 run_in_background="True"

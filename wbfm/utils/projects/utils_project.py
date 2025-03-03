@@ -19,7 +19,7 @@ from wbfm.utils.general.utils_filenames import get_location_of_new_project_defau
 #####################
 
 
-def get_project_name(basename=None, experimenter='', task='') -> str:
+def get_relative_project_name(basename=None, experimenter='', task='') -> str:
     # Use current time
     if basename is None:
         project_name = datetime.now().strftime("%Y_%m_%d")

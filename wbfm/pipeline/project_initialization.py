@@ -20,7 +20,7 @@ from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.general.utils_filenames import get_sequential_filename, add_name_suffix, \
     get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder, \
     get_ndtiff_fnames_from_parent_folder, generate_output_data_names
-from wbfm.utils.projects.utils_project import get_project_name, safe_cd, update_project_config_path, \
+from wbfm.utils.projects.utils_project import get_relative_project_name, safe_cd, update_project_config_path, \
     update_snakemake_config_path, update_nwb_config_path
 
 
@@ -87,19 +87,16 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger = 
     basename = Path(red_fname).name.split('_')[0]
     project_config_updates = _config
 
-    abs_new_project_name = build_project_name(basename, project_config_updates)
-    logger.info(f"Building new project at: {abs_new_project_name}")
-
     project_fname, _ = build_project_structure(project_config_updates, abs_new_project_name)
 
     return project_fname
 
 
-def build_project_name(basename, project_config_updates):
+def get_absolute_project_name(basename, project_config_updates):
     parent_folder = project_config_updates['project_dir']
     experimenter = project_config_updates.get('experimenter', '')
     task = project_config_updates.get('task_name', '')
-    rel_new_project_name = get_project_name(basename, experimenter=experimenter, task=task)
+    rel_new_project_name = get_relative_project_name(basename, experimenter=experimenter, task=task)
     abs_new_project_name = osp.join(parent_folder, rel_new_project_name)
     abs_new_project_name = get_sequential_filename(abs_new_project_name)
     abs_new_project_name = str(Path(abs_new_project_name).resolve())
@@ -108,7 +105,7 @@ def build_project_name(basename, project_config_updates):
 
 def build_project_structure(project_config_updates, basename=None):
     """project_config_updates must at least have project_dir as a string"""
-    project_folder_abs = build_project_name(basename, project_config_updates)
+    project_folder_abs = get_absolute_project_name(basename, project_config_updates)
     # Uses the pip installed package location
     src = get_location_of_new_project_defaults()
     copytree(src, project_folder_abs)
