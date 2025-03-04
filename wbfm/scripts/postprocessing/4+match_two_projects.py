@@ -5,6 +5,9 @@ This doesn't work well if the postures are not very similar.
 In principle the videos should be the same individual.
 
 Saves pickle files, .h5, and .xlsx files in the visualization subfolder of the target and base projects.
+
+Example usage (when in the right folder):
+    python 4+match_two_projects with project_path_base=path/to/p0 project_path_target=path/to/p1
 """
 
 # Experiment tracking
