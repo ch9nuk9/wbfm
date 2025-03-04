@@ -87,7 +87,7 @@ def match_two_projects_using_superglue_using_config(project_cfg_base: ModularPro
 
 
     """
-    all_frames_base, _, num_random_templates, project_data_base, t_template, tracking_cfg, use_multiple_templates = _unpack_project_for_global_tracking(
+    all_frames_base, _, num_random_templates, project_data_base, t_template, tracking_cfg, _ = _unpack_project_for_global_tracking(
         DEBUG, project_cfg_base)
     # Also unpack second config
     all_frames_target, num_frames, _, project_data_target, _, _, _ = _unpack_project_for_global_tracking(
