@@ -22,6 +22,7 @@ from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.tracklets.tracklet_class import TrackedWorm, DetectedTrackletsAndNeurons
 from wbfm.utils.tracklets.utils_tracklets import split_all_tracklets_at_once
+from wbfm.utils.external.utils_pandas import crop_to_same_time_length
 
 
 def track_using_superglue_using_config(project_cfg, DEBUG):
@@ -123,8 +124,10 @@ def match_two_projects_using_superglue_using_config(project_cfg_base: ModularPro
     elif only_match_same_time_points:
         raise NotImplementedError
 
-    _, matches, conf, name_mapping = rename_columns_using_matching(df_final, project_data_target.final_tracks,
-                                                                   try_to_fix_inf=True)
+    # Ensure that there are the same number of time points
+    df_final, df_original = crop_to_same_time_length(df_final, project_data_target.final_tracks, axis=0)
+
+    _, matches, conf, name_mapping = rename_columns_using_matching(df_final, df_original, try_to_fix_inf=True)
 
     if to_save:
         # Save in target AND base folders

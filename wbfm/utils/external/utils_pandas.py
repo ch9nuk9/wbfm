@@ -1457,3 +1457,12 @@ def get_dataframe_for_single_neuron(Xy, neuron_name, curvature_terms=None, datas
     if verbose >= 1:
         print(f"Loaded {df_model.shape[0]} samples for {neuron_name} in {dataset_name}")
     return df_model
+
+
+def crop_to_same_time_length(df0, df1, axis=0):
+    """Crops dataframes to same length"""
+    if df0.shape[axis] > df1.shape[axis]:
+        df0 = df0.copy().iloc[:df1.shape[axis], :]
+    elif df0.shape[axis] < df1.shape[axis]:
+        df1 = df1.copy().iloc[:df0.shape[axis], :]
+    return df0, df1
