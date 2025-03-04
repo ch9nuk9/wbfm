@@ -154,7 +154,29 @@ def match_two_projects_using_superglue_using_config(project_cfg_base: ModularPro
         fname2 = os.path.join(project_data_target.project_dir, fname)
         df_mapping.to_excel(fname2)
 
+        # Also update the manual annotation file for the target project, if there are any manual ids
+        manual_ids_before = project_before.neuron_name_to_manual_id_mapping(confidence_threshold=0,
+                                                                            remove_unnamed_neurons=True,
+                                                                            flip_names_and_ids=True)
+        if len(manual_ids_before) > 0:
+            manual_ids_after = {name_mapping.get(k, k): v for k, v in manual_ids_before.items()}
+            df_after_manual_tracking = project_after.df_manual_tracking.copy()
+            fname = project_after.df_manual_tracking_fname
+            # Save a backup of the original file
+            df_after_manual_tracking.to_hdf(fname.replace('.xlsx', '_backup.xlsx'))
+            # Rename neurons, and save with the original filename
+            df_after_manual_tracking['ID1'] = df_after_manual_tracking['Neuron ID'].map(map_only_named)
+            df_after_manual_tracking.to_xlsx(fname)
+
     return df_final, matches, conf, name_mapping
+
+
+def _map_only_named(x):
+    new_name = name_mapping_manual_ids.get(x, '')
+    if 'neuron' not in new_name:
+        return new_name
+    else:
+        return ''
 
 
 def track_using_embedding_using_config(project_cfg, DEBUG):
