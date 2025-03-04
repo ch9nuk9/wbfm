@@ -74,7 +74,18 @@ def track_using_superglue_using_config(project_cfg, DEBUG):
 
 
 def match_two_projects_using_superglue_using_config(project_cfg_base: ModularProjectConfig,
-                                                    project_cfg_target: ModularProjectConfig, DEBUG):
+                                                    project_cfg_target: ModularProjectConfig, to_save=True,
+                                                    use_multiple_templates=True, only_match_same_time_points=False,
+                                                    DEBUG=False):
+    """
+    Matches two projects using the main tracking pipeline
+
+    Tracks from template frames of the base project to all frames of the target project
+
+    Saves pickle files, .h5, and .xlsx files in the visualization subfolder of the target and base projects.
+
+
+    """
     all_frames_base, _, num_random_templates, project_data_base, t_template, tracking_cfg, use_multiple_templates = _unpack_project_for_global_tracking(
         DEBUG, project_cfg_base)
     # Also unpack second config
@@ -86,12 +97,14 @@ def match_two_projects_using_superglue_using_config(project_cfg_base: ModularPro
     model = tracker_base.model  # Save for later initialization
     min_neurons_for_template = 50
 
-    if not use_multiple_templates:
+    if not use_multiple_templates and not only_match_same_time_points:
         df_final = track_using_template(all_frames_target, num_frames, project_data_target, tracker_base)
-    else:
+    elif use_multiple_templates:
         # Ensure the reference frames are actually good by checking they have a minimum number of neurons
         all_templates = generate_random_valid_template_frames(all_frames_base, min_neurons_for_template, num_frames,
                                                               t_template, num_random_templates)
+
+        project_data_base.logger.info(f"Using {num_random_templates} templates at t={all_templates}")
 
         # All subsequent dataframes will have their names mapped to this
         df_base = track_using_template(all_frames_target, num_frames, project_data_target, tracker_base)
@@ -107,35 +120,38 @@ def match_two_projects_using_superglue_using_config(project_cfg_base: ModularPro
 
         tracking_cfg.config['t_templates'] = all_templates
         df_final = combine_dataframes_using_bipartite_matching(all_dfs_names_aligned)
+    elif only_match_same_time_points:
+        raise NotImplementedError
 
     _, matches, conf, name_mapping = rename_columns_using_matching(df_final, project_data_target.final_tracks,
                                                                    try_to_fix_inf=True)
 
-    # Save in target AND base folders
-    fname = f'match_{project_data_base.shortened_name}_{project_data_target.shortened_name}.pickle'
-    fname = os.path.join('visualization', fname)
-    project_cfg_base.pickle_data_in_local_project(matches, fname)
-    project_cfg_target.pickle_data_in_local_project(matches, fname)
+    if to_save:
+        # Save in target AND base folders
+        fname = f'match_{project_data_base.shortened_name}_{project_data_target.shortened_name}.pickle'
+        fname = os.path.join('visualization', fname)
+        project_cfg_base.pickle_data_in_local_project(matches, fname)
+        project_cfg_target.pickle_data_in_local_project(matches, fname)
 
-    fname = f'conf_{project_data_base.shortened_name}_{project_data_target.shortened_name}.pickle'
-    fname = os.path.join('visualization', fname)
-    project_cfg_base.pickle_data_in_local_project(conf, fname)
-    project_cfg_target.pickle_data_in_local_project(conf, fname)
+        fname = f'conf_{project_data_base.shortened_name}_{project_data_target.shortened_name}.pickle'
+        fname = os.path.join('visualization', fname)
+        project_cfg_base.pickle_data_in_local_project(conf, fname)
+        project_cfg_target.pickle_data_in_local_project(conf, fname)
 
-    fname = f'name_mapping_{project_data_base.shortened_name}_{project_data_target.shortened_name}.pickle'
-    fname = os.path.join('visualization', fname)
-    project_cfg_base.pickle_data_in_local_project(name_mapping, fname)
-    project_cfg_target.pickle_data_in_local_project(name_mapping, fname)
+        fname = f'name_mapping_{project_data_base.shortened_name}_{project_data_target.shortened_name}.pickle'
+        fname = os.path.join('visualization', fname)
+        project_cfg_base.pickle_data_in_local_project(name_mapping, fname)
+        project_cfg_target.pickle_data_in_local_project(name_mapping, fname)
 
-    fname = f'name_mapping_{project_data_base.shortened_name}_{project_data_target.shortened_name}.xlsx'
-    fname = os.path.join('visualization', fname)
-    df_mapping = pd.DataFrame(name_mapping, index=["Immobilized Match"]).T
-    fname1 = os.path.join(project_data_base.project_dir, fname)
-    df_mapping.to_excel(fname1)
-    fname2 = os.path.join(project_data_target.project_dir, fname)
-    df_mapping.to_excel(fname2)
+        fname = f'name_mapping_{project_data_base.shortened_name}_{project_data_target.shortened_name}.xlsx'
+        fname = os.path.join('visualization', fname)
+        df_mapping = pd.DataFrame(name_mapping, index=["Immobilized Match"]).T
+        fname1 = os.path.join(project_data_base.project_dir, fname)
+        df_mapping.to_excel(fname1)
+        fname2 = os.path.join(project_data_target.project_dir, fname)
+        df_mapping.to_excel(fname2)
 
-    return df_final
+    return df_final, matches, conf, name_mapping
 
 
 def track_using_embedding_using_config(project_cfg, DEBUG):
