@@ -3,7 +3,7 @@ import os
 import pickle
 import re
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Dict
+from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
