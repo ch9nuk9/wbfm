@@ -16,6 +16,7 @@ from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSe
     preprocess_all_frames_using_config, background_subtract_single_channel
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.general.utils_filenames import error_if_dot_in_name
 
 from wbfm.utils.general.utils_filenames import get_sequential_filename, add_name_suffix, \
     get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder, \
@@ -82,6 +83,10 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger = 
         else:
             _config['red_fname'] = red_fname
             _config['green_fname'] = green_fname
+
+    # Check to make sure there are no '.' characters
+    for key in ['red_fname', 'green_fname', 'red_bigtiff_fname', 'green_bigtiff_fname']:
+        error_if_dot_in_name(_config.get(key, ''))
 
     # Build the full project name using the date the data was taken
     basename = Path(red_fname).name.split('_')[0]

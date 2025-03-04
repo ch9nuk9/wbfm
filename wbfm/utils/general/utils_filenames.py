@@ -412,3 +412,13 @@ def is_folder_ndtiff_format(folder):
         return True
     else:
         return False
+
+
+def error_if_dot_in_name(filename: Union[str, Path]):
+    """
+    Check if there is a period in the filename
+
+    Note that if there is a relative path with a ., this will give an error
+    """
+    if '.' in os.path.splitext(str(filename))[0]:
+        raise ValueError(f"Filename {filename} contains a period, which is not allowed")
