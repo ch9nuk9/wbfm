@@ -11,7 +11,7 @@ from matplotlib import animation, pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from tifffile import tifffile
 from tqdm.auto import tqdm
-
+from matplotlib.colors import ListedColormap
 from wbfm.utils.general.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
 from wbfm.utils.projects.finished_project_data import ProjectData, plot_pca_projection_3d_from_project
 
@@ -611,12 +611,21 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     pc1_weights, _ = project_data.calc_pca_modes(n_components=1, return_pca_weights=True, use_paper_options=True)
     heatmap_data = df_traces.T.reindex(pc1_weights.sort_values(by=0, ascending=False).index)
 
+    # Get behavior time series as integers, with custom colormap
+    beh_vec_raw = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True)
+    beh_vec = [b.value for b in beh_vec_raw.values]
+    beh_vec = np.array(beh_vec).reshape(1, -1)
+
+    colormap_dict = BehaviorCodes.ethogram_cmap(use_plotly_style_strings=False)
+    mapped_categories = [colormap_dict.get(cat, 'gray') for cat in beh_vec_raw]
+    ethogram_cmap = ListedColormap([colormap_dict[key] for key in sorted(colormap_dict.keys())])
+
     # Get video properties
     fps = volumes_per_second
     frame_count, width, height = video_array.shape
 
     # Prepare VideoWriter to save the output
-    output_size = (width * 2, height * 2)  # Double the height and width to accommodate the wide heatmap and pca plot
+    output_size = (width * 2, height * 2 * 1.1)  # Accommodate the wide heatmap and pca plot, and ethogram
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     output_video = cv2.VideoWriter(output_fname, fourcc, fps, output_size)
 
@@ -631,7 +640,8 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     fig.set_tight_layout(True)
     heatmap = ax.imshow(heatmap_data, cmap='jet', interpolation='nearest', aspect='auto',
                         extent=[0, np.max(heatmap_data.T.index), 0, height], **plot_kwargs)
-    ax.set_xlabel("Time (s)")
+    # ax.set_xlabel("Time (s)")
+    ax.set_xlabel("")
     ax.set_ylabel("Neurons")
     ax.set_yticks([])
     vertical_line = ax.axvline(x=0, color='white', linewidth=4)
@@ -639,6 +649,18 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     cbar = fig.colorbar(heatmap, ax=ax)
     cbar.set_label(r'$\Delta R/R50$')
     ax.set_title("Heatmap of neuronal time series")
+
+    plt.tight_layout()
+
+    # Initialize ethogram and line
+    fig, ax = plt.subplots(figsize=(2 * width / 100, height / 100 / 10), dpi=100)
+    fig.set_tight_layout(True)
+    ethogram = ax.imshow(beh_vec, cmap=ethogram_cmap, interpolation='nearest', aspect='auto',
+                        extent=[0, np.max(heatmap_data.T.index), 0, height/10])
+    ax.set_xlabel("Time (s)")
+    ax.set_yticks([])
+    vertical_line_ethogram = ax.axvline(x=0, color='white', linewidth=4)
+    canvas_ethogram = FigureCanvas(fig)
 
     plt.tight_layout()
 
@@ -702,17 +724,23 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
         # Units should be same as the 'extent' of the ax.imshow command, which is the x axis of the heatmap
         line_position = heatmap_data.T.index[frame_idx]
         vertical_line.set_xdata([line_position])
+        vertical_line_ethogram.set_xdata([line_position])
 
-        # Render the updated figure to a numpy array
+        # Render the updated figures to a numpy array
         canvas_heatmap.draw()
         heatmap_image = np.frombuffer(canvas_heatmap.tostring_rgb(), dtype=np.uint8)
         heatmap_image = heatmap_image.reshape(canvas_heatmap.get_width_height()[::-1] + (3,))
         # Convert heatmap from RGB to BGR to align with OpenCV's format
         heatmap_image = cv2.cvtColor(heatmap_image, cv2.COLOR_RGB2BGR)
 
+        canvas_ethogram.draw()
+        ethogram_image = np.frombuffer(canvas_ethogram.tostring_rgb(), dtype=np.uint8)
+        ethogram_image = ethogram_image.reshape(canvas_ethogram.get_width_height()[::-1] + (3,))
+        ethogram_image = cv2.cvtColor(ethogram_image, cv2.COLOR_RGB2BGR)
+
         # Combine the video frame and heatmap, converting to width/height like opencv expects
         combined_frame = np.hstack((rgb_frame, matplotlib_image))
-        combined_frame = np.vstack((combined_frame, heatmap_image))
+        combined_frame = np.vstack((combined_frame, heatmap_image, ethogram_image))
 
         # Add text label and line for scale bar
         cv2.line(combined_frame, scale_bar_start, scale_bar_end, (255, 255, 255), 2)
