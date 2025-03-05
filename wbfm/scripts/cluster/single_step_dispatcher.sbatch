@@ -18,17 +18,19 @@ function show_help {
     echo "  -t project_path: path to the project directory"
     echo "  -n is_dry_run: whether to run the command or just print it"
     echo "  -s step_reference: reference to the step to run (see single_step_dispatcher.sbatch for the list of steps)"
+    echo "  -a args: additional arguments to pass to the script; only used for match_ids"
     echo "  -h: display this help message"
 }
 
 # Get all user flags
 is_dry_run=""
-while getopts t:n:s:h: flag
+while getopts t:n:s:b:h: flag
 do
     case "${flag}" in
         t) project_path=${OPTARG};;
         n) is_dry_run="True";;
         s) step_reference=${OPTARG};;
+        a) args=${OPTARG};;
         h) show_help
            exit 0;;
         *) raise error "Unknown flag"
@@ -60,13 +62,18 @@ CMD_DICT["check_gpu"]="examples/check_gpu.py"
 CMD_DICT["manual"]="postprocessing/3b+update_after_manual_annotation.py"
 CMD_DICT["delete_DANGER"]="postprocessing/delete_analysis_files.py"
 CMD_DICT["delete_dryrun"]="postprocessing/delete_analysis_files.py"
+CMD_DICT["match_ids"]="postprocessing/4+match_two_projects.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
 FULL_CMD="python $CMD with project_path=$project_path"
 
-# Specify additional args, if any. For now, this is only non-trivial for the delete_DANGER step
+# Specify additional args, if any
 if [ "$step_reference" = "delete_DANGER" ]; then
   FULL_CMD="$FULL_CMD dryrun=False"
+fi
+
+if [ "$step_reference" = "match_ids" ]; then
+  FULL_CMD="python $CMD with project_path_base=$project_path project_path_target=$args"
 fi
 
 echo "Running step $step_reference using full command:"
