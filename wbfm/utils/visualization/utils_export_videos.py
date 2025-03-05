@@ -633,10 +633,11 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Neurons")
     ax.set_yticks([])
-    vertical_line = ax.axvline(x=0, color='white', linewidth=2)
+    vertical_line = ax.axvline(x=0, color='white', linewidth=4)
     canvas_heatmap = FigureCanvas(fig)
     cbar = fig.colorbar(heatmap, ax=ax)
     cbar.set_label(r'$\Delta R/R50$')
+    ax.set_title("Heatmap of neuronal time series")
 
     plt.tight_layout()
 
@@ -650,7 +651,8 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
 
     # Update-able point: https://stackoverflow.com/questions/61326186/how-to-animate-multiple-dots-moving-along-the-circumference-of-a-circle-in-pytho
     dot_position = list(pca_proj.iloc[0, :4])
-    (time_dot,) = ax.plot(dot_position[0], dot_position[1], dot_position[2], marker="o", color='black', linewidth=2)
+    (time_dot,) = ax.plot(dot_position[0], dot_position[1], dot_position[2], marker="o", color='black',
+                          markersize=10)
     canvas_pca = FigureCanvas(fig)
 
     plt.tight_layout()
