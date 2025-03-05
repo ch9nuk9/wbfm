@@ -571,7 +571,8 @@ def save_video_of_pca_plot_with_behavior(project_path: Union[str, Path], plot_3d
 def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], output_fname=None,
                                                 DEBUG=False):
     """
-    Save a video of the heatmap (bottom third) and pca phase plot (middle third) with behavior (top third)
+    Save a video of the heatmap (bottom half, stretched) and pca phase plot (top left) with behavior (top right)
+    Also: an ethogram under the heatmap
 
     Units will not be correct unless the project_config.yaml exposure_time is set correctly
 
@@ -615,7 +616,7 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     frame_count, width, height = video_array.shape
 
     # Prepare VideoWriter to save the output
-    output_size = (width, height * 3)  # Double the height to accommodate the heatmap and pca plot
+    output_size = (width * 2, height * 2)  # Double the height and width to accommodate the wide heatmap and pca plot
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     output_video = cv2.VideoWriter(output_fname, fourcc, fps, output_size)
 
@@ -626,7 +627,7 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     # plot_kwargs['vmax'] = 2*np.quantile(df_traces.values, 0.95)
 
     # Initialize heatmap and line
-    fig, ax = plt.subplots(figsize=(width / 100, height / 100), dpi=100)
+    fig, ax = plt.subplots(figsize=(2 * width / 100, height / 100), dpi=100)
     fig.set_tight_layout(True)
     heatmap = ax.imshow(heatmap_data, cmap='jet', interpolation='nearest', aspect='auto',
                         extent=[0, np.max(heatmap_data.T.index), 0, height], **plot_kwargs)
@@ -678,7 +679,7 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
         subsample_rate = 1
     else:
         num_frames = 100
-        subsample_rate=10
+        subsample_rate = 10
 
     for frame_idx in tqdm(range(0, num_frames, subsample_rate)):
         # Get the video frame from dask array
@@ -710,7 +711,8 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
         heatmap_image = cv2.cvtColor(heatmap_image, cv2.COLOR_RGB2BGR)
 
         # Combine the video frame and heatmap, converting to width/height like opencv expects
-        combined_frame = np.vstack((rgb_frame, matplotlib_image, heatmap_image))
+        combined_frame = np.hstack((rgb_frame, matplotlib_image))
+        combined_frame = np.vstack((combined_frame, heatmap_image))
 
         # Add text label and line for scale bar
         cv2.line(combined_frame, scale_bar_start, scale_bar_end, (255, 255, 255), 2)
