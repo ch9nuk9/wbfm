@@ -2514,7 +2514,8 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     else:
         ax = fig.add_subplot(111, projection='3d')
 
-    pca_proj, _ = project_data.calc_pca_modes(**trace_kwargs, interpolate_nan=True)
+    pca_proj, var_explained = project_data.calc_pca_modes(**trace_kwargs, interpolate_nan=True)
+    var_explained *= 100
 
     if t_end is not None:
         pca_proj = pca_proj[:t_end, :]
@@ -2549,9 +2550,10 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
 
         ax.plot(state_df[0], state_df[1], state_df[2], c=ethogram_cmap[state_code], label=state_name)
 
-    ax.set_xlabel("Mode 1")
-    ax.set_ylabel("Mode 2")
-    ax.set_zlabel("Mode 3")
+    label_func = lambda i: f'Neuronal component {i} (PCA; {var_explained[i - 1]:.0f}%)'
+    ax.set_xlabel(label_func(1))
+    ax.set_ylabel(label_func(2))
+    ax.set_zlabel(label_func(3))
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.set_zticklabels([])
