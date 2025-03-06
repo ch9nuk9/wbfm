@@ -461,6 +461,8 @@ class BehaviorCodes(Flag):
         ... unfortunately the enum class relies on certain names being None, so I have to have a separate
         property for this
 
+        See convert_to_simple_states
+
         Returns
         -------
 

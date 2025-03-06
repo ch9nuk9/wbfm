@@ -2543,8 +2543,10 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
         state_df, _ = fill_missing_indices_with_nan(state_df, expected_max_t=pca_proj.shape[0])
         # For every first nan value after a gap, add in the real data in order to connect states
         state_df = ffill_using_raw_data(state_df, pca_proj)
+        # Transform state_code to simple string
+        state_name = BehaviorCodes.convert_to_simple_states(state_code).full_name
 
-        ax.plot(state_df[0], state_df[1], state_df[2], c=ethogram_cmap[state_code], label=state_code)
+        ax.plot(state_df[0], state_df[1], state_df[2], c=ethogram_cmap[state_code], label=state_name)
 
     ax.set_xlabel("Mode 1")
     ax.set_ylabel("Mode 2")
