@@ -23,6 +23,7 @@ from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from wbfm.utils.neuron_matching.matches_class import MatchesWithConfidence, get_mismatches
 from wbfm.utils.external.utils_neuron_names import int2name_neuron
+from wbfm.utils.general.utils_paper import behavior_name_mapping
 import os
 from dataclasses import dataclass
 from typing import Tuple, Dict, Union, List, Optional
@@ -2544,7 +2545,7 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
         # For every first nan value after a gap, add in the real data in order to connect states
         state_df = ffill_using_raw_data(state_df, pca_proj)
         # Transform state_code to simple string
-        state_name = BehaviorCodes.convert_to_simple_states(state_code).full_name
+        state_name = behavior_name_mapping()[BehaviorCodes.convert_to_simple_states(state_code).full_name]
 
         ax.plot(state_df[0], state_df[1], state_df[2], c=ethogram_cmap[state_code], label=state_name)
 

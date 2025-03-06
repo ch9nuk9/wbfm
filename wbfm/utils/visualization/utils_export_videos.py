@@ -644,37 +644,47 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     # plot_kwargs['vmax'] = 2*np.quantile(df_traces.values, 0.95)
 
     # Initialize heatmap + ethogram as subplots, and line
-    fig, ax = plt.subplots(2, 1, figsize=(2 * width / 100, (height / 100) + ethogram_height), dpi=100,
-                           gridspec_kw={'height_ratios': [9, 1]})
+    fig, ax = plt.subplots(2, 1, figsize=(2 * width / 100, (height + ethogram_height) / 100), dpi=100,
+                           gridspec_kw={'height_ratios': [height, ethogram_height]}
+                           )
     fig.set_tight_layout(True)
     heatmap = ax[0].imshow(heatmap_data, cmap='jet', interpolation='nearest', aspect='auto',
-                        extent=[0, np.max(heatmap_data.T.index), 0, height], **plot_kwargs)
+                           extent=[0, np.max(heatmap_data.T.index), 0, height],
+                           **plot_kwargs)
     # ax.set_xlabel("Time (s)")
     ax[0].set_xlabel("")
+    ax[0].set_xticks([])
     ax[0].set_ylabel("Neurons")
     ax[0].set_yticks([])
     vertical_line = ax[0].axvline(x=0, color='white', linewidth=4)
     # canvas_heatmap = FigureCanvas(fig)
-    divider = make_axes_locatable(ax[0])
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    cbar = fig.colorbar(heatmap, cax=cax)
-    # cbar = fig.colorbar(heatmap, ax=ax[0])
-    cbar.set_label(r'$\Delta R/R50$')
     ax[0].set_title("Heatmap of neuronal time series")
 
-    plt.tight_layout()
 
     # Initialize ethogram and line
     # fig, ax = plt.subplots(figsize=(2 * width / 100, height / 100 / 10), dpi=100)
     # fig.set_tight_layout(True)
     ethogram = ax[1].imshow(beh_vec, cmap=ethogram_cmap, interpolation='nearest', aspect='auto',
-                            extent=[0, np.max(heatmap_data.T.index), 0, ethogram_height])
+                            extent=[0, np.max(heatmap_data.T.index), 0, ethogram_height]
+                            )
     ax[1].set_xlabel("Time (s)")
     ax[1].set_yticks([])
     vertical_line_ethogram = ax[1].axvline(x=0, color='white', linewidth=4)
 
-    # Ensure the x-axes are aligned
+    # Ensure the x-axes are aligned by manually adding the colorbar to a specified divided axis
+    divider = make_axes_locatable(ax[0])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cbar = fig.colorbar(heatmap, cax=cax)
+    # cbar = fig.colorbar(heatmap, ax=ax[0])
+    cbar.set_label(r'$\Delta R/R50$')
+    # Do the same to the ethogram, with no colorbar
+    divider = make_axes_locatable(ax[1])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    # Make this extra axis invisible
+    cax.axis('off')
+
     ax[1].set_xlim(ax[0].get_xlim())
+    plt.tight_layout()
 
     canvas_ethogram_and_heatmap = FigureCanvas(fig)
 
