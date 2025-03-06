@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 import re
@@ -28,6 +29,7 @@ from wbfm.utils.general.hardcoded_paths import get_summary_visualization_dir
 from wbfm.utils.external.utils_pandas import pad_events_in_binary_vector
 
 
+@functools.total_ordering
 class BehaviorCodes(Flag):
     """
     Top-level behaviors that are discretely annotated.
@@ -138,6 +140,10 @@ class BehaviorCodes(Flag):
             return self.value == other.value
         else:
             return False
+
+    def __lt__(self, other):
+        # Allows sorting (rest are generated via functools.total_ordering)
+        return self.value < other.value
 
     def __hash__(self):
         # Allows this enum to be used as a key in a dictionary

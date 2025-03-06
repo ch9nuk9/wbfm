@@ -14,6 +14,8 @@ from tqdm.auto import tqdm
 from matplotlib.colors import ListedColormap
 from wbfm.utils.general.video_and_data_conversion.video_conversion_utils import write_numpy_as_avi
 from wbfm.utils.projects.finished_project_data import ProjectData, plot_pca_projection_3d_from_project
+from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
+from wbfm.utils.external.utils_plotly import rgba2float
 
 
 def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=None, fps=7,
@@ -616,16 +618,18 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     beh_vec = [b.value for b in beh_vec_raw.values]
     beh_vec = np.array(beh_vec).reshape(1, -1)
 
-    colormap_dict = BehaviorCodes.ethogram_cmap(use_plotly_style_strings=False)
-    mapped_categories = [colormap_dict.get(cat, 'gray') for cat in beh_vec_raw]
-    ethogram_cmap = ListedColormap([colormap_dict[key] for key in sorted(colormap_dict.keys())])
+    colormap_dict = BehaviorCodes.ethogram_cmap(use_plotly_style_strings=True)
+    sorted_keys = sorted(list(colormap_dict.keys()))
+    ethogram_cmap = [rgba2float(colormap_dict[k]) for k in sorted_keys if colormap_dict[k] is not None]
+    ethogram_cmap = ListedColormap(ethogram_cmap)
 
     # Get video properties
     fps = volumes_per_second
     frame_count, width, height = video_array.shape
+    ethogram_height = int(height / 10)
 
     # Prepare VideoWriter to save the output
-    output_size = (width * 2, height * 2 * 1.1)  # Accommodate the wide heatmap and pca plot, and ethogram
+    output_size = (width * 2, height * 2 + ethogram_height)  # Accommodate the wide heatmap and pca plot, and ethogram
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     output_video = cv2.VideoWriter(output_fname, fourcc, fps, output_size)
 
@@ -656,13 +660,11 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     fig, ax = plt.subplots(figsize=(2 * width / 100, height / 100 / 10), dpi=100)
     fig.set_tight_layout(True)
     ethogram = ax.imshow(beh_vec, cmap=ethogram_cmap, interpolation='nearest', aspect='auto',
-                        extent=[0, np.max(heatmap_data.T.index), 0, height/10])
+                        extent=[0, np.max(heatmap_data.T.index), 0, ethogram_height])
     ax.set_xlabel("Time (s)")
     ax.set_yticks([])
     vertical_line_ethogram = ax.axvline(x=0, color='white', linewidth=4)
     canvas_ethogram = FigureCanvas(fig)
-
-    plt.tight_layout()
 
     # Initialize behavior-colored pca plot, and black dot for time
     plt.ion()

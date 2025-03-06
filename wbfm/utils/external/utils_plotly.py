@@ -215,6 +215,13 @@ def rgba2hex(rgba_color):
     return hex_color
 
 
+def rgba2float(rgba_color):
+    """Converts string of rgba color to list of floats, like matplotlib expects"""
+    rgba_color = rgba_color.replace('rgba', '').replace('rgb', '').replace(' ', '').replace('(', '').replace(')', '')
+    rgba_color = rgba_color.split(',')
+    return [float(c) / 255 for c in rgba_color]
+
+
 def pastelize_color(hex_color, mix_fraction=0.2, return_hex=True):
     """Make a color more pastel by mixing it with white."""
     rgb_color = hex2rgba(hex_color, alpha=None, return_tuple=True)
