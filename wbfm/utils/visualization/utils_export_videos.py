@@ -749,7 +749,7 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
         # Units should be same as the 'extent' of the ax.imshow command, which is the x axis of the heatmap
         line_position = heatmap_data.T.index[frame_idx]
         vertical_line.set_xdata([line_position])
-        # vertical_line_ethogram.set_xdata([line_position])
+        vertical_line_ethogram.set_xdata([line_position])
 
         # Render the updated figures to a numpy array
         # canvas_heatmap.draw()
