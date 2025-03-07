@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 import dask.array as da
 
 from wbfm.gui.utils.utils_gui import change_viewer_time_point
-from wbfm.utils.external.custom_errors import MissingAnalysisError
+from wbfm.utils.external.custom_errors import MissingAnalysisError, NoBehaviorAnnotationsError
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 import napari
 
@@ -245,7 +245,10 @@ class NapariLayerInitializer:
             test_neuron = project_data.neuron_names[0]
             num_frames = project_data.red_traces[test_neuron].shape[0]
             if project_data.worm_posture_class.has_full_kymograph:
-                curvature = project_data.worm_posture_class.curvature(fluorescence_fps=True).iloc[0:num_frames]
+                try:
+                    curvature = project_data.worm_posture_class.curvature(fluorescence_fps=True).iloc[0:num_frames]
+                except NoBehaviorAnnotationsError:
+                    curvature = None
             else:
                 curvature = None
             heat_mapper = NapariPropertyHeatMapper(project_data.red_traces, project_data.green_traces,
