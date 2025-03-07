@@ -325,6 +325,12 @@ rule sam2_segment:
         batch_size=400
     shell:
         """
+        # I started getting an error with the xml_catalog_files_libxml2 variable, so check if it is set
+        if [ -z "$xml_catalog_files_libxml2" ]; then
+            #echo "Warning: xml_catalog_files_libxml2 is not set, setting it to /lisc/app/conda/miniforge3/etc/xml/catalog"
+            export xml_catalog_files_libxml2=""
+        fi 
+        
         # Activate the environment and the correct cuda
         source /lisc/app/conda/miniforge3/bin/activate {params.sam2_conda_env_name}
         module load cuda-toolkit/12.6.3
@@ -461,6 +467,12 @@ rule dlc_analyze_videos:
         csv_file = f"{output_behavior_dir}/raw_stack_dlc.csv"
     shell:
         """
+        # I started getting an error with the xml_catalog_files_libxml2 variable, so check if it is set
+        if [ -z "$xml_catalog_files_libxml2" ]; then
+            #echo "Warning: xml_catalog_files_libxml2 is not set, setting it to /lisc/app/conda/miniforge3/etc/xml/catalog"
+            export xml_catalog_files_libxml2=""
+        fi 
+        
         source /lisc/app/conda/miniforge3/bin/activate {params.dlc_conda_env}
         module load cuda-toolkit/12.6.3
         # Also rename the output file to the expected name
