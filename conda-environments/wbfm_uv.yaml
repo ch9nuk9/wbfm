@@ -1,0 +1,58 @@
+# wbfm.yaml
+
+# Made by Charles Fieseler
+# designed to be used with uv / pip
+
+
+# python=3.10
+pip
+numpy
+pandas
+tqdm
+zarr
+scipy
+torchaudio
+cudatoolkit
+cudnn
+matplotlib
+torchvision
+scikit-learn
+scikit-image
+networkx
+lmfit
+natsort
+snakemake
+napari[all]
+pytorch
+torchvision
+torchaudio
+torchmetrics
+pytorch-cuda
+plotly
+tifffile
+opencv-contrib-python
+tables
+networkx
+tensorflow
+sacred
+ruamel.yaml
+stardist  # Use 0.8.4 for printing fix, but not actually necessary
+hashfs
+tinydb
+tinydb-serialization
+openpyxl
+pytest
+ruptures
+backports.cached_property
+pytorch-lightning
+wandb
+seaborn
+hdbscan
+statsmodels
+ppca
+methodtools
+kaleido
+skan==0.9 # For behavior pipeline
+loguru  # For imutils
+ndtiff
+ndstorage
