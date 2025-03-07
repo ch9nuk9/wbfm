@@ -21,11 +21,10 @@ lmfit
 natsort
 snakemake
 napari[all]
-pytorch
+torch
 torchvision
 torchaudio
 torchmetrics
-pytorch-cuda
 plotly
 tifffile
 opencv-contrib-python
