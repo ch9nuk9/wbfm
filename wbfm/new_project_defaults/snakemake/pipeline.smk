@@ -326,7 +326,7 @@ rule sam2_segment:
     shell:
         """
         # I started getting an error with the xml_catalog_files_libxml2 variable, so check if it is set
-        if [ -z "$xml_catalog_files_libxml2" ]; then
+        if [ -z "${xml_catalog_files_libxml2:-}" ]; then
             #echo "Warning: xml_catalog_files_libxml2 is not set, setting it to /lisc/app/conda/miniforge3/etc/xml/catalog"
             export xml_catalog_files_libxml2=""
         fi 
@@ -468,7 +468,7 @@ rule dlc_analyze_videos:
     shell:
         """
         # I started getting an error with the xml_catalog_files_libxml2 variable, so check if it is set
-        if [ -z "$xml_catalog_files_libxml2" ]; then
+        if [ -z "${xml_catalog_files_libxml2:-}" ]; then
             #echo "Warning: xml_catalog_files_libxml2 is not set, setting it to /lisc/app/conda/miniforge3/etc/xml/catalog"
             export xml_catalog_files_libxml2=""
         fi 
