@@ -12,7 +12,6 @@ tqdm
 zarr
 scipy
 torchaudio
-cudnn
 matplotlib
 torchvision
 scikit-learn
