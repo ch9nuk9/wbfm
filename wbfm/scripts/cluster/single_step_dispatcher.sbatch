@@ -24,7 +24,8 @@ function show_help {
 
 # Get all user flags
 is_dry_run=""
-while getopts t:n:s:b:h: flag
+args=""
+while getopts t:n:s:a:h: flag
 do
     case "${flag}" in
         t) project_path=${OPTARG};;

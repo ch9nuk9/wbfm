@@ -25,6 +25,7 @@ function show_help {
 pwd; hostname; date
 
 # Get all user flags
+args=""
 while getopts t:n:s:a:h flag
 do
     case "${flag}" in
@@ -40,7 +41,6 @@ done
 # Unpack the flag into an actual command
 CMD_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts"
 
-declare -A CMD_DICT
 declare -A CMD_DICT
 CMD_DICT["0b"]="0b-preprocess_working_copy_of_data.py"
 CMD_DICT["1"]="1-segment_video.py"
