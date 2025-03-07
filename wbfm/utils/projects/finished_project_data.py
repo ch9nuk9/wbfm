@@ -914,7 +914,7 @@ class ProjectData:
         """
 
         if binary_behaviors:
-            behavior_codes = ['rev', 'ventral_turn', 'dorsal_turn', 'head_cast', 'pause', 'self_collision']
+            behavior_codes = ['rev', 'ventral_turn', 'dorsal_turn', 'pause', 'self_collision']
         else:
             behavior_codes = ['signed_middle_body_speed', 'ventral_only_body_curvature', 'ventral_only_head_curvature',
                               'dorsal_only_body_curvature', 'dorsal_only_head_curvature']
