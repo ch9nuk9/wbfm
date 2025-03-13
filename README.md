@@ -1,5 +1,8 @@
 # Whole Brain Freely Moving Tracking and Trace extraction
 
+Contains code for the pipeline, GUI, and analysis code for the paper:
+[An intrinsic neuronal manifold underlies brain-wide hierarchical organization of behavior in C. elegans](https://www.biorxiv.org/content/10.1101/2025.03.09.642241v1)
+
 This repository contains python code for analyzing raw volumetric images in two channels: red (tracking) and green (activity).
 
 The segmentation portion of the algorithm is in a [sibling repository](https://github.com/Zimmer-lab/segmentation), but all main pipeline steps and GUIs are in this one.
