@@ -65,3 +65,4 @@ dependencies:
     - loguru  # For imutils
     - ndtiff
     - ndstorage
+    - torchio

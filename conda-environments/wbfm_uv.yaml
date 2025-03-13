@@ -53,3 +53,4 @@ skan==0.9 # For behavior pipeline
 loguru  # For imutils
 ndtiff
 ndstorage
+torchio
