@@ -105,7 +105,7 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[10]:
+# In[12]:
 
 
 fps = project_data_gcamp.physical_unit_conversion.frames_per_second
@@ -122,7 +122,7 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[11]:
+# In[13]:
 
 
 fig = make_summary_interactive_kymograph_with_behavior(project_data_gcamp, to_save=False, to_show=True,
@@ -147,7 +147,7 @@ get_ipython().run_line_magic('debug', '')
 
 # ## Trajectory
 
-# In[13]:
+# In[14]:
 
 
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
@@ -155,7 +155,7 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.general.utils_paper import behavior_name_mapping
 
 
-# In[14]:
+# In[15]:
 
 
 xy = project_data_gcamp.worm_posture_class.calc_behavior_from_alias('worm_center_position').copy()
@@ -171,7 +171,7 @@ df_xy['Behavior'] = beh.values
 df_xy.head()
 
 
-# In[15]:
+# In[16]:
 
 
 # import plotly.graph_objects as go
@@ -203,7 +203,7 @@ df_xy.head()
 # fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[16]:
+# In[17]:
 
 
 import plotly.graph_objects as go
@@ -252,7 +252,7 @@ fig.write_image(fname.replace(".png", ".svg"))
 
 # ## NOT USING: Behavior transition diagram
 
-# In[17]:
+# In[18]:
 
 
 # dot, df_probabilities, df_raw_number = project_data_gcamp.worm_posture_class.plot_behavior_transition_diagram(output_folder='behavior')
@@ -262,7 +262,7 @@ fig.write_image(fname.replace(".png", ".svg"))
 
 # ## Displacement
 
-# In[18]:
+# In[19]:
 
 
 from collections import defaultdict
@@ -298,20 +298,20 @@ def calc_displacement_dataframes(all_projects):
     return df_displacement_gcamp
 
 
-# In[19]:
+# In[20]:
 
 
 df_displacement_gcamp = calc_displacement_dataframes(all_projects_gcamp)
 df_displacement_gfp = calc_displacement_dataframes(all_projects_gfp)
 
 
-# In[20]:
+# In[21]:
 
 
 df_displacement_gfp.shape
 
 
-# In[21]:
+# In[22]:
 
 
 df_displacement_gcamp['genotype'] = 'gcamp'
@@ -320,7 +320,7 @@ df_displacement_gfp['genotype'] = 'gfp'
 df_displacement = pd.concat([df_displacement_gcamp, df_displacement_gfp])
 
 
-# In[22]:
+# In[23]:
 
 
 # fig = px.histogram(df_displacement, x='net', color='genotype', nbins=40)
@@ -331,14 +331,14 @@ df_displacement = pd.concat([df_displacement_gcamp, df_displacement_gfp])
 # fig.show()
 
 
-# In[23]:
+# In[24]:
 
 
 # fig = px.histogram(df_displacement, x='net', facet_row='genotype', color='genotype', nbins=30)
 # fig.show()
 
 
-# In[24]:
+# In[25]:
 
 
 # Alternative: boxplot with scatter plot
@@ -357,7 +357,7 @@ fig.write_image(fname)
 fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[25]:
+# In[26]:
 
 
 # fig = px.histogram(df_displacement, x='cumulative', facet_row='genotype', color='genotype', nbins=30)
@@ -366,14 +366,14 @@ fig.write_image(fname.replace(".png", ".svg"))
 
 # ## Speed, in several different ways
 
-# In[26]:
+# In[27]:
 
 
 from wbfm.utils.visualization.plot_summary_statistics import calc_speed_dataframe
 from wbfm.utils.general.utils_paper import apply_figure_settings
 
 
-# In[27]:
+# In[28]:
 
 
 df_speed_gcamp = calc_speed_dataframe(all_projects_gcamp)
@@ -386,7 +386,7 @@ df_speed_gfp = calc_speed_dataframe(all_projects_gfp)
 
 
 
-# In[28]:
+# In[29]:
 
 
 from wbfm.utils.general.utils_paper import data_type_name_mapping
@@ -424,7 +424,7 @@ for x in speed_types:
     fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[29]:
+# In[30]:
 
 
 # fname = os.path.join(output_folder, "df_speed.h5")
@@ -433,26 +433,26 @@ for x in speed_types:
 
 # ## Reversal and forward durations
 
-# In[30]:
+# In[31]:
 
 
 from wbfm.utils.visualization.plot_summary_statistics import calc_durations_dataframe
 
 
-# In[31]:
+# In[32]:
 
 
 df_duration_gcamp = calc_durations_dataframe(all_projects_gcamp)
 df_duration_gfp = calc_durations_dataframe(all_projects_gfp)
 
 
-# In[32]:
+# In[33]:
 
 
 # %debug
 
 
-# In[33]:
+# In[34]:
 
 
 df_duration_gcamp['genotype'] = 'gcamp'
@@ -465,22 +465,23 @@ df_duration['BehaviorCodes.FWD'] /= fps
 df_duration['BehaviorCodes.REV'] /= fps
 
 
-# In[34]:
+# In[35]:
 
 
 df_duration.columns
 
 
-# In[35]:
+# In[46]:
 
 
 
 states = ['BehaviorCodes.FWD', 'BehaviorCodes.REV']
-titles = ["Forward", "Reversal"]
+titles = ["Fwd", "Bwd"]
 
 for x, t in zip(states, titles):
     fig = px.histogram(df_duration, x=x, facet_row='genotype', color='genotype', color_discrete_map=plotly_paper_color_discrete_map(), 
                        title=f"<br>                {t} duration", 
+                       # title=f"                              {t} duration", 
                        histnorm='probability')
 
     fig.update_layout(title=dict(x=0.5, y=0.99))
@@ -513,7 +514,7 @@ for x, t in zip(states, titles):
     fig.write_image(fname.replace(".png", ".svg"))
 
 
-# In[36]:
+# In[37]:
 
 
 

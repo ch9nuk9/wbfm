@@ -251,44 +251,44 @@ project_data_immob2.use_physical_x_axis = True
 # In[28]:
 
 
-fig1, fig2 = make_summary_heatmap_and_subplots(project_data_immob2, trace_opt=dict(use_paper_options=True, interpolate_nan=True, verbose=True), include_speed_subplot=False,
-                                               to_save=True, to_show=True, base_width=0.55, output_folder="intro/fm_to_immob/immob",
-                                              ethogram_on_top=True)
+# fig1, fig2 = make_summary_heatmap_and_subplots(project_data_immob2, trace_opt=dict(use_paper_options=True, interpolate_nan=True, verbose=True), include_speed_subplot=False,
+#                                                to_save=True, to_show=True, base_width=0.55, output_folder="intro/fm_to_immob/immob",
+#                                               ethogram_on_top=True)
 
 
-# In[ ]:
+# In[29]:
 
 
 project_data_gcamp2.calc_paper_traces().shape
 
 
-# In[ ]:
+# In[30]:
 
 
 fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp2, trace_opt=dict(use_paper_options=True, interpolate_nan=True, verbose=True), include_speed_subplot=False,
                                                to_save=True, to_show=True, base_width=0.55, ethogram_on_top=True, output_folder="intro/fm_to_immob/fm")
 
 
-# In[ ]:
+# In[31]:
 
 
 # trace_opt=dict(use_paper_options=True, interpolate_nan=False, verbose=True)
 # df = project_data_fm2immob_fm.calc_default_traces(**trace_opt)
 
 
-# In[ ]:
+# In[32]:
 
 
 # project_data_immob2.calc_paper_traces()
 
 
-# In[ ]:
+# In[33]:
 
 
 # project_data_immob2.tail_neuron_names()
 
 
-# In[ ]:
+# In[34]:
 
 
 # # Test: include tail neurons
@@ -300,7 +300,7 @@ fig1, fig2 = make_summary_heatmap_and_subplots(project_data_gcamp2, trace_opt=di
 
 # ### Just plot the legend for reversal shading
 
-# In[29]:
+# In[35]:
 
 
 from wbfm.utils.general.utils_paper import export_legend_for_paper
@@ -309,7 +309,7 @@ fname = 'intro/reversal_legend.png'
 export_legend_for_paper(reversal_shading=True, fname=fname)
 
 
-# In[30]:
+# In[36]:
 
 
 
@@ -317,7 +317,7 @@ fname = 'intro/reversal_and_collision_legend.png'
 export_legend_for_paper(reversal_shading=True, fname=fname, include_self_collision=True)
 
 
-# In[31]:
+# In[37]:
 
 
 from wbfm.utils.general.utils_paper import export_legend_for_paper
@@ -328,7 +328,7 @@ export_legend_for_paper(ethogram=True, fname=fname)
 
 # ## Triggered average examples
 
-# In[32]:
+# In[38]:
 
 
 # from wbfm.utils.visualization.plot_traces import make_grid_plot_using_project
@@ -343,7 +343,7 @@ from wbfm.utils.visualization.utils_plot_traces import plot_triggered_averages
 
 
 
-# In[33]:
+# In[39]:
 
 
 # plot_triggered_averages([project_data_gcamp, project_data_immob], output_foldername="intro/basic_triggered_average")
@@ -351,7 +351,7 @@ from wbfm.utils.visualization.utils_plot_traces import plot_triggered_averages
 
 # ## PCA variance explained plot of all datasets
 
-# In[34]:
+# In[40]:
 
 
 from wbfm.utils.visualization.multiproject_wrappers import get_all_variance_explained
@@ -359,13 +359,13 @@ from wbfm.utils.visualization.utils_plot_traces import plot_with_shading
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
 
 
-# In[35]:
+# In[41]:
 
 
 gcamp_var, gfp_var, immob_var, gcamp_var_sum, gfp_var_sum, immob_var_sum = get_all_variance_explained(all_projects_gcamp, all_projects_gfp, all_projects_immob)
 
 
-# In[36]:
+# In[42]:
 
 
 fig, ax = plt.subplots(dpi=200, figsize=(5,5))
@@ -411,7 +411,7 @@ fig.savefig(fname.replace(".png", ".svg"), transparent=True)
 
 # # PCA weights across wbfm and immob
 
-# In[37]:
+# In[43]:
 
 
 from wbfm.utils.visualization.utils_cca import calc_pca_weights_for_all_projects
@@ -420,7 +420,7 @@ from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 
 
-# In[68]:
+# In[191]:
 
 
 
@@ -428,26 +428,32 @@ wbfm_weights = calc_pca_weights_for_all_projects(all_projects_gcamp, use_paper_o
                                                  include_only_confident_ids=True)
 
 
-# In[69]:
+# In[192]:
 
 
 immob_weights = calc_pca_weights_for_all_projects(all_projects_immob, use_paper_options=True, combine_left_right=True,
                                                   include_only_confident_ids=True)
 
 
-# In[130]:
+# In[193]:
 
 
 len(neurons_with_confident_ids())
 
 
-# In[132]:
+# In[194]:
 
 
 len(neurons_with_confident_ids(combine_left_right=True))
 
 
-# In[41]:
+# In[211]:
+
+
+len(wbfm_weights.count()), len(immob_weights.count())
+
+
+# In[196]:
 
 
 # # Create a list of colors to highlight BAG
@@ -471,7 +477,7 @@ len(neurons_with_confident_ids(combine_left_right=True))
 # fig.write_image(fname)
 
 
-# In[42]:
+# In[197]:
 
 
 # # Create a list of colors to highlight BAG
@@ -495,7 +501,7 @@ len(neurons_with_confident_ids(combine_left_right=True))
 
 # ## FM and immob on same plot
 
-# In[70]:
+# In[212]:
 
 
 from wbfm.utils.visualization.utils_plot_traces import add_p_value_annotation
@@ -505,8 +511,22 @@ from wbfm.utils.general.utils_paper import intrinsic_categories_color_discrete_m
 from wbfm.utils.external.utils_plotly import colored_text
 
 
-# In[128]:
+# ### Precalculate all p values that will be needed
 
+# In[213]:
+
+
+'URX' in df_both['neuron_name'], 'URX' in names_to_keep
+
+
+# In[254]:
+
+
+from scipy import stats
+from statsmodels.stats.multitest import multipletests
+
+opts_multipletests = dict(method='fdr_bh', alpha=0.05)
+# opts_multipletests = dict(method='sidak')
 
 names_to_keep = set(wbfm_weights.columns).intersection(immob_weights.columns)
 wbfm_melt = wbfm_weights.melt(var_name='neuron_name', value_name='PC1 weight').assign(dataset_type='gcamp')
@@ -514,14 +534,65 @@ immob_melt = immob_weights.melt(var_name='neuron_name', value_name='PC1 weight')
 df_both = pd.concat([wbfm_melt, immob_melt], axis=0)
 df_both = df_both[df_both['neuron_name'].isin(names_to_keep)]
 df_both['Dataset Type'] = df_both['dataset_type'].map(data_type_name_mapping())
+print(len(df_both['neuron_name'].unique()))
+
+# Significantly different from 0... need a permutation version, so use an extra function
+# From: https://stackoverflow.com/questions/73569894/permutation-based-alternative-to-scipy-stats-ttest-1samp
+def _t_statistic(x, axis=-1):
+    # return stats.ttest_1samp(x, popmean=0, axis=axis).statistic
+    return stats.ttest_1samp(x, popmean=0).statistic
+
+def t_statistic_permutation(x):
+    return stats.permutation_test((x.values, ), _t_statistic, permutation_type='samples', ).pvalue
+
+# func = lambda x: stats.ttest_1samp(x, 0)[1]
+df_groupby = df_both.dropna().groupby(['neuron_name', 'dataset_type'])
+df_pvalue = df_groupby['PC1 weight'].apply(t_statistic_permutation).to_frame()
+df_pvalue.columns = ['p_value']
+
+# Multiple comparison correction in the same way for all tests
+output = multipletests(df_pvalue.values.squeeze(), **opts_multipletests)
+df_pvalue['p_value_corrected'] = output[1]
+df_pvalue['significance_corrected'] = output[0]
+
+# Sign of medians
+df_medians_gcamp = df_groupby['PC1 weight'].median()[(slice(None), 'gcamp')]
+df_medians_immob = df_groupby['PC1 weight'].median()[(slice(None), 'immob')]
+
+# Significantly different from each other (should be exact same as the boxplot)
+df_groupby = df_both.dropna().groupby(['neuron_name'])
+func = lambda x: stats.ttest_ind(x[x['dataset_type']=='gcamp']['PC1 weight'], x[x['dataset_type']=='immob']['PC1 weight'], 
+                                 equal_var=False, permutations=1000)[1]
+df_significant_diff = df_groupby.apply(func).to_frame()
+df_significant_diff.columns = ['p_value_diff']
+# Multiple comparison correction in the same way for all tests
+output = multipletests(df_significant_diff.values.squeeze(), **opts_multipletests)
+df_significant_diff['p_value_corrected_diff'] = output[1]
+df_significant_diff['significance_corrected_diff'] = output[0]
+# df_significant_diff.head()
+
+
+# In[255]:
+
 
 # Color xticks by later pie chart colors
 # Load from disk from previous run
 # NOTE: IF UPDATING NEURONS: this will remove neurons, which then will not get into the pie chart later
 df_categories = pd.read_excel('intro/intrinsic_categories.xlsx')
-df_categories['Result_simple_color'] = df_categories['Result_simple'].map(intrinsic_categories_color_discrete_map(return_hex=False))
-df_both = pd.merge(df_both, df_categories, on='neuron_name', validate='many_to_one')
-df_both['neuron_name_html'] = df_both.apply(lambda x: colored_text(x['neuron_name'], x['Result_simple_color'], bold=True), axis=1)
+if len(df_both['neuron_name'].unique()) > len(df_categories['neuron_name'].unique()):
+    print("Not all neurons have colors; skipping coloring")
+    df_both['neuron_name_html'] = df_both['neuron_name']
+else:
+    df_categories['Result_simple_color'] = df_categories['Result_simple'].map(intrinsic_categories_color_discrete_map(return_hex=False))
+    df_both = pd.merge(df_both, df_categories, on='neuron_name', validate='many_to_one')
+    df_both['neuron_name_html'] = df_both.apply(lambda x: colored_text(x['neuron_name'], x['Result_simple_color'], bold=True), axis=1)
+    print(len(df_both['neuron_name'].unique()))
+
+
+# ### Box plot with significance
+
+# In[266]:
+
 
 # Plot
 fig = px.box(df_both, y='PC1 weight', x='neuron_name_html', 
@@ -529,8 +600,10 @@ fig = px.box(df_both, y='PC1 weight', x='neuron_name_html',
             color_discrete_map=plotly_paper_color_discrete_map(),
             category_orders={'Dataset Type': ['Immobilized (GCaMP)', 'Freely Moving (GCaMP)']})
 
-add_p_value_annotation(fig, x_label='all', show_ns=False, show_only_stars=True, permutations=1000,
-                      height_mode='top_of_data')#, _format=dict(text_height=0.075))
+# add_p_value_annotation(fig, x_label='all', show_ns=False, show_only_stars=True, permutations=1000,
+#                       height_mode='top_of_data')#, _format=dict(text_height=0.075))
+add_p_value_annotation(fig, x_label='all', show_ns=False, show_only_stars=True, precalculated_p_values=df_significant_diff['p_value_corrected_diff'],
+                      height_mode='top_of_data')
 apply_figure_settings(fig, width_factor=0.83, height_factor=0.3, plotly_not_matplotlib=True)
 
 fig.update_layout(legend=dict(
@@ -551,7 +624,7 @@ fig.update_layout(legend=dict(
 # )
 # fig.add_trace(dummy_data)
 
-fig.update_yaxes(dict(title="PC1 weight"), zeroline=True, zerolinewidth=1, zerolinecolor="black", range=[-0.2, 0.55])
+fig.update_yaxes(dict(title="PC1 weight"), zeroline=True, zerolinewidth=1, zerolinecolor="black", )#range=[-0.2, 0.55])
 fig.update_xaxes(dict(title="Neuron Name"))
 fig.show()
 
@@ -559,30 +632,6 @@ fname = os.path.join("intro", 'fm_and_immob_pca_weights.png')
 fig.write_image(fname, scale=3)
 fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
-
-
-# In[115]:
-
-
-# df_both[df_both['neuron_name']=='DD01']
-
-
-# In[104]:
-
-
-'DD01' in names_to_keep
-
-
-# In[105]:
-
-
-# df_categories
-
-
-# In[116]:
-
-
-# immob_melt[immob_melt['neuron_name']=='DD01']
 
 
 # ## Pie chart summarizing above
@@ -620,67 +669,47 @@ fig.write_image(fname)
 # 3. 
 # 
 
-# In[107]:
+# In[257]:
 
 
 from wbfm.utils.general.hardcoded_paths import intrinsic_definition
 
 
-# In[108]:
+# In[258]:
 
 
-from scipy import stats
-from statsmodels.stats.multitest import multipletests
+# from scipy import stats
+# from statsmodels.stats.multitest import multipletests
 
-# Significantly different from 0
-func = lambda x: stats.ttest_1samp(x, 0)[1]
-df_groupby = df_both.dropna().groupby(['neuron_name', 'dataset_type'])
-df_pvalue = df_groupby['PC1 weight'].apply(func).to_frame()
-df_pvalue.columns = ['p_value']
+# # Significantly different from 0
+# func = lambda x: stats.ttest_1samp(x, 0)[1]
+# df_groupby = df_both.dropna().groupby(['neuron_name', 'dataset_type'])
+# df_pvalue = df_groupby['PC1 weight'].apply(func).to_frame()
+# df_pvalue.columns = ['p_value']
 
-output = multipletests(df_pvalue.values.squeeze(), method='sidak')
-df_pvalue['p_value_corrected'] = output[1]
-df_pvalue['significance_corrected'] = output[0]
+# # Multiple comparison correction in the same way for all tests
+# output = multipletests(df_pvalue.values.squeeze(), method='fdr_bh', alpha=0.05)
+# df_pvalue['p_value_corrected'] = output[1]
+# df_pvalue['significance_corrected'] = output[0]
 
-# Sign of medians
-df_medians_gcamp = df_groupby['PC1 weight'].median()[(slice(None), 'gcamp')]
-df_medians_immob = df_groupby['PC1 weight'].median()[(slice(None), 'immob')]
+# # Sign of medians
+# df_medians_gcamp = df_groupby['PC1 weight'].median()[(slice(None), 'gcamp')]
+# df_medians_immob = df_groupby['PC1 weight'].median()[(slice(None), 'immob')]
 
-# Significantly different from each other
-df_groupby = df_both.dropna().groupby(['neuron_name'])
-func = lambda x: stats.ttest_ind(x[x['dataset_type']=='gcamp']['PC1 weight'], x[x['dataset_type']=='immob']['PC1 weight'], 
-                                 equal_var=False)[1]
-df_significant_diff = df_groupby.apply(func).to_frame()
-df_significant_diff.columns = ['p_value_diff']
-output = multipletests(df_significant_diff.values.squeeze(), method='sidak')
-df_significant_diff['p_value_corrected_diff'] = output[1]
-df_significant_diff['significance_corrected_diff'] = output[0]
-df_significant_diff.head()
-
-
-# In[109]:
-
-
-# %debug
+# # Significantly different from each other (should be exact same as the boxplot)
+# df_groupby = df_both.dropna().groupby(['neuron_name'])
+# func = lambda x: stats.ttest_ind(x[x['dataset_type']=='gcamp']['PC1 weight'], x[x['dataset_type']=='immob']['PC1 weight'], 
+#                                  equal_var=False)[1]
+# df_significant_diff = df_groupby.apply(func).to_frame()
+# df_significant_diff.columns = ['p_value_diff']
+# # Multiple comparison correction in the same way for all tests
+# output = multipletests(df_significant_diff.values.squeeze(), method='fdr_bh', alpha=0.05)
+# df_significant_diff['p_value_corrected_diff'] = output[1]
+# df_significant_diff['significance_corrected_diff'] = output[0]
+# df_significant_diff.head()
 
 
-# In[110]:
-
-
-
-# # Add horizontal line at the intersection with mean_y
-
-# fig = px.scatter(df_pvalue.reset_index(), x='neuron_name', y='p_value_corrected', color='dataset_type',
-#                  symbol = 'significance_corrected',
-#           log_y=True)
-# fig.add_shape(type="line",
-#               x0=0, y0=0.05, x1=1, y1=0.05, xref='paper',
-#               line=dict(color="Black", width=1, dash="dash"),
-#               )
-# fig.show()
-
-
-# In[111]:
+# In[259]:
 
 
 # Process p value comparisons to 0
@@ -688,26 +717,26 @@ df_pvalue_thresh = df_pvalue['significance_corrected'].reset_index()
 
 # Collect signficance calculations per datatype
 df_pivot = df_pvalue_thresh.pivot_table(index='neuron_name', columns='dataset_type', values='significance_corrected', aggfunc='first')
-df_4states = df_pivot.astype(str).radd(df_pivot.columns + '_')
-df_4states = (df_4states['gcamp'] + '_' + df_4states['immob'])#.reset_index()
+df_4states_complex = df_pivot.astype(str).radd(df_pivot.columns + '_')
+df_4states_complex = (df_4states_complex['gcamp'] + '_' + df_4states_complex['immob'])#.reset_index()
 
 # Add suffix to the state: are both medians on the same side?
 df_medians_gcamp.name = 'same_sign'
 df_medians_immob.name = 'same_sign'
 df_medians_same_sign = ((df_medians_gcamp>0) == (df_medians_immob>0)).astype(str).radd(df_medians_gcamp.name + '_')
-df_4states = df_4states.to_frame().join(df_medians_same_sign)#.reset_index()
+df_4states_complex = df_4states_complex.to_frame().join(df_medians_same_sign)#.reset_index()
 
 # Add suffix to the state: is the difference between them significant?
-df_4states = df_4states.join(df_significant_diff['significance_corrected_diff'].astype(str).radd('diff_'))
+df_4states_complex = df_4states_complex.join(df_significant_diff['significance_corrected_diff'].astype(str).radd('diff_'))
 
 # Combine into final categories
-df_4states.columns = ['pvalue_result', 'diff_sign', 'diff_sig']
-df_4states = (df_4states['pvalue_result'] + '_' + df_4states['diff_sign'] + '_' + df_4states['diff_sig']).to_frame()
+df_4states_complex.columns = ['pvalue_result', 'diff_sign', 'diff_sig']
+df_4states = (df_4states_complex['pvalue_result'] + '_' + df_4states_complex['diff_sign'] + '_' + df_4states_complex['diff_sig']).to_frame()
 df_4states.columns = ['Result']
 df_4states.head()
 
 
-# In[129]:
+# In[265]:
 
 
 from wbfm.utils.general.utils_paper import intrinsic_categories_color_discrete_map
@@ -722,7 +751,7 @@ df_4states['Result_simple'] = df_4states['Result'].map(intrinsic_definition)
 
 fig = px.pie(df_4states_counts, names='Result_simple', values='count', color='Result_simple', 
              color_discrete_map=intrinsic_categories_color_discrete_map())
-apply_figure_settings(fig, width_factor=0.2, height_factor=0.2)
+apply_figure_settings(fig, width_factor=0.2, height_factor=0.25)
 fig.update_layout(legend=dict(
     yanchor="top",
     y=0.0,
@@ -743,7 +772,7 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-# In[113]:
+# In[261]:
 
 
 df_4states['Result_simple'].value_counts()
@@ -751,21 +780,25 @@ df_4states['Result_simple'].value_counts()
 
 # ### Add english language column and export
 
-# In[114]:
+# In[262]:
 
 
 from wbfm.utils.general.hardcoded_paths import intrinsic_categories_short_description
 df_4states['Result_description'] = df_4states['Result'].map(intrinsic_categories_short_description())
 
+# Also add the original booleans that lead to these categories
+df_4states_export = df_4states.copy().join(df_4states_complex.loc[:, ['pvalue_result', 'diff_sign', 'diff_sig']]).drop(columns='Result')
+# df_4states_export
+
 fname = 'intro/intrinsic_categories.xlsx'
-df_4states.sort_values(by='Result_description').drop(columns='Result').to_excel(fname)
+df_4states.sort_values(by='Result_description').to_excel(fname)
 
 
 # # Variance explained by mode 1 across neurons
 # 
 # i.e. the cumulative histogram, with error bar per dataset
 
-# In[80]:
+# In[64]:
 
 
 from wbfm.utils.visualization.multiproject_wrappers import build_dataframe_of_variance_explained
@@ -773,7 +806,7 @@ from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map
 from wbfm.utils.general.utils_paper import apply_figure_settings
 
 
-# In[81]:
+# In[65]:
 
 
 trace_opt = dict(use_paper_options=True, interpolate_nan=True)
@@ -800,13 +833,13 @@ df_var_exp = pd.concat(all_dfs, axis=0)
 df_var_exp.head()
 
 
-# In[82]:
+# In[66]:
 
 
 df_var_exp[(df_var_exp['dataset_name'] == '2022-11-23_worm10') & (df_var_exp['neuron_name'] == 'ALA')]
 
 
-# In[83]:
+# In[67]:
 
 
 # px.histogram(df_var_exp, color='dataset_name', x='fraction_variance_explained', cumulative=True, 
@@ -814,7 +847,7 @@ df_var_exp[(df_var_exp['dataset_name'] == '2022-11-23_worm10') & (df_var_exp['ne
 #              barmode='overlay', histnorm='percent')
 
 
-# In[84]:
+# In[68]:
 
 
 df_var_exp_hist = df_var_exp.copy()
@@ -845,7 +878,7 @@ long_vars.reset_index(drop=True, inplace=True)
 long_vars.head()
 
 
-# In[85]:
+# In[69]:
 
 
 # px.line(long_vars, x='fraction_count', 
@@ -853,7 +886,7 @@ long_vars.head()
 #        facet_row='Type of data')
 
 
-# In[86]:
+# In[70]:
 
 
 from wbfm.utils.external.utils_plotly import plotly_plot_mean_and_shading
@@ -899,19 +932,19 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[87]:
+# In[71]:
 
 
 # %debug
 
 
-# In[88]:
+# In[72]:
 
 
 long_vars['Type of data'].unique()
 
 
-# In[89]:
+# In[73]:
 
 
 from wbfm.utils.external.utils_plotly import plotly_plot_mean_and_shading
@@ -969,7 +1002,7 @@ fname = Path(fname).with_suffix('.svg')
 fig.write_image(fname)
 
 
-# In[90]:
+# In[74]:
 
 
 # %debug
@@ -1003,7 +1036,7 @@ fig.write_image(fname)
 
 # ## Where is DD01?
 
-# In[91]:
+# In[75]:
 
 
 'DD01' in wbfm_weights, 'DD01' in immob_weights

@@ -847,7 +847,7 @@ triggered_average_gcamp_plotter_immob_mutant_downshift = PaperMultiDatasetTrigge
 
 # # Final version: combine triggered averages, ttests, and example traces together
 
-# In[36]:
+# In[ ]:
 
 
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
@@ -862,7 +862,7 @@ from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 
 # ## Load all classes
 
-# In[37]:
+# In[ ]:
 
 
 # Make sure physical indices are set
@@ -871,7 +871,7 @@ for this_dict in list_of_all_dicts:
         p.use_physical_time = True
 
 
-# In[38]:
+# In[ ]:
 
 
 opt = dict(calculate_global=False, calculate_turns=False,
@@ -886,7 +886,7 @@ triggered_average_gcamp_plotter_fm_mutant = PaperMultiDatasetTriggeredAverage(al
                                                                               trigger_opt=dict(fixed_num_points_after_event=40), calculate_residual=True, **opt)
 
 
-# In[70]:
+# In[ ]:
 
 
 
@@ -899,7 +899,7 @@ triggered_average_gcamp_plotter_immob_no_O2 = PaperMultiDatasetTriggeredAverage(
                                                                          calculate_stimulus=False)
 
 
-# In[71]:
+# In[ ]:
 
 
 opt = dict(calculate_residual=False, calculate_global=False, calculate_turns=False,
@@ -921,7 +921,7 @@ triggered_average_gcamp_plotter_immob_downshift = PaperMultiDatasetTriggeredAver
 # %debug
 
 
-# In[72]:
+# In[ ]:
 
 
 # Immob mutant
@@ -951,7 +951,7 @@ triggered_average_gcamp_plotter_immob_hiscl = PaperMultiDatasetTriggeredAverage(
 
 # ## Actually plot
 
-# In[73]:
+# In[ ]:
 
 
 project_data_gcamp = all_projects_O2_fm['ZIM2165_Gcamp7b_worm1-2022_11_28']
@@ -959,7 +959,7 @@ project_data_gcamp = all_projects_O2_fm['ZIM2165_Gcamp7b_worm1-2022_11_28']
 project_data_gcamp2 = all_projects_O2_fm['2023-11-30_14-31_wt_worm5_FM-2023-11-30']
 
 
-# In[74]:
+# In[ ]:
 
 
 trace_options = dict(channel_mode='dr_over_r_20')
@@ -970,7 +970,7 @@ wbfm_plotter2 = PaperExampleTracePlotter(project_data_gcamp2, xlim=[0, 120], tra
 
 # ### Example traces (left column); shared regardless of ttests
 
-# In[75]:
+# In[ ]:
 
 
 
@@ -992,7 +992,7 @@ for i, neuron in enumerate(neuron_list):
         pass
 
 
-# In[76]:
+# In[ ]:
 
 
 # Second set of neurons
@@ -1011,7 +1011,7 @@ for i, neuron in enumerate(neuron_list):
 
 # ### Helper function
 
-# In[122]:
+# In[ ]:
 
 
 from wbfm.utils.general.utils_paper import apply_figure_settings
@@ -1059,7 +1059,7 @@ def _combine_and_save(all_figs_box, all_figs_trig, all_figs_examples, width_fact
 
 # ### triggered averages (middle column) and ttests (right column) for all conditions
 
-# In[115]:
+# In[ ]:
 
 
 # Shared variables
@@ -1080,7 +1080,7 @@ neuron_list_rev = ['BAG']
 # ### Calculate all p values and subplots
 # Note: these p values will not be used directly, because they need to be corrected across conditions
 
-# In[116]:
+# In[ ]:
 
 
 ## FWD (most neurons)
@@ -1123,13 +1123,13 @@ all_figs_box_hiscl = plot_triggered_averages_from_triggered_average_classes(neur
                                                                       **opt, output_dir=None)
 
 
-# In[117]:
+# In[ ]:
 
 
 # %debug
 
 
-# In[118]:
+# In[ ]:
 
 
 # NOT USED
@@ -1166,7 +1166,7 @@ all_figs_box_hiscl = plot_triggered_averages_from_triggered_average_classes(neur
 
 # ### Properly correct the p values, replot the subplots, then plot everything
 
-# In[119]:
+# In[ ]:
 
 
 from statsmodels.stats.multitest import multipletests
@@ -1177,7 +1177,7 @@ df_p_values_fm = df_p_values_all[~df_p_values_all.is_immobilized]
 df_p_values_immob = df_p_values_all[df_p_values_all.is_immobilized]
 
 
-# In[120]:
+# In[ ]:
 
 
 # Replot panels; mostly copied from above code, but now using these p values
@@ -1224,7 +1224,7 @@ all_figs_box_hiscl = plot_triggered_averages_from_triggered_average_classes(neur
                                                                       **opt, output_dir=trigger_immob_dir, annotation_kwargs=dict(is_immobilized=True))
 
 
-# In[123]:
+# In[ ]:
 
 
 # Combine and actually plot,
@@ -1243,7 +1243,7 @@ _combine_and_save(all_figs_box_immob_down, all_figs_trig_immob_down, all_figs_ex
 
 # ## Export for alternative modeling
 
-# In[100]:
+# In[ ]:
 
 
 # Add gfp class, just for exporting
@@ -1255,7 +1255,7 @@ triggered_average_gcamp_plotter_GFP = PaperMultiDatasetTriggeredAverage(all_proj
                                                                         trigger_opt=dict(fixed_num_points_after_event=40), calculate_residual=True)
 
 
-# In[136]:
+# In[ ]:
 
 
 from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
@@ -1292,13 +1292,13 @@ for name, trigger_class in tqdm(all_classes.items()):
         df_combined.to_hdf(fname, key='df_with_missing')
 
 
-# In[102]:
+# In[ ]:
 
 
 # df_combined['AVA'].head()
 
 
-# In[103]:
+# In[ ]:
 
 
 # df = triggered_average_gcamp_plotter.get_df_triggered_from_trigger_type_all_traces_as_df('raw_rev', melt_neuron='AVAL')
@@ -1311,14 +1311,14 @@ for name, trigger_class in tqdm(all_classes.items()):
 
 # # Also export an excel with number of IDs and events
 
-# In[137]:
+# In[ ]:
 
 
 from wbfm.utils.general.hardcoded_paths import get_triggered_average_dataframe_fname, get_all_trigger_suffixes, get_triggered_average_modeling_dir
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 
 
-# In[138]:
+# In[ ]:
 
 
 all_trigger_suffixes = get_all_trigger_suffixes()
@@ -1337,16 +1337,17 @@ for suffix in tqdm(all_trigger_suffixes):
         pass
 
 
-# In[139]:
+# In[ ]:
 
 
 # all_dfs.keys()
 
 
-# In[145]:
+# In[ ]:
 
 
 from wbfm.utils.general.hardcoded_paths import excel_event_full_description
+from wbfm.utils.general.utils_paper import add_figure_panel_references_to_df
 all_events_dict = {}
 
 trigger_type_to_dataset_name = {'raw_rev': 'num_datasets_freely_moving_gcamp',
@@ -1381,36 +1382,20 @@ df = pd.DataFrame(all_events_dict)
 
 # Add a column referring to specific figure panels
 df['Figure panel references'] = ''
-df.at['num_datasets_freely_moving_gcamp', 'Figure panel references'] = '1J; 2C; 2G; 3A-H; 4A-C; S2C; S5A,B; S6A-C; S8A,B'
-df.at['raw_rev', 'Figure panel references']                          = '3B,D; 4A'
-df.at['raw_fwd', 'Figure panel references']                          = '4B,C; S9A'
-df.at['self_collision', 'Figure panel references']                   = 'S9H'
-df.at['residual', 'Figure panel references']                         = '3B,D; S9B-F'
-df.at['residual_rectified_fwd', 'Figure panel references']           = '3E,F'
-df.at['residual_rectified_rev', 'Figure panel references']           = '3E,F'
-
-df.at['num_datasets_immob_gcamp', 'Figure panel references']         = '2C; 2G; S2C; S8A,B'
-df.at['num_datasets_mutant_immob', 'Figure panel references']        = '4A-C'
-df.at['immob-stimulus', 'Figure panel references']                   = 'S9B,C,F'
-df.at['immob_mutant-stimulus', 'Figure panel references']            = 'S9B,C,F'
-df.at['immob_downshift-stimulus', 'Figure panel references']         = 'S9A'
-df.at['immob_mutant_downshift-stimulus', 'Figure panel references']  = 'S9A'
-df.at['immob_hiscl-stimulus', 'Figure panel references']             = 'S9D,E'
-
-df.at['num_datasets_gfp', 'Figure panel references']                 = '3G; S2C'
+add_figure_panel_references_to_df(df)
 
 # Add a column with full descriptions
 df['Description'] = pd.Series(df.index).astype(str).map(excel_event_full_description()).values
 df = df[df.Description != 'DROP']
 
 
-# In[146]:
+# In[ ]:
 
 
 # df['DB01']
 
 
-# In[147]:
+# In[ ]:
 
 
 
@@ -1420,7 +1405,7 @@ df.to_excel(fname)
 
 # # Alternative: collision-triggered averages (only showing BAG)
 
-# In[110]:
+# In[ ]:
 
 
 ttest_kwargs=dict(dynamic_window_center=True, dynamic_window_length=6)
@@ -1440,7 +1425,7 @@ all_figs_box_col = plot_triggered_averages_from_triggered_average_classes(neuron
                                                                       output_dir=None, annotation_kwargs=dict(is_residual=True), **opt)
 
 
-# In[114]:
+# In[ ]:
 
 
 _combine_and_save(all_figs_box_col, all_figs_trig_col, all_figs_examples=None, to_show=True, suffix='collision', width_factor=0.5)
@@ -1448,13 +1433,13 @@ _combine_and_save(all_figs_box_col, all_figs_trig_col, all_figs_examples=None, t
 
 # ## Legends for everything
 
-# In[125]:
+# In[ ]:
 
 
 from wbfm.utils.general.utils_paper import export_legend_for_paper
 
 
-# In[127]:
+# In[ ]:
 
 
 output_foldername = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing'
@@ -1462,7 +1447,7 @@ fname = os.path.join(output_foldername, 'o2_supp_legend.png')
 export_legend_for_paper(fname, o2_supp=True)
 
 
-# In[128]:
+# In[ ]:
 
 
 output_foldername = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing'
@@ -1470,7 +1455,7 @@ fname = os.path.join(output_foldername, 'triple_plots_legend.png')
 export_legend_for_paper(fname, triple_plots=True)
 
 
-# In[129]:
+# In[ ]:
 
 
 output_foldername = '/home/charles/Current_work/repos/dlc_for_wbfm/wbfm/notebooks/paper/multiplexing'

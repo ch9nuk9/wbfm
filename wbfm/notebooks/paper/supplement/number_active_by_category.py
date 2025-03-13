@@ -302,13 +302,13 @@ from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 
 # ## Immob
 
-# In[23]:
+# In[24]:
 
 
-df_var_exp_immob = build_dataframe_of_variance_explained(all_projects_immob, use_paper_options=True)
+df_var_exp_immob = build_dataframe_of_variance_explained(all_projects_immob, use_paper_options=True, interpolate_nan=True)
 
 
-# In[ ]:
+# In[25]:
 
 
 manifold_threshold = 0.5
@@ -329,21 +329,21 @@ len(neurons_active_and_ided_in_immob), len(neurons_active_and_manifold_in_immob)
 
 # ## FM
 
-# In[ ]:
+# In[26]:
 
 
 df_weights_pc0_gcamp = calc_pca_weights_for_all_projects(all_projects_gcamp, which_mode=0, 
                                                          drop_unlabeled_neurons=False, min_datasets_present=0,
-                                                        use_paper_options=True)
+                                                        use_paper_options=True, interpolate_nan=True)
 
 
-# In[ ]:
+# In[28]:
 
 
-df_var_exp_gcamp = build_dataframe_of_variance_explained(all_projects_gcamp, use_paper_options=True)
+df_var_exp_gcamp = build_dataframe_of_variance_explained(all_projects_gcamp, use_paper_options=True, interpolate_nan=True)
 
 
-# In[ ]:
+# In[29]:
 
 
 # Get long dataframe, to be used for final pie chart
@@ -366,14 +366,14 @@ melt_on_vars = ['dataset_name', 'neuron_name']
 # print(df_active_melt['variable'].unique(), df_var_exp_gcamp_melt['variable'].unique())
 
 
-# In[ ]:
+# In[30]:
 
 
 df_var_exp_gcamp_melt = df_var_exp_gcamp_melt.merge(df_active_melt, on=melt_on_vars)
 df_var_exp_gcamp_melt.head()
 
 
-# In[ ]:
+# In[31]:
 
 
 # Add columns for the relevant categories
@@ -385,7 +385,7 @@ df_var_exp_gcamp_melt['is_o2'] = df_var_exp_gcamp_melt['neuron_name'].apply(lamb
 df_var_exp_gcamp_melt['active_in_immob'] = df_var_exp_gcamp_melt['neuron_name'].apply(lambda x: x in neurons_active_and_manifold_in_immob)
 
 
-# In[ ]:
+# In[32]:
 
 
 df_var_exp_gcamp_melt['category'] = np.nan
@@ -400,13 +400,13 @@ df_var_exp_gcamp_melt['marker_size'] = [0.3 if c=='Not Identified' else 1 for c 
 print(df_var_exp_gcamp_melt['category'].value_counts())
 
 
-# In[ ]:
+# In[33]:
 
 
 df_var_exp_gcamp_melt[df_var_exp_gcamp_melt['category']=='Manifold in Freely Moving only']['neuron_name'].unique()
 
 
-# In[ ]:
+# In[34]:
 
 
 from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map, apply_figure_settings
@@ -429,7 +429,7 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[ ]:
+# In[42]:
 
 
 interesting_idx = (df_var_exp_gcamp_melt['variance'] > active_threshold) &     (df_var_exp_gcamp_melt['fraction_variance_explained'] > 0.5)
@@ -451,7 +451,7 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[ ]:
+# In[36]:
 
 
 # valid_idx = ['neuron' not in name and 'VG_' not in name for name in df_var_exp_gcamp.columns]

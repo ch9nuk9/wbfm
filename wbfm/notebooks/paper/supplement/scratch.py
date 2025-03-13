@@ -37,13 +37,39 @@ print(fname)
 Xy_gfp = pd.read_hdf(fname)
 
 
-# In[68]:
+# In[6]:
 
 
-fname = "/lisc/scratch/neurobiology/zimmer/zihaozhai/WBFM/project/2024-10-02_12-17_SWF1088_2per_worm2-2024-10-02/project_config.yaml"
+fname = "/lisc/scratch/neurobiology/zimmer/schaar/wbfm/results/20250301/worm1-2025-03-07/project_config.yaml"
 # Manually corrected version
 # fname = "/lisc/scratch/neurobiology/zimmer/ItamarLev/feedback_story/WBFM/test_behavior/2023-09-06_13-56_GCamP7b_2per_worm3-2023-09-06"
 project_data_gcamp = ProjectData.load_final_project_data_from_config(fname)
+
+
+# # Read behavior
+
+# In[7]:
+
+
+project_data_gcamp.worm_posture_class.stage_position()
+
+
+# In[9]:
+
+
+project_data_gcamp.project_config.get_behavior_config()
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # # Turn annotation

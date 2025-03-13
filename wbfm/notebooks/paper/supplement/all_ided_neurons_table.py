@@ -7,7 +7,7 @@
 
 
 
-# In[45]:
+# In[1]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -89,13 +89,13 @@ Xy['fwd'].unique()
 'IL1LL' in Xy
 
 
-# In[47]:
+# In[11]:
 
 
 # Xy['dataset_name'].unique()
 
 
-# In[46]:
+# In[12]:
 
 
 # _Xy = Xy.loc[Xy['dataset_name'].apply(lambda x: 'hiscl' in x), :].dropna().copy()
@@ -112,28 +112,16 @@ Xy['fwd'].unique()
 Xy['dataset_name'].apply(lambda x: 'hiscl' in x)
 
 
-# In[14]:
-
-
-_Xy[['IL2L', 'dataset_name']]
-
-
-# In[15]:
-
-
-c
-
-
 # # Plot ided neurons, counted by dataset and colored by datatype
 
-# In[16]:
+# In[17]:
 
 
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map, data_type_name_mapping
 
 
-# In[17]:
+# In[18]:
 
 
 def func(col):
@@ -148,7 +136,7 @@ Xy_count = Xy.apply(func)
 Xy_count
 
 
-# In[18]:
+# In[19]:
 
 
 non_nan_groups = Xy.groupby(['dataset_name', 'dataset_type'])[neurons_with_confident_ids()].agg(lambda x: x.count() > 0).reset_index()
@@ -162,13 +150,13 @@ non_nan_fraction = (non_nan_totals.T / non_nan_totals.max(axis=1)).T
 non_nan_fraction = non_nan_fraction.reset_index().melt(id_vars='dataset_type', var_name='neuron_name', value_name='count')
 
 
-# In[19]:
+# In[20]:
 
 
 print(non_nan_totals)
 
 
-# In[20]:
+# In[21]:
 
 
 non_nan_melt.columns = ['Dataset Type', 'Neuron Name', 'Count']
@@ -178,13 +166,13 @@ non_nan_fraction.columns = ['Dataset Type', 'Neuron Name', 'Count']
 non_nan_fraction['Dataset Type'] = non_nan_fraction['Dataset Type'].map(data_type_name_mapping())
 
 
-# In[21]:
+# In[22]:
 
 
 non_nan_melt[non_nan_melt['Neuron Name'] == 'AIBR']
 
 
-# In[22]:
+# In[23]:
 
 
 
@@ -214,7 +202,7 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[23]:
+# In[24]:
 
 
 # Same, but no grid and with horizontal lines where the total number of datasets are
@@ -255,7 +243,7 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[24]:
+# In[25]:
 
 
 
@@ -279,7 +267,7 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[25]:
+# In[26]:
 
 
 non_nan_fraction['Neuron Name'].value_counts()
@@ -345,16 +333,41 @@ fname = fname.replace('.png', '.svg')
 fig.write_image(fname)
 
 
-# In[ ]:
+# # Fraction of IDs per dataset
+
+# In[28]:
 
 
+Xy.head()
 
 
-
-# In[ ]:
-
+# In[48]:
 
 
+ided_columns = [col for col in Xy.columns if col in neurons_with_confident_ids() and 'manifold' not in col]
+nonided_columns = [col for col in Xy.columns if col.startswith('neuron_') and 'manifold' not in col]
+
+# Count non-null neuron IDs per dataset
+ided_result = Xy.groupby(['dataset_name', 'dataset_type'])[ided_columns].apply(lambda x: (x.notna().any()).sum()).reset_index()
+nonided_result = Xy.groupby(['dataset_name', 'dataset_type'])[nonided_columns].apply(lambda x: (x.notna().any()).sum()).reset_index()
+
+ided_result.columns = ['dataset_name', 'Dataset Type', 'neuron_id_count']
+nonided_result.columns = ['dataset_name', 'Dataset Type', 'neuron_id_count']
+
+
+# In[49]:
+
+
+ided_result['Fraction of IDed neurons'] = ided_result['neuron_id_count'] / (ided_result['neuron_id_count'] + nonided_result['neuron_id_count'])
+
+
+# In[51]:
+
+
+fig = px.box(ided_result, x='Dataset Type', y='Fraction of IDed neurons', color='Dataset Type', 
+      color_discrete_map=plotly_paper_color_discrete_map(), points='all',
+            category_orders={'Dataset Type': ['Freely Moving (GFP)', 'Freely Moving (GCaMP)', 'Immobilized (GCaMP)', ]})
+fig.show()
 
 
 # In[ ]:

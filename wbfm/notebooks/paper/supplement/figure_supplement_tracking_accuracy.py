@@ -102,25 +102,31 @@ if to_save:
     plt.savefig(fname)
 
 
-# In[35]:
+# In[9]:
 
 
 df_acc.index.name = 'Neuron'
 df_acc_melt = df_acc.melt(var_name='Algorithm option', value_name='Accuracy')
 
 
-# In[38]:
+# In[35]:
+
+
+df_acc
+
+
+# In[10]:
 
 
 df_acc_melt
 
 
-# In[43]:
+# In[33]:
 
 
 # fig = px.scatter(df_acc.sort_values(by='Full pipeline'), marginal_y='box')
 fig = px.box(df_acc_melt, color='Algorithm option')
-apply_figure_settings(fig, width_factor=0.15, height_factor=0.5, plotly_not_matplotlib=True)
+apply_figure_settings(fig, width_factor=0.15, height_factor=0.3, plotly_not_matplotlib=True)
 
 fig.update_xaxes(dict(showticklabels=False, title=""),row=1, col=1)
 fig.update_yaxes(title="Fraction correctly tracked points", range=[0.5, 1.03])
@@ -136,19 +142,19 @@ if to_save:
     fig.write_image(fname)
 
 
-# In[45]:
+# In[34]:
 
 
 df_delta = (df_acc.T - df_acc['Single reference frame'].values).T
 fig = px.scatter(df_delta.sort_values(by='Full pipeline'))#, marginal_y='box')
-apply_figure_settings(fig, width_factor=0.35, height_factor=0.5, plotly_not_matplotlib=True)
+apply_figure_settings(fig, width_factor=0.35, height_factor=0.3, plotly_not_matplotlib=True)
 
-# fig.update_xaxes(dict(showticklabels=False),row=1, col=1)
-fig.update_yaxes(title="Change in fraction correctly tracked", zeroline=True, zerolinecolor='black')#, range=[0.5, 1.03])
+fig.update_xaxes(tickfont=dict(color="rgba(0,0,0,0)", size=1), row=1, col=1, title='Neurons with<br>ground truth tracking')
+fig.update_yaxes(title="Improvement in tracks<br>(fraction of frames)", zeroline=True, zerolinecolor='black')#, range=[0.5, 1.03])
 fig.update_layout(
     showlegend=True,
     legend=dict(
-      title='Algorithm option',
+      title='',
       yanchor="top",
       y=0.95,
       xanchor="left",
@@ -171,13 +177,13 @@ if to_save:
 
 # ## Look at accuracy as an image
 
-# In[106]:
+# In[13]:
 
 
 neuron_names = project_data_gcamp.finished_neuron_names()
 
 
-# In[ ]:
+# In[14]:
 
 
 df_acc_image = df_gt.loc[:, (neuron_names, 'raw_neuron_ind_in_list')] == df_global.loc[:, (neuron_names, 'raw_neuron_ind_in_list')]
@@ -205,7 +211,7 @@ df_acc_image = ~np.isnan(df_gt.loc[:, (neuron_names, 'raw_neuron_ind_in_list')])
 px.imshow(df_acc_image.droplevel(1, axis=1), title="Nan points in the ground truth")
 
 
-# In[133]:
+# In[ ]:
 
 
 # (df_gt.loc[:, (neuron_names, 'raw_neuron_ind_in_list')].count() / 1666).hist()
@@ -213,20 +219,20 @@ px.imshow(df_acc_image.droplevel(1, axis=1), title="Nan points in the ground tru
 
 # ## Another project (todo: recalculate tracks using ground truth)
 
-# In[101]:
+# In[ ]:
 
 
 from wbfm.utils.performance.comparing_ground_truth import  calc_accuracy_of_pipeline_steps
 
 
-# In[261]:
+# In[ ]:
 
 
 # Original project
 # calc_accuracy_of_pipeline_steps(project_data_gcamp, remove_gt_nan=True)
 
 
-# In[119]:
+# In[ ]:
 
 
 # calc_accuracy_of_pipeline_steps(project_data_gcamp2)
@@ -252,7 +258,7 @@ from wbfm.utils.performance.comparing_ground_truth import  calc_accuracy_of_pipe
 
 # ## Plot fraction tracked (gaps) vs. fraction correct
 
-# In[63]:
+# In[ ]:
 
 
 neuron_names = project_data_gcamp.finished_neuron_names()
@@ -261,7 +267,7 @@ df_pipeline = project_data_gcamp.initial_pipeline_tracks[neuron_names]
 df_gt = project_data_gcamp.final_tracks[neuron_names]
 
 
-# In[64]:
+# In[ ]:
 
 
 opt = dict(column_names=['raw_neuron_ind_in_list'])
@@ -269,27 +275,27 @@ opt = dict(column_names=['raw_neuron_ind_in_list'])
 df_acc_pipeline = calculate_accuracy_from_dataframes(df_gt, df_pipeline, **opt)
 
 
-# In[71]:
+# In[ ]:
 
 
 df_pipeline_nonnan = df_pipeline.loc[:, (slice(None), 'raw_neuron_ind_in_list')].droplevel(1, axis=1).count()
 df_pipeline_nonnan /= df_pipeline.shape[0]
 
 
-# In[72]:
+# In[ ]:
 
 
 df_pipeline_nonnan
 
 
-# In[79]:
+# In[ ]:
 
 
 df_acc_pipeline['fraction_tracked'] = df_pipeline_nonnan
 df_acc_pipeline['enough_tracked'] = df_acc_pipeline['fraction_tracked'] > 0.9
 
 
-# In[91]:
+# In[ ]:
 
 
 
@@ -299,7 +305,7 @@ px.scatter(df_acc_pipeline, x='matches', y='fraction_tracked', **opt,
           color='enough_tracked', title="Better tracking implies more correct matches")
 
 
-# In[90]:
+# In[ ]:
 
 
 
@@ -307,7 +313,7 @@ px.scatter(df_acc_pipeline, x='mismatches', y='fraction_tracked', **opt,
           color='enough_tracked', title="Better tracking implies fewer mismatches")
 
 
-# In[82]:
+# In[ ]:
 
 
 df_acc_pipeline.head()
@@ -315,7 +321,7 @@ df_acc_pipeline.head()
 
 # ## Estimate tracking and segmentation statistics
 
-# In[158]:
+# In[ ]:
 
 
 projects_to_compare = dict(
@@ -342,13 +348,13 @@ cols = ["Neurons > threshold", "Threshold for successfully tracked frames (fract
 df_tracked.columns = cols
 
 
-# In[159]:
+# In[ ]:
 
 
 df_tracked.head()
 
 
-# In[160]:
+# In[ ]:
 
 
 # Export options
@@ -363,7 +369,7 @@ fig_opt = dict(
 )
 
 
-# In[162]:
+# In[ ]:
 
 
 to_plot = cols[0]
@@ -395,19 +401,19 @@ fig.write_image(fname, **save_opt)
 
 # ## Fix reading of manual annotation
 
-# In[33]:
+# In[ ]:
 
 
 fname = "/scratch/neurobiology/zimmer/Charles/dlc_stacks/manually_annotated/paper_data/ZIM2165_Gcamp7b_worm1-2022_11_28/3-tracking/manual_annotation/ZIM2165_Gcamp7b_worm1-2022_11_28.xlsx"
 
 
-# In[34]:
+# In[ ]:
 
 
 df = pd.read_excel(fname)
 
 
-# In[35]:
+# In[ ]:
 
 
 df['Finished?'].count()
