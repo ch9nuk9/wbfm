@@ -645,8 +645,7 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
 
     # Initialize heatmap + ethogram as subplots, and line
     fig, ax = plt.subplots(2, 1, figsize=(2 * width / 100, (height + ethogram_height) / 100), dpi=100,
-                           gridspec_kw={'height_ratios': [height, ethogram_height]}
-                           )
+                           gridspec_kw={'height_ratios': [height, ethogram_height]})
     fig.set_tight_layout(True)
     heatmap = ax[0].imshow(heatmap_data, cmap='jet', interpolation='nearest', aspect='auto',
                            extent=[0, np.max(heatmap_data.T.index), 0, height],
@@ -658,15 +657,14 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     ax[0].set_yticks([])
     vertical_line = ax[0].axvline(x=0, color='white', linewidth=4)
     # canvas_heatmap = FigureCanvas(fig)
-    ax[0].set_title("Heatmap of neuronal time series")
+    ax[0].set_title("Heatmap of neuronal time series", fontsize=18)
 
 
     # Initialize ethogram and line
     # fig, ax = plt.subplots(figsize=(2 * width / 100, height / 100 / 10), dpi=100)
     # fig.set_tight_layout(True)
     ethogram = ax[1].imshow(beh_vec, cmap=ethogram_cmap, interpolation='nearest', aspect='auto',
-                            extent=[0, np.max(heatmap_data.T.index), 0, ethogram_height]
-                            )
+                            extent=[0, np.max(heatmap_data.T.index), 0, ethogram_height])
     ax[1].set_xlabel("Time (s)")
     ax[1].set_yticks([])
     vertical_line_ethogram = ax[1].axvline(x=0, color='white', linewidth=4)
@@ -694,8 +692,11 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     fig, ax, pca_proj = plot_pca_projection_3d_from_project(project_data, fig_opt=fig_opt,
                                                             include_time_series_subplot=False)
     plt.legend()
+    ax.xaxis.label.set_size(18)
+    ax.yaxis.label.set_size(18)
+    ax.zaxis.label.set_size(18)
     fig.set_tight_layout(True)
-    ax.set_title("Phase plot of PCA modes")
+    ax.set_title("Phase plot of PCA modes", fontsize=24)
 
     # Update-able point: https://stackoverflow.com/questions/61326186/how-to-animate-multiple-dots-moving-along-the-circumference-of-a-circle-in-pytho
     dot_position = list(pca_proj.iloc[0, :4])

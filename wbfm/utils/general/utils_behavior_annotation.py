@@ -502,7 +502,7 @@ class BehaviorCodes(Flag):
 
         """
 
-        state_hierarchy = [cls.REV, cls.VENTRAL_TURN, cls.DORSAL_TURN, cls.SLOWING, cls.FWD]
+        state_hierarchy = [cls.REV, cls.VENTRAL_TURN, cls.DORSAL_TURN, cls.PAUSE, cls.SLOWING, cls.FWD]
         for state in state_hierarchy:
             if state in query_state:
                 return state

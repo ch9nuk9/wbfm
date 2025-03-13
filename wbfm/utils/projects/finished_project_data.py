@@ -2485,7 +2485,8 @@ def plot_pca_modes_from_project(project_data: ProjectData, n_components=3, trace
 
 
 def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_start=None, t_end=None,
-                                        include_time_series_subplot=True, fig=None, fig_opt=None, verbose=0):
+                                        include_time_series_subplot=True, fig=None, fig_opt=None,
+                                        states_to_remove=None, verbose=0):
     """
     Similar to plot_pca_modes_from_project, but 3d. Plots times series and 3d axis
     
@@ -2513,6 +2514,8 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
         ax = fig.add_subplot(211, projection='3d')
     else:
         ax = fig.add_subplot(111, projection='3d')
+    if states_to_remove is None:
+        states_to_remove = [BehaviorCodes.UNKNOWN]
 
     pca_proj, var_explained = project_data.calc_pca_modes(**trace_kwargs, interpolate_nan=True)
     var_explained *= 100
@@ -2524,7 +2527,7 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
 
     # Color the lines by behavior annotation using proper colormap
     beh_annotation = dict(fluorescence_fps=True, reset_index=True, include_collision=False, include_turns=True,
-                          include_head_cast=False, include_pause=False, include_slowing=False)
+                          include_head_cast=False, include_pause=True, include_slowing=False, use_pause_to_exclude_other_states=True)
     ethogram_cmap_kwargs = dict(use_plotly_style_strings=False)
     # beh_annotation.update(beh_annotation_kwargs)
     state_vec = project_data.worm_posture_class.beh_annotation(**beh_annotation)
@@ -2539,6 +2542,8 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
     state_codes = pca_proj['state'].unique()
 
     for i, state_code in enumerate(state_codes):
+        if state_code in states_to_remove:
+            continue
         # Plot the state
         state_df = pca_proj[pca_proj['state'] == state_code].copy()
         # Fill with nan so matplotlib doesn't connect the gaps
@@ -2550,7 +2555,7 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
 
         ax.plot(state_df[0], state_df[1], state_df[2], c=ethogram_cmap[state_code], label=state_name)
 
-    label_func = lambda i: f'Neuronal component {i} (PCA; {var_explained[i - 1]:.0f}%)'
+    label_func = lambda i: f'Component {i} ({var_explained[i - 1]:.0f}%)'
     ax.set_xlabel(label_func(1))
     ax.set_ylabel(label_func(2))
     ax.set_zlabel(label_func(3))
