@@ -620,7 +620,7 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
                                                                  include_collision=False, include_head_cast=False)
     beh_vec = beh_vec_raw.copy()
     # Extend short states (only turns)
-    for behavior_code in [BehaviorCodes.VENTRAL_TURN, BehaviorCodes.DORSAL_TURN]:
+    for behavior_code in [BehaviorCodes.VENTRAL_TURN, BehaviorCodes.DORSAL_TURN, BehaviorCodes.PAUSE]:
         binary_behavior = BehaviorCodes.vector_equality(beh_vec_raw, behavior_code)
         starts, ends = get_contiguous_blocks_from_column(binary_behavior, already_boolean=True)
         starts, ends = extend_short_states(starts, ends, len(beh_vec_raw), state_length_minimum=10)
