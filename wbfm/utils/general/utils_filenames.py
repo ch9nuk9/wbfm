@@ -61,6 +61,8 @@ def resolve_mounted_path_in_current_os(raw_path: str, verbose: int = 0) -> str:
         ('Z:', "/lisc/scratch"),
         ('S:', "/scratch"),
         ('S:', "/lisc/scratch"),
+        ('S:', "/lisc/scratch/neurobiology"),
+        ('S:', "/lisc/scratch/neurobiology/zimmer"),
         (r'//samba.lisc.univie.ac.at/scratch', "/lisc/scratch")
     ]
 
