@@ -17,6 +17,7 @@ from wbfm.utils.general.video_and_data_conversion.video_conversion_utils import 
 from wbfm.utils.projects.finished_project_data import ProjectData, plot_pca_projection_3d_from_project
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 from wbfm.utils.external.utils_plotly import rgba2float
+from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, extend_short_states
 
 
 def save_video_of_neuron_trace(project_data: ProjectData, neuron_name, t0=0, t1=None, fps=7,
@@ -615,15 +616,26 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     heatmap_data = df_traces.T.reindex(pc1_weights.sort_values(by=0, ascending=False).index)
 
     # Get behavior time series as integers, with custom colormap
-    beh_vec_raw = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True)
-    beh_vec = [b.value for b in beh_vec_raw.values]
+    beh_vec_raw = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True,
+                                                                 include_collision=False, include_head_cast=False)
+    beh_vec = beh_vec_raw.copy()
+    # Extend short states (only turns)
+    for behavior_code in [BehaviorCodes.VENTRAL_TURN, BehaviorCodes.DORSAL_TURN]:
+        binary_behavior = BehaviorCodes.vector_equality(beh_vec_raw, behavior_code)
+        starts, ends = get_contiguous_blocks_from_column(binary_behavior, already_boolean=True)
+        starts, ends = extend_short_states(starts, ends, len(beh_vec_raw), state_length_minimum=10)
+        for s, e in zip(starts, ends):
+            beh_vec.iloc[s:e] = behavior_code
+
+    sorted_beh_codes = sorted(set(beh_vec.values))
+    beh_vec = [b.value for b in beh_vec.values]
     # Sort and convert these integers to sequential values to match up with the colormap
     beh_vec = [sorted(set(beh_vec)).index(b) for b in beh_vec]
     beh_vec = np.array(beh_vec).reshape(1, -1)
 
     colormap_dict = BehaviorCodes.ethogram_cmap(use_plotly_style_strings=True)
-    sorted_keys = sorted(list(colormap_dict.keys()))
-    ethogram_cmap = [rgba2float(colormap_dict[k]) for k in sorted_keys if colormap_dict[k] is not None]
+    # sorted_keys = sorted(list(colormap_dict.keys()))
+    ethogram_cmap = [rgba2float(colormap_dict[k]) for k in sorted_beh_codes if colormap_dict[k] is not None]
     ethogram_cmap = ListedColormap(ethogram_cmap)
 
     # Get video properties
