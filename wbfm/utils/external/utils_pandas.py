@@ -329,7 +329,7 @@ def extend_short_states(starts, ends, max_len, state_length_minimum=10, DEBUG=Fa
             if DEBUG:
                 print("Extending state")
             # Check to make sure the states we're extending into are allowed, i.e. not the edge or True
-            new_end = min(max_len, end + state_length_minimum)
+            new_end = min(max_len, start + state_length_minimum)
             if i < len(ends) - 1:
                 if new_end > starts[i + 1]:
                     new_end = starts[i + 1] - 1
