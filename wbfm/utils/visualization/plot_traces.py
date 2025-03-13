@@ -1467,12 +1467,12 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
         fig.update_yaxes(dict(showticklabels=False, showgrid=False), col=1, row=1)
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Turn<br>Annotations'), col=1, row=3)
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Other<br>Annotations'), col=1, row=4)
-        fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Reversal<br>Annotation'), col=1, row=5)
+        fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Backwards<br>Annotation'), col=1, row=5)
     elif eigenworm_behaviors:
         fig.update_yaxes(dict(showticklabels=False, showgrid=False, title='Body Segment'), col=1, row=1)
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Eigenworms'), col=1, row=3)
         fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Eigenworms'), col=1, row=4)
-        fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Reversal'), col=1, row=5)
+        fig.update_yaxes(dict(showticklabels=False, showgrid=True, title='Backwards'), col=1, row=5)
     else:
         fig.update_yaxes(dict(showticklabels=True, showgrid=True, title='Head<br>Curvature'), col=1, row=3)
         fig.update_yaxes(dict(showticklabels=True, showgrid=True, title='Body<br>Curvature'), col=1, row=4)
@@ -1994,7 +1994,13 @@ def build_all_plot_variables_for_summary_plot(project_data, num_pca_modes_to_plo
                 # They may be a list of behaviors
                 if not isinstance(name_list, list):
                     name_list = [name_list]
-                legendgroup = name_key if 'Eigen' not in name_key else 'Eigenworms'
+                if 'Eigen' in name_key:
+                    legendgroup = 'Eigenworms'
+                elif 'Rev' in name_key:
+                    legendgroup = 'Backwards'
+                else:
+                    legendgroup = name_key
+
                 for single_name in name_list:
                     y = project_data.worm_posture_class.calc_behavior_from_alias(single_name, **behavior_kwargs)
                     # Do not control the line colors here, because we want different ones on one plot
