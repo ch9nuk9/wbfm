@@ -1905,8 +1905,11 @@ class WormFullVideoPosture:
         # In newer projects, the behavior output files will be local, not mixed with the raw data
         # If it didn't find any files, even if it found in subfolder, then check the local behavior subfolder
         if all_files.get('filename_curvature', None) is None:
-            behavior_subfolder = Path(project_config.get_behavior_config().absolute_subfolder)
-            all_files = WormFullVideoPosture._check_ulises_pipeline_files_in_subfolder(behavior_subfolder)
+            try:
+                behavior_subfolder = Path(project_config.get_behavior_config().absolute_subfolder)
+                all_files = WormFullVideoPosture._check_ulises_pipeline_files_in_subfolder(behavior_subfolder)
+            except FileNotFoundError:
+                behavior_subfolder = raw_behavior_subfolder
         else:
             # Then the files and the raw are the same (old style)
             behavior_subfolder = raw_behavior_subfolder
