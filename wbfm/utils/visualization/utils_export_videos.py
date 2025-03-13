@@ -627,7 +627,7 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     ethogram_cmap = ListedColormap(ethogram_cmap)
 
     # Get video properties
-    fps = volumes_per_second
+    fps = 4 * volumes_per_second
     frame_count, width, height = video_array.shape
     ethogram_height = int(height / 10)
 
@@ -645,38 +645,40 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
 
     # Initialize heatmap + ethogram as subplots, and line
     fig, ax = plt.subplots(2, 1, figsize=(2 * width / 100, (height + ethogram_height) / 100), dpi=100,
-                           gridspec_kw={'height_ratios': [height, ethogram_height]})
+                           gridspec_kw={'height_ratios': [ethogram_height, height]})
     fig.set_tight_layout(True)
-    heatmap = ax[0].imshow(heatmap_data, cmap='jet', interpolation='nearest', aspect='auto',
+    heatmap = ax[1].imshow(heatmap_data, cmap='jet', interpolation='nearest', aspect='auto',
                            extent=[0, np.max(heatmap_data.T.index), 0, height],
                            **plot_kwargs)
     # ax.set_xlabel("Time (s)")
-    ax[0].set_xlabel("")
-    ax[0].set_xticks([])
-    ax[0].set_ylabel("Neurons")
-    ax[0].set_yticks([])
-    vertical_line = ax[0].axvline(x=0, color='white', linewidth=4)
+    ax[1].set_xlabel("Time (s)", fontsize=18)
+    ax[0].xaxis.set_tick_params(labelsize=18)
+    ax[1].set_ylabel("Neurons", fontsize=18)
+    ax[1].set_yticks([])
+    vertical_line = ax[1].axvline(x=0, color='white', linewidth=4)
     # canvas_heatmap = FigureCanvas(fig)
-    ax[0].set_title("Heatmap of neuronal time series", fontsize=18)
+    ax[1].set_title("Heatmap of neuronal time series", fontsize=18)
 
 
     # Initialize ethogram and line
     # fig, ax = plt.subplots(figsize=(2 * width / 100, height / 100 / 10), dpi=100)
     # fig.set_tight_layout(True)
-    ethogram = ax[1].imshow(beh_vec, cmap=ethogram_cmap, interpolation='nearest', aspect='auto',
+    ethogram = ax[0].imshow(beh_vec, cmap=ethogram_cmap, interpolation='nearest', aspect='auto',
                             extent=[0, np.max(heatmap_data.T.index), 0, ethogram_height])
-    ax[1].set_xlabel("Time (s)")
-    ax[1].set_yticks([])
-    vertical_line_ethogram = ax[1].axvline(x=0, color='white', linewidth=4)
+    ax[0].set_xlabel("")
+    plt.xticks(fontsize=18)
+    ax[0].set_yticks([])
+    vertical_line_ethogram = ax[0].axvline(x=0, color='white', linewidth=4)
 
     # Ensure the x-axes are aligned by manually adding the colorbar to a specified divided axis
-    divider = make_axes_locatable(ax[0])
+    divider = make_axes_locatable(ax[1])
     cax = divider.append_axes("right", size="5%", pad=0.05)
     cbar = fig.colorbar(heatmap, cax=cax)
+    cbar.ax.tick_params(labelsize=18)
     # cbar = fig.colorbar(heatmap, ax=ax[0])
-    cbar.set_label(r'$\Delta R/R50$')
+    cbar.set_label(r'$\Delta R/R50$', fontsize=18)
     # Do the same to the ethogram, with no colorbar
-    divider = make_axes_locatable(ax[1])
+    divider = make_axes_locatable(ax[0])
     cax = divider.append_axes("right", size="5%", pad=0.05)
     # Make this extra axis invisible
     cax.axis('off')
@@ -726,8 +728,8 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
         num_frames = heatmap_data.shape[1]
         subsample_rate = 1
     else:
-        num_frames = 100
-        subsample_rate = 10
+        num_frames = 10
+        subsample_rate = 1
 
     for frame_idx in tqdm(range(0, num_frames, subsample_rate)):
         # Get the video frame from dask array
@@ -773,7 +775,7 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
         # Combine the video frame and heatmap, converting to width/height like opencv expects
         combined_frame = np.hstack((rgb_frame, matplotlib_image))
         combined_frame = np.vstack((combined_frame, ethogram_and_heatmap_image))
-        print(combined_frame.shape)
+        # print(combined_frame.shape)
 
         # Add text label and line for scale bar
         cv2.line(combined_frame, scale_bar_start, scale_bar_end, (255, 255, 255), 2)
