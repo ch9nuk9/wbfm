@@ -1,0 +1,78 @@
+# This file contains the default values for the snakemake pipeline
+# For historical reasons, it is only the parameters for the behavior pipeline
+#
+# NOTE: all hardcoded paths have been moved to the wbfm_config.yaml file
+# See load_hardcoded_neural_network_paths in wbfm/utils/general/hardcoded_paths.py for more details
+
+#
+# FOR ANALYZING TRACES
+#
+use_barlow_tracker: True  # Experimental, possibly much better tracker
+
+# Uncomment the relevant one
+# Generally within /lisc/scratch/neurobiology/zimmer/wbfm/TrainedBarlow
+# Baseline model:
+barlow_model_path: /lisc/scratch/neurobiology/zimmer/wbfm/TrainedBarlow/barlow_ZIM2165_Gcamp7b_worm1-2022_11_28_from_search/trial_13/resnet50.pth
+# Fungus model:
+#barlow_model_path: /lisc/scratch/neurobiology/zimmer/wbfm/TrainedBarlow//lisc/scratch/neurobiology/zimmer/wbfm/TrainedBarlow/hyperparameter_search_fungus/resnet50.pth
+# Neuropal model:
+#barlow_model_path: /lisc/scratch/neurobiology/zimmer/wbfm/TrainedBarlow//lisc/scratch/neurobiology/zimmer/wbfm/TrainedBarlow/hyperparameter_search_neuropal/resnet50.pth
+# 1% agar model:
+#barlow_model_path: /lisc/scratch/neurobiology/zimmer/wbfm/TrainedBarlow//lisc/scratch/neurobiology/zimmer/wbfm/TrainedBarlow/hyperparameter_search_1percent/resnet50.pth
+
+
+#
+# FOR ANALYZING BEHAVIOR
+#
+# Deletes intermediate files in the behavior pipeline
+delete_intermediate_files: True
+
+# rule subtract background
+do_inverse: True
+
+# rule normalise
+alpha: 0
+beta: 255
+
+#rule stack_make_binary
+threshold : 30
+max_value : 255
+
+# rule binarize_coil
+coil_threshold : 240
+coil_new_value : 255
+
+# rule tiff2avi
+fourcc : 0 #codec
+fps : 83
+
+# rule create centerline
+nose : "head" # how was the nose annotated as in DLC model? e.g. head, nose, Head, Nose, etc..
+tail : "tail" # how was the tail annotated as in DLC model?
+num_splines : 100
+
+# averaging spline (X,Y,K) rule
+averaging_window : 83
+
+# rule annotate behaviour  (assumes 100 segments)
+initial_segment : 30
+final_segment : 80
+window : 100
+
+# for turns annotation (assumes 100 segments)
+turn_threshold : 0.5
+turn_initial_segment : 10
+turn_final_segment : 90
+turn_avg_window : 500
+
+# Hilbert
+hilbert_averaging_window : 83
+# Hilbert also uses the sampling frequency, which is the same as for the fft
+
+# rule fft
+sampling_frequency: 83
+fft_averaging_window: 83
+
+# Path to neural network for dlc tracking
+# Comment out to use the system default (see wbfm_config.yaml)
+head_tail_dlc_project: /lisc/scratch/neurobiology/zimmer/zimmer_DLC/DLC_projects/DLCwbfm_headtailphar-Eva-2024-11-20/config.yaml

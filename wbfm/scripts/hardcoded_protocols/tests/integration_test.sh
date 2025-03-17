@@ -5,8 +5,10 @@ PARENT_PROJECT_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/test_projects"
 PARENT_DATA_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/test_data"
 CODE_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
 
+# Define relevant subfolders
+SUBFOLDERS=("freely_moving" "immobilized" "barlow")
+
 # For each subfolder, remove any project folders
-SUBFOLDERS=("freely_moving" "immobilized")
 for f in "${SUBFOLDERS[@]}"; do
     PROJECT_PATH=$PARENT_PROJECT_DIR/$f
     if [ -d "$PROJECT_PATH" ]; then
@@ -47,4 +49,12 @@ bash $COMMAND -t "$PROJECT_PATH" -s traces_and_behavior
 # Immobilized
 PROJECT_PATH=$PARENT_PROJECT_DIR/"immobilized"
 bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
+bash $COMMAND -t "$PROJECT_PATH" -s traces
+
+# Barlow, which needs the original and an additional config change
+NEW_BARLOW_CONFIG=$CODE_DIR/"alternative_project_defaults/short_video/cluster_config.yaml"
+
+PROJECT_PATH=$PARENT_PROJECT_DIR/"barlow"
+bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
+bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_BARLOW_CONFIG"
 bash $COMMAND -t "$PROJECT_PATH" -s traces
