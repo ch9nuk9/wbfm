@@ -57,4 +57,4 @@ NEW_BARLOW_CONFIG=$CODE_DIR/"alternative_project_defaults/barlow/snakemake_confi
 PROJECT_PATH=$PARENT_PROJECT_DIR/"barlow"
 bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
 bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_BARLOW_CONFIG"
-bash $COMMAND -t "$PROJECT_PATH" -s traces
+bash $COMMAND -t "$PROJECT_PATH" -s traces_and_behavior
