@@ -719,7 +719,6 @@ class WormFullVideoPosture:
                      'quantile_curvature', 'quantile_head_curvature',
                      'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature',
                      'interpolated_dorsal_midbody_curvature', 'interpolated_dorsal_head_curvature',
-                     'speed_plateau_piecewise_constant',
                      'ventral_only_body_curvature', 'dorsal_only_body_curvature',
                      'ventral_only_head_curvature', 'dorsal_only_head_curvature',
                      'speed_plateau_piecewise_linear_onset', 'speed_plateau_piecewise_linear_offset',
@@ -830,8 +829,6 @@ class WormFullVideoPosture:
             y, _ = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=False, **kwargs)
         elif behavior_alias == 'speed_plateau_piecewise_linear_offset':
             y, _ = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=True, **kwargs)
-        elif behavior_alias == 'speed_plateau_piecewise_constant':
-            y = self.calc_constant_offset_plateau_state(**kwargs)
         elif behavior_alias == 'signed_stage_speed_strongly_smoothed':
             y = self.worm_speed(signed=True, strong_smoothing=True, **kwargs)
         elif behavior_alias == 'signed_speed_angular':
@@ -1630,63 +1627,6 @@ class WormFullVideoPosture:
         predicted_pirouette_state = predicted_pirouette_state[pad_num:-pad_num].reset_index(drop=True)
 
         return predicted_pirouette_state
-
-    def calc_constant_offset_plateau_state(self, frames_to_remove=5, DEBUG=False):
-        """
-        Calculates a state that is high when the worm is in a "plateau", and low otherwise
-        Plateau is defined in two steps:
-            1. Find all reversals that are longer than 2 * frames_to_remove
-            2. Determine a single break point, and keep all points after
-
-        Parameters
-        ----------
-        frames_to_remove
-
-        Returns
-        -------
-
-        """
-        from wbfm.utils.traces.triggered_averages import calc_time_series_from_starts_and_ends
-        import ruptures as rpt
-        from ruptures.exceptions import BadSegmentationParameters
-
-        # Get the binary state
-        beh_vec = self.beh_annotation(fluorescence_fps=True)
-        rev_ind = BehaviorCodes.vector_equality(beh_vec, BehaviorCodes.REV)
-        all_starts, all_ends = get_contiguous_blocks_from_column(rev_ind, already_boolean=True)
-        # Also get the speed
-        speed = self.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True)
-        # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
-        new_starts = []
-        new_ends = []
-        for start, end in zip(all_starts, all_ends):
-            # The breakpoint algorithm needs at least 3 points
-            if end - start - 2 * frames_to_remove < 3:
-                continue
-            dat = speed.loc[start + frames_to_remove:end - frames_to_remove].to_numpy()
-            algo = rpt.Dynp(model="l2").fit(dat)
-            try:
-                result = algo.predict(n_bkps=1)
-            except BadSegmentationParameters:
-                continue
-            breakpoint_absolute_coords = result[0] + start + frames_to_remove
-            new_starts.append(breakpoint_absolute_coords)
-            new_ends.append(end)
-
-            if DEBUG:
-                fig, ax = plt.subplots()
-                plt.plot(dat)
-                for r in result:
-                    ax.axvline(x=r, color='black')
-                plt.title(f"Start: {start}, bkps: {breakpoint_absolute_coords}, End: {end}")
-                plt.show()
-        if DEBUG:
-            print(f"Original starts: {all_starts}")
-            print(f"New starts: {new_starts}")
-
-        num_pts = len(beh_vec)
-        plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
-        return pd.Series(plateau_state)
 
     def calc_piecewise_linear_plateau_state(self, **plateau_kwargs):
         """

@@ -159,12 +159,9 @@ class PaddedDataFrame(pd.DataFrame):
         return df_working_copy, all_new_names
 
     def split_all_tracklets_using_mode(self, split_mode='gap', verbose=0, DEBUG=False):
-        possible_modes = ['gap', 'jump']
+        possible_modes = ['gap']
         split_mode = split_mode.lower()
         assert split_mode in possible_modes, f"Found split_mode={split_mode}, but it must be one of {possible_modes}"
-        if split_mode == 'jump':
-            from wbfm.utils.tracklets.utils_splitting import TrackletSplitter
-            tracklet_splitter = TrackletSplitter(verbose=verbose)
 
         all_names = get_names_from_df(self)
         name_mapping = defaultdict(set)
@@ -174,8 +171,6 @@ class PaddedDataFrame(pd.DataFrame):
             name_mapping[original_name].add(original_name)
             if split_mode == 'gap':
                 split_list = get_split_points_at_nans_and_delete_singles(df_working_copy, original_name, verbose)
-            elif split_mode == 'jump':
-                split_list = tracklet_splitter.get_split_points_using_feature_jumps(df_working_copy, original_name)
             else:
                 raise NotImplementedError
 
