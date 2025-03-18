@@ -52,7 +52,7 @@ bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
 bash $COMMAND -t "$PROJECT_PATH" -s traces
 
 # Barlow, which needs the original and an additional config change
-NEW_BARLOW_CONFIG=$CODE_DIR/"alternative_project_defaults/short_video/cluster_config.yaml"
+NEW_BARLOW_CONFIG=$CODE_DIR/"alternative_project_defaults/barlow/snakemake_config.yaml"
 
 PROJECT_PATH=$PARENT_PROJECT_DIR/"barlow"
 bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
