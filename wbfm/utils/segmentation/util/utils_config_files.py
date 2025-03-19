@@ -3,7 +3,7 @@ import pickle
 
 from wbfm.utils.general.utils_filenames import pickle_load_binary
 
-from segmentation.util.utils_paths import get_output_fnames
+from wbfm.utils.segmentation.util.utils_paths import get_output_fnames
 
 
 def _unpack_config_file(preprocessing_cfg, segment_cfg, project_cfg, DEBUG):

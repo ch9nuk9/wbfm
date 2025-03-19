@@ -1,4 +1,4 @@
-import segmentation.util.overlap as ol
+import wbfm.utils.segmentation.util.overlap as ol
 import os
 import numpy as np
 from collections import defaultdict

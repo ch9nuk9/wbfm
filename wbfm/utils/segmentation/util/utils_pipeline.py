@@ -12,7 +12,7 @@ from wbfm.utils.general.utils_filenames import add_name_suffix
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from numcodecs import blosc
 
-import segmentation.util.utils_postprocessing as post
+import wbfm.utils.segmentation.util.utils_postprocessing as post
 import numpy as np
 from tqdm import tqdm
 # preprocessing
@@ -20,8 +20,8 @@ from wbfm.utils.general.video_and_data_conversion.import_video_as_array import g
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
 from wbfm.utils.general.preprocessing.utils_preprocessing import perform_preprocessing
 # metadata
-from segmentation.util.utils_config_files import _unpack_config_file
-from segmentation.util.utils_metadata import get_metadata_dictionary, calc_metadata_full_video
+from wbfm.utils.segmentation.util.utils_config_files import _unpack_config_file
+from wbfm.utils.segmentation.util.utils_metadata import get_metadata_dictionary, calc_metadata_full_video
 import zarr
 import concurrent.futures
 
@@ -192,7 +192,7 @@ def segment_video_using_config_2d(preprocessing_cfg: ConfigFileWithProjectContex
 
 
 def initialize_stardist_model(stardist_model_name, verbose):
-    from segmentation.util.utils_model import get_stardist_model
+    from wbfm.utils.segmentation.util.utils_model import get_stardist_model
     sd_model = get_stardist_model(stardist_model_name, verbose=verbose - 1)
     # Not fully working for multithreaded scenario
     # Discussion about finalizing: https://stackoverflow.com/questions/40850089/is-keras-thread-safe/43393252#43393252
@@ -244,7 +244,7 @@ def _do_first_volume2d(frame_list: list, mask_fname: str, num_frames: int,
     i_volume = frame_list[i]
     volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
 
-    from segmentation.util.utils_model import segment_with_stardist_2d
+    from wbfm.utils.segmentation.util.utils_model import segment_with_stardist_2d
     final_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
     _, num_slices, x_sz, y_sz = video_dat.shape
     masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mode=mode)
@@ -288,7 +288,7 @@ def _do_first_volume3d(frame_list: list, mask_fname: str, num_frames: int,
     i_volume = frame_list[i]
     volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
 
-    from segmentation.util.utils_model import segment_with_stardist_3d
+    from wbfm.utils.segmentation.util.utils_model import segment_with_stardist_3d
     final_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     _, num_slices, x_sz, y_sz = video_dat.shape
     masks_zarr = _create_or_continue_zarr(mask_fname, num_frames, num_slices, x_sz, y_sz, mode=mode)
@@ -354,7 +354,7 @@ def segment_and_save3d(i, i_volume, masks_zarr, opt_postprocessing,
 
     """
     volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
-    from segmentation.util.utils_model import segment_with_stardist_3d
+    from wbfm.utils.segmentation.util.utils_model import segment_with_stardist_3d
     if keras_lock is None:
         segmented_masks = segment_with_stardist_3d(volume, sd_model, verbose=verbose - 1)
     else:
@@ -373,7 +373,7 @@ def segment_and_save2d(i, i_volume, masks_zarr, opt_postprocessing,
                        all_bounding_boxes,
                        sd_model, verbose, video_dat, keras_lock=None, read_lock=None):
     volume = get_volume_using_bbox(all_bounding_boxes, i_volume, video_dat)
-    from segmentation.util.utils_model import segment_with_stardist_2d
+    from wbfm.utils.segmentation.util.utils_model import segment_with_stardist_2d
     if keras_lock is None:
         segmented_masks = segment_with_stardist_2d(volume, sd_model, zero_out_borders, verbose=verbose - 1)
     else:

@@ -10,7 +10,7 @@ Usage: python -m wrapper_iou.py gt_path cp_path
 """
 
 import sys
-from segmentation.test.iou_accuracy.utils_iou import calculate_iou
+from wbfm.utils.segmentation.test.iou_accuracy.utils_iou import calculate_iou
 
 # ground truth path
 ground_truth_path = r'/groups/zimmer/shared_projects/wbfm/ground_truth/one_volume_seg.npy'

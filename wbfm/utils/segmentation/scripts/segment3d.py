@@ -3,7 +3,7 @@ The top level functions for segmenting a full (WBFM) recording.
 """
 
 import os
-from segmentation.util.utils_pipeline import segment_video_using_config_3d
+from wbfm.utils.segmentation.util.utils_pipeline import segment_video_using_config_3d
 # Experiment tracking
 import sacred
 from sacred import Experiment

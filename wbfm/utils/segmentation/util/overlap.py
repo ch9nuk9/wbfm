@@ -21,7 +21,7 @@ from wbfm.utils.tracklets.utils_tracklets import build_tracklets_from_matches
 from natsort import natsorted
 from scipy.optimize import curve_fit
 
-import segmentation.util.utils_model as sd
+import wbfm.utils.segmentation.util.utils_model as sd
 
 
 def calc_all_overlaps(array_3d,

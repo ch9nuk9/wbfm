@@ -4,7 +4,7 @@ Testing area for all 'utils_accuracy.py' related functions.
 """
 import unittest
 import numpy as np
-from segmentation.util.utils_accuracy import *
+from wbfm.utils.segmentation.util.utils_accuracy import *
 
 
 class TestAccuracy(unittest.TestCase):

@@ -1,7 +1,7 @@
 import open3d as o3d
 from wbfm.utils.visualization.visualization_tracks import visualize_clusters_from_dataframe
 import numpy as np
-import segmentation.util.overlap as ol
+import wbfm.utils.segmentation.util.overlap as ol
 
 
 def visualize_centroids(df, all_centroids):

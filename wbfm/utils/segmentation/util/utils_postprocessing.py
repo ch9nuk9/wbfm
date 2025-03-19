@@ -22,7 +22,7 @@ from wbfm.utils.tracklets.utils_tracklets import build_tracklets_dfs
 from scipy.signal import find_peaks
 from skimage.measure import regionprops
 
-from segmentation.util.util_curve_fitting import calculate_multi_gaussian_fits, get_best_model_using_aicc, \
+from wbfm.utils.segmentation.util.util_curve_fitting import calculate_multi_gaussian_fits, get_best_model_using_aicc, \
     calc_split_point_from_gaussians, plot_gaussians, _plot_just_data
 
 

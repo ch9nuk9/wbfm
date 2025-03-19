@@ -16,7 +16,7 @@ from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet
 import numpy as np
 import pandas as pd
 import zarr
-from segmentation.util.utils_config_files import _unpack_config_file
+from wbfm.utils.segmentation.util.utils_config_files import _unpack_config_file
 from skimage.measure import label, regionprops
 from tqdm import tqdm
 

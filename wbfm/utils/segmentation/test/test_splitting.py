@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from segmentation.util.utils_postprocessing import split_neuron_and_update_dicts, calc_brightness, \
+from wbfm.utils.segmentation.util.utils_postprocessing import split_neuron_and_update_dicts, calc_brightness, \
     get_neuron_lengths_dict
 
 

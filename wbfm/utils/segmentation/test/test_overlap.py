@@ -1,6 +1,6 @@
 import numpy as np
 import unittest
-from segmentation.util.overlap import *
+from wbfm.utils.segmentation.util.overlap import *
 
 # when testing, one should assert summarizing results, such as number of outputs or lengths, instead of precise results
 

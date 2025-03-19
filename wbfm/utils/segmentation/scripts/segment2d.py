@@ -2,7 +2,7 @@
 The top level functions for segmenting a full (WBFM) recording.
 """
 
-from segmentation.util.utils_pipeline import segment_video_using_config_2d
+from wbfm.utils.segmentation.util.utils_pipeline import segment_video_using_config_2d
 import os
 # Experiment tracking
 import sacred
