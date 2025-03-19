@@ -12,33 +12,30 @@ channels:
   - bioconda
   - nodefaults
 dependencies:
-  - python=3.11
+  - python=3.9
   - pip
-  - numpy
-  - pandas
   - tqdm
-  - zarr
-  - scipy
-  - torchaudio
-  - cudatoolkit
-  - cudnn
   - matplotlib
-  - torchvision
-  - scikit-learn
   - scikit-image
   - networkx
   - lmfit
   - natsort
   - snakemake
-  - napari[all]
-  - pytorch
-  - torchvision
-  - torchaudio
   - torchmetrics
-  - pytorch-cuda
-  - plotly
-  - tifffile
   - pip:
+    - tifffile
+    - torch
+    - torchvision
+    - torchaudio
+    - napari[all]
+    - cudatoolkit
+    - cudnn
+    - plotly
+    - zarr
+    - scipy
+    - scikit-learn
+    - numpy
+    - pandas
     - opencv-contrib-python
     - tables
     - networkx
