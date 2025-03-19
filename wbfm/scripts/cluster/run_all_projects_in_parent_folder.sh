@@ -35,7 +35,7 @@ do
 done
 
 # Shared setup for each command
-setup_cmd="conda activate /lisc/scratch/neurobiology/zimmer/.conda/envs/wbfm/"
+conda_setup_cmd="conda activate /lisc/scratch/neurobiology/zimmer/.conda/envs/wbfm/"
 
 # Loop through the parent folder, then try to get the config file within each of these parent folders
 for f in "$folder_of_projects"/*; do
@@ -50,11 +50,12 @@ for f in "$folder_of_projects"/*; do
                 else
                     # Get the snakemake command and run it
                     snakemake_folder="$f/snakemake"
+                    snakemake_script_path="$snakemake_folder/RUNME.sh"
+
+                    snakemake_cmd="$snakemake_script_path -s $RULE $RUNME_ARGS"
                     if [ "$is_snakemake_dry_run" ]; then
-                       snakemake_cmd="$snakemake_folder/RUNME.sh -n -s $RULE $RUNME_ARGS"
+                       snakemake_cmd="$snakemake_cmd -n"
                        echo "Running snakemake dry run"
-                    else
-                       snakemake_cmd="$snakemake_folder/RUNME.sh -s $RULE $RUNME_ARGS"
                     fi
                     # Instead of tmux, use a controller sbatch job
                     cd "$snakemake_folder" || exit  # Move in order to create the snakemake log all together
@@ -63,13 +64,13 @@ for f in "$folder_of_projects"/*; do
                     JOB_NAME="${f}_${RULE}"
                     echo "Running job with name: $JOB_NAME"
 
-                    full_cmd="$setup_cmd; bash $snakemake_cmd"
-
                     # If the RUNME_ARGS contains -c, then run the command directly without sbatch
-                    if [ "$RUNME_ARGS" ]; then
+                    if [ "$RUNME_ARGS" = "-c" ]; then
                         # Do not run the conda setup command, which is not needed for local runs
-                        bash "$full_cmd"
+                        echo "Running: $snakemake_cmd"
+                        bash $snakemake_cmd &
                     else
+                        full_cmd="$conda_setup_cmd; bash $snakemake_cmd"
                         sbatch --time 5-00:00:00 \
                             --cpus-per-task 1 \
                             --mem 1G \
