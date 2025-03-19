@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from wbfm.utils.visualization.utils_array_format_conversion import napari_tracks_from_match_list
 from napari.utils.transforms import Affine
-from segmentation.util.utils_metadata import DetectedNeurons
+from wbfm.utils.segmentation.util.utils_metadata import DetectedNeurons
 from wbfm.utils.external.utils_cv2 import cast_matches_as_array
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from wbfm.utils.external.custom_errors import NoMatchesError, AnalysisOutOfOrderError

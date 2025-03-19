@@ -11,7 +11,7 @@ from wbfm.utils.neuron_matching.utils_matching import calc_bipartite_from_positi
 from wbfm.utils.projects.finished_project_data import ProjectData
 from skimage.measure import regionprops
 from tqdm.auto import tqdm
-from segmentation.util.utils_metadata import DetectedNeurons
+from wbfm.utils.segmentation.util.utils_metadata import DetectedNeurons
 
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.general.utils_filenames import add_name_suffix

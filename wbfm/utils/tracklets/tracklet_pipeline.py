@@ -11,7 +11,7 @@ import pandas as pd
 from wbfm.utils.neuron_matching.class_frame_pair import FramePair, FramePairOptions
 from wbfm.utils.nn_utils.superglue import SuperGlueUnpacker
 from wbfm.utils.nn_utils.worm_with_classifier import WormWithSuperGlueClassifier
-from segmentation.util.utils_metadata import DetectedNeurons
+from wbfm.utils.segmentation.util.utils_metadata import DetectedNeurons
 
 from wbfm.utils.neuron_matching.feature_pipeline import match_all_adjacent_frames
 from wbfm.utils.projects.finished_project_data import ProjectData

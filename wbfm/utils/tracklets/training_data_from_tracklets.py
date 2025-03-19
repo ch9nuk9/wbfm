@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
-from segmentation.util.utils_metadata import DetectedNeurons
+from wbfm.utils.segmentation.util.utils_metadata import DetectedNeurons
 
 from wbfm.utils.external.utils_pandas import fill_missing_indices_with_nan
 from wbfm.utils.general.high_performance_pandas import get_names_from_df
