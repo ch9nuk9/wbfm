@@ -21,7 +21,7 @@ is_dry_run=""
 RUNME_ARGS=""
 
 # Get all user flags
-while getopts t:n:s:dc:h flag
+while getopts t:n:s:d:ch flag
 do
     case "${flag}" in
         t) folder_of_projects=${OPTARG};;
