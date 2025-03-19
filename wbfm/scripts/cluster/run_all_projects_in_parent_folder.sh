@@ -67,7 +67,8 @@ for f in "$folder_of_projects"/*; do
 
                     # If the RUNME_ARGS contains -c, then run the command directly without sbatch
                     if [ "$RUNME_ARGS" ]; then
-                        eval "$full_cmd &"
+                        # Do not run the conda setup command, which is not needed for local runs
+                        bash "$full_cmd"
                     else
                         sbatch --time 5-00:00:00 \
                             --cpus-per-task 1 \
