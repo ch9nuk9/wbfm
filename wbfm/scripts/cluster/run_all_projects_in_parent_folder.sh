@@ -18,13 +18,16 @@ function usage {
 
 RULE="traces_and_behavior"
 is_dry_run=""
+RUNME_ARGS=""
+
 # Get all user flags
-while getopts t:n:s:d:h flag
+while getopts t:n:s:dc:h flag
 do
     case "${flag}" in
         t) folder_of_projects=${OPTARG};;
         n) is_dry_run="True";;
         d) is_snakemake_dry_run=${OPTARG};;
+        c) RUNME_ARGS="-c";;
         s) RULE=${OPTARG};;
         h) usage;;
         *) raise error "Unknown flag"
@@ -48,10 +51,10 @@ for f in "$folder_of_projects"/*; do
                     # Get the snakemake command and run it
                     snakemake_folder="$f/snakemake"
                     if [ "$is_snakemake_dry_run" ]; then
-                       snakemake_cmd="$snakemake_folder/RUNME.sh -n -s $RULE"
+                       snakemake_cmd="$snakemake_folder/RUNME.sh -n -s $RULE $RUNME_ARGS"
                        echo "Running snakemake dry run"
                     else
-                       snakemake_cmd="$snakemake_folder/RUNME.sh -s $RULE"
+                       snakemake_cmd="$snakemake_folder/RUNME.sh -s $RULE $RUNME_ARGS"
                     fi
                     # Instead of tmux, use a controller sbatch job
                     cd "$snakemake_folder" || exit  # Move in order to create the snakemake log all together
