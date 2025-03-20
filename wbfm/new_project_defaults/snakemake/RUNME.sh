@@ -32,7 +32,7 @@ do
 done
 
 # Package slurm options
-OPT="sbatch -t {cluster.time} -p {cluster.partition} --cpus-per-task {cluster.cpus_per_task} --mem {cluster.mem} --output {cluster.output} --gres {cluster.gres}"
+OPT="sbatch -t {cluster.time} -p {cluster.partition} --cpus-per-task {cluster.cpus_per_task} --mem {cluster.mem} --output {cluster.output} --gres {cluster.gres} --job-name={rule}"
 NUM_JOBS_TO_SUBMIT=8
 
 # Slurm doesn't properly deal with TIMEOUT errors in subjobs, so we need to create a script to deal with them
