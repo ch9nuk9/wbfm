@@ -64,4 +64,5 @@ dependencies:
     - ndstorage
     - torchio
     - umap-learn
-    - PyQt5
+    - pynwb
+    - ndx_multichannel_volume

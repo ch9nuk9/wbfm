@@ -33,3 +33,5 @@ dependencies:
     - loguru
     - ndtiff
     - ndstorage
+    - pynwb
+    - ndx_multichannel_volume
