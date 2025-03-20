@@ -64,3 +64,4 @@ dependencies:
     - ndstorage
     - torchio
     - umap-learn
+    - PyQt5
