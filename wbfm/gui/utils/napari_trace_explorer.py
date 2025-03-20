@@ -18,7 +18,6 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
-from napari._qt.qthreading import thread_worker
 from numpy.linalg import LinAlgError
 from tqdm.auto import tqdm
 from PyQt5.QtWidgets import QApplication, QProgressDialog
@@ -1395,7 +1394,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Change focus to the same row, but one column over
         # self.manualNeuronNameEditor.jump_focus_to_neuron(original_name, column_offset=1)
 
-    @thread_worker
     def refresh_manual_id_layer(self):
         # This decorator makes the function return a worker, even though pycharm doesn't know it
         self.manual_id_layer.refresh_text()
