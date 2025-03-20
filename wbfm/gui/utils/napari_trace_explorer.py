@@ -10,6 +10,7 @@ from functools import partial
 from typing import List, Tuple, Union
 
 import napari
+from napari import Viewer  # Needed to ensure full initialization
 import numpy as np
 import pandas as pd
 import tifffile
@@ -33,7 +34,7 @@ from wbfm.utils.external.utils_pandas import build_tracks_from_dataframe
 from wbfm.utils.projects.finished_project_data import ProjectData
 import time
 
-cgitb.enable(format='text')
+# cgitb.enable(format='text')
 
 
 class NapariTraceExplorer(QtWidgets.QWidget):
