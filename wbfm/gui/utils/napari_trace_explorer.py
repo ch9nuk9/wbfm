@@ -10,7 +10,6 @@ from functools import partial
 from typing import List, Tuple, Union
 
 import napari
-from napari import Viewer  # Needed to ensure full initialization
 import numpy as np
 import pandas as pd
 import tifffile
