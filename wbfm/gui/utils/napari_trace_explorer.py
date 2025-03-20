@@ -64,7 +64,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         try:
             check_all_needed_data_for_step(project_data.project_config,
                                            step_index=5, raise_error=True, training_data_required=False)
-        except IncompleteConfigFileError:
+        except (IncompleteConfigFileError, AttributeError):
             # This error means that the project is an alternate style, which is likely fine
             pass
         for k, v in kwargs.items():
