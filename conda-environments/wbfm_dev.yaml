@@ -28,8 +28,6 @@ dependencies:
     - torchaudio
     - torchmetrics
     - napari[all]
-    - cudatoolkit
-    - cudnn
     - plotly
     - zarr>=2,<3
     - scipy
@@ -39,7 +37,7 @@ dependencies:
     - opencv-contrib-python
     - tables
     - networkx
-    - tensorflow
+    - tensorflow[and-cuda]
     - sacred
     - ruamel.yaml
     - stardist  # Use 0.8.4 for printing fix, but not actually necessary
