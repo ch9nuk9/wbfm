@@ -70,20 +70,28 @@ NEW_CONFIG=$CODE_DIR/"alternative_project_defaults/short_video/cluster_config.ya
 # Command to actually run
 COMMAND=$CODE_DIR/"scripts/cluster/run_all_projects_in_parent_folder.sh"
 
-# Freely moving
+# Freely moving (behavior can't be run without cluster)
 PROJECT_PATH=$PARENT_PROJECT_DIR/"freely_moving"
 bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
-bash $COMMAND -t "$PROJECT_PATH" -s traces_and_behavior $RUNME_ARGS
+if [ -z "$USE_CLUSTER" ]; then
+  bash $COMMAND -t "$PROJECT_PATH" -s traces $RUNME_ARGS
+else
+  bash $COMMAND -t "$PROJECT_PATH" -s traces_and_behavior $RUNME_ARGS
+fi
 
 # Immobilized
 PROJECT_PATH=$PARENT_PROJECT_DIR/"immobilized"
 bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
 bash $COMMAND -t "$PROJECT_PATH" -s traces $RUNME_ARGS
 
-# Barlow, which needs the original and an additional config change
+# Barlow, which needs the original and an additional config change (behavior can't be run without cluster)
 NEW_BARLOW_CONFIG=$CODE_DIR/"alternative_project_defaults/barlow/snakemake_config.yaml"
 
 PROJECT_PATH=$PARENT_PROJECT_DIR/"barlow"
 bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
 bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_BARLOW_CONFIG"
-bash $COMMAND -t "$PROJECT_PATH" -s traces_and_behavior $RUNME_ARGS
+if [ -z "$USE_CLUSTER" ]; then
+  bash $COMMAND -t "$PROJECT_PATH" -s traces $RUNME_ARGS
+else
+  bash $COMMAND -t "$PROJECT_PATH" -s traces_and_behavior $RUNME_ARGS
+fi
