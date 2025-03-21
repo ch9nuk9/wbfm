@@ -395,7 +395,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         subfolder = subconfig_path.parent
 
         args = dict(self_path=str(subconfig_path),
-                    config=cfg,
+                    _config=cfg,
                     project_dir=str(project_dir),
                     _logger=self.logger,
                     subfolder=str(subfolder))
