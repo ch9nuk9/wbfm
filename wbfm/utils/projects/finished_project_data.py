@@ -776,16 +776,21 @@ class ProjectData:
 
         # Note that there should always be 'CalciumActivity' but it may be a stub
         try:
-            # Load the traces, and the tracks using the same dataframes (they all have xyz info)
+            # Load the traces, and the tracks using the same dataframes (they should all have xyz info)
             both_df_traces = convert_nwb_to_trace_dataframe(nwb_obj)
-            obj.red_traces = both_df_traces['Reference']
+            # There may not be a reference, but there is always the signal
             obj.green_traces = both_df_traces['Signal']
+            obj.red_traces = both_df_traces.get('Reference', obj.green_traces.copy())
+            obj.final_tracks = obj.red_traces.copy()
+
+        except KeyError as e:
+            obj.logger.warning(f"Could not load traces from NWB file: {e}")
+
+        try:
             # Transpose data from TXYZ to TZXY
             obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
-
-            obj.final_tracks = both_df_traces['Reference']
-        except KeyError:
-            pass
+        except (KeyError, AttributeError) as e:
+            obj.logger.warning(f"Could not load segmentation from NWB file: {e}")
 
         p = PhysicalUnitConversion()
         if 'CalciumImageSeries' in nwb_obj.acquisition:
