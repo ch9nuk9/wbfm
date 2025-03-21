@@ -480,7 +480,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     @property
     def final_track_layer(self):
-        return self.viewer.layers.get('final_track', None)
+        if 'final_track' in self.viewer.layers:
+            return self.viewer.layers['final_track']
+        else:
+            return None
 
     @property
     def track_of_point_layer(self):
