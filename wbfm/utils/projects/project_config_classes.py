@@ -40,6 +40,7 @@ class ConfigFileWithProjectContext:
     """
 
     self_path: str
+    _config: dict = None
     project_dir: str = None
 
     _logger: logging.Logger = None
