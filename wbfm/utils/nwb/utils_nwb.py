@@ -727,8 +727,10 @@ def convert_nwb_to_trace_dataframe(nwbfile):
             # First make the labels, with the same number of rows as the traces (repeated label)
             df_labels = pd.DataFrame(index=df_traces.index, columns=df_traces.columns)
             df_labels.loc[:, :] = np.array(df_traces.columns.get_level_values(0)).reshape(1, -1)
-            df_labels.columns = pd.MultiIndex.from_product([['label'], df_labels.columns])
-            df_traces.columns = pd.MultiIndex.from_product([['intensity_image'], df_traces.columns])
+            # Build columns: strings from the first level of the original columns
+            col_names = [int2name_neuron(n+1) for n in df_traces.columns]
+            df_labels.columns = pd.MultiIndex.from_product([col_names, ['label']])
+            df_traces.columns = pd.MultiIndex.from_product([col_names, ['intensity_image']])
             # Combine the two dataframes using a multiindex
             df_traces = pd.concat([df_labels, df_traces], axis=1)
 
