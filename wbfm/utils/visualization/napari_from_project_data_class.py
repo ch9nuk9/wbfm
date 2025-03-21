@@ -125,7 +125,7 @@ class NapariLayerInitializer:
 
     @staticmethod
     def add_layers_to_viewer(project_data, viewer=None, which_layers: Union[str, List[str], List[tuple]] = 'all',
-                             to_remove_flyback=False, check_if_layers_exist=False,
+                             to_remove_flyback=False, check_if_layers_already_exist=False,
                              dask_for_segmentation=True, force_all_visible=False,
                              gt_neuron_name_dict=None, heatmap_kwargs=None,
                              error_if_missing_layers=True, layer_opt=None):
@@ -140,8 +140,8 @@ class NapariLayerInitializer:
                               'Colored segmentation', 'Neuron IDs', 'Manual IDs', 'Intermediate global IDs']
         if which_layers == 'all':
             which_layers = basic_valid_layers
-        if check_if_layers_exist:
-            # NOTE: only works if the layer names are the same as these convinience names
+        if check_if_layers_already_exist:
+            # NOTE: only works if the layer names are the same as these convenience names
             new_layers = set(which_layers) - set([layer.name for layer in viewer.layers])
             which_layers = list(new_layers)
 
@@ -188,7 +188,7 @@ class NapariLayerInitializer:
                 viewer.add_labels(project_data.segmentation, name=layer_name,
                                   scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=force_all_visible)
                 layers_actually_added.append(layer_name)
-            viewer.layers[layer_name].blending = 'translucent_no_depth'
+                viewer.layers[layer_name].blending = 'translucent_no_depth'
 
         # Text overlay with automatic names
         if 'Neuron IDs' in which_layers:
