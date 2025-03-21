@@ -17,7 +17,7 @@ from imutils import MicroscopeDataReader
 from methodtools import lru_cache
 
 from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
-from wbfm.utils.external.custom_errors import NoBehaviorDataError, TiffFormatError
+from wbfm.utils.external.custom_errors import NoBehaviorDataError, TiffFormatError, IncompleteConfigFileError
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
 from wbfm.utils.general.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
     get_sequential_filename, get_location_of_new_project_defaults, is_absolute_in_any_os
@@ -40,7 +40,6 @@ class ConfigFileWithProjectContext:
     """
 
     self_path: str
-    config: dict = None
     project_dir: str = None
 
     _logger: logging.Logger = None
@@ -49,7 +48,7 @@ class ConfigFileWithProjectContext:
     def __post_init__(self):
         if self.self_path is None:
             logging.warning("self_path is None; some functionality will not work")
-            self.config = dict()
+            self._config = dict()
         else:
             if Path(self.self_path).is_dir():
                 # Then it was a folder, and we should find the config file inside
@@ -57,8 +56,8 @@ class ConfigFileWithProjectContext:
                 self.self_path = str(Path(self.self_path).joinpath('project_config.yaml'))
             else:
                 self.project_dir = str(Path(self.self_path).parent)
-            self.config = load_config(self.self_path)
-            if self.config is None:
+            self._config = load_config(self.self_path)
+            if self._config is None:
                 if not Path(self.self_path).exists():
                     raise FileNotFoundError(f"Could not find config file {self.self_path}")
                 else:
@@ -67,6 +66,13 @@ class ConfigFileWithProjectContext:
             # Convert to default dict, for backwards compatibility with deprecated keys
             # Actually: this gives problems with pickling, so do not do this
             # self.config = defaultdict(lambda: defaultdict(lambda: None), self.config)
+
+    @property
+    def config(self):
+        if self.has_valid_self_path:
+            return self._config
+        else:
+            raise IncompleteConfigFileError("No valid self_path was found")
 
     @property
     def has_valid_self_path(self):
@@ -329,9 +335,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return fname
 
     def get_behavior_config(self) -> SubfolderConfigFile:
+        if not self.has_valid_self_path:
+            raise FileNotFoundError
         fname = Path(self.project_dir).joinpath('behavior', 'behavior_config.yaml')
         if not fname.exists():
-            # self.logger.warning("Project does not have a behavior config file")
             raise FileNotFoundError
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
