@@ -3,7 +3,6 @@ import os
 import re
 from pathlib import Path
 
-import mat73
 import numpy as np
 import scipy
 # from hdmf_zarr import NWBZarrIO
@@ -164,6 +163,7 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
     if output_folder is None:
         logging.warning("No output folder specified, will not save final output (this is a dry run)")
 
+    import mat73
     mat = mat73.loadmat(matlab_fname)
 
     # Unpack variables from matlab file
@@ -675,7 +675,20 @@ def convert_nwb_to_trace_dataframe(nwbfile):
     all_dfs = {}
     for channel in ['Signal', 'Reference']:
         # Extract the information as long vectors
-        red = nwbfile.processing['CalciumActivity'][f'{channel}Fluorescence'][f'{channel}CalciumImResponseSeries'].data
+        try:
+            activity = nwbfile.processing['CalciumActivity']
+            if f'{channel}DFoF' in activity.data_interfaces:
+                red = activity[f'{channel}DFoF'][f'{channel}CalciumImResponseSeries'].data
+            elif f'{channel}Fluorescence' in activity.data_interfaces:
+                red = activity[f'{channel}Fluorescence'][f'{channel}CalciumImResponseSeries'].data
+            elif f'{channel}RawFluor' in activity.data_interfaces:
+                red = activity[f'{channel}RawFluor'][f'{channel}CalciumImResponseSeries'].data
+            else:
+                print(f"Failed to extract traces data for channel {channel}")
+                continue
+        except KeyError:
+            print(f"Failed to extract traces data for channel {channel}")
+            continue
         _all_dfs = {}
         for name, r in tqdm(rois.items()):
             rois_list = r.voxel_mask.data[:]
