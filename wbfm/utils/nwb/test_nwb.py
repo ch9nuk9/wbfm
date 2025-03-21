@@ -1,3 +1,5 @@
+import sys
+
 from pynwb import NWBFile, NWBHDF5IO
 import argparse
 import os
@@ -37,7 +39,7 @@ class TestNWB:
                     try:
                         shape = acq.data.shape
                         print(f"  Shape: {shape}")
-                    except:
+                    except AttributeError:
                         print("  Shape: Not available")
 
             print("\nProcessing Modules:")
@@ -62,12 +64,19 @@ class TestNWB:
                 seg = read_nwbfile.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons'].voxel_mask[:]
                 labels = read_nwbfile.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons']['ID_labels'][:]
                 # get information about all of the optical channels used in acquisition
-                optchans = im_vol.optical_channel_plus[:]
-                # get the order of the optical channels in the image
-                chan_refs = read_nwbfile.processing['NeuroPAL']['OpticalChannelRefs'].channels[:]
+                optchans = im_vol.optical_channel_plus
+                # get the order of the optical channels in the image... not in flavell data?
+                try:
+                    chan_refs = read_nwbfile.processing['NeuroPAL']['OpticalChannelRefs'].channels[:]
+                except KeyError:
+                    chan_refs = read_nwbfile.processing['NeuroPAL']['order_optical_channels'].channels[:]
                 has_neuropal = True
-            except KeyError as e:
-                print(e)
+            except (KeyError, TypeError) as e:
+                print(f"Error with neuropal stacks: {e}")
+
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print(exc_type, fname, exc_tb.tb_lineno)
 
             try:
                 # load the first 15 frames of the calcium images
@@ -76,35 +85,47 @@ class TestNWB:
                 print(f"Size of calcium imaging data: {size}")
                 has_calcium_imaging = True
             except KeyError as e:
-                print(e)
+                print(f"Error with calcium imaging: {e}")
 
             try:
-                try:
-                    fluor = read_nwbfile.processing['CalciumActivity']['SignalFluorescence'][
-                                'SignalCalciumImResponseSeries'].data[:]
-                except KeyError:
-                    fluor = read_nwbfile.processing['CalciumActivity']['SignalDFoF'][
-                                'SignalCalciumImResponseSeries'].data[:]
+                activity = read_nwbfile.processing['CalciumActivity']
+                if 'SignalDFoF' in activity.data_interfaces:
+                    fluor = activity['SignalDFoF']['SignalCalciumImResponseSeries'].data
+                elif 'SignalFluorescence' in activity.data_interfaces:
+                    fluor = activity['SignalFluorescence']['SignalCalciumImResponseSeries'].data
+                elif 'SignalRawFluor' in activity.data_interfaces:
+                    fluor = activity['SignalRawFluor']['SignalCalciumImResponseSeries'].data
                 print(f"Size of calcium imaging traces: {fluor.shape}")
                 has_calcium_traces = True
 
             except KeyError as e:
-                print(e)
+                print(f"Error with calcium traces: {e}")
 
             try:
-                calc_seg = read_nwbfile.processing['CalciumActivity']['CalciumSeriesSegmentation'][
-                               'Seg_tpoint_0'].voxel_mask[:]
-                has_segmentation = True
-            except KeyError as e:
-                print(e)
-            except TypeError:
-                # Then it is a fully saved voxel video
-                try:
-                    calc_seg = read_nwbfile.processing['CalciumActivity']['SegmentationVol0'][
-                                   'Seg_tpoint_0'].voxel_mask[:]
-                    has_segmentation = True
-                except KeyError as e:
-                    print(e)
+                activity = read_nwbfile.processing['CalciumActivity']
+                if 'CalciumSeriesSegmentation' in activity.data_interfaces:
+                    try:
+                        if 'Seg_tpoint_0' in activity['CalciumSeriesSegmentation']:
+                            calc_seg = activity['CalciumSeriesSegmentation']['Seg_tpoint_0'].voxel_mask[:]
+                            has_segmentation = True
+                    except TypeError:
+                        if 'SegmentationVol0' in activity.data_interfaces:
+                            calc_seg = activity['CalciumSeriesSegmentation']['SegmentationVol0'].voxel_mask[:]
+                            has_segmentation = True
+                        else:
+                            has_segmentation = False
+                            print(list(activity['CalciumSeriesSegmentation'].data.shape))
+
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        print(exc_type, fname, exc_tb.tb_lineno)
+            except (TypeError, KeyError) as e:
+                print(f"Error with segmentation: {e}")
+
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print(exc_type, fname, exc_tb.tb_lineno)
+                # print(read_nwbfile.processing['CalciumActivity']['CalciumSeriesSegmentation'].keys())
 
         print(f"Found the following data in the NWB file: \n"
               f"NeuroPAL image:         {has_neuropal}\n"
