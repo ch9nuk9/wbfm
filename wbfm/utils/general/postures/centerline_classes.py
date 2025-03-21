@@ -27,7 +27,7 @@ from wbfm.utils.external.utils_pandas import get_durations_from_column, get_cont
     remove_short_state_changes, get_dataframe_of_transitions, make_binary_vector_from_starts_and_ends, \
     force_same_indexing
 from wbfm.utils.external.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
-    MissingAnalysisError, DataSynchronizationError
+    MissingAnalysisError, DataSynchronizationError, IncompleteConfigFileError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.general.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
@@ -1804,7 +1804,7 @@ class WormFullVideoPosture:
         # Get the relevant foldernames from the project
         # The exact files may not be in the config, so try to find them
         project_config = project_data.project_config
-        if project_config is None:
+        if project_config is None or not project_config.has_valid_self_path:
             project_data.logger.warning("No project config found; returning empty posture class")
             return WormFullVideoPosture()
 
