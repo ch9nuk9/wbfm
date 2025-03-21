@@ -193,10 +193,14 @@ class NapariLayerInitializer:
         # Text overlay with automatic names
         if 'Neuron IDs' in which_layers:
             df = project_data.red_traces
-            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
-            options['visible'] = force_all_visible
-            viewer.add_points(**options)
-            layers_actually_added.append(options['name'])
+            try:
+                options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
+                options['visible'] = force_all_visible
+                viewer.add_points(**options)
+                layers_actually_added.append(options['name'])
+            except KeyError:
+                # Some nwb files may not have xyz information
+                project_data.logger.warning("Could not add neuron IDs; no xyz information available")
 
         # Text overlay with manual IDs
         if 'Manual IDs' in which_layers:
@@ -207,13 +211,18 @@ class NapariLayerInitializer:
                                                                                     remove_unnamed_neurons=True,
                                                                                     remove_duplicates=False)
 
-            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
-                                                          neuron_name_dict=gt_neuron_name_dict,
-                                                          automatic_label_by_default=False)
-            options['visible'] = force_all_visible
-            options['name'] = 'Manual IDs'
-            viewer.add_points(**options)
-            layers_actually_added.append(options['name'])
+            try:
+                options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
+                                                              neuron_name_dict=gt_neuron_name_dict,
+                                                              automatic_label_by_default=False)
+                options['visible'] = force_all_visible
+                options['name'] = 'Manual IDs'
+                viewer.add_points(**options)
+                layers_actually_added.append(options['name'])
+            except KeyError:
+                # Some nwb files may not have xyz information
+                project_data.logger.warning("Could not add neuron IDs; no xyz information available")
+
 
         if 'GT IDs' in which_layers:
             # Not added by default!

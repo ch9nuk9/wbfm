@@ -166,7 +166,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.verticalLayout.addWidget(self.groupBox5)
         self.verticalLayout.addWidget(self.groupBox6SegmentationCorrection)
 
-        self.initialize_track_layers()
+        try:
+            self.initialize_track_layers()
+        except KeyError:
+            self.logger.warning("Failed to initialize track layers, segmentation and tracklet callbacks will be "
+                                "unavailable")
         self.initialize_shortcuts()
         self.connect_napari_callbacks()
         self.initialize_trace_or_tracklet_subplot()
