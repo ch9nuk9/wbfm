@@ -61,7 +61,8 @@ for f in "$folder_of_projects"/*; do
                     cd "$snakemake_folder" || exit  # Move in order to create the snakemake log all together
 
                     # Build the job name using the folder name and the target rule
-                    JOB_NAME="${f}_${RULE}"
+                    JOB_NAME=$(basename "$f")
+                    JOB_NAME="${JOB_NAME}_${RULE}"
                     echo "Running job with name: $JOB_NAME"
 
                     # If the RUNME_ARGS contains -c, then run the command directly without sbatch
