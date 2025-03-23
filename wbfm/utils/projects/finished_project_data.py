@@ -773,8 +773,8 @@ class ProjectData:
             obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
             obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 1].transpose((0, 3, 1, 2))
             # Load this into the raw data as well; needed for certain steps
-            preprocessing_settings._raw_red_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
-            preprocessing_settings._raw_green_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data)[..., 1].transpose(
+            preprocessing_settings._raw_red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
+            preprocessing_settings._raw_green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 1].transpose(
                 (0, 3, 1, 2))
         if 'RawCalciumImageSeries' in nwb_obj.acquisition:
             # Load this, but it's not actually part of the main ProjectData class
