@@ -690,6 +690,8 @@ class ProjectData:
                     project_data.project_config._preprocessing_class = nwb_preprocessing_class
                     project_data._nwb_io = project_data_nwb._nwb_io
                     project_data.logger.info(f"Successfully imported raw data from nwb file")
+                else:
+                    project_data.logger.info(f"Did not find raw data in nwb file, continuing")
             else:
                 project_data.logger.info(f"Found no nwb file, continuing")
 
@@ -767,6 +769,10 @@ class ProjectData:
             # Transpose data from TXYZC to TZXY (splitting the channel)
             obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
             obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 1].transpose((0, 3, 1, 2))
+            # Load this into the raw data as well; needed for certain steps
+            preprocessing_settings._raw_red_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
+            preprocessing_settings._raw_green_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data)[..., 1].transpose(
+                (0, 3, 1, 2))
         if 'RawCalciumImageSeries' in nwb_obj.acquisition:
             # Load this, but it's not actually part of the main ProjectData class
             # Transpose data from TXYZC to TZXY (splitting the channel)
