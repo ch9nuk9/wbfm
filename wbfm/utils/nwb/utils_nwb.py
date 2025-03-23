@@ -3,7 +3,6 @@ import os
 import re
 from pathlib import Path
 
-import mat73
 import numpy as np
 import scipy
 # from hdmf_zarr import NWBZarrIO
@@ -164,6 +163,7 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
     if output_folder is None:
         logging.warning("No output folder specified, will not save final output (this is a dry run)")
 
+    import mat73
     mat = mat73.loadmat(matlab_fname)
 
     # Unpack variables from matlab file
@@ -670,34 +670,70 @@ def convert_nwb_to_trace_dataframe(nwbfile):
 
     """
     # Rois are the same for both channels
-    rois = nwbfile.processing['CalciumActivity']['CalciumSeriesSegmentationCoords'].plane_segmentations
+    activity = nwbfile.processing['CalciumActivity']
+    try:
+        rois = activity['CalciumSeriesSegmentationCoords'].plane_segmentations
+    except KeyError:
+        # Flavell style
+        # This is just one time point, we need the full list... I think it doesn't exist
+        # rois = np.array(activity['CalciumSeriesSegmentation'].plane_segmentations['Aligned_neuron_coordinates']['voxel_mask'])
+        rois = None
 
     all_dfs = {}
     for channel in ['Signal', 'Reference']:
         # Extract the information as long vectors
-        red = nwbfile.processing['CalciumActivity'][f'{channel}Fluorescence'][f'{channel}CalciumImResponseSeries'].data
-        _all_dfs = {}
-        for name, r in tqdm(rois.items()):
-            rois_list = r.voxel_mask.data[:]
-            # This loop keeps the ids
-            df = pd.DataFrame()
-            df[['x', 'y', 'z', 'weight']] = np.array([r.astype(int) for r_inner in rois_list for r in r_inner]).reshape(-1,
-                                                                                                                        4)
-            _all_dfs[int(name.split('_')[-1])] = df
-        df_traces = pd.concat(_all_dfs, axis=1)
-        # Add labels
-        for n in df_traces.columns.get_level_values(0).unique():
-            df_traces.loc[:, (n, 'label')] = np.array(df_traces.index) + 1
-        id_mapping = {n: int2name_neuron(n + 1) for n in df_traces.index}
-        df_traces = df_traces.rename(index=id_mapping)
-        df_traces = df_traces.unstack().swaplevel(0, 2).unstack().T.replace(0, np.nan).copy()
+        try:
+            if f'{channel}DFoF' in activity.data_interfaces:
+                red = activity[f'{channel}DFoF'][f'{channel}CalciumImResponseSeries'].data
+            elif f'{channel}Fluorescence' in activity.data_interfaces:
+                red = activity[f'{channel}Fluorescence'][f'{channel}CalciumImResponseSeries'].data
+            elif f'{channel}RawFluor' in activity.data_interfaces:
+                red = activity[f'{channel}RawFluor'][f'{channel}CalciumImResponseSeries'].data
+            else:
+                logging.warning(f"Failed to extract traces data for channel {channel}")
+                continue
+        except KeyError:
+            logging.warning(f"Failed to extract traces data for channel {channel}")
+            continue
 
-        # Add traces (column name is from opencv)
-        red = pd.DataFrame(red)
-        red = red.rename(columns=id_mapping)
-        red = pd.concat({'intensity_image': red}, axis=1).swaplevel(0, 1, axis=1)
+        if rois is not None:
+            _all_dfs = {}
+            for name, r in tqdm(rois.items()):
+                rois_list = r.voxel_mask.data[:]
+                # This loop keeps the ids
+                df = pd.DataFrame()
+                df[['x', 'y', 'z', 'weight']] = np.array([r.astype(int) for r_inner in rois_list for r in r_inner]).reshape(-1,
+                                                                                                                            4)
+                _all_dfs[int(name.split('_')[-1])] = df
+            df_traces = pd.concat(_all_dfs, axis=1)
+            # Add labels
+            for n in df_traces.columns.get_level_values(0).unique():
+                df_traces.loc[:, (n, 'label')] = np.array(df_traces.index) + 1
+            id_mapping = {n: int2name_neuron(n + 1) for n in df_traces.index}
+            df_traces = df_traces.rename(index=id_mapping)
+            df_traces = df_traces.unstack().swaplevel(0, 2).unstack().T.replace(0, np.nan).copy()
 
-        df_traces = df_traces.join(red).sort_index()
+            # Add traces (column name is from opencv)
+            red = pd.DataFrame(red)
+            red = red.rename(columns=id_mapping)
+            red = pd.concat({'intensity_image': red}, axis=1).swaplevel(0, 1, axis=1)
+            df_traces = df_traces.join(red).sort_index()
+
+        else:
+            df_traces = pd.DataFrame(red)
+            # Make the columns into the correct format: multiindex, with the first level being the neuron name
+            # and the second being the features: ('label' for the int label, 'intensity_image' for the trace)
+
+            # First make the labels, with the same number of rows as the traces (repeated label)
+            df_labels = pd.DataFrame(index=df_traces.index, columns=df_traces.columns)
+            df_labels.loc[:, :] = np.array(df_traces.columns.get_level_values(0)).reshape(1, -1)
+            # Build columns: strings from the first level of the original columns
+            col_names = [int2name_neuron(n+1) for n in df_traces.columns]
+            df_labels.columns = pd.MultiIndex.from_product([col_names, ['label']])
+            df_traces.columns = pd.MultiIndex.from_product([col_names, ['intensity_image']])
+            # Combine the two dataframes using a multiindex
+            df_traces = pd.concat([df_labels, df_traces], axis=1)
+
         all_dfs[channel] = df_traces
 
     return all_dfs

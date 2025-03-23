@@ -7,7 +7,7 @@ from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
-from segmentation.util.utils_pipeline import resplit_masks_in_z_from_config
+from wbfm.utils.segmentation.util.utils_pipeline import resplit_masks_in_z_from_config
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 
 from wbfm.utils.projects.utils_project import safe_cd

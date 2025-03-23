@@ -28,14 +28,6 @@ def test_custom_package_imports():
     pass
 
 
-@pytest.mark.skipif(os.environ.get('CONDA_DEFAULT_ENV', '') != "segmentation", reason="incorrect conda env")
-def test_segmentation_package_imports():
-
-    print("import segmentation")
-
-    print("Successfully imported everything! Your segmentation environment is properly setup")
-
-
 @pytest.mark.skipif(os.environ.get('CONDA_DEFAULT_ENV', '') != "wbfm", reason="incorrect conda env")
 def test_wbfm_package_imports():
     print("import pytorch")

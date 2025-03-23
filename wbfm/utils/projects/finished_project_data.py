@@ -48,7 +48,7 @@ from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, 
 from sklearn.neighbors import NearestNeighbors, LocalOutlierFactor
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from wbfm.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
-from segmentation.util.utils_metadata import DetectedNeurons
+from wbfm.utils.segmentation.util.utils_metadata import DetectedNeurons
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from wbfm.utils.general.utils_filenames import read_if_exists, pickle_load_binary, \
     load_file_according_to_precedence, pandas_read_any_filetype, get_sequential_filename
@@ -482,7 +482,10 @@ class ProjectData:
         """Note that this is cached so that a user can overwrite the number of frames"""
         num_frames = None
         if self.project_config is not None:
-            num_frames = self.project_config.num_frames
+            try:
+                num_frames = self.project_config.num_frames
+            except AttributeError:
+                num_frames = None
         if num_frames is None:
             # Then try calculate from the processed data, not the raw
             if self.red_data is not None:
@@ -579,7 +582,7 @@ class ProjectData:
         seg_fname_raw = segment_cfg.resolve_relative_path_from_config('output_masks')
         seg_fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
 
-        # Metadata uses class from segmentation package, which does lazy loading itself
+        # Metadata uses class from wbfm.utils.segmentation package, which does lazy loading itself
         seg_metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
         obj.segmentation_metadata = DetectedNeurons(seg_metadata_fname)
         obj.physical_unit_conversion = PhysicalUnitConversion.load_from_config(cfg)
@@ -782,16 +785,21 @@ class ProjectData:
 
         # Note that there should always be 'CalciumActivity' but it may be a stub
         try:
-            # Load the traces, and the tracks using the same dataframes (they all have xyz info)
+            # Load the traces, and the tracks using the same dataframes (they should all have xyz info)
             both_df_traces = convert_nwb_to_trace_dataframe(nwb_obj)
-            obj.red_traces = both_df_traces['Reference']
+            # There may not be a reference, but there is always the signal
             obj.green_traces = both_df_traces['Signal']
+            obj.red_traces = both_df_traces.get('Reference', obj.green_traces.copy())
+            obj.final_tracks = obj.red_traces.copy()
+
+        except KeyError as e:
+            obj.logger.warning(f"Could not load traces from NWB file: {e}")
+
+        try:
             # Transpose data from TXYZ to TZXY
             obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
-
-            obj.final_tracks = both_df_traces['Reference']
-        except KeyError:
-            pass
+        except (KeyError, AttributeError) as e:
+            obj.logger.warning(f"Could not load segmentation from NWB file: {e}")
 
         p = PhysicalUnitConversion()
         if 'CalciumImageSeries' in nwb_obj.acquisition:

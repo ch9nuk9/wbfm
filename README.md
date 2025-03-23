@@ -5,8 +5,6 @@ Contains code for the pipeline, GUI, and analysis code for the paper:
 
 This repository contains python code for analyzing raw volumetric images in two channels: red (tracking) and green (activity).
 
-The segmentation portion of the algorithm is in a [sibling repository](https://github.com/Zimmer-lab/segmentation), but all main pipeline steps and GUIs are in this one.
-
 
 # Installation for running
 

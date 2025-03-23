@@ -11,7 +11,6 @@ channels:
 dependencies:
   - python=3.8
   - pip
-  - opencv
   - scikit-image
   - lmfit
   - zarr
@@ -22,6 +21,7 @@ dependencies:
   - plotly
   - pip:
     - tables
+    - opencv-python-headless
     - statsmodels
     - ppca
     - sacred
@@ -33,3 +33,5 @@ dependencies:
     - loguru
     - ndtiff
     - ndstorage
+    - pynwb
+    - ndx_multichannel_volume

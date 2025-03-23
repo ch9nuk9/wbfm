@@ -1,4 +1,5 @@
 from setuptools import setup
+import setuptools
 
 setup(name='wbfm',
       version='1.3.0',

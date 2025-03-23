@@ -21,8 +21,8 @@ from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.tracklets.utils_tracklets import get_time_overlap_of_candidate_tracklet, \
     split_tracklet_within_sparse_dataframe, get_tracklet_at_time
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
-from segmentation.util.utils_metadata import DetectedNeurons
-from segmentation.util.utils_postprocessing import split_neuron_interactive
+from wbfm.utils.segmentation.util.utils_metadata import DetectedNeurons
+from wbfm.utils.segmentation.util.utils_postprocessing import split_neuron_interactive
 from wbfm.utils.projects.project_config_classes import SubfolderConfigFile
 from wbfm.utils.general.utils_filenames import read_if_exists, pickle_load_binary, get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import trace_from_dataframe_factory, \

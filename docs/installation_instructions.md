@@ -12,8 +12,9 @@ https://github.com/Zimmer-lab/protocols/tree/master/computational/zimmer_lab_cod
 
 Download or clone these repositories:
 1. wbfm (this repo): https://github.com/Zimmer-lab/wbfm
-2. Segmentation: https://github.com/Zimmer-lab/segmentation
+2. centerline_behavior_annotation: https://github.com/Zimmer-lab/centerline_behavior_annotation 
 3. imutils (Lukas' data reader): https://github.com/Zimmer-lab/imutils
+4. 
 
 ### Install the environments
 

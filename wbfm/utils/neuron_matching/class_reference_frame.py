@@ -11,7 +11,7 @@ from wbfm.utils.external.custom_errors import OverwritePreviousAnalysisError, Da
 from wbfm.utils.neuron_matching.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
     build_feature_tree, build_neuron_tree, build_f2n_map, detect_only_keypoints
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
-from segmentation.util.utils_metadata import DetectedNeurons
+from wbfm.utils.segmentation.util.utils_metadata import DetectedNeurons
 
 ##
 ## Basic class definition

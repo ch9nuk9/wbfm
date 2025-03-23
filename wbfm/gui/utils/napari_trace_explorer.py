@@ -18,7 +18,6 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
-from napari._qt.qthreading import thread_worker
 from numpy.linalg import LinAlgError
 from tqdm.auto import tqdm
 from PyQt5.QtWidgets import QApplication, QProgressDialog
@@ -34,7 +33,7 @@ from wbfm.utils.external.utils_pandas import build_tracks_from_dataframe
 from wbfm.utils.projects.finished_project_data import ProjectData
 import time
 
-cgitb.enable(format='text')
+# cgitb.enable(format='text')
 
 
 class NapariTraceExplorer(QtWidgets.QWidget):
@@ -65,7 +64,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         try:
             check_all_needed_data_for_step(project_data.project_config,
                                            step_index=5, raise_error=True, training_data_required=False)
-        except IncompleteConfigFileError:
+        except (IncompleteConfigFileError, AttributeError):
             # This error means that the project is an alternate style, which is likely fine
             pass
         for k, v in kwargs.items():
@@ -167,7 +166,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.verticalLayout.addWidget(self.groupBox5)
         self.verticalLayout.addWidget(self.groupBox6SegmentationCorrection)
 
-        self.initialize_track_layers()
+        try:
+            self.initialize_track_layers()
+        except KeyError:
+            self.logger.warning("Failed to initialize track layers, segmentation and tracklet callbacks will be "
+                                "unavailable")
         self.initialize_shortcuts()
         self.connect_napari_callbacks()
         self.initialize_trace_or_tracklet_subplot()
@@ -477,7 +480,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     @property
     def final_track_layer(self):
-        return self.viewer.layers['final_track']
+        if 'final_track' in self.viewer.layers:
+            return self.viewer.layers['final_track']
+        else:
+            return None
 
     @property
     def track_of_point_layer(self):
@@ -575,6 +581,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self._disable_callbacks = False
 
     def update_track_layers(self):
+        if self.final_track_layer is None:
+            return
         point_layer_data, track_layer_data = self.get_track_data()
         self.final_track_layer.data = point_layer_data
         if self.use_track_of_point:
@@ -1395,7 +1403,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Change focus to the same row, but one column over
         # self.manualNeuronNameEditor.jump_focus_to_neuron(original_name, column_offset=1)
 
-    @thread_worker
     def refresh_manual_id_layer(self):
         # This decorator makes the function return a worker, even though pycharm doesn't know it
         self.manual_id_layer.refresh_text()

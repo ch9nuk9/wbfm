@@ -37,7 +37,7 @@ dependencies:
   - plotly
   - pip:
     - tifffile==2023.7.10
-    - opencv-contrib-python
+    - opencv-contrib-python-headless
     - tables
     - networkx
     - tensorflow
@@ -64,3 +64,5 @@ dependencies:
     - ndstorage
     - torchio
     - umap-learn
+    - pynwb
+    - ndx_multichannel_volume

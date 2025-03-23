@@ -17,7 +17,7 @@ from imutils import MicroscopeDataReader
 from methodtools import lru_cache
 
 from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
-from wbfm.utils.external.custom_errors import NoBehaviorDataError, TiffFormatError
+from wbfm.utils.external.custom_errors import NoBehaviorDataError, TiffFormatError, IncompleteConfigFileError
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
 from wbfm.utils.general.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
     get_sequential_filename, get_location_of_new_project_defaults, is_absolute_in_any_os
@@ -40,7 +40,7 @@ class ConfigFileWithProjectContext:
     """
 
     self_path: str
-    config: dict = None
+    _config: dict = None
     project_dir: str = None
 
     _logger: logging.Logger = None
@@ -49,7 +49,7 @@ class ConfigFileWithProjectContext:
     def __post_init__(self):
         if self.self_path is None:
             logging.warning("self_path is None; some functionality will not work")
-            self.config = dict()
+            self._config = dict()
         else:
             if Path(self.self_path).is_dir():
                 # Then it was a folder, and we should find the config file inside
@@ -57,8 +57,8 @@ class ConfigFileWithProjectContext:
                 self.self_path = str(Path(self.self_path).joinpath('project_config.yaml'))
             else:
                 self.project_dir = str(Path(self.self_path).parent)
-            self.config = load_config(self.self_path)
-            if self.config is None:
+            self._config = load_config(self.self_path)
+            if self._config is None:
                 if not Path(self.self_path).exists():
                     raise FileNotFoundError(f"Could not find config file {self.self_path}")
                 else:
@@ -67,6 +67,13 @@ class ConfigFileWithProjectContext:
             # Convert to default dict, for backwards compatibility with deprecated keys
             # Actually: this gives problems with pickling, so do not do this
             # self.config = defaultdict(lambda: defaultdict(lambda: None), self.config)
+
+    @property
+    def config(self):
+        if self.has_valid_self_path:
+            return self._config
+        else:
+            raise IncompleteConfigFileError("No valid self_path was found")
 
     @property
     def has_valid_self_path(self):
@@ -329,9 +336,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return fname
 
     def get_behavior_config(self) -> SubfolderConfigFile:
+        if not self.has_valid_self_path:
+            raise FileNotFoundError
         fname = Path(self.project_dir).joinpath('behavior', 'behavior_config.yaml')
         if not fname.exists():
-            # self.logger.warning("Project does not have a behavior config file")
             raise FileNotFoundError
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
@@ -357,7 +365,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             cfg = default_raw_data_config()
             self._logger.warning(f"Could not find file {fname}; "
                                  f"Using hardcoded default raw data config: {cfg}")
-            return SubfolderConfigFile(self_path=None, config=cfg, project_dir=self.project_dir)
+            return SubfolderConfigFile(self_path=None, _config=cfg, project_dir=self.project_dir)
 
     def get_nwb_config(self) -> SubfolderConfigFile:
         fname = Path(self.config['subfolder_configs'].get('nwb', None))
@@ -388,7 +396,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         subfolder = subconfig_path.parent
 
         args = dict(self_path=str(subconfig_path),
-                    config=cfg,
+                    _config=cfg,
                     project_dir=str(project_dir),
                     _logger=self.logger,
                     subfolder=str(subfolder))
@@ -824,7 +832,7 @@ def update_path_to_behavior_in_config(cfg: ModularProjectConfig):
     # Then make a new folder, file, and fill it
     fname = Path(cfg.project_dir).joinpath('behavior', 'nwb_config.yaml')
     fname.parent.mkdir(exist_ok=False)
-    behavior_cfg = SubfolderConfigFile(self_path=str(fname), config={}, project_dir=cfg.project_dir, subfolder='behavior')
+    behavior_cfg = SubfolderConfigFile(self_path=str(fname), _config={}, project_dir=cfg.project_dir, subfolder='behavior')
 
     # Fill variable 1: Try to find behavior annotations
     raw_behavior_foldername, flag = cfg.get_behavior_raw_parent_folder_from_red_fname()

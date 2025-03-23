@@ -10,7 +10,7 @@ from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
-from segmentation.util.utils_postprocessing import zero_out_borders_using_config
+from wbfm.utils.segmentation.util.utils_postprocessing import zero_out_borders_using_config
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 import cgitb
