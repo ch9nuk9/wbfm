@@ -42,6 +42,7 @@ for f in "$folder_of_projects"/*; do
     if [ -d "$f" ] && [ ! -L "$f" ]; then
         echo "Checking folder: $f"
 
+        # Check to make sure the project has a project_config.yaml file, i.e. is a real project
         for f_config in "$f"/*; do
             if [ -f "$f_config" ] && [ "${f_config##*/}" = "project_config.yaml" ]; then
                 if [ "$is_dry_run" ]; then
