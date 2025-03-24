@@ -101,7 +101,8 @@ def _unpack_configs_for_traces(project_cfg, track_cfg):
     # Settings
     max_dist = track_cfg.config['final_3d_tracks']['max_dist_to_segmentation']
     params_start_volume = project_cfg.start_volume
-    num_frames = project_cfg.get_num_frames_robust()
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    num_frames = project_data.get_num_frames_robust()
 
     return max_dist, params_start_volume, num_frames
 

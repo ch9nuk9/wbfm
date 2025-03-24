@@ -143,8 +143,9 @@ def postprocess_matches_to_tracklets_using_config(project_config: ModularProject
         _unpack_config_for_tracklets(training_config, segmentation_config)
 
     # Sanity check
+    project_data = ProjectData.load_final_project_data_from_config(project_config)
     val = len(all_frame_pairs)
-    expected = project_config.get_num_frames_robust() - 1
+    expected = project_data.num_frames - 1
     msg = f"Incorrect number of frame pairs ({val} != {expected})"
     assert val == expected, msg
 

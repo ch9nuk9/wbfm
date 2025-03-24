@@ -484,7 +484,7 @@ class ProjectData:
         if self.project_config is not None:
             try:
                 num_frames = self.project_config.num_frames
-            except AttributeError:
+            except (AttributeError, FileNotFoundError):
                 num_frames = None
         if num_frames is None:
             # Then try calculate from the processed data, not the raw
