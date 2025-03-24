@@ -110,7 +110,8 @@ def _unpack_configs_for_traces(project_cfg, track_cfg):
 def _unpack_configs_for_extraction(project_cfg: ModularProjectConfig, traces_cfg):
     # Settings
     params_start_volume = project_cfg.start_volume
-    num_frames = project_cfg.get_num_frames_robust()
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    num_frames = project_data.num_frames
     frame_list = list(range(params_start_volume, num_frames + params_start_volume))
 
     coords = ['z', 'x', 'y']
