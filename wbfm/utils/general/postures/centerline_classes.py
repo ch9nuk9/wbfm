@@ -913,6 +913,10 @@ class WormFullVideoPosture:
             self.check_has_full_kymograph()
             i = int(behavior_alias.split('_')[-1])
             y = self.curvature(**kwargs).loc[:, i]
+        elif isinstance(behavior_alias, str) and 'hilbert' in behavior_alias:
+            # Assume it is a direct field
+            self.check_has_full_kymograph()
+            y = getattr(self, behavior_alias)(**kwargs)
         else:
             # Check if there is a BehaviorCodes enum with this name
             try:

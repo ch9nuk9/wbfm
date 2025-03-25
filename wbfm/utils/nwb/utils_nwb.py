@@ -145,8 +145,14 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     video_class = project_data.worm_posture_class
     if video_class.raw_behavior_video is not None:
         behavior_video = video_class.raw_behavior_video
-        behavior_time_series_names = ['angular_velocity', 'head_curvature', 'body_curvature', 'reversal_events', 'velocity']
+        behavior_time_series_names = ['angular_velocity', 'head_curvature', 'body_curvature', 'reversal_events',
+                                      'velocity',
+                                      'hilbert_phase', 'hilbert_amplitude', 'hilbert_frequency', 'hilbert_carrier']
         behavior_time_series_dict = {n: video_class.calc_behavior_from_alias(n) for n in behavior_time_series_names}
+        # Also add some more basic time series data
+        behavior_time_series_dict['kymograph'] = video_class.curvature(fluorescence_fps=False)
+        behavior_time_series_dict['stage_position'] = video_class.stage_position(fluorescence_fps=False)
+        behavior_time_series_dict['eigenworms'] = video_class.eigenworms
     else:
         behavior_video, behavior_time_series_dict = None, None
 
@@ -663,8 +669,16 @@ def convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict):
                                                        description="Behavioral time series")
 
     for name, time_series in behavior_time_series_dict.items():
-        _time_series_obj = TimeSeries(name=name, data=time_series.values, timestamps=time_series.index.values,
-                                      unit='seconds')
+        if isinstance(time_series, np.ndarray):
+            data = time_series
+            timestamps = np.arange(len(data))
+            unit = 'frames'
+        else:
+            # Assume pandas
+            data = time_series.values
+            timestamps = time_series.index.values
+            unit = 'seconds'
+        _time_series_obj = TimeSeries(name=name, data=data, timestamps=timestamps, unit=unit)
         behavior_module.add(BehavioralTimeSeries(name=name, time_series=_time_series_obj))
 
     return nwbfile
