@@ -7,7 +7,7 @@ import numpy as np
 import scipy
 # from hdmf_zarr import NWBZarrIO
 from matplotlib import pyplot as plt
-from pynwb import NWBFile, NWBHDF5IO
+from pynwb import NWBFile, NWBHDF5IO, TimeSeries
 from pynwb.behavior import BehavioralTimeSeries
 from pynwb.image import ImageSeries
 from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, Fluorescence
@@ -243,7 +243,7 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
         nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, CalcOptChanRefs, physical_units_class, device=device
     )
     if behavior_video is not None:
-        nwbfile = convert_behavior_video_to_nwb(nwbfile, behavior_video)
+        nwbfile = convert_behavior_video_to_nwb(nwbfile, behavior_video, fps=physical_units_class.frames_per_second)
         nwbfile = convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict)
 
     fname = None
@@ -629,7 +629,7 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
     return nwbfile
 
 
-def convert_behavior_video_to_nwb(nwbfile, behavior_video):
+def convert_behavior_video_to_nwb(nwbfile, behavior_video, fps):
     print("Converting behavior to nwb format...")
     # Behavior is already TXY
     chunk_shape = list(behavior_video.shape)
@@ -645,13 +645,14 @@ def convert_behavior_video_to_nwb(nwbfile, behavior_video):
         name="BrightFieldNIR",
         description="Behavioral image in near-infrared light",
         data=wrapped_data,
-        unit="seconds"
+        unit="seconds",
+        rate=fps
     )
 
     # Create new processing module for the behavior video
     behavior_module = nwbfile.create_processing_module(name="BF_NIR",
                                                        description="Behavioral image in near-infrared light")
-    behavior_module.add_acquisition(behavior_video_series)
+    behavior_module.add(behavior_video_series)
 
     return nwbfile
 
@@ -662,7 +663,9 @@ def convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict):
                                                        description="Behavioral time series")
 
     for name, time_series in behavior_time_series_dict.items():
-        behavior_module.add_acquisition(BehavioralTimeSeries(name=name, data=time_series))
+        _time_series_obj = TimeSeries(name=name, data=time_series.values, timestamps=time_series.index.values,
+                                      unit='seconds')
+        behavior_module.add(BehavioralTimeSeries(name=name, time_series=_time_series_obj))
 
     return nwbfile
 
