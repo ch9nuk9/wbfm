@@ -5,10 +5,12 @@ import math
 import os
 from pathlib import Path
 from typing import Union, Optional, List, Tuple
-
+import dask.array as da
 import numpy as np
 import pandas as pd
 from dataclasses import dataclass
+
+from imutils import MicroscopeDataReader
 from matplotlib import pyplot as plt
 from methodtools import lru_cache
 from scipy.ndimage import gaussian_filter1d
@@ -30,7 +32,8 @@ from wbfm.utils.external.custom_errors import NoManualBehaviorAnnotationsError, 
     MissingAnalysisError, DataSynchronizationError, IncompleteConfigFileError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.general.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
+from wbfm.utils.general.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists, \
+    load_file_according_to_precedence
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
     assign_id_based_on_closest_onset_in_split_lists, calc_time_series_from_starts_and_ends
 from wbfm.utils.general.high_performance_pandas import get_names_from_df
@@ -2139,6 +2142,22 @@ class WormFullVideoPosture:
             if file.name.endswith('NDTiff.index'):
                 return self.raw_behavior_subfolder  # Return folder, not this file
         return None
+
+    def get_raw_behavior_video(self) -> da.Array:
+        """
+        Returns the raw behavior video, if it exists
+
+        Returns
+        -------
+
+        """
+        possible_fnames = dict(btf=self.behavior_video_btf_fname(True),
+                               ndtiff=self.behavior_video_ndtiff_fname())
+        fname_precedence = ['ndtiff', 'btf']
+        reader = MicroscopeDataReader
+        video, fname = load_file_according_to_precedence(fname_precedence, possible_fnames, reader=reader)
+
+        return da.squeeze(video.dask_array)
 
     @property
     def use_physical_time(self) -> bool:

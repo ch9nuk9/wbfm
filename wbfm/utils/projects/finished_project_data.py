@@ -240,7 +240,7 @@ class ProjectData:
 
         fname_precedence = self.precedence_tracks
         final_tracks, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                this_reader=read_if_exists)
+                                                                reader_func=read_if_exists)
         self.final_tracks_fname = fname
         self.logger.debug(f"Loading final global tracks from {fname}")
         self.all_used_fnames.append(fname)
@@ -275,7 +275,7 @@ class ProjectData:
 
         fname_precedence = self.precedence_global2tracklet
         global2tracklet, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                   this_reader=pickle_load_binary)
+                                                                   reader_func=pickle_load_binary)
         self.global2tracklet_fname = fname
         self.logger.debug(f"Loading global2tracklet from {fname}")
         if global2tracklet is not None:
@@ -382,7 +382,7 @@ class ProjectData:
             automatic=train_cfg.resolve_relative_path_from_config('df_3d_tracklets'))
         fname_precedence = self.precedence_df_tracklets
         df_all_tracklets, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                    this_reader=pandas_read_any_filetype,
+                                                                    reader_func=pandas_read_any_filetype,
                                                                     dryrun=dryrun)
         return df_all_tracklets, fname
 
@@ -1741,7 +1741,7 @@ class ProjectData:
         fname_precedence = ['newest']
         try:
             df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                          this_reader=read_if_exists, na_filter=False)
+                                                                          reader_func=read_if_exists, na_filter=False)
         except ValueError:
             # Then the file was corrupted... try to load from the h5 file (don't worry about other file types)
             fname = possible_fnames['h5_backup']
@@ -1760,7 +1760,7 @@ class ProjectData:
 
                         # And then actually read this file, so we don't touch the backup
                         df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                                        this_reader=read_if_exists, na_filter=False)
+                                                                                      reader_func=read_if_exists, na_filter=False)
             else:
                 self.logger.warning(
                     f"Found corrupted manual annotation file ({excel_fname}), with no backup h5 file; returning None")
