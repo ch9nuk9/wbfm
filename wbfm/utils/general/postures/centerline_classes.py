@@ -2125,6 +2125,21 @@ class WormFullVideoPosture:
                 return file
         return None
 
+    def behavior_video_ndtiff_fname(self):
+        """
+        This is actually a folder, not a file
+
+        See behavior_video_avi_fname
+        """
+        if self.raw_behavior_subfolder is None:
+            return None
+        for file in Path(self.raw_behavior_subfolder).iterdir():
+            if file.is_dir():
+                continue
+            if file.name.endswith('NDTiff.index'):
+                return self.raw_behavior_subfolder  # Return folder, not this file
+        return None
+
     @property
     def use_physical_time(self) -> bool:
         """Whether to reindex returned behavioral time series or kymographs to physical time"""
@@ -2142,6 +2157,7 @@ Posture class with the following files:\n\
 =========Raw Behavior Videos==============\n\
 behavior_video_avi:         {self.behavior_video_avi_fname() is not None}\n\
 raw_behavior_video_btf:     {self.behavior_video_btf_fname(True) is not None}\n\
+raw_behavior_video_ndtiff:  {self.behavior_video_ndtiff_fname() is not None}\n\
 ============Stage Position================\n\
 table_position:             {self.filename_table_position is not None}\n\
 ============Centerline=====================\n\
