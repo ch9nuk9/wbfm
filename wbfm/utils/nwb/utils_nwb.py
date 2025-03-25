@@ -420,8 +420,8 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
         CalcOptChanRefData.append(wave)
 
     # This object just contains references to the order of channels because OptChannels does not preserve ordering
-    CalcOptChanRefs = OpticalChannelReferences(
-        name='OpticalChannelRefs',
+    order_optical_channels = OpticalChannelReferences(
+        name='order_optical_channels',
         channels=CalcOptChanRefData
     )
 
@@ -429,7 +429,7 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
         name='CalciumImVol',
         description='Imaging plane used to acquire calcium imaging data',
         optical_channel_plus=CalcOptChannels,
-        order_optical_channels=CalcOptChanRefs,
+        order_optical_channels=order_optical_channels,
         device=device,
         location='Worm head',
         grid_spacing=grid_spacing,
@@ -455,7 +455,7 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
     nwbfile.add_imaging_plane(CalcImagingVolume)
     nwbfile.add_acquisition(calcium_image_series)
 
-    return CalcOptChanRefs, CalcImagingVolume
+    return order_optical_channels, CalcImagingVolume
 
 
 def _iter_volumes(video_data):
