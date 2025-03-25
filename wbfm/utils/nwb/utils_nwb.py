@@ -85,12 +85,12 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
 
     """
 
+    cfg_nwb = project_data.project_config.get_nwb_config()
     if DEBUG:
         logging.warning("DEBUG mode; will not save final output (this is a dry run)")
         output_folder = None
     elif output_folder is None:
         # Save within the project_data folder
-        cfg_nwb = project_data.project_config.get_nwb_config()
         output_folder = cfg_nwb.absolute_subfolder
 
     # Unpack variables from project_data
@@ -242,9 +242,8 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
         nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, CalcOptChanRefs, physical_units_class, device=device
     )
     if behavior_video is not None:
-        nwbfile = convert_behavior_video_to_nwb(
-            nwbfile, behavior_video, device=device
-        )
+        nwbfile = convert_behavior_video_to_nwb(nwbfile, behavior_video)
+        nwbfile = convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict)
 
     fname = None
     if output_folder:
@@ -629,10 +628,10 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
     return nwbfile
 
 
-def convert_behavior_video_to_nwb(nwbfile, behavior_video, device):
+def convert_behavior_video_to_nwb(nwbfile, behavior_video):
     print("Converting behavior to nwb format...")
     # Behavior is already TXY
-    chunk_shape = list(behavior_video.shape)  # One time point
+    chunk_shape = list(behavior_video.shape)
 
     # Build a generator (like the raw data) but for the behavior data
     data = CustomDataChunkIterator(
@@ -653,6 +652,12 @@ def convert_behavior_video_to_nwb(nwbfile, behavior_video, device):
     behavior_module.add_acquisition(behavior_video_series)
 
     return nwbfile
+
+
+def convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict):
+    print("Converting behavior time series to nwb format...")
+    behavior_module = nwbfile.create_processing_module(name="Behavior",
+                                                       description="Behavioral image in near-infrared light")
 
 
 def _add_blob(blob, blobquant):
