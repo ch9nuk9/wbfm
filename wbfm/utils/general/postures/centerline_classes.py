@@ -2110,9 +2110,10 @@ class WormFullVideoPosture:
 
         See behavior_video_avi_fname
         """
-        if self.behavior_subfolder is None:
+        this_path = self.raw_behavior_subfolder if raw else self.behavior_subfolder
+        if this_path is None:
             return None
-        for file in Path(self.behavior_subfolder).iterdir():
+        for file in Path(this_path).iterdir():
             if file.is_dir():
                 continue
             if raw and file.name.endswith('raw_stack.btf'):
@@ -2140,7 +2141,7 @@ class WormFullVideoPosture:
 Posture class with the following files:\n\
 =========Raw Behavior Videos==============\n\
 behavior_video_avi:         {self.behavior_video_avi_fname() is not None}\n\
-behavior_video_btf:         {self.behavior_video_btf_fname() is not None}\n\
+raw_behavior_video_btf:     {self.behavior_video_btf_fname(True) is not None}\n\
 ============Stage Position================\n\
 table_position:             {self.filename_table_position is not None}\n\
 ============Centerline=====================\n\
