@@ -127,11 +127,14 @@ class TestNWB:
                 print(exc_type, fname, exc_tb.tb_lineno)
                 # print(read_nwbfile.processing['CalciumActivity']['CalciumSeriesSegmentation'].keys())
 
+
         print(f"Found the following data in the NWB file: \n"
               f"NeuroPAL image:         {has_neuropal}\n"
               f"Video calcium imaging:  {has_calcium_imaging}\n"
               f"Video calcium traces:   {has_calcium_traces}\n"
-              f"Video segmentation:     {has_segmentation}")
+              f"Video segmentation:     {has_segmentation}\n"
+              f"Behavior video:         {False}\n"
+              f"Behavior time series:   {False}\n")
 
 
 def main():

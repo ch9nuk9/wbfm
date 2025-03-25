@@ -8,6 +8,7 @@ import scipy
 # from hdmf_zarr import NWBZarrIO
 from matplotlib import pyplot as plt
 from pynwb import NWBFile, NWBHDF5IO
+from pynwb.behavior import BehavioralTimeSeries
 from pynwb.image import ImageSeries
 from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, Fluorescence
 from hdmf.data_utils import GenericDataChunkIterator
@@ -142,8 +143,8 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
 
     # Unpack behavior video and time seriesdata
     video_class = project_data.worm_posture_class
-    if video_class.get_raw_behavior_video() is not None:
-        behavior_video = video_class.get_raw_behavior_video()
+    if video_class.raw_behavior_video is not None:
+        behavior_video = video_class.raw_behavior_video
         behavior_time_series_names = ['angular_velocity', 'head_curvature', 'body_curvature', 'reversal_events', 'velocity']
         behavior_time_series_dict = {n: video_class.calc_behavior_from_alias(n) for n in behavior_time_series_names}
     else:
@@ -643,7 +644,8 @@ def convert_behavior_video_to_nwb(nwbfile, behavior_video):
     behavior_video_series = ImageSeries(
         name="BrightFieldNIR",
         description="Behavioral image in near-infrared light",
-        data=wrapped_data
+        data=wrapped_data,
+        unit="seconds"
     )
 
     # Create new processing module for the behavior video
@@ -657,8 +659,12 @@ def convert_behavior_video_to_nwb(nwbfile, behavior_video):
 def convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict):
     print("Converting behavior time series to nwb format...")
     behavior_module = nwbfile.create_processing_module(name="Behavior",
-                                                       description="Behavioral image in near-infrared light")
+                                                       description="Behavioral time series")
 
+    for name, time_series in behavior_time_series_dict.items():
+        behavior_module.add_acquisition(BehavioralTimeSeries(name=name, data=time_series))
+
+    return nwbfile
 
 def _add_blob(blob, blobquant):
     blobarr = np.asarray(blob[['X', 'Y', 'Z', 'gce_quant', 'ID']])

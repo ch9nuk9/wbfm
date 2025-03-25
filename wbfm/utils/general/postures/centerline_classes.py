@@ -897,6 +897,10 @@ class WormFullVideoPosture:
             y = xy['X', 50]
             x = xy['Y', 50]
             y = pd.concat([x, y], keys=['X', 'Y'], axis=1)
+        elif behavior_alias == 'reversal_events':
+            # Binary time series of reversals
+            y = self.beh_annotation(**kwargs)
+            y = BehaviorCodes.vector_equality(y, BehaviorCodes.REV).astype(int)
         elif isinstance(behavior_alias, str) and 'eigenworm' in behavior_alias:
             # Eigenworms 0-4 are possible, calculated on curvature
             # i.e. the full string should be 'eigenworm0', 'eigenworm1', etc.
