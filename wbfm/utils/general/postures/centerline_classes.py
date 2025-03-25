@@ -2148,7 +2148,8 @@ class WormFullVideoPosture:
                 return self.raw_behavior_subfolder  # Return folder, not this file
         return None
 
-    def get_raw_behavior_video(self) -> Optional[da.Array]:
+    @cached_property
+    def raw_behavior_video(self) -> Optional[da.Array]:
         """
         Returns the raw behavior video, if it exists
 
@@ -2181,7 +2182,7 @@ class WormFullVideoPosture:
             f"=========================================\n\
 Posture class with the following files:\n\
 =========Raw Behavior Videos==============\n\
-raw_behavior_video:         {self.get_raw_behavior_video() is not None}\n\
+raw_behavior_video:         {self.raw_behavior_video is not None}\n\
 ============Stage Position================\n\
 table_position:             {self.filename_table_position is not None}\n\
 ============Centerline=====================\n\
