@@ -8,6 +8,7 @@ import scipy
 # from hdmf_zarr import NWBZarrIO
 from matplotlib import pyplot as plt
 from pynwb import NWBFile, NWBHDF5IO
+from pynwb.image import ImageSeries
 from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, Fluorescence
 from hdmf.data_utils import GenericDataChunkIterator
 from dateutil import tz
@@ -111,7 +112,7 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     # Unpack metadata (no matter what the stage of the project is)
     print("Calculating metadata...")
     raw_data_cfg = project_data.project_config.get_raw_data_config()
-    if strain is None:
+    if strain is None and raw_data_cfg.has_valid_self_path:
         strain = raw_data_cfg.config.get('strain', 'unknown')
     physical_units_class = project_data.physical_unit_conversion
 
@@ -139,8 +140,18 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     calcium_video_dict = {'red': project_data.red_data, 'green': project_data.green_data}
     segmentation_video = project_data.segmentation
 
-    nwb_file, fname = nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_quant_dict, session_start_time, subject_id, strain,
-                                                      physical_units_class, output_folder)
+    # Unpack behavior video and time seriesdata
+    video_class = project_data.worm_posture_class
+    if video_class.get_raw_behavior_video() is not None:
+        behavior_video = video_class.get_raw_behavior_video()
+        behavior_time_series_names = ['angular_velocity', 'head_curvature', 'body_curvature', 'reversal_events', 'velocity']
+        behavior_time_series_dict = {n: video_class.calc_behavior_from_alias(n) for n in behavior_time_series_names}
+    else:
+        behavior_video, behavior_time_series_dict = None, None
+
+    nwb_file, fname = nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_quant_dict,
+                                                      session_start_time, subject_id, strain, physical_units_class,
+                                                      behavior_video, behavior_time_series_dict, output_folder)
     # Update in the project config
     cfg_nwb.config['nwb_filename'] = fname
     cfg_nwb.update_self_on_disk()
@@ -211,13 +222,15 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
     # Unpack video
     video_dict = {'red': None}
 
-    nwb_file = nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, subject_id, strain,
-                                               physical_units_class=None, output_folder=output_folder)
-    return nwb_file
+    # TODO: FIX
+    raise NotImplementedError
+    # nwb_file = nwb_with_traces_from_components(video_dict, gce_quant, session_start_time, subject_id, strain,
+    #                                            physical_units_class=None, output_folder=output_folder)
+    # return nwb_file
 
 
 def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_quant_dict, session_start_time, subject_id, strain,
-                                    physical_units_class, output_folder):
+                                    physical_units_class, behavior_video, behavior_time_series_dict, output_folder):
     # Initialize and populate the NWB file
     nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
 
@@ -228,6 +241,10 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
     nwbfile = convert_traces_and_segmentation_to_nwb(
         nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, CalcOptChanRefs, physical_units_class, device=device
     )
+    if behavior_video is not None:
+        nwbfile = convert_behavior_video_to_nwb(
+            nwbfile, behavior_video, device=device
+        )
 
     fname = None
     if output_folder:
@@ -608,6 +625,32 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
     calcium_imaging_module.add(RefFluor)
     # Finish: metadata
     calcium_imaging_module.add(CalcOptChanRefs)
+
+    return nwbfile
+
+
+def convert_behavior_video_to_nwb(nwbfile, behavior_video, device):
+    print("Converting behavior to nwb format...")
+    # Behavior is already TXY
+    chunk_shape = list(behavior_video.shape)  # One time point
+
+    # Build a generator (like the raw data) but for the behavior data
+    data = CustomDataChunkIterator(
+        array=behavior_video,
+        chunk_shape=tuple(chunk_shape)
+    )
+    wrapped_data = H5DataIO(data=data, compression="gzip", compression_opts=4)
+
+    behavior_video_series = ImageSeries(
+        name="BrightFieldNIR",
+        description="Behavioral image in near-infrared light",
+        data=wrapped_data
+    )
+
+    # Create new processing module for the behavior video
+    behavior_module = nwbfile.create_processing_module(name="BF_NIR",
+                                                       description="Behavioral image in near-infrared light")
+    behavior_module.add_acquisition(behavior_video_series)
 
     return nwbfile
 

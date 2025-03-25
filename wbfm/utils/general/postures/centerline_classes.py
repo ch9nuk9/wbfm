@@ -718,12 +718,13 @@ class WormFullVideoPosture:
                      'middle_body_speed', 'signed_middle_body_speed', 'signed_speed_angular',
                      'worm_speed_average_all_segments',
                      'summed_curvature',
-                     'summed_signed_curvature', 'head_curvature', 'head_signed_curvature',
+                     'summed_signed_curvature', 'head_curvature', 'head_unsigned_curvature',
                      'quantile_curvature', 'quantile_head_curvature',
                      'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature',
                      'interpolated_dorsal_midbody_curvature', 'interpolated_dorsal_head_curvature',
                      'ventral_only_body_curvature', 'dorsal_only_body_curvature',
                      'ventral_only_head_curvature', 'dorsal_only_head_curvature',
+                     'body_curvature',
                      'speed_plateau_piecewise_linear_onset', 'speed_plateau_piecewise_linear_offset',
                      'fwd_empirical_distribution', 'rev_empirical_distribution',
                      'worm_nose_peak_frequency', 'worm_head_peak_frequency',
@@ -759,7 +760,7 @@ class WormFullVideoPosture:
 
         if behavior_alias == 'raw_annotations':
             y = self.beh_annotation(**kwargs)
-        elif behavior_alias == 'signed_stage_speed' or behavior_alias == 'speed':
+        elif behavior_alias in ['signed_stage_speed', 'speed', 'velocity']:
             y = self.worm_speed(**kwargs, signed=True)
         # More complex speeds
         elif behavior_alias == 'abs_stage_speed':
@@ -778,13 +779,17 @@ class WormFullVideoPosture:
         elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_signed_curvature':
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(do_abs=False, **kwargs)
-        elif behavior_alias == 'head_curvature':
+        elif behavior_alias == 'head_unsigned_curvature':
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=5, end_segment=30, **kwargs)
-        elif behavior_alias == 'head_signed_curvature':
+        elif behavior_alias == 'head_curvature':
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(do_abs=False,
                                                      start_segment=5, end_segment=30, **kwargs)
+        elif behavior_alias == 'body_curvature':
+            self.check_has_full_kymograph()
+            y = self.summed_curvature_from_kymograph(do_abs=False,
+                                                     start_segment=10, end_segment=90, **kwargs)
         elif behavior_alias == 'curvature_vb02':
             # Segment 15 is the hardcoded (approximate) location of the vb02 neuron
             # Note that there can be significant difference between individuals
@@ -834,7 +839,7 @@ class WormFullVideoPosture:
             y, _ = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=True, **kwargs)
         elif behavior_alias == 'signed_stage_speed_strongly_smoothed':
             y = self.worm_speed(signed=True, strong_smoothing=True, **kwargs)
-        elif behavior_alias == 'signed_speed_angular':
+        elif behavior_alias == 'signed_speed_angular' or behavior_alias == 'angular_velocity':
             y = self.worm_angular_velocity(**kwargs)
         elif behavior_alias == 'worm_speed_average_all_segments':
             y = self.worm_speed_average_all_segments(**kwargs)
@@ -2143,7 +2148,7 @@ class WormFullVideoPosture:
                 return self.raw_behavior_subfolder  # Return folder, not this file
         return None
 
-    def get_raw_behavior_video(self) -> da.Array:
+    def get_raw_behavior_video(self) -> Optional[da.Array]:
         """
         Returns the raw behavior video, if it exists
 
@@ -2157,6 +2162,8 @@ class WormFullVideoPosture:
         reader = MicroscopeDataReader
         video, fname = load_file_according_to_precedence(fname_precedence, possible_fnames, reader=reader)
 
+        if video is None:
+            return None
         return da.squeeze(video.dask_array)
 
     @property
@@ -2174,9 +2181,7 @@ class WormFullVideoPosture:
             f"=========================================\n\
 Posture class with the following files:\n\
 =========Raw Behavior Videos==============\n\
-behavior_video_avi:         {self.behavior_video_avi_fname() is not None}\n\
-raw_behavior_video_btf:     {self.behavior_video_btf_fname(True) is not None}\n\
-raw_behavior_video_ndtiff:  {self.behavior_video_ndtiff_fname() is not None}\n\
+raw_behavior_video:         {self.get_raw_behavior_video() is not None}\n\
 ============Stage Position================\n\
 table_position:             {self.filename_table_position is not None}\n\
 ============Centerline=====================\n\
