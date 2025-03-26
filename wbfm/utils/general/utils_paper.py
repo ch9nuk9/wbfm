@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_matplotlib import export_legend
-from wbfm.utils.general.paper.hardcoded_paths import load_paper_datasets
+from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 
 from wbfm.utils.utils_cache import cache_to_disk_class
 from wbfm.utils.external.utils_plotly import pastelize_color, mute_color

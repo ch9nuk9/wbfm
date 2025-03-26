@@ -4,7 +4,7 @@ from wbfm.utils.external.custom_errors import NoBehaviorDataError, RawDataFormat
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 import snakemake
 
-from wbfm.utils.general.paper.hardcoded_paths import load_hardcoded_neural_network_paths
+from wbfm.utils.general.hardcoded_paths import load_hardcoded_neural_network_paths
 
 
 configfile: "snakemake_config.yaml"

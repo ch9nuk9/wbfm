@@ -22,7 +22,7 @@ from wbfm.utils.external.utils_matplotlib import round_yticks
 from wbfm.utils.external.utils_pandas import split_flattened_index, combine_columns_with_suffix
 from wbfm.utils.external.utils_plotly import float2rgba, add_annotation_lines
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, add_behavior_shading_to_plot
-from wbfm.utils.general.paper.utils_paper import apply_figure_settings, paper_trace_settings, plotly_paper_color_discrete_map, \
+from wbfm.utils.general.utils_paper import apply_figure_settings, paper_trace_settings, plotly_paper_color_discrete_map, \
     plot_box_multi_axis
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.traces.triggered_averages import clustered_triggered_averages_from_dict_of_projects, \

@@ -24,7 +24,7 @@ from wbfm.utils.tracklets.utils_tracklets import build_tracklets_dfs, \
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from wbfm.utils.general.utils_filenames import pickle_load_binary
 from wbfm.utils.projects.utils_project import safe_cd
-from wbfm.utils.general.paper.hardcoded_paths import load_hardcoded_neural_network_paths
+from wbfm.utils.general.hardcoded_paths import load_hardcoded_neural_network_paths
 
 ###
 ### For use with produces tracklets (step 2 of traces)

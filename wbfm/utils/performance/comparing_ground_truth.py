@@ -13,7 +13,7 @@ import seaborn as sns
 from wbfm.utils.external.utils_pandas import df_to_matches, accuracy_of_matches
 from wbfm.utils.general.postprocessing.postprocessing_utils import filter_dataframe_using_likelihood
 from wbfm.utils.external.utils_matplotlib import paired_boxplot_from_dataframes
-from wbfm.utils.general.paper.utils_paper import apply_figure_settings
+from wbfm.utils.general.utils_paper import apply_figure_settings
 from wbfm.utils.neuron_matching.utils_matching import calc_bipartite_from_positions, calc_nearest_neighbor_matches
 from wbfm.utils.general.high_performance_pandas import get_names_from_df
 

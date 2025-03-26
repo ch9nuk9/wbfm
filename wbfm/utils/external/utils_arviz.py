@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import arviz as az
 
-from wbfm.utils.general.paper.hardcoded_paths import get_hierarchical_modeling_dir
+from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir
 
 
 def plot_ts(idata, y='y', y_hat='y', num_samples=100, title='', confidence_interval=0.68, to_show=True,

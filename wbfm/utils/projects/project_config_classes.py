@@ -22,7 +22,7 @@ from wbfm.utils.general.utils_filenames import check_exists, resolve_mounted_pat
 from wbfm.utils.projects.utils_project import safe_cd, update_project_config_path, \
     update_snakemake_config_path, RawFluorescenceData
 from wbfm.utils.external.utils_yaml import edit_config, load_config
-from wbfm.utils.general.paper.hardcoded_paths import default_raw_data_config
+from wbfm.utils.general.hardcoded_paths import default_raw_data_config
 from wbfm.utils.external.custom_errors import RawDataFormatError
 
 

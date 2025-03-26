@@ -6,9 +6,9 @@ import numpy as np
 from statsmodels.stats.multitest import multipletests
 from tqdm.auto import tqdm
 
-from wbfm.utils.general.paper.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
-from wbfm.utils.general.paper.hardcoded_paths import (get_hierarchical_modeling_dir, role_of_neuron_dict,
-                                                      neurons_with_confident_ids)
+from wbfm.utils.general.utils_paper import apply_figure_settings, plotly_paper_color_discrete_map
+from wbfm.utils.general.hardcoded_paths import (get_hierarchical_modeling_dir, role_of_neuron_dict,
+                                                neurons_with_confident_ids)
 
 
 def main(combine_left_right=True):
