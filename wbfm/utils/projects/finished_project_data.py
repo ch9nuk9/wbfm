@@ -194,6 +194,10 @@ class ProjectData:
         neuropal_segmentation = MicroscopeDataReader(neuropal_path)
         return da.squeeze(neuropal_segmentation.dask_array)
 
+    @property
+    def has_complete_neuropal(self):
+        return self.neuropal_data is not None and self.neuropal_segmentation is not None
+
     @cached_property
     def intermediate_global_tracks(self) -> pd.DataFrame:
         """

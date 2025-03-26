@@ -223,7 +223,6 @@ class NapariLayerInitializer:
                 # Some nwb files may not have xyz information
                 project_data.logger.warning("Could not add neuron IDs; no xyz information available")
 
-
         if 'GT IDs' in which_layers:
             # Not added by default!
             df = project_data.final_tracks
@@ -246,6 +245,22 @@ class NapariLayerInitializer:
             options['visible'] = force_all_visible
             viewer.add_points(**options)
             layers_actually_added.append(options['name'])
+
+        if 'Neuropal' in which_layers and project_data.neuropal_data is not None:
+            z_to_xy_ratio_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
+            layer_names = ['Red(mNeptune2.5)', 'White(TagRFP)', 'Green(CyOFP1)', 'Blue(mTagBFP2)']
+            colormaps = ['red', 'gray', 'green', 'blue']
+            viewer.add_image(project_data.neuropal_data, name=layer_names, colormap=colormaps,
+                             visible=False, blending='additive', channel_axis=0,
+                             scale=(1.0, z_to_xy_ratio_np, 1.0, 1.0))
+            layers_actually_added.append('Neuropal')
+
+        if 'Neuropal segmentation' in which_layers and project_data.neuropal_data is not None:
+            layer_name = 'Neuropal segmentation'
+            z_to_xy_ratio_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
+            viewer.add_image(project_data.neuropal_data, name=layer_name,
+                             scale=(1.0, z_to_xy_ratio_np, 1.0, 1.0), opacity=0.4)
+            layers_actually_added.append('Neuropal')
 
         # Special layers from the heatmapper class
         for layer_tuple in which_layers:

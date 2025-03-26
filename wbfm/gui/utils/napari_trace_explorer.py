@@ -61,12 +61,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     _disable_callbacks = False
 
     def __init__(self, project_data: ProjectData, app: QApplication, **kwargs):
-        try:
-            check_all_needed_data_for_step(project_data.project_config,
-                                           step_index=5, raise_error=True, training_data_required=False)
-        except (IncompleteConfigFileError, AttributeError):
-            # This error means that the project is an alternate style, which is likely fine
-            pass
         for k, v in kwargs.items():
             setattr(self, k, v)
         if self.load_tracklets:
@@ -113,10 +107,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.tracklet_mode_calculation_options = ['z', 'volume', 'likelihood', 'brightness_red']
 
         self.dict_of_saved_times = dict()
-
         self.list_of_gt_correction_widgets = []
 
-    def setupUi(self, viewer: napari.Viewer):
+    def setup_ui(self, viewer: napari.Viewer):
 
         self.logger.debug("Starting main UI setup")
         # Load dataframe and path to outputs
@@ -193,6 +186,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.manualNeuronNameEditor.multiple_annotations_updated.connect(self.update_neuron_id_strings_in_layer)
             self.manualNeuronNameEditor.setWindowTitle(f"Neuron Name Editor for project: {self.dat.project_dir}")
             self.manualNeuronNameEditor.show()
+
+        # Optional: add neuropal layers
+        if self.dat.has_complete_neuropal:
+            self.dat.add_neuropal_layers_to_viewer(self.viewer, check_if_layers_exist=True)
 
         self.logger.debug("Finished main UI setup")
 
@@ -2074,7 +2071,7 @@ def napari_trace_explorer(project_data: ProjectData,
     ui.dat.add_layers_to_viewer(viewer, dask_for_segmentation=False)
 
     # Actually dock my additional gui elements
-    ui.setupUi(viewer)
+    ui.setup_ui(viewer)
     viewer.window.add_dock_widget(ui)
     ui.show()
     change_viewer_time_point(viewer, t_target=10)
