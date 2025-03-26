@@ -16,7 +16,7 @@ from wbfm.utils.neuron_matching.utils_candidate_matches import rename_columns_us
 from wbfm.utils.nn_utils.superglue import SuperGlueUnpacker
 from wbfm.utils.nn_utils.worm_with_classifier import _unpack_project_for_global_tracking, \
     WormWithSuperGlueClassifier, track_using_template, WormWithNeuronClassifier
-from wbfm.utils.general.postures.random_templates import generate_random_valid_template_frames
+from wbfm.utils.external.random_templates import generate_random_valid_template_frames
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_project import safe_cd
