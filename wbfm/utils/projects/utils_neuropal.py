@@ -2,9 +2,13 @@ import os
 import shutil
 from pathlib import Path
 
+import numpy as np
+import zarr
 from imutils import MicroscopeDataReader
-
+import dask.array as da
+from wbfm.utils.external.custom_errors import NoNeuropalError
 from wbfm.utils.projects.finished_project_data import ProjectData
+from wbfm.utils.segmentation.util.utils_model import segment_with_stardist_3d, get_stardist_model
 
 
 def add_neuropal_to_project(project_path, neuropal_path, copy_data=True):
@@ -52,3 +56,51 @@ def add_neuropal_to_project(project_path, neuropal_path, copy_data=True):
     neuropal_data_path = os.path.join(target_dir, os.path.basename(neuropal_path))
     neuropal_config.config['neuropal_data_path'] = neuropal_config.unresolve_absolute_path(neuropal_data_path)
     neuropal_config.update_self_on_disk()
+
+
+def segment_neuropal_from_project(project_data):
+    """
+    Segments the neuropal dataset in a project.
+
+    Parameters
+    ----------
+    project_data : ProjectData
+
+    Returns
+    -------
+
+    """
+    try:
+        neuropal_config = project_data.project_config.get_neuropal_config()
+    except FileNotFoundError:
+        raise NoNeuropalError(project_data.project_dir)
+
+    # Get raw data
+    neuropal_path = neuropal_config.resolve_relative_path_from_config('neuropal_data_path')
+    neuropal_data = MicroscopeDataReader(neuropal_path)
+
+    # Sum channels to get volume that will actually be segmented
+    channels_to_sum = neuropal_config.config['segmentation_params']['channels_to_sum']
+    multichannel_volume = da.squeeze(neuropal_data.dask_array)
+    volume = multichannel_volume[channels_to_sum].sum(axis=0).compute()
+
+    # Get segmentation model
+    stardist_model_name = neuropal_config.config['segmentation_params']['stardist_model_name']
+    if stardist_model_name is None:
+        segmentation_config = project_data.project_config.get_segmentation_config()
+        stardist_model_name = segmentation_config.config['segmentation_params']['stardist_model_name']
+    sd_model = get_stardist_model(stardist_model_name)
+
+    # Segment and save
+    final_masks = segment_with_stardist_3d(volume, sd_model)
+
+    output_fname = neuropal_config.config['neuropal_segmentation_path']
+    if output_fname is None:
+        output_fname = os.path.join('neuropal', 'neuropal_masks.zarr')
+    output_fname = neuropal_config.resolve_relative_path_from_config(output_fname)
+
+    sz = final_masks.shape
+    chunks = sz
+    # TODO: Do this in one line?
+    masks_zarr = zarr.open(output_fname, mode='w', shape=sz, chunks=chunks, dtype=np.uint16, fill_value=0)
+    masks_zarr[:] = final_masks[:]

@@ -141,3 +141,9 @@ class RawDataFormatError(Exception):
     def __init__(self, message=""):
         self.message = "Incorrectly formatted raw data; " + message
         super().__init__(self.message)
+
+
+class NoNeuropalError(Exception):
+    def __init__(self, message=""):
+        self.message = "No neuropal data found in project: " + message
+        super().__init__(self.message)
