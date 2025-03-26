@@ -42,13 +42,13 @@ def add_neuropal_to_project(project_path, neuropal_path, copy_data=True):
         raise FileNotFoundError(f'Could not find the ome.tif file in {neuropal_dir}')
     _ = MicroscopeDataReader(neuropal_path)
 
-    # Move or copy all files from the neuropal folder project directory
+    # Move or copy all contents from the neuropal folder project directory
     if copy_data:
-        shutil.copytree(neuropal_dir, target_dir)
+        shutil.copytree(neuropal_dir, target_dir, dirs_exist_ok=True)
     else:
         shutil.move(neuropal_dir, target_dir)
 
     # Update the config file with the new data path
     neuropal_data_path = os.path.join(target_dir, os.path.basename(neuropal_path))
-    neuropal_config.config['neuropal_data_path'] = neuropal_data_path
+    neuropal_config.config['neuropal_data_path'] = neuropal_config.unresolve_absolute_path(neuropal_data_path)
     neuropal_config.update_self_on_disk()

@@ -151,6 +151,10 @@ class ConfigFileWithProjectContext:
     def absolute_self_path(self):
         return self.resolve_relative_path(self.self_path)
 
+    @property
+    def relative_self_path(self):
+        return self.unresolve_absolute_path(self.self_path)
+
     def to_json(self):
         return json.dumps(vars(self))
 
@@ -386,18 +390,20 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return str(foldername)
 
     def get_neuropal_config(self) -> SubfolderConfigFile:
-        fname = Path(self.config['subfolder_configs'].get('neuropal', None))
+        fname = self.config['subfolder_configs'].get('neuropal', None)
         if fname is None:
             fname = Path(self.project_dir).joinpath(self._get_neuropal_dir(), 'neuropal_config.yaml')
             if not fname.exists():
                 raise FileNotFoundError("No path to a neuropal config file was found in the project_config.yaml file")
+        else:
+            fname = Path(fname)
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
     def initialize_neuropal_subproject(self) -> SubfolderConfigFile:
         # Nearly the same as getting a subfolder config, but expects the folder to not exist
         foldername = self._get_neuropal_dir(make_subfolder=True, raise_error=True)
         # Copy contents of the neuropal folder from the github project to the local project
-        source_folder = get_location_of_alternative_project_defaults().joinpath('neuropal_subproject')
+        source_folder = Path(get_location_of_alternative_project_defaults()).joinpath('neuropal_subproject')
         for content in source_folder.iterdir():
             if content.is_file():
                 shutil.copy(content, foldername)
@@ -405,7 +411,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                 raise FileNotFoundError(f"Found a folder in the default neuropal folder: {content}")
         # Add this config path to the main project config
         neuropal_config = self.get_neuropal_config()
-        self.config['subfolder_configs']['neuropal'] = neuropal_config.self_path
+        self.config['subfolder_configs']['neuropal'] = neuropal_config.relative_self_path
         self.update_self_on_disk()
         return neuropal_config
 
