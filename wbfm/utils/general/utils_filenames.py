@@ -363,6 +363,12 @@ def get_location_of_new_project_defaults():
     return str(target_folder)
 
 
+def get_location_of_alternative_project_defaults():
+    parent_folder = Path(get_location_of_installed_project())
+    target_folder = parent_folder.joinpath('wbfm').joinpath('alternative_project_defaults').resolve()
+    return str(target_folder)
+
+
 def get_bigtiff_fname_from_folder(folder_fname, channel_to_check=0):
     fname = None
     str_pattern = f'_Ch{channel_to_check}bigtiff.btf'

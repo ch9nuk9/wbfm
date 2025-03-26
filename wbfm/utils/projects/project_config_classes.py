@@ -17,7 +17,8 @@ from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
 from wbfm.utils.external.custom_errors import NoBehaviorDataError, IncompleteConfigFileError
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
 from wbfm.utils.general.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
-    get_sequential_filename, get_location_of_new_project_defaults, is_absolute_in_any_os
+    get_sequential_filename, get_location_of_new_project_defaults, is_absolute_in_any_os, \
+    get_location_of_alternative_project_defaults
 from wbfm.utils.projects.utils_project import safe_cd, update_project_config_path, \
     update_snakemake_config_path, RawFluorescenceData
 from wbfm.utils.external.utils_yaml import edit_config, load_config
@@ -372,6 +373,42 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                 raise FileNotFoundError("No path to a nwb config file was found in the project_config.yaml file")
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
+    def _get_neuropal_dir(self, make_subfolder=True, raise_error=False):
+        # Directory which is not part of a default project
+        foldername = Path(self.project_dir).joinpath('neuropal')
+        if make_subfolder:
+            try:
+                foldername.mkdir(exist_ok=True)
+            except PermissionError as e:
+                self.logger.warning(f"Could not create neuropal folder (continuing): {e}")
+                if raise_error:
+                    raise e
+        return str(foldername)
+
+    def get_neuropal_config(self) -> SubfolderConfigFile:
+        fname = Path(self.config['subfolder_configs'].get('neuropal', None))
+        if fname is None:
+            fname = Path(self.project_dir).joinpath(self._get_neuropal_dir(), 'neuropal_config.yaml')
+            if not fname.exists():
+                raise FileNotFoundError("No path to a neuropal config file was found in the project_config.yaml file")
+        return SubfolderConfigFile(**self._check_path_and_load_config(fname))
+
+    def initialize_neuropal_subproject(self) -> SubfolderConfigFile:
+        # Nearly the same as getting a subfolder config, but expects the folder to not exist
+        foldername = self._get_neuropal_dir(make_subfolder=True, raise_error=True)
+        # Copy contents of the neuropal folder from the github project to the local project
+        source_folder = get_location_of_alternative_project_defaults().joinpath('neuropal_subproject')
+        for content in source_folder.iterdir():
+            if content.is_file():
+                shutil.copy(content, foldername)
+            else:
+                raise FileNotFoundError(f"Found a folder in the default neuropal folder: {content}")
+        # Add this config path to the main project config
+        neuropal_config = self.get_neuropal_config()
+        self.config['subfolder_configs']['neuropal'] = neuropal_config.self_path
+        self.update_self_on_disk()
+        return neuropal_config
+
     def _check_path_and_load_config(self, subconfig_path: Path,
                                     allow_config_to_not_exist: bool = False) -> Dict:
         if is_absolute_in_any_os(str(subconfig_path)):
@@ -405,11 +442,12 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return str(foldername)
 
     def _get_visualization_dir(self) -> str:
+        # Directory which is not part of a default project
         foldername = Path(self.project_dir).joinpath('visualization')
         try:
             foldername.mkdir(exist_ok=True)
-        except PermissionError:
-            pass
+        except PermissionError as e:
+            self.logger.warning(f"Could not create visualization folder (continuing): {e}")
         return str(foldername)
 
     def get_visualization_config(self, make_subfolder=False) -> SubfolderConfigFile:
@@ -422,8 +460,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         if make_subfolder:
             try:
                 Path(cfg.subfolder).mkdir(exist_ok=True)
-            except PermissionError:
-                pass
+            except PermissionError as e:
+                self.logger.warning(f"Could not create visualization folder (continuing): {e}")
         return cfg
 
     def resolve_mounted_path_in_current_os(self, key) -> Optional[Path]:
