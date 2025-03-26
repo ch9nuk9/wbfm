@@ -150,7 +150,7 @@ class NapariLayerInitializer:
         xy_pixels = project_data.physical_unit_conversion.zimmer_fluroscence_um_per_pixel_xy
         z_pixels = project_data.physical_unit_conversion.zimmer_um_per_pixel_z
         z_to_xy_ratio = z_pixels / xy_pixels
-        scale = (1.0, project_data.physical_unit_conversion.zimmer_um_per_pixel_z, xy_pixels, xy_pixels)
+        scale = (1.0, z_to_xy_ratio, 1.0, 1.0)
         if to_remove_flyback:
             raise NotImplementedError
             # clipping_list = [{'position': [2*z_to_xy_ratio, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
@@ -257,14 +257,14 @@ class NapariLayerInitializer:
             for i, (name, cmap) in enumerate(zip(layer_names, colormaps)):
                 viewer.add_image(project_data.neuropal_data[i], name=name, colormap=cmap,
                                  visible=False, blending='additive',
-                                 scale=(z_np, xy_pixels, xy_pixels))
+                                 scale=(z_np/xy_pixels, 1.0, 1.0))
             layers_actually_added.append('Neuropal')
 
         if 'Neuropal segmentation' in which_layers and project_data.neuropal_data is not None:
             layer_name = 'Neuropal segmentation'
             z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
             viewer.add_labels(project_data.neuropal_segmentation, name=layer_name, visible=False,
-                             scale=(z_np, xy_pixels, xy_pixels), opacity=0.4)
+                             scale=(z_np/xy_pixels, 1.0, 1.0), opacity=0.4)
             layers_actually_added.append('Neuropal segmentation')
 
         # Special layers from the heatmapper class
