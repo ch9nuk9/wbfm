@@ -193,8 +193,8 @@ class ProjectData:
         neuropal_path = neuropal_config.resolve_relative_path_from_config('neuropal_segmentation_path')
         if neuropal_path is None:
             return None
-        neuropal_segmentation = MicroscopeDataReader(neuropal_path)
-        return da.squeeze(neuropal_segmentation.dask_array)
+        neuropal_segmentation = zarr.open(neuropal_path)
+        return neuropal_segmentation
 
     @property
     def has_complete_neuropal(self):
