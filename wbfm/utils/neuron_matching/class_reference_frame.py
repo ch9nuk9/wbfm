@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass
-from typing import Union
 import cv2
 import numpy as np
 from tqdm.auto import tqdm
@@ -8,9 +7,8 @@ from wbfm.utils.external.utils_cv2 import get_keypoints_from_3dseg
 from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.external.custom_errors import OverwritePreviousAnalysisError, DataSynchronizationError, \
     AnalysisOutOfOrderError, DeprecationError, NoNeuronsError
-from wbfm.utils.neuron_matching.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
+from wbfm.utils.general.utils_features import convert_to_grayscale, detect_keypoints_and_features, \
     build_feature_tree, build_neuron_tree, build_f2n_map, detect_only_keypoints
-from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
 from wbfm.utils.segmentation.util.utils_metadata import DetectedNeurons
 
 ##

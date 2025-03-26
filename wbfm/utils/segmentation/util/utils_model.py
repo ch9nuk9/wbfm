@@ -10,7 +10,7 @@ from stardist.models import StarDist3D, StarDist2D
 import os
 from csbdeep.utils import Path, normalize
 from wbfm.utils.external.custom_errors import IncompleteConfigFileError
-from wbfm.utils.general.hardcoded_paths import load_hardcoded_neural_network_paths
+from wbfm.utils.general.paper.hardcoded_paths import load_hardcoded_neural_network_paths
 
 
 def get_stardist_model(model_name: str = 'students_and_lukas_3d_zarr',

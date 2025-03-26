@@ -29,7 +29,7 @@ from wbfm.utils.external.utils_pandas import get_durations_from_column, get_cont
     remove_short_state_changes, get_dataframe_of_transitions, make_binary_vector_from_starts_and_ends, \
     force_same_indexing
 from wbfm.utils.external.custom_errors import NoManualBehaviorAnnotationsError, NoBehaviorAnnotationsError, \
-    MissingAnalysisError, DataSynchronizationError, IncompleteConfigFileError
+    MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.general.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists, \
@@ -39,7 +39,7 @@ from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
 from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import remove_outliers_via_rolling_mean, \
     filter_gaussian_moving_average, fill_nan_in_dataframe
-from wbfm.utils.general.hardcoded_paths import forward_distribution_statistics, reverse_distribution_statistics
+from wbfm.utils.general.paper.hardcoded_paths import forward_distribution_statistics, reverse_distribution_statistics
 
 
 @dataclass

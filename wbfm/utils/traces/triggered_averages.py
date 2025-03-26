@@ -30,8 +30,8 @@ from wbfm.utils.external.utils_pandas import get_contiguous_blocks_from_column, 
 from wbfm.utils.external.utils_zeta_statistics import calculate_zeta_cumsum, jitter_indices, calculate_p_value_from_zeta
 from wbfm.utils.external.utils_matplotlib import paired_boxplot_from_dataframes
 from wbfm.utils.external.utils_jupyter import check_plotly_rendering
-from wbfm.utils.general.utils_paper import apply_figure_settings
-from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
+from wbfm.utils.general.paper.utils_paper import apply_figure_settings
+from wbfm.utils.general.paper.hardcoded_paths import neurons_with_confident_ids
 from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.filtering_traces import filter_gaussian_moving_average
 from wbfm.utils.visualization.utils_plot_traces import plot_with_shading, plot_with_shading_plotly
@@ -2001,7 +2001,7 @@ class ClusteredTriggeredAverages:
             rng = np.random.default_rng()
         # all_traces should be an iterable of arrays, each row of each array being a trace
         all_traces = (traces0.T, traces1.T)
-        from wbfm.utils.traces.utils_cluster import ks_statistic
+        from wbfm.utils.general.utils_clustering import ks_statistic
         res = permutation_test(all_traces, ks_statistic, vectorized=True,
                                n_resamples=n_resamples, axis=1, random_state=rng)
         if DEBUG:

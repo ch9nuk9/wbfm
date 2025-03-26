@@ -1,4 +1,3 @@
-import logging
 import os.path
 from dataclasses import dataclass
 
@@ -12,7 +11,7 @@ from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from wbfm.utils.nn_utils.model_image_classifier import NeuronEmbeddingModel
 from wbfm.utils.nn_utils.superglue import SuperGlueModel, SuperGlueUnpacker
 from wbfm.utils.projects.finished_project_data import ProjectData, template_matches_to_dataframe
-from wbfm.utils.general.hardcoded_paths import load_hardcoded_neural_network_paths
+from wbfm.utils.general.paper.hardcoded_paths import load_hardcoded_neural_network_paths
 
 
 # TODO: also save hyperparameters (doesn't work in jupyter notebooks)

@@ -6,7 +6,7 @@ from sklearn.gaussian_process.kernels import RBF, DotProduct, ConstantKernel
 from sklearn.utils._testing import ignore_warnings
 from tqdm.auto import tqdm
 
-from wbfm.utils.neuron_matching.utils_features import build_neuron_tree
+from wbfm.utils.general.utils_features import build_neuron_tree
 from wbfm.utils.neuron_matching.utils_matching import calc_nearest_neighbor_matches
 
 

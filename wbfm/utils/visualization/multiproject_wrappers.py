@@ -19,14 +19,14 @@ from wbfm.utils.external.utils_pandas import split_flattened_index, flatten_mult
 from wbfm.utils.general.postprocessing.utils_imputation import impute_missing_values_in_dataframe
 from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
 from wbfm.utils.external.utils_matplotlib import corrfunc, paired_boxplot_from_dataframes
-from wbfm.utils.general.utils_paper import apply_figure_settings
+from wbfm.utils.general.paper.utils_paper import apply_figure_settings
 from wbfm.utils.projects.finished_project_data import load_all_projects_from_list, ProjectData
 from wbfm.utils.traces.triggered_averages import FullDatasetTriggeredAverages, \
     clustered_triggered_averages_from_dict_of_projects
 from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.visualization.behavior_comparison_plots import NeuronToMultivariateEncoding
 from wbfm.utils.visualization.filtering_traces import remove_outliers_using_std
-from wbfm.utils.general.hardcoded_paths import list_of_gas_sensing_neurons, list_neurons_manifold_in_immob
+from wbfm.utils.general.paper.hardcoded_paths import list_of_gas_sensing_neurons, list_neurons_manifold_in_immob
 
 
 @dataclass

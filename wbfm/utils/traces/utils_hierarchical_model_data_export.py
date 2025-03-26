@@ -1,6 +1,6 @@
 import os
 
-from wbfm.utils.general.hardcoded_paths import load_paper_datasets, get_hierarchical_modeling_dir
+from wbfm.utils.general.paper.hardcoded_paths import load_paper_datasets, get_hierarchical_modeling_dir
 from wbfm.utils.visualization.multiproject_wrappers import build_trace_time_series_from_multiple_projects, \
     build_behavior_time_series_from_multiple_projects, build_cross_dataset_eigenworms, \
     build_pca_time_series_from_multiple_projects

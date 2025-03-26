@@ -24,7 +24,7 @@ from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.external.custom_errors import MustBeFiniteError, TiffFormatError
 from wbfm.utils.general.preprocessing.deconvolution import ImageScaler, CustomPSF, sharpen_volume_using_dog, \
     sharpen_volume_using_bilateral
-from wbfm.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
+from wbfm.utils.external.utils_rigid_alignment import align_stack_to_middle_slice, \
     cumulative_alignment_of_stack, apply_alignment_matrix_to_stack, calculate_alignment_matrix_two_stacks
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
 from wbfm.utils.general.utils_filenames import add_name_suffix

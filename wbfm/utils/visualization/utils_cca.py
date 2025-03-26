@@ -10,11 +10,11 @@ from ipywidgets import interact
 from sklearn.cross_decomposition import CCA
 import plotly.express as px
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import FunctionTransformer, StandardScaler
+from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
-from wbfm.utils.general.utils_paper import apply_figure_settings, behavior_name_mapping
+from wbfm.utils.general.paper.utils_paper import apply_figure_settings, behavior_name_mapping
 from wbfm.utils.general.utils_filenames import get_sequential_filename
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
@@ -24,7 +24,7 @@ from methodtools import lru_cache
 import cca_zoo.models as scc_mod
 
 from wbfm.utils.projects.finished_project_data import ProjectData
-from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
+from wbfm.utils.general.paper.hardcoded_paths import neurons_with_confident_ids
 
 
 @dataclass

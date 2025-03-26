@@ -1,5 +1,5 @@
 from tqdm.auto import tqdm
-from wbfm.utils.general.hardcoded_paths import load_paper_datasets
+from wbfm.utils.general.paper.hardcoded_paths import load_paper_datasets
 from wbfm.utils.general.utils_filenames import correct_mounted_path_prefix
 
 

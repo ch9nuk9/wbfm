@@ -407,7 +407,7 @@ def add_annotation_lines(df_idx_range, neuron_name, fig, is_immobilized=False, i
         # If there is a dynamic time window used for the ttest, then add a bar as an annotation
         this_idx = df_idx_range[df_idx_range['neuron'] == neuron_name]
         # Add a bar for the dynamic window for each type (mutant and not)
-        from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map
+        from wbfm.utils.general.paper.utils_paper import plotly_paper_color_discrete_map
         _cmap = plotly_paper_color_discrete_map()
         for i, row in this_idx.iterrows():
             y0 = 0.9

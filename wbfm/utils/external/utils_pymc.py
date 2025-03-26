@@ -10,7 +10,7 @@ import pymc as pm
 import arviz as az
 import cloudpickle
 from matplotlib import pyplot as plt
-from wbfm.utils.general.hardcoded_paths import get_hierarchical_modeling_dir, get_triggered_average_modeling_dir, \
+from wbfm.utils.general.paper.hardcoded_paths import get_hierarchical_modeling_dir, get_triggered_average_modeling_dir, \
     get_triggered_average_dataframe_fname
 from wbfm.utils.external.utils_pandas import get_dataframe_for_single_neuron
 

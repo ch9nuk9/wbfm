@@ -11,7 +11,7 @@ import numpy as np
 import scipy.io
 from sklearn.decomposition import PCA
 
-from wbfm.utils.general.utils_paper import paper_trace_settings, paper_figure_page_settings, \
+from wbfm.utils.general.paper.utils_paper import paper_trace_settings, paper_figure_page_settings, \
     apply_figure_settings, behavior_name_mapping
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, options_for_ethogram, shade_using_behavior
 from wbfm.utils.external.custom_errors import NoNeuronsError, NoBehaviorAnnotationsError
@@ -31,7 +31,7 @@ from plotly import graph_objects as go
 from wbfm.utils.visualization.filtering_traces import fill_nan_in_dataframe
 from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow_gaps_for_plotly
 import plotly.express as px
-from wbfm.utils.general.utils_paper import plotly_paper_color_discrete_map
+from wbfm.utils.general.paper.utils_paper import plotly_paper_color_discrete_map
 
 
 ##

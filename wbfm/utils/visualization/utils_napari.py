@@ -10,7 +10,7 @@ from wbfm.utils.external.utils_pandas import cast_int_or_nan
 from wbfm.utils.general.high_performance_pandas import get_names_from_df
 from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet
 
-from wbfm.utils.traces.bleach_correction import detrend_exponential_iter
+from wbfm.utils.external.bleach_correction import detrend_exponential_iter
 from sklearn.linear_model import LinearRegression
 
 
