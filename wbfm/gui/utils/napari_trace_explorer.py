@@ -187,9 +187,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.manualNeuronNameEditor.setWindowTitle(f"Neuron Name Editor for project: {self.dat.project_dir}")
             self.manualNeuronNameEditor.show()
 
-        # Optional: add neuropal layers
+        # Optional: add neuropal layer interactivity
         if self.dat.has_complete_neuropal:
-            self.dat.add_neuropal_layers_to_viewer(self.viewer, check_if_layers_exist=True)
+            pass
 
         self.logger.debug("Finished main UI setup")
 
