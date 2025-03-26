@@ -191,6 +191,8 @@ class ProjectData:
             return None
         # May not exist if the segmentation step has not been run
         neuropal_path = neuropal_config.resolve_relative_path_from_config('neuropal_segmentation_path')
+        if neuropal_path is None:
+            return None
         neuropal_segmentation = MicroscopeDataReader(neuropal_path)
         return da.squeeze(neuropal_segmentation.dask_array)
 
