@@ -4,4 +4,4 @@ neuropal_segmentation_path:
 
 segmentation_params:
     stardist_model_name:  # By default uses the same as the traces
-    channels_to_sum: [0]  # List of channels to sum up for the segmentation
+    channels_to_sum: [1]  # List of channels to sum up for the segmentation; default is TagRFP

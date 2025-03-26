@@ -92,15 +92,15 @@ def segment_neuropal_from_project(project_data):
     sd_model = get_stardist_model(stardist_model_name)
 
     # Segment and save
-    final_masks = segment_with_stardist_3d(volume, sd_model)
-
     output_fname = neuropal_config.config['neuropal_segmentation_path']
     if output_fname is None:
         output_fname = os.path.join('neuropal', 'neuropal_masks.zarr')
-    output_fname = neuropal_config.resolve_relative_path_from_config(output_fname)
+    output_fname = neuropal_config.resolve_relative_path(output_fname)
+    print("Saving segmentation to ", output_fname)
+
+    final_masks = segment_with_stardist_3d(volume, sd_model)
 
     sz = final_masks.shape
     chunks = sz
-    # TODO: Do this in one line?
     masks_zarr = zarr.open(output_fname, mode='w', shape=sz, chunks=chunks, dtype=np.uint16, fill_value=0)
     masks_zarr[:] = final_masks[:]
