@@ -97,7 +97,7 @@ class ConfigFileWithProjectContext:
         return logger
 
     def update_self_on_disk(self):
-        fname = self.relative_self_path
+        fname = self.absolute_self_path
         self.logger.info(f"Updating config file {fname} on disk")
         # Make sure none of the values are Path objects, which will crash the yaml dump and leave an empty file!
         for key in self.config:
