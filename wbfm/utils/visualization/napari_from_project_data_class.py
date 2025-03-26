@@ -147,9 +147,13 @@ class NapariLayerInitializer:
 
         project_data.logger.info(f"Finished loading data, trying to add following layers: {which_layers}")
         layers_actually_added = []
-        z_to_xy_ratio = project_data.physical_unit_conversion.z_to_xy_ratio
+        xy_pixels = project_data.physical_unit_conversion.zimmer_fluroscence_um_per_pixel_xy
+        z_pixels = project_data.physical_unit_conversion.zimmer_um_per_pixel_z
+        z_to_xy_ratio = z_pixels / xy_pixels
+        scale = (1.0, project_data.physical_unit_conversion.zimmer_um_per_pixel_z, xy_pixels, xy_pixels)
         if to_remove_flyback:
-            clipping_list = [{'position': [2*z_to_xy_ratio, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
+            raise NotImplementedError
+            # clipping_list = [{'position': [2*z_to_xy_ratio, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
         else:
             clipping_list = []
 
@@ -158,7 +162,7 @@ class NapariLayerInitializer:
             contrast_high = NapariLayerInitializer._get_contrast_limits(project_data, red_not_green=True)
             viewer.add_image(project_data.red_data, name=layer_name, opacity=0.5, colormap='PiYG',
                              contrast_limits=[0, contrast_high],
-                             scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
+                             scale=scale,
                              experimental_clipping_planes=clipping_list)
             layers_actually_added.append(layer_name)
         if 'Green data' in which_layers:
@@ -167,7 +171,7 @@ class NapariLayerInitializer:
             viewer.add_image(project_data.green_data, name=layer_name, opacity=0.5, colormap='green',
                              visible=force_all_visible,
                              contrast_limits=[0, contrast_high],
-                             scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
+                             scale=scale,
                              experimental_clipping_planes=clipping_list)
             layers_actually_added.append(layer_name)
         if 'Raw segmentation' in which_layers:
@@ -175,7 +179,7 @@ class NapariLayerInitializer:
                 layer_name = 'Raw segmentation'
                 seg_array = zarr.array(project_data.raw_segmentation)
                 viewer.add_labels(seg_array, name=layer_name,
-                                  scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=force_all_visible,
+                                  scale=scale, opacity=0.8, visible=force_all_visible,
                                   rendering='translucent')
                 layers_actually_added.append(layer_name)
                 # The rendering cannot be initialized to translucent_no_depth, so we do it here
@@ -186,7 +190,7 @@ class NapariLayerInitializer:
                 project_data.logger.warning("Colored segmentation requested but not available, skipping")
             else:
                 viewer.add_labels(project_data.segmentation, name=layer_name,
-                                  scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=force_all_visible)
+                                  scale=scale, opacity=0.4, visible=force_all_visible)
                 layers_actually_added.append(layer_name)
                 viewer.layers[layer_name].blending = 'translucent_no_depth'
 
@@ -247,20 +251,20 @@ class NapariLayerInitializer:
             layers_actually_added.append(options['name'])
 
         if 'Neuropal' in which_layers and project_data.neuropal_data is not None:
-            z_to_xy_ratio_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
+            z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
             layer_names = ['Red(mNeptune2.5)', 'White(TagRFP)', 'Green(CyOFP1)', 'Blue(mTagBFP2)']
             colormaps = ['red', 'gray', 'green', 'blue']
             for i, (name, cmap) in enumerate(zip(layer_names, colormaps)):
                 viewer.add_image(project_data.neuropal_data[i], name=name, colormap=cmap,
                                  visible=False, blending='additive',
-                                 scale=(z_to_xy_ratio_np, 1.0, 1.0))
+                                 scale=(z_np, xy_pixels, xy_pixels))
             layers_actually_added.append('Neuropal')
 
         if 'Neuropal segmentation' in which_layers and project_data.neuropal_data is not None:
             layer_name = 'Neuropal segmentation'
-            z_to_xy_ratio_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
-            viewer.add_image(project_data.neuropal_data, name=layer_name,
-                             scale=(z_to_xy_ratio_np, 1.0, 1.0), opacity=0.4)
+            z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
+            viewer.add_labels(project_data.neuropal_segmentation, name=layer_name, visible=False,
+                             scale=(z_np, xy_pixels, xy_pixels), opacity=0.4)
             layers_actually_added.append('Neuropal segmentation')
 
         # Special layers from the heatmapper class
