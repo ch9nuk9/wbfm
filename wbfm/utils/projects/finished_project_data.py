@@ -2,6 +2,9 @@ import concurrent
 import logging
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
+
+from imutils import MicroscopeDataReader
+
 from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
 
 import tables
@@ -162,6 +165,34 @@ class ProjectData:
         else:
             self.logger.warning("ProjectData initialized without a project_config object; "
                                 "if this is from a NWB file, this is expected")
+
+    @cached_property
+    def neuropal_data(self) -> Optional[da.Array]:
+        """
+        Data from the neuropal dataset, if present
+        """
+        try:
+            neuropal_config = self.project_config.get_neuropal_config()
+        except FileNotFoundError:
+            return None
+        # Should always exist if the config exists
+        neuropal_path = neuropal_config.resolve_relative_path_from_config('neuropal_data_path')
+        neuropal_data = MicroscopeDataReader(neuropal_path)
+        return da.squeeze(neuropal_data.dask_array)
+
+    @cached_property
+    def neuropal_segmentation(self) -> Optional[da.Array]:
+        """
+        Segmentation from the neuropal dataset, if present
+        """
+        try:
+            neuropal_config = self.project_config.get_neuropal_config()
+        except FileNotFoundError:
+            return None
+        # May not exist if the segmentation step has not been run
+        neuropal_path = neuropal_config.resolve_relative_path_from_config('neuropal_segmentation_path')
+        neuropal_segmentation = MicroscopeDataReader(neuropal_path)
+        return da.squeeze(neuropal_segmentation.dask_array)
 
     @cached_property
     def intermediate_global_tracks(self) -> pd.DataFrame:
