@@ -250,17 +250,18 @@ class NapariLayerInitializer:
             z_to_xy_ratio_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
             layer_names = ['Red(mNeptune2.5)', 'White(TagRFP)', 'Green(CyOFP1)', 'Blue(mTagBFP2)']
             colormaps = ['red', 'gray', 'green', 'blue']
-            viewer.add_image(project_data.neuropal_data, name=layer_names, colormap=colormaps,
-                             visible=False, blending='additive', channel_axis=0,
-                             scale=(1.0, z_to_xy_ratio_np, 1.0, 1.0))
+            for i, (name, cmap) in enumerate(zip(layer_names, colormaps)):
+                viewer.add_image(project_data.neuropal_data[i], name=name, colormap=cmap,
+                                 visible=False, blending='additive',
+                                 scale=(z_to_xy_ratio_np, 1.0, 1.0))
             layers_actually_added.append('Neuropal')
 
         if 'Neuropal segmentation' in which_layers and project_data.neuropal_data is not None:
             layer_name = 'Neuropal segmentation'
             z_to_xy_ratio_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
             viewer.add_image(project_data.neuropal_data, name=layer_name,
-                             scale=(1.0, z_to_xy_ratio_np, 1.0, 1.0), opacity=0.4)
-            layers_actually_added.append('Neuropal')
+                             scale=(z_to_xy_ratio_np, 1.0, 1.0), opacity=0.4)
+            layers_actually_added.append('Neuropal segmentation')
 
         # Special layers from the heatmapper class
         for layer_tuple in which_layers:
