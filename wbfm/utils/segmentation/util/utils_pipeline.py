@@ -585,7 +585,7 @@ def resplit_masks_in_z_from_config(preprocessing_cfg: ConfigFileWithProjectConte
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Get data: needs both segmentation and raw video
-    check_all_needed_data_for_step(project_cfg.self_path, 2)
+    check_all_needed_data_for_step(project_cfg, 2)
     masks_old = zarr.open(mask_fname, mode='r')
     # masks_old = np.array(masks_zarr[:num_frames, ...])  # TEST
 

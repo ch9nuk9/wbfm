@@ -37,7 +37,7 @@ class ConfigFileWithProjectContext:
     3. change filepaths between relative and absolute
     """
 
-    self_path: str
+    _self_path: str
     _config: dict = None
     project_dir: str = None
 
@@ -45,22 +45,22 @@ class ConfigFileWithProjectContext:
     log_to_file: bool = True
 
     def __post_init__(self):
-        if self.self_path is None:
+        if self._self_path is None:
             logging.warning("self_path is None; some functionality will not work")
             self._config = dict()
         else:
-            if Path(self.self_path).is_dir():
+            if Path(self._self_path).is_dir():
                 # Then it was a folder, and we should find the config file inside
-                self.project_dir = self.self_path
-                self.self_path = str(Path(self.self_path).joinpath('project_config.yaml'))
+                self.project_dir = self._self_path
+                self._self_path = str(Path(self._self_path).joinpath('project_config.yaml'))
             else:
-                self.project_dir = str(Path(self.self_path).parent)
-            self._config = load_config(self.self_path)
+                self.project_dir = str(Path(self._self_path).parent)
+            self._config = load_config(self._self_path)
             if self._config is None:
-                if not Path(self.self_path).exists():
-                    raise FileNotFoundError(f"Could not find config file {self.self_path}")
+                if not Path(self._self_path).exists():
+                    raise FileNotFoundError(f"Could not find config file {self._self_path}")
                 else:
-                    raise ValueError(f"Found empty file at {self.self_path}; probably yaml crashed and deleted the file. "
+                    raise ValueError(f"Found empty file at {self._self_path}; probably yaml crashed and deleted the file. "
                                      f"There is no way to recover the data, so the file must be recreated manually.")
             # Convert to default dict, for backwards compatibility with deprecated keys
             # Actually: this gives problems with pickling, so do not do this
@@ -75,7 +75,7 @@ class ConfigFileWithProjectContext:
 
     @property
     def has_valid_self_path(self):
-        return self.self_path is not None
+        return self._self_path is not None
 
     @property
     def logger(self):
@@ -97,7 +97,7 @@ class ConfigFileWithProjectContext:
         return logger
 
     def update_self_on_disk(self):
-        fname = self.resolve_relative_path(self.self_path)
+        fname = self.relative_self_path
         self.logger.info(f"Updating config file {fname} on disk")
         # Make sure none of the values are Path objects, which will crash the yaml dump and leave an empty file!
         for key in self.config:
@@ -108,7 +108,7 @@ class ConfigFileWithProjectContext:
         try:
             edit_config(fname, self.config)
         except PermissionError as e:
-            if Path(self.self_path).is_absolute():
+            if Path(self._self_path).is_absolute():
                 self.logger.debug(f"Skipped updating nonlocal file: {fname}")
             else:
                 # Then it was a local file, and the error was real
@@ -149,11 +149,11 @@ class ConfigFileWithProjectContext:
 
     @property
     def absolute_self_path(self):
-        return self.resolve_relative_path(self.self_path)
+        return self.resolve_relative_path(self._self_path)
 
     @property
     def relative_self_path(self):
-        return self.unresolve_absolute_path(self.self_path)
+        return self.unresolve_absolute_path(self._self_path)
 
     def to_json(self):
         return json.dumps(vars(self))
@@ -367,7 +367,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             cfg = default_raw_data_config()
             self._logger.warning(f"Could not find file {fname}; "
                                  f"Using hardcoded default raw data config: {cfg}")
-            return SubfolderConfigFile(self_path=None, _config=cfg, project_dir=self.project_dir)
+            return SubfolderConfigFile(_self_path=None, _config=cfg, project_dir=self.project_dir)
 
     def get_nwb_config(self) -> SubfolderConfigFile:
         fname = Path(self.config['subfolder_configs'].get('nwb', None))
@@ -420,7 +420,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         if is_absolute_in_any_os(str(subconfig_path)):
             project_dir = Path(resolve_mounted_path_in_current_os(str(subconfig_path.parent.parent)))
         else:
-            project_dir = Path(self.self_path).parent
+            project_dir = Path(self.absolute_self_path).parent
         with safe_cd(project_dir):
             try:
                 cfg = load_config(subconfig_path)
@@ -435,7 +435,7 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                     raise e
         subfolder = subconfig_path.parent
 
-        args = dict(self_path=str(subconfig_path),
+        args = dict(_self_path=str(subconfig_path),
                     _config=cfg,
                     project_dir=str(project_dir),
                     _logger=self.logger,
@@ -873,7 +873,7 @@ def update_path_to_behavior_in_config(cfg: ModularProjectConfig):
     # Then make a new folder, file, and fill it
     fname = Path(cfg.project_dir).joinpath('behavior', 'nwb_config.yaml')
     fname.parent.mkdir(exist_ok=False)
-    behavior_cfg = SubfolderConfigFile(self_path=str(fname), _config={}, project_dir=cfg.project_dir, subfolder='behavior')
+    behavior_cfg = SubfolderConfigFile(_self_path=str(fname), _config={}, project_dir=cfg.project_dir, subfolder='behavior')
 
     # Fill variable 1: Try to find behavior annotations
     raw_behavior_foldername, flag = cfg.get_behavior_raw_parent_folder_from_red_fname()
