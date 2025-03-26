@@ -2070,6 +2070,9 @@ def napari_trace_explorer(project_data: ProjectData,
         viewer = napari.Viewer(ndisplay=3)
     ui.dat.add_layers_to_viewer(viewer, dask_for_segmentation=False)
 
+    if project_data.has_complete_neuropal:
+        ui.dat.add_layers_to_viewer(viewer, which_layers=['Neuropal', 'Neuropal segmentation'])
+
     # Actually dock my additional gui elements
     ui.setup_ui(viewer)
     viewer.window.add_dock_widget(ui)
