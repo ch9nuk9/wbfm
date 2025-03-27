@@ -15,7 +15,7 @@ from sklearn.linear_model import LinearRegression
 
 
 def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, label_using_column_name=False,
-                                        z_to_xy_ratio=1, automatic_label_by_default=True,
+                                        z_to_xy_ratio=1, automatic_label_by_default=True, include_time=True,
                                         DEBUG=False):
     """
     Expects dataframe with positions, with column names either:
@@ -54,14 +54,20 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, label_using_c
     all_neurons = get_names_from_df(df)
     t_vec = np.expand_dims(np.array(list(df.index), dtype=int), axis=1)
     # label_vec = np.ones(len(df.index), dtype=int)
-    all_t_zxy = np.array([[0, 0, 0, 0]], dtype=int)
+    if include_time:
+        all_t_zxy = np.array([[0, 0, 0, 0]], dtype=int)
+    else:
+        all_t_zxy = np.array([[0, 0, 0]], dtype=int)
     properties = dict(automatic_label=[], custom_label=[])
     for n in all_neurons:
         coords = ['z', 'x', 'y']
         zxy = np.array(df[n][coords]).astype(float)
         # Note that this messes up the 2d view, because z values will be in-between real planes
         zxy[:, 0] *= z_to_xy_ratio
-        t_zxy = np.hstack([t_vec, zxy])
+        if include_time:
+            t_zxy = np.hstack([t_vec, zxy])
+        else:
+            t_zxy = zxy
 
         # Add two label fields: one for the automatic label, and one for the (optional) custom label
         this_gt_name = neuron_name_dict.get(n, '')

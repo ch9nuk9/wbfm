@@ -265,6 +265,7 @@ class NapariLayerInitializer:
             z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
             viewer.add_labels(project_data.neuropal_segmentation, name=layer_name, visible=False,
                               scale=(z_np/xy_pixels, 1.0, 1.0), opacity=0.4)
+            viewer.layers[layer_name].blending = 'translucent_no_depth'
             layers_actually_added.append('Neuropal segmentation')
 
         if 'Neuropal Ids' in which_layers and project_data.neuropal_segmentation is not None:
@@ -275,13 +276,15 @@ class NapariLayerInitializer:
             try:
                 np_neuron_name_dict = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0,
                                                                                     remove_unnamed_neurons=True,
-                                                                                    remove_duplicates=False)
+                                                                                    remove_duplicates=False,
+                                                                                    neuropal_subproject=True)
                 options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_np/xy_pixels,
                                                               neuron_name_dict=np_neuron_name_dict,
-                                                              automatic_label_by_default=True)
+                                                              automatic_label_by_default=True,
+                                                              include_time=False)
                 options['visible'] = force_all_visible
                 options['name'] = 'Neuropal IDs'
-                options['text']['color'] = 'red'
+                # options['text']['color'] = 'red'
                 viewer.add_points(**options)
                 layers_actually_added.append(options['name'])
             except KeyError:
