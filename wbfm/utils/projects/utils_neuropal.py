@@ -126,10 +126,10 @@ def segment_neuropal_from_project(project_data, subsample_in_z=True):
     if metadata_fname is None:
         metadata_fname = os.path.join('neuropal', 'neuropal_metadata.pickle')
     metadata_fname = neuropal_config.resolve_relative_path(metadata_fname)
-    # Expand the time dimension
+    # Expand the time dimension, and
     frame_list = [0]
-    calc_metadata_full_video(frame_list, np.expand_dims(final_masks, axis=0),
-                             np.expand_dims(summed_volume, axis=0), metadata_fname)
+    volume = np.expand_dims(np.transpose(multichannel_volume.compute(), (1, 2, 3, 0)), axis=0)
+    calc_metadata_full_video(frame_list, np.expand_dims(final_masks, axis=0), volume, metadata_fname)
 
     # Save the segmentation and filenames
     project_data.logger.info(f"Saving segmentation to {output_fname} with shape {final_masks.shape}")

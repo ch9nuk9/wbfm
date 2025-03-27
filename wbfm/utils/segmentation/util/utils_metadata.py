@@ -226,7 +226,8 @@ class DetectedNeurons:
         return ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list', 'raw_segmentation_id',
                 'brightness_red', 'volume']
 
-    def get_all_neuron_metadata_for_single_time(self, t, likelihood=1.0, as_dataframe=True) -> Tuple[list, list]:
+    def get_all_neuron_metadata_for_single_time(self, t, likelihood=1.0, use_mean_intensity=False,
+                                                as_dataframe=True) -> Tuple[list, list]:
         """
         Returns all metadata for all neurons at a single time
 
@@ -235,7 +236,7 @@ class DetectedNeurons:
         if t in self.volumes_with_no_neurons:
             return [], []
         all_metadata = self.segmentation_metadata[t].copy()
-        column_names = self._column_names
+        column_names = self._column_names.copy()
         # Reformat using the new column names
         zxy = np.array(all_metadata['centroids'].values.tolist())
         red = all_metadata['total_brightness'].to_numpy()
@@ -243,8 +244,22 @@ class DetectedNeurons:
         mask_ind = all_metadata['label']
         ind_in_list = [self.mask_index_to_i_in_array(t, i) for i in mask_ind]
         likelihood_vec = [likelihood] * len(mask_ind)
-        row_data = [zxy[:, 0], zxy[:, 1], zxy[:, 2], likelihood_vec, ind_in_list, mask_ind, red, vol]
+        if use_mean_intensity:
+            mean = np.array(all_metadata['intensity_mean'].values.tolist())
+            if len(mean.shape) > 1:
+                # Then there are multiple channels, and we need to loop for intensity
+                # And take the mean for the centroid
+                row_data = [zxy[:, 0].mean(axis=-1), zxy[:, 1].mean(axis=-1), zxy[:, 2].mean(axis=-1),
+                            likelihood_vec, ind_in_list, mask_ind, red, vol]
+                for i in range(mean.shape[1]):
+                    column_names.append(f'mean_intensity_{i}')
+                    row_data.append(mean[:, i])
+            else:
+                row_data = [zxy[:, 0], zxy[:, 1], zxy[:, 2], likelihood_vec, ind_in_list, mask_ind, mean, vol]
+        else:
+            row_data = [zxy[:, 0], zxy[:, 1], zxy[:, 2], likelihood_vec, ind_in_list, mask_ind, red, vol]
         if as_dataframe:
+            # err
             data_dict = {
                 (int2name_neuron(i+1), attribute_name): attribute_val
                 for attribute_name, attribute_vec in zip(column_names, row_data)
