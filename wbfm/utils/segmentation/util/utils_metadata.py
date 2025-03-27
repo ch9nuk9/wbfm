@@ -9,7 +9,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple
-from wbfm.utils.general.postprocessing.utils_metadata import regionprops_one_volume_one_channel
+from wbfm.utils.general.postprocessing.utils_metadata import regionprops_one_volume
 from wbfm.utils.general.utils_filenames import pickle_load_binary
 from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet, int2name_neuron
 
@@ -83,10 +83,10 @@ def OLD_get_metadata_dictionary(masks, original_vol):
     return df
 
 
-def get_metadata_dictionary(masks, original_vol, name_mode='neuron'):
-
-    props_to_save = ['area', 'weighted_centroid', 'intensity_image', 'label', 'bbox']
-    props = regionprops_one_volume_one_channel(masks, original_vol, props_to_save, name_mode=name_mode)
+def get_metadata_dictionary(masks, original_vol, name_mode='neuron', props_to_save=None):
+    if props_to_save is None:
+        props_to_save = ['area', 'weighted_centroid', 'intensity_image', 'label', 'bbox', 'intensity_mean']
+    props = regionprops_one_volume(masks, original_vol, props_to_save, name_mode=name_mode)
 
     # Convert back to old (Niklas) style
     dict_of_rows = defaultdict(list)
@@ -98,7 +98,7 @@ def get_metadata_dictionary(masks, original_vol, name_mode='neuron'):
         dict_of_rows[idx].append(v)
 
     # NOTE: deprecates "all_values"
-    new_names = ['neuron_volume', 'centroids', 'total_brightness', 'label', 'bbox']
+    new_names = ['neuron_volume', 'centroids', 'total_brightness', 'label', 'bbox', 'intensity_mean']
     df_metadata = pd.DataFrame.from_dict(dict_of_rows, orient='index', columns=new_names)
 
     return df_metadata
@@ -372,8 +372,7 @@ def recalculate_metadata_from_config(preprocessing_cfg, segment_cfg, project_cfg
 
 
 def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat: zarr.Array,
-                             metadata_fname: str,
-                             name_mode='neuron') -> None:
+                             metadata_fname: str = None, name_mode='neuron', props_to_save=None) -> dict:
     """
     Calculates metadata once segmentation is finished
 
@@ -401,9 +400,9 @@ def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat
     with tqdm(total=len(frame_list)) as pbar:
         def parallel_func(i_both):
             i_mask, i_vol = i_both
-            masks = masks_zarr[i_mask, :, :, :]
+            masks = masks_zarr[i_mask, ...]
             volume = video_dat[i_vol, ...]
-            metadata[i_vol] = get_metadata_dictionary(masks, volume, name_mode=name_mode)
+            metadata[i_vol] = get_metadata_dictionary(masks, volume, name_mode=name_mode, props_to_save=props_to_save)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
@@ -412,5 +411,8 @@ def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat
                 pbar.update(1)
 
     # saving metadata and settings
-    with open(metadata_fname, 'wb') as meta_save:
-        pickle.dump(metadata, meta_save)
+    if metadata_fname is not None:
+        with open(metadata_fname, 'wb') as meta_save:
+            pickle.dump(metadata, meta_save)
+
+    return metadata

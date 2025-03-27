@@ -266,7 +266,10 @@ class NapariLayerInitializer:
             z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
             viewer.add_labels(project_data.neuropal_segmentation, name=layer_name, visible=False,
                               scale=(z_np/xy_pixels, 1.0, 1.0), opacity=0.4)
-            viewer.layers[layer_name].blending = 'translucent_no_depth'
+            _layer = viewer.layers[layer_name]
+            _layer.blending = 'translucent_no_depth'
+            # _layer.color = prop_dict
+            # _layer.color_mode = 'direct'
             layers_actually_added.append('Neuropal segmentation')
 
         if 'Neuropal Ids' in which_layers and project_data.neuropal_segmentation is not None:
