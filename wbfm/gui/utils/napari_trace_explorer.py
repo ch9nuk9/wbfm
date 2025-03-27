@@ -197,6 +197,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 # Change the background to light blue to differentiate from the other window
                 self.manualNeuropalNeuronNameEditor.setStyleSheet("background-color: lightblue;")
                 self.manualNeuropalNeuronNameEditor.show()
+        else:
+            self.manualNeuropalNeuronNameEditor = None
 
         self.logger.debug("Finished main UI setup")
 
@@ -655,6 +657,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         if self.manualNeuronNameEditor is not None:
             dict_of_saving_callbacks['manual_ids'] = self.manualNeuronNameEditor.save_df_to_disk
+        if self.manualNeuropalNeuronNameEditor:
+            dict_of_saving_callbacks['neuropal_ids'] = self.manualNeuropalNeuronNameEditor.save_df_to_disk
         progress = QProgressDialog("Saving to disk, you may quit when finished", None,
                                    0, len(dict_of_saving_callbacks), self)
         progress.setWindowModality(Qt.WindowModal)
