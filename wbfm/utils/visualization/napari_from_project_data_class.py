@@ -255,7 +255,8 @@ class NapariLayerInitializer:
             layer_names = ['Red(mNeptune2.5)', 'White(TagRFP)', 'Green(CyOFP1)', 'Blue(mTagBFP2)']
             colormaps = ['red', 'gray', 'green', 'blue']
             for i, (name, cmap) in enumerate(zip(layer_names, colormaps)):
-                viewer.add_image(project_data.neuropal_data[i], name=name, colormap=cmap,
+                dat = np.array(project_data.neuropal_data[i])
+                viewer.add_image(dat, name=name, colormap=cmap, contrast_limits=[dat.min(), dat.max()],
                                  visible=False, blending='additive',
                                  scale=(z_np/xy_pixels, 1.0, 1.0))
             layers_actually_added.append('Neuropal')

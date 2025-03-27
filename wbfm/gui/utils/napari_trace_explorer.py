@@ -479,7 +479,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     @property
     def neuropal_seg_layer(self):
-        return self.viewer.layers['Neuropal segmentation']
+        try:
+            return self.viewer.layers['Neuropal segmentation']
+        except KeyError:
+            return None
 
     @property
     def neuron_id_layer(self):
@@ -956,6 +959,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         def toggle_neuron_ids(viewer):
             self.toggle_colored_segmentation_layer()
 
+        @viewer.bind_key('Shift-q', overwrite=True)
+        def toggle_neuron_ids(viewer):
+            self.toggle_neuropal_segmentation_layer()
+
         @viewer.bind_key('c', overwrite=True)
         def save_tracklet(viewer):
             self.save_current_tracklet_to_neuron()
@@ -1193,6 +1200,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     def toggle_colored_segmentation_layer(self):
         self._toggle_layer(self.colored_seg_layer)
+
+    def toggle_neuropal_segmentation_layer(self):
+        layer = self.neuropal_seg_layer
+        if layer is not None:
+            self._toggle_layer(layer)
 
     def toggle_neuron_ids(self):
         self.neuron_id_layer.visible = not self.neuron_id_layer.visible
