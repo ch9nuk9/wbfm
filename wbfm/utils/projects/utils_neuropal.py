@@ -138,7 +138,8 @@ def segment_neuropal_from_project(project_data, subsample_in_z=True):
     masks_zarr = zarr.open(output_fname, mode='w', shape=sz, chunks=chunks, dtype=np.uint16, fill_value=0)
     masks_zarr[:] = final_masks[:]
 
-    # Update the config file with the new data path
+    # Update the config files with the new data path
     neuropal_config.config['neuropal_segmentation_path'] = neuropal_config.unresolve_absolute_path(output_fname)
+    neuropal_config.config['segmentation_metadata_path'] = neuropal_config.unresolve_absolute_path(metadata_fname)
     neuropal_config.update_self_on_disk()
 
