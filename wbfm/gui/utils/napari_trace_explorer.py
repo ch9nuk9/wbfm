@@ -184,12 +184,19 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.manualNeuronNameEditor is not None:
             self.manualNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
             self.manualNeuronNameEditor.multiple_annotations_updated.connect(self.update_neuron_id_strings_in_layer)
-            self.manualNeuronNameEditor.setWindowTitle(f"Neuron Name Editor for project: {self.dat.project_dir}")
+            self.manualNeuronNameEditor.setWindowTitle(f"Fluorescence Neuron Name Editor for project: {self.dat.project_dir}")
             self.manualNeuronNameEditor.show()
 
         # Optional: add neuropal layer interactivity
         if self.dat.has_complete_neuropal:
-            pass
+            self.manualNeuropalNeuronNameEditor = self.dat.build_neuron_editor_gui(neuropal_subproject=True)
+            if self.manualNeuropalNeuronNameEditor is not None:
+                # self.manualNeuropalNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
+                # self.manualNeuropalNeuronNameEditor.multiple_annotations_updated.connect(self.update_neuron_id_strings_in_layer)
+                self.manualNeuropalNeuronNameEditor.setWindowTitle(f"Neuropal Neuron Name Editor for project: {self.dat.project_dir}")
+                # Change the background to light blue to differentiate from the other window
+                self.manualNeuropalNeuronNameEditor.setStyleSheet("background-color: lightblue;")
+                self.manualNeuropalNeuronNameEditor.show()
 
         self.logger.debug("Finished main UI setup")
 

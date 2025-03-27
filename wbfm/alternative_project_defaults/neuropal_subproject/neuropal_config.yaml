@@ -1,6 +1,7 @@
 
 neuropal_data_path:
 neuropal_segmentation_path:
+manual_id_path:
 
 segmentation_params:
     stardist_model_name:  # By default uses the same as the traces

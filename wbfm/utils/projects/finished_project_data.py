@@ -140,6 +140,7 @@ class ProjectData:
     # Values for ground truth annotation (reading from excel or .csv)
     finished_neurons_column_name: str = "Finished?"
     df_manual_tracking_fname: str = None
+    df_neuropal_id_fname: str = None
 
     # EXPERIMENTAL (but tested)
     use_custom_padded_dataframe: bool = False
@@ -1807,14 +1808,52 @@ class ProjectData:
         self.df_manual_tracking_fname = fname
         return df_manual_tracking
 
-    def get_default_manual_annotation_fname(self) -> Optional[str]:
+    @cached_property
+    def df_neuropal_ids(self) -> Optional[pd.DataFrame]:
+        """
+        Load a dataframe corresponding to manual iding based on the neuropal stacks, if they exist
+
+        This will not exist for every project
+
+        """
+        # Manual annotations take precedence by default
+        if not self.project_config.has_valid_self_path:
+            self.logger.warning("No project config found; cannot load manual annotations")
+            return None
+        excel_fname = self.get_default_manual_annotation_fname(neuropal_subproject=True)
+        try:
+            possible_fnames = dict(excel=excel_fname)
+        except ValueError:
+            self.df_neuropal_id_fname = ''
+            return None
+        possible_fnames = {k: str(v) for k, v in possible_fnames.items()}
+        fname_precedence = ['newest']
+        try:
+            df_neuropal_id, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
+                                                                          reader_func=read_if_exists,
+                                                                          na_filter=False)
+        except ValueError:
+            # Then the file was corrupted... try to load from the h5 file (don't worry about other file types)
+            self.logger.warning(f"Found corrupted neuropal annotation file ({excel_fname}), "
+                                f"with no backup h5 file; returning None")
+            fname = ''
+            df_neuropal_id = None
+        self.df_neuropal_id_fname = fname
+        return df_neuropal_id
+
+    def get_default_manual_annotation_fname(self, neuropal_subproject=False) -> Optional[str]:
         if self.project_config is None:
             raise IncompleteConfigFileError("No project config found; cannot load or save manual annotations")
-        track_cfg = self.project_config.get_tracking_config()
-        excel_fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.xlsx", prepend_subfolder=True)
+        if neuropal_subproject:
+            neuropal_cfg = self.project_config.get_neuropal_config()
+            excel_fname = neuropal_cfg.resolve_relative_path("manual_annotation.xlsx", prepend_subfolder=True)
+        else:
+            track_cfg = self.project_config.get_tracking_config()
+            excel_fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.xlsx",
+                                                          prepend_subfolder=True)
         return excel_fname
 
-    def build_neuron_editor_gui(self):
+    def build_neuron_editor_gui(self, neuropal_subproject=False):
         """
         Initialize a QT table interface for editing neurons
 
@@ -1824,8 +1863,11 @@ class ProjectData:
         -------
 
         """
+        if neuropal_subproject:
+            df = self.df_neuropal_ids
+        else:
+            df = self.df_manual_tracking
 
-        df = self.df_manual_tracking
         if df is None:
             # Generate a default dataframe, with hardcoded names
             df = pd.DataFrame(columns=['Neuron ID', 'Finished?', 'ID1', 'ID2', 'Certainty', 'does_activity_match_ID',
@@ -1834,16 +1876,21 @@ class ProjectData:
             df['Neuron ID'] = self.neuron_names
             df['Certainty'] = 0
             try:
-                fname = self.get_default_manual_annotation_fname()
+                fname = self.get_default_manual_annotation_fname(neuropal_subproject=neuropal_subproject)
             except IncompleteConfigFileError:
                 return None
-        elif not self.df_manual_tracking_fname.endswith('.xlsx'):
-            # Make sure the output is excel even if the input isn't
-            fname = str(Path(self.df_manual_tracking_fname).with_suffix('.xlsx'))
-            self.logger.warning(f"Found manual annotation file at ({self.df_manual_tracking_fname}), but will save as ",
-                                f"excel file at ({fname})")
         else:
-            fname = self.df_manual_tracking_fname
+            # Ensure formatting of output name
+            if neuropal_subproject:
+                fname = self.df_neuropal_id_fname
+            else:
+                fname = self.df_manual_tracking_fname
+
+            if not fname.endswith('.xlsx'):
+                # Make sure the output is excel even if the input isn't
+                self.logger.warning(f"Found manual annotation file at ({fname})")
+                fname = str(Path(fname).with_suffix('.xlsx'))
+                self.logger.warning(f", but will save as excel file at ({fname})")
 
         # Enforce certain datatypes
         df['Neuron ID'] = df['Neuron ID'].astype(str)
