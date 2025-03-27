@@ -58,7 +58,7 @@ def napari_labels_from_traces_dataframe(df, neuron_name_dict=None, label_using_c
     properties = dict(automatic_label=[], custom_label=[])
     for n in all_neurons:
         coords = ['z', 'x', 'y']
-        zxy = np.array(df[n][coords])
+        zxy = np.array(df[n][coords]).astype(float)
         # Note that this messes up the 2d view, because z values will be in-between real planes
         zxy[:, 0] *= z_to_xy_ratio
         t_zxy = np.hstack([t_vec, zxy])

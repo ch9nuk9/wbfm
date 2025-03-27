@@ -264,7 +264,7 @@ class NapariLayerInitializer:
             layer_name = 'Neuropal segmentation'
             z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
             viewer.add_labels(project_data.neuropal_segmentation, name=layer_name, visible=False,
-                             scale=(z_np/xy_pixels, 1.0, 1.0), opacity=0.4)
+                              scale=(z_np/xy_pixels, 1.0, 1.0), opacity=0.4)
             layers_actually_added.append('Neuropal segmentation')
 
         if 'Neuropal Ids' in which_layers and project_data.neuropal_segmentation is not None:
@@ -273,7 +273,12 @@ class NapariLayerInitializer:
             df = project_data.neuropal_segmentation_metadata.get_all_neuron_metadata_for_single_time(0,
                                                                                                      as_dataframe=True)
             try:
-                options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_np/xy_pixels)
+                np_neuron_name_dict = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0,
+                                                                                    remove_unnamed_neurons=True,
+                                                                                    remove_duplicates=False)
+                options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_np/xy_pixels,
+                                                              neuron_name_dict=np_neuron_name_dict,
+                                                              automatic_label_by_default=True)
                 options['visible'] = force_all_visible
                 options['name'] = 'Neuropal IDs'
                 options['text']['color'] = 'red'

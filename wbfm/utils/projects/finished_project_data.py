@@ -1951,7 +1951,7 @@ class ProjectData:
 
         return manual_neuron_name_editor
 
-    def dict_numbers_to_neuron_names(self) -> Dict[str, Tuple[str, int]]:
+    def dict_numbers_to_neuron_names(self, neuropal_subproject=False) -> Dict[str, Tuple[str, int]]:
         """
         Uses df_manual_tracking to map neuron numbers to names and confidence. Example:
             dict_numbers_to_neuron_names['neuron_001'] -> ['AVAL', 2]
@@ -1969,7 +1969,10 @@ class ProjectData:
 
         """
         # Read each column, and create a dictionary
-        df = self.df_manual_tracking
+        if neuropal_subproject:
+            df = self.df_neuropal_ids
+        else:
+            df = self.df_manual_tracking
         if df is None:
             return {}
         # Strip white space from column names
@@ -2016,7 +2019,7 @@ class ProjectData:
         -------
 
         """
-        name_ids = self.dict_numbers_to_neuron_names().copy()
+        name_ids = self.dict_numbers_to_neuron_names(neuropal_subproject=neuropal_subproject).copy()
         if len(name_ids) == 0:
             return {}
         name_mapping = {k: (v[0] if (v[1] >= confidence_threshold and v[0] != '') else k) for k, v in name_ids.items()}

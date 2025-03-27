@@ -246,9 +246,9 @@ class DetectedNeurons:
         row_data = [zxy[:, 0], zxy[:, 1], zxy[:, 2], likelihood_vec, ind_in_list, mask_ind, red, vol]
         if as_dataframe:
             data_dict = {
-                (int2name_neuron(i+1), attr): value
-                for i, neuron_data in enumerate(row_data)
-                for attr, value in zip(column_names, neuron_data)
+                (int2name_neuron(i+1), attribute_name): attribute_val
+                for attribute_name, attribute_vec in zip(column_names, row_data)
+                for i, attribute_val in enumerate(attribute_vec)
             }
             df = pd.DataFrame(data_dict, index=[t])
             return df
