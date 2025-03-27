@@ -199,6 +199,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 # Change the background to light blue to differentiate from the other window
                 self.manualNeuropalNeuronNameEditor.setStyleSheet("background-color: lightblue;")
                 self.manualNeuropalNeuronNameEditor.show()
+
+                # Also add interactivity to the segmentation layer
+                self.add_neuropal_neuron_selection_callback()
         else:
             self.manualNeuropalNeuronNameEditor = None
 
@@ -475,6 +478,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return self.viewer.layers['Colored segmentation']
 
     @property
+    def neuropal_seg_layer(self):
+        return self.viewer.layers['Neuropal segmentation']
+
+    @property
     def neuron_id_layer(self):
         return self.viewer.layers['Neuron IDs']
 
@@ -526,6 +533,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Get tracklet that is currently attached to the selected neuron
         self.logger.debug(f"USER: change tracklet to currently attached tracklet at t={self.t}")
         if not self._disable_callbacks:
+            if self.dat.tracklet_annotator is None:
+                self.logger.warning("Tracklet annotator is not initialized")
+                return
             target_tracklet = self.dat.tracklet_annotator.get_tracklet_attached_at_time(self.t)
             self.change_tracklets_from_gui(next_tracklet=target_tracklet)
 
@@ -769,23 +779,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             if event.button in (1, 2, 3):
                 click_modifiers = [m.name.lower() for m in event.modifiers]
                 if 'shift' not in click_modifiers:
-                    # Get the index of the clicked segmentation
-
-                    # Get information about clicked-on neuron
-                    seg_index = layer.get_value(
-                        position=event.position,
-                        view_direction=event.view_direction,
-                        dims_displayed=event.dims_displayed,
-                        world=True
-                    )
-                    if seg_index is None or seg_index == 0:
-                        self.logger.debug("Clicked on background, not a neuron")
+                    neuron_name = self._get_info_of_clicked_on_neuron(layer, event)
+                    if neuron_name is None:
                         return
 
-                    # The segmentation index should be the same as the name
-                    neuron_name = int2name_neuron(seg_index)
-                    self.logger.debug(f"Clicked on segmentation {seg_index}, corresponding to {neuron_name},"
-                                      f" with button {event.button}")
                     if event.button == 1:
                         self.select_neuron(neuron_name)
                     elif event.button == 2:
@@ -794,6 +791,43 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                         # Jump to the clicked row in the external name editor gui
                         if self.manualNeuronNameEditor is not None:
                             self.manualNeuronNameEditor.jump_focus_to_neuron(neuron_name)
+
+    def add_neuropal_neuron_selection_callback(self):
+        layer_to_add_callback = self.neuropal_seg_layer
+
+        @layer_to_add_callback.mouse_drag_callbacks.append
+        def on_click(layer, event):
+            # Only interactivity for middle click
+            if event.button in (3, ):
+                click_modifiers = [m.name.lower() for m in event.modifiers]
+                if 'shift' not in click_modifiers:
+                    neuron_name = self._get_info_of_clicked_on_neuron(layer, event)
+                    if neuron_name is None:
+                        return
+
+                    # Jump to the clicked row in the external name editor gui
+                    if self.manualNeuropalNeuronNameEditor is not None:
+                        self.manualNeuropalNeuronNameEditor.jump_focus_to_neuron(neuron_name)
+
+    def _get_info_of_clicked_on_neuron(self, layer, event):
+        # Get the index of the clicked segmentation
+
+        # Get information about clicked-on neuron
+        seg_index = layer.get_value(
+            position=event.position,
+            view_direction=event.view_direction,
+            dims_displayed=event.dims_displayed,
+            world=True
+        )
+        if seg_index is None or seg_index == 0:
+            self.logger.debug("Clicked on background, not a neuron")
+            return None
+
+        # The segmentation index should be the same as the name
+        neuron_name = int2name_neuron(seg_index)
+        self.logger.debug(f"Clicked on segmentation {seg_index}, corresponding to {neuron_name},"
+                          f" with button {event.button}")
+        return neuron_name
 
     def connect_napari_callbacks(self):
         viewer = self.viewer
@@ -1395,7 +1429,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 # worker.start()
             return
 
-        self.logger.info(f"Changing neuron name {old_name} to {new_name} (original name: {original_name})")
+        msg = f"Changing neuron name {old_name} to {new_name} (original name: {original_name})"
+        if neuropal:
+            msg += " in neuropal layer"
+        self.logger.info(msg)
         # Because the old name may have been blank, we need to use the automatic labels for indexing
         id_layer = self.get_manual_id_layer(neuropal=neuropal)
         original_name_series = id_layer.properties['automatic_label']
