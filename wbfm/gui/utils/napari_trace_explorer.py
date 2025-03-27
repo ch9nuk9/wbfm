@@ -182,8 +182,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Open a new window with manual neuron name editing, if you have permissions in the project
         self.manualNeuronNameEditor = self.dat.build_neuron_editor_gui()
         if self.manualNeuronNameEditor is not None:
-            self.manualNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
-            self.manualNeuronNameEditor.multiple_annotations_updated.connect(self.update_neuron_id_strings_in_layer)
+            update_func = lambda *args: self.update_neuron_id_strings_in_layer(*args, neuropal=False)
+            self.manualNeuronNameEditor.annotation_updated.connect(update_func)
+            self.manualNeuronNameEditor.multiple_annotations_updated.connect(update_func)
             self.manualNeuronNameEditor.setWindowTitle(f"Fluorescence Neuron Name Editor for project: {self.dat.project_dir}")
             self.manualNeuronNameEditor.show()
 
@@ -191,8 +192,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.dat.has_complete_neuropal:
             self.manualNeuropalNeuronNameEditor = self.dat.build_neuron_editor_gui(neuropal_subproject=True)
             if self.manualNeuropalNeuronNameEditor is not None:
-                self.manualNeuropalNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
-                self.manualNeuropalNeuronNameEditor.multiple_annotations_updated.connect(self.update_neuron_id_strings_in_layer)
+                update_func = lambda *args: self.update_neuron_id_strings_in_layer(*args, neuropal=True)
+                self.manualNeuropalNeuronNameEditor.annotation_updated.connect(update_func)
+                self.manualNeuropalNeuronNameEditor.multiple_annotations_updated.connect(update_func)
                 self.manualNeuropalNeuronNameEditor.setWindowTitle(f"Neuropal Neuron Name Editor for project: {self.dat.project_dir}")
                 # Change the background to light blue to differentiate from the other window
                 self.manualNeuropalNeuronNameEditor.setStyleSheet("background-color: lightblue;")
@@ -476,9 +478,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def neuron_id_layer(self):
         return self.viewer.layers['Neuron IDs']
 
-    @property
-    def manual_id_layer(self):
-        return self.viewer.layers['Manual IDs']
+    def get_manual_id_layer(self, neuropal=False):
+        if not neuropal:
+            return self.viewer.layers['Manual IDs']
+        else:
+            return self.viewer.layers['Neuropal IDs']
 
     @property
     def red_data_layer(self):
@@ -1161,7 +1165,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self._toggle_layer(self.neuron_id_layer)
 
     def toggle_manual_ids(self):
-        self.manual_id_layer.visible = not self.manual_id_layer.visible
+        self.get_manual_id_layer().visible = not self.get_manual_id_layer().visible
 
     def _toggle_layer(self, layer):
         if self.viewer.layers.selection.active == layer:
@@ -1365,7 +1369,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.draw_subplot()
 
     def update_neuron_id_strings_in_layer(self, original_name: Union[list, str], old_name, new_name: Union[list, str],
-                                          actually_update_gui=True):
+                                          actually_update_gui=True, neuropal=False):
         """
         Modify the layer properties to change the displayed name of a neuron (across all time)
 
@@ -1385,32 +1389,33 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # Assume this is a multi-neuron change, and update the dataframe first before the gui
             assert len(original_name) == len(new_name), "Must have the same number of old and new names"
             for o, n in zip(original_name, new_name):
-                self.update_neuron_id_strings_in_layer(o, old_name, n, actually_update_gui=False)
+                self.update_neuron_id_strings_in_layer(o, old_name, n, actually_update_gui=False, neuropal=neuropal)
             if actually_update_gui:
-                worker = self.refresh_manual_id_layer()
+                worker = self.refresh_manual_id_layer(neuropal)
                 # worker.start()
             return
 
         self.logger.info(f"Changing neuron name {old_name} to {new_name} (original name: {original_name})")
         # Because the old name may have been blank, we need to use the automatic labels for indexing
-        original_name_series = self.manual_id_layer.properties['automatic_label']
+        id_layer = self.get_manual_id_layer(neuropal=neuropal)
+        original_name_series = id_layer.properties['automatic_label']
         original_name_series = pd.Series([int2name_neuron(n) for n in original_name_series])
 
         # Only modify the rows that are being changed
         rows_to_change = original_name_series == original_name
 
         # We need to change the features dataframe, not the properties dict
-        self.manual_id_layer.features.loc[rows_to_change, 'custom_label'] = new_name
+        id_layer.features.loc[rows_to_change, 'custom_label'] = new_name
 
         if actually_update_gui:
             # This updates the entire text layer including all strings, so it takes a while
             # Therefore do a new thread
-            worker = self.refresh_manual_id_layer()
+            worker = self.refresh_manual_id_layer(neuropal)
             # worker.start()
 
-    def refresh_manual_id_layer(self):
+    def refresh_manual_id_layer(self, neuropal=False):
         # This decorator makes the function return a worker, even though pycharm doesn't know it
-        self.manual_id_layer.refresh_text()
+        self.get_manual_id_layer(neuropal).refresh_text()
 
     def add_tracking_outliers_to_plot(self):
         # TODO: will improperly jump to selected tracklets when added; should be able to loop over self.tracklet_lines
@@ -2018,7 +2023,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat.add_layers_to_viewer(self.viewer, which_layers=which_layers, heatmap_kwargs=heatmap_kwargs,
                                       layer_opt=dict(opacity=1.0))
         # Move manual_ids to top, so they are not obscured
-        i_manual_id_layer = self.viewer.layers.index(self.manual_id_layer)
+        i_manual_id_layer = self.viewer.layers.index(self.get_manual_id_layer())
         # Reorder function needs the layer index, not the name
         self.viewer.layers.move(i_manual_id_layer, -1)
 
