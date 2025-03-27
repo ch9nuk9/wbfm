@@ -239,6 +239,9 @@ class DetectedNeurons:
         column_names = self._column_names.copy()
         # Reformat using the new column names
         zxy = np.array(all_metadata['centroids'].values.tolist())
+        if len(zxy.shape) > 2:
+            # Then there are multiple channels, and we want to average them
+            zxy = zxy.mean(axis=-1)
         red = all_metadata['total_brightness'].to_numpy()
         vol = all_metadata['neuron_volume'].to_numpy()
         mask_ind = all_metadata['label']
@@ -249,8 +252,7 @@ class DetectedNeurons:
             if len(mean.shape) > 1:
                 # Then there are multiple channels, and we need to loop for intensity
                 # And take the mean for the centroid
-                row_data = [zxy[:, 0].mean(axis=-1), zxy[:, 1].mean(axis=-1), zxy[:, 2].mean(axis=-1),
-                            likelihood_vec, ind_in_list, mask_ind, red, vol]
+                row_data = [zxy[:, 0], zxy[:, 1], zxy[:, 2], likelihood_vec, ind_in_list, mask_ind, red, vol]
                 for i in range(mean.shape[1]):
                     column_names.append(f'mean_intensity_{i}')
                     row_data.append(mean[:, i])
