@@ -191,8 +191,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         if self.dat.has_complete_neuropal:
             self.manualNeuropalNeuronNameEditor = self.dat.build_neuron_editor_gui(neuropal_subproject=True)
             if self.manualNeuropalNeuronNameEditor is not None:
-                # self.manualNeuropalNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
-                # self.manualNeuropalNeuronNameEditor.multiple_annotations_updated.connect(self.update_neuron_id_strings_in_layer)
+                self.manualNeuropalNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
+                self.manualNeuropalNeuronNameEditor.multiple_annotations_updated.connect(self.update_neuron_id_strings_in_layer)
                 self.manualNeuropalNeuronNameEditor.setWindowTitle(f"Neuropal Neuron Name Editor for project: {self.dat.project_dir}")
                 # Change the background to light blue to differentiate from the other window
                 self.manualNeuropalNeuronNameEditor.setStyleSheet("background-color: lightblue;")
@@ -1388,7 +1388,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                 self.update_neuron_id_strings_in_layer(o, old_name, n, actually_update_gui=False)
             if actually_update_gui:
                 worker = self.refresh_manual_id_layer()
-                worker.start()
+                # worker.start()
             return
 
         self.logger.info(f"Changing neuron name {old_name} to {new_name} (original name: {original_name})")
@@ -1403,13 +1403,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.manual_id_layer.features.loc[rows_to_change, 'custom_label'] = new_name
 
         if actually_update_gui:
-            # Unfortunately, this updates the entire text layer including all strings, so it takes a while
+            # This updates the entire text layer including all strings, so it takes a while
             # Therefore do a new thread
             worker = self.refresh_manual_id_layer()
-            worker.start()
-
-        # Change focus to the same row, but one column over
-        # self.manualNeuronNameEditor.jump_focus_to_neuron(original_name, column_offset=1)
+            # worker.start()
 
     def refresh_manual_id_layer(self):
         # This decorator makes the function return a worker, even though pycharm doesn't know it

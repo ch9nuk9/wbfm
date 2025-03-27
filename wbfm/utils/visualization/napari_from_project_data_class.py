@@ -280,7 +280,7 @@ class NapariLayerInitializer:
                                                                                     neuropal_subproject=True)
                 options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_np/xy_pixels,
                                                               neuron_name_dict=np_neuron_name_dict,
-                                                              automatic_label_by_default=True,
+                                                              automatic_label_by_default=False,
                                                               include_time=False)
                 options['visible'] = force_all_visible
                 options['name'] = 'Neuropal IDs'
