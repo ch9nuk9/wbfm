@@ -6,8 +6,7 @@ import numpy as np
 import zarr
 from imutils import MicroscopeDataReader
 import dask.array as da
-from scipy import ndimage
-
+from skimage.transform import resize
 from wbfm.utils.external.custom_errors import NoNeuropalError
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.segmentation.util.utils_metadata import calc_metadata_full_video
@@ -96,8 +95,9 @@ def segment_neuropal_from_project(project_data, subsample_in_z=True):
         z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
         z_fluo = project_data.physical_unit_conversion.zimmer_um_per_pixel_z
         z_zoom = z_np / z_fluo
-        zoomed_volume = ndimage.zoom(summed_volume, (z_zoom, 1, 1))
-        project_data.logger.info(f"Subsampling in z to shape {zoomed_volume.shape} from {multichannel_volume.shape}")
+        target_shape = (int(summed_volume.shape[0] * z_zoom), summed_volume.shape[1], summed_volume.shape[2])
+        resized_volume = resize(summed_volume, target_shape, order=3)
+        project_data.logger.info(f"Subsampling in z to shape {resized_volume.shape} from {multichannel_volume.shape}")
 
     # Get segmentation model
     stardist_model_name = neuropal_config.config['segmentation_params']['stardist_model_name']
@@ -113,19 +113,23 @@ def segment_neuropal_from_project(project_data, subsample_in_z=True):
     output_fname = neuropal_config.resolve_relative_path(output_fname)
 
     if subsample_in_z:
-        final_masks = segment_with_stardist_3d(zoomed_volume, sd_model)
+        final_masks = segment_with_stardist_3d(resized_volume, sd_model)
         # Expand the masks back to the original z resolution
-        final_masks = ndimage.zoom(final_masks, (1/z_zoom, 1, 1), order=0)
+        target_shape = summed_volume.shape
+        final_masks = resize(final_masks, target_shape, order=0)
     else:
         final_masks = segment_with_stardist_3d(summed_volume, sd_model)
+    final_masks = np.array(final_masks, dtype=np.uint16)
 
     # Calculate metadata for the segmentation (same as main segmentation)
     metadata_fname = neuropal_config.config['segmentation_metadata_path']
     if metadata_fname is None:
         metadata_fname = os.path.join('neuropal', 'neuropal_metadata.pickle')
     metadata_fname = neuropal_config.resolve_relative_path(metadata_fname)
-    frame_list = list(range(final_masks.shape[0]))
-    calc_metadata_full_video(frame_list, final_masks, summed_volume, metadata_fname)
+    # Expand the time dimension
+    frame_list = [0]
+    calc_metadata_full_video(frame_list, np.expand_dims(final_masks, axis=0),
+                             np.expand_dims(summed_volume, axis=0), metadata_fname)
 
     # Save the segmentation and filenames
     project_data.logger.info(f"Saving segmentation to {output_fname} with shape {final_masks.shape}")
