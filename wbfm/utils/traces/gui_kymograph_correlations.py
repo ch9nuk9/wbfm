@@ -188,7 +188,7 @@ def get_manual_annotation_from_project(all_projects, project_name, neuron_name,
                                        min_confidence=2):
     # Get the id'ed name for this project and this neuron, even if empty
     p = all_projects[project_name]
-    mapping = p.dict_numbers_to_neuron_names
+    mapping = p.dict_numbers_to_neuron_names()
     confidence = mapping.get(neuron_name, [0, 0])[1]
     if confidence >= min_confidence:
         col_value = mapping[neuron_name][0]

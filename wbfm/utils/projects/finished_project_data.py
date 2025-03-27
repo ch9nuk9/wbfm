@@ -197,6 +197,26 @@ class ProjectData:
         neuropal_segmentation = zarr.open(neuropal_path)
         return neuropal_segmentation
 
+    @cached_property
+    def neuropal_segmentation_metadata(self) -> Optional[DetectedNeurons]:
+        """
+        Metadata from the neuropal segmentation
+
+        Returns
+        -------
+
+        """
+        try:
+            neuropal_config = self.project_config.get_neuropal_config()
+        except FileNotFoundError:
+            return None
+        # May not exist if the segmentation step has not been run
+        neuropal_path = neuropal_config.resolve_relative_path_from_config('segmentation_metadata_path')
+        if neuropal_path is None:
+            return None
+        neuropal_segmentation_metadata = DetectedNeurons(neuropal_path)
+        return neuropal_segmentation_metadata
+
     @property
     def has_complete_neuropal(self):
         return self.neuropal_data is not None and self.neuropal_segmentation is not None
@@ -1931,7 +1951,6 @@ class ProjectData:
 
         return manual_neuron_name_editor
 
-    @property
     def dict_numbers_to_neuron_names(self) -> Dict[str, Tuple[str, int]]:
         """
         Uses df_manual_tracking to map neuron numbers to names and confidence. Example:
@@ -1975,7 +1994,8 @@ class ProjectData:
         return neuron_dict
 
     def neuron_name_to_manual_id_mapping(self, confidence_threshold=2, remove_unnamed_neurons=False,
-                                         flip_names_and_ids=False, error_on_duplicate=False, remove_duplicates=True) -> \
+                                         flip_names_and_ids=False, error_on_duplicate=False,
+                                         remove_duplicates=True, neuropal_subproject=False) -> \
             Dict[str, str]:
         """
         Note: if confidence_threshold is 0, then non-id'ed neuron names will be removed because
@@ -1996,7 +2016,7 @@ class ProjectData:
         -------
 
         """
-        name_ids = self.dict_numbers_to_neuron_names.copy()
+        name_ids = self.dict_numbers_to_neuron_names().copy()
         if len(name_ids) == 0:
             return {}
         name_mapping = {k: (v[0] if (v[1] >= confidence_threshold and v[0] != '') else k) for k, v in name_ids.items()}

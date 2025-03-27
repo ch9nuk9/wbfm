@@ -260,12 +260,28 @@ class NapariLayerInitializer:
                                  scale=(z_np/xy_pixels, 1.0, 1.0))
             layers_actually_added.append('Neuropal')
 
-        if 'Neuropal segmentation' in which_layers and project_data.neuropal_data is not None:
+        if 'Neuropal segmentation' in which_layers and project_data.neuropal_segmentation is not None:
             layer_name = 'Neuropal segmentation'
             z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
             viewer.add_labels(project_data.neuropal_segmentation, name=layer_name, visible=False,
                              scale=(z_np/xy_pixels, 1.0, 1.0), opacity=0.4)
             layers_actually_added.append('Neuropal segmentation')
+
+        if 'Neuropal Ids' in which_layers and project_data.neuropal_segmentation is not None:
+            z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
+
+            df = project_data.neuropal_segmentation_metadata.get_all_neuron_metadata_for_single_time(0,
+                                                                                                     as_dataframe=True)
+            try:
+                options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_np/xy_pixels)
+                options['visible'] = force_all_visible
+                options['name'] = 'Neuropal IDs'
+                options['text']['color'] = 'red'
+                viewer.add_points(**options)
+                layers_actually_added.append(options['name'])
+            except KeyError:
+                # Some nwb files may not have xyz information
+                project_data.logger.warning("Could not add neuron IDs; no xyz information available")
 
         # Special layers from the heatmapper class
         for layer_tuple in which_layers:

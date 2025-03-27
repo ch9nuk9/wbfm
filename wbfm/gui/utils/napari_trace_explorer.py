@@ -2082,7 +2082,7 @@ def napari_trace_explorer(project_data: ProjectData,
     ui.dat.add_layers_to_viewer(viewer, dask_for_segmentation=False)
 
     if project_data.has_complete_neuropal:
-        ui.dat.add_layers_to_viewer(viewer, which_layers=['Neuropal', 'Neuropal segmentation'])
+        ui.dat.add_layers_to_viewer(viewer, which_layers=['Neuropal', 'Neuropal segmentation', 'Neuropal Ids'])
 
     # Actually dock my additional gui elements
     ui.setup_ui(viewer)

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 from wbfm.utils.general.postprocessing.utils_metadata import regionprops_one_volume_one_channel
 from wbfm.utils.general.utils_filenames import pickle_load_binary
-from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet
+from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet, int2name_neuron
 
 import numpy as np
 import pandas as pd
@@ -226,7 +226,7 @@ class DetectedNeurons:
         return ['z', 'x', 'y', 'likelihood', 'raw_neuron_ind_in_list', 'raw_segmentation_id',
                 'brightness_red', 'volume']
 
-    def get_all_neuron_metadata_for_single_time(self, t, likelihood=1.0) -> Tuple[list, list]:
+    def get_all_neuron_metadata_for_single_time(self, t, likelihood=1.0, as_dataframe=True) -> Tuple[list, list]:
         """
         Returns all metadata for all neurons at a single time
 
@@ -244,7 +244,16 @@ class DetectedNeurons:
         ind_in_list = [self.mask_index_to_i_in_array(t, i) for i in mask_ind]
         likelihood_vec = [likelihood] * len(mask_ind)
         row_data = [zxy[:, 0], zxy[:, 1], zxy[:, 2], likelihood_vec, ind_in_list, mask_ind, red, vol]
-        return row_data, column_names
+        if as_dataframe:
+            data_dict = {
+                (int2name_neuron(i+1), attr): value
+                for i, neuron_data in enumerate(row_data)
+                for attr, value in zip(column_names, neuron_data)
+            }
+            df = pd.DataFrame(data_dict, index=[t])
+            return df
+        else:
+            return row_data, column_names
 
     def overwrite_original_detection_file(self):
         backup_fname = Path(self.detection_fname).with_name("backup_metadata.pickle")
