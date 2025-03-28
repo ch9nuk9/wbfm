@@ -287,7 +287,10 @@ class NapariLayerInitializer:
             prop_dict = {k: np.squeeze(v) for k, v in collapsed.to_dict(orient='list').items()}
             df_prop = pd.DataFrame(prop_dict)
             df_prop = df_prop.subtract(df_prop.min(axis=1), axis=0)
-            df_prop = df_prop.divide(df_prop.max(), axis=0)
+            # Also normalize to be 0 to 1, relative to all objects
+            df_prop = df_prop.divide(df_prop.max(axis=1), axis=0)
+            # Also normalize based on the total intensity across colors per object, to make the colormap work
+            df_prop = df_prop.divide(df_prop.sum(axis=0), axis=1)
             prop_dict = {k: np.array(tuple(v) + (1.0, )) for k, v in df_prop.to_dict(orient='list').items()}
             _layer.color = prop_dict
             _layer.color_mode = 'direct'
