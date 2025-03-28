@@ -29,12 +29,12 @@ except (NoBehaviorDataError, RawDataFormatError, FileNotFoundError) as e:
     # Note: these strings can't be empty, otherwise snakemake can have weird issues
     logging.warning(f"No behavior data found, behavior will not run. Only 'traces' can be processed. "
                     f"Error message: {e}")
-    raw_data_dir = "NOTFOUND1"
-    output_behavior_dir = "NOTFOUND2"
-    background_img = "NOTFOUND3"
-    background_video = "NOTFOUND4"
-    behavior_btf = "NOTFOUND5"
-    raw_data_subfolder = "NOTFOUND6"
+    raw_data_dir = "NOTFOUND_raw_data_dir"
+    output_behavior_dir = "NOTFOUND_output_behavior_dir"
+    background_img = "NOTFOUND_background_img"
+    background_video = "NOTFOUND_background_video"
+    behavior_btf = "NOTFOUND_behavior_btf"
+    raw_data_subfolder = "NOTFOUND_raw_data_subfolder"
 
 # Additionally update the paths used for the behavior pipeline (note that this needs to be loaded even if behavior is not run)
 hardcoded_paths = load_hardcoded_neural_network_paths()
