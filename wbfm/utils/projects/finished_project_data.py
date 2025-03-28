@@ -36,7 +36,7 @@ import pandas as pd
 import zarr
 from tqdm.auto import tqdm
 
-from wbfm.utils.projects.utils_neuropal import NeuropalManager
+from wbfm.utils.projects.neuropal_manager import NeuropalManager
 from wbfm.utils.traces.triggered_averages import plot_triggered_average_from_matrix_low_level
 from wbfm.utils.general.hardcoded_paths import read_names_of_neurons_to_id, neurons_with_confident_ids
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
