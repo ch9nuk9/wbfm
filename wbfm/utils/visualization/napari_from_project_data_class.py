@@ -250,27 +250,27 @@ class NapariLayerInitializer:
             viewer.add_points(**options)
             layers_actually_added.append(options['name'])
 
-        if 'Neuropal' in which_layers and project_data.neuropal_data is not None:
+        if 'Neuropal' in which_layers and project_data.neuropal_manager.data is not None:
             z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
             layer_names = ['Red(mNeptune2.5)', 'White(TagRFP)', 'Green(CyOFP1)', 'Blue(mTagBFP2)']
             colormaps = ['red', 'gray', 'green', 'blue']
             for i, (name, cmap) in enumerate(zip(layer_names, colormaps)):
-                dat = np.array(project_data.neuropal_data[i])
+                dat = np.array(project_data.neuropal_manager.data[i])
                 viewer.add_image(dat, name=name, colormap=cmap, contrast_limits=[dat.min(), dat.max()],
                                  visible=False, blending='additive',
                                  scale=(z_np/xy_pixels, 1.0, 1.0))
             layers_actually_added.append('Neuropal')
 
-        if 'Neuropal segmentation' in which_layers and project_data.neuropal_segmentation is not None:
+        if 'Neuropal segmentation' in which_layers and project_data.neuropal_manager.segmentation is not None:
             layer_name = 'Neuropal segmentation'
             z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
-            viewer.add_labels(project_data.neuropal_segmentation, name=layer_name, visible=False,
+            viewer.add_labels(project_data.neuropal_manager.segmentation, name=layer_name, visible=False,
                               scale=(z_np/xy_pixels, 1.0, 1.0), opacity=1.0)
             _layer = viewer.layers[layer_name]
             _layer.blending = 'translucent_no_depth'
             _layer.rendering = 'translucent'
             # Use the rgb colors from the mean intensity of the neuropal data
-            df = project_data.neuropal_segmentation_metadata.get_all_neuron_metadata_for_single_time(0,
+            df = project_data.neuropal_manager.segmentation_metadata.get_all_neuron_metadata_for_single_time(0,
                                                                                                      as_dataframe=True,
                                                                                                      use_mean_intensity=True)
             # Napari expects a dict with the label as key and an rgba tuple as value
@@ -293,11 +293,11 @@ class NapariLayerInitializer:
             _layer.color_mode = 'direct'
             layers_actually_added.append('Neuropal segmentation')
 
-        if 'Neuropal Ids' in which_layers and project_data.neuropal_segmentation is not None:
+        if 'Neuropal Ids' in which_layers and project_data.neuropal_manager.segmentation is not None:
             z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
 
-            df = project_data.neuropal_segmentation_metadata.get_all_neuron_metadata_for_single_time(0,
-                                                                                                     as_dataframe=True)
+            df = project_data.neuropal_manager.segmentation_metadata.get_all_neuron_metadata_for_single_time(0,
+                                                                                                             as_dataframe=True)
             try:
                 np_neuron_name_dict = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0,
                                                                                     remove_unnamed_neurons=True,

@@ -189,7 +189,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             self.manualNeuronNameEditor.show()
 
         # Optional: add neuropal layer interactivity
-        if self.dat.has_complete_neuropal:
+        if self.dat.neuropal_manager.has_complete_neuropal:
             self.manualNeuropalNeuronNameEditor = self.dat.build_neuron_editor_gui(neuropal_subproject=True)
             if self.manualNeuropalNeuronNameEditor is not None:
                 update_func = lambda *args: self.update_neuron_id_strings_in_layer(*args, neuropal=True)
@@ -2132,7 +2132,7 @@ def napari_trace_explorer(project_data: ProjectData,
         viewer = napari.Viewer(ndisplay=3)
     ui.dat.add_layers_to_viewer(viewer, dask_for_segmentation=False)
 
-    if project_data.has_complete_neuropal:
+    if project_data.neuropal_manager.has_complete_neuropal:
         ui.dat.add_layers_to_viewer(viewer, which_layers=['Neuropal', 'Neuropal segmentation', 'Neuropal Ids'])
 
     # Actually dock my additional gui elements
