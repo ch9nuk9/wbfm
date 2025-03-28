@@ -932,6 +932,13 @@ class ProjectData:
         """All names of neurons"""
         return get_names_from_df(self.red_traces)
 
+    @property
+    def neuron_names_neuropal(self) -> List[str]:
+        """Get the names from the segmentation metadata"""
+        df = self.neuropal_segmentation_metadata.get_all_neuron_metadata_for_single_time(0, as_dataframe=True)
+        # Get the top level of the multiindex
+        return df.index.get_level_values(0).unique().tolist()
+
     def well_tracked_neuron_names(self, min_nonnan=0.5, remove_invalid_neurons=False,
                                   confidence_threshold=1,
                                   rename_neurons_using_manual_ids=False, always_keep_manual_ids=False):
@@ -1893,7 +1900,7 @@ class ProjectData:
             df = pd.DataFrame(columns=['Neuron ID', 'Finished?', 'ID1', 'ID2', 'Certainty', 'does_activity_match_ID',
                                        'paired_neuron', 'Interesting_not_IDd', 'Notes'])
             # Fill the first column with the default names
-            df['Neuron ID'] = self.neuron_names
+            df['Neuron ID'] = self.neuron_names_neuropal if neuropal_subproject else self.neuron_names
             df['Certainty'] = 0
             try:
                 fname = self.get_default_manual_annotation_fname(neuropal_subproject=neuropal_subproject)

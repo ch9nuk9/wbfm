@@ -210,7 +210,13 @@ class DetectedNeurons:
         self._brightnesses_cache.pop(i_volume, None)
 
     def get_all_metadata_for_single_time(self, mask_ind, t, likelihood=1.0):
-        # Correct null value is None
+        """
+        Gets all metadata for a single neuron (via the mask_index) at a single time point
+
+        Correct null value is None
+
+        See also: get_all_neuron_metadata_for_single_time
+        """
         ind_in_list = self.mask_index_to_i_in_array(t, mask_ind)
         column_names = self._column_names
         if ind_in_list is None:
