@@ -16,7 +16,7 @@ from wbfm.utils.segmentation.util.utils_metadata import DetectedNeurons
 @dataclass
 class NeuropalManager:
 
-    config: SubfolderConfigFile
+    config: Optional[SubfolderConfigFile] = None
 
     df_id_fname: str = None
 

@@ -172,7 +172,7 @@ class ProjectData:
         try:
             neuropal_config = self.project_config.get_neuropal_config()
         except FileNotFoundError:
-            return None
+            return NeuropalManager(None)
         return NeuropalManager(neuropal_config)
 
     @cached_property
