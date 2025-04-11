@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import subprocess
@@ -39,5 +40,8 @@ def zarr_reader_folder_or_zipstore(fname: str, depth: int = 0):
             raise e
         # On Windows, if the path contains a special character, zarr.open() will fail. Retry with raw string
         dat = zarr_reader_folder_or_zipstore(rf"{fname}", depth=depth + 1)
+    except zarr.errors.PathNotFoundError as e:
+        logging.error(f"Corrupted zarr file found at {fname}; most likely the file or folder needs to be deleted")
+        raise e
 
     return dat
