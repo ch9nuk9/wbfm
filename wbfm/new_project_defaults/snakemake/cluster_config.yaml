@@ -4,7 +4,6 @@
 # https://lisc.univie.ac.at/wiki/content/working_environment/services/computational_resources
 
 __default__:
-    partition: basic,gpu
     time: 0-6:00:00
     nodes: 1
     cpus_per_task: 16
@@ -25,7 +24,6 @@ segmentation:
     cpus_per_task: 40
 
 match_frame_pairs:
-    partition: basic,gpu
     gpus_per_node: 1
     time: 0-12:00:00
     mem: 128G
@@ -36,7 +34,6 @@ build_frame_objects:
     cpus_per_task: 20
 
 postprocess_matches_to_tracklets:
-    partition: basic,gpu
     cpus_per_task: 1
     time: 0-2:00:00
     gres: gpu:1
@@ -46,13 +43,11 @@ combine_tracking_and_tracklets:
     cpus_per_task: 20
 
 tracking:
-    partition: basic,gpu
     gpus_per_node: 1
     cpus_per_task: 16
     gres: gpu:1
 
 barlow_tracking:
-    partition: basic,gpu
     gpus_per_node: 1
     cpus_per_task: 16
     gres: gpu:1
@@ -69,7 +64,6 @@ tiff2avi:
 
 dlc_analyze_videos:
     time: 0-08:00:00
-    partition: basic,gpu
     cpus_per_task: 24
     gres: gpu:1
 
@@ -85,19 +79,16 @@ normalize_img:
 
 worm_unet:
     time: 0-08:00:00
-    partition: basic,gpu
     cpus_per_task: 24
     gres: gpu:1
 
 sam2_segment:
     time: 0-12:00:00  # Might be faster than this, needs testing
-    partition: basic,gpu
     cpus_per_task: 24
     gres: gpu:1
 
 coil_unet:
     time: 0-08:00:00
-    partition: basic,gpu
     cpus_per_task: 24
     gres: gpu:1
 
