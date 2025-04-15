@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from pynwb import NWBFile, NWBHDF5IO, TimeSeries
 from pynwb.behavior import BehavioralTimeSeries
 from pynwb.image import ImageSeries
-from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, Fluorescence
+from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, Fluorescence, DfOverF
 from hdmf.data_utils import GenericDataChunkIterator
 from dateutil import tz
 import pandas as pd
@@ -147,7 +147,7 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
         calcium_video_dict = {'red': project_data.red_data, 'green': project_data.green_data}
         segmentation_video = project_data.segmentation
     else:
-        calcium_video_dict = None
+        calcium_video_dict = {'red': None, 'green': None}
         segmentation_video = None
 
     # Unpack behavior video and time seriesdata
@@ -255,16 +255,32 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
     # Initialize and populate the NWB file
     nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
 
+    # Get the overall metadata of the imaging device
     device = _zimmer_microscope_device(nwbfile)
+    if physical_units_class is None:
+        # STUB FOR IMMOBILIZED (which has very messy metadata
+        logging.warning("No physical units class provided, using default values")
+        grid_spacing = [0.4, 0.4, 0.2]
+        rate = 2.0  # Volumes per second
+    else:
+        grid_spacing = physical_units_class.grid_spacing
+        rate = physical_units_class.volumes_per_second
+    CalcImagingVolume, order_optical_channels = build_optical_channel_objects(device, grid_spacing, calcium_video_dict)
+    nwbfile.add_imaging_plane(CalcImagingVolume)
+
+    # Add the video data (optional)
     if include_image_data:
-        CalcOptChanRefs, CalcImagingVolume = convert_calcium_videos_to_nwb(
-            nwbfile, calcium_video_dict, device, physical_units_class=physical_units_class
-        )
+        convert_calcium_videos_to_nwb(nwbfile, calcium_video_dict, device, CalcImagingVolume)
         CalciumSegSeries = convert_segmentation_video_to_nwb(CalcImagingVolume, device, segmentation_video, physical_units_class=physical_units_class)
 
+    # Add the traces and tracking data
     nwbfile = convert_traces_and_tracking_to_nwb(
-        nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, CalcOptChanRefs, physical_units_class, device=device
+        nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, physical_units_class, device=device
     )
+    # Finish: metadata
+    nwbfile.processing['CalciumActivity'].add(order_optical_channels)
+
+    # Add the behavior video and time series, if they exist
     if behavior_video is not None and include_image_data:
         nwbfile = convert_behavior_video_to_nwb(nwbfile, behavior_video, fps=physical_units_class.frames_per_second)
     if behavior_time_series_dict is not None:
@@ -387,26 +403,12 @@ def laser_properties(channel_str='red'):
     return emission_lambda, emission_delta, excitation_lambda, laser_description, laser_tuple
 
 
-def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_units_class=None,
-                                  raw_videos=False):
+def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, CalcImagingVolume, raw_videos=False):
     print("Initializing imaging channels...")
-    if physical_units_class is None:
-        # STUB FOR IMMOBILIZED (which has very messy metadata
-        logging.warning("No physical units class provided, using default values")
-        grid_spacing = [0.4, 0.4, 0.2]
-        rate = 2.0  # Volumes per second
-    else:
-        grid_spacing = physical_units_class.grid_spacing
-        rate = physical_units_class.volumes_per_second
 
     # Convert a dictionary of video data into a single multi-channel numpy array
     # With proper metadata
-    video_list = []
-    CalcChannels = []
-    for key, video in video_dict.items():
-        laser_tuple = laser_properties(key)[-1]
-        CalcChannels.append(laser_tuple)
-        video_list.append(video)
+    video_list = list(video_dict.values())
     video_data = np.stack(video_list, axis=-1)
     # Reshape to be TXYZC from TZXYC
     video_data = np.transpose(video_data, [0, 2, 3, 1, 4])
@@ -427,8 +429,31 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
     else:
         wrapped_data = H5DataIO(np.zeros((1, 1, 1, 1), dtype=np.uint8), compression='gzip')
 
+    calcium_image_series = MultiChannelVolumeSeries(
+        name="CalciumImageSeries" if not raw_videos else "RawCalciumImageSeries",
+        description="Raw GCaMP series images",
+        comments="GFP-GCaMP channel is the GCaMP signal, mScarlet is the reference signal",
+        data=wrapped_data,
+        device=device,
+        unit="Voxel gray counts",
+        # scan_line_rate=None,  # TODO: what is this?
+        resolution=1.,
+        #smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
+        rate=rate,
+        imaging_volume=CalcImagingVolume,
+        # dimension=None, #  Gives a warning; what should this be?
+    )
+
+    nwbfile.add_acquisition(calcium_image_series)
+
+
+def build_optical_channel_objects(device, grid_spacing, video_dict):
     # The loop below takes the list of channels and converts it into a list of OpticalChannelPlus objects which hold the metadata
     # for the optical channels used in the experiment
+    CalcChannels = []
+    for key in video_dict.keys():
+        laser_tuple = laser_properties(key)[-1]
+        CalcChannels.append(laser_tuple)
     CalcOptChannels = []
     CalcOptChanRefData = []
     for fluor, des, wave in CalcChannels:
@@ -445,7 +470,6 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
         )
         CalcOptChannels.append(OptChan)
         CalcOptChanRefData.append(wave)
-
     # This object just contains references to the order of channels because OptChannels does not preserve ordering
     order_optical_channels = OpticalChannelReferences(
         name='order_optical_channels',
@@ -463,26 +487,7 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, physical_un
         grid_spacing_unit='um',
         reference_frame='Worm head'
     )
-
-    calcium_image_series = MultiChannelVolumeSeries(
-        name="CalciumImageSeries" if not raw_videos else "RawCalciumImageSeries",
-        description="Raw GCaMP series images",
-        comments="GFP-GCaMP channel is the GCaMP signal, mScarlet is the reference signal",
-        data=wrapped_data,
-        device=device,
-        unit="Voxel gray counts",
-        # scan_line_rate=None,  # TODO: what is this?
-        resolution=1.,
-        #smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
-        rate=rate,
-        imaging_volume=CalcImagingVolume,
-        # dimension=None, #  Gives a warning; what should this be?
-    )
-
-    nwbfile.add_imaging_plane(CalcImagingVolume)
-    nwbfile.add_acquisition(calcium_image_series)
-
-    return order_optical_channels, CalcImagingVolume
+    return CalcImagingVolume, order_optical_channels
 
 
 def _iter_volumes(video_data):
@@ -504,7 +509,7 @@ def _iter_volumes(video_data):
     return
 
 
-def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, CalcOptChanRefs,
+def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume,
                                        physical_units_class, device, DEBUG=False):
     print("Converting traces and tracking to nwb format...")
     gce_quant_red = convert_tracking_dataframe_to_nwb_format(gce_quant_dict['red'], DEBUG)
@@ -515,13 +520,16 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
 
     # Extract the blobs (with time series) from red and green
     print("Extracting segmentation ids...")
-    blobquant_red, blobquant_green = None, None
+    blobquant_red, blobquant_green, blobquant_ratio = None, None, None
     for idx in tqdm(gce_quant_red['blob_ix'].unique(), leave=False):
         blob_red = gce_quant_red[gce_quant_red['blob_ix'] == idx]
         blobquant_red = _add_blob(blob_red, blobquant_red)
 
         blob_green = gce_quant_green[gce_quant_green['blob_ix'] == idx]
         blobquant_green = _add_blob(blob_green, blobquant_green)
+
+        blob_ratio = gce_quant_ratio[gce_quant_ratio['blob_ix'] == idx]
+        blobquant_ratio = _add_blob(blob_ratio, blobquant_ratio)
 
     print("Extracting segmentation coordinates...")
     volsegs = []
@@ -568,6 +576,7 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
     # Take only gce quantification column and transpose so time is in the first dimension
     gce_data_red = np.transpose(blobquant_red[:, :, 3])
     gce_data_green = np.transpose(blobquant_green[:, :, 3])
+    gce_data_ratio = np.transpose(blobquant_ratio[:, :, 3])
 
     # Traces: Red (reference)
     RefRoiResponse = RoiResponseSeries(
@@ -612,7 +621,7 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
         rate=rate,
     )
 
-    SignalFluor = DfOverF(  # Change to Fluorescence if using raw fluorescence
+    RatioFluor = DfOverF(  # Change to Fluorescence if using raw fluorescence
         name='SignalDFoF',
         roi_response_series=RatioRoiResponse
     )
@@ -624,14 +633,12 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
     )
 
     # Finish: segmentation
-    calcium_imaging_module.add(CalciumSegSeries)
     calcium_imaging_module.add(Calclabels)
     calcium_imaging_module.add(CalcImSegCoords)
     # Finish: signal time series
     calcium_imaging_module.add(SignalFluor)
     calcium_imaging_module.add(RefFluor)
-    # Finish: metadata
-    calcium_imaging_module.add(CalcOptChanRefs)
+    calcium_imaging_module.add(RatioFluor)
 
     return nwbfile
 
