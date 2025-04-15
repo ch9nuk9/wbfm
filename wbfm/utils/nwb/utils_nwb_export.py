@@ -255,7 +255,9 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
         CalcOptChanRefs, CalcImagingVolume = convert_calcium_videos_to_nwb(
             nwbfile, calcium_video_dict, device, physical_units_class=physical_units_class
         )
-    nwbfile = convert_traces_and_segmentation_to_nwb(
+        CalciumSegSeries = convert_segmentation_video_to_nwb(CalcImagingVolume, device, segmentation_video, physical_units_class=physical_units_class)
+
+    nwbfile = convert_traces_and_tracking_to_nwb(
         nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, CalcOptChanRefs, physical_units_class, device=device
     )
     if behavior_video is not None and include_image_data:
@@ -494,9 +496,9 @@ def _iter_volumes(video_data):
     return
 
 
-def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, CalcOptChanRefs,
-                                           physical_units_class, device, DEBUG=False):
-    print("Converting traces and segmentation to nwb format...")
+def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, CalcOptChanRefs,
+                                       physical_units_class, device, DEBUG=False):
+    print("Converting traces and tracking to nwb format...")
     gce_quant_red = convert_tracking_dataframe_to_nwb_format(gce_quant_dict['red'], DEBUG)
     gce_quant_green = convert_tracking_dataframe_to_nwb_format(gce_quant_dict['green'], DEBUG)
 
@@ -511,37 +513,6 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
 
         blob_green = gce_quant_green[gce_quant_green['blob_ix'] == idx]
         blobquant_green = _add_blob(blob_green, blobquant_green)
-
-    # Convert segmentation video from TZXY to TXYZ
-    segmentation_video = np.transpose(segmentation_video, [0, 2, 3, 1])
-    chunk_shape = list(segmentation_video.shape[1:])  # One time point
-    chunk_shape.insert(0, 1)  # Add the time point
-
-    # Build a generator (like the raw data) but for the segmentation data
-    data = CustomDataChunkIterator(
-        array=segmentation_video,
-        # this will be the max shape of the final image. Can leave blank or set as the size of your full data if you know that ahead of time
-        # maxshape=None,
-        # buffer_size=10,
-        chunk_shape=tuple(chunk_shape)
-    )
-    wrapped_data = H5DataIO(data=data, compression="gzip", compression_opts=4)
-
-    CalciumSegSeries = MultiChannelVolumeSeries(
-        name="CalciumSeriesSegmentation",
-        description="Series of indexed masks associated with calcium segmentation",
-        comments="Include here whether ROIs are tracked across frames or any other comments",
-        data=wrapped_data,  # data here should be series of indexed masks
-        # Elements below can be kept the same as the CalciumImageSeries defined above
-        device=device,
-        unit="Voxel gray counts",
-        scan_line_rate=2995.,
-        # dimension=None, #  Gives a warning; what should this be?,
-        resolution=1.,
-        # smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
-        rate=rate,  # sampling rate in hz
-        imaging_volume=CalcImagingVolume,
-    )
 
     print("Extracting segmentation coordinates...")
     volsegs = []
@@ -644,6 +615,39 @@ def convert_traces_and_segmentation_to_nwb(nwbfile, segmentation_video, gce_quan
     calcium_imaging_module.add(CalcOptChanRefs)
 
     return nwbfile
+
+
+def convert_segmentation_video_to_nwb(CalcImagingVolume, device, segmentation_video, physical_units_class):
+    rate = physical_units_class.volumes_per_second
+    # Convert segmentation video from TZXY to TXYZ
+    segmentation_video = np.transpose(segmentation_video, [0, 2, 3, 1])
+    chunk_shape = list(segmentation_video.shape[1:])  # One time point
+    chunk_shape.insert(0, 1)  # Add the time point
+    # Build a generator (like the raw data) but for the segmentation data
+    data = CustomDataChunkIterator(
+        array=segmentation_video,
+        # this will be the max shape of the final image. Can leave blank or set as the size of your full data if you know that ahead of time
+        # maxshape=None,
+        # buffer_size=10,
+        chunk_shape=tuple(chunk_shape)
+    )
+    wrapped_data = H5DataIO(data=data, compression="gzip", compression_opts=4)
+    CalciumSegSeries = MultiChannelVolumeSeries(
+        name="CalciumSeriesSegmentation",
+        description="Series of indexed masks associated with calcium segmentation",
+        comments="Include here whether ROIs are tracked across frames or any other comments",
+        data=wrapped_data,  # data here should be series of indexed masks
+        # Elements below can be kept the same as the CalciumImageSeries defined above
+        device=device,
+        unit="Voxel gray counts",
+        scan_line_rate=2995.,
+        # dimension=None, #  Gives a warning; what should this be?,
+        resolution=1.,
+        # smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
+        rate=rate,  # sampling rate in hz
+        imaging_volume=CalcImagingVolume,
+    )
+    return CalciumSegSeries
 
 
 def convert_behavior_video_to_nwb(nwbfile, behavior_video, fps):
