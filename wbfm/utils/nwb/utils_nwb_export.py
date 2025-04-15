@@ -71,7 +71,7 @@ def create_vol_seg_centers(name, description, ImagingVolume, positions,
     return vs
 
 
-def nwb_using_project_data(project_data: ProjectData, include_image_data=False, output_folder=None, DEBUG=False):
+def nwb_using_project_data(project_data: ProjectData, include_image_data=True, output_folder=None, DEBUG=False):
     """
     Convert a ProjectData class to an NWB h5 file, optionally including all raw image data.
 
@@ -138,13 +138,20 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
     gce_quant_green.loc[:, ('intensity_image', slice(None))] = df_traces_green.values
 
     # Unpack videos
-    calcium_video_dict = {'red': project_data.red_data, 'green': project_data.green_data}
-    segmentation_video = project_data.segmentation
+    if include_image_data:
+        calcium_video_dict = {'red': project_data.red_data, 'green': project_data.green_data}
+        segmentation_video = project_data.segmentation
+    else:
+        calcium_video_dict = None
+        segmentation_video = None
 
     # Unpack behavior video and time seriesdata
     video_class = project_data.worm_posture_class
     if video_class.raw_behavior_video is not None:
-        behavior_video = video_class.raw_behavior_video
+        if include_image_data:
+            behavior_video = video_class.raw_behavior_video
+        else:
+            behavior_video = None
         behavior_time_series_names = ['angular_velocity', 'head_curvature', 'body_curvature', 'reversal_events',
                                       'velocity',
                                       'hilbert_phase', 'hilbert_amplitude', 'hilbert_frequency', 'hilbert_carrier']
@@ -158,7 +165,8 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=False, 
 
     nwb_file, fname = nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_quant_dict,
                                                       session_start_time, subject_id, strain, physical_units_class,
-                                                      behavior_video, behavior_time_series_dict, output_folder)
+                                                      behavior_video, behavior_time_series_dict,
+                                                      output_folder, include_image_data)
     # Update in the project config
     cfg_nwb.config['nwb_filename'] = fname
     cfg_nwb.update_self_on_disk()
@@ -237,19 +245,22 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
 
 
 def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_quant_dict, session_start_time, subject_id, strain,
-                                    physical_units_class, behavior_video, behavior_time_series_dict, output_folder):
+                                    physical_units_class, behavior_video, behavior_time_series_dict,
+                                    output_folder, include_image_data):
     # Initialize and populate the NWB file
     nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
 
     device = _zimmer_microscope_device(nwbfile)
-    CalcOptChanRefs, CalcImagingVolume = convert_calcium_videos_to_nwb(
-        nwbfile, calcium_video_dict, device, physical_units_class=physical_units_class
-    )
+    if include_image_data:
+        CalcOptChanRefs, CalcImagingVolume = convert_calcium_videos_to_nwb(
+            nwbfile, calcium_video_dict, device, physical_units_class=physical_units_class
+        )
     nwbfile = convert_traces_and_segmentation_to_nwb(
         nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, CalcOptChanRefs, physical_units_class, device=device
     )
-    if behavior_video is not None:
+    if behavior_video is not None and include_image_data:
         nwbfile = convert_behavior_video_to_nwb(nwbfile, behavior_video, fps=physical_units_class.frames_per_second)
+    if behavior_time_series_dict is not None:
         nwbfile = convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict)
 
     fname = None
