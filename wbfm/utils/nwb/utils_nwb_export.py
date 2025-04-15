@@ -272,7 +272,10 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
 
     fname = None
     if output_folder:
-        fname = os.path.join(output_folder, subject_id + '.nwb')
+        fname = os.path.join(output_folder, subject_id)
+        if not include_image_data:
+            fname = f'{fname}_no_image_data'
+        fname = f'{fname}.nwb'
         logging.info(f"Saving NWB file to {fname}")
         fname = get_sequential_filename(fname)
         with NWBHDF5IO(fname, mode='w') as io:
