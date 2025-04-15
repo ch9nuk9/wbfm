@@ -129,13 +129,18 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
     print("Calculating traces...")
     gce_quant_red = project_data.red_traces.swaplevel(i=0, j=1, axis=1).copy()
     gce_quant_green = project_data.green_traces.swaplevel(i=0, j=1, axis=1).copy()
-    gce_quant_dict = {'red': gce_quant_red, 'green': gce_quant_green}
+    gce_quant_ratio = gce_quant_red.copy()
+
+    gce_quant_dict = {'red': gce_quant_red, 'green': gce_quant_green, 'ratio': gce_quant_ratio}
     # Store just the background subtracting red or green traces, because we don't want to store the object volume
     trace_opt = dict(min_nonnan=0, remove_tail_neurons=False, filter_mode="no_filtering")
     df_traces_red = project_data.calc_default_traces(channel_mode='red', **trace_opt)
     gce_quant_red.loc[:, ('intensity_image', slice(None))] = df_traces_red.values
     df_traces_green = project_data.calc_default_traces(channel_mode='green', **trace_opt)
     gce_quant_green.loc[:, ('intensity_image', slice(None))] = df_traces_green.values
+
+    df_traces_ratio = project_data.calc_default_traces(channel_mode='dr_over_r_50', **trace_opt)
+    gce_quant_ratio.loc[:, ('intensity_image', slice(None))] = df_traces_ratio.values
 
     # Unpack videos
     if include_image_data:
@@ -501,6 +506,7 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
     print("Converting traces and tracking to nwb format...")
     gce_quant_red = convert_tracking_dataframe_to_nwb_format(gce_quant_dict['red'], DEBUG)
     gce_quant_green = convert_tracking_dataframe_to_nwb_format(gce_quant_dict['green'], DEBUG)
+    gce_quant_ratio = convert_tracking_dataframe_to_nwb_format(gce_quant_dict['ratio'], DEBUG)
 
     rate = physical_units_class.volumes_per_second
 
@@ -592,11 +598,21 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
         roi_response_series=SignalRoiResponse
     )
 
-    # SignalFluor = DfOverF(  # Change to Fluorescence if using raw fluorescence
-    #     name='SignalDFoF',
-    #     # Change name to SignalRawFluor if using raw fluorescence, rename reference and processed object accordingly
-    #     roi_response_series=SignalRoiResponse
-    # )
+    # Final "ratio" values (dr/r50)
+    RatioRoiResponse = RoiResponseSeries(
+        # See https://pynwb.readthedocs.io/en/stable/pynwb.ophys.html#pynwb.ophys.RoiResponseSeries for additional key word argument options
+        name='SignalCalciumImResponseSeries',
+        description='dR/R50 fluorescence activity for calcium imaging data',
+        data=gce_data_ratio,
+        rois=rt_region,
+        unit='integrated image intensity',
+        rate=rate,
+    )
+
+    SignalFluor = DfOverF(  # Change to Fluorescence if using raw fluorescence
+        name='SignalDFoF',
+        roi_response_series=RatioRoiResponse
+    )
 
     # Add data under the processed module
     calcium_imaging_module = nwbfile.create_processing_module(
