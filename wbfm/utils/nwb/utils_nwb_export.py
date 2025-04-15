@@ -565,7 +565,7 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
         #See https://pynwb.readthedocs.io/en/stable/pynwb.ophys.html#pynwb.ophys.RoiResponseSeries for additional key word argument options
         name='ReferenceCalciumImResponseSeries',
         description='Fluorescence for reference channel in calcium imaging',
-        data=gce_data_green,  #first dimension should represent time and second dimension should represent ROIs
+        data=gce_data_red,  #first dimension should represent time and second dimension should represent ROIs
         rois=rt_region,
         unit='integrated image intensity',  #the unit of measurement for the data input here
         rate=rate
@@ -580,8 +580,8 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
     SignalRoiResponse = RoiResponseSeries(
         # See https://pynwb.readthedocs.io/en/stable/pynwb.ophys.html#pynwb.ophys.RoiResponseSeries for additional key word argument options
         name='SignalCalciumImResponseSeries',
-        description='Ratio fluorescence activity for calcium imaging data',
-        data=gce_data_red,
+        description='Green fluorescence activity for calcium imaging data',
+        data=gce_data_green,
         rois=rt_region,
         unit='integrated image intensity',
         rate=rate,
