@@ -275,6 +275,7 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
     if include_image_data:
         convert_calcium_videos_to_nwb(nwbfile, calcium_video_dict, device, CalcImagingVolume)
         CalciumSegSeries = convert_segmentation_video_to_nwb(CalcImagingVolume, device, segmentation_video, physical_units_class=physical_units_class)
+        nwbfile.processing['CalciumActivity'].add(CalciumSegSeries)
 
     # Add the traces and tracking data
     nwbfile = convert_traces_and_tracking_to_nwb(
