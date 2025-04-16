@@ -103,14 +103,6 @@ class TestNWB:
 
             try:
                 activity = read_nwbfile.processing['CalciumActivity']
-                print(activity['NeuronIDs'].ImageSegmentation.plane_segmentations['Seg_tpoint_0']['ID_labels'].data[:])
-                print(activity['NeuronIDs'].ImageSegmentation.plane_segmentations['Seg_tpoint_0']['ID_labels_index'].data[:])
-                print(activity['NeuronIDs'].ImageSegmentation.plane_segmentations['Seg_tpoint_0']['voxel_mask'].data[:])
-                print(activity['NeuronIDs'].ImageSegmentation.plane_segmentations['Seg_tpoint_0']['voxel_mask_index'].data[:])
-                err
-                print(activity['NeuronIDs'].ImageSegmentation.plane_segmentations['Aligned_neuron_coordinates']['ID_labels'].data[:])
-                print(activity['NeuronIDs'].ImageSegmentation.plane_segmentations['Aligned_neuron_coordinates']['voxel_mask'].data[:])
-                print(activity['NeuronIDs'].ImageSegmentation.plane_segmentations['Aligned_neuron_coordinates']['voxel_mask_index'].data[:])
                 if 'CalciumSeriesSegmentation' in activity.data_interfaces:
                     try:
                         if 'Seg_tpoint_0' in activity['CalciumSeriesSegmentation']:
