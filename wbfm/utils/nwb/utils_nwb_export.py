@@ -562,8 +562,7 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
     # Do not repeat ids for all time points, just save t=0
     calc_IDs = np.squeeze(blobquant_red[:, 0, 4])
     calc_labels = calc_IDs.astype(str)
-    calc_labels = np.where(calc_labels != 'nan', calc_labels, '')
-    err
+    calc_labels = np.where(['neuron' not in n for n in calc_labels], calc_labels, '')
     Calclabels = SegmentationLabels(
         name='NeuronIDs',
         labels=calc_labels,
