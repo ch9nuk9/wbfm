@@ -22,11 +22,11 @@ if __name__ == '__main__':
 
     for suffix in tqdm(all_suffixes):
         subfolder_name = f'exported_data_{suffix}'
-        Path(parent_dir).mkdir(exist_ok=True)
+        this_folder = os.path.join(parent_dir, subfolder_name)
+        Path(this_folder).mkdir(exist_ok=True)
         all_projects = load_paper_datasets(suffix)
 
         for name, project in all_projects.items():
-            this_folder = os.path.join(parent_dir, subfolder_name)
 
             # Skip if file exists
             # if args.skip_if_exists and project.exported_data_path.exists():

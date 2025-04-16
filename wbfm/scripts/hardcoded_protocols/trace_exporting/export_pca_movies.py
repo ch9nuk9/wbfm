@@ -24,10 +24,11 @@ if __name__ == '__main__':
 
     for suffix in tqdm(all_suffixes):
         subfolder_name = f'movies_{suffix}'
+        this_folder = os.path.join(parent_dir, subfolder_name)
+        Path(this_folder).mkdir(exist_ok=True)
         all_projects = load_paper_datasets(suffix)
 
         for name, project in all_projects.items():
-            this_folder = os.path.join(parent_dir, subfolder_name)
             Path(parent_dir).mkdir(exist_ok=True)
             output_fname = os.path.join(this_folder, f'{project.shortened_name}.mp4')
 
