@@ -136,8 +136,8 @@ class TestNWB:
               f"Video calcium imaging:  {has_calcium_imaging}\n"
               f"Video calcium traces:   {has_calcium_traces}\n"
               f"Video segmentation:     {has_segmentation}\n"
-              f"Behavior video:         {False}\n"
-              f"Behavior time series:   {False}\n")
+              f"Behavior video:         (Not yet implemented)\n"
+              f"Behavior time series:   (Not yet implemented)\n")
 
 
 def main():

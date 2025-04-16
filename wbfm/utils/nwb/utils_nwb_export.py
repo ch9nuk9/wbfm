@@ -573,9 +573,9 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
     )
 
     # Take only gce quantification column and transpose so time is in the first dimension
-    gce_data_red = np.transpose(blobquant_red[:, :, 3])
-    gce_data_green = np.transpose(blobquant_green[:, :, 3])
-    gce_data_ratio = np.transpose(blobquant_ratio[:, :, 3])
+    gce_data_red = np.transpose(blobquant_red[:, :, 3]).astype(float)
+    gce_data_green = np.transpose(blobquant_green[:, :, 3]).astype(float)
+    gce_data_ratio = np.transpose(blobquant_ratio[:, :, 3]).astype(float)
 
     # Traces: Red (reference)
     RefRoiResponse = RoiResponseSeries(
