@@ -370,11 +370,13 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             return SubfolderConfigFile(_self_path=None, _config=cfg, project_dir=self.project_dir)
 
     def get_nwb_config(self) -> SubfolderConfigFile:
-        fname = Path(self.config['subfolder_configs'].get('nwb', None))
+        fname = self.config['subfolder_configs'].get('nwb', None)
         if fname is None:
             fname = Path(self.project_dir).joinpath('nwb', 'nwb_config.yaml')
             if not fname.exists():
                 raise FileNotFoundError("No path to a nwb config file was found in the project_config.yaml file")
+        else:
+            fname = Path(fname)
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
     def _get_neuropal_dir(self, make_subfolder=True, raise_error=False):
