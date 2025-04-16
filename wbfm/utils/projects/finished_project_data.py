@@ -1918,7 +1918,8 @@ class ProjectData:
 
     def neuron_name_to_manual_id_mapping(self, confidence_threshold=2, remove_unnamed_neurons=False,
                                          flip_names_and_ids=False, error_on_duplicate=False,
-                                         remove_duplicates=True, neuropal_subproject=False) -> \
+                                         remove_duplicates=True, neuropal_subproject=False,
+                                         only_include_confident_labels=False) -> \
             Dict[str, str]:
         """
         Note: if confidence_threshold is 0, then non-id'ed neuron names will be removed because
@@ -1928,12 +1929,15 @@ class ProjectData:
         therefore in the neuron_name_to_manual_id_mapping. This is because we are reading from an excel file, which
         may have been manually edited
 
+        Note that only_include_confident_labels will remove unnamed neurons
+
         Parameters
         ----------
         confidence_threshold
         remove_unnamed_neurons
         flip_names_and_ids
         error_on_duplicate
+        only_include_confident_labels
 
         Returns
         -------
@@ -1943,6 +1947,9 @@ class ProjectData:
         if len(name_ids) == 0:
             return {}
         name_mapping = {k: (v[0] if (v[1] >= confidence_threshold and v[0] != '') else k) for k, v in name_ids.items()}
+        if only_include_confident_labels:
+            confident_labels = neurons_with_confident_ids()
+            name_mapping = {k: v for k, v in name_mapping.items() if v in confident_labels}
         # Check that there are no duplicates within the values
         value_counts = pd.Series(name_mapping.values()).value_counts()
         message = f"Duplicate values found in neuron_name_to_manual_id_mapping: " \
