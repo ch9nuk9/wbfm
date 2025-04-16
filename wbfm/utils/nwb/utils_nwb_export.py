@@ -93,6 +93,11 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
         # Save within the project_data folder
         output_folder = cfg_nwb.absolute_subfolder
 
+    output_fname = os.path.join(output_folder, project_data.shortened_name)
+    if not include_image_data:
+        output_fname = f'{output_fname}_no_image_data'
+    output_fname = f'{output_fname}.nwb'
+
     # Unpack variables from project_data
     # Everything in the zimmer lab is produced with a time stamp saved in the filename of the raw data folder
     # Like this: 2022-11-27_15-14_ZIM2165_worm1_GC7b_Ch0-BH
@@ -174,7 +179,7 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
     nwb_file, fname = nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_quant_dict,
                                                       session_start_time, subject_id, strain, physical_units_class,
                                                       behavior_video, behavior_time_series_dict,
-                                                      output_folder, include_image_data)
+                                                      output_fname, include_image_data)
     # Update in the project config
     cfg_nwb.config['nwb_filename'] = fname
     cfg_nwb.update_self_on_disk()
@@ -254,7 +259,7 @@ def nwb_from_matlab_tracker(matlab_fname, output_folder=None):
 
 def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_quant_dict, session_start_time, subject_id, strain,
                                     physical_units_class, behavior_video, behavior_time_series_dict,
-                                    output_folder, include_image_data):
+                                    output_fname, include_image_data):
     # Initialize and populate the NWB file
     nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
 
@@ -273,7 +278,7 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
 
     # Add the video data (optional)
     if include_image_data:
-        convert_calcium_videos_to_nwb(nwbfile, calcium_video_dict, device, CalcImagingVolume)
+        convert_calcium_videos_to_nwb(nwbfile, calcium_video_dict, device, CalcImagingVolume, rate)
         CalciumSegSeries = convert_segmentation_video_to_nwb(CalcImagingVolume, device, segmentation_video, physical_units_class=physical_units_class)
         nwbfile.processing['CalciumActivity'].add(CalciumSegSeries)
 
@@ -290,14 +295,9 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
     if behavior_time_series_dict is not None:
         nwbfile = convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict)
 
-    fname = None
-    if output_folder:
-        fname = os.path.join(output_folder, subject_id)
-        if not include_image_data:
-            fname = f'{fname}_no_image_data'
-        fname = f'{fname}.nwb'
-        logging.info(f"Saving NWB file to {fname}")
-        fname = get_sequential_filename(fname)
+    if output_fname:
+        logging.info(f"Saving NWB file to {output_fname}")
+        fname = get_sequential_filename(output_fname)
         with NWBHDF5IO(fname, mode='w') as io:
         # with NWBZarrIO(path=fname, mode="w") as io:
             io.write(nwbfile)
@@ -328,9 +328,8 @@ def nwb_only_raw_data(project_data, session_start_time, subject_id, strain, phys
     nwbfile = initialize_nwb_file(session_start_time, strain, subject_id)
 
     device = _zimmer_microscope_device(nwbfile)
-    CalcOptChanRefs, CalcImagingVolume = convert_calcium_videos_to_nwb(
-        nwbfile, raw_video_dict, device, physical_units_class=physical_units_class, raw_videos=True
-    )
+    rate = physical_units_class.volumes_per_second
+    convert_calcium_videos_to_nwb(nwbfile, raw_video_dict, device, rate, raw_videos=True)
 
     # Create a stub processing module, because I'm not sure where else the CalcOptChanRefs should go
     calcium_imaging_module = nwbfile.create_processing_module(
@@ -407,7 +406,7 @@ def laser_properties(channel_str='red'):
     return emission_lambda, emission_delta, excitation_lambda, laser_description, laser_tuple
 
 
-def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, CalcImagingVolume, raw_videos=False):
+def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, CalcImagingVolume, rate, raw_videos=False):
     print("Initializing imaging channels...")
 
     # Convert a dictionary of video data into a single multi-channel numpy array
