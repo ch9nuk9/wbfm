@@ -573,7 +573,7 @@ def save_video_of_pca_plot_with_behavior(project_path: Union[str, Path], plot_3d
 
 
 def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], output_fname=None,
-                                                DEBUG=False):
+                                                include_slowing=False, DEBUG=False):
     """
     Save a video of the heatmap (bottom half, stretched) and pca phase plot (top left) with behavior (top right)
     Also: an ethogram under the heatmap
@@ -616,11 +616,14 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     heatmap_data = df_traces.T.reindex(pc1_weights.sort_values(by=0, ascending=False).index)
 
     # Get behavior time series as integers, with custom colormap
-    beh_vec_raw = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True,
+    beh_vec_raw = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, include_slowing=include_slowing,
                                                                  include_collision=False, include_head_cast=False)
     beh_vec = beh_vec_raw.copy()
     # Extend short states (only turns)
-    for behavior_code in [BehaviorCodes.VENTRAL_TURN, BehaviorCodes.DORSAL_TURN, BehaviorCodes.PAUSE]:
+    beh_to_extend = [BehaviorCodes.VENTRAL_TURN, BehaviorCodes.DORSAL_TURN, BehaviorCodes.PAUSE]
+    if include_slowing:
+        beh_to_extend.append(BehaviorCodes.SLOWING)
+    for behavior_code in beh_to_extend:
         binary_behavior = BehaviorCodes.vector_equality(beh_vec_raw, behavior_code)
         starts, ends = get_contiguous_blocks_from_column(binary_behavior, already_boolean=True)
         starts, ends = extend_short_states(starts, ends, len(beh_vec_raw), state_length_minimum=10)
