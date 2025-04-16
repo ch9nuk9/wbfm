@@ -168,11 +168,16 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
         behavior_time_series_names = ['angular_velocity', 'head_curvature', 'body_curvature', 'reversal_events',
                                       'velocity',
                                       'hilbert_phase', 'hilbert_amplitude', 'hilbert_frequency', 'hilbert_carrier']
-        behavior_time_series_dict = {n: video_class.calc_behavior_from_alias(n) for n in behavior_time_series_names}
+        behavior_time_series_dict = video_class.calc_behavior_from_alias(behavior_time_series_names)
         # Also add some more basic time series data
         behavior_time_series_dict['kymograph'] = video_class.curvature(fluorescence_fps=False)
         behavior_time_series_dict['stage_position'] = video_class.stage_position(fluorescence_fps=False)
         behavior_time_series_dict['eigenworms'] = video_class.eigenworms
+        # Also add a dataframe of the discrete behaviors
+        discrete_time_series_names = ['REV', 'FWD', 'VENTRAL_TURN', 'DORSAL_TURN', 'PAUSE', 'SLOWING']
+        df_discrete = video_class.calc_behavior_from_alias(discrete_time_series_names, include_slowing=True)
+        behavior_time_series_dict['discrete_states'] = df_discrete
+
     else:
         behavior_video, behavior_time_series_dict = None, None
 

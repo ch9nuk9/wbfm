@@ -4,7 +4,7 @@ import logging
 import math
 import os
 from pathlib import Path
-from typing import Union, Optional, List, Tuple
+from typing import Union, Optional, List, Tuple, Dict
 import dask.array as da
 import numpy as np
 import pandas as pd
@@ -733,7 +733,7 @@ class WormFullVideoPosture:
         behaviors.extend(BehaviorCodes.possible_behavior_aliases())
         return behaviors
 
-    def calc_behavior_from_alias(self, behavior_alias: str, **kwargs) -> pd.Series:
+    def calc_behavior_from_alias(self, behavior_alias: Union[str, List[str]], **kwargs) -> Union[pd.Series, Dict[str, pd.Series]]:
         """
         This calls worm_speed or summed_curvature_from_kymograph with defined key word arguments
 
@@ -753,6 +753,10 @@ class WormFullVideoPosture:
         -------
 
         """
+        if isinstance(behavior_alias, list):
+            # This is a list of behaviors to calculate; return a dict with that as the key
+            # and the behavior as the value
+            return {b: self.calc_behavior_from_alias(b, **kwargs) for b in behavior_alias}
 
         # Default arguments
         kwargs['fluorescence_fps'] = kwargs.get('fluorescence_fps', True)
