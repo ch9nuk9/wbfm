@@ -559,7 +559,7 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
     calc_IDs = np.squeeze(blobquant_red[:, 0, 4])
     calc_labels = calc_IDs.astype(str)
     calc_labels = np.where(calc_labels != 'nan', calc_labels, '')
-
+    err
     Calclabels = SegmentationLabels(
         name='NeuronIDs',
         labels=calc_labels,
@@ -734,7 +734,7 @@ def _add_blob(blob, blobquant):
     return blobquant
 
 
-def convert_tracking_dataframe_to_nwb_format(gce_quant, DEBUG=False):
+def convert_tracking_dataframe_to_nwb_format(gce_quant_raw, DEBUG=False):
     """
     Converts my tracking dataframe to the format that the NWB tutorial expects, i.e. the Kato lab standard
 
@@ -747,8 +747,9 @@ def convert_tracking_dataframe_to_nwb_format(gce_quant, DEBUG=False):
     -------
 
     """
+    gce_quant = gce_quant_raw.copy()
     # Copy the label column to be blob_ix, but need to manually create the multiindex because it is multiple columns
-    new_columns = pd.MultiIndex.from_tuples([('blob_ix', c[1]) for c in gce_quant[['label']].columns])
+    new_columns = pd.MultiIndex.from_tuples([('blob_ix', c[1]) for c in gce_quant_raw[['label']].columns])
     gce_quant[new_columns] = gce_quant['label'].copy()
     gce_quant.loc[:, ('blob_ix', slice(None))] = gce_quant.loc[:, ('blob_ix', slice(None))].fillna(
         method='bfill').fillna(method='ffill')
@@ -765,6 +766,12 @@ def convert_tracking_dataframe_to_nwb_format(gce_quant, DEBUG=False):
         print(len(gce_quant['blob_ix'].unique()))  # Count the number of unique blobs in this file
         print(len(gce_quant['T'].unique()))  # Count the number of unique time points in this file
     gce_quant = gce_quant[['X', 'Y', 'Z', 'gce_quant', 'ID', 'T', 'blob_ix']]  # Reorder columns to order we want
+
+    # Make sure the ID column the string, corresponding to the initial column name
+    # First build mapping from label to column name, using the mode (all labels should be the same, unless they don't exist)
+    label_mapping = gce_quant_raw.copy()['label'].mode().T.to_dict()[0]
+    label_mapping = {v: k for k, v in label_mapping.items()}
+    gce_quant['ID'] = gce_quant['ID'].apply(lambda x: label_mapping[x] if x != 0 else '')
 
     return gce_quant
 
