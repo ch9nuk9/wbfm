@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from tqdm.auto import tqdm
 import argparse
@@ -21,6 +22,7 @@ if __name__ == '__main__':
 
     for suffix in tqdm(all_suffixes):
         subfolder_name = f'exported_data_{suffix}'
+        Path(parent_dir).mkdir(exist_ok=True)
         all_projects = load_paper_datasets(suffix)
 
         for name, project in all_projects.items():

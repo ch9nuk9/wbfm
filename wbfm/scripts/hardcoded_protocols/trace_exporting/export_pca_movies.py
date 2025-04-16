@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from tqdm.auto import tqdm
 import argparse
@@ -25,6 +26,7 @@ if __name__ == '__main__':
 
         for name, project in all_projects.items():
             this_folder = os.path.join(parent_dir, subfolder_name)
+            Path(parent_dir).mkdir(exist_ok=True)
             output_fname = os.path.join(this_folder, f'{project.shortened_name}.mp4')
 
             # Skip if file exists
