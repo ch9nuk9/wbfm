@@ -369,12 +369,15 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                                  f"Using hardcoded default raw data config: {cfg}")
             return SubfolderConfigFile(_self_path=None, _config=cfg, project_dir=self.project_dir)
 
-    def get_nwb_config(self) -> SubfolderConfigFile:
+    def get_nwb_config(self, make_subfolder=True) -> SubfolderConfigFile:
         fname = self.config['subfolder_configs'].get('nwb', None)
         if fname is None:
             fname = Path(self.project_dir).joinpath('nwb', 'nwb_config.yaml')
             if not fname.exists():
-                raise FileNotFoundError("No path to a nwb config file was found in the project_config.yaml file")
+                if make_subfolder:
+                    self.initialize_nwb_folder()
+                else:
+                    raise FileNotFoundError("No path to a nwb config file was found in the project_config.yaml file")
         else:
             fname = Path(fname)
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
@@ -416,6 +419,23 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         self.config['subfolder_configs']['neuropal'] = neuropal_config.relative_self_path
         self.update_self_on_disk()
         return neuropal_config
+
+    def initialize_nwb_folder(self) -> SubfolderConfigFile:
+        # Nearly the same as getting a subfolder config, but expects the folder to not exist
+        foldername = Path(self.project_dir).joinpath('nwb')
+        foldername.mkdir(exist_ok=True)
+        # Copy contents of the config file from the github project to the local project
+        source_folder = Path(get_location_of_new_project_defaults()).joinpath('nwb')
+        for content in source_folder.iterdir():
+            if content.is_file():
+                shutil.copy(content, foldername)
+            else:
+                raise FileNotFoundError(f"Found a folder in the default nwb folder: {content}")
+        # Add this config path to the main project config
+        nwb_config = self.get_nwb_config()
+        self.config['subfolder_configs']['nwb'] = nwb_config.relative_self_path
+        self.update_self_on_disk()
+        return nwb_config
 
     def _check_path_and_load_config(self, subconfig_path: Path,
                                     allow_config_to_not_exist: bool = False) -> Dict:
