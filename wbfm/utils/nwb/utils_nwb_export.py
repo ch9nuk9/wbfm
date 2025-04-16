@@ -65,8 +65,7 @@ def create_vol_seg_centers(name, description, ImagingVolume, positions,
         vs.add_column(
             name='ID_labels',
             description='ROI ID labels',
-            data=labels,
-            index=True
+            data=labels.astype(str),
         )
     return vs
 
@@ -540,10 +539,6 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
     for t in tqdm(range(blobquant_red.shape[1]), leave=False):
         blobs = np.squeeze(blobquant_red[:, t, 0:3])
         IDs = np.squeeze(blobquant_red[:, t, 4])
-        # I think the labels as strings mess things up
-        # Later the labels are converted to lists of single characters... but otherwise gives a ValueError
-        # ... so I'll just use the strings but ignore that column and use the actual dataframe index as ID
-        # labels = np.where(IDs != 0, IDs, -1)
         labels = IDs.astype(str)
         labels = np.where(labels != 'nan', labels, '')
 
@@ -552,6 +547,7 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
         volseg = create_vol_seg_centers(vsname, description, CalcImagingVolume, blobs, labels=labels)
 
         volsegs.append(volseg)
+
 
     CalcImSegCoords = ImageSegmentation(
         name='CalciumSeriesSegmentationCoords',
