@@ -2595,7 +2595,7 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
         # Plot the state
         state_df = pca_proj[pca_proj['state'] == state_code].copy()
         # Fill with nan so matplotlib doesn't connect the gaps
-        state_df, _ = fill_missing_indices_with_nan(state_df, expected_max_t=pca_proj.shape[0])
+        state_df, _ = fill_missing_indices_with_nan(state_df, expected_index=pca_proj.index)
         # For every first nan value after a gap, add in the real data in order to connect states
         state_df = ffill_using_raw_data(state_df, pca_proj)
         # Transform state_code to simple string
