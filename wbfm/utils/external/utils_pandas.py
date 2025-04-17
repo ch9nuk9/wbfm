@@ -676,7 +676,15 @@ def ffill_using_raw_data(df_with_gaps, df_raw):
     idx_to_fill = state_df_next_fill.notna() & df_with_gaps.isna()
     idx_to_fill = idx_to_fill.any(axis=1)  # Only need rows
     idx_to_fill = pd.Series(idx_to_fill, index=df_with_gaps.index)  # Explicitly set the index; only needed on some pandas versions
-    df_with_gaps.loc[idx_to_fill] = df_raw.loc[idx_to_fill]
+    print("df_with_gaps index:", df_with_gaps.index)
+    print("df_raw index:", df_raw.index)
+    print("idx_to_fill index:", idx_to_fill.index)
+    print("idx_to_fill type:", type(idx_to_fill))
+    print("idx_to_fill dtype:", idx_to_fill.dtype)
+    print("idx_to_fill shape:", idx_to_fill.shape)
+    rows_to_fill = df_with_gaps.index[idx_to_fill]
+    assert all(rows_to_fill.isin(df_raw.index)), "Some rows to fill aren't in df_raw"
+    df_with_gaps.loc[rows_to_fill] = df_raw.loc[rows_to_fill]
     return df_with_gaps
 
 
