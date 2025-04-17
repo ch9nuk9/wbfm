@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
             # Export data
             save_video_of_heatmap_and_pca_with_behavior(project, output_fname=output_fname,
-                                                        include_slowing=include_slowing)
+                                                        include_slowing=include_slowing, DEBUG=DEBUG)
 
             if DEBUG:
                 print(f'Exported {name} to {this_folder}, breaking')

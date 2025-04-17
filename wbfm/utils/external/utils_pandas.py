@@ -658,6 +658,8 @@ def fill_missing_indices_with_nan(df: Union[pd.DataFrame, pd.Series], expected_m
 def ffill_using_raw_data(df_with_gaps, df_raw):
     """
     Like ffill, but instead fills with values from another dataframe.
+
+    Only fills a single point, i.e. it assumes that the values are
     
     Useful for filling gaps in plots in matplotlib
     
@@ -673,6 +675,7 @@ def ffill_using_raw_data(df_with_gaps, df_raw):
     state_df_next_fill = df_with_gaps.fillna(method='ffill', limit=1)
     idx_to_fill = state_df_next_fill.notna() & df_with_gaps.isna()
     idx_to_fill = idx_to_fill.any(axis=1)  # Only need rows
+    idx_to_fill = pd.Series(idx_to_fill, index=df_with_gaps.index)  # Explicitly set the index; only needed on some pandas versions
     df_with_gaps.loc[idx_to_fill] = df_raw.loc[idx_to_fill]
     return df_with_gaps
 
