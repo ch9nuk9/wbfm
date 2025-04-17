@@ -2534,7 +2534,7 @@ def plot_pca_modes_from_project(project_data: ProjectData, n_components=3, trace
 
 def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_start=None, t_end=None,
                                         include_time_series_subplot=True, fig=None, fig_opt=None,
-                                        states_to_remove=None, verbose=0):
+                                        states_to_remove=None, include_slowing=False, verbose=0):
     """
     Similar to plot_pca_modes_from_project, but 3d. Plots times series and 3d axis
     
@@ -2575,7 +2575,8 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
 
     # Color the lines by behavior annotation using proper colormap
     beh_annotation = dict(fluorescence_fps=True, reset_index=True, include_collision=False, include_turns=True,
-                          include_head_cast=False, include_pause=True, include_slowing=False, use_pause_to_exclude_other_states=True)
+                          include_head_cast=False, include_pause=True, include_slowing=include_slowing,
+                          use_pause_to_exclude_other_states=True, simplify_states=True)
     ethogram_cmap_kwargs = dict(use_plotly_style_strings=False)
     # beh_annotation.update(beh_annotation_kwargs)
     state_vec = project_data.worm_posture_class.beh_annotation(**beh_annotation)

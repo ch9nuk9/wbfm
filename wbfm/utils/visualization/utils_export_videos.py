@@ -707,7 +707,8 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     plt.ion()
     fig_opt = dict(figsize=(width / 100, height / 100), dpi=100)
     fig, ax, pca_proj = plot_pca_projection_3d_from_project(project_data, fig_opt=fig_opt,
-                                                            include_time_series_subplot=False)
+                                                            include_time_series_subplot=False,
+                                                            include_slowing=include_slowing)
     plt.legend()
     ax.xaxis.label.set_size(18)
     ax.yaxis.label.set_size(18)
