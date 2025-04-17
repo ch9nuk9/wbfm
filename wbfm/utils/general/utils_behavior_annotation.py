@@ -1168,9 +1168,11 @@ def approximate_slowing_using_speed_from_config(project_cfg, min_length=3, retur
         return beh_vec
 
 
-def calc_slowing_from_speed(y, min_length):
-    # At the default height of 0.5, every body bend will show "slowing"
-    beh_vec_raw = calculate_rise_high_fall_low(y - y.mean(), min_length=min_length, height=1.0, width=100, verbose=0)
+def calc_slowing_from_speed(y, min_length, DEBUG=False, **kwargs):
+    kwargs['width'] = kwargs.get('width', 5)
+    kwargs['height'] = kwargs.get('height', 0.1)
+    kwargs['deriv_epsilon'] = kwargs.get('deriv_epsilon', 0.4)
+    beh_vec_raw = calculate_rise_high_fall_low(y - y.mean(), min_length=min_length, verbose=0, DEBUG=DEBUG, **kwargs)
     # Convert this to slowing periods
     # For each period check what the mean speed is
     beh_vec = pd.Series(np.zeros_like(beh_vec_raw), index=beh_vec_raw.index, dtype=bool)
@@ -1202,7 +1204,7 @@ def calc_slowing_from_speed(y, min_length):
 
 def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominence=0.0,
                                  signal_delta_threshold=0.15, high_assignment_threshold=0.4,
-                                 verbose=1, DEBUG=False) -> pd.Series:
+                                 deriv_epsilon=0.4, verbose=1, DEBUG=False) -> pd.Series:
     """
     From a time series, calculates the "rise", "high", "fall", and "low" states
 
@@ -1270,7 +1272,7 @@ def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominenc
         # Instead of prominences, pass the peaks heights to get the intersection at 0
         # But, because the derivative might not exactly be 0, pass an epslion value
         # Note that this epsilon is quite high; some "high" periods can have a negative slope almost as high as a "fall"
-        deriv_epsilon = 0.4
+
         widths, h_eval, left_ips, right_ips = peak_widths(
             this_dy, peaks,
             rel_height=1,
@@ -1304,12 +1306,11 @@ def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominenc
         if DEBUG:
             # Plot the derivative with the peaks and widths
             print(h_eval)
+            fig = px.line({'dy': dy, 'dy_smoothed': df_smooth},
+                          title="Positive peaks" if i == 0 else "Negative peaks")
+            fig.show()
             plt.figure(dpi=200)
-            plt.plot(dy)
-            if i == 0:
-                print("Positive peaks")
-            else:
-                print("Negative peaks")
+            fig = plt.plot(dy)
             for i_left, i_right, i_prom in zip(left_ips, right_ips, prominences):
                 plt.plot(np.arange(int(i_left), int(i_right)), dy[int(i_left): int(i_right)], "x")
                 print(f"left: {int(i_left)}, right: {int(i_right)}, "
