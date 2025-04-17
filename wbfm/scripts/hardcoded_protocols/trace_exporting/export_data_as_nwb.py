@@ -34,7 +34,11 @@ if __name__ == '__main__':
             #     continue
 
             # Export data
-            nwb_using_project_data(project, include_image_data=False, output_folder=this_folder)
+            try:
+                nwb_using_project_data(project, include_image_data=False, output_folder=this_folder)
+            except ValueError as e:
+                print(f'Error exporting {name}: {e}')
+                continue
 
             if DEBUG:
                 print(f'Exported {name} to {this_folder}, breaking')
