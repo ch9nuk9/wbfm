@@ -183,7 +183,8 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
         # Also add a dataframe of the discrete behaviors
         discrete_time_series_names = ['REV', 'FWD', 'VENTRAL_TURN', 'DORSAL_TURN', 'PAUSE', 'SLOWING']
         df_discrete = video_class.calc_behavior_from_alias(discrete_time_series_names, include_slowing=True)
-        behavior_time_series_dict['discrete_states'] = df_discrete
+        idx = behavior_time_series_dict['velocity'].index
+        behavior_time_series_dict['discrete_states'] = pd.DataFrame(df_discrete, index=idx)
 
     else:
         behavior_video, behavior_time_series_dict = None, None
