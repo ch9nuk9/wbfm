@@ -3,20 +3,15 @@
 
 # main function
 import os
-import subprocess
-from pathlib import Path
 
 # Experiment tracking
 import sacred
 
-from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
 from sacred import Experiment
 from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
 
-from wbfm.pipeline.project_initialization import write_data_subset_using_config, zip_zarr_using_config, \
-    subtract_background_using_config
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_project import safe_cd
 from wbfm.utils.projects.utils_neuropal import add_neuropal_to_project
@@ -28,7 +23,7 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 # Initialize sacred experiment
 
 ex = Experiment(save_git_info=False)
-ex.add_config(project_path=None, raw_neuropal_path=None, copy_data=True)
+ex.add_config(project_path=None, raw_neuropal_path=None, copy_data=True, DEBUG=False)
 
 
 @ex.config
