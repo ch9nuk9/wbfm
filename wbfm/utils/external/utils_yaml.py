@@ -1,3 +1,4 @@
+import os
 import pathlib
 import typing
 from os import path as osp
@@ -33,9 +34,10 @@ def edit_config(config_fname: typing.Union[str, pathlib.Path], edits: dict, DEBU
 def load_config(config_fname: typing.Union[str, pathlib.Path]) -> dict:
     if not osp.exists(config_fname):
         # Try to append "project_config.yaml" to the end
-        config_fname = osp.join(config_fname, 'project_config.yaml')
-        if not osp.exists(config_fname):
-            raise FileNotFoundError(f"{config_fname} not found!")
+        config_fname_appended = osp.join(config_fname, 'project_config.yaml')
+        if not osp.exists(config_fname_appended):
+            raise FileNotFoundError(f"{config_fname} not found from current directory {os.getcwd()}!")
+        config_fname = config_fname_appended
 
     with open(config_fname, 'r') as f:
         cfg = YAML().load(f)
