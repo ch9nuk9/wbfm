@@ -84,14 +84,21 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
     -------
 
     """
+    try:
+        cfg_nwb = project_data.project_config.get_nwb_config()
+    except PermissionError:
+        logging.warning(f"You do not have permissions for project {project_data.shortened_name} to save NWB files.")
+        cfg_nwb = None
 
-    cfg_nwb = project_data.project_config.get_nwb_config()
     if DEBUG:
         logging.warning("DEBUG mode; will not save final output (this is a dry run)")
         output_folder = None
     elif output_folder is None:
-        # Save within the project_data folder
-        output_folder = cfg_nwb.absolute_subfolder
+        if cfg_nwb is not None:
+            # Save within the project_data folder
+            output_folder = cfg_nwb.absolute_subfolder
+        else:
+            raise PermissionError(f"Either project permissions or output folder is required to save NWB files.")
 
     output_fname = os.path.join(output_folder, project_data.shortened_name)
     if not include_image_data:
@@ -186,8 +193,9 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
                                                       behavior_video, behavior_time_series_dict,
                                                       output_fname, include_image_data)
     # Update in the project config
-    cfg_nwb.config['nwb_filename'] = fname
-    cfg_nwb.update_self_on_disk()
+    if cfg_nwb is not None:
+        cfg_nwb.config['nwb_filename'] = fname
+        cfg_nwb.update_self_on_disk()
 
     return nwb_file, fname
 
