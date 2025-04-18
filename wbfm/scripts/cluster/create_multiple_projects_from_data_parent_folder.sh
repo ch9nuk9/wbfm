@@ -11,15 +11,26 @@
 # Example:
 #   bash create_multiple_projects_from_data_parent_folder.sh -t /lisc/scratch/neurobiology/zimmer/wbfm/data -p/lisc/scratch/neurobiology/zimmer/wbfm/projects
 
+function usage {
+  echo "Usage: $0 [-t DATA_PARENT_FOLDER] [-p PROJECT_PARENT_FOLDER] [-n is_dry_run] [-b run_in_background]"
+  echo "  -t: parent folder of data (required)"
+  echo "  -p: parent folder of projects (required)"
+  echo "  -n: dry run of this script (default: false)"
+  echo "  -b: run in background (default: True)"
+  echo "  -h: display help (this message)"
+  exit 1
+}
+
 # Get all user flags
 run_in_background="True"
-while getopts t:p:n:b flag
+while getopts t:p:n:bh flag
 do
     case "${flag}" in
         t) DATA_PARENT_FOLDER=${OPTARG};;
         p) PROJECT_PARENT_FOLDER=${OPTARG};;
         n) is_dry_run=${OPTARG};;
         b) run_in_background=${OPTARG};;
+        h) usage;;
         *) raise error "Unknown flag"
     esac
 done
