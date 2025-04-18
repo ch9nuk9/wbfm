@@ -517,7 +517,7 @@ class BehaviorCodes(Flag):
 
         """
 
-        for state in self.default_state_hierarchy:
+        for state in cls.default_state_hierarchy:
             if state in query_state:
                 return state
         return cls.UNKNOWN
