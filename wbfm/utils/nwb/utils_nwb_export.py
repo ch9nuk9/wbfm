@@ -21,6 +21,7 @@ from ndx_multichannel_volume import CElegansSubject, OpticalChannelReferences, O
     MultiChannelVolume, MultiChannelVolumeSeries, SegmentationLabels
 from tifffile import tifffile
 from tqdm.auto import tqdm
+from wbfm.utils.external.utils_pandas import convert_binary_columns_to_one_hot
 
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.external.utils_neuron_names import int2name_neuron
