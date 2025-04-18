@@ -493,6 +493,21 @@ class BehaviorCodes(Flag):
             return individual_names
 
     @classmethod
+    def default_state_hierarchy(cls, use_strings=False):
+        """
+        Returns the default state hierarchy for this behavior
+
+        Returns
+        -------
+
+        """
+        vec = [cls.REV, cls.VENTRAL_TURN, cls.DORSAL_TURN, cls.PAUSE, cls.SLOWING, cls.FWD]
+        if use_strings:
+            return [v.name for v in vec]
+        else:
+            return vec
+
+    @classmethod
     def convert_to_simple_states(cls, query_state: 'BehaviorCodes'):
         """
         Collapses simultaneous states into one-state-at-a-time, using a hardcoded hierarchy
@@ -502,8 +517,7 @@ class BehaviorCodes(Flag):
 
         """
 
-        state_hierarchy = [cls.REV, cls.VENTRAL_TURN, cls.DORSAL_TURN, cls.PAUSE, cls.SLOWING, cls.FWD]
-        for state in state_hierarchy:
+        for state in self.default_state_hierarchy:
             if state in query_state:
                 return state
         return cls.UNKNOWN

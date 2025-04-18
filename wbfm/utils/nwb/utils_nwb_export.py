@@ -181,10 +181,13 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
         behavior_time_series_dict['stage_position'] = video_class.stage_position(fluorescence_fps=False)
         behavior_time_series_dict['eigenworms'] = video_class.eigenworms
         # Also add a dataframe of the discrete behaviors
-        discrete_time_series_names = ['REV', 'FWD', 'VENTRAL_TURN', 'DORSAL_TURN', 'PAUSE', 'SLOWING']
+        from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
+        discrete_time_series_names = BehaviorCodes.default_state_hierarchy(use_strings=True)
         df_discrete = video_class.calc_behavior_from_alias(discrete_time_series_names, include_slowing=True)
         idx = behavior_time_series_dict['velocity'].index
-        behavior_time_series_dict['discrete_states'] = pd.DataFrame(df_discrete, index=idx)
+        df_discrete = convert_binary_columns_to_one_hot(pd.DataFrame(df_discrete, index=idx),
+                                                        discrete_time_series_names)
+        behavior_time_series_dict['discrete_states'] = df_discrete
 
     else:
         behavior_video, behavior_time_series_dict = None, None

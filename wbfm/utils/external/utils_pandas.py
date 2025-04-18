@@ -1513,3 +1513,32 @@ def crop_to_same_time_length(df0, df1, axis=0):
     elif df0.shape[axis] < df1.shape[axis]:
         df1 = df1.copy().iloc[:df0.shape[axis], :]
     return df0, df1
+
+
+def convert_binary_columns_to_one_hot(df: pd.DataFrame, column_hierarchy: List[str]):
+    """
+    Given a dataframe with binary columns that might overlap, convert them to a one-hot encoding
+
+    i.e. if there are columns 'A' and 'B', and they are both 1, then set the lower one in the hierarchy to 0
+
+    Parameters
+    ----------
+    df
+    column_hierarchy
+
+    Returns
+    -------
+
+    """
+    # Check that all columns are passed in the hierarchy
+    if not all(col in column_hierarchy for col in df.columns):
+        raise ValueError("Not all columns are in the hierarchy list")
+
+    df = df.copy()
+    for col in column_hierarchy:
+        # Get the columns that are lower in the hierarchy
+        lower_cols = column_hierarchy[column_hierarchy.index(col) + 1:]
+        if len(lower_cols) > 0:
+            # Set the lower columns to 0 if the current column is 1
+            df.loc[df[col].astype(bool), lower_cols] = 0
+    return df
