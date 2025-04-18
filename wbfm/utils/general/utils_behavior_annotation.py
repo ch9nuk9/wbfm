@@ -1160,7 +1160,7 @@ def approximate_slowing_using_speed_from_config(project_cfg, min_length=3, retur
     project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
     y = project_data.worm_posture_class.worm_angular_velocity(fluorescence_fps=False)
-    beh_vec, beh_vec_raw = calc_slowing_from_speed(y, min_length)
+    beh_vec, beh_vec_raw = calc_slowing_using_peak_detection(y, min_length)
 
     if return_raw_rise_high_fall:
         return beh_vec_raw
@@ -1168,7 +1168,7 @@ def approximate_slowing_using_speed_from_config(project_cfg, min_length=3, retur
         return beh_vec
 
 
-def calc_slowing_from_speed(y, min_length, DEBUG=False, **kwargs):
+def calc_slowing_using_peak_detection(y, min_length, DEBUG=False, **kwargs):
     kwargs['width'] = kwargs.get('width', 5)
     kwargs['height'] = kwargs.get('height', 0.1)
     kwargs['deriv_epsilon'] = kwargs.get('deriv_epsilon', 0.4)
@@ -1202,9 +1202,41 @@ def calc_slowing_from_speed(y, min_length, DEBUG=False, **kwargs):
     return beh_vec, beh_vec_raw
 
 
+def calc_slowing_using_threshold(y, min_length, threshold, only_negative_deriv=True, DEBUG=False):
+    """
+    Uses a threshold to define slowing periods, and then (optionally) only keep periods with a negative derivative
+
+    Note that this expects an all-positive speed, i.e. not signed by reversals
+
+    Parameters
+    ----------
+    y
+    min_length
+    DEBUG
+
+    Returns
+    -------
+
+    """
+
+    # Get the periods both below the threshold and with negative derivative
+    beh_vec = pd.Series(np.zeros_like(y), index=y.index, dtype=bool)
+    beh_vec[y < threshold] = True
+
+    if only_negative_deriv:
+        dy = np.gradient(y)
+        beh_vec[dy > 0] = False
+
+    # Remove very short states (requires the vector to be integers)
+    if min_length > 0:
+        beh_vec = remove_short_state_changes(beh_vec, min_length=min_length)
+
+    return beh_vec
+
+
 def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominence=0.0,
                                  signal_delta_threshold=0.15, high_assignment_threshold=0.4,
-                                 deriv_epsilon=0.4, verbose=1, DEBUG=False) -> pd.Series:
+                                 deriv_epsilon=0.4, smoothing_std=2, verbose=1, DEBUG=False) -> pd.Series:
     """
     From a time series, calculates the "rise", "high", "fall", and "low" states
 
@@ -1256,7 +1288,7 @@ def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominenc
     opt_find_peaks = dict(height=height, width=width, prominence=prominence)
     for i, this_dy in enumerate([dy, -dy]):
         # First find peaks in the smoothed signal
-        df_smooth = filter_gaussian_moving_average(pd.Series(this_dy), 2)
+        df_smooth = filter_gaussian_moving_average(pd.Series(this_dy), smoothing_std)
         peaks_smooth, properties_smooth = find_peaks(df_smooth, **opt_find_peaks)
         # Second find the peaks in the original signal
         peaks_raw, properties_raw = find_peaks(this_dy, **opt_find_peaks)
@@ -1286,10 +1318,10 @@ def calculate_rise_high_fall_low(y, min_length=5, height=0.5, width=5, prominenc
             if delta > signal_delta_threshold:
                 peaks_filtered.append(peak)
                 heights_filtered.append(height)
-                if DEBUG:
+                if DEBUG and verbose >= 1:
                     print(f"Keeping peak at {int(i_left)} because delta ({delta}) is large enough")
             else:
-                if DEBUG:
+                if DEBUG and verbose >= 1:
                     print(f"Removing peak at {int(i_left)} because delta ({delta}) is too small "
                           f"({signal_delta_threshold})")
         heights = np.array(heights_filtered)

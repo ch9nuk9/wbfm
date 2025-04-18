@@ -23,8 +23,8 @@ from wbfm.utils.external.utils_breakpoints import plot_with_offset_x
 from wbfm.utils.external.utils_self_collision import calculate_self_collision_using_pairwise_distances
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate, \
     shade_using_behavior, get_same_phase_segment_pairs, get_heading_vector_from_phase_pair_segments, \
-    shade_using_behavior_plotly, calc_slowing_from_speed, detect_peaks_and_interpolate_using_inter_event_intervals, \
-    plot_dataframe_of_transitions, annotate_turns_from_reversal_ends
+    shade_using_behavior_plotly, calc_slowing_using_peak_detection, detect_peaks_and_interpolate_using_inter_event_intervals, \
+    plot_dataframe_of_transitions, annotate_turns_from_reversal_ends, calc_slowing_using_threshold
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
     remove_short_state_changes, get_dataframe_of_transitions, make_binary_vector_from_starts_and_ends, \
     force_same_indexing
@@ -478,9 +478,8 @@ class WormFullVideoPosture:
         # # Remove any slowing bouts that are too short (less than ~0.5 seconds)
         # _raw_vector = remove_short_state_changes(_raw_vector, min_length=30)
 
-        y = self.worm_angular_velocity(fluorescence_fps=False, make_consisent_with_stage_speed=False,
-                                       strong_smoothing=True)
-        _raw_vector, _ = calc_slowing_from_speed(y, min_length=30)
+        y = self.worm_speed(fluorescence_fps=False, signed=False, lowpass_filter=True)
+        _raw_vector = calc_slowing_using_threshold(y, min_length=0, threshold=0.05, only_negative_deriv=False)
 
         # Convert 1's to BehaviorCodes.SLOWING and 0's to BehaviorCodes.NOT_ANNOTATED
         _raw_vector = _raw_vector.replace(True, BehaviorCodes.SLOWING)
@@ -1136,7 +1135,7 @@ class WormFullVideoPosture:
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
                    strong_smoothing=False, use_stage_position=True, remove_outliers=True, body_segment=50,
                    clip_unrealistic_values=True, strong_smoothing_before_derivative=False,
-                   reset_index=True) -> pd.Series:
+                   lowpass_filter=False, reset_index=True) -> pd.Series:
         """
         Calculates derivative of position
 
@@ -1185,8 +1184,18 @@ class WormFullVideoPosture:
                                                            reset_index=True)
         speed_mm_per_s = self.convert_index_to_physical_time(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
         if strong_smoothing:
-            window = 50
-            speed_mm_per_s = pd.Series(speed_mm_per_s).rolling(window=window, center=True).mean()
+            std = 84 if not fluorescence_fps else 3.5
+            speed_mm_per_s = filter_gaussian_moving_average(speed_mm_per_s, std=std)
+        if lowpass_filter:
+            # Remove frequencies similar to the scanning
+            from scipy import signal
+            fs = 1.0  # samples per frame
+            cutoff = 1 / 48  # Scanning is usually 24 fps, so this is 2 Hz
+            nyq = 0.5 * fs
+            normalized_cutoff = cutoff / nyq
+            b, a = signal.butter(8, normalized_cutoff, btype='low')
+            y = signal.filtfilt(b, a, fill_nan_in_dataframe(speed_mm_per_s).values, method="gust")
+            speed_mm_per_s = pd.Series(y, index=speed_mm_per_s.index)
         if remove_outliers:
             window = 10
             speed_mm_per_s = remove_outliers_via_rolling_mean(pd.Series(speed_mm_per_s), window)
