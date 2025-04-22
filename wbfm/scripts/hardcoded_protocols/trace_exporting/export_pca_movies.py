@@ -13,6 +13,7 @@ if __name__ == '__main__':
     # Debug mode
     parser.add_argument('--debug', action='store_true', help='Debug mode')
     parser.add_argument('--include_slowing', action='store_true', help='Include slowing in the video')
+    parser.add_argument('--suffixes', '-s', nargs='+', default=['gfp', 'gcamp', 'mutant'], help='Suffixes to include in the export')
     args = parser.parse_args()
 
     include_slowing = args.include_slowing
@@ -20,7 +21,7 @@ if __name__ == '__main__':
 
     # Export to hardcoded locations
     parent_dir = '/lisc/user/fieseler/zimmer/fieseler/paper/pca_movies'
-    all_suffixes = ['gfp', '', 'mutant']  # don't include immob
+    all_suffixes = args.suffixes  # don't include immob
 
     for suffix in tqdm(all_suffixes):
         subfolder_name = f'movies_{suffix}'
