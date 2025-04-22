@@ -501,7 +501,8 @@ class BehaviorCodes(Flag):
         -------
 
         """
-        vec = [cls.REV, cls.VENTRAL_TURN, cls.DORSAL_TURN, cls.PAUSE, cls.SLOWING, cls.FWD]
+        vec = [cls.REV, cls.VENTRAL_TURN, cls.DORSAL_TURN, cls.PAUSE, cls.SLOWING, cls.FWD,
+               cls.TRACKING_FAILURE, cls.UNKNOWN]
         if use_strings:
             return [v.name for v in vec]
         else:
