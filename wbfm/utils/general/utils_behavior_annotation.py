@@ -335,7 +335,7 @@ class BehaviorCodes(Flag):
 
         """
         base_cmap = cls.base_colormap()
-        cmap = {cls.UNKNOWN: None,
+        cmap = {cls.UNKNOWN: None, cls.TRACKING_FAILURE: None,
                 cls.FWD: base_cmap[0],
                 cls.REV: base_cmap[1],
                 # Same as FWD by default
