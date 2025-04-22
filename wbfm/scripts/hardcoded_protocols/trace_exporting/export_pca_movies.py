@@ -9,7 +9,7 @@ from wbfm.utils.visualization.utils_export_videos import save_video_of_heatmap_a
 
 if __name__ == '__main__':
     # Get args
-    parser = argparse.ArgumentParser(description='Export traces in nwb format')
+    parser = argparse.ArgumentParser(description='Export movies of pca phase space, behavior, and heatmap')
     # Debug mode
     parser.add_argument('--debug', action='store_true', help='Debug mode')
     parser.add_argument('--include_slowing', action='store_true', help='Include slowing in the video')
