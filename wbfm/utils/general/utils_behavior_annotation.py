@@ -356,8 +356,8 @@ class BehaviorCodes(Flag):
                 cls.QUIESCENCE | cls.VENTRAL_TURN: base_cmap[0],
                 cls.QUIESCENCE | cls.DORSAL_TURN: base_cmap[0],
                 cls.PAUSE | cls.QUIESCENCE: base_cmap[0],
-                cls.SLOWING: base_cmap[0],
-                cls.SLOWING | cls.FWD: base_cmap[0],
+                cls.SLOWING: base_cmap[4],
+                cls.SLOWING | cls.FWD: base_cmap[4],
                 }
         if include_turns:
             # Turns during FWD are differentiated, but not during REV
