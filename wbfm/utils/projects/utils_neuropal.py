@@ -75,6 +75,7 @@ def segment_neuropal_from_project(project_data, subsample_in_z=True):
     -------
 
     """
+    project_data = ProjectData.load_final_project_data(project_data)
     try:
         neuropal_config = project_data.project_config.get_neuropal_config()
     except FileNotFoundError:
