@@ -7,7 +7,6 @@ from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
-from pip._internal.commands.show import search_packages_info
 
 from wbfm.utils.external.custom_errors import UnknownValueError, RawDataFormatError
 
@@ -353,6 +352,7 @@ def generate_output_data_names(cfg):
 
 
 def get_location_of_installed_project():
+    from pip._internal.commands.show import search_packages_info
     package_info = next(search_packages_info(['wbfm']))
     return package_info.location
 

@@ -619,10 +619,11 @@ def save_video_of_heatmap_and_pca_with_behavior(project_path: Union[str, Path], 
     beh_vec_raw = project_data.worm_posture_class.beh_annotation(fluorescence_fps=True, include_slowing=include_slowing,
                                                                  include_collision=False, include_head_cast=False)
     beh_vec = beh_vec_raw.copy()
+    beh_vec = BehaviorCodes.convert_to_simple_states_vector(beh_vec)
     # Extend short states (only turns)
     beh_to_extend = [BehaviorCodes.VENTRAL_TURN, BehaviorCodes.DORSAL_TURN, BehaviorCodes.PAUSE]
-    if include_slowing:
-        beh_to_extend.append(BehaviorCodes.SLOWING)
+    # if include_slowing:
+    #     beh_to_extend.append(BehaviorCodes.SLOWING)
     for behavior_code in beh_to_extend:
         binary_behavior = BehaviorCodes.vector_equality(beh_vec_raw, behavior_code)
         starts, ends = get_contiguous_blocks_from_column(binary_behavior, already_boolean=True)
