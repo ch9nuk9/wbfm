@@ -74,9 +74,12 @@ def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
     for i_volume in tqdm(frame_list):
         # Get tracking point cloud
         # NOTE: This dataframe starts at 0, not start_volume
-        zxy0 = _get_zxy_from_pandas(i_volume)
-        # TODO: use physical units and align between z and xy
-        zxy1 = project_data.get_centroids_as_numpy(i_volume)
+        try:
+            zxy0 = _get_zxy_from_pandas(i_volume)
+            # TODO: use physical units and align between z and xy
+            zxy1 = project_data.get_centroids_as_numpy(i_volume)
+        except KeyError:
+            zxy0, zxy1 = [], []
         if len(zxy1) == 0 or len(zxy0) == 0:
             continue
         # Get matches
