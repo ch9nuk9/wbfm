@@ -359,10 +359,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         """
         fname = None
         try:
-            fname, flag = self.get_behavior_raw_parent_folder_from_red_fname()
-            if flag:
-                fname = Path(fname).parent
-            else:
+            fname = self.get_folder_for_all_channels()
+            if fname is None:
                 raise FileNotFoundError
             fname = Path(fname).joinpath('config.yaml')
             return SubfolderConfigFile(**self._check_path_and_load_config(fname))
@@ -503,20 +501,18 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return Path(resolve_mounted_path_in_current_os(path))
 
     def get_folder_for_entire_day(self) -> Optional[Path]:
-        return self._get_variable_parent_folder_of_raw_data(2)
+        fname, flag = self.get_behavior_raw_parent_folder_from_red_fname()
+        if not flag:
+            return None
+        else:
+            return Path(fname).parent.parent
 
     def get_folder_for_all_channels(self) -> Optional[Path]:
-        return self._get_variable_parent_folder_of_raw_data(1)
-
-    def _get_variable_parent_folder_of_raw_data(self, i_parent):
-        raw_bigtiff_filename = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
-        if raw_bigtiff_filename is None:
-            raise FileNotFoundError(raw_bigtiff_filename)
-        raw_bigtiff_filename = Path(raw_bigtiff_filename)
-        parent_folder = raw_bigtiff_filename.parents[i_parent]
-        if not Path(parent_folder).exists():
-            raise FileNotFoundError(parent_folder)
-        return parent_folder
+        fname, flag = self.get_behavior_raw_parent_folder_from_red_fname()
+        if not flag:
+            return None
+        else:
+            return Path(fname).parent
 
     def get_folder_with_background(self) -> Path:
         folder_for_entire_day = self.get_folder_for_entire_day()
