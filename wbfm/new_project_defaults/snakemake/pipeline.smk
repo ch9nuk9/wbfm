@@ -523,7 +523,7 @@ rule create_centerline:
 rule invert_curvature_sign:
     input:
         spline_K = f"{output_behavior_dir}/skeleton_spline_K.csv",
-        config_yaml_file = raw_data_config_fname
+        config_yaml_file = str(raw_data_config_fname)
     # params:
     #     output_path = f"{output_behavior_dir}/"
     output:
