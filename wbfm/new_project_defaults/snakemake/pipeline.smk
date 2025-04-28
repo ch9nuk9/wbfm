@@ -37,10 +37,10 @@ except (NoBehaviorDataError, RawDataFormatError, FileNotFoundError) as e:
     raw_data_subfolder = "NOTFOUND_raw_data_subfolder"
 
 # Also get the raw data config file (if it exists)
-# try:
-#     raw_data_config_fname = project_config.get_raw_data_config().absolute_self_path
-# except FileNotFoundError:
-#     raw_data_config_fname = None
+try:
+    raw_data_config_fname = project_config.get_raw_data_config().absolute_self_path
+except FileNotFoundError:
+    raw_data_config_fname = "NOTFOUND_raw_data_config_fname"
 
 # Additionally update the paths used for the behavior pipeline (note that this needs to be loaded even if behavior is not run)
 hardcoded_paths = load_hardcoded_neural_network_paths()
@@ -523,8 +523,7 @@ rule create_centerline:
 rule invert_curvature_sign:
     input:
         spline_K = f"{output_behavior_dir}/skeleton_spline_K.csv",
-        # Unfortunately this config file doesn't always exist
-        #config_yaml_file = raw_data_config_fname
+        config_yaml_file = raw_data_config_fname
     # params:
     #     output_path = f"{output_behavior_dir}/"
     output:
@@ -537,6 +536,7 @@ rule invert_curvature_sign:
         invert_curvature_sign.main([
             '-i', str(params.output_path),
             '-r', str(raw_data_dir),
+            '-c', str(input.config_yaml_file),
         ])
 
 rule average_kymogram:
