@@ -359,7 +359,11 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         """
         fname = None
         try:
-            fname = self.get_folder_for_all_channels()
+            fname, flag = self.get_behavior_raw_parent_folder_from_red_fname()
+            if flag:
+                fname = Path(fname).parent
+            else:
+                raise FileNotFoundError
             fname = Path(fname).joinpath('config.yaml')
             return SubfolderConfigFile(**self._check_path_and_load_config(fname))
         except FileNotFoundError:
