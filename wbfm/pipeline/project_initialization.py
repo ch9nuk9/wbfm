@@ -21,7 +21,6 @@ from wbfm.utils.general.utils_filenames import error_if_dot_in_name
 from wbfm.utils.general.utils_filenames import get_sequential_filename, add_name_suffix, \
     get_location_of_new_project_defaults, get_both_bigtiff_fnames_from_parent_folder, \
     get_ndtiff_fnames_from_parent_folder, generate_output_data_names
-from wbfm.utils.projects.utils_neuropal import add_neuropal_to_project
 from wbfm.utils.projects.utils_project import get_relative_project_name, safe_cd, update_project_config_path, \
     update_snakemake_config_path, update_nwb_config_path
 
@@ -99,6 +98,7 @@ def build_project_structure_from_config(config: dict, logger: logging.Logger = N
     if 'neuropal_path' in config:
         neuropal_path = config['neuropal_path']
         copy_data = config.get('copy_neuropal_data', True)
+        from wbfm.utils.projects.utils_neuropal import add_neuropal_to_project
         add_neuropal_to_project(project_fname, neuropal_path, copy_data=copy_data)
 
     return project_fname
