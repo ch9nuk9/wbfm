@@ -800,7 +800,7 @@ def preprocess_all_frames(video_dat_4d: da, p: PreprocessingSettings, which_chan
     """
 
     total_sz = video_dat_4d.shape
-    if p.rescale_to_target_z:
+    if p.rescale_to_target_z is not None:
         total_sz = list(total_sz)
         total_sz[1] = p.rescale_to_target_z
         total_sz = tuple(total_sz)
