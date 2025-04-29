@@ -6,6 +6,7 @@ import pickle
 import threading
 from dataclasses import dataclass, field
 from typing import List, Optional
+from skimage.transform import resize
 
 from imutils import MicroscopeDataReader
 from methodtools import lru_cache
@@ -88,6 +89,7 @@ class PreprocessingSettings(RawFluorescenceData):
     # Plane removal, especially flyback
     raw_number_of_planes: int = None
     starting_plane: int = None
+    rescale_to_target_z: int = None
 
     # Filtering
     do_filtering: bool = False
@@ -732,6 +734,10 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
     if s.do_mini_max_projection:
         mini_max_size = s.mini_max_size
         single_volume_raw = ndi.maximum_filter(single_volume_raw, size=(mini_max_size, 1, 1))
+
+    if s.rescale_to_target_z is not None:
+        target_shape = (s.rescale_to_target_z, single_volume_raw.shape[1], single_volume_raw.shape[2])
+        single_volume_raw = resize(single_volume_raw, target_shape, order=3)
 
     # Do not actually change datatype
     if not s.uint8_only_for_opencv:

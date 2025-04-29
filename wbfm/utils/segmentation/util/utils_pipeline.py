@@ -2,7 +2,6 @@ import logging
 import os
 import threading
 from typing import Union
-from skimage.transform import resize
 
 import cv2
 import dask.array as da
