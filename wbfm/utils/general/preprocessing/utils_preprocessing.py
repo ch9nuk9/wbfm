@@ -6,6 +6,8 @@ import pickle
 import threading
 from dataclasses import dataclass, field
 from typing import List, Optional
+
+from skimage import img_as_uint
 from skimage.transform import resize
 
 from imutils import MicroscopeDataReader
@@ -737,7 +739,7 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
 
     if s.rescale_to_target_z is not None:
         target_shape = (s.rescale_to_target_z, single_volume_raw.shape[1], single_volume_raw.shape[2])
-        single_volume_raw = resize(single_volume_raw, target_shape, order=3)
+        single_volume_raw = resize(single_volume_raw, target_shape, order=3, preserve_range=True)
 
     # Do not actually change datatype
     if not s.uint8_only_for_opencv:
