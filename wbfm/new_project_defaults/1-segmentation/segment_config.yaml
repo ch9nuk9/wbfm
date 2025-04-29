@@ -5,16 +5,13 @@
 self_path: 1-segmentation/segment_config.yaml
 segmentation_type: 3d
 
-# Image preprocessing steps (that will only apply to segmentation)
-preprocessing:
-  rescale_z:  # Replace with a number; our network was trained on z=24-30, with 1.5um spacing
-
-# Segmentation
+# Segmentation and image preprocessing
 segmentation_params:
   stardist_model_name: students_and_lukas_3d_zarr
   zero_out_borders: false
   full_erosion: false
   sum_red_and_green_channels: false
+  rescale_z:  # Replace with a number; our network was trained on z=24-30, with 1.5um spacing
 
 # Postprocessing (only for 2d segmentation type)
 postprocessing_params:

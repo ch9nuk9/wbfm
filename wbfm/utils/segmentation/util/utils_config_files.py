@@ -38,9 +38,13 @@ def _unpack_config_file(preprocessing_cfg, segment_cfg, project_cfg, DEBUG):
     if sum_red_and_green_channels:
         if segment_on_green_channel:
             project_cfg.logger.warning("segment_on_green_channel and sum_red_and_green_channels are both true; "
-                                       "setting sum_red_and_green_channels to False")
+                                       "ignoring sum_red_and_green_channels")
+            sum_red_and_green_channels = False
         else:
             project_cfg.logger.warning("Summing red and green channels for segmentation; does not affect metadata.")
 
+    # For rescaling the volume in z, especially to match the neural network training data
+    rescale_z = segment_cfg.config['segmentation_params'].get('rescale_z', None)
+
     return (mask_fname, metadata_fname, stardist_model_name, verbose, video_path,
-            zero_out_borders, all_bounding_boxes, sum_red_and_green_channels, segment_on_green_channel)
+            zero_out_borders, all_bounding_boxes, sum_red_and_green_channels, segment_on_green_channel, rescale_z)

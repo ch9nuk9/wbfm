@@ -377,7 +377,7 @@ def recalculate_metadata_from_config(preprocessing_cfg, segment_cfg, project_cfg
 
     """
 
-    mask_fname, metadata_fname, _, _, video_path, _, _, _, _ = _unpack_config_file(
+    mask_fname, metadata_fname, _, _, video_path, _, _, _, _, _ = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     masks_zarr = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())

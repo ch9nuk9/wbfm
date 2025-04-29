@@ -47,7 +47,7 @@ def segment_video_using_config_3d(preprocessing_cfg: ConfigFileWithProjectContex
     """
 
     (mask_fname, metadata_fname, stardist_model_name, verbose, video_path, _,
-     all_bounding_boxes, sum_red_and_green_channels, segment_on_green_channel) = _unpack_config_file(
+     all_bounding_boxes, sum_red_and_green_channels, segment_on_green_channel, rescale_z) = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Open the file
@@ -147,7 +147,7 @@ def segment_video_using_config_2d(preprocessing_cfg: ConfigFileWithProjectContex
     """
 
     (mask_fname, metadata_fname, stardist_model_name, verbose, video_path, zero_out_borders,
-     all_bounding_boxes, sum_red_and_green_channels) = _unpack_config_file(
+     all_bounding_boxes, sum_red_and_green_channels, rescale_z) = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Open the file
@@ -581,7 +581,7 @@ def resplit_masks_in_z_from_config(preprocessing_cfg: ConfigFileWithProjectConte
     """
 
     (mask_fname, metadata_fname, _, verbose, video_path, zero_out_borders,
-     all_bounding_boxes, sum_red_and_green_channels) = _unpack_config_file(
+     all_bounding_boxes, sum_red_and_green_channels, rescale_z) = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Get data: needs both segmentation and raw video
