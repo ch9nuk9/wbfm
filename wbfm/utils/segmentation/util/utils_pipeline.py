@@ -2,6 +2,7 @@ import logging
 import os
 import threading
 from typing import Union
+from skimage.transform import resize
 
 import cv2
 import dask.array as da
@@ -47,7 +48,7 @@ def segment_video_using_config_3d(preprocessing_cfg: ConfigFileWithProjectContex
     """
 
     (mask_fname, metadata_fname, stardist_model_name, verbose, video_path, _,
-     all_bounding_boxes, sum_red_and_green_channels, segment_on_green_channel, rescale_z) = _unpack_config_file(
+     all_bounding_boxes, sum_red_and_green_channels, segment_on_green_channel) = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Open the file
@@ -55,6 +56,7 @@ def segment_video_using_config_3d(preprocessing_cfg: ConfigFileWithProjectContex
     red_dat = project_dat.red_data
     video_dat = red_dat
 
+    # Image preprocessing
     if sum_red_and_green_channels or segment_on_green_channel:
         green_dat = project_dat.green_data
         if sum_red_and_green_channels:
@@ -67,6 +69,7 @@ def segment_video_using_config_3d(preprocessing_cfg: ConfigFileWithProjectContex
     frame_list = list(range(num_frames))
     logging.info(f"Found video of shape {video_dat.shape}")
 
+    # Other initialization
     sd_model = initialize_stardist_model(stardist_model_name, verbose)
     # For now don't worry about postprocessing the first volume
     opt_postprocessing = segment_cfg.config['postprocessing_params']  # Most options are 2d-only
@@ -147,7 +150,7 @@ def segment_video_using_config_2d(preprocessing_cfg: ConfigFileWithProjectContex
     """
 
     (mask_fname, metadata_fname, stardist_model_name, verbose, video_path, zero_out_borders,
-     all_bounding_boxes, sum_red_and_green_channels, rescale_z) = _unpack_config_file(
+     all_bounding_boxes, sum_red_and_green_channels) = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Open the file
@@ -581,7 +584,7 @@ def resplit_masks_in_z_from_config(preprocessing_cfg: ConfigFileWithProjectConte
     """
 
     (mask_fname, metadata_fname, _, verbose, video_path, zero_out_borders,
-     all_bounding_boxes, sum_red_and_green_channels, rescale_z) = _unpack_config_file(
+     all_bounding_boxes, sum_red_and_green_channels) = _unpack_config_file(
         preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
 
     # Get data: needs both segmentation and raw video

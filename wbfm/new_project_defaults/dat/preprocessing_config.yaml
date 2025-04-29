@@ -7,6 +7,9 @@ bounding_boxes_fname: dat/bounding_boxes.pickle
 raw_number_of_planes: 22
 starting_plane: 0
 
+# Replace with target number; our segmentation and tracking networks were trained on z=24-30 (1.5um spacing)
+rescale_to_target_z:
+
 # Filtering
 do_filtering: false
 filter_opt:

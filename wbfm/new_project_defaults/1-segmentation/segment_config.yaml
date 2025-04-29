@@ -11,7 +11,6 @@ segmentation_params:
   zero_out_borders: false
   full_erosion: false
   sum_red_and_green_channels: false
-  rescale_z:  # Replace with a number; our network was trained on z=24-30, with 1.5um spacing
 
 # Postprocessing (only for 2d segmentation type)
 postprocessing_params:
