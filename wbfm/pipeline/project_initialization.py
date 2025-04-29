@@ -365,7 +365,7 @@ def calculate_total_number_of_frames_from_bigtiff(cfg):
         cfg.update_self_on_disk()
 
 
-def preprocess_fluorescence_data(cfg, to_zip_zarr_using_7z, DEBUG):
+def preprocess_fluorescence_data(cfg, to_zip_zarr_using_7z, DEBUG=False):
     # Load the project, to make sure even if raw data is in a weird format it works
     from wbfm.utils.projects.finished_project_data import ProjectData
 
