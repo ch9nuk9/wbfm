@@ -516,7 +516,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     def get_folder_with_background(self) -> Path:
         folder_for_entire_day = self.get_folder_for_entire_day()
-        folder_for_background = folder_for_entire_day.joinpath('background')
+        if folder_for_entire_day is not None:
+            folder_for_background = folder_for_entire_day.joinpath('background')
+        else:
+            raise FileNotFoundError("Could not find behavior folder for entire day")
         if not folder_for_background.exists():
             raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
 
@@ -532,7 +535,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     def get_folder_with_alignment(self):
         folder_for_entire_day = self.get_folder_for_entire_day()
-        folder_for_alignment = folder_for_entire_day.joinpath('alignment')
+        if folder_for_entire_day is not None:
+            folder_for_alignment = folder_for_entire_day.joinpath('alignment')
+        else:
+            raise FileNotFoundError("Could not find behavior folder for entire day")
         if not folder_for_alignment.exists():
             raise FileNotFoundError(f"Could not find alignment folder {folder_for_alignment}")
 
