@@ -29,8 +29,6 @@ def cfg(project_path, DEBUG):
     bounding_box_fname = os.path.join(cfg.project_dir, '1-segmentation', 'bounding_boxes.pickle')
     segment_cfg = cfg.get_segmentation_config()
 
-    num_frames = cfg.config['dataset_params']['num_frames']
-
 
 @ex.automain
 def main(_config, _run):
@@ -40,8 +38,7 @@ def main(_config, _run):
 
     video_fname = cfg.get_preprocessing_class().get_path_to_preprocessed_data(red_not_green=True)
     bbox_fname = _config['bounding_box_fname']
-    num_frames = _config['num_frames']
-    calculate_bounding_boxes_from_cfg_and_save(video_fname, bbox_fname, num_frames)
+    calculate_bounding_boxes_from_cfg_and_save(video_fname, bbox_fname)
 
     segment_cfg = _config['segment_cfg']
     bbox_fname = segment_cfg.unresolve_absolute_path(bbox_fname)
