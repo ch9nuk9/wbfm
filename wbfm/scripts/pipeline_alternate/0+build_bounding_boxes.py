@@ -33,7 +33,6 @@ def cfg(project_path, DEBUG):
 @ex.automain
 def main(_config, _run):
     sacred.commands.print_config(_run)
-    raise NotImplementedError("Needs to be fixed with preprocessing config")
     cfg = _config['cfg']
 
     video_fname = cfg.get_preprocessing_class().get_path_to_preprocessed_data(red_not_green=True)
