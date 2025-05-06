@@ -539,6 +539,24 @@ rule invert_curvature_sign:
             '-c', str(input.config_yaml_file),
         ])
 
+# Benjamin-style rule that directly reads the config file
+# rule invert_curvature_sign:
+#     input:
+#         spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed.csv"
+#     params:
+#         ventral = worm_config["ventral"],
+#     output:
+#         spline_K_signed = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv"
+#     run:
+#         from centerline_behavior_annotation.curvature.src import invert_curvature_sign
+#
+#         # Call the invert_curvature_sign function with the correct parameters
+#         invert_curvature_sign.main_benjamin([
+#             '--spline_K_path', str(input.spline_K),
+#             '--ventral', str(params.ventral),
+#             '--output_file_path', str(output.spline_K_signed)
+#         ])
+
 rule average_kymogram:
     input:
         spline_K = f"{output_behavior_dir}/skeleton_spline_K_signed.csv"
@@ -577,7 +595,7 @@ rule average_xy_coords:
 
 rule hilbert_transform_on_kymogram:
     input:
-        spline_K = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed",
         output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
     params:
         output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
@@ -603,7 +621,7 @@ rule hilbert_transform_on_kymogram:
 
 rule fast_fourier_transform:
     input:
-        spline_K = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed",
     params:
         # project_folder
         sampling_frequency=config["sampling_frequency"],
@@ -626,9 +644,9 @@ rule fast_fourier_transform:
 
 rule reformat_skeleton_files:
     input:
-        spline_K= f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv", #should have signed spline_K
-        spline_X= f"{output_behavior_dir}/skeleton_spline_X_coords_avg.csv",
-        spline_Y= f"{output_behavior_dir}/skeleton_spline_Y_coords_avg.csv",
+        spline_K= f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed", #should have signed spline_K
+        spline_X= f"{output_behavior_dir}/skeleton_spline_X_coords_equi_dist_segment.csv",
+        spline_Y= f"{output_behavior_dir}/skeleton_spline_Y_coords_equi_dist_segment.csv",
         #spline_list = ["{sample}_spline_K.csv", "{sample}_spline_X_coords.csv", "{sample}_spline_Y_coords.csv",]
 
     output:
@@ -646,7 +664,7 @@ rule reformat_skeleton_files:
 
 rule annotate_behaviour:
     input:
-        curvature_file = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
+        curvature_file = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv"
 
     params:
         pca_model_path = config["pca_model"],
@@ -672,7 +690,7 @@ rule annotate_behaviour:
 rule annotate_turns:
     input:
         #principal_components = f"{output_behavior_dir}/principal_components.csv"
-        spline_K  = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
+        spline_K  = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv"
     params:
         output_path = f"{output_behavior_dir}/",  # Ulises' functions expect the final slash
         threshold = config["turn_threshold"],
@@ -707,10 +725,11 @@ rule self_touch:
         df = stack_self_touch(input.binary_img, params.external_area, params.internal_area)
         df.to_csv(output.self_touch)
 
+
 rule calculate_parameters:
     #So far it only calculates speed
     input:
-        curvature_file = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv" #This is used as a parameter because it is only used to find the main dir
+        curvature_file = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv" #This is used as a parameter because it is only used to find the main dir
     output:
         speed_file = f"{output_behavior_dir}/raw_worm_speed.csv" # This is never produced, so this will always run
     params:
@@ -722,6 +741,7 @@ rule calculate_parameters:
             '-i', str(params.output_path),
             '-r', str(raw_data_dir),
         ])
+
 
 rule save_signed_speed:
     input:
@@ -738,9 +758,10 @@ rule save_signed_speed:
         signed_speed_df.to_csv(output.signed_speed_file)
         print("If the ethogram had a running average and had less values at the start and end, so will the signed speed")
 
+
 rule make_behaviour_figure:
     input:
-        curvature_file = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
+        curvature_file = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv",
         pc_file = f"{output_behavior_dir}/principal_components.csv",
         beh_annotation_file = f"{output_behavior_dir}/beh_annotation.csv",
         speed_file = f"{output_behavior_dir}/signed_worm_speed.csv",
@@ -756,6 +777,44 @@ rule make_behaviour_figure:
             '-i', str(params.output_path),
             '-r', str(raw_data_dir),
         ])
+
+
+
+rule process_skeleton_curvature:
+    input:
+        skeleton_x = f"{output_behavior_dir}/skeleton_spline_X_coords.csv",
+        skeleton_y = f"{output_behavior_dir}/skeleton_spline_Y_coords.csv"
+    output:
+        output_x = f"{output_behavior_dir}/skeleton_spline_X_coords_equi_dist_segment.csv",
+        output_y = f"{output_behavior_dir}/skeleton_spline_Y_coords_equi_dist_segment.csv",
+        output_curvature = f"{output_behavior_dir}/skeleton_spline_K_equi_dist_segment.csv",
+        output_smoothed_curvature = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed.csv"
+    params:
+        spacing = config['relative_spacing'],
+        num_sampled_points = config['num_sampled_points'],
+        smoothing = config['smoothing'],
+        time_sigma = config['time_sigma'],
+        spatial_sigma = config['spatial_sigma'],
+        max_columns = config['max_columns'],
+    run:
+        import sys
+        from centerline_behavior_annotation.centerline.dev import centerline_equi_distance_2d_smoothing
+
+        centerline_equi_distance_2d_smoothing.main([
+            '--skeleton_x', str(input.skeleton_x),
+            '--skeleton_y', str(input.skeleton_y),
+            '--relative_spacing', str(params.spacing),
+            '--num_sampled_points', str(params.num_sampled_points),
+            '--smoothing', str(params.smoothing),
+            '--time_sigma', str(params.time_sigma),
+            '--spatial_sigma', str(params.spatial_sigma),
+            '--max_columns', str(params.max_columns),
+            '--output_x', str(output.output_x),
+            '--output_y', str(output.output_y),
+            '--output_curvature', str(output.output_curvature),
+            '--output_smoothed_curvature', str(output.output_smoothed_curvature)
+        ])
+
 
 
 ##
