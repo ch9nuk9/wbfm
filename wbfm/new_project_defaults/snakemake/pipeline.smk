@@ -522,12 +522,10 @@ rule create_centerline:
 
 rule invert_curvature_sign:
     input:
-        spline_K = f"{output_behavior_dir}/skeleton_spline_K.csv",
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed.csv",
         config_yaml_file = str(raw_data_config_fname)
-    # params:
-    #     output_path = f"{output_behavior_dir}/"
     output:
-        spline_K = f"{output_behavior_dir}/skeleton_spline_K_signed.csv"
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv"
     params:
         output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
     run:
