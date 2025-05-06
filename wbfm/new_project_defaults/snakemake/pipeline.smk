@@ -593,7 +593,7 @@ rule average_xy_coords:
 
 rule hilbert_transform_on_kymogram:
     input:
-        spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed",
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv",
         output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
     params:
         output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
