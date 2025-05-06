@@ -37,7 +37,7 @@ def main(_config, _run):
 
     video_fname = cfg.get_preprocessing_class().get_path_to_preprocessed_data(red_not_green=True)
     bbox_fname = _config['bounding_box_fname']
-    calculate_bounding_boxes_from_cfg_and_save(video_fname, bbox_fname)
+    calculate_bounding_boxes_from_cfg_and_save(cfg, bbox_fname)
 
     segment_cfg = _config['segment_cfg']
     bbox_fname = segment_cfg.unresolve_absolute_path(bbox_fname)
