@@ -85,3 +85,6 @@ smoothing: 0.1  # Smoothing parameter for the spline fitting, controls how much 
 time_sigma: 2.0  # Sigma for Gaussian smoothing along the time (frame) axis, higher values smooth more across frames
 spatial_sigma: 1.0  # Sigma for Gaussian smoothing along the spatial axis, higher values smooth more across points in each frame
 max_columns: 0  # Dynamic mode: when set to 0, the skeleton is truncated where NaN content increases by more than 50%
+
+# PCA model used for curvature analysis (should be changed for different shapes of worms)
+pca_model: /lisc/scratch/neurobiology/zimmer/wbfm/code/centerline_behavior_annotation/centerline_behavior_annotation/curvature/models/1738_20230403_eigenworm_PCA_bodypart_30_to_80.pkl
