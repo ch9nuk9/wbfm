@@ -113,6 +113,7 @@ rule preprocessing:
     output:
         os.path.join(project_dir, "dat/bounding_boxes.pickle")
     run:
+        shell("ml p7zip")  # Needed as of May 2025
         _run_helper("0b-preprocess_working_copy_of_data", str(input.cfg))
 
 #
@@ -225,6 +226,7 @@ rule extract_full_traces:
         masks=os.path.join(project_dir, "4-traces/reindexed_masks.zarr.zip")
     threads: 56
     run:
+        shell("ml p7zip")  # Needed as of May 2025
         _run_helper("4-make_final_traces", str(input.cfg))
 
 

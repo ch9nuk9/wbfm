@@ -12,7 +12,7 @@ def zip_raw_data_zarr(raw_fname, delete_original=True, verbose=1):
     if verbose >= 1:
         print(f"Zipping zarr file {raw_fname} to {out_fname_zip}")
 
-    cmd = ['7z', 'a', '-tzip']
+    cmd = ['7zz', 'a', '-tzip']
     cmd.extend([str(out_fname_zip), os.path.join(str(raw_fname), '.')])
 
     subprocess.run(cmd)
