@@ -5,7 +5,7 @@ from pathlib import Path
 from wbfm.utils.general.utils_filenames import get_sequential_filename
 
 
-def setup_logger_object(log_filename, actually_set_up_file=True):
+def setup_logger_object(log_filename, actually_set_up_file=False):
     # Log to a file and the console
     # https://docs.python.org/3/howto/logging-cookbook.html
     log_name = Path(log_filename).stem

@@ -42,7 +42,7 @@ class ConfigFileWithProjectContext:
     project_dir: str = None
 
     _logger: logging.Logger = None
-    log_to_file: bool = True
+    log_to_file: bool = False
 
     def __post_init__(self):
         if self._self_path is None:
