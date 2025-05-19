@@ -1,5 +1,7 @@
 import logging
 import os
+
+from ruamel.yaml import YAML
 from wbfm.utils.external.custom_errors import NoBehaviorDataError, RawDataFormatError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 import snakemake
@@ -39,8 +41,11 @@ except (NoBehaviorDataError, RawDataFormatError, FileNotFoundError) as e:
 # Also get the raw data config file (if it exists)
 try:
     raw_data_config_fname = project_config.get_raw_data_config().absolute_self_path
+    with open(raw_data_config_fname, 'r') as f:
+        worm_config = YAML().load(f)
 except FileNotFoundError:
     raw_data_config_fname = "NOTFOUND_raw_data_config_fname"
+    worm_config = dict()
 
 # Additionally update the paths used for the behavior pipeline (note that this needs to be loaded even if behavior is not run)
 hardcoded_paths = load_hardcoded_neural_network_paths()
@@ -113,6 +118,7 @@ rule preprocessing:
     output:
         os.path.join(project_dir, "dat/bounding_boxes.pickle")
     run:
+        shell("ml p7zip")  # Needed as of May 2025
         _run_helper("0b-preprocess_working_copy_of_data", str(input.cfg))
 
 #
@@ -225,6 +231,7 @@ rule extract_full_traces:
         masks=os.path.join(project_dir, "4-traces/reindexed_masks.zarr.zip")
     threads: 56
     run:
+        shell("ml p7zip")  # Needed as of May 2025
         _run_helper("4-make_final_traces", str(input.cfg))
 
 
@@ -520,40 +527,24 @@ rule create_centerline:
             '-dlc', str(params.fill_with_DLC),
         ])
 
+
+# Benjamin-style rule that directly reads the config file
 rule invert_curvature_sign:
     input:
-        spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed.csv",
-        config_yaml_file = str(raw_data_config_fname)
-    output:
-        spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv"
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed.csv"
     params:
-        output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
+        ventral = worm_config["ventral"],
+    output:
+        spline_K_signed = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv"
     run:
         from centerline_behavior_annotation.curvature.src import invert_curvature_sign
 
-        invert_curvature_sign.main([
-            '-i', str(params.output_path),
-            '-r', str(raw_data_dir),
-            '-c', str(input.config_yaml_file),
+        # Call the invert_curvature_sign function with the correct parameters
+        invert_curvature_sign.main_benjamin([
+            '--spline_K_path', str(input.spline_K),
+            '--ventral', str(params.ventral),
+            '--output_file_path', str(output.spline_K_signed)
         ])
-
-# Benjamin-style rule that directly reads the config file
-# rule invert_curvature_sign:
-#     input:
-#         spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed.csv"
-#     params:
-#         ventral = worm_config["ventral"],
-#     output:
-#         spline_K_signed = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv"
-#     run:
-#         from centerline_behavior_annotation.curvature.src import invert_curvature_sign
-#
-#         # Call the invert_curvature_sign function with the correct parameters
-#         invert_curvature_sign.main_benjamin([
-#             '--spline_K_path', str(input.spline_K),
-#             '--ventral', str(params.ventral),
-#             '--output_file_path', str(output.spline_K_signed)
-#         ])
 
 rule average_kymogram:
     input:

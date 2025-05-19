@@ -78,7 +78,7 @@ if [ "$DRYRUN" ]; then
 elif [ -z "$USE_CLUSTER" ]; then
     echo "Running snakemake rule locally: $RULE. Common options: traces_and_behavior (default), traces, behavior"
     snakemake -s pipeline.smk --unlock  # Unlock the folder, just in case
-    snakemake "$RULE" -s pipeline.smk --latency-wait 60 --cores 56 --retries 3
+    snakemake "$RULE" -s pipeline.smk --latency-wait 60 --cores 56 --retries 2
 else
     echo "Running snakemake rule on the cluster: $RULE. Common options: traces_and_behavior (default), traces, behavior"
     snakemake -s pipeline.smk --unlock  # Unlock the folder, just in case
