@@ -41,6 +41,8 @@ except (NoBehaviorDataError, RawDataFormatError, FileNotFoundError) as e:
 # Also get the raw data config file (if it exists)
 try:
     raw_data_config_fname = project_config.get_raw_data_config().absolute_self_path
+    if raw_data_config_fname is None:
+        raise FileNotFoundError
     with open(raw_data_config_fname, 'r') as f:
         worm_config = YAML().load(f)
 except FileNotFoundError:
