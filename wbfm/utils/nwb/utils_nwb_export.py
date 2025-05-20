@@ -175,6 +175,8 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
             behavior_video = None
         behavior_time_series_names = ['angular_velocity', 'head_curvature', 'body_curvature', 'reversal_events',
                                       'velocity',
+                                      'ventral_only_body_curvature', 'dorsal_only_body_curvature',
+                                      'ventral_only_head_curvature', 'dorsal_only_head_curvature',
                                       'hilbert_phase', 'hilbert_amplitude', 'hilbert_frequency', 'hilbert_carrier']
         behavior_time_series_dict = video_class.calc_behavior_from_alias(behavior_time_series_names)
         # Also add some more basic time series data
