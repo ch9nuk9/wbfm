@@ -1,7 +1,6 @@
 import logging
 import os
 import shutil
-import subprocess
 from pathlib import Path
 import zarr
 
@@ -13,9 +12,8 @@ def zip_raw_data_zarr(raw_fname, delete_original=True, verbose=1):
         print(f"Zipping zarr file {raw_fname} to {out_fname_zip}")
 
     with zarr.ZipStore(str(out_fname_zip), mode='w') as target_data_store:
-        with zarr.open(raw_fname, mode='r') as raw_data_store:
+        with zarr.open(str(raw_fname), mode='r') as raw_data_store:
             # Copy the data to the zip store
-            # This is a bit slow, but it works
             zarr.copy_store(raw_data_store, target_data_store)
 
     if delete_original:
