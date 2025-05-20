@@ -501,18 +501,28 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return Path(resolve_mounted_path_in_current_os(path))
 
     def get_folder_for_entire_day(self) -> Optional[Path]:
-        fname, flag = self.get_behavior_raw_parent_folder_from_red_fname()
-        if not flag:
-            return None
-        else:
-            return Path(fname).parent.parent
-
-    def get_folder_for_all_channels(self) -> Optional[Path]:
-        fname, flag = self.get_behavior_raw_parent_folder_from_red_fname()
-        if not flag:
+        fname = self.get_folder_for_all_channels()
+        if fname is None:
             return None
         else:
             return Path(fname).parent
+
+    def get_folder_for_all_channels(self, verbose=0) -> Optional[Path]:
+        red_fname, is_btf = self.get_raw_data_fname(red_not_green=True)
+        if red_fname is None:
+            if verbose >= 1:
+                print("Could not find red_bigtiff_fname, aborting")
+            return None
+        if is_btf:
+            folder_for_all_channels = Path(red_fname).parents[1]
+        else:
+            folder_for_all_channels = Path(red_fname).parents[0]
+
+        if not folder_for_all_channels.exists():
+            if verbose >= 1:
+                print(f"Could not find main data folder {folder_for_all_channels}, aborting")
+            return None
+        return folder_for_all_channels
 
     def get_folder_with_background(self) -> Path:
         folder_for_entire_day = self.get_folder_for_entire_day()
@@ -692,31 +702,20 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         -------
 
         """
-        red_fname, is_btf = self.get_raw_data_fname(red_not_green=True)
-        if red_fname is None:
-            if verbose >= 1:
-                print("Could not find red_bigtiff_fname, aborting")
-            return None, False
-        if is_btf:
-            main_data_folder = Path(red_fname).parents[1]
-        else:
-            main_data_folder = Path(red_fname).parents[0]
-
-        if not main_data_folder.exists():
-            if verbose >= 1:
-                print(f"Could not find main data folder {main_data_folder}, aborting")
+        folder_for_all_channels = self.get_folder_for_all_channels(verbose=verbose)
+        if folder_for_all_channels is None:
             return None, False
         # First, get the subfolder
-        for content in main_data_folder.iterdir():
+        for content in folder_for_all_channels.iterdir():
             if content.is_dir():
                 # Ulises uses UK spelling
                 if 'behaviour' in content.name or 'BH' in content.name:
-                    behavior_subfolder = main_data_folder.joinpath(content)
+                    behavior_subfolder = folder_for_all_channels.joinpath(content)
                     flag = True
                     break
         else:
             if verbose >= 1:
-                print(f"Found no behavior subfolder in {main_data_folder}, aborting")
+                print(f"Found no behavior subfolder in {folder_for_all_channels}, aborting")
             flag = False
             behavior_subfolder = None
         if verbose >= 1:

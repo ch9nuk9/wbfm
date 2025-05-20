@@ -2262,7 +2262,7 @@ class ProjectData:
     def raw_data_dir(self):
         if self.project_config is None:
             return None
-        return self.project_config.get_behavior_raw_parent_folder_from_red_fname()[0]
+        return self.project_config.get_folder_for_all_channels()
 
     @property
     def x_lim(self):
