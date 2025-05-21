@@ -745,7 +745,11 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         behavior_raw_folder = str(behavior_raw_folder)
 
         # Second
-        beh_cfg = self.get_behavior_config()
+        try:
+            beh_cfg = self.get_behavior_config()
+        except FileNotFoundError:
+            raise NoBehaviorDataError(f"Could not find behavior_config.yaml in {self.project_dir}/behavior... "
+                                      f"Did the user delete it?")
         behavior_output_folder = beh_cfg.subfolder
 
         if not Path(behavior_output_folder).exists():
