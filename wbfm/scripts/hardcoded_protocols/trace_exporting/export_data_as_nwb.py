@@ -36,7 +36,7 @@ if __name__ == '__main__':
             # Export data
             try:
                 nwb_using_project_data(project, include_image_data=False, output_folder=this_folder)
-            except ValueError as e:
+            except Exception as e:
                 print(f'Error exporting {name}: {e}')
                 continue
 
