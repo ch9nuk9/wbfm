@@ -186,7 +186,8 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
         # Also add a dataframe of the discrete behaviors
         from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
         discrete_time_series_names = BehaviorCodes.default_state_hierarchy(use_strings=True)
-        df_discrete = video_class.calc_behavior_from_alias(discrete_time_series_names, include_slowing=True)
+        df_discrete = video_class.calc_behavior_from_alias(discrete_time_series_names, include_slowing=True,
+                                                           reset_index=False)
         idx = behavior_time_series_dict['velocity'].index
         df_discrete = convert_binary_columns_to_one_hot(pd.DataFrame(df_discrete, index=idx),
                                                         discrete_time_series_names)
