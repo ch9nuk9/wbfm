@@ -145,19 +145,28 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
 
     gce_quant_dict = {'red': gce_quant_red, 'green': gce_quant_green, 'ratio': gce_quant_ratio}
     # Rename to use manual ids, if they exist
-    id_mapping = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0, only_include_confident_labels=True)
+    id_mapping = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0,
+                                                               only_include_confident_labels=False)
     for key in gce_quant_dict.keys():
         gce_quant_dict[key].rename(columns=id_mapping, inplace=True, level=1)
     # Store just the background subtracting red or green traces, because we don't want to store the object volume
     # Use the exact options in the paper
-    trace_opt = dict(use_paper_traces=True)
+    trace_opt = dict(use_paper_options=True, interpolate_nan=True)
     df_traces_red = project_data.calc_default_traces(channel_mode='red', **trace_opt)
-    gce_quant_red.loc[:, ('intensity_image', slice(None))] = df_traces_red.values
+    # Here we have a subset of columns, so we need to keep only the proper set
+    kept_columns = df_traces_red.columns
+    gce_quant_red.loc[:, ('intensity_image', kept_columns)] = df_traces_red.values
     df_traces_green = project_data.calc_default_traces(channel_mode='green', **trace_opt)
-    gce_quant_green.loc[:, ('intensity_image', slice(None))] = df_traces_green.values
+    gce_quant_green.loc[:, ('intensity_image', kept_columns)] = df_traces_green.values
 
     df_traces_ratio = project_data.calc_default_traces(channel_mode='dr_over_r_50', **trace_opt)
-    gce_quant_ratio.loc[:, ('intensity_image', slice(None))] = df_traces_ratio.values
+    gce_quant_ratio.loc[:, ('intensity_image', kept_columns)] = df_traces_ratio.values
+
+    # Then drop any other columns that are not in the kept columns
+    gce_quant_red = gce_quant_red.loc[:, (slice(None), kept_columns)]
+    gce_quant_green = gce_quant_green.loc[:, (slice(None), kept_columns)]
+    gce_quant_ratio = gce_quant_ratio.loc[:, (slice(None), kept_columns)]
+    gce_quant_dict = {'red': gce_quant_red, 'green': gce_quant_green, 'ratio': gce_quant_ratio}
 
     # Unpack videos
     if include_image_data:
@@ -178,13 +187,16 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
         behavior_time_series_names = ['angular_velocity', 'head_curvature', 'body_curvature', 'reversal_events',
                                       'velocity',
                                       'ventral_only_body_curvature', 'dorsal_only_body_curvature',
-                                      'ventral_only_head_curvature', 'dorsal_only_head_curvature',
-                                      'hilbert_phase', 'hilbert_amplitude', 'hilbert_frequency', 'hilbert_carrier']
-        behavior_time_series_dict['continuous_behaviors'] = video_class.calc_behavior_from_alias(behavior_time_series_names)
+                                      'ventral_only_head_curvature', 'dorsal_only_head_curvature']
+        behavior_time_series_dict['continuous_behaviors'] = video_class.calc_behavior_from_alias(behavior_time_series_names,
+                                                                                                 reset_index=False)
+        hilbert_outputs = ['hilbert_phase', 'hilbert_amplitude', 'hilbert_frequency', 'hilbert_carrier']
+        for name in hilbert_outputs:
+            behavior_time_series_dict[name] = video_class.calc_behavior_from_alias(name, reset_index=False)
         # behavior_time_series_dict = video_class.calc_behavior_from_alias(behavior_time_series_names)
         # Also add some more basic time series data
-        behavior_time_series_dict['kymograph'] = video_class.curvature(fluorescence_fps=False)
-        behavior_time_series_dict['stage_position'] = video_class.stage_position(fluorescence_fps=False)
+        behavior_time_series_dict['kymograph'] = video_class.curvature(fluorescence_fps=False, reset_index=False)
+        behavior_time_series_dict['stage_position'] = video_class.stage_position(fluorescence_fps=False, reset_index=False)
         behavior_time_series_dict['eigenworms'] = video_class.eigenworms
         # Also add a dataframe of the discrete behaviors
         from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
@@ -733,27 +745,32 @@ def convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict):
                                                        description="Behavioral time series")
 
     for name, time_series in behavior_time_series_dict.items():
+        unit = 'seconds'
         if isinstance(time_series, np.ndarray):
             raise NotImplementedError
             # data = time_series
             # timestamps = np.arange(len(data))
             # unit = 'frames'
+        elif isinstance(time_series, dict):
+            keys = list(time_series.keys())
+            timestamps = time_series[keys[0]].index.values
+            _time_series_columns = time_series
         else:
             # Assume pandas dataframe
             # data = time_series.values
             timestamps = time_series.index.values
-            unit = 'seconds'
             # each column should be stored as a sub time series
             _time_series_columns = time_series.to_dict(orient='list')
-            time_series_dict = {}
-            for colname, coldata in _time_series_columns.items():
-                time_series_dict[colname] = TimeSeries(name=colname, data=coldata, timestamps=timestamps, unit=unit)
+        time_series_dict = {}
+        for colname, coldata in _time_series_columns.items():
+            coldata = coldata.values if isinstance(coldata, pd.Series) else coldata
+            time_series_dict[colname] = TimeSeries(name=str(colname), data=coldata, timestamps=timestamps, unit=unit)
         # This nested requires nested indexing in the final object...
         # _time_series_obj = TimeSeries(name=name, data=data, timestamps=timestamps, unit=unit)
-        # behavior_module.add(BehavioralTimeSeries(name=name, time_series=_time_series_obj))
-        behavior_module.add_timeseries(time_series_dict)
+        behavior_module.add(BehavioralTimeSeries(name=name, time_series=time_series_dict))
 
     return nwbfile
+
 
 def _add_blob(blob, blobquant):
     blobarr = np.asarray(blob[['X', 'Y', 'Z', 'gce_quant', 'ID']])
