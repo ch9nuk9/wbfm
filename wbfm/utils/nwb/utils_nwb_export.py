@@ -149,7 +149,8 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
     for key in gce_quant_dict.keys():
         gce_quant_dict[key].rename(columns=id_mapping, inplace=True, level=1)
     # Store just the background subtracting red or green traces, because we don't want to store the object volume
-    trace_opt = dict(min_nonnan=0, remove_tail_neurons=False, filter_mode="no_filtering")
+    # Use the exact options in the paper
+    trace_opt = dict(use_paper_traces=True)
     df_traces_red = project_data.calc_default_traces(channel_mode='red', **trace_opt)
     gce_quant_red.loc[:, ('intensity_image', slice(None))] = df_traces_red.values
     df_traces_green = project_data.calc_default_traces(channel_mode='green', **trace_opt)
@@ -173,11 +174,13 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
             behavior_video = video_class.raw_behavior_video
         else:
             behavior_video = None
+        behavior_time_series_dict = {}
         behavior_time_series_names = ['angular_velocity', 'head_curvature', 'body_curvature', 'reversal_events',
                                       'velocity',
                                       'ventral_only_body_curvature', 'dorsal_only_body_curvature',
                                       'ventral_only_head_curvature', 'dorsal_only_head_curvature',
                                       'hilbert_phase', 'hilbert_amplitude', 'hilbert_frequency', 'hilbert_carrier']
+        # behavior_time_series_dict['continuous_behaviors'] = video_class.calc_behavior_from_alias(behavior_time_series_names)
         behavior_time_series_dict = video_class.calc_behavior_from_alias(behavior_time_series_names)
         # Also add some more basic time series data
         behavior_time_series_dict['kymograph'] = video_class.curvature(fluorescence_fps=False)
@@ -188,7 +191,7 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
         discrete_time_series_names = BehaviorCodes.default_state_hierarchy(use_strings=True)
         df_discrete = video_class.calc_behavior_from_alias(discrete_time_series_names, include_slowing=True,
                                                            reset_index=False)
-        idx = behavior_time_series_dict['velocity'].index
+        idx = behavior_time_series_dict['continuous_behaviors']['velocity'].index
         df_discrete = convert_binary_columns_to_one_hot(pd.DataFrame(df_discrete, index=idx),
                                                         discrete_time_series_names)
         behavior_time_series_dict['discrete_states'] = df_discrete
@@ -736,11 +739,15 @@ def convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict):
             unit = 'frames'
         else:
             # Assume pandas
+            # from hdmf.common.table import DynamicTable
+            # data = DynamicTable(time_series.values, columns=time_series.columns)
             data = time_series.values
             timestamps = time_series.index.values
             unit = 'seconds'
+        # This nested requires nested indexing in the final object...
         _time_series_obj = TimeSeries(name=name, data=data, timestamps=timestamps, unit=unit)
         behavior_module.add(BehavioralTimeSeries(name=name, time_series=_time_series_obj))
+        # behavior_module.add(BehavioralTimeSeries(name=name, data=data, timestamps=timestamps, unit=unit))
 
     return nwbfile
 
