@@ -180,8 +180,8 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
                                       'ventral_only_body_curvature', 'dorsal_only_body_curvature',
                                       'ventral_only_head_curvature', 'dorsal_only_head_curvature',
                                       'hilbert_phase', 'hilbert_amplitude', 'hilbert_frequency', 'hilbert_carrier']
-        # behavior_time_series_dict['continuous_behaviors'] = video_class.calc_behavior_from_alias(behavior_time_series_names)
-        behavior_time_series_dict = video_class.calc_behavior_from_alias(behavior_time_series_names)
+        behavior_time_series_dict['continuous_behaviors'] = video_class.calc_behavior_from_alias(behavior_time_series_names)
+        # behavior_time_series_dict = video_class.calc_behavior_from_alias(behavior_time_series_names)
         # Also add some more basic time series data
         behavior_time_series_dict['kymograph'] = video_class.curvature(fluorescence_fps=False)
         behavior_time_series_dict['stage_position'] = video_class.stage_position(fluorescence_fps=False)
@@ -734,20 +734,24 @@ def convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict):
 
     for name, time_series in behavior_time_series_dict.items():
         if isinstance(time_series, np.ndarray):
-            data = time_series
-            timestamps = np.arange(len(data))
-            unit = 'frames'
+            raise NotImplementedError
+            # data = time_series
+            # timestamps = np.arange(len(data))
+            # unit = 'frames'
         else:
-            # Assume pandas
-            # from hdmf.common.table import DynamicTable
-            # data = DynamicTable(time_series.values, columns=time_series.columns)
-            data = time_series.values
+            # Assume pandas dataframe
+            # data = time_series.values
             timestamps = time_series.index.values
             unit = 'seconds'
+            # each column should be stored as a sub time series
+            _time_series_columns = time_series.to_dict(orient='list')
+            time_series_dict = {}
+            for colname, coldata in _time_series_columns.items():
+                time_series_dict[colname] = TimeSeries(name=colname, data=coldata, timestamps=timestamps, unit=unit)
         # This nested requires nested indexing in the final object...
-        _time_series_obj = TimeSeries(name=name, data=data, timestamps=timestamps, unit=unit)
-        behavior_module.add(BehavioralTimeSeries(name=name, time_series=_time_series_obj))
-        # behavior_module.add(BehavioralTimeSeries(name=name, data=data, timestamps=timestamps, unit=unit))
+        # _time_series_obj = TimeSeries(name=name, data=data, timestamps=timestamps, unit=unit)
+        # behavior_module.add(BehavioralTimeSeries(name=name, time_series=_time_series_obj))
+        behavior_module.add_timeseries(time_series_dict)
 
     return nwbfile
 
