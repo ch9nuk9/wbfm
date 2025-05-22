@@ -117,11 +117,13 @@ class WormFullVideoPosture:
         #     logging.warning("No stage position file found; disallowing subsampling")
         #     self.beh_annotation_already_converted_to_fluorescence_fps = True
 
-    @cached_property
-    def eigenworms(self) -> np.ndarray:
+    @lru_cache(maxsize=8)
+    def eigenworms(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         curvature_nonan = self.curvature().replace(np.nan, 0.0)
         pca_proj = self.calculate_eigenworms_from_curvature(curvature_nonan, 5,
                                                             self.i_eigenworm_start, self.i_eigenworm_end)
+        pca_proj = self._validate_and_downsample(pd.DataFrame(pca_proj), fluorescence_fps=fluorescence_fps,
+                                                 **kwargs)
         return pca_proj
 
     @staticmethod
@@ -909,7 +911,7 @@ class WormFullVideoPosture:
             # i.e. the full string should be 'eigenworm0', 'eigenworm1', etc.
             # First get the number
             i = int(behavior_alias[-1])
-            y = pd.Series(self.eigenworms[:, i])
+            y = pd.Series(self.eigenworms().iloc[:, i])
             y = self._validate_and_downsample(y, **kwargs)
         elif isinstance(behavior_alias, str) and 'curvature' in behavior_alias:
             # Assume the string is 'curvature' followed by a number, e.g. 'curvature_10'
@@ -1085,7 +1087,7 @@ class WormFullVideoPosture:
     def _raw_worm_angular_velocity(self):
         """Using angular velocity in 2d pca space"""
 
-        xyz_pca = self.eigenworms
+        xyz_pca = self.eigenworms().values
         window = 5
         x = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 0]), window)
         y = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 1]), window)
@@ -1445,7 +1447,8 @@ class WormFullVideoPosture:
         fig = plt.figure(figsize=(15, 15))
         ax = fig.add_subplot(111, projection='3d')
         c = np.arange(self.num_volumes) / 1e6
-        ax.scatter(self.eigenworms[:, 0], self.eigenworms[:, 1], self.eigenworms[:, 2], c=c)
+        eig = self.eigenworms().values
+        ax.scatter(eig[:, 0], eig[:, 1], eig[:, 2], c=c)
         plt.colorbar()
 
     def get_centerline_for_time(self, t):
@@ -2431,7 +2434,7 @@ class WormReferencePosture:
 
     @property
     def pca_projections(self):
-        return self.all_postures.eigenworms
+        return self.all_postures.eigenworms()
 
     @property
     def reference_posture(self):

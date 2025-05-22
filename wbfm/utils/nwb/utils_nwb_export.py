@@ -197,7 +197,7 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
         # Also add some more basic time series data
         behavior_time_series_dict['kymograph'] = video_class.curvature(fluorescence_fps=False, reset_index=False)
         behavior_time_series_dict['stage_position'] = video_class.stage_position(fluorescence_fps=False, reset_index=False)
-        behavior_time_series_dict['eigenworms'] = pd.DataFrame(video_class.eigenworms)
+        behavior_time_series_dict['eigenworms'] = video_class.eigenworms(fluorescence_fps=True, reset_index=False)
         # Also add a dataframe of the discrete behaviors
         from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
         discrete_time_series_names = BehaviorCodes.default_state_hierarchy(use_strings=True)
