@@ -1113,8 +1113,6 @@ class WormFullVideoPosture:
         """
         velocity = self._raw_worm_angular_velocity
         velocity = self._validate_and_downsample(velocity, fluorescence_fps=fluorescence_fps, **kwargs)
-        if fluorescence_fps:
-            velocity.reset_index(drop=True, inplace=True)
         if remove_outliers:
             window = 10
             velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
