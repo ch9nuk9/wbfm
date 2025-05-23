@@ -92,7 +92,7 @@ worm_unet:
     gres: gpu:1
 
 sam2_segment:
-    time: 24:00:00
+    time: 1-0:00:00
     partition: basic,gpu
     cpus_per_task: 24
     gres: gpu:1
