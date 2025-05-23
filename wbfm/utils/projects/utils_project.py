@@ -76,8 +76,7 @@ def delete_all_analysis_files(project_path: str, dryrun=False, verbose=2):
     src = get_location_of_new_project_defaults()
     initial_fnames = list(Path(src).rglob('**/*'))
     if len(initial_fnames) == 0:
-        print("Found no initial files, probably running this from the wrong directory")
-        raise FileNotFoundError
+        raise FileNotFoundError(f"Found no initial files in {src}, probably running this from the wrong directory")
 
     # Convert them to relative
     initial_fnames = {str(fname.relative_to(src)) for fname in initial_fnames}
