@@ -27,7 +27,7 @@ segmentation:
 match_frame_pairs:
     partition: basic,gpu
     gpus_per_node: 1
-    time: 1-12:00:00
+    time: 1-00:00:00
     mem: 128G
     gres: shard:32
 
@@ -70,7 +70,7 @@ tiff2avi:
     cpus_per_task: 2
 
 dlc_analyze_videos:
-    time: 1-08:00:00
+    time: 1-00:00:00
     partition: basic,gpu
     cpus_per_task: 24
     gres: shard:32
@@ -86,19 +86,19 @@ normalize_img:
     cpus_per_task: 8
 
 worm_unet:
-    time: 1-08:00:00
+    time: 1-00:00:00
     partition: basic,gpu
     cpus_per_task: 24
     gres: shard:32
 
 sam2_segment:
-    time: 1-08:00:00
+    time: 24:00:00
     partition: basic,gpu
     cpus_per_task: 24
     gres: shard:32
 
 coil_unet:
-    time: 1-08:00:00
+    time: 1-00:00:00
     partition: basic,gpu
     cpus_per_task: 24
     gres: shard:32
