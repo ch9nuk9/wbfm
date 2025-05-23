@@ -158,7 +158,6 @@ class NapariLayerInitializer:
             clipping_list = []
 
         # Raw data (useful if the preprocessing doesn't work)
-
         if 'Raw red data' in which_layers:
             layer_name = 'Raw red data'
             p = project_data.project_config.get_preprocessing_class()

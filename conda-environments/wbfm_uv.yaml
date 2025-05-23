@@ -25,6 +25,7 @@ torch
 torchvision
 torchaudio
 torchmetrics
+pytorch-lightning
 plotly
 tifffile
 opencv-contrib-python
@@ -40,8 +41,6 @@ tinydb-serialization
 openpyxl
 pytest
 ruptures
-backports.cached_property
-pytorch-lightning
 wandb
 seaborn
 hdbscan
