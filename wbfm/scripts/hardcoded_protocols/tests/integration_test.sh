@@ -1,12 +1,43 @@
 #!/bin/bash
 
-# Clean and run the integration test, i.e. a shortened dataset
-PARENT_PROJECT_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/test_projects"
+
+# Function to display a help message
+function show_help {
+    echo "Usage: $0 [-c] [-h]"
+  echo "  -c: do NOT use cluster (default: false, i.e. run on cluster)"
+}
+
+# Get all user flags
+USE_CLUSTER="True"
+
+while getopts ch flag
+do
+    case "${flag}" in
+        c) USE_CLUSTER=${OPTARG};;
+        h) show_help
+           exit 0;;
+        *) raise error "Unknown flag"
+    esac
+done
+
+# Clean and run the integration test, i.e. shortened datasets
 PARENT_DATA_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/test_data"
-CODE_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
+if [ -z "$USE_CLUSTER" ]; then
+  echo "Running integration test without cluster"
+  PARENT_PROJECT_DIR="/home/charles/Current_work/test_projects"
+  CODE_DIR="/home/charles/Current_work/repos/dlc_for_wbfm/wbfm"
+  RUNME_ARGS="-c"
+else
+  echo "Running integration test on the cluster"
+  PARENT_PROJECT_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/test_projects"
+  CODE_DIR="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm"
+  RUNME_ARGS=""
+fi
+
+# Define relevant subfolders
+SUBFOLDERS=("freely_moving" "immobilized" "barlow")
 
 # For each subfolder, remove any project folders
-SUBFOLDERS=("freely_moving" "immobilized")
 for f in "${SUBFOLDERS[@]}"; do
     PROJECT_PATH=$PARENT_PROJECT_DIR/$f
     if [ -d "$PROJECT_PATH" ]; then
@@ -39,12 +70,28 @@ NEW_CONFIG=$CODE_DIR/"alternative_project_defaults/short_video/cluster_config.ya
 # Command to actually run
 COMMAND=$CODE_DIR/"scripts/cluster/run_all_projects_in_parent_folder.sh"
 
-# Freely moving
+# Freely moving (behavior can't be run without cluster)
 PROJECT_PATH=$PARENT_PROJECT_DIR/"freely_moving"
 bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
-bash $COMMAND -t "$PROJECT_PATH" -s traces_and_behavior
+if [ -z "$USE_CLUSTER" ]; then
+  bash $COMMAND -t "$PROJECT_PATH" -s traces $RUNME_ARGS
+else
+  bash $COMMAND -t "$PROJECT_PATH" -s traces_and_behavior $RUNME_ARGS
+fi
 
 # Immobilized
 PROJECT_PATH=$PARENT_PROJECT_DIR/"immobilized"
 bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
-bash $COMMAND -t "$PROJECT_PATH" -s traces
+bash $COMMAND -t "$PROJECT_PATH" -s traces $RUNME_ARGS
+
+# Barlow, which needs the original and an additional config change (behavior can't be run without cluster)
+NEW_BARLOW_CONFIG=$CODE_DIR/"alternative_project_defaults/barlow/snakemake_config.yaml"
+
+PROJECT_PATH=$PARENT_PROJECT_DIR/"barlow"
+bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
+bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_BARLOW_CONFIG"
+if [ -z "$USE_CLUSTER" ]; then
+  bash $COMMAND -t "$PROJECT_PATH" -s traces $RUNME_ARGS
+else
+  bash $COMMAND -t "$PROJECT_PATH" -s traces_and_behavior $RUNME_ARGS
+fi

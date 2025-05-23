@@ -1,12 +1,7 @@
-import pickle
-
-import imageio
 import matplotlib.pyplot as plt
 import numpy as np
-from ipywidgets import interact
 
 from wbfm.utils.general.postprocessing.base_cropping_utils import get_crop_from_avi
-from wbfm.utils.general.postprocessing.postprocessing_utils import get_crop_from_ometiff_virtual
 from wbfm.utils.visualization.utils_plot_traces import set_big_font
 
 

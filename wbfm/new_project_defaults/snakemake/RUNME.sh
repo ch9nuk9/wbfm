@@ -32,7 +32,7 @@ do
 done
 
 # Package slurm options
-OPT="sbatch -t {cluster.time} -p {cluster.partition} --cpus-per-task {cluster.cpus_per_task} --mem {cluster.mem} --output {cluster.output} --gres {cluster.gres}"
+OPT="sbatch -t {cluster.time} --cpus-per-task {cluster.cpus_per_task} --mem {cluster.mem} --output {cluster.output} --gres {cluster.gres} --job-name={rule}"
 NUM_JOBS_TO_SUBMIT=8
 
 # Slurm doesn't properly deal with TIMEOUT errors in subjobs, so we need to create a script to deal with them
@@ -78,7 +78,7 @@ if [ "$DRYRUN" ]; then
 elif [ -z "$USE_CLUSTER" ]; then
     echo "Running snakemake rule locally: $RULE. Common options: traces_and_behavior (default), traces, behavior"
     snakemake -s pipeline.smk --unlock  # Unlock the folder, just in case
-    snakemake "$RULE" -s pipeline.smk --latency-wait 60 --cores 56 --retries 3
+    snakemake "$RULE" -s pipeline.smk --latency-wait 60 --cores 56 --retries 2
 else
     echo "Running snakemake rule on the cluster: $RULE. Common options: traces_and_behavior (default), traces, behavior"
     snakemake -s pipeline.smk --unlock  # Unlock the folder, just in case

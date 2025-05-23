@@ -11,18 +11,14 @@ import os
 import sys
 from pathlib import Path
 
-import napari
+from napari import Viewer
 from PyQt5 import QtCore, QtWidgets
 
 from wbfm.gui.utils.utils_gui import add_fps_printer
-from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.gui.create_project_gui import CreateProjectDialog
 from wbfm.gui.utils.file_dialog_widget import FileDialog
 from wbfm.utils.projects.utils_project import safe_cd
-from wbfm.utils.projects.utils_project_status import check_segmentation, check_tracking, \
-    check_traces, check_training_final, check_training_only_tracklets
+from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.utils.projects.finished_project_data import ProjectData
-from backports.cached_property import cached_property
 
 
 class UiMainWindow(object):
@@ -32,6 +28,8 @@ class UiMainWindow(object):
 
         # Unclear if this matters
         os.environ["NAPARI_ASYNC"] = "1"
+
+        self.viewer = None
 
     def setupUi(self, MainWindow, project_path):
         MainWindow.setObjectName("MainWindow")
@@ -185,61 +183,58 @@ class UiMainWindow(object):
             self._load_config_files(value)
         self.check_project_status()
 
-    @cached_property
-    def project_data(self):
-        return ProjectData.load_final_project_data_from_config(self.project_file,
-                                                               to_load_segmentation_metadata=True)
 
     def check_project_status(self):
-        seg_status = check_segmentation(self.cfg)
+        seg_status = check_all_needed_data_for_step(self.cfg, 1, raise_error=False)
         if seg_status:
             self.segmentationProgress.setValue(100)
         else:
             self.segmentationProgress.setValue(0)
-        training_status = check_training_only_tracklets(self.cfg)
+        training_status = check_all_needed_data_for_step(self.cfg, 2,
+                                                         training_data_required=False, raise_error=False)
         if training_status:
             self.trainingProgress.setValue(100)
         else:
             self.trainingProgress.setValue(0)
-        tracking_status = check_tracking(self.cfg)
+        tracking_status = check_all_needed_data_for_step(self.cfg, 3, raise_error=False)
         if tracking_status:
             self.trackingProgress.setValue(100)
         else:
             self.trackingProgress.setValue(0)
-        traces_status = check_traces(self.cfg)
+        traces_status = check_all_needed_data_for_step(self.cfg, 4, raise_error=False)
         if traces_status:
             self.tracesProgress.setValue(100)
         else:
             self.tracesProgress.setValue(0)
 
     def _load_config_files(self, project_path):
-        cfg = ModularProjectConfig(project_path)
-        self.cfg = cfg
+        self.project_data = ProjectData.load_final_project_data(project_path)
+        self.cfg = self.project_data.project_config
 
     def napari_for_masks(self):
         """Open napari window for segmentation before tracking"""
-        self.viewer = napari.Viewer(ndisplay=3)
+        # self.viewer = Viewer(ndisplay=3)
         which_layers = ['Red data', 'Green data', 'Raw segmentation']
-        self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)
+        self.viewer = self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)
         self.viewer.show()
         add_fps_printer(self.viewer)
 
     def napari_for_masks_tracking(self):
         """Open napari window for segmentation colored by tracking"""
-        self.viewer = napari.Viewer(ndisplay=3)
+        self.viewer = Viewer(ndisplay=3)
         which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Intermediate global IDs']
         self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)
         self.viewer.show()
 
     def napari_for_masks_training(self):
         """Open napari window for segmentation and raw data"""
-        self.viewer = napari.Viewer(ndisplay=3)
+        self.viewer = Viewer(ndisplay=3)
         which_layers = ['Red data', 'Green data', 'Raw segmentation']
         self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)
         self.viewer.show()
 
     def open_traces_gui(self):
-        self.viewer = napari.Viewer(ndisplay=3)
+        self.viewer = Viewer(ndisplay=3)
         which_layers = ['Red data', 'Green data', 'Raw segmentation', 'Colored segmentation',
                         'Neuron IDs', 'Intermediate global IDs']
         self.project_data.add_layers_to_viewer(self.viewer, which_layers=which_layers)

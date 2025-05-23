@@ -17,7 +17,7 @@ ex.add_config(os.path.join(path, 'project_config.yaml'))
 
 
 @ex.config
-def cfg(red_fname, green_fname, parent_data_folder):
+def cfg(parent_data_folder):
     pass
 
 
@@ -30,6 +30,8 @@ def main(_config, _run, _log):
         project_dir='/scratch/neurobiology/zimmer/fieseler/wbfm_projects/exposure_12ms'
         task_name=gfp
         experimenter=C
+        # OPTIONAL:
+        neuropal_path='/scratch/neurobiology/zimmer/ulises/wbfm/20220824/data/ZIM2319_worm2/20220824_ZIM2319_worm2_gfp_neuropal.h5'
     """
     sacred.commands.print_config(_run)
 

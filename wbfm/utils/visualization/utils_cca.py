@@ -6,11 +6,10 @@ from typing import Tuple, Union
 from sklearn.pipeline import Pipeline
 import numpy as np
 import pandas as pd
-from ipywidgets import interact
 from sklearn.cross_decomposition import CCA
 import plotly.express as px
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import FunctionTransformer, StandardScaler
+from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
 
 from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
@@ -21,8 +20,6 @@ from wbfm.utils.visualization.utils_plot_traces import modify_dataframe_to_allow
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes
 import plotly.graph_objects as go
 from methodtools import lru_cache
-import cca_zoo.models as scc_mod
-
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.general.hardcoded_paths import neurons_with_confident_ids
 
@@ -137,6 +134,7 @@ class CCAPlotter:
             cca = CCA(n_components=n_components)
             X_r, Y_r = cca.fit_transform(X, Y)
         else:
+            import cca_zoo.models as scc_mod
             cca = scc_mod.SCCA_IPLS(latent_dims=n_components, tau=sparse_tau)
             X_r, Y_r = cca.fit_transform([X, Y])
         return X_r, Y_r, cca
@@ -306,6 +304,7 @@ class CCAPlotter:
             self.project_data.shade_axis_using_behavior(plotly_fig=fig)
             fig.show()
 
+        from ipywidgets import interact
         interact(f, i=(0, X_r.shape[1] - 1))
 
     def get_weights_from_cca(self, cca, binary_behaviors, **kwargs):

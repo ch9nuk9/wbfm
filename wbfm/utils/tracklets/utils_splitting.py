@@ -30,33 +30,6 @@ class TrackletSplitter:
 
         return self._means_to_subtract
 
-    def get_split_points_using_feature_jumps(self, df_working_copy, original_name, jump=1):
-        from ruptures.exceptions import BadSegmentationParameters
-        _ = self.get_means_to_subtract(df_working_copy)
-        tracklet = df_working_copy[original_name]
-        signal = self.get_signal_from_tracklet(tracklet)
-        if signal is None:
-            return []
-        try:
-            split_list = split_signal(signal, self.penalty, jump=jump)
-            # Convert back to original times
-            ind_no_nan = tracklet.dropna(axis=0).index
-            split_list = [ind_no_nan[i] for i in split_list if i < len(ind_no_nan)]
-        except BadSegmentationParameters:
-            split_list = []
-
-        return split_list
-
-    def plot_split_points_and_tracklet(self, df, original_name, split_list):
-        import ruptures as rpt
-        tracklet = df[original_name]
-        signal = self.get_signal_from_tracklet(tracklet)
-        # Convert to local times
-        ind_no_nan = list(tracklet.dropna(axis=0).index)
-        split_list = [ind_no_nan.index(i) for i in split_list]
-        rpt.display(signal, [], split_list, figsize=(10, 6))
-        plt.show()
-
     def get_signal_from_tracklet(self, tracklet):
         return get_signal_from_tracklet(tracklet, self.features, means_to_subtract=self.get_means_to_subtract())
 
@@ -77,12 +50,3 @@ def get_signal_from_tracklet(tracklet, features, means_to_subtract=None):
         signal_list.append(signal)
     signal = np.vstack(signal_list).T
     return signal
-
-
-def split_signal(signal, penalty, jump):
-    import ruptures as rpt
-    # Note: the timing is quadratic (I think) in the jump parameter;
-    model = "l2"  # "l2", "rbf"
-    algo = rpt.Pelt(model=model, min_size=3, jump=jump).fit(signal)
-    my_bkps = algo.predict(pen=penalty)
-    return my_bkps

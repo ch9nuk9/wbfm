@@ -12,37 +12,32 @@ channels:
   - bioconda
   - nodefaults
 dependencies:
-  - python=3.10
+  - python=3.9
   - pip
-  - numpy
-  - pandas
-  - tqdm
-  - zarr
-  - scipy
-  - torchaudio
-  - cudatoolkit
-  - cudnn
-  - matplotlib
-  - torchvision
-  - scikit-learn
-  - scikit-image
-  - networkx
-  - lmfit
-  - natsort
-  - snakemake
-  - napari[all]
-  - pytorch
-  - torchvision
-  - torchaudio
-  - torchmetrics
-  - pytorch-cuda
-  - plotly
   - pip:
     - tifffile
+    - natsort
+    - scikit-image
+    - networkx
+    - matplotlib
+    - tqdm
+    - snakemake
+    - lmfit
+    - torch
+    - torchvision
+    - torchaudio
+    - torchmetrics
+    - napari[all]
+    - plotly
+    - zarr>=2,<3
+    - scipy
+    - scikit-learn
+    - numpy
+    - pandas
     - opencv-contrib-python
     - tables
     - networkx
-    - tensorflow
+    - tensorflow[and-cuda]
     - sacred
     - ruamel.yaml
     - stardist  # Use 0.8.4 for printing fix, but not actually necessary
@@ -66,3 +61,4 @@ dependencies:
     - ndtiff
     - ndstorage
     - torchio
+    - pulp<2.8

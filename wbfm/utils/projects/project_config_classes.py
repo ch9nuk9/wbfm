@@ -4,23 +4,21 @@ import logging
 import os
 import pickle
 import shutil
-from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple, Optional, List
 
-import dask.array as da
 import numpy as np
 import pandas as pd
 import pprint
 from imutils import MicroscopeDataReader
-from methodtools import lru_cache
 
 from wbfm.utils.external.utils_pandas import ensure_dense_dataframe
-from wbfm.utils.external.custom_errors import NoBehaviorDataError, TiffFormatError
+from wbfm.utils.external.custom_errors import NoBehaviorDataError, IncompleteConfigFileError
 from wbfm.utils.general.utils_logging import setup_logger_object, setup_root_logger
 from wbfm.utils.general.utils_filenames import check_exists, resolve_mounted_path_in_current_os, \
-    get_sequential_filename, get_location_of_new_project_defaults, is_absolute_in_any_os
+    get_sequential_filename, get_location_of_new_project_defaults, is_absolute_in_any_os, \
+    get_location_of_alternative_project_defaults
 from wbfm.utils.projects.utils_project import safe_cd, update_project_config_path, \
     update_snakemake_config_path, RawFluorescenceData
 from wbfm.utils.external.utils_yaml import edit_config, load_config
@@ -39,38 +37,45 @@ class ConfigFileWithProjectContext:
     3. change filepaths between relative and absolute
     """
 
-    self_path: str
-    config: dict = None
+    _self_path: str
+    _config: dict = None
     project_dir: str = None
 
     _logger: logging.Logger = None
-    log_to_file: bool = True
+    log_to_file: bool = False
 
     def __post_init__(self):
-        if self.self_path is None:
+        if self._self_path is None:
             logging.warning("self_path is None; some functionality will not work")
-            self.config = dict()
+            self._config = dict()
         else:
-            if Path(self.self_path).is_dir():
+            if Path(self._self_path).is_dir():
                 # Then it was a folder, and we should find the config file inside
-                self.project_dir = self.self_path
-                self.self_path = str(Path(self.self_path).joinpath('project_config.yaml'))
+                self.project_dir = self._self_path
+                self._self_path = str(Path(self._self_path).joinpath('project_config.yaml'))
             else:
-                self.project_dir = str(Path(self.self_path).parent)
-            self.config = load_config(self.self_path)
-            if self.config is None:
-                if not Path(self.self_path).exists():
-                    raise FileNotFoundError(f"Could not find config file {self.self_path}")
+                self.project_dir = str(Path(self._self_path).parent)
+            self._config = load_config(self._self_path)
+            if self._config is None:
+                if not Path(self._self_path).exists():
+                    raise FileNotFoundError(f"Could not find config file {self._self_path}")
                 else:
-                    raise ValueError(f"Found empty file at {self.self_path}; probably yaml crashed and deleted the file. "
+                    raise ValueError(f"Found empty file at {self._self_path}; probably yaml crashed and deleted the file. "
                                      f"There is no way to recover the data, so the file must be recreated manually.")
             # Convert to default dict, for backwards compatibility with deprecated keys
             # Actually: this gives problems with pickling, so do not do this
             # self.config = defaultdict(lambda: defaultdict(lambda: None), self.config)
 
     @property
+    def config(self):
+        if self.has_valid_self_path:
+            return self._config
+        else:
+            raise IncompleteConfigFileError("No valid self_path was found")
+
+    @property
     def has_valid_self_path(self):
-        return self.self_path is not None
+        return self._self_path is not None
 
     @property
     def logger(self):
@@ -92,7 +97,7 @@ class ConfigFileWithProjectContext:
         return logger
 
     def update_self_on_disk(self):
-        fname = self.resolve_relative_path(self.self_path)
+        fname = self.absolute_self_path
         self.logger.info(f"Updating config file {fname} on disk")
         # Make sure none of the values are Path objects, which will crash the yaml dump and leave an empty file!
         for key in self.config:
@@ -103,7 +108,7 @@ class ConfigFileWithProjectContext:
         try:
             edit_config(fname, self.config)
         except PermissionError as e:
-            if Path(self.self_path).is_absolute():
+            if Path(self._self_path).is_absolute():
                 self.logger.debug(f"Skipped updating nonlocal file: {fname}")
             else:
                 # Then it was a local file, and the error was real
@@ -144,7 +149,11 @@ class ConfigFileWithProjectContext:
 
     @property
     def absolute_self_path(self):
-        return self.resolve_relative_path(self.self_path)
+        return self.resolve_relative_path(self._self_path)
+
+    @property
+    def relative_self_path(self):
+        return self.unresolve_absolute_path(self._self_path)
 
     def to_json(self):
         return json.dumps(vars(self))
@@ -329,9 +338,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return fname
 
     def get_behavior_config(self) -> SubfolderConfigFile:
+        if not self.has_valid_self_path:
+            raise FileNotFoundError
         fname = Path(self.project_dir).joinpath('behavior', 'behavior_config.yaml')
         if not fname.exists():
-            # self.logger.warning("Project does not have a behavior config file")
             raise FileNotFoundError
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
 
@@ -350,6 +360,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         fname = None
         try:
             fname = self.get_folder_for_all_channels()
+            if fname is None:
+                raise FileNotFoundError
             fname = Path(fname).joinpath('config.yaml')
             return SubfolderConfigFile(**self._check_path_and_load_config(fname))
         except FileNotFoundError:
@@ -357,22 +369,82 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
             cfg = default_raw_data_config()
             self._logger.warning(f"Could not find file {fname}; "
                                  f"Using hardcoded default raw data config: {cfg}")
-            return SubfolderConfigFile(self_path=None, config=cfg, project_dir=self.project_dir)
+            return SubfolderConfigFile(_self_path=None, _config=cfg, project_dir=self.project_dir)
 
-    def get_nwb_config(self) -> SubfolderConfigFile:
-        fname = Path(self.config['subfolder_configs'].get('nwb', None))
+    def get_nwb_config(self, make_subfolder=True) -> SubfolderConfigFile:
+        fname = self.config['subfolder_configs'].get('nwb', None)
         if fname is None:
             fname = Path(self.project_dir).joinpath('nwb', 'nwb_config.yaml')
             if not fname.exists():
-                raise FileNotFoundError("No path to a nwb config file was found in the project_config.yaml file")
+                if make_subfolder:
+                    self.initialize_nwb_folder()
+                else:
+                    raise FileNotFoundError("No path to a nwb config file was found in the project_config.yaml file")
+        else:
+            fname = Path(fname)
         return SubfolderConfigFile(**self._check_path_and_load_config(fname))
+
+    def _get_neuropal_dir(self, make_subfolder=True, raise_error=False):
+        # Directory which is not part of a default project
+        foldername = Path(self.project_dir).joinpath('neuropal')
+        if make_subfolder:
+            try:
+                foldername.mkdir(exist_ok=True)
+            except PermissionError as e:
+                self.logger.warning(f"Could not create neuropal folder (continuing): {e}")
+                if raise_error:
+                    raise e
+        return str(foldername)
+
+    def get_neuropal_config(self) -> SubfolderConfigFile:
+        fname = self.config['subfolder_configs'].get('neuropal', None)
+        if fname is None:
+            fname = Path(self.project_dir).joinpath(self._get_neuropal_dir(), 'neuropal_config.yaml')
+            if not fname.exists():
+                raise FileNotFoundError("No path to a neuropal config file was found in the project_config.yaml file")
+        else:
+            fname = Path(fname)
+        return SubfolderConfigFile(**self._check_path_and_load_config(fname))
+
+    def initialize_neuropal_subproject(self) -> SubfolderConfigFile:
+        # Nearly the same as getting a subfolder config, but expects the folder to not exist
+        foldername = self._get_neuropal_dir(make_subfolder=True, raise_error=True)
+        # Copy contents of the neuropal folder from the github project to the local project
+        source_folder = Path(get_location_of_alternative_project_defaults()).joinpath('neuropal_subproject')
+        for content in source_folder.iterdir():
+            if content.is_file():
+                shutil.copy(content, foldername)
+            else:
+                raise FileNotFoundError(f"Found a folder in the default neuropal folder: {content}")
+        # Add this config path to the main project config
+        neuropal_config = self.get_neuropal_config()
+        self.config['subfolder_configs']['neuropal'] = neuropal_config.relative_self_path
+        self.update_self_on_disk()
+        return neuropal_config
+
+    def initialize_nwb_folder(self) -> SubfolderConfigFile:
+        # Nearly the same as getting a subfolder config, but expects the folder to not exist
+        foldername = Path(self.project_dir).joinpath('nwb')
+        foldername.mkdir(exist_ok=True)
+        # Copy contents of the config file from the github project to the local project
+        source_folder = Path(get_location_of_new_project_defaults()).joinpath('nwb')
+        for content in source_folder.iterdir():
+            if content.is_file():
+                shutil.copy(content, foldername)
+            else:
+                raise FileNotFoundError(f"Found a folder in the default nwb folder: {content}")
+        # Add this config path to the main project config
+        nwb_config = self.get_nwb_config()
+        self.config['subfolder_configs']['nwb'] = nwb_config.relative_self_path
+        self.update_self_on_disk()
+        return nwb_config
 
     def _check_path_and_load_config(self, subconfig_path: Path,
                                     allow_config_to_not_exist: bool = False) -> Dict:
         if is_absolute_in_any_os(str(subconfig_path)):
             project_dir = Path(resolve_mounted_path_in_current_os(str(subconfig_path.parent.parent)))
         else:
-            project_dir = Path(self.self_path).parent
+            project_dir = Path(self.absolute_self_path).parent
         with safe_cd(project_dir):
             try:
                 cfg = load_config(subconfig_path)
@@ -387,8 +459,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                     raise e
         subfolder = subconfig_path.parent
 
-        args = dict(self_path=str(subconfig_path),
-                    config=cfg,
+        args = dict(_self_path=str(subconfig_path),
+                    _config=cfg,
                     project_dir=str(project_dir),
                     _logger=self.logger,
                     subfolder=str(subfolder))
@@ -400,11 +472,12 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return str(foldername)
 
     def _get_visualization_dir(self) -> str:
+        # Directory which is not part of a default project
         foldername = Path(self.project_dir).joinpath('visualization')
         try:
             foldername.mkdir(exist_ok=True)
-        except PermissionError:
-            pass
+        except PermissionError as e:
+            self.logger.warning(f"Could not create visualization folder (continuing): {e}")
         return str(foldername)
 
     def get_visualization_config(self, make_subfolder=False) -> SubfolderConfigFile:
@@ -417,8 +490,8 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         if make_subfolder:
             try:
                 Path(cfg.subfolder).mkdir(exist_ok=True)
-            except PermissionError:
-                pass
+            except PermissionError as e:
+                self.logger.warning(f"Could not create visualization folder (continuing): {e}")
         return cfg
 
     def resolve_mounted_path_in_current_os(self, key) -> Optional[Path]:
@@ -428,24 +501,35 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         return Path(resolve_mounted_path_in_current_os(path))
 
     def get_folder_for_entire_day(self) -> Optional[Path]:
-        return self._get_variable_parent_folder_of_raw_data(2)
+        fname = self.get_folder_for_all_channels()
+        if fname is None:
+            return None
+        else:
+            return Path(fname).parent
 
-    def get_folder_for_all_channels(self) -> Optional[Path]:
-        return self._get_variable_parent_folder_of_raw_data(1)
+    def get_folder_for_all_channels(self, verbose=0) -> Optional[Path]:
+        red_fname, is_btf = self.get_raw_data_fname(red_not_green=True)
+        if red_fname is None:
+            if verbose >= 1:
+                print("Could not find red_bigtiff_fname, aborting")
+            return None
+        if is_btf:
+            folder_for_all_channels = Path(red_fname).parents[1]
+        else:
+            folder_for_all_channels = Path(red_fname).parents[0]
 
-    def _get_variable_parent_folder_of_raw_data(self, i_parent):
-        raw_bigtiff_filename = self.resolve_mounted_path_in_current_os('red_bigtiff_fname')
-        if raw_bigtiff_filename is None:
-            raise FileNotFoundError(raw_bigtiff_filename)
-        raw_bigtiff_filename = Path(raw_bigtiff_filename)
-        parent_folder = raw_bigtiff_filename.parents[i_parent]
-        if not Path(parent_folder).exists():
-            raise FileNotFoundError(parent_folder)
-        return parent_folder
+        if not folder_for_all_channels.exists():
+            if verbose >= 1:
+                print(f"Could not find main data folder {folder_for_all_channels}, aborting")
+            return None
+        return folder_for_all_channels
 
     def get_folder_with_background(self) -> Path:
         folder_for_entire_day = self.get_folder_for_entire_day()
-        folder_for_background = folder_for_entire_day.joinpath('background')
+        if folder_for_entire_day is not None:
+            folder_for_background = folder_for_entire_day.joinpath('background')
+        else:
+            raise FileNotFoundError("Could not find behavior folder for entire day")
         if not folder_for_background.exists():
             raise FileNotFoundError(f"Could not find background folder {folder_for_background}")
 
@@ -461,7 +545,10 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
 
     def get_folder_with_alignment(self):
         folder_for_entire_day = self.get_folder_for_entire_day()
-        folder_for_alignment = folder_for_entire_day.joinpath('alignment')
+        if folder_for_entire_day is not None:
+            folder_for_alignment = folder_for_entire_day.joinpath('alignment')
+        else:
+            raise FileNotFoundError("Could not find behavior folder for entire day")
         if not folder_for_alignment.exists():
             raise FileNotFoundError(f"Could not find alignment folder {folder_for_alignment}")
 
@@ -615,31 +702,20 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         -------
 
         """
-        red_fname, is_btf = self.get_raw_data_fname(red_not_green=True)
-        if red_fname is None:
-            if verbose >= 1:
-                print("Could not find red_bigtiff_fname, aborting")
-            return None, False
-        if is_btf:
-            main_data_folder = Path(red_fname).parents[1]
-        else:
-            main_data_folder = Path(red_fname).parents[0]
-
-        if not main_data_folder.exists():
-            if verbose >= 1:
-                print(f"Could not find main data folder {main_data_folder}, aborting")
+        folder_for_all_channels = self.get_folder_for_all_channels(verbose=verbose)
+        if folder_for_all_channels is None:
             return None, False
         # First, get the subfolder
-        for content in main_data_folder.iterdir():
+        for content in folder_for_all_channels.iterdir():
             if content.is_dir():
                 # Ulises uses UK spelling
                 if 'behaviour' in content.name or 'BH' in content.name:
-                    behavior_subfolder = main_data_folder.joinpath(content)
+                    behavior_subfolder = folder_for_all_channels.joinpath(content)
                     flag = True
                     break
         else:
             if verbose >= 1:
-                print(f"Found no behavior subfolder in {main_data_folder}, aborting")
+                print(f"Found no behavior subfolder in {folder_for_all_channels}, aborting")
             flag = False
             behavior_subfolder = None
         if verbose >= 1:
@@ -669,7 +745,11 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
         behavior_raw_folder = str(behavior_raw_folder)
 
         # Second
-        beh_cfg = self.get_behavior_config()
+        try:
+            beh_cfg = self.get_behavior_config()
+        except FileNotFoundError:
+            raise NoBehaviorDataError(f"Could not find behavior_config.yaml in {self.project_dir}/behavior... "
+                                      f"Did the user delete it?")
         behavior_output_folder = beh_cfg.subfolder
 
         if not Path(behavior_output_folder).exists():
@@ -824,7 +904,7 @@ def update_path_to_behavior_in_config(cfg: ModularProjectConfig):
     # Then make a new folder, file, and fill it
     fname = Path(cfg.project_dir).joinpath('behavior', 'nwb_config.yaml')
     fname.parent.mkdir(exist_ok=False)
-    behavior_cfg = SubfolderConfigFile(self_path=str(fname), config={}, project_dir=cfg.project_dir, subfolder='behavior')
+    behavior_cfg = SubfolderConfigFile(_self_path=str(fname), _config={}, project_dir=cfg.project_dir, subfolder='behavior')
 
     # Fill variable 1: Try to find behavior annotations
     raw_behavior_foldername, flag = cfg.get_behavior_raw_parent_folder_from_red_fname()

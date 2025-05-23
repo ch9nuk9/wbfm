@@ -13,7 +13,7 @@ from wbfm.utils.external.utils_matplotlib import export_legend
 from wbfm.utils.general.hardcoded_paths import load_paper_datasets
 
 from wbfm.utils.utils_cache import cache_to_disk_class
-from wbfm.utils.external.utils_plotly import rgba2hex, hex2rgba, pastelize_color, darken_color, mute_color
+from wbfm.utils.external.utils_plotly import pastelize_color, mute_color
 
 
 def paper_trace_settings():
@@ -307,6 +307,7 @@ def behavior_name_mapping(shorten=False):
         self_collision='Self-collision',
         head_cast='Head cast',
         slowing='Slowing',
+        SLOWING='Slowing',
         pause='Pause',
         PAUSE='Pause',
         # Eigenworms are counted from 0 in python, but the paper wants them from 1

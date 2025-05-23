@@ -7,7 +7,6 @@ from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
-from pip._internal.commands.show import search_packages_info
 
 from wbfm.utils.external.custom_errors import UnknownValueError, RawDataFormatError
 
@@ -185,7 +184,7 @@ def lexigraphically_sort(strs_with_numbers):
 
 def load_file_according_to_precedence(fname_precedence: list,
                                       possible_fnames: Dict[str, str],
-                                      this_reader: callable = read_if_exists, dryrun=False, **kwargs):
+                                      reader_func: callable = read_if_exists, dryrun=False, **kwargs):
     """
     Load a file according to a dict of possible filenames, ordered by fname_precedence
 
@@ -193,7 +192,7 @@ def load_file_according_to_precedence(fname_precedence: list,
     ----------
     fname_precedence
     possible_fnames
-    this_reader
+    reader_func
     dryrun
     kwargs
 
@@ -217,7 +216,7 @@ def load_file_according_to_precedence(fname_precedence: list,
                 data = None
                 logging.debug(f"Dryrun: would have read data from: {fname}")
             else:
-                data = this_reader(fname, **kwargs)
+                data = reader_func(fname, **kwargs)
                 logging.debug(f"Read data from: {fname}")
             if key != most_recent_modified_key:
                 logging.debug(f"Not using most recently modified file (mode {most_recent_modified_key})")
@@ -353,6 +352,7 @@ def generate_output_data_names(cfg):
 
 
 def get_location_of_installed_project():
+    from pip._internal.commands.show import search_packages_info
     package_info = next(search_packages_info(['wbfm']))
     return package_info.location
 
@@ -360,6 +360,12 @@ def get_location_of_installed_project():
 def get_location_of_new_project_defaults():
     parent_folder = Path(get_location_of_installed_project())
     target_folder = parent_folder.joinpath('wbfm').joinpath('new_project_defaults').resolve()
+    return str(target_folder)
+
+
+def get_location_of_alternative_project_defaults():
+    parent_folder = Path(get_location_of_installed_project())
+    target_folder = parent_folder.joinpath('wbfm').joinpath('alternative_project_defaults').resolve()
     return str(target_folder)
 
 

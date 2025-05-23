@@ -7,14 +7,14 @@ import scipy.ndimage as ndi
 import cv2
 import numpy as np
 import pandas as pd
-from wbfm.utils.visualization.utils_array_format_conversion import napari_tracks_from_match_list
+from wbfm.utils.visualization.utils_napari import napari_tracks_from_match_list
 from napari.utils.transforms import Affine
-from segmentation.util.utils_metadata import DetectedNeurons
+from wbfm.utils.segmentation.util.utils_metadata import DetectedNeurons
 from wbfm.utils.external.utils_cv2 import cast_matches_as_array
 from wbfm.utils.neuron_matching.class_reference_frame import ReferenceFrame
 from wbfm.utils.external.custom_errors import NoMatchesError, AnalysisOutOfOrderError
 from wbfm.utils.neuron_matching.utils_affine import calc_matches_using_affine_propagation
-from wbfm.utils.neuron_matching.utils_features import match_known_features, build_features_and_match_2volumes
+from wbfm.utils.general.utils_features import match_known_features, build_features_and_match_2volumes
 from wbfm.utils.neuron_matching.utils_gaussian_process import calc_matches_using_gaussian_process
 from wbfm.utils.general.utils_networkx import calc_bipartite_from_candidates
 from wbfm.utils.general.distance_functions import dist2conf

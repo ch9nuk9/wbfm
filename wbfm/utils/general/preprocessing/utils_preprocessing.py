@@ -7,6 +7,9 @@ import threading
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+from skimage import img_as_uint
+from skimage.transform import resize
+
 from imutils import MicroscopeDataReader
 from methodtools import lru_cache
 
@@ -24,7 +27,7 @@ from wbfm.utils.external.utils_zarr import zarr_reader_folder_or_zipstore
 from wbfm.utils.external.custom_errors import MustBeFiniteError, TiffFormatError
 from wbfm.utils.general.preprocessing.deconvolution import ImageScaler, CustomPSF, sharpen_volume_using_dog, \
     sharpen_volume_using_bilateral
-from wbfm.utils.neuron_matching.utils_rigid_alignment import align_stack_to_middle_slice, \
+from wbfm.utils.external.utils_rigid_alignment import align_stack_to_middle_slice, \
     cumulative_alignment_of_stack, apply_alignment_matrix_to_stack, calculate_alignment_matrix_two_stacks
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, ConfigFileWithProjectContext
 from wbfm.utils.general.utils_filenames import add_name_suffix
@@ -88,6 +91,7 @@ class PreprocessingSettings(RawFluorescenceData):
     # Plane removal, especially flyback
     raw_number_of_planes: int = None
     starting_plane: int = None
+    rescale_to_target_z: int = None
 
     # Filtering
     do_filtering: bool = False
@@ -733,6 +737,10 @@ def perform_preprocessing(single_volume_raw: np.ndarray,
         mini_max_size = s.mini_max_size
         single_volume_raw = ndi.maximum_filter(single_volume_raw, size=(mini_max_size, 1, 1))
 
+    if s.rescale_to_target_z is not None:
+        target_shape = (s.rescale_to_target_z, single_volume_raw.shape[1], single_volume_raw.shape[2])
+        single_volume_raw = resize(single_volume_raw, target_shape, order=3, preserve_range=True)
+
     # Do not actually change datatype
     if not s.uint8_only_for_opencv:
         raise DeprecationWarning("uint8 should not be saved directly, but converted on demand for opencv")
@@ -794,8 +802,17 @@ def preprocess_all_frames(video_dat_4d: da, p: PreprocessingSettings, which_chan
     """
 
     total_sz = video_dat_4d.shape
+    if p.rescale_to_target_z is not None:
+        total_sz = list(total_sz)
+        total_sz[1] = p.rescale_to_target_z
+        total_sz = tuple(total_sz)
+
     chunk_sz = (1,) + total_sz[1:]
-    store = zarr.DirectoryStore(path=out_fname)
+
+    try:
+        store = zarr.DirectoryStore(path=out_fname)
+    except AttributeError:
+        store = zarr.storage.LocalStore(path=out_fname)
     logging.info(f"Preprocessing all frames and saving to {out_fname}, with settings: "
                  f"total_sz={total_sz}, chunk_sz={chunk_sz}")
     if p.final_dtype == np.uint8:

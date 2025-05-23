@@ -13,7 +13,7 @@ def segment_local_data_subset(project_config, out_fname=None):
 
     See also: write_data_subset_from_config
     """
-    from segmentation.util.utils_pipeline import _segment_full_video_3d, _segment_full_video_2d
+    from wbfm.utils.segmentation.util.utils_pipeline import _segment_full_video_3d, _segment_full_video_2d
 
     cfg = load_config(project_config)
     project_dir = Path(project_config).parent

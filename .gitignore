@@ -57,7 +57,8 @@ wbfm/notebooks/*.ipynb
 /wbfm/tests/.hypothesis/examples/*
 /wbfm/tests/.hypothesis/examples/**/*
 /wbfm/notebooks/paper/cluster_triggered_average_many_clusters/
-/wbfm/notebooks/paper/Old/
+/wbfm/notebooks/**/old/
+/wbfm/notebooks/**/scratch/
 /wbfm/notebooks/presentations_and_grants/manuel_presentation_may_2023/
 /wbfm/notebooks/paper/iframe_figures/
 /wbfm/notebooks/alternative_ideas/*

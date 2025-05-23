@@ -18,7 +18,6 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from backports.cached_property import cached_property
 from matplotlib import pyplot as plt
-from napari._qt.qthreading import thread_worker
 from numpy.linalg import LinAlgError
 from tqdm.auto import tqdm
 from PyQt5.QtWidgets import QApplication, QProgressDialog
@@ -34,7 +33,7 @@ from wbfm.utils.external.utils_pandas import build_tracks_from_dataframe
 from wbfm.utils.projects.finished_project_data import ProjectData
 import time
 
-cgitb.enable(format='text')
+# cgitb.enable(format='text')
 
 
 class NapariTraceExplorer(QtWidgets.QWidget):
@@ -62,12 +61,6 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     _disable_callbacks = False
 
     def __init__(self, project_data: ProjectData, app: QApplication, **kwargs):
-        try:
-            check_all_needed_data_for_step(project_data.project_config,
-                                           step_index=5, raise_error=True, training_data_required=False)
-        except IncompleteConfigFileError:
-            # This error means that the project is an alternate style, which is likely fine
-            pass
         for k, v in kwargs.items():
             setattr(self, k, v)
         if self.load_tracklets:
@@ -114,10 +107,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.tracklet_mode_calculation_options = ['z', 'volume', 'likelihood', 'brightness_red']
 
         self.dict_of_saved_times = dict()
-
         self.list_of_gt_correction_widgets = []
 
-    def setupUi(self, viewer: napari.Viewer):
+    def setup_ui(self, viewer: napari.Viewer):
 
         self.logger.debug("Starting main UI setup")
         # Load dataframe and path to outputs
@@ -167,7 +159,11 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # self.verticalLayout.addWidget(self.groupBox5)
         self.verticalLayout.addWidget(self.groupBox6SegmentationCorrection)
 
-        self.initialize_track_layers()
+        try:
+            self.initialize_track_layers()
+        except KeyError:
+            self.logger.warning("Failed to initialize track layers, segmentation and tracklet callbacks will be "
+                                "unavailable")
         self.initialize_shortcuts()
         self.connect_napari_callbacks()
         self.initialize_trace_or_tracklet_subplot()
@@ -186,10 +182,28 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Open a new window with manual neuron name editing, if you have permissions in the project
         self.manualNeuronNameEditor = self.dat.build_neuron_editor_gui()
         if self.manualNeuronNameEditor is not None:
-            self.manualNeuronNameEditor.annotation_updated.connect(self.update_neuron_id_strings_in_layer)
-            self.manualNeuronNameEditor.multiple_annotations_updated.connect(self.update_neuron_id_strings_in_layer)
-            self.manualNeuronNameEditor.setWindowTitle(f"Neuron Name Editor for project: {self.dat.project_dir}")
+            update_func = lambda *args: self.update_neuron_id_strings_in_layer(*args, neuropal=False)
+            self.manualNeuronNameEditor.annotation_updated.connect(update_func)
+            self.manualNeuronNameEditor.multiple_annotations_updated.connect(update_func)
+            self.manualNeuronNameEditor.setWindowTitle(f"Fluorescence Neuron Name Editor for project: {self.dat.project_dir}")
             self.manualNeuronNameEditor.show()
+
+        # Optional: add neuropal layer interactivity
+        if self.dat.neuropal_manager.has_complete_neuropal:
+            self.manualNeuropalNeuronNameEditor = self.dat.build_neuron_editor_gui(neuropal_subproject=True)
+            if self.manualNeuropalNeuronNameEditor is not None:
+                update_func = lambda *args: self.update_neuron_id_strings_in_layer(*args, neuropal=True)
+                self.manualNeuropalNeuronNameEditor.annotation_updated.connect(update_func)
+                self.manualNeuropalNeuronNameEditor.multiple_annotations_updated.connect(update_func)
+                self.manualNeuropalNeuronNameEditor.setWindowTitle(f"Neuropal Neuron Name Editor for project: {self.dat.project_dir}")
+                # Change the background to light blue to differentiate from the other window
+                self.manualNeuropalNeuronNameEditor.setStyleSheet("background-color: lightblue;")
+                self.manualNeuropalNeuronNameEditor.show()
+
+                # Also add interactivity to the segmentation layer
+                self.add_neuropal_neuron_selection_callback()
+        else:
+            self.manualNeuropalNeuronNameEditor = None
 
         self.logger.debug("Finished main UI setup")
 
@@ -464,12 +478,21 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         return self.viewer.layers['Colored segmentation']
 
     @property
+    def neuropal_seg_layer(self):
+        try:
+            return self.viewer.layers['Neuropal segmentation']
+        except KeyError:
+            return None
+
+    @property
     def neuron_id_layer(self):
         return self.viewer.layers['Neuron IDs']
 
-    @property
-    def manual_id_layer(self):
-        return self.viewer.layers['Manual IDs']
+    def get_manual_id_layer(self, neuropal=False):
+        if not neuropal:
+            return self.viewer.layers['Manual IDs']
+        else:
+            return self.viewer.layers['Neuropal IDs']
 
     @property
     def red_data_layer(self):
@@ -477,7 +500,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
     @property
     def final_track_layer(self):
-        return self.viewer.layers['final_track']
+        if 'final_track' in self.viewer.layers:
+            return self.viewer.layers['final_track']
+        else:
+            return None
 
     @property
     def track_of_point_layer(self):
@@ -510,6 +536,9 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         # Get tracklet that is currently attached to the selected neuron
         self.logger.debug(f"USER: change tracklet to currently attached tracklet at t={self.t}")
         if not self._disable_callbacks:
+            if self.dat.tracklet_annotator is None:
+                self.logger.warning("Tracklet annotator is not initialized")
+                return
             target_tracklet = self.dat.tracklet_annotator.get_tracklet_attached_at_time(self.t)
             self.change_tracklets_from_gui(next_tracklet=target_tracklet)
 
@@ -575,6 +604,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self._disable_callbacks = False
 
     def update_track_layers(self):
+        if self.final_track_layer is None:
+            return
         point_layer_data, track_layer_data = self.get_track_data()
         self.final_track_layer.data = point_layer_data
         if self.use_track_of_point:
@@ -643,6 +674,8 @@ class NapariTraceExplorer(QtWidgets.QWidget):
 
         if self.manualNeuronNameEditor is not None:
             dict_of_saving_callbacks['manual_ids'] = self.manualNeuronNameEditor.save_df_to_disk
+        if self.manualNeuropalNeuronNameEditor:
+            dict_of_saving_callbacks['neuropal_ids'] = self.manualNeuropalNeuronNameEditor.save_df_to_disk
         progress = QProgressDialog("Saving to disk, you may quit when finished", None,
                                    0, len(dict_of_saving_callbacks), self)
         progress.setWindowModality(Qt.WindowModal)
@@ -749,23 +782,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             if event.button in (1, 2, 3):
                 click_modifiers = [m.name.lower() for m in event.modifiers]
                 if 'shift' not in click_modifiers:
-                    # Get the index of the clicked segmentation
-
-                    # Get information about clicked-on neuron
-                    seg_index = layer.get_value(
-                        position=event.position,
-                        view_direction=event.view_direction,
-                        dims_displayed=event.dims_displayed,
-                        world=True
-                    )
-                    if seg_index is None or seg_index == 0:
-                        self.logger.debug("Clicked on background, not a neuron")
+                    neuron_name = self._get_info_of_clicked_on_neuron(layer, event)
+                    if neuron_name is None:
                         return
 
-                    # The segmentation index should be the same as the name
-                    neuron_name = int2name_neuron(seg_index)
-                    self.logger.debug(f"Clicked on segmentation {seg_index}, corresponding to {neuron_name},"
-                                      f" with button {event.button}")
                     if event.button == 1:
                         self.select_neuron(neuron_name)
                     elif event.button == 2:
@@ -774,6 +794,43 @@ class NapariTraceExplorer(QtWidgets.QWidget):
                         # Jump to the clicked row in the external name editor gui
                         if self.manualNeuronNameEditor is not None:
                             self.manualNeuronNameEditor.jump_focus_to_neuron(neuron_name)
+
+    def add_neuropal_neuron_selection_callback(self):
+        layer_to_add_callback = self.neuropal_seg_layer
+
+        @layer_to_add_callback.mouse_drag_callbacks.append
+        def on_click(layer, event):
+            # Only interactivity for middle click
+            if event.button in (3, ):
+                click_modifiers = [m.name.lower() for m in event.modifiers]
+                if 'shift' not in click_modifiers:
+                    neuron_name = self._get_info_of_clicked_on_neuron(layer, event)
+                    if neuron_name is None:
+                        return
+
+                    # Jump to the clicked row in the external name editor gui
+                    if self.manualNeuropalNeuronNameEditor is not None:
+                        self.manualNeuropalNeuronNameEditor.jump_focus_to_neuron(neuron_name)
+
+    def _get_info_of_clicked_on_neuron(self, layer, event):
+        # Get the index of the clicked segmentation
+
+        # Get information about clicked-on neuron
+        seg_index = layer.get_value(
+            position=event.position,
+            view_direction=event.view_direction,
+            dims_displayed=event.dims_displayed,
+            world=True
+        )
+        if seg_index is None or seg_index == 0:
+            self.logger.debug("Clicked on background, not a neuron")
+            return None
+
+        # The segmentation index should be the same as the name
+        neuron_name = int2name_neuron(seg_index)
+        self.logger.debug(f"Clicked on segmentation {seg_index}, corresponding to {neuron_name},"
+                          f" with button {event.button}")
+        return neuron_name
 
     def connect_napari_callbacks(self):
         viewer = self.viewer
@@ -901,6 +958,10 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         @viewer.bind_key('Shift-s', overwrite=True)
         def toggle_neuron_ids(viewer):
             self.toggle_colored_segmentation_layer()
+
+        @viewer.bind_key('Shift-q', overwrite=True)
+        def toggle_neuron_ids(viewer):
+            self.toggle_neuropal_segmentation_layer()
 
         @viewer.bind_key('c', overwrite=True)
         def save_tracklet(viewer):
@@ -1140,12 +1201,17 @@ class NapariTraceExplorer(QtWidgets.QWidget):
     def toggle_colored_segmentation_layer(self):
         self._toggle_layer(self.colored_seg_layer)
 
+    def toggle_neuropal_segmentation_layer(self):
+        layer = self.neuropal_seg_layer
+        if layer is not None:
+            self._toggle_layer(layer)
+
     def toggle_neuron_ids(self):
         self.neuron_id_layer.visible = not self.neuron_id_layer.visible
         # self._toggle_layer(self.neuron_id_layer)
 
     def toggle_manual_ids(self):
-        self.manual_id_layer.visible = not self.manual_id_layer.visible
+        self.get_manual_id_layer().visible = not self.get_manual_id_layer().visible
 
     def _toggle_layer(self, layer):
         if self.viewer.layers.selection.active == layer:
@@ -1349,7 +1415,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.draw_subplot()
 
     def update_neuron_id_strings_in_layer(self, original_name: Union[list, str], old_name, new_name: Union[list, str],
-                                          actually_update_gui=True):
+                                          actually_update_gui=True, neuropal=False):
         """
         Modify the layer properties to change the displayed name of a neuron (across all time)
 
@@ -1369,36 +1435,36 @@ class NapariTraceExplorer(QtWidgets.QWidget):
             # Assume this is a multi-neuron change, and update the dataframe first before the gui
             assert len(original_name) == len(new_name), "Must have the same number of old and new names"
             for o, n in zip(original_name, new_name):
-                self.update_neuron_id_strings_in_layer(o, old_name, n, actually_update_gui=False)
+                self.update_neuron_id_strings_in_layer(o, old_name, n, actually_update_gui=False, neuropal=neuropal)
             if actually_update_gui:
-                worker = self.refresh_manual_id_layer()
-                worker.start()
+                worker = self.refresh_manual_id_layer(neuropal)
+                # worker.start()
             return
 
-        self.logger.info(f"Changing neuron name {old_name} to {new_name} (original name: {original_name})")
+        msg = f"Changing neuron name {old_name} to {new_name} (original name: {original_name})"
+        if neuropal:
+            msg += " in neuropal layer"
+        self.logger.info(msg)
         # Because the old name may have been blank, we need to use the automatic labels for indexing
-        original_name_series = self.manual_id_layer.properties['automatic_label']
+        id_layer = self.get_manual_id_layer(neuropal=neuropal)
+        original_name_series = id_layer.properties['automatic_label']
         original_name_series = pd.Series([int2name_neuron(n) for n in original_name_series])
 
         # Only modify the rows that are being changed
         rows_to_change = original_name_series == original_name
 
         # We need to change the features dataframe, not the properties dict
-        self.manual_id_layer.features.loc[rows_to_change, 'custom_label'] = new_name
+        id_layer.features.loc[rows_to_change, 'custom_label'] = new_name
 
         if actually_update_gui:
-            # Unfortunately, this updates the entire text layer including all strings, so it takes a while
+            # This updates the entire text layer including all strings, so it takes a while
             # Therefore do a new thread
-            worker = self.refresh_manual_id_layer()
-            worker.start()
+            worker = self.refresh_manual_id_layer(neuropal)
+            # worker.start()
 
-        # Change focus to the same row, but one column over
-        # self.manualNeuronNameEditor.jump_focus_to_neuron(original_name, column_offset=1)
-
-    @thread_worker
-    def refresh_manual_id_layer(self):
+    def refresh_manual_id_layer(self, neuropal=False):
         # This decorator makes the function return a worker, even though pycharm doesn't know it
-        self.manual_id_layer.refresh_text()
+        self.get_manual_id_layer(neuropal).refresh_text()
 
     def add_tracking_outliers_to_plot(self):
         # TODO: will improperly jump to selected tracklets when added; should be able to loop over self.tracklet_lines
@@ -2006,7 +2072,7 @@ class NapariTraceExplorer(QtWidgets.QWidget):
         self.dat.add_layers_to_viewer(self.viewer, which_layers=which_layers, heatmap_kwargs=heatmap_kwargs,
                                       layer_opt=dict(opacity=1.0))
         # Move manual_ids to top, so they are not obscured
-        i_manual_id_layer = self.viewer.layers.index(self.manual_id_layer)
+        i_manual_id_layer = self.viewer.layers.index(self.get_manual_id_layer())
         # Reorder function needs the layer index, not the name
         self.viewer.layers.move(i_manual_id_layer, -1)
 
@@ -2066,8 +2132,11 @@ def napari_trace_explorer(project_data: ProjectData,
         viewer = napari.Viewer(ndisplay=3)
     ui.dat.add_layers_to_viewer(viewer, dask_for_segmentation=False)
 
+    if project_data.neuropal_manager.has_complete_neuropal:
+        ui.dat.add_layers_to_viewer(viewer, which_layers=['Neuropal', 'Neuropal segmentation', 'Neuropal Ids'])
+
     # Actually dock my additional gui elements
-    ui.setupUi(viewer)
+    ui.setup_ui(viewer)
     viewer.window.add_dock_widget(ui)
     ui.show()
     change_viewer_time_point(viewer, t_target=10)

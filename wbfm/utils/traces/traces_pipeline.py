@@ -74,9 +74,12 @@ def match_segmentation_and_tracks(_get_zxy_from_pandas: Callable,
     for i_volume in tqdm(frame_list):
         # Get tracking point cloud
         # NOTE: This dataframe starts at 0, not start_volume
-        zxy0 = _get_zxy_from_pandas(i_volume)
-        # TODO: use physical units and align between z and xy
-        zxy1 = project_data.get_centroids_as_numpy(i_volume)
+        try:
+            zxy0 = _get_zxy_from_pandas(i_volume)
+            # TODO: use physical units and align between z and xy
+            zxy1 = project_data.get_centroids_as_numpy(i_volume)
+        except KeyError:
+            zxy0, zxy1 = [], []
         if len(zxy1) == 0 or len(zxy0) == 0:
             continue
         # Get matches
@@ -101,7 +104,8 @@ def _unpack_configs_for_traces(project_cfg, track_cfg):
     # Settings
     max_dist = track_cfg.config['final_3d_tracks']['max_dist_to_segmentation']
     params_start_volume = project_cfg.start_volume
-    num_frames = project_cfg.get_num_frames_robust()
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    num_frames = project_data.num_frames
 
     return max_dist, params_start_volume, num_frames
 
@@ -109,7 +113,8 @@ def _unpack_configs_for_traces(project_cfg, track_cfg):
 def _unpack_configs_for_extraction(project_cfg: ModularProjectConfig, traces_cfg):
     # Settings
     params_start_volume = project_cfg.start_volume
-    num_frames = project_cfg.get_num_frames_robust()
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    num_frames = project_data.num_frames
     frame_list = list(range(params_start_volume, num_frames + params_start_volume))
 
     coords = ['z', 'x', 'y']

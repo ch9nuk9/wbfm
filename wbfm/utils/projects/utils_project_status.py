@@ -24,7 +24,7 @@ def check_all_needed_data_for_step(project_config: ModularProjectConfig,
                                    raise_error=True,
                                    training_data_required=True,
                                    verbose=1):
-    if project_config is None:
+    if project_config is None or not project_config.has_valid_self_path:
         logging.warning("No project config provided; cannot check data")
         if raise_error:
             raise IncompleteConfigFileError("No project config provided; cannot check data")
@@ -43,7 +43,7 @@ def check_all_needed_data_for_step(project_config: ModularProjectConfig,
         if training_data_required:
             flag = check_training_final(project_config, verbose)
         else:
-            flag = check_training_only_tracklets(project_config, verbose)
+            flag = True
         if not flag and raise_error:
             raise AnalysisOutOfOrderError('Training data')
     if step_index > 3:

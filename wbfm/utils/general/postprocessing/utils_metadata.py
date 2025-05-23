@@ -79,13 +79,13 @@ def region_props_one_volume(this_mask_volume,
     """
     props_to_save = ['area', 'weighted_centroid', 'intensity_image', 'label']
     opt = dict(name_mode=name_mode, props_to_save=props_to_save)
-    red_neurons_one_volume = regionprops_one_volume_one_channel(this_mask_volume, this_red_volume, **opt)
-    green_neurons_one_volume = regionprops_one_volume_one_channel(this_mask_volume, this_green_volume, **opt)
+    red_neurons_one_volume = regionprops_one_volume(this_mask_volume, this_red_volume, **opt)
+    green_neurons_one_volume = regionprops_one_volume(this_mask_volume, this_green_volume, **opt)
 
     return red_neurons_one_volume, green_neurons_one_volume
 
 
-def regionprops_one_volume_one_channel(mask, data, props_to_save, name_mode):
+def regionprops_one_volume(mask, data, props_to_save, name_mode):
     neurons_one_volume = {}
     props = measure.regionprops(mask, intensity_image=data)
 

@@ -14,8 +14,8 @@ from wbfm.utils.neuron_matching.class_frame_pair import FramePair
 import napari
 
 from wbfm.utils.general.utils_filenames import get_sequential_filename
-from wbfm.utils.visualization.utils_array_format_conversion import napari_tracks_from_match_list, napari_labels_from_frames
-from wbfm.utils.visualization.napari_utils import napari_labels_from_traces_dataframe, NapariPropertyHeatMapper
+from wbfm.utils.visualization.utils_napari import napari_labels_from_traces_dataframe, NapariPropertyHeatMapper, \
+    napari_tracks_from_match_list, napari_labels_from_frames
 
 
 @dataclass
@@ -125,7 +125,7 @@ class NapariLayerInitializer:
 
     @staticmethod
     def add_layers_to_viewer(project_data, viewer=None, which_layers: Union[str, List[str], List[tuple]] = 'all',
-                             to_remove_flyback=False, check_if_layers_exist=False,
+                             to_remove_flyback=False, check_if_layers_already_exist=False,
                              dask_for_segmentation=True, force_all_visible=False,
                              gt_neuron_name_dict=None, heatmap_kwargs=None,
                              error_if_missing_layers=True, layer_opt=None):
@@ -140,25 +140,46 @@ class NapariLayerInitializer:
                               'Colored segmentation', 'Neuron IDs', 'Manual IDs', 'Intermediate global IDs']
         if which_layers == 'all':
             which_layers = basic_valid_layers
-        if check_if_layers_exist:
-            # NOTE: only works if the layer names are the same as these convinience names
+        if check_if_layers_already_exist:
+            # NOTE: only works if the layer names are the same as these convenience names
             new_layers = set(which_layers) - set([layer.name for layer in viewer.layers])
             which_layers = list(new_layers)
 
         project_data.logger.info(f"Finished loading data, trying to add following layers: {which_layers}")
         layers_actually_added = []
-        z_to_xy_ratio = project_data.physical_unit_conversion.z_to_xy_ratio
+        xy_pixels = project_data.physical_unit_conversion.zimmer_fluroscence_um_per_pixel_xy
+        z_pixels = project_data.physical_unit_conversion.zimmer_um_per_pixel_z
+        z_to_xy_ratio = z_pixels / xy_pixels
+        scale = (1.0, z_to_xy_ratio, 1.0, 1.0)
         if to_remove_flyback:
-            clipping_list = [{'position': [2*z_to_xy_ratio, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
+            raise NotImplementedError
+            # clipping_list = [{'position': [2*z_to_xy_ratio, 0, 0], 'normal': [1, 0, 0], 'enabled': True}]
         else:
             clipping_list = []
 
+        # Raw data (useful if the preprocessing doesn't work)
+        if 'Raw red data' in which_layers:
+            layer_name = 'Raw red data'
+            p = project_data.project_config.get_preprocessing_class()
+            dat = p.open_raw_data_as_4d_dask(red_not_green=True)
+            viewer.add_image(dat, name=layer_name, opacity=0.5, colormap='PiYG',
+                             scale=scale, experimental_clipping_planes=clipping_list)
+            layers_actually_added.append(layer_name)
+        if 'Raw green data' in which_layers:
+            layer_name = 'Raw green data'
+            p = project_data.project_config.get_preprocessing_class()
+            dat = p.open_raw_data_as_4d_dask(red_not_green=False)
+            viewer.add_image(dat, name=layer_name, opacity=0.5, colormap='green',
+                             scale=scale, experimental_clipping_planes=clipping_list)
+            layers_actually_added.append(layer_name)
+
+        # Normal (processed) data
         if 'Red data' in which_layers:
             layer_name = 'Red data'
             contrast_high = NapariLayerInitializer._get_contrast_limits(project_data, red_not_green=True)
             viewer.add_image(project_data.red_data, name=layer_name, opacity=0.5, colormap='PiYG',
                              contrast_limits=[0, contrast_high],
-                             scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
+                             scale=scale,
                              experimental_clipping_planes=clipping_list)
             layers_actually_added.append(layer_name)
         if 'Green data' in which_layers:
@@ -167,7 +188,7 @@ class NapariLayerInitializer:
             viewer.add_image(project_data.green_data, name=layer_name, opacity=0.5, colormap='green',
                              visible=force_all_visible,
                              contrast_limits=[0, contrast_high],
-                             scale=(1.0, z_to_xy_ratio, 1.0, 1.0),
+                             scale=scale,
                              experimental_clipping_planes=clipping_list)
             layers_actually_added.append(layer_name)
         if 'Raw segmentation' in which_layers:
@@ -175,7 +196,7 @@ class NapariLayerInitializer:
                 layer_name = 'Raw segmentation'
                 seg_array = zarr.array(project_data.raw_segmentation)
                 viewer.add_labels(seg_array, name=layer_name,
-                                  scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.8, visible=force_all_visible,
+                                  scale=scale, opacity=0.8, visible=force_all_visible,
                                   rendering='translucent')
                 layers_actually_added.append(layer_name)
                 # The rendering cannot be initialized to translucent_no_depth, so we do it here
@@ -186,17 +207,21 @@ class NapariLayerInitializer:
                 project_data.logger.warning("Colored segmentation requested but not available, skipping")
             else:
                 viewer.add_labels(project_data.segmentation, name=layer_name,
-                                  scale=(1.0, z_to_xy_ratio, 1.0, 1.0), opacity=0.4, visible=force_all_visible)
+                                  scale=scale, opacity=0.4, visible=force_all_visible)
                 layers_actually_added.append(layer_name)
-            viewer.layers[layer_name].blending = 'translucent_no_depth'
+                viewer.layers[layer_name].blending = 'translucent_no_depth'
 
         # Text overlay with automatic names
         if 'Neuron IDs' in which_layers:
             df = project_data.red_traces
-            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
-            options['visible'] = force_all_visible
-            viewer.add_points(**options)
-            layers_actually_added.append(options['name'])
+            try:
+                options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio)
+                options['visible'] = force_all_visible
+                viewer.add_points(**options)
+                layers_actually_added.append(options['name'])
+            except KeyError:
+                # Some nwb files may not have xyz information
+                project_data.logger.warning("Could not add neuron IDs; no xyz information available")
 
         # Text overlay with manual IDs
         if 'Manual IDs' in which_layers:
@@ -207,13 +232,17 @@ class NapariLayerInitializer:
                                                                                     remove_unnamed_neurons=True,
                                                                                     remove_duplicates=False)
 
-            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
-                                                          neuron_name_dict=gt_neuron_name_dict,
-                                                          automatic_label_by_default=False)
-            options['visible'] = force_all_visible
-            options['name'] = 'Manual IDs'
-            viewer.add_points(**options)
-            layers_actually_added.append(options['name'])
+            try:
+                options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio,
+                                                              neuron_name_dict=gt_neuron_name_dict,
+                                                              automatic_label_by_default=False)
+                options['visible'] = force_all_visible
+                options['name'] = 'Manual IDs'
+                viewer.add_points(**options)
+                layers_actually_added.append(options['name'])
+            except KeyError:
+                # Some nwb files may not have xyz information
+                project_data.logger.warning("Could not add neuron IDs; no xyz information available")
 
         if 'GT IDs' in which_layers:
             # Not added by default!
@@ -237,6 +266,76 @@ class NapariLayerInitializer:
             options['visible'] = force_all_visible
             viewer.add_points(**options)
             layers_actually_added.append(options['name'])
+
+        if 'Neuropal' in which_layers and project_data.neuropal_manager.data is not None:
+            z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
+            layer_names = ['Red(mNeptune2.5)', 'White(TagRFP)', 'Green(CyOFP1)', 'Blue(mTagBFP2)']
+            colormaps = ['red', 'gray', 'green', 'blue']
+            for i, (name, cmap) in enumerate(zip(layer_names, colormaps)):
+                dat = np.array(project_data.neuropal_manager.data[i])
+                viewer.add_image(dat, name=name, colormap=cmap, contrast_limits=[dat.min(), dat.max()],
+                                 visible=False, blending='additive',
+                                 scale=(z_np/xy_pixels, 1.0, 1.0))
+            layers_actually_added.append('Neuropal')
+
+        if 'Neuropal segmentation' in which_layers and project_data.neuropal_manager.segmentation is not None:
+            layer_name = 'Neuropal segmentation'
+            z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
+            viewer.add_labels(project_data.neuropal_manager.segmentation, name=layer_name, visible=False,
+                              scale=(z_np/xy_pixels, 1.0, 1.0), opacity=1.0)
+            _layer = viewer.layers[layer_name]
+            _layer.blending = 'translucent_no_depth'
+            _layer.rendering = 'translucent'
+            # Use the rgb colors from the mean intensity of the neuropal data
+            df = project_data.neuropal_manager.segmentation_metadata.get_all_neuron_metadata_for_single_time(0,
+                                                                                                     as_dataframe=True,
+                                                                                                     use_mean_intensity=True)
+            # Napari expects a dict with the label as key and an rgba tuple as value
+            # The dataframe is multi-indexed, so we need to convert it to a dictionary
+            # channel = 1 is white, which we ignore
+            rgb_columns = ['mean_intensity_0', 'mean_intensity_2', 'mean_intensity_3']
+            rename_column = ['raw_segmentation_id']
+            collapse_df = df.loc[:, df.columns.get_level_values(1).isin(rgb_columns)]
+            rename_values = df.loc[:, (slice(None), rename_column)].iloc[0].droplevel(1)
+            # Collapse selected columns into lists
+            collapsed = collapse_df.groupby(level=0, axis=1).agg(lambda x: list(x.values.tolist()))
+            collapsed.columns = [rename_values[neuron] for neuron in collapsed.columns]
+            # These are in raw pixel values, so we need to normalize them to 0 to 1
+            prop_dict = {k: np.squeeze(v) for k, v in collapsed.to_dict(orient='list').items()}
+            df_prop = pd.DataFrame(prop_dict)
+            df_prop = df_prop.subtract(df_prop.min(axis=1), axis=0)
+            # Also normalize to be 0 to 1, relative to all objects
+            df_prop = df_prop.divide(df_prop.max(axis=1), axis=0)
+            # Also normalize based on the total intensity across colors per object, to make the colormap work
+            df_prop = df_prop.divide(df_prop.sum(axis=0), axis=1)
+            prop_dict = {k: np.array(tuple(v) + (1.0, )) for k, v in df_prop.to_dict(orient='list').items()}
+            _layer.color = prop_dict
+            _layer.color_mode = 'direct'
+            layers_actually_added.append('Neuropal segmentation')
+
+        if 'Neuropal Ids' in which_layers and project_data.neuropal_manager.segmentation is not None:
+            z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
+
+            df = project_data.neuropal_manager.segmentation_metadata.get_all_neuron_metadata_for_single_time(0,
+                                                                                                             as_dataframe=True)
+            try:
+                np_neuron_name_dict = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0,
+                                                                                    remove_unnamed_neurons=True,
+                                                                                    remove_duplicates=False,
+                                                                                    neuropal_subproject=True)
+                options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_np/xy_pixels,
+                                                              neuron_name_dict=np_neuron_name_dict,
+                                                              automatic_label_by_default=False,
+                                                              include_time=False,
+                                                              label_using_column_name=True)
+                options['visible'] = force_all_visible
+                options['name'] = 'Neuropal IDs'
+                # options['text']['color'] = 'red'
+                viewer.add_points(**options)
+                layers_actually_added.append(options['name'])
+            except KeyError:
+                # Some nwb files may not have xyz information
+                project_data.logger.warning("Could not add neuron IDs; no xyz information available")
 
         # Special layers from the heatmapper class
         for layer_tuple in which_layers:

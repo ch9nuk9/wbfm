@@ -13,7 +13,7 @@ from probreg import bcpd, cpd
 from probreg import callbacks
 from sklearn.neighbors import NearestNeighbors
 
-from wbfm.utils.neuron_matching.utils_features import build_neuron_tree
+from wbfm.utils.general.utils_features import build_neuron_tree
 from wbfm.utils.general.point_clouds.utils_bcpd_segmentation import bcpd_to_pixels, pixels_to_bcpd
 
 

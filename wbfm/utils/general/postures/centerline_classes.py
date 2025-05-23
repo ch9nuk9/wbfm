@@ -4,11 +4,13 @@ import logging
 import math
 import os
 from pathlib import Path
-from typing import Union, Optional, List, Tuple
-
+from typing import Union, Optional, List, Tuple, Dict
+import dask.array as da
 import numpy as np
 import pandas as pd
 from dataclasses import dataclass
+
+from imutils import MicroscopeDataReader
 from matplotlib import pyplot as plt
 from methodtools import lru_cache
 from scipy.ndimage import gaussian_filter1d
@@ -21,8 +23,8 @@ from wbfm.utils.external.utils_breakpoints import plot_with_offset_x
 from wbfm.utils.external.utils_self_collision import calculate_self_collision_using_pairwise_distances
 from wbfm.utils.general.utils_behavior_annotation import BehaviorCodes, detect_peaks_and_interpolate, \
     shade_using_behavior, get_same_phase_segment_pairs, get_heading_vector_from_phase_pair_segments, \
-    shade_using_behavior_plotly, calc_slowing_from_speed, detect_peaks_and_interpolate_using_inter_event_intervals, \
-    plot_dataframe_of_transitions, annotate_turns_from_reversal_ends
+    shade_using_behavior_plotly, calc_slowing_using_peak_detection, detect_peaks_and_interpolate_using_inter_event_intervals, \
+    plot_dataframe_of_transitions, annotate_turns_from_reversal_ends, calc_slowing_using_threshold
 from wbfm.utils.external.utils_pandas import get_durations_from_column, get_contiguous_blocks_from_column, \
     remove_short_state_changes, get_dataframe_of_transitions, make_binary_vector_from_starts_and_ends, \
     force_same_indexing
@@ -30,7 +32,8 @@ from wbfm.utils.external.custom_errors import NoManualBehaviorAnnotationsError, 
     MissingAnalysisError, DataSynchronizationError
 from wbfm.utils.projects.physical_units import PhysicalUnitConversion
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.general.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists
+from wbfm.utils.general.utils_filenames import resolve_mounted_path_in_current_os, read_if_exists, \
+    load_file_according_to_precedence
 from wbfm.utils.traces.triggered_averages import TriggeredAverageIndices, \
     assign_id_based_on_closest_onset_in_split_lists, calc_time_series_from_starts_and_ends
 from wbfm.utils.general.high_performance_pandas import get_names_from_df
@@ -114,11 +117,13 @@ class WormFullVideoPosture:
         #     logging.warning("No stage position file found; disallowing subsampling")
         #     self.beh_annotation_already_converted_to_fluorescence_fps = True
 
-    @cached_property
-    def eigenworms(self) -> np.ndarray:
+    @lru_cache(maxsize=8)
+    def eigenworms(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         curvature_nonan = self.curvature().replace(np.nan, 0.0)
         pca_proj = self.calculate_eigenworms_from_curvature(curvature_nonan, 5,
                                                             self.i_eigenworm_start, self.i_eigenworm_end)
+        pca_proj = self._validate_and_downsample(pd.DataFrame(pca_proj), fluorescence_fps=fluorescence_fps,
+                                                 **kwargs)
         return pca_proj
 
     @staticmethod
@@ -475,9 +480,8 @@ class WormFullVideoPosture:
         # # Remove any slowing bouts that are too short (less than ~0.5 seconds)
         # _raw_vector = remove_short_state_changes(_raw_vector, min_length=30)
 
-        y = self.worm_angular_velocity(fluorescence_fps=False, make_consisent_with_stage_speed=False,
-                                       strong_smoothing=True)
-        _raw_vector, _ = calc_slowing_from_speed(y, min_length=30)
+        y = self.worm_speed(fluorescence_fps=False, signed=False, lowpass_filter=True)
+        _raw_vector = calc_slowing_using_threshold(y, min_length=0, threshold=0.05, only_negative_deriv=False)
 
         # Convert 1's to BehaviorCodes.SLOWING and 0's to BehaviorCodes.NOT_ANNOTATED
         _raw_vector = _raw_vector.replace(True, BehaviorCodes.SLOWING)
@@ -715,13 +719,13 @@ class WormFullVideoPosture:
                      'middle_body_speed', 'signed_middle_body_speed', 'signed_speed_angular',
                      'worm_speed_average_all_segments',
                      'summed_curvature',
-                     'summed_signed_curvature', 'head_curvature', 'head_signed_curvature',
+                     'summed_signed_curvature', 'head_curvature', 'head_unsigned_curvature',
                      'quantile_curvature', 'quantile_head_curvature',
                      'interpolated_ventral_midbody_curvature', 'interpolated_ventral_head_curvature',
                      'interpolated_dorsal_midbody_curvature', 'interpolated_dorsal_head_curvature',
-                     'speed_plateau_piecewise_constant',
                      'ventral_only_body_curvature', 'dorsal_only_body_curvature',
                      'ventral_only_head_curvature', 'dorsal_only_head_curvature',
+                     'body_curvature',
                      'speed_plateau_piecewise_linear_onset', 'speed_plateau_piecewise_linear_offset',
                      'fwd_empirical_distribution', 'rev_empirical_distribution',
                      'worm_nose_peak_frequency', 'worm_head_peak_frequency',
@@ -730,7 +734,7 @@ class WormFullVideoPosture:
         behaviors.extend(BehaviorCodes.possible_behavior_aliases())
         return behaviors
 
-    def calc_behavior_from_alias(self, behavior_alias: str, **kwargs) -> pd.Series:
+    def calc_behavior_from_alias(self, behavior_alias: Union[str, List[str]], **kwargs) -> Union[pd.Series, Dict[str, pd.Series]]:
         """
         This calls worm_speed or summed_curvature_from_kymograph with defined key word arguments
 
@@ -750,6 +754,10 @@ class WormFullVideoPosture:
         -------
 
         """
+        if isinstance(behavior_alias, list):
+            # This is a list of behaviors to calculate; return a dict with that as the key
+            # and the behavior as the value
+            return {b: self.calc_behavior_from_alias(b, **kwargs) for b in behavior_alias}
 
         # Default arguments
         kwargs['fluorescence_fps'] = kwargs.get('fluorescence_fps', True)
@@ -757,7 +765,7 @@ class WormFullVideoPosture:
 
         if behavior_alias == 'raw_annotations':
             y = self.beh_annotation(**kwargs)
-        elif behavior_alias == 'signed_stage_speed' or behavior_alias == 'speed':
+        elif behavior_alias in ['signed_stage_speed', 'speed', 'velocity']:
             y = self.worm_speed(**kwargs, signed=True)
         # More complex speeds
         elif behavior_alias == 'abs_stage_speed':
@@ -776,13 +784,17 @@ class WormFullVideoPosture:
         elif behavior_alias == 'leifer_curvature' or behavior_alias == 'summed_signed_curvature':
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(do_abs=False, **kwargs)
-        elif behavior_alias == 'head_curvature':
+        elif behavior_alias == 'head_unsigned_curvature':
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(start_segment=5, end_segment=30, **kwargs)
-        elif behavior_alias == 'head_signed_curvature':
+        elif behavior_alias == 'head_curvature':
             self.check_has_full_kymograph()
             y = self.summed_curvature_from_kymograph(do_abs=False,
                                                      start_segment=5, end_segment=30, **kwargs)
+        elif behavior_alias == 'body_curvature':
+            self.check_has_full_kymograph()
+            y = self.summed_curvature_from_kymograph(do_abs=False,
+                                                     start_segment=10, end_segment=90, **kwargs)
         elif behavior_alias == 'curvature_vb02':
             # Segment 15 is the hardcoded (approximate) location of the vb02 neuron
             # Note that there can be significant difference between individuals
@@ -830,11 +842,9 @@ class WormFullVideoPosture:
             y, _ = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=False, **kwargs)
         elif behavior_alias == 'speed_plateau_piecewise_linear_offset':
             y, _ = self.calc_piecewise_linear_plateau_state(n_breakpoints=2, return_last_breakpoint=True, **kwargs)
-        elif behavior_alias == 'speed_plateau_piecewise_constant':
-            y = self.calc_constant_offset_plateau_state(**kwargs)
         elif behavior_alias == 'signed_stage_speed_strongly_smoothed':
             y = self.worm_speed(signed=True, strong_smoothing=True, **kwargs)
-        elif behavior_alias == 'signed_speed_angular':
+        elif behavior_alias == 'signed_speed_angular' or behavior_alias == 'angular_velocity':
             y = self.worm_angular_velocity(**kwargs)
         elif behavior_alias == 'worm_speed_average_all_segments':
             y = self.worm_speed_average_all_segments(**kwargs)
@@ -892,18 +902,26 @@ class WormFullVideoPosture:
             y = xy['X', 50]
             x = xy['Y', 50]
             y = pd.concat([x, y], keys=['X', 'Y'], axis=1)
+        elif behavior_alias == 'reversal_events':
+            # Binary time series of reversals
+            y = self.beh_annotation(**kwargs)
+            y = BehaviorCodes.vector_equality(y, BehaviorCodes.REV).astype(int)
         elif isinstance(behavior_alias, str) and 'eigenworm' in behavior_alias:
             # Eigenworms 0-4 are possible, calculated on curvature
             # i.e. the full string should be 'eigenworm0', 'eigenworm1', etc.
             # First get the number
             i = int(behavior_alias[-1])
-            y = pd.Series(self.eigenworms[:, i])
+            y = pd.Series(self.eigenworms().iloc[:, i])
             y = self._validate_and_downsample(y, **kwargs)
         elif isinstance(behavior_alias, str) and 'curvature' in behavior_alias:
             # Assume the string is 'curvature' followed by a number, e.g. 'curvature_10'
             self.check_has_full_kymograph()
             i = int(behavior_alias.split('_')[-1])
             y = self.curvature(**kwargs).loc[:, i]
+        elif isinstance(behavior_alias, str) and 'hilbert' in behavior_alias:
+            # Assume it is a direct field
+            self.check_has_full_kymograph()
+            y = getattr(self, behavior_alias)(**kwargs)
         else:
             # Check if there is a BehaviorCodes enum with this name
             try:
@@ -1069,7 +1087,7 @@ class WormFullVideoPosture:
     def _raw_worm_angular_velocity(self):
         """Using angular velocity in 2d pca space"""
 
-        xyz_pca = self.eigenworms
+        xyz_pca = self.eigenworms().values
         window = 5
         x = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 0]), window)
         y = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 1]), window)
@@ -1097,8 +1115,6 @@ class WormFullVideoPosture:
         """
         velocity = self._raw_worm_angular_velocity
         velocity = self._validate_and_downsample(velocity, fluorescence_fps=fluorescence_fps, **kwargs)
-        if fluorescence_fps:
-            velocity.reset_index(drop=True, inplace=True)
         if remove_outliers:
             window = 10
             velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
@@ -1119,7 +1135,7 @@ class WormFullVideoPosture:
     def worm_speed(self, fluorescence_fps=False, subsample_before_derivative=True, signed=False,
                    strong_smoothing=False, use_stage_position=True, remove_outliers=True, body_segment=50,
                    clip_unrealistic_values=True, strong_smoothing_before_derivative=False,
-                   reset_index=True) -> pd.Series:
+                   lowpass_filter=False, reset_index=True) -> pd.Series:
         """
         Calculates derivative of position
 
@@ -1168,8 +1184,18 @@ class WormFullVideoPosture:
                                                            reset_index=True)
         speed_mm_per_s = self.convert_index_to_physical_time(speed_mm_per_s, fluorescence_fps=fluorescence_fps)
         if strong_smoothing:
-            window = 50
-            speed_mm_per_s = pd.Series(speed_mm_per_s).rolling(window=window, center=True).mean()
+            std = 84 if not fluorescence_fps else 3.5
+            speed_mm_per_s = filter_gaussian_moving_average(speed_mm_per_s, std=std)
+        if lowpass_filter:
+            # Remove frequencies similar to the scanning
+            from scipy import signal
+            fs = 1.0  # samples per frame
+            cutoff = 1 / 48  # Scanning is usually 24 fps, so this is 2 Hz
+            nyq = 0.5 * fs
+            normalized_cutoff = cutoff / nyq
+            b, a = signal.butter(8, normalized_cutoff, btype='low')
+            y = signal.filtfilt(b, a, fill_nan_in_dataframe(speed_mm_per_s).values, method="gust")
+            speed_mm_per_s = pd.Series(y, index=speed_mm_per_s.index)
         if remove_outliers:
             window = 10
             speed_mm_per_s = remove_outliers_via_rolling_mean(pd.Series(speed_mm_per_s), window)
@@ -1421,7 +1447,8 @@ class WormFullVideoPosture:
         fig = plt.figure(figsize=(15, 15))
         ax = fig.add_subplot(111, projection='3d')
         c = np.arange(self.num_volumes) / 1e6
-        ax.scatter(self.eigenworms[:, 0], self.eigenworms[:, 1], self.eigenworms[:, 2], c=c)
+        eig = self.eigenworms().values
+        ax.scatter(eig[:, 0], eig[:, 1], eig[:, 2], c=c)
         plt.colorbar()
 
     def get_centerline_for_time(self, t):
@@ -1631,63 +1658,6 @@ class WormFullVideoPosture:
 
         return predicted_pirouette_state
 
-    def calc_constant_offset_plateau_state(self, frames_to_remove=5, DEBUG=False):
-        """
-        Calculates a state that is high when the worm is in a "plateau", and low otherwise
-        Plateau is defined in two steps:
-            1. Find all reversals that are longer than 2 * frames_to_remove
-            2. Determine a single break point, and keep all points after
-
-        Parameters
-        ----------
-        frames_to_remove
-
-        Returns
-        -------
-
-        """
-        from wbfm.utils.traces.triggered_averages import calc_time_series_from_starts_and_ends
-        import ruptures as rpt
-        from ruptures.exceptions import BadSegmentationParameters
-
-        # Get the binary state
-        beh_vec = self.beh_annotation(fluorescence_fps=True)
-        rev_ind = BehaviorCodes.vector_equality(beh_vec, BehaviorCodes.REV)
-        all_starts, all_ends = get_contiguous_blocks_from_column(rev_ind, already_boolean=True)
-        # Also get the speed
-        speed = self.worm_speed(fluorescence_fps=True, strong_smoothing_before_derivative=True)
-        # Loop through all the reversals, shorten them, and calculate a break point in the middle as the new onset
-        new_starts = []
-        new_ends = []
-        for start, end in zip(all_starts, all_ends):
-            # The breakpoint algorithm needs at least 3 points
-            if end - start - 2 * frames_to_remove < 3:
-                continue
-            dat = speed.loc[start + frames_to_remove:end - frames_to_remove].to_numpy()
-            algo = rpt.Dynp(model="l2").fit(dat)
-            try:
-                result = algo.predict(n_bkps=1)
-            except BadSegmentationParameters:
-                continue
-            breakpoint_absolute_coords = result[0] + start + frames_to_remove
-            new_starts.append(breakpoint_absolute_coords)
-            new_ends.append(end)
-
-            if DEBUG:
-                fig, ax = plt.subplots()
-                plt.plot(dat)
-                for r in result:
-                    ax.axvline(x=r, color='black')
-                plt.title(f"Start: {start}, bkps: {breakpoint_absolute_coords}, End: {end}")
-                plt.show()
-        if DEBUG:
-            print(f"Original starts: {all_starts}")
-            print(f"New starts: {new_starts}")
-
-        num_pts = len(beh_vec)
-        plateau_state = calc_time_series_from_starts_and_ends(new_starts, new_ends, num_pts, only_onset=False)
-        return pd.Series(plateau_state)
-
     def calc_piecewise_linear_plateau_state(self, **plateau_kwargs):
         """
         Calculates a state that is high when the worm speed is in a "semi-plateau", and low otherwise
@@ -1864,7 +1834,7 @@ class WormFullVideoPosture:
         # Get the relevant foldernames from the project
         # The exact files may not be in the config, so try to find them
         project_config = project_data.project_config
-        if project_config is None:
+        if project_config is None or not project_config.has_valid_self_path:
             project_data.logger.warning("No project config found; returning empty posture class")
             return WormFullVideoPosture()
 
@@ -1906,8 +1876,11 @@ class WormFullVideoPosture:
         # If it didn't find any files, even if it found in subfolder, then check the local behavior subfolder
         if all_files.get('filename_curvature', None) is None:
             try:
-                behavior_subfolder = Path(project_config.get_behavior_config().absolute_subfolder)
-                all_files = WormFullVideoPosture._check_ulises_pipeline_files_in_subfolder(behavior_subfolder)
+                if project_config.has_valid_self_path:
+                    behavior_subfolder = Path(project_config.get_behavior_config().absolute_subfolder)
+                    all_files = WormFullVideoPosture._check_ulises_pipeline_files_in_subfolder(behavior_subfolder)
+                else:
+                    behavior_subfolder = raw_behavior_subfolder
             except FileNotFoundError:
                 behavior_subfolder = raw_behavior_subfolder
         else:
@@ -2167,9 +2140,10 @@ class WormFullVideoPosture:
 
         See behavior_video_avi_fname
         """
-        if self.behavior_subfolder is None:
+        this_path = self.raw_behavior_subfolder if raw else self.behavior_subfolder
+        if this_path is None:
             return None
-        for file in Path(self.behavior_subfolder).iterdir():
+        for file in Path(this_path).iterdir():
             if file.is_dir():
                 continue
             if raw and file.name.endswith('raw_stack.btf'):
@@ -2180,6 +2154,40 @@ class WormFullVideoPosture:
                 # Newer naming convention
                 return file
         return None
+
+    def behavior_video_ndtiff_fname(self):
+        """
+        This is actually a folder, not a file
+
+        See behavior_video_avi_fname
+        """
+        if self.raw_behavior_subfolder is None:
+            return None
+        for file in Path(self.raw_behavior_subfolder).iterdir():
+            if file.is_dir():
+                continue
+            if file.name.endswith('NDTiff.index'):
+                return self.raw_behavior_subfolder  # Return folder, not this file
+        return None
+
+    @cached_property
+    def raw_behavior_video(self) -> Optional[da.Array]:
+        """
+        Returns the raw behavior video, if it exists
+
+        Returns
+        -------
+
+        """
+        possible_fnames = dict(btf=self.behavior_video_btf_fname(True),
+                               ndtiff=self.behavior_video_ndtiff_fname())
+        fname_precedence = ['ndtiff', 'btf']
+        reader = MicroscopeDataReader
+        video, fname = load_file_according_to_precedence(fname_precedence, possible_fnames, reader=reader)
+
+        if video is None:
+            return None
+        return da.squeeze(video.dask_array)
 
     @property
     def use_physical_time(self) -> bool:
@@ -2196,8 +2204,7 @@ class WormFullVideoPosture:
             f"=========================================\n\
 Posture class with the following files:\n\
 =========Raw Behavior Videos==============\n\
-behavior_video_avi:         {self.behavior_video_avi_fname() is not None}\n\
-behavior_video_btf:         {self.behavior_video_btf_fname() is not None}\n\
+raw_behavior_video:         {self.raw_behavior_video is not None}\n\
 ============Stage Position================\n\
 table_position:             {self.filename_table_position is not None}\n\
 ============Centerline=====================\n\
@@ -2427,7 +2434,7 @@ class WormReferencePosture:
 
     @property
     def pca_projections(self):
-        return self.all_postures.eigenworms
+        return self.all_postures.eigenworms()
 
     @property
     def reference_posture(self):

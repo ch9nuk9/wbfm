@@ -38,7 +38,7 @@ conda activate gui_only
 ### Step 3
 After the overall packages are installed, the zimmer group private packages need to be installed:
 
-1. git clone wbfm, segmentation, and imutils (from https://github.com/Zimmer-lab)
+1. git clone wbfm, centerline_behavior_annotation, and imutils (from https://github.com/Zimmer-lab)
 2. cd to the main folder of each repository, and run ```pip install -e .```
    1. Note: you will run ```pip``` three times (once per folder), and it is very fast
 

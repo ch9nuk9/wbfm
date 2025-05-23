@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Tuple, List, Union, Dict
+from typing import Tuple, List, Union, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -609,18 +609,26 @@ def accuracy_of_matches(gt_matches, new_matches, null_value=-1, allow_unknown=Tr
     return tp, fp, fn, unknown
 
 
-def fill_missing_indices_with_nan(df: Union[pd.DataFrame, pd.Series], expected_max_t=None) -> \
-        Tuple[Union[pd.DataFrame, pd.Series], int]:
+def fill_missing_indices_with_nan(df: Union[pd.DataFrame, pd.Series], expected_index: Optional[pd.Index] = None,
+                                  expected_max_t=None) -> Tuple[Union[pd.DataFrame, pd.Series], int]:
     """
     Given a dataframe that may skip time points (e.g. the Index is 1, 2, 5), fill the missing Index values with nan
 
     Parameters
     ----------
-    expected_max_t
-    df
+    df : pd.DataFrame or pd.Series
+        DataFrame with a numeric index (int or float) assumed to be regularly spaced.
+    expected_index : pd.Index, optional
+        Full index to use for reindexing. If provided, overrides automatic index generation.
+    expected_max_t : float or int, optional
+        If given, ensures the resulting DataFrame has an index up to this value.
 
     Returns
     -------
+    df : Union[pd.DataFrame, pd.Series]
+        DataFrame with missing indices filled with NaNs.
+    num_added : int
+        Number of rows that were added.
 
     """
     t = df.index
@@ -628,36 +636,64 @@ def fill_missing_indices_with_nan(df: Union[pd.DataFrame, pd.Series], expected_m
     # Check if df is a series or dataframe
     is_series = isinstance(df, pd.Series)
 
-    if len(t) != int(t[-1]) + 1:
-        add_indices = pd.Index(range(int(t[-1]))).difference(t)
-        if is_series:
-            df_interleave = pd.Series(index=add_indices)
+    if expected_index is None:
+        if len(t) != int(t[-1]) + 1:
+            add_indices = pd.Index(range(int(t[-1]))).difference(t)
+            if is_series:
+                df_interleave = pd.Series(index=add_indices)
+            else:
+                df_interleave = pd.DataFrame(index=add_indices, columns=df.columns)
+            dfs_to_add.append(df_interleave)
+            num_added = df_interleave.shape[0]
         else:
-            df_interleave = pd.DataFrame(index=add_indices, columns=df.columns)
-        dfs_to_add.append(df_interleave)
-        num_added = df_interleave.shape[0]
+            num_added = 0
+
+        current_max_t = df.shape[0] + num_added
+        if expected_max_t is not None and current_max_t != expected_max_t:
+            end_indices = pd.Index(range(current_max_t, expected_max_t))
+            if is_series:
+                df_nan_at_end = pd.Series(index=end_indices)
+            else:
+                df_nan_at_end = pd.DataFrame(index=end_indices, columns=df.columns)
+            dfs_to_add.append(df_nan_at_end)
+            num_added += df_nan_at_end.shape[0]
+
+        if dfs_to_add is not None:
+            dfs_to_add.append(df)
+            df = pd.concat(dfs_to_add).sort_index()
+        return df, num_added
     else:
-        num_added = 0
+        missing = expected_index.difference(t)
 
-    current_max_t = df.shape[0] + num_added
-    if expected_max_t is not None and current_max_t != expected_max_t:
-        end_indices = pd.Index(range(current_max_t, expected_max_t))
         if is_series:
-            df_nan_at_end = pd.Series(index=end_indices)
+            missing_df = pd.Series(index=missing, dtype=df.dtype)
         else:
-            df_nan_at_end = pd.DataFrame(index=end_indices, columns=df.columns)
-        dfs_to_add.append(df_nan_at_end)
-        num_added += df_nan_at_end.shape[0]
+            missing_df = pd.DataFrame(index=missing, columns=df.columns)
 
-    if dfs_to_add is not None:
-        dfs_to_add.append(df)
-        df = pd.concat(dfs_to_add).sort_index()
-    return df, num_added
+        df = pd.concat([df, missing_df]).sort_index()
+
+        # Add additional padding if expected_max_t is higher than current max
+        if expected_max_t is not None and df.index[-1] < expected_max_t:
+            if len(expected_index) < 2:
+                raise ValueError("Cannot infer step size from expected_index.")
+            step = float(np.median(np.diff(expected_index)))
+            end_index = pd.Index(
+                np.round(np.arange(df.index[-1] + step, expected_max_t + step / 2, step), decimals=10),
+                dtype='float64'
+            )
+            if is_series:
+                end_df = pd.Series(index=end_index, dtype=df.dtype)
+            else:
+                end_df = pd.DataFrame(index=end_index, columns=df.columns)
+            df = pd.concat([df, end_df])
+        return df, len(missing)
 
 
 def ffill_using_raw_data(df_with_gaps, df_raw):
     """
     Like ffill, but instead fills with values from another dataframe.
+
+    Only fills a single point, i.e. it assumes that the values are
     
     Useful for filling gaps in plots in matplotlib
     
@@ -673,7 +709,18 @@ def ffill_using_raw_data(df_with_gaps, df_raw):
     state_df_next_fill = df_with_gaps.fillna(method='ffill', limit=1)
     idx_to_fill = state_df_next_fill.notna() & df_with_gaps.isna()
     idx_to_fill = idx_to_fill.any(axis=1)  # Only need rows
-    df_with_gaps.loc[idx_to_fill] = df_raw.loc[idx_to_fill]
+    idx_to_fill = pd.Series(idx_to_fill, index=df_with_gaps.index)  # Explicitly set the index; only needed on some pandas versions
+    rows_to_fill = df_with_gaps.index[idx_to_fill]
+    if not all(rows_to_fill.isin(df_raw.index)):
+        print("df_with_gaps index:", df_with_gaps.index)
+        print("df_raw index:", df_raw.index)
+        print("idx_to_fill index:", idx_to_fill.index)
+        print("idx_to_fill type:", type(idx_to_fill))
+        print("idx_to_fill dtype:", idx_to_fill.dtype)
+        print("idx_to_fill shape:", idx_to_fill.shape)
+        raise DataSynchronizationError(df_raw.index, df_with_gaps.index)
+
+    df_with_gaps.loc[rows_to_fill] = df_raw.loc[rows_to_fill]
     return df_with_gaps
 
 
@@ -1466,3 +1513,32 @@ def crop_to_same_time_length(df0, df1, axis=0):
     elif df0.shape[axis] < df1.shape[axis]:
         df1 = df1.copy().iloc[:df0.shape[axis], :]
     return df0, df1
+
+
+def convert_binary_columns_to_one_hot(df: pd.DataFrame, column_hierarchy: List[str]):
+    """
+    Given a dataframe with binary columns that might overlap, convert them to a one-hot encoding
+
+    i.e. if there are columns 'A' and 'B', and they are both 1, then set the lower one in the hierarchy to 0
+
+    Parameters
+    ----------
+    df
+    column_hierarchy
+
+    Returns
+    -------
+
+    """
+    # Check that all columns are passed in the hierarchy
+    if not all(col in column_hierarchy for col in df.columns):
+        raise ValueError("Not all columns are in the hierarchy list")
+
+    df = df.copy()
+    for col in column_hierarchy:
+        # Get the columns that are lower in the hierarchy
+        lower_cols = column_hierarchy[column_hierarchy.index(col) + 1:]
+        if len(lower_cols) > 0:
+            # Set the lower columns to 0 if the current column is 1
+            df.loc[df[col].astype(bool), lower_cols] = 0
+    return df

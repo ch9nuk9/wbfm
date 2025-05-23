@@ -9,7 +9,7 @@ if __name__ == "__main__":
                         help='path to config file')
     # Boolean args
     parser.add_argument('--force_tracklets_to_be_sparse', default="False", help='')
-    parser.add_argument('--load_tracklets', default="True", help='')
+    parser.add_argument('--load_tracklets', default="False", help='')
     parser.add_argument('--DEBUG', default=False, help='')
 
     args = parser.parse_args()

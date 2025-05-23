@@ -1,0 +1,12 @@
+
+# Produced upon segmentation
+neuropal_data_path:
+neuropal_segmentation_path:
+segmentation_metadata_path:
+
+# Manual iding
+manual_id_path:
+
+segmentation_params:
+    stardist_model_name:  # By default uses the same as the traces
+    channels_to_sum: [1]  # List of channels to sum up for the segmentation; default is TagRFP

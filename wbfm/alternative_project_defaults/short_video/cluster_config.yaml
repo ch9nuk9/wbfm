@@ -25,14 +25,14 @@ segmentation:
 match_frame_pairs:
     gpus_per_node: 1
     mem: 128G
-    gres: shard:32
+    gres: gpu:1
 
 build_frame_objects:
     cpus_per_task: 20
 
 postprocess_matches_to_tracklets:
     cpus_per_task: 1
-    gres: shard:32
+    gres: gpu:1
 
 combine_tracking_and_tracklets:
     cpus_per_task: 20
@@ -41,13 +41,13 @@ tracking:
     partition: basic,gpu
     gpus_per_node: 1
     cpus_per_task: 16
-    gres: shard:32
+    gres: gpu:1
 
 barlow_tracking:
     partition: basic,gpu
     gpus_per_node: 1
     cpus_per_task: 16
-    gres: shard:32
+    gres: gpu:1
 
 
 # Behavior
@@ -60,7 +60,7 @@ tiff2avi:
 
 dlc_analyze_videos:
     cpus_per_task: 24
-    gres: shard:32
+    gres: gpu:1
 
 create_centerline:
     mem: 8G
@@ -72,15 +72,15 @@ normalize_img:
 
 worm_unet:
     cpus_per_task: 24
-    gres: shard:32
+    gres: gpu:1
 
 sam2_segment:
     cpus_per_task: 24
-    gres: shard:32
+    gres: gpu:1
 
 coil_unet:
     cpus_per_task: 24
-    gres: shard:32
+    gres: gpu:1
 
 binarize:
     cpus_per_task: 8

@@ -21,7 +21,7 @@ from wbfm.utils.external.custom_errors import AnalysisOutOfOrderError, DataSynch
 from wbfm.utils.neuron_matching.matches_class import MatchesAsGraph, MatchesWithConfidence
 from wbfm.utils.general.utils_filenames import lexigraphically_sort
 from wbfm.utils.external.utils_neuron_names import int2name_neuron, name2int_neuron_and_tracklet
-from segmentation.util.utils_metadata import DetectedNeurons
+from wbfm.utils.segmentation.util.utils_metadata import DetectedNeurons
 from sklearn.neighbors import NearestNeighbors
 
 from wbfm.utils.tracklets.training_data_from_tracklets import translate_training_names_to_raw_names

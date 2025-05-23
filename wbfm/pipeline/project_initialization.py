@@ -15,7 +15,6 @@ from wbfm.utils.general.preprocessing.bounding_boxes import generate_legacy_bbox
 from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings, \
     preprocess_all_frames_using_config, background_subtract_single_channel
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
-from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.general.utils_filenames import error_if_dot_in_name
 
 from wbfm.utils.general.utils_filenames import get_sequential_filename, add_name_suffix, \
@@ -25,7 +24,7 @@ from wbfm.utils.projects.utils_project import get_relative_project_name, safe_cd
     update_snakemake_config_path, update_nwb_config_path
 
 
-def build_project_structure_from_config(_config: dict, logger: logging.Logger = None) -> None:
+def build_project_structure_from_config(config: dict, logger: logging.Logger = None) -> None:
     """
     Builds a project from passed user data, which determines:
         The location and name of the new project
@@ -35,7 +34,7 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger = 
 
     Parameters
     ----------
-    _config: dict with the following:
+    config: dict with the following:
         Raw data information, meaning either of the following:
             parent_data_folder - the folder containing the raw data
             green_bigtiff_fname AND red_bigtiff_fname - the individual channel bigtiff files
@@ -51,19 +50,19 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger = 
         logger = logging.getLogger(__name__)
 
     # If the user just passed the parent raw data folder, then convert that into green and red
-    parent_data_folder = _config.get('parent_data_folder', None)
+    parent_data_folder = config.get('parent_data_folder', None)
     green_fname, red_fname = \
-        _config.get('green_bigtiff_fname', None), _config.get('red_bigtiff_fname', None)
+        config.get('green_bigtiff_fname', None), config.get('red_bigtiff_fname', None)
     # First try for the new format: ndtiff
     is_btf = False
     if parent_data_folder is not None:
         green_fname, red_fname = get_ndtiff_fnames_from_parent_folder(parent_data_folder)
-        search_failed = _check_if_search_succeeded(_config, green_fname, red_fname)
+        search_failed = _check_if_search_succeeded(config, green_fname, red_fname)
 
         if search_failed:
             green_fname, red_fname = get_both_bigtiff_fnames_from_parent_folder(parent_data_folder)
             is_btf = True
-    search_failed = _check_if_search_succeeded(_config, green_fname, red_fname)
+    search_failed = _check_if_search_succeeded(config, green_fname, red_fname)
 
     if search_failed:
         logging.warning(f"Failed to find raw files in folder {parent_data_folder}")
@@ -78,21 +77,28 @@ def build_project_structure_from_config(_config: dict, logger: logging.Logger = 
 
         if is_btf:
             logging.warning("Found bigtiff files, which are deprecated.")
-            _config['green_bigtiff_fname'] = green_fname
-            _config['red_bigtiff_fname'] = red_fname
+            config['green_bigtiff_fname'] = green_fname
+            config['red_bigtiff_fname'] = red_fname
         else:
-            _config['red_fname'] = red_fname
-            _config['green_fname'] = green_fname
+            config['red_fname'] = red_fname
+            config['green_fname'] = green_fname
 
     # Check to make sure there are no '.' characters
     for key in ['red_fname', 'green_fname', 'red_bigtiff_fname', 'green_bigtiff_fname']:
-        error_if_dot_in_name(_config.get(key, ''))
+        error_if_dot_in_name(config.get(key, ''))
 
     # Build the full project name using the date the data was taken
     basename = Path(red_fname).name.split('_')[0]
-    project_config_updates = _config
+    project_config_updates = config
 
     project_fname, _ = build_project_structure(project_config_updates, basename)
+
+    # If there is a neuropal dataset to add, do so
+    if 'neuropal_path' in config:
+        neuropal_path = config['neuropal_path']
+        copy_data = config.get('copy_neuropal_data', True)
+        from wbfm.utils.projects.utils_neuropal import add_neuropal_to_project
+        add_neuropal_to_project(project_fname, neuropal_path, copy_data=copy_data)
 
     return project_fname
 
@@ -359,8 +365,10 @@ def calculate_total_number_of_frames_from_bigtiff(cfg):
         cfg.update_self_on_disk()
 
 
-def preprocess_fluorescence_data(cfg, to_zip_zarr_using_7z, DEBUG):
+def preprocess_fluorescence_data(cfg, to_zip_zarr_using_7z, DEBUG=False):
     # Load the project, to make sure even if raw data is in a weird format it works
+    from wbfm.utils.projects.finished_project_data import ProjectData
+
     project_data = ProjectData.load_final_project_data(cfg, allow_hybrid_loading=True)
     cfg = project_data.project_config
 

@@ -5,7 +5,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from wbfm.utils.neuron_matching.utils_features import build_neuron_tree
+from wbfm.utils.general.utils_features import build_neuron_tree
 from wbfm.utils.neuron_matching.utils_keypoint_matching import get_indices_of_tracklet
 
 

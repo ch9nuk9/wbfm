@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import pandas as pd
 
-from wbfm.utils.traces.bleach_correction import detrend_exponential_lmfit
+from wbfm.utils.external.bleach_correction import detrend_exponential_lmfit
 from wbfm.utils.visualization.utils_plot_traces import correct_trace_using_linear_model
 
 

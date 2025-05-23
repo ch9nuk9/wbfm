@@ -2001,7 +2001,7 @@ class ClusteredTriggeredAverages:
             rng = np.random.default_rng()
         # all_traces should be an iterable of arrays, each row of each array being a trace
         all_traces = (traces0.T, traces1.T)
-        from wbfm.utils.traces.utils_cluster import ks_statistic
+        from wbfm.utils.general.utils_clustering import ks_statistic
         res = permutation_test(all_traces, ks_statistic, vectorized=True,
                                n_resamples=n_resamples, axis=1, random_state=rng)
         if DEBUG:

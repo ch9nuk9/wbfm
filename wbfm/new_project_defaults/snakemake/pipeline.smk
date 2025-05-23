@@ -1,5 +1,7 @@
 import logging
 import os
+
+from ruamel.yaml import YAML
 from wbfm.utils.external.custom_errors import NoBehaviorDataError, RawDataFormatError
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 import snakemake
@@ -29,12 +31,23 @@ except (NoBehaviorDataError, RawDataFormatError, FileNotFoundError) as e:
     # Note: these strings can't be empty, otherwise snakemake can have weird issues
     logging.warning(f"No behavior data found, behavior will not run. Only 'traces' can be processed. "
                     f"Error message: {e}")
-    raw_data_dir = "NOTFOUND1"
-    output_behavior_dir = "NOTFOUND2"
-    background_img = "NOTFOUND3"
-    background_video = "NOTFOUND4"
-    behavior_btf = "NOTFOUND5"
-    raw_data_subfolder = "NOTFOUND6"
+    raw_data_dir = "NOTFOUND_raw_data_dir"
+    output_behavior_dir = "NOTFOUND_output_behavior_dir"
+    background_img = "NOTFOUND_background_img"
+    background_video = "NOTFOUND_background_video"
+    behavior_btf = "NOTFOUND_behavior_btf"
+    raw_data_subfolder = "NOTFOUND_raw_data_subfolder"
+
+# Also get the raw data config file (if it exists)
+try:
+    raw_data_config_fname = project_config.get_raw_data_config().absolute_self_path
+    if raw_data_config_fname is None:
+        raise FileNotFoundError
+    with open(raw_data_config_fname, 'r') as f:
+        worm_config = YAML().load(f)
+except FileNotFoundError:
+    raw_data_config_fname = "NOTFOUND_raw_data_config_fname"
+    worm_config = dict()
 
 # Additionally update the paths used for the behavior pipeline (note that this needs to be loaded even if behavior is not run)
 hardcoded_paths = load_hardcoded_neural_network_paths()
@@ -107,6 +120,7 @@ rule preprocessing:
     output:
         os.path.join(project_dir, "dat/bounding_boxes.pickle")
     run:
+        shell("ml p7zip")  # Needed as of May 2025
         _run_helper("0b-preprocess_working_copy_of_data", str(input.cfg))
 
 #
@@ -219,6 +233,7 @@ rule extract_full_traces:
         masks=os.path.join(project_dir, "4-traces/reindexed_masks.zarr.zip")
     threads: 56
     run:
+        shell("ml p7zip")  # Needed as of May 2025
         _run_helper("4-make_final_traces", str(input.cfg))
 
 
@@ -355,7 +370,7 @@ rule sam2_segment:
         sleep 2
 
         # Run the script within the temporary directory
-        python -c "from SAM2_snakemake_scripts.sam2_video_processing_from_jpeg_batch_pipeline import main; main(['-video_path', '$TMPDIR/track.avi', '-output_file_path', '$TMPDIR/track_mask.btf', '-DLC_csv_file_path', '$TMPDIR/track_dlc.csv', '-column_names', '{params.column_names}', '-SAM2_path', '{params.model_path}', '--batch_size', '{params.batch_size}'])"
+        python -c "from SAM2_snakemake_scripts.sam2_video_processing_from_jpeg_batch_pipeline import main; main(['-video_path', '$TMPDIR/track.avi', '-output_file_path', '$TMPDIR/track_mask.btf', '-DLC_csv_file_path', '$TMPDIR/track_dlc.csv', '-column_names', '{params.column_names}', '-SAM2_path', '{params.model_path}', '--batch_size', '{params.batch_size}', '--device', '${{CUDA_VISIBLE_DEVICES:-0}}'])"
 
         # Verify output file exists and wait for it to be fully written
         while [ ! -f $TMPDIR/track_mask.btf ] || [ ! -s $TMPDIR/track_mask.btf ]; do
@@ -477,7 +492,7 @@ rule dlc_analyze_videos:
         module load cuda-toolkit/12.6.3
         # Also rename the output file to the expected name
         # We don't actually know the name without querying deeplabcut, so just rename it
-        python -c "import deeplabcut, os; fname = deeplabcut.analyze_videos('{params.dlc_model_configfile_path}', '{input.input_avi}', videotype='avi', gputouse=0, save_as_csv=True); print('Produced raw files with name: ' + fname); os.rename(f'{output_behavior_dir}/raw_stack'+fname+'.h5', '{output_behavior_dir}/raw_stack_dlc.h5'); os.rename(f'{output_behavior_dir}/raw_stack'+fname+'.csv', '{output_behavior_dir}/raw_stack_dlc.csv')"
+        python -c "import deeplabcut, os; fname = deeplabcut.analyze_videos('{params.dlc_model_configfile_path}', '{input.input_avi}', videotype='avi', gputouse=${{CUDA_VISIBLE_DEVICES:-0}}, save_as_csv=True); print('Produced raw files with name: ' + fname); os.rename(f'{output_behavior_dir}/raw_stack'+fname+'.h5', '{output_behavior_dir}/raw_stack_dlc.h5'); os.rename(f'{output_behavior_dir}/raw_stack'+fname+'.csv', '{output_behavior_dir}/raw_stack_dlc.csv')"
         """
 
 rule create_centerline:
@@ -514,23 +529,23 @@ rule create_centerline:
             '-dlc', str(params.fill_with_DLC),
         ])
 
+
+# Benjamin-style rule that directly reads the config file
 rule invert_curvature_sign:
     input:
-        spline_K = f"{output_behavior_dir}/skeleton_spline_K.csv",
-        # would be good to ad the config yaml file to input because if it is updated the code should re-run
-        #config_yaml_file = os.path.join(os.path.dirname(os.path.dirname("{sample}_skeleton_spline_K.csv")), "config.yaml") #hard to get its path
-    # params:
-    #     output_path = f"{output_behavior_dir}/"
-    output:
-        spline_K = f"{output_behavior_dir}/skeleton_spline_K_signed.csv"
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed.csv"
     params:
-        output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
+        ventral = worm_config["ventral"],
+    output:
+        spline_K_signed = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv"
     run:
         from centerline_behavior_annotation.curvature.src import invert_curvature_sign
 
-        invert_curvature_sign.main([
-            '-i', str(params.output_path),
-            '-r', str(raw_data_dir),
+        # Call the invert_curvature_sign function with the correct parameters
+        invert_curvature_sign.main_benjamin([
+            '--spline_K_path', str(input.spline_K),
+            '--ventral', str(params.ventral),
+            '--output_file_path', str(output.spline_K_signed)
         ])
 
 rule average_kymogram:
@@ -571,7 +586,7 @@ rule average_xy_coords:
 
 rule hilbert_transform_on_kymogram:
     input:
-        spline_K = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv",
         output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
     params:
         output_path = f"{output_behavior_dir}/", # Ulises' functions expect the final slash
@@ -597,7 +612,7 @@ rule hilbert_transform_on_kymogram:
 
 rule fast_fourier_transform:
     input:
-        spline_K = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
+        spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed",
     params:
         # project_folder
         sampling_frequency=config["sampling_frequency"],
@@ -620,9 +635,9 @@ rule fast_fourier_transform:
 
 rule reformat_skeleton_files:
     input:
-        spline_K= f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv", #should have signed spline_K
-        spline_X= f"{output_behavior_dir}/skeleton_spline_X_coords_avg.csv",
-        spline_Y= f"{output_behavior_dir}/skeleton_spline_Y_coords_avg.csv",
+        spline_K= f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed", #should have signed spline_K
+        spline_X= f"{output_behavior_dir}/skeleton_spline_X_coords_equi_dist_segment.csv",
+        spline_Y= f"{output_behavior_dir}/skeleton_spline_Y_coords_equi_dist_segment.csv",
         #spline_list = ["{sample}_spline_K.csv", "{sample}_spline_X_coords.csv", "{sample}_spline_Y_coords.csv",]
 
     output:
@@ -640,7 +655,7 @@ rule reformat_skeleton_files:
 
 rule annotate_behaviour:
     input:
-        curvature_file = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
+        curvature_file = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv"
 
     params:
         pca_model_path = config["pca_model"],
@@ -666,7 +681,7 @@ rule annotate_behaviour:
 rule annotate_turns:
     input:
         #principal_components = f"{output_behavior_dir}/principal_components.csv"
-        spline_K  = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv"
+        spline_K  = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv"
     params:
         output_path = f"{output_behavior_dir}/",  # Ulises' functions expect the final slash
         threshold = config["turn_threshold"],
@@ -701,10 +716,11 @@ rule self_touch:
         df = stack_self_touch(input.binary_img, params.external_area, params.internal_area)
         df.to_csv(output.self_touch)
 
+
 rule calculate_parameters:
     #So far it only calculates speed
     input:
-        curvature_file = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv" #This is used as a parameter because it is only used to find the main dir
+        curvature_file = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv" #This is used as a parameter because it is only used to find the main dir
     output:
         speed_file = f"{output_behavior_dir}/raw_worm_speed.csv" # This is never produced, so this will always run
     params:
@@ -716,6 +732,7 @@ rule calculate_parameters:
             '-i', str(params.output_path),
             '-r', str(raw_data_dir),
         ])
+
 
 rule save_signed_speed:
     input:
@@ -732,24 +749,67 @@ rule save_signed_speed:
         signed_speed_df.to_csv(output.signed_speed_file)
         print("If the ethogram had a running average and had less values at the start and end, so will the signed speed")
 
+
 rule make_behaviour_figure:
     input:
-        curvature_file = f"{output_behavior_dir}/skeleton_spline_K_signed_avg.csv",
+        curvature_file = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv",
         pc_file = f"{output_behavior_dir}/principal_components.csv",
         beh_annotation_file = f"{output_behavior_dir}/beh_annotation.csv",
         speed_file = f"{output_behavior_dir}/signed_worm_speed.csv",
         turns_annotation = f"{output_behavior_dir}/turns_annotation.csv"
     output:
-        figure = f"{output_behavior_dir}/behavioral_summary_figure.pdf" #This is  never produced, so it whill always run
+        figure = f"{output_behavior_dir}/behavioral_summary_figure.pdf" #This is never produced, so it will always run
     params:
-        output_path = f"{output_behavior_dir}/",# Ulises' functions expect the final slash
+        output_path = f"{output_behavior_dir}/" # Ulises' functions expect the final slash
     run:
-        from centerline_behavior_annotation.behavior_analysis.src import make_figure
+        from centerline_behavior_annotation.behavior_analysis.src import make_figure_2
 
-        make_figure.main([
+        make_figure_2.main([
             '-i', str(params.output_path),
             '-r', str(raw_data_dir),
+            '-k', str(input.curvature_file),
+            '-pcs', str(input.pc_file),
+            '-beh', str(input.beh_annotation_file),
+            '-speed', str(input.speed_file),
+            '-turns', str(input.turns_annotation)
         ])
+
+
+rule process_skeleton_curvature:
+    input:
+        skeleton_x = f"{output_behavior_dir}/skeleton_spline_X_coords.csv",
+        skeleton_y = f"{output_behavior_dir}/skeleton_spline_Y_coords.csv"
+    output:
+        output_x = f"{output_behavior_dir}/skeleton_spline_X_coords_equi_dist_segment.csv",
+        output_y = f"{output_behavior_dir}/skeleton_spline_Y_coords_equi_dist_segment.csv",
+        output_curvature = f"{output_behavior_dir}/skeleton_spline_K_equi_dist_segment.csv",
+        output_smoothed_curvature = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed.csv"
+    params:
+        spacing = config['relative_spacing'],
+        num_sampled_points = config['num_sampled_points'],
+        smoothing = config['smoothing'],
+        time_sigma = config['time_sigma'],
+        spatial_sigma = config['spatial_sigma'],
+        max_columns = config['max_columns'],
+    run:
+        import sys
+        from centerline_behavior_annotation.centerline.dev import centerline_equi_distance_2d_smoothing
+
+        centerline_equi_distance_2d_smoothing.main([
+            '--skeleton_x', str(input.skeleton_x),
+            '--skeleton_y', str(input.skeleton_y),
+            '--relative_spacing', str(params.spacing),
+            '--num_sampled_points', str(params.num_sampled_points),
+            '--smoothing', str(params.smoothing),
+            '--time_sigma', str(params.time_sigma),
+            '--spatial_sigma', str(params.spatial_sigma),
+            '--max_columns', str(params.max_columns),
+            '--output_x', str(output.output_x),
+            '--output_y', str(output.output_y),
+            '--output_curvature', str(output.output_curvature),
+            '--output_smoothed_curvature', str(output.output_smoothed_curvature)
+        ])
+
 
 
 ##

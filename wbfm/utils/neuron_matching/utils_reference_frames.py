@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from wbfm.utils.neuron_matching.class_reference_frame import RegisteredReferenceFrames
-from wbfm.utils.neuron_matching.utils_features import add_neuron_match
+from wbfm.utils.general.utils_features import add_neuron_match
 from wbfm.utils.general.utils_networkx import unpack_node_name, is_one_neuron_per_frame
 
 

@@ -2,6 +2,9 @@ import concurrent
 import logging
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
+
+from imutils import MicroscopeDataReader
+
 from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
 
 import tables
@@ -33,6 +36,7 @@ import pandas as pd
 import zarr
 from tqdm.auto import tqdm
 
+from wbfm.utils.projects.neuropal_manager import NeuropalManager
 from wbfm.utils.traces.triggered_averages import plot_triggered_average_from_matrix_low_level
 from wbfm.utils.general.hardcoded_paths import read_names_of_neurons_to_id, neurons_with_confident_ids
 from wbfm.utils.external.utils_pandas import dataframe_to_numpy_zxy_single_frame, df_to_matches, \
@@ -48,7 +52,7 @@ from wbfm.utils.tracklets.utils_tracklets import fix_global2tracklet_full_dict, 
 from sklearn.neighbors import NearestNeighbors, LocalOutlierFactor
 from wbfm.utils.tracklets.tracklet_class import DetectedTrackletsAndNeurons
 from wbfm.utils.projects.plotting_classes import TracePlotter, TrackletAndSegmentationAnnotator
-from segmentation.util.utils_metadata import DetectedNeurons
+from wbfm.utils.segmentation.util.utils_metadata import DetectedNeurons
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig, SubfolderConfigFile
 from wbfm.utils.general.utils_filenames import read_if_exists, pickle_load_binary, \
     load_file_according_to_precedence, pandas_read_any_filetype, get_sequential_filename
@@ -164,6 +168,14 @@ class ProjectData:
                                 "if this is from a NWB file, this is expected")
 
     @cached_property
+    def neuropal_manager(self):
+        try:
+            neuropal_config = self.project_config.get_neuropal_config()
+        except FileNotFoundError:
+            return NeuropalManager(None)
+        return NeuropalManager(neuropal_config)
+
+    @cached_property
     def intermediate_global_tracks(self) -> pd.DataFrame:
         """
         Dataframe of tracks produced by the global tracker alone (no tracklets)
@@ -240,7 +252,7 @@ class ProjectData:
 
         fname_precedence = self.precedence_tracks
         final_tracks, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                this_reader=read_if_exists)
+                                                                reader_func=read_if_exists)
         self.final_tracks_fname = fname
         self.logger.debug(f"Loading final global tracks from {fname}")
         self.all_used_fnames.append(fname)
@@ -275,7 +287,7 @@ class ProjectData:
 
         fname_precedence = self.precedence_global2tracklet
         global2tracklet, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                   this_reader=pickle_load_binary)
+                                                                   reader_func=pickle_load_binary)
         self.global2tracklet_fname = fname
         self.logger.debug(f"Loading global2tracklet from {fname}")
         if global2tracklet is not None:
@@ -382,7 +394,7 @@ class ProjectData:
             automatic=train_cfg.resolve_relative_path_from_config('df_3d_tracklets'))
         fname_precedence = self.precedence_df_tracklets
         df_all_tracklets, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                    this_reader=pandas_read_any_filetype,
+                                                                    reader_func=pandas_read_any_filetype,
                                                                     dryrun=dryrun)
         return df_all_tracklets, fname
 
@@ -482,7 +494,10 @@ class ProjectData:
         """Note that this is cached so that a user can overwrite the number of frames"""
         num_frames = None
         if self.project_config is not None:
-            num_frames = self.project_config.num_frames
+            try:
+                num_frames = self.project_config.num_frames
+            except (AttributeError, FileNotFoundError):
+                num_frames = None
         if num_frames is None:
             # Then try calculate from the processed data, not the raw
             if self.red_data is not None:
@@ -579,7 +594,7 @@ class ProjectData:
         seg_fname_raw = segment_cfg.resolve_relative_path_from_config('output_masks')
         seg_fname = traces_cfg.resolve_relative_path_from_config('reindexed_masks')
 
-        # Metadata uses class from segmentation package, which does lazy loading itself
+        # Metadata uses class from wbfm.utils.segmentation package, which does lazy loading itself
         seg_metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
         obj.segmentation_metadata = DetectedNeurons(seg_metadata_fname)
         obj.physical_unit_conversion = PhysicalUnitConversion.load_from_config(cfg)
@@ -690,6 +705,8 @@ class ProjectData:
                     project_data.project_config._preprocessing_class = nwb_preprocessing_class
                     project_data._nwb_io = project_data_nwb._nwb_io
                     project_data.logger.info(f"Successfully imported raw data from nwb file")
+                else:
+                    project_data.logger.info(f"Did not find raw data in nwb file, continuing")
             else:
                 project_data.logger.info(f"Found no nwb file, continuing")
 
@@ -747,7 +764,7 @@ class ProjectData:
 
         from pynwb import NWBHDF5IO, NWBFile
         from wbfm.utils.general.preprocessing.utils_preprocessing import PreprocessingSettings
-        from wbfm.utils.nwb.utils_nwb import convert_nwb_to_trace_dataframe
+        from wbfm.utils.nwb.utils_nwb_export import convert_nwb_to_trace_dataframe
 
         nwb_io = NWBHDF5IO(nwb_path, mode='r', load_namespaces=True)
         if isinstance(nwb_io, NWBFile):
@@ -767,6 +784,10 @@ class ProjectData:
             # Transpose data from TXYZC to TZXY (splitting the channel)
             obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
             obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 1].transpose((0, 3, 1, 2))
+            # Load this into the raw data as well; needed for certain steps
+            preprocessing_settings._raw_red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
+            preprocessing_settings._raw_green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 1].transpose(
+                (0, 3, 1, 2))
         if 'RawCalciumImageSeries' in nwb_obj.acquisition:
             # Load this, but it's not actually part of the main ProjectData class
             # Transpose data from TXYZC to TZXY (splitting the channel)
@@ -776,16 +797,21 @@ class ProjectData:
 
         # Note that there should always be 'CalciumActivity' but it may be a stub
         try:
-            # Load the traces, and the tracks using the same dataframes (they all have xyz info)
+            # Load the traces, and the tracks using the same dataframes (they should all have xyz info)
             both_df_traces = convert_nwb_to_trace_dataframe(nwb_obj)
-            obj.red_traces = both_df_traces['Reference']
+            # There may not be a reference, but there is always the signal
             obj.green_traces = both_df_traces['Signal']
+            obj.red_traces = both_df_traces.get('Reference', obj.green_traces.copy())
+            obj.final_tracks = obj.red_traces.copy()
+
+        except KeyError as e:
+            obj.logger.warning(f"Could not load traces from NWB file: {e}")
+
+        try:
             # Transpose data from TXYZ to TZXY
             obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
-
-            obj.final_tracks = both_df_traces['Reference']
-        except KeyError:
-            pass
+        except (KeyError, AttributeError) as e:
+            obj.logger.warning(f"Could not load segmentation from NWB file: {e}")
 
         p = PhysicalUnitConversion()
         if 'CalciumImageSeries' in nwb_obj.acquisition:
@@ -1727,7 +1753,7 @@ class ProjectData:
         fname_precedence = ['newest']
         try:
             df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                          this_reader=read_if_exists, na_filter=False)
+                                                                          reader_func=read_if_exists, na_filter=False)
         except ValueError:
             # Then the file was corrupted... try to load from the h5 file (don't worry about other file types)
             fname = possible_fnames['h5_backup']
@@ -1746,7 +1772,7 @@ class ProjectData:
 
                         # And then actually read this file, so we don't touch the backup
                         df_manual_tracking, fname = load_file_according_to_precedence(fname_precedence, possible_fnames,
-                                                                                        this_reader=read_if_exists, na_filter=False)
+                                                                                      reader_func=read_if_exists, na_filter=False)
             else:
                 self.logger.warning(
                     f"Found corrupted manual annotation file ({excel_fname}), with no backup h5 file; returning None")
@@ -1756,14 +1782,18 @@ class ProjectData:
         self.df_manual_tracking_fname = fname
         return df_manual_tracking
 
-    def get_default_manual_annotation_fname(self) -> Optional[str]:
+    def get_default_manual_annotation_fname(self, neuropal_subproject=False) -> Optional[str]:
         if self.project_config is None:
             raise IncompleteConfigFileError("No project config found; cannot load or save manual annotations")
-        track_cfg = self.project_config.get_tracking_config()
-        excel_fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.xlsx", prepend_subfolder=True)
+        if neuropal_subproject:
+            excel_fname = self.neuropal_manager.get_default_manual_annotation_fname()
+        else:
+            track_cfg = self.project_config.get_tracking_config()
+            excel_fname = track_cfg.resolve_relative_path("manual_annotation/manual_annotation.xlsx",
+                                                          prepend_subfolder=True)
         return excel_fname
 
-    def build_neuron_editor_gui(self):
+    def build_neuron_editor_gui(self, neuropal_subproject=False):
         """
         Initialize a QT table interface for editing neurons
 
@@ -1773,26 +1803,34 @@ class ProjectData:
         -------
 
         """
+        if neuropal_subproject:
+            df = self.neuropal_manager.df_ids
+        else:
+            df = self.df_manual_tracking
 
-        df = self.df_manual_tracking
         if df is None:
             # Generate a default dataframe, with hardcoded names
             df = pd.DataFrame(columns=['Neuron ID', 'Finished?', 'ID1', 'ID2', 'Certainty', 'does_activity_match_ID',
                                        'paired_neuron', 'Interesting_not_IDd', 'Notes'])
             # Fill the first column with the default names
-            df['Neuron ID'] = self.neuron_names
+            df['Neuron ID'] = self.neuropal_manager.neuron_names if neuropal_subproject else self.neuron_names
             df['Certainty'] = 0
             try:
-                fname = self.get_default_manual_annotation_fname()
+                fname = self.get_default_manual_annotation_fname(neuropal_subproject=neuropal_subproject)
             except IncompleteConfigFileError:
                 return None
-        elif not self.df_manual_tracking_fname.endswith('.xlsx'):
-            # Make sure the output is excel even if the input isn't
-            fname = str(Path(self.df_manual_tracking_fname).with_suffix('.xlsx'))
-            self.logger.warning(f"Found manual annotation file at ({self.df_manual_tracking_fname}), but will save as ",
-                                f"excel file at ({fname})")
         else:
-            fname = self.df_manual_tracking_fname
+            # Ensure formatting of output name
+            if neuropal_subproject:
+                fname = self.neuropal_manager.df_id_fname
+            else:
+                fname = self.df_manual_tracking_fname
+
+            if not fname.endswith('.xlsx'):
+                # Make sure the output is excel even if the input isn't
+                self.logger.warning(f"Found manual annotation file at ({fname})")
+                fname = str(Path(fname).with_suffix('.xlsx'))
+                self.logger.warning(f", but will save as excel file at ({fname})")
 
         # Enforce certain datatypes
         df['Neuron ID'] = df['Neuron ID'].astype(str)
@@ -1833,8 +1871,7 @@ class ProjectData:
 
         return manual_neuron_name_editor
 
-    @property
-    def dict_numbers_to_neuron_names(self) -> Dict[str, Tuple[str, int]]:
+    def dict_numbers_to_neuron_names(self, neuropal_subproject=False) -> Dict[str, Tuple[str, int]]:
         """
         Uses df_manual_tracking to map neuron numbers to names and confidence. Example:
             dict_numbers_to_neuron_names['neuron_001'] -> ['AVAL', 2]
@@ -1852,7 +1889,10 @@ class ProjectData:
 
         """
         # Read each column, and create a dictionary
-        df = self.df_manual_tracking
+        if neuropal_subproject:
+            df = self.neuropal_manager.df_ids
+        else:
+            df = self.df_manual_tracking
         if df is None:
             return {}
         # Strip white space from column names
@@ -1877,7 +1917,9 @@ class ProjectData:
         return neuron_dict
 
     def neuron_name_to_manual_id_mapping(self, confidence_threshold=2, remove_unnamed_neurons=False,
-                                         flip_names_and_ids=False, error_on_duplicate=False, remove_duplicates=True) -> \
+                                         flip_names_and_ids=False, error_on_duplicate=False,
+                                         remove_duplicates=True, neuropal_subproject=False,
+                                         only_include_confident_labels=False) -> \
             Dict[str, str]:
         """
         Note: if confidence_threshold is 0, then non-id'ed neuron names will be removed because
@@ -1887,21 +1929,27 @@ class ProjectData:
         therefore in the neuron_name_to_manual_id_mapping. This is because we are reading from an excel file, which
         may have been manually edited
 
+        Note that only_include_confident_labels will remove unnamed neurons
+
         Parameters
         ----------
         confidence_threshold
         remove_unnamed_neurons
         flip_names_and_ids
         error_on_duplicate
+        only_include_confident_labels
 
         Returns
         -------
 
         """
-        name_ids = self.dict_numbers_to_neuron_names.copy()
+        name_ids = self.dict_numbers_to_neuron_names(neuropal_subproject=neuropal_subproject).copy()
         if len(name_ids) == 0:
             return {}
         name_mapping = {k: (v[0] if (v[1] >= confidence_threshold and v[0] != '') else k) for k, v in name_ids.items()}
+        if only_include_confident_labels:
+            confident_labels = neurons_with_confident_ids()
+            name_mapping = {k: v for k, v in name_mapping.items() if v in confident_labels}
         # Check that there are no duplicates within the values
         value_counts = pd.Series(name_mapping.values()).value_counts()
         message = f"Duplicate values found in neuron_name_to_manual_id_mapping: " \
@@ -2214,7 +2262,7 @@ class ProjectData:
     def raw_data_dir(self):
         if self.project_config is None:
             return None
-        return self.project_config.get_behavior_raw_parent_folder_from_red_fname()[0]
+        return self.project_config.get_folder_for_all_channels()
 
     @property
     def x_lim(self):
@@ -2486,7 +2534,7 @@ def plot_pca_modes_from_project(project_data: ProjectData, n_components=3, trace
 
 def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=None, t_start=None, t_end=None,
                                         include_time_series_subplot=True, fig=None, fig_opt=None,
-                                        states_to_remove=None, verbose=0):
+                                        states_to_remove=None, include_slowing=False, verbose=0):
     """
     Similar to plot_pca_modes_from_project, but 3d. Plots times series and 3d axis
     
@@ -2527,7 +2575,8 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
 
     # Color the lines by behavior annotation using proper colormap
     beh_annotation = dict(fluorescence_fps=True, reset_index=True, include_collision=False, include_turns=True,
-                          include_head_cast=False, include_pause=True, include_slowing=False, use_pause_to_exclude_other_states=True)
+                          include_head_cast=False, include_pause=True, include_slowing=include_slowing,
+                          use_pause_to_exclude_other_states=True, simplify_states=True)
     ethogram_cmap_kwargs = dict(use_plotly_style_strings=False)
     # beh_annotation.update(beh_annotation_kwargs)
     state_vec = project_data.worm_posture_class.beh_annotation(**beh_annotation)
@@ -2547,7 +2596,7 @@ def plot_pca_projection_3d_from_project(project_data: ProjectData, trace_kwargs=
         # Plot the state
         state_df = pca_proj[pca_proj['state'] == state_code].copy()
         # Fill with nan so matplotlib doesn't connect the gaps
-        state_df, _ = fill_missing_indices_with_nan(state_df, expected_max_t=pca_proj.shape[0])
+        state_df, _ = fill_missing_indices_with_nan(state_df, expected_index=pca_proj.index)
         # For every first nan value after a gap, add in the real data in order to connect states
         state_df = ffill_using_raw_data(state_df, pca_proj)
         # Transform state_code to simple string

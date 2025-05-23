@@ -5,7 +5,7 @@
 self_path: 1-segmentation/segment_config.yaml
 segmentation_type: 3d
 
-# Segmentation
+# Segmentation and image preprocessing
 segmentation_params:
   stardist_model_name: students_and_lukas_3d_zarr
   zero_out_borders: false

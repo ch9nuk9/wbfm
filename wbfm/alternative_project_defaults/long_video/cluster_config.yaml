@@ -29,7 +29,7 @@ match_frame_pairs:
     gpus_per_node: 1
     time: 1-00:00:00
     mem: 128G
-    gres: shard:32
+    gres: gpu:1
 
 build_frame_objects:
     time: 1-12:00:00
@@ -39,7 +39,7 @@ postprocess_matches_to_tracklets:
     partition: basic,gpu
     cpus_per_task: 1
     time: 0-6:00:00
-    gres: shard:32
+    gres: gpu:1
 
 combine_tracking_and_tracklets:
     time: 1-18:00:00
@@ -50,13 +50,13 @@ tracking:
     time: 1-00:00:00
     gpus_per_node: 1
     cpus_per_task: 16
-    gres: shard:32
+    gres: gpu:1
 
 barlow_tracking:
     partition: basic,gpu
     gpus_per_node: 1
     cpus_per_task: 16
-    gres: shard:32
+    gres: gpu:1
 
 
 # Behavior
@@ -73,7 +73,7 @@ dlc_analyze_videos:
     time: 1-00:00:00
     partition: basic,gpu
     cpus_per_task: 24
-    gres: shard:32
+    gres: gpu:1
 
 create_centerline:
     time: 1-12:00:00
@@ -89,19 +89,19 @@ worm_unet:
     time: 1-00:00:00
     partition: basic,gpu
     cpus_per_task: 24
-    gres: shard:32
+    gres: gpu:1
 
 sam2_segment:
     time: 24:00:00
     partition: basic,gpu
     cpus_per_task: 24
-    gres: shard:32
+    gres: gpu:1
 
 coil_unet:
     time: 1-00:00:00
     partition: basic,gpu
     cpus_per_task: 24
-    gres: shard:32
+    gres: gpu:1
 
 binarize:
     time: 1-06:00:00
