@@ -178,7 +178,7 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
 
     # Unpack behavior video and time seriesdata
     video_class = project_data.worm_posture_class
-    if video_class.raw_behavior_video is not None:
+    if video_class.check_has_full_kymograph():
         if include_image_data:
             behavior_video = video_class.raw_behavior_video
         else:
@@ -209,6 +209,7 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
         behavior_time_series_dict['discrete_states'] = df_discrete
 
     else:
+        print("No behavior data available")
         behavior_video, behavior_time_series_dict = None, None
 
     nwb_file, fname = nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_quant_dict,
