@@ -42,25 +42,23 @@ COMMAND="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/0a-create
 # Counter for number of jobs actually submitted
 num_jobs=0
 readarray -t folders < <(find "$DATA_PARENT_FOLDER" -type d -name "*worm*" -o -name "*animal*")
+echo "Found ${#folders[@]} folders in $DATA_PARENT_FOLDER matching *worm* or *animal*"
 
 for f in "${folders[@]}"; do
-    if [[ -d "$f" ]] && [[ "$f" == *"worm"* ]]; then
-        echo "Checking folder: $f"
-        num_jobs=$((num_jobs+1))
-        EXPERIMENTER=$(cd "$f" && pwd)
-        EXPERIMENTER=$(basename "$EXPERIMENTER")
-        ARGS="project_dir=$PROJECT_PARENT_FOLDER experimenter=$EXPERIMENTER parent_data_folder=$f"
-        if [ "$is_dry_run" ]; then
-            echo "DRYRUN: Dispatching on folder: $f with EXPERIMENTER: $EXPERIMENTER"
+    num_jobs=$((num_jobs+1))
+    EXPERIMENTER=$(cd "$f" && pwd)
+    EXPERIMENTER=$(basename "$EXPERIMENTER")
+    ARGS="project_dir=$PROJECT_PARENT_FOLDER experimenter=$EXPERIMENTER parent_data_folder=$f"
+    if [ "$is_dry_run" ]; then
+        echo "DRYRUN: Dispatching on folder: $f with EXPERIMENTER: $EXPERIMENTER"
+    else
+        echo "Dispatching on folder: $f with EXPERIMENTER: $EXPERIMENTER"
+        if [ "$run_in_background" == "True" ]; then
+            # shellcheck disable=SC2086
+            python $COMMAND with $ARGS &
         else
-            echo "Dispatching on folder: $f with EXPERIMENTER: $EXPERIMENTER"
-            if [ "$run_in_background" == "True" ]; then
-                # shellcheck disable=SC2086
-                python $COMMAND with $ARGS &
-            else
-                # shellcheck disable=SC2086
-                python $COMMAND with $ARGS
-            fi
+            # shellcheck disable=SC2086
+            python $COMMAND with $ARGS
         fi
     fi
 done
