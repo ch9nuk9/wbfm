@@ -1,5 +1,6 @@
 import concurrent
 import logging
+import shutil
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
@@ -1225,6 +1226,17 @@ class ProjectData:
         all_methods_fnames = self.data_cacher.list_of_paper_trace_methods(return_simple_names=True)
         all_traces_dict = {name: method() for name, method in zip(all_methods_fnames, all_methods)}
         return all_traces_dict
+
+    def copy_paper_traces_to_main_folder(self):
+        """Copy all paper traces from the .cache folder to the traces folder"""
+        source_folder = self.data_cacher.cache_dir
+        target_folder = self.project_config.get_traces_config().absolute_subfolder
+        # Copy every .h5 file
+        for fname in os.listdir(source_folder):
+            if fname.endswith('.h5'):
+                source_path = os.path.join(source_folder, fname)
+                target_path = os.path.join(target_folder, fname)
+                shutil.copy(source_path, target_path)
 
     @lru_cache(maxsize=16)
     def calc_raw_traces(self, neuron_names: tuple, **opt: dict):

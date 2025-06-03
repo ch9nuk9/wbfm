@@ -119,6 +119,16 @@ def extract_traces_using_config(project_cfg: SubfolderConfigFile,
     _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
 
 
+def calc_paper_traces_using_config(project_cfg: ModularProjectConfig,
+                                  DEBUG=False):
+    """
+    Calculate paper traces using the traces config
+    """
+    # Also produce the paper-style "final" traces, and copy them to the final traces folder
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    project_data.calc_all_paper_traces()
+    project_data.copy_paper_traces_to_main_folder()
+
 def reindex_segmentation_using_config(traces_cfg: SubfolderConfigFile,
                                       segment_cfg: SubfolderConfigFile,
                                       project_cfg: ModularProjectConfig,
@@ -160,6 +170,9 @@ def full_step_4_make_traces_from_config(project_cfg, allow_only_global_tracker=F
 
         # Reads masks from disk, and writes traces
         extract_traces_using_config(project_cfg, traces_cfg, name_mode='neuron', DEBUG=DEBUG)
+
+        # Also produce the paper-style "final" traces, and copy them to the final traces folder
+        calc_paper_traces_using_config(project_cfg)
 
         # By default make some visualizations
         make_default_summary_plots_using_config(project_cfg)
