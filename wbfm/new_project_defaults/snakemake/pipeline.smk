@@ -47,7 +47,7 @@ try:
         worm_config = YAML().load(f)
 except FileNotFoundError:
     raw_data_config_fname = "NOTFOUND_raw_data_config_fname"
-    worm_config = dict()
+    worm_config = dict(ventral='NOTFOUND')
 
 # Additionally update the paths used for the behavior pipeline (note that this needs to be loaded even if behavior is not run)
 hardcoded_paths = load_hardcoded_neural_network_paths()
@@ -535,7 +535,7 @@ rule invert_curvature_sign:
     input:
         spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed.csv"
     params:
-        ventral = worm_config["ventral"],
+        ventral = worm_config['ventral'],
     output:
         spline_K_signed = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv"
     run:
