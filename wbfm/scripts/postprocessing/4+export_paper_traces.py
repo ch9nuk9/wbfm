@@ -24,7 +24,7 @@ ex.add_config(project_path=None, DEBUG=False)
 
 
 @ex.config
-def cfg(project_path, allow_only_global_tracker, DEBUG):
+def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
 
