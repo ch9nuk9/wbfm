@@ -65,6 +65,7 @@ CMD_DICT["delete_DANGER"]="postprocessing/delete_analysis_files.py"
 CMD_DICT["delete_dryrun"]="postprocessing/delete_analysis_files.py"
 CMD_DICT["match_ids"]="postprocessing/4+match_two_projects.py"
 CMD_DICT["segment_neuropal"]="postprocessing/0+segment_neuropal_in_project.py"
+CMD_DICT["export_paper_traces"]="postprocessing/4+export_paper_traces.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
 FULL_CMD="python $CMD with project_path=$project_path"
