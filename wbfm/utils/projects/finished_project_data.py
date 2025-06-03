@@ -1039,7 +1039,7 @@ class ProjectData:
         nan_using_ppca_manifold: Uses a dimensionality heuristic to remove single-neuron mistakes. See OutlierRemover
             Note: iterative algorithm that takes around a minute
         high_pass_bleach_correct: Filters by removing very slow drifts, i.e. a gaussian of sigma = num_frames / 5
-        remove_tail_neurons: Removes neurons that are not annotated with "tail" in the manual annotation
+        remove_tail_neurons: Removes neurons that are annotated with "tail" in the manual annotation
         verbose
         kwargs: Args to pass to calculate_traces; updates the default 'opt' dict above
             See TracePlotter for options
