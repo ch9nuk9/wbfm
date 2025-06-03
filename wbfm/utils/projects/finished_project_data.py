@@ -1022,7 +1022,7 @@ class ProjectData:
             calculation_mode='integration',
             remove_outliers=True,
             filter_mode='rolling_mean',
-            high_pass_bleach_correct=True
+            high_pass_bleach_correct=False
         )
 
         if interpolate_nan is True, then additionally (after dropping empty neurons and removing outliers):
@@ -1071,7 +1071,7 @@ class ProjectData:
             calculation_mode='integration',
             remove_outliers=True,
             filter_mode='rolling_mean',
-            high_pass_bleach_correct=True
+            high_pass_bleach_correct=False
         )
         opt.update(kwargs)
 
