@@ -68,7 +68,7 @@ CMD_DICT["segment_neuropal"]="postprocessing/0+segment_neuropal_in_project.py"
 CMD_DICT["export_paper_traces"]="postprocessing/4+export_paper_traces.py"
 
 CMD="${CMD_DIR}/${CMD_DICT[$step_reference]}"
-FULL_CMD="python $CMD with project_path=$project_path"
+FULL_CMD="$CMD with project_path=$project_path"
 
 # Specify additional args, if any
 if [ "$step_reference" = "delete_DANGER" ]; then
@@ -76,7 +76,7 @@ if [ "$step_reference" = "delete_DANGER" ]; then
 fi
 
 if [ "$step_reference" = "match_ids" ]; then
-  FULL_CMD="python $CMD with project_path_base=$project_path project_path_target=$args"
+  FULL_CMD="$CMD with project_path_base=$project_path project_path_target=$args"
 fi
 
 echo "Running step $step_reference using full command:"
