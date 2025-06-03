@@ -41,7 +41,7 @@ COMMAND="/lisc/scratch/neurobiology/zimmer/wbfm/code/wbfm/wbfm/scripts/0a-create
 # Loop through the parent folder, then try to get the config file within each of these parent folders
 # Counter for number of jobs actually submitted
 num_jobs=0
-readarray -t folders < <(find "$DATA_PARENT_FOLDER" -type d -name "*worm*" -o -name "*animal*")
+readarray -t folders < <(find "$DATA_PARENT_FOLDER" -maxdepth 1 -type d -name "*worm*" -o -name "*animal*")
 echo "Found ${#folders[@]} folders in $DATA_PARENT_FOLDER matching *worm* or *animal*"
 
 for f in "${folders[@]}"; do
