@@ -18,14 +18,13 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
-ex.add_config(project_path=None, model_fname=None, results_subfolder='barlow_tracker', DEBUG=False)
+ex.add_config(project_path=None, model_fname=None, results_subfolder=None, DEBUG=False)
 
 
 @ex.config
 def cfg(project_path, DEBUG):
     # Manually load yaml files
     cfg = ModularProjectConfig(project_path)
-    cfg.setup_logger('barlow_tracking.log')
     check_all_needed_data_for_step(cfg, 2)
 
     if not DEBUG:
