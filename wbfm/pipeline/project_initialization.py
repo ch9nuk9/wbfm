@@ -93,6 +93,15 @@ def build_project_structure_from_config(config: dict, logger: logging.Logger = N
 
     project_fname, _ = build_project_structure(project_config_updates, basename)
 
+    # Copy simple raw data files to the project; for now just stage_position
+    from wbfm.utils.general.postures.centerline_classes import WormFullVideoPosture
+    stage_position_filename = WormFullVideoPosture.find_stage_position_in_folder(parent_data_folder)
+    if stage_position_filename is not None:
+        project_config = ModularProjectConfig(project_fname)
+        beh_folder = project_config.get_behavior_config().absolute_subfolder
+        # Copy just this file
+        shutil.copy(stage_position_filename, osp.join(beh_folder, Path(stage_position_filename).name))
+
     # If there is a neuropal dataset to add, do so
     if 'neuropal_path' in config:
         neuropal_path = config['neuropal_path']

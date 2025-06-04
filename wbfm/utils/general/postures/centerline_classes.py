@@ -1878,21 +1878,12 @@ class WormFullVideoPosture:
         # UNLESS this is an immobilized dataset
         filename_table_position = None
 
-        def _find_stage_position(_folder):
-            fnames = [fn for fn in glob.glob(os.path.join(beh_path, '*TablePosRecord.txt'))]
-            _filename_table_position = None
-            if len(fnames) == 1:
-                _filename_table_position = fnames[0]
-            elif len(fnames) > 1:
-                logging.warning(f"Found multiple stage position files in {beh_path}: {fnames}")
-            return _filename_table_position
-
         # First search for a version copied to the local project
         beh_path = project_config.get_behavior_config().absolute_subfolder
         if beh_path is not None:
-            filename_table_position = _find_stage_position(beh_path)
+            filename_table_position = WormFullVideoPosture.find_stage_position_in_folder(beh_path)
         if filename_table_position is None and raw_behavior_subfolder is not None:
-            filename_table_position = _find_stage_position(raw_behavior_subfolder)
+            filename_table_position = WormFullVideoPosture.find_stage_position_in_folder(raw_behavior_subfolder)
         all_files['filename_table_position'] = filename_table_position
 
         # Get manual behavior annotations
@@ -1933,6 +1924,17 @@ class WormFullVideoPosture:
 
         # Even if no files found, at least save the fps
         return WormFullVideoPosture(**all_files, **opt)
+
+    @staticmethod
+    def find_stage_position_in_folder(_folder):
+        fnames = [fn for fn in glob.glob(os.path.join(_folder, '*TablePosRecord.txt'))]
+        _filename_table_position = None
+        if len(fnames) == 1:
+            _filename_table_position = fnames[0]
+        elif len(fnames) > 1:
+            logging.warning(f"Found multiple stage position files in {_folder}: {fnames}")
+        return _filename_table_position
+
 
     @staticmethod
     def _check_ulises_pipeline_files_in_subfolder(behavior_subfolder):
