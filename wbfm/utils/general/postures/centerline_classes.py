@@ -103,20 +103,6 @@ class WormFullVideoPosture:
             self.filename_x = resolve_mounted_path_in_current_os(self.filename_x, verbose=0)
             self.filename_y = resolve_mounted_path_in_current_os(self.filename_y, verbose=0)
 
-        if self.filename_table_position is None and self.filename_curvature is not None:
-            # Try to find in the parent folder
-            main_folder = Path(self.filename_curvature).parents[1]
-            fnames = [fn for fn in glob.glob(os.path.join(main_folder, '*TablePosRecord.txt'))]
-            if len(fnames) != 1:
-                logging.warning(f"Did not find stage position file in {main_folder}")
-            else:
-                self.filename_table_position = fnames[0]
-
-        # if self.filename_table_position is None:
-        #     # Then subsampling won't work
-        #     logging.warning("No stage position file found; disallowing subsampling")
-        #     self.beh_annotation_already_converted_to_fluorescence_fps = True
-
     @lru_cache(maxsize=8)
     def eigenworms(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         curvature_nonan = self.curvature().replace(np.nan, 0.0)
@@ -1891,12 +1877,22 @@ class WormFullVideoPosture:
         # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)
         # UNLESS this is an immobilized dataset
         filename_table_position = None
-        if raw_behavior_subfolder is not None:
-            fnames = [fn for fn in glob.glob(os.path.join(raw_behavior_subfolder.parent, '*TablePosRecord.txt'))]
-            if len(fnames) != 1:
-                logging.warning(f"Did not find stage position file in {raw_behavior_subfolder}")
-            else:
-                filename_table_position = fnames[0]
+
+        def _find_stage_position(_folder):
+            fnames = [fn for fn in glob.glob(os.path.join(beh_path, '*TablePosRecord.txt'))]
+            _filename_table_position = None
+            if len(fnames) == 1:
+                _filename_table_position = fnames[0]
+            elif len(fnames) > 1:
+                logging.warning(f"Found multiple stage position files in {beh_path}: {fnames}")
+            return _filename_table_position
+
+        # First search for a version copied to the local project
+        beh_path = project_config.get_behavior_config().absolute_subfolder
+        if beh_path is not None:
+            filename_table_position = _find_stage_position(beh_path)
+        if filename_table_position is None and raw_behavior_subfolder is not None:
+            filename_table_position = _find_stage_position(raw_behavior_subfolder)
         all_files['filename_table_position'] = filename_table_position
 
         # Get manual behavior annotations
