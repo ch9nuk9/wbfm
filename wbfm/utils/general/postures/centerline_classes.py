@@ -1883,7 +1883,7 @@ class WormFullVideoPosture:
         if beh_path is not None:
             filename_table_position = WormFullVideoPosture.find_stage_position_in_folder(beh_path)
         if filename_table_position is None and raw_behavior_subfolder is not None:
-            filename_table_position = WormFullVideoPosture.find_stage_position_in_folder(raw_behavior_subfolder)
+            filename_table_position = WormFullVideoPosture.find_stage_position_in_folder(raw_behavior_subfolder.parent)
         all_files['filename_table_position'] = filename_table_position
 
         # Get manual behavior annotations
