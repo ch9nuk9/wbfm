@@ -146,7 +146,7 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
     gce_quant_dict = {'red': gce_quant_red, 'green': gce_quant_green, 'ratio': gce_quant_ratio}
     # Rename to use manual ids, if they exist
     id_mapping = project_data.neuron_name_to_manual_id_mapping(confidence_threshold=0,
-                                                               only_include_confident_labels=False)
+                                                               only_include_confident_labels=True)
     for key in gce_quant_dict.keys():
         gce_quant_dict[key].rename(columns=id_mapping, inplace=True, level=1)
     # Store just the background subtracting red or green traces, because we don't want to store the object volume
