@@ -35,6 +35,8 @@ if __name__ == '__main__':
 
             # Export data
             try:
+                print("=" * 50)
+                print(f'Exporting {name} to {this_folder}')
                 nwb_using_project_data(project, include_image_data=False, output_folder=this_folder)
             except Exception as e:
                 print(f'Error exporting {name}: {e}')

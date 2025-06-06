@@ -331,6 +331,8 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
         nwbfile = convert_behavior_video_to_nwb(nwbfile, behavior_video, fps=physical_units_class.frames_per_second)
     if behavior_time_series_dict is not None:
         nwbfile = convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict)
+    else:
+        print("No behavior time series data found, skipping...")
 
     if output_fname:
         logging.info(f"Saving NWB file to {output_fname}")
@@ -561,7 +563,7 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
     # Extract the blobs (with time series) from red and green
     print("Extracting segmentation ids...")
     blobquant_red, blobquant_green, blobquant_ratio = None, None, None
-    for idx in tqdm(gce_quant_red['blob_ix'].unique(), leave=False):
+    for idx in tqdm(gce_quant_red['blob_ix'].unique(), leave=False, disable=not DEBUG):
         blob_red = gce_quant_red[gce_quant_red['blob_ix'] == idx]
         blobquant_red = _add_blob(blob_red, blobquant_red)
 
@@ -573,7 +575,7 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
 
     print("Extracting segmentation coordinates...")
     volsegs = []
-    for t in tqdm(range(blobquant_red.shape[1]), leave=False):
+    for t in tqdm(range(blobquant_red.shape[1]), leave=False, disable=not DEBUG):
         blobs = np.squeeze(blobquant_red[:, t, 0:3])
         IDs = np.squeeze(blobquant_red[:, t, 4])
         labels = IDs.astype(str)
