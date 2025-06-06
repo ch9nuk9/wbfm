@@ -67,3 +67,4 @@ dependencies:
     - pynwb
     - ndx_multichannel_volume
     - arviz
+    - xlrd
