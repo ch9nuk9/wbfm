@@ -1,5 +1,6 @@
 import concurrent
 import logging
+import shutil
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
@@ -1021,7 +1022,7 @@ class ProjectData:
             calculation_mode='integration',
             remove_outliers=True,
             filter_mode='rolling_mean',
-            high_pass_bleach_correct=True
+            high_pass_bleach_correct=False
         )
 
         if interpolate_nan is True, then additionally (after dropping empty neurons and removing outliers):
@@ -1039,7 +1040,7 @@ class ProjectData:
         nan_using_ppca_manifold: Uses a dimensionality heuristic to remove single-neuron mistakes. See OutlierRemover
             Note: iterative algorithm that takes around a minute
         high_pass_bleach_correct: Filters by removing very slow drifts, i.e. a gaussian of sigma = num_frames / 5
-        remove_tail_neurons: Removes neurons that are not annotated with "tail" in the manual annotation
+        remove_tail_neurons: Removes neurons that are annotated with "tail" in the manual annotation
         verbose
         kwargs: Args to pass to calculate_traces; updates the default 'opt' dict above
             See TracePlotter for options
@@ -1070,7 +1071,7 @@ class ProjectData:
             calculation_mode='integration',
             remove_outliers=True,
             filter_mode='rolling_mean',
-            high_pass_bleach_correct=True
+            high_pass_bleach_correct=False
         )
         opt.update(kwargs)
 
@@ -1225,6 +1226,17 @@ class ProjectData:
         all_methods_fnames = self.data_cacher.list_of_paper_trace_methods(return_simple_names=True)
         all_traces_dict = {name: method() for name, method in zip(all_methods_fnames, all_methods)}
         return all_traces_dict
+
+    def copy_paper_traces_to_main_folder(self):
+        """Copy all paper traces from the .cache folder to the traces folder"""
+        source_folder = self.data_cacher.cache_dir
+        target_folder = self.project_config.get_traces_config().absolute_subfolder
+        # Copy every .h5 file
+        for fname in os.listdir(source_folder):
+            if fname.endswith('.h5'):
+                source_path = os.path.join(source_folder, fname)
+                target_path = os.path.join(target_folder, fname)
+                shutil.copy(source_path, target_path)
 
     @lru_cache(maxsize=16)
     def calc_raw_traces(self, neuron_names: tuple, **opt: dict):
@@ -2262,7 +2274,7 @@ class ProjectData:
     def raw_data_dir(self):
         if self.project_config is None:
             return None
-        return self.project_config.get_behavior_raw_parent_folder_from_red_fname()[0]
+        return self.project_config.get_folder_for_all_channels()
 
     @property
     def x_lim(self):

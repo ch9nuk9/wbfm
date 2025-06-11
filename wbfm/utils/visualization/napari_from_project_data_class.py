@@ -157,6 +157,23 @@ class NapariLayerInitializer:
         else:
             clipping_list = []
 
+        # Raw data (useful if the preprocessing doesn't work)
+        if 'Raw red data' in which_layers:
+            layer_name = 'Raw red data'
+            p = project_data.project_config.get_preprocessing_class()
+            dat = p.open_raw_data_as_4d_dask(red_not_green=True)
+            viewer.add_image(dat, name=layer_name, opacity=0.5, colormap='PiYG',
+                             scale=scale, experimental_clipping_planes=clipping_list)
+            layers_actually_added.append(layer_name)
+        if 'Raw green data' in which_layers:
+            layer_name = 'Raw green data'
+            p = project_data.project_config.get_preprocessing_class()
+            dat = p.open_raw_data_as_4d_dask(red_not_green=False)
+            viewer.add_image(dat, name=layer_name, opacity=0.5, colormap='green',
+                             scale=scale, experimental_clipping_planes=clipping_list)
+            layers_actually_added.append(layer_name)
+
+        # Normal (processed) data
         if 'Red data' in which_layers:
             layer_name = 'Red data'
             contrast_high = NapariLayerInitializer._get_contrast_limits(project_data, red_not_green=True)

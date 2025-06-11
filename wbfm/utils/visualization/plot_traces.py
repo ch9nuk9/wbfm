@@ -1382,7 +1382,9 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
     behavior_alias_dict = _get_behavior_dict(discrete_behaviors, eigenworm_behaviors)
 
     num_modes_to_plot = len(behavior_alias_dict)
-    kwargs['behavior_kwargs'] = dict(fluorescence_fps=False, reset_index=False)
+    behavior_kwargs = dict(fluorescence_fps=False, reset_index=False)
+    behavior_kwargs.update(kwargs['behavior_kwargs']) if 'behavior_kwargs' in kwargs else {}
+    kwargs['behavior_kwargs'] =behavior_kwargs
     additional_shaded_states = []#[BehaviorCodes.SLOWING, BehaviorCodes.HEAD_CAST]
     column_widths, ethogram_opt, heatmap, heatmap_opt, kymograph, kymograph_opt, phase_plot_list, phase_plot_list_opt, _row_heights, subplot_titles, trace_list, trace_opt_list, trace_shading_opt, var_explained_line, var_explained_line_opt, weights_list, weights_opt_list = build_all_plot_variables_for_summary_plot(
         project_data, num_modes_to_plot, use_behavior_traces=True, behavior_alias_dict=behavior_alias_dict,
@@ -1408,6 +1410,10 @@ def make_summary_interactive_kymograph_with_behavior(project_cfg, to_save=True, 
                         row_heights=row_heights, vertical_spacing=0.02,
                         #subplot_titles=subplot_titles
                         )
+    fig.update_layout(
+        width=800,
+        height=600
+    )
 
     for opt in ethogram_opt:
         fig.add_shape(**opt, row=2, col=1)

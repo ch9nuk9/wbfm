@@ -9,7 +9,6 @@ from typing import List, Union, Optional, Dict
 import matplotlib
 import numpy as np
 import pandas as pd
-import tifffile
 from matplotlib import pyplot as plt
 from plotly import express as px
 from plotly.subplots import make_subplots
@@ -2111,6 +2110,7 @@ def approximate_background_using_video(behavior_video, num_frames=1000):
     -------
 
     """
+    import tifffile
 
     with tifffile.TiffFile(behavior_video, 'r') as behavior_dat:
         # Get the first 1000 frames
@@ -2148,6 +2148,7 @@ def save_background_in_project(cfg, **kwargs):
 
     # Save (btf)
     print(f"Saving background to {fname} with dtype {background.dtype}")
+    import tifffile
     tifffile.imwrite(fname, background)
 
     return background

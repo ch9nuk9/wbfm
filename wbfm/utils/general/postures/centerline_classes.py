@@ -103,25 +103,13 @@ class WormFullVideoPosture:
             self.filename_x = resolve_mounted_path_in_current_os(self.filename_x, verbose=0)
             self.filename_y = resolve_mounted_path_in_current_os(self.filename_y, verbose=0)
 
-        if self.filename_table_position is None and self.filename_curvature is not None:
-            # Try to find in the parent folder
-            main_folder = Path(self.filename_curvature).parents[1]
-            fnames = [fn for fn in glob.glob(os.path.join(main_folder, '*TablePosRecord.txt'))]
-            if len(fnames) != 1:
-                logging.warning(f"Did not find stage position file in {main_folder}")
-            else:
-                self.filename_table_position = fnames[0]
-
-        # if self.filename_table_position is None:
-        #     # Then subsampling won't work
-        #     logging.warning("No stage position file found; disallowing subsampling")
-        #     self.beh_annotation_already_converted_to_fluorescence_fps = True
-
-    @cached_property
-    def eigenworms(self) -> np.ndarray:
+    @lru_cache(maxsize=8)
+    def eigenworms(self, fluorescence_fps=False, **kwargs) -> pd.DataFrame:
         curvature_nonan = self.curvature().replace(np.nan, 0.0)
         pca_proj = self.calculate_eigenworms_from_curvature(curvature_nonan, 5,
                                                             self.i_eigenworm_start, self.i_eigenworm_end)
+        pca_proj = self._validate_and_downsample(pd.DataFrame(pca_proj), fluorescence_fps=fluorescence_fps,
+                                                 **kwargs)
         return pca_proj
 
     @staticmethod
@@ -909,7 +897,7 @@ class WormFullVideoPosture:
             # i.e. the full string should be 'eigenworm0', 'eigenworm1', etc.
             # First get the number
             i = int(behavior_alias[-1])
-            y = pd.Series(self.eigenworms[:, i])
+            y = pd.Series(self.eigenworms().iloc[:, i])
             y = self._validate_and_downsample(y, **kwargs)
         elif isinstance(behavior_alias, str) and 'curvature' in behavior_alias:
             # Assume the string is 'curvature' followed by a number, e.g. 'curvature_10'
@@ -1085,7 +1073,7 @@ class WormFullVideoPosture:
     def _raw_worm_angular_velocity(self):
         """Using angular velocity in 2d pca space"""
 
-        xyz_pca = self.eigenworms
+        xyz_pca = self.eigenworms().values
         window = 5
         x = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 0]), window)
         y = remove_outliers_via_rolling_mean(pd.Series(xyz_pca[:, 1]), window)
@@ -1113,8 +1101,6 @@ class WormFullVideoPosture:
         """
         velocity = self._raw_worm_angular_velocity
         velocity = self._validate_and_downsample(velocity, fluorescence_fps=fluorescence_fps, **kwargs)
-        if fluorescence_fps:
-            velocity.reset_index(drop=True, inplace=True)
         if remove_outliers:
             window = 10
             velocity = remove_outliers_via_rolling_mean(pd.Series(velocity), window)
@@ -1447,7 +1433,8 @@ class WormFullVideoPosture:
         fig = plt.figure(figsize=(15, 15))
         ax = fig.add_subplot(111, projection='3d')
         c = np.arange(self.num_volumes) / 1e6
-        ax.scatter(self.eigenworms[:, 0], self.eigenworms[:, 1], self.eigenworms[:, 2], c=c)
+        eig = self.eigenworms().values
+        ax.scatter(eig[:, 0], eig[:, 1], eig[:, 2], c=c)
         plt.colorbar()
 
     def get_centerline_for_time(self, t):
@@ -1890,12 +1877,13 @@ class WormFullVideoPosture:
         # Should always exist IF you have access to the raw data folder (which probably means a mounted drive)
         # UNLESS this is an immobilized dataset
         filename_table_position = None
-        if raw_behavior_subfolder is not None:
-            fnames = [fn for fn in glob.glob(os.path.join(raw_behavior_subfolder.parent, '*TablePosRecord.txt'))]
-            if len(fnames) != 1:
-                logging.warning(f"Did not find stage position file in {raw_behavior_subfolder}")
-            else:
-                filename_table_position = fnames[0]
+
+        # First search for a version copied to the local project
+        beh_path = project_config.get_behavior_config().absolute_subfolder
+        if beh_path is not None:
+            filename_table_position = WormFullVideoPosture.find_stage_position_in_folder(beh_path)
+        if filename_table_position is None and raw_behavior_subfolder is not None:
+            filename_table_position = WormFullVideoPosture.find_stage_position_in_folder(raw_behavior_subfolder.parent)
         all_files['filename_table_position'] = filename_table_position
 
         # Get manual behavior annotations
@@ -1936,6 +1924,17 @@ class WormFullVideoPosture:
 
         # Even if no files found, at least save the fps
         return WormFullVideoPosture(**all_files, **opt)
+
+    @staticmethod
+    def find_stage_position_in_folder(_folder):
+        fnames = [fn for fn in glob.glob(os.path.join(_folder, '*TablePosRecord.txt'))]
+        _filename_table_position = None
+        if len(fnames) == 1:
+            _filename_table_position = fnames[0]
+        elif len(fnames) > 1:
+            logging.warning(f"Found multiple stage position files in {_folder}: {fnames}")
+        return _filename_table_position
+
 
     @staticmethod
     def _check_ulises_pipeline_files_in_subfolder(behavior_subfolder):
@@ -2433,7 +2432,7 @@ class WormReferencePosture:
 
     @property
     def pca_projections(self):
-        return self.all_postures.eigenworms
+        return self.all_postures.eigenworms()
 
     @property
     def reference_posture(self):

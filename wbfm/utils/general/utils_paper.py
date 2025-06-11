@@ -33,7 +33,8 @@ def paper_trace_settings():
                use_physical_time=True,
                rename_neurons_using_manual_ids=True,
                always_keep_manual_ids=True,
-               manual_id_confidence_threshold=0)
+               manual_id_confidence_threshold=0,
+               high_pass_bleach_correct=False)
     return opt
 
 

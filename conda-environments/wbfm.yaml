@@ -66,3 +66,5 @@ dependencies:
     - umap-learn
     - pynwb
     - ndx_multichannel_volume
+    - arviz
+    - xlrd

@@ -41,11 +41,13 @@ except (NoBehaviorDataError, RawDataFormatError, FileNotFoundError) as e:
 # Also get the raw data config file (if it exists)
 try:
     raw_data_config_fname = project_config.get_raw_data_config().absolute_self_path
+    if raw_data_config_fname is None:
+        raise FileNotFoundError
     with open(raw_data_config_fname, 'r') as f:
         worm_config = YAML().load(f)
 except FileNotFoundError:
     raw_data_config_fname = "NOTFOUND_raw_data_config_fname"
-    worm_config = dict()
+    worm_config = dict(ventral='NOTFOUND')
 
 # Additionally update the paths used for the behavior pipeline (note that this needs to be loaded even if behavior is not run)
 hardcoded_paths = load_hardcoded_neural_network_paths()
@@ -533,7 +535,7 @@ rule invert_curvature_sign:
     input:
         spline_K = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed.csv"
     params:
-        ventral = worm_config["ventral"],
+        ventral = worm_config['ventral'],
     output:
         spline_K_signed = f"{output_behavior_dir}/skeleton_spline_K__equi_dist_segment_2D_smoothed_signed.csv"
     run:
@@ -756,17 +758,21 @@ rule make_behaviour_figure:
         speed_file = f"{output_behavior_dir}/signed_worm_speed.csv",
         turns_annotation = f"{output_behavior_dir}/turns_annotation.csv"
     output:
-        figure = f"{output_behavior_dir}/behavioral_summary_figure.pdf" #This is  never produced, so it whill always run
+        figure = f"{output_behavior_dir}/behavioral_summary_figure.pdf" #This is never produced, so it will always run
     params:
-        output_path = f"{output_behavior_dir}/",# Ulises' functions expect the final slash
+        output_path = f"{output_behavior_dir}/" # Ulises' functions expect the final slash
     run:
-        from centerline_behavior_annotation.behavior_analysis.src import make_figure
+        from centerline_behavior_annotation.behavior_analysis.src import make_figure_2
 
-        make_figure.main([
+        make_figure_2.main([
             '-i', str(params.output_path),
             '-r', str(raw_data_dir),
+            '-k', str(input.curvature_file),
+            '-pcs', str(input.pc_file),
+            '-beh', str(input.beh_annotation_file),
+            '-speed', str(input.speed_file),
+            '-turns', str(input.turns_annotation)
         ])
-
 
 
 rule process_skeleton_curvature:
