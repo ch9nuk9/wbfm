@@ -1,0 +1,7 @@
+numpy
+pandas
+seaborn
+matplotlib
+h5py
+scikit-learn
+# pynwb  # Uncomment if you need pynwb
