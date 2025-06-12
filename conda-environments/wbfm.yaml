@@ -68,3 +68,4 @@ dependencies:
     - ndx_multichannel_volume
     - arviz
     - xlrd
+    - submitit
