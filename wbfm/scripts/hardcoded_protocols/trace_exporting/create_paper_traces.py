@@ -26,7 +26,7 @@ def load_project_and_create_traces(project_path, keep_old_traces=True):
     return {'result': output}
 
 
-def main(run_locally=False, keep_old_traces=True, DEBUG=False):
+def main(run_locally, keep_old_traces, DEBUG=False):
     """
     Create traces for all projects in the paper, caching them in the project folder.
 
