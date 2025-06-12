@@ -1057,9 +1057,6 @@ class ProjectData:
             df = self.calc_paper_traces(channel_mode=channel_mode, residual_mode=residual_mode,
                                         interpolate_nan=interpolate_nan)
             # Most postprocessing is not done on these traces, but these are allowed
-            if only_keep_confident_ids:
-                confident_ids = neurons_with_confident_ids()
-                df = df[[col for col in df.columns if col in confident_ids]]
             if remove_tail_neurons:
                 tail_names = self.tail_neuron_names()
                 tail_names = [n for n in tail_names if n in get_names_from_df(df)]
@@ -1202,12 +1199,9 @@ class ProjectData:
 
         # Optional: rename columns to use manual ids, if found
         if rename_neurons_using_manual_ids:
-            mapping = self.neuron_name_to_manual_id_mapping(confidence_threshold=manual_id_confidence_threshold)
+            mapping = self.neuron_name_to_manual_id_mapping(confidence_threshold=manual_id_confidence_threshold,
+                                                            only_include_confident_labels=only_keep_confident_ids)
             df = df.rename(columns=mapping)
-
-            if only_keep_confident_ids:
-                confident_ids = neurons_with_confident_ids()
-                df = df[[col for col in df.columns if col in confident_ids]]
 
         # Optional: set the index to be physical units
         if self.use_physical_time:
