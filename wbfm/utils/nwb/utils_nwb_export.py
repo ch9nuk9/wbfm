@@ -178,7 +178,7 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
 
     # Unpack behavior video and time seriesdata
     video_class = project_data.worm_posture_class
-    if video_class.check_has_full_kymograph:
+    if video_class.has_full_kymograph:
         if include_image_data:
             behavior_video = video_class.raw_behavior_video
         else:
