@@ -767,7 +767,15 @@ def convert_behavior_series_to_nwb(nwbfile, behavior_time_series_dict):
         time_series_dict = {}
         for colname, coldata in _time_series_columns.items():
             coldata = coldata.values if isinstance(coldata, pd.Series) else coldata
-            time_series_dict[colname] = TimeSeries(name=str(colname), data=coldata, timestamps=timestamps, unit=unit)
+            # Convert column name to string, but be careful if it is an integer
+            # Specifically if it is <10, it should be padded with zeros to maintain sorting
+            if isinstance(colname, int):
+                colname = f"{colname:02d}"
+            elif isinstance(colname, str):
+                pass
+            else:
+                colname = str(colname)
+            time_series_dict[colname] = TimeSeries(name=colname, data=coldata, timestamps=timestamps, unit=unit)
         # This nested requires nested indexing in the final object...
         # _time_series_obj = TimeSeries(name=name, data=data, timestamps=timestamps, unit=unit)
         behavior_module.add(BehavioralTimeSeries(name=name, time_series=time_series_dict))
