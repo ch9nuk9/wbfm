@@ -151,15 +151,15 @@ def nwb_using_project_data(project_data: ProjectData, include_image_data=True, o
         gce_quant_dict[key].rename(columns=id_mapping, inplace=True, level=1)
     # Store just the background subtracting red or green traces, because we don't want to store the object volume
     # Use the exact options in the paper
-    trace_opt = dict(use_paper_options=True, interpolate_nan=True)
-    df_traces_red = project_data.calc_default_traces(channel_mode='red', **trace_opt)
+    trace_opt = dict(interpolate_nan=True)
+    df_traces_red = project_data.calc_paper_traces(channel_mode='red', **trace_opt)
     # Here we have a subset of columns, so we need to keep only the proper set
     kept_columns = df_traces_red.columns
     gce_quant_red.loc[:, ('intensity_image', kept_columns)] = df_traces_red.values
-    df_traces_green = project_data.calc_default_traces(channel_mode='green', **trace_opt)
+    df_traces_green = project_data.calc_paper_traces(channel_mode='green', **trace_opt)
     gce_quant_green.loc[:, ('intensity_image', kept_columns)] = df_traces_green.values
 
-    df_traces_ratio = project_data.calc_default_traces(channel_mode='dr_over_r_50', **trace_opt)
+    df_traces_ratio = project_data.calc_paper_traces(channel_mode='dr_over_r_50', **trace_opt)
     gce_quant_ratio.loc[:, ('intensity_image', kept_columns)] = df_traces_ratio.values
 
     # Then drop any other columns that are not in the kept columns
