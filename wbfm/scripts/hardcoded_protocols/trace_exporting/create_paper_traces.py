@@ -39,7 +39,8 @@ def main(run_locally, keep_old_traces, DEBUG=False):
     -------
 
     """
-    print("Starting with options: run_locally=", run_locally, "DEBUG=", DEBUG)
+    print("Starting with options: run_locally=", run_locally, " keep_old_traces=", keep_old_traces, 
+          "DEBUG=", DEBUG)
     # Load all paths to datasets used in the paper
     all_project_paths = load_all_paper_datasets(only_load_paths=True)
 
