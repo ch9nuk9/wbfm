@@ -492,14 +492,24 @@ class PreprocessingSettings(RawFluorescenceData):
                 raise TiffFormatError("Could not find number of z slices in config file; "
                                       "Required if using .btf files")
             if actually_open:
-                dat = MicroscopeDataReader(fname, as_raw_tiff=True, raw_tiff_num_slices=z_slices,
-                                           verbose=0)
+                try:
+                    dat = MicroscopeDataReader(fname, as_raw_tiff=True, raw_tiff_num_slices=z_slices,
+                                            verbose=0)
+                except KeyError:
+                    logging.warning(f"Could not open {fname} as a MicroscopeDataReader; "
+                                    f"possibly it is not a valid ndtiff folder")
+                    dat = None
             else:
                 dat = None
         else:
             # Has metadata already
             if actually_open:
-                dat = MicroscopeDataReader(fname, as_raw_tiff=False, verbose=0)
+                try:
+                    dat = MicroscopeDataReader(fname, as_raw_tiff=False, verbose=0)
+                except KeyError:
+                    logging.warning(f"Could not open {fname} as a MicroscopeDataReader; "
+                                    f"possibly it is not a valid ndtiff folder")
+                    dat = None
             else:
                 dat = None
 
