@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 
 #SBATCH --job-name=gpu_check
-#SBATCH --nodes=1                   # Use one node
-#SBATCH --ntasks=1                  # Run a single task
-#SBATCH --qos=short             # Time limit hrs:min:sec
+#SBATCH --mem=1G
+#SBATCH --cpus-per-task=1
 #SBATCH --output=log_gpu_test-%j.out    # Standard output and error log
 #SBATCH --time=0:10:00
-#SBATCH --partition=basic
 #SBATCH --gres=gpu:1
 
 pwd; hostname; date
