@@ -2,7 +2,7 @@
 
 # Add help function
 function usage {
-    echo "Usage: $0 [-s rule] [-n] [-c] [-h]"
+    echo "Usage: $0 [-s rule] [-n] [-c] [-h] [-R restart_rule]"
     echo "  -s: snakemake rule to run until, i.e. target rule (default: traces_and_behavior; other options: traces, behavior)"
     echo "  -R: snakemake rule to restart from (default: None)"
     echo "  -n: dry run (default: false)"
@@ -22,7 +22,7 @@ USE_CLUSTER="True"
 RULE="traces_and_behavior"
 RESTART_RULE=""
 
-while getopts :s:nch flag
+while getopts :s:R:nch flag
 do
     case "${flag}" in
         s) RULE=${OPTARG};;

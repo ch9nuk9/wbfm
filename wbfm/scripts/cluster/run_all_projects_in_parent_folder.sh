@@ -7,11 +7,12 @@
 
 # Add help function
 function usage {
-  echo "Usage: $0 [-t folder_of_projects] [-n] [-d] [-s rule] [-h]"
+  echo "Usage: $0 [-t folder_of_projects] [-n] [-d] [-s rule] [-h] [-R restart_rule]"
   echo "  -t: folder of projects (required)"
   echo "  -n: dry run of this script (default: false)"
   echo "  -d: dry run of snakemake (default: false)"
   echo "  -s: snakemake rule to run (default: traces_and_behavior; other options: traces, behavior)"
+  echo "  -R: snakemake rule to restart from (default: None)"
   echo "  -h: display help (this message)"
   exit 1
 }
@@ -19,9 +20,10 @@ function usage {
 RULE="traces_and_behavior"
 is_dry_run=""
 RUNME_ARGS=""
+RESTART_RULE=""
 
 # Get all user flags
-while getopts t:n:s:d:ch flag
+while getopts t:n:s:d:R:ch flag
 do
     case "${flag}" in
         t) folder_of_projects=${OPTARG};;
@@ -29,6 +31,7 @@ do
         d) is_snakemake_dry_run=${OPTARG};;
         c) RUNME_ARGS="-c";;
         s) RULE=${OPTARG};;
+        R) RESTART_RULE=${OPTARG};;
         h) usage;;
         *) raise error "Unknown flag"
     esac
@@ -57,6 +60,9 @@ for f in "$folder_of_projects"/*; do
                     if [ "$is_snakemake_dry_run" ]; then
                        snakemake_cmd="$snakemake_cmd -n"
                        echo "Running snakemake dry run"
+                    fi
+                    if [ -n "$RESTART_RULE" ]; then
+                        snakemake_cmd="$snakemake_cmd -R $RESTART_RULE"
                     fi
                     # Instead of tmux, use a controller sbatch job
                     cd "$snakemake_folder" || exit  # Move in order to create the snakemake log all together
