@@ -34,10 +34,11 @@ do
     esac
 done
 
-# Package slurm options
-OPT="sbatch -t {cluster.time} --cpus-per-task {cluster.cpus_per_task} --mem {cluster.mem} --output {cluster.output} --gres {cluster.gres} --job-name={rule}"
+# Package options
+SBATCH_OPT="sbatch -t {cluster.time} --cpus-per-task {cluster.cpus_per_task} --mem {cluster.mem} --output {cluster.output} --gres {cluster.gres} --job-name={rule}"
+SNAKEMAKE_OPT="-s pipeline.smk --latency-wait 60 --cores 56 --retries 2"
 if [ -n "$RESTART_RULE" ]; then
-    OPT="$OPT -R $RESTART_RULE"
+    SNAKEMAKE_OPT="$SNAKEMAKE_OPT -R $RESTART_RULE"
 fi
 NUM_JOBS_TO_SUBMIT=8
 
@@ -79,14 +80,14 @@ chmod +x "$CLUSTER_STATUS_SCRIPT"
 
 # Actual command
 if [ "$DRYRUN" ]; then
-    echo "DRYRUN of snakemake rule: $RULE. Common options: traces_and_behavior (default), traces, behavior"
-    snakemake "$RULE" --debug-dag -n -s pipeline.smk --cores
+    echo "DRYRUN of snakemake $RULE rule with options $SNAKEMAKE_OPT"
+    snakemake "$RULE" --debug-dag -n "$SNAKEMAKE_OPT"
 elif [ -z "$USE_CLUSTER" ]; then
-    echo "Running snakemake rule locally: $RULE. Common options: traces_and_behavior (default), traces, behavior"
+    echo "Running snakemake rule $RULE locally with options $SNAKEMAKE_OPT"
     snakemake -s pipeline.smk --unlock  # Unlock the folder, just in case
-    snakemake "$RULE" -s pipeline.smk --latency-wait 60 --cores 56 --retries 2
+    snakemake "$RULE" "$SNAKEMAKE_OPT"
 else
-    echo "Running snakemake rule on the cluster: $RULE. Common options: traces_and_behavior (default), traces, behavior"
+    echo "Running snakemake rule $RULE on the cluster with options $SNAKEMAKE_OPT"
     snakemake -s pipeline.smk --unlock  # Unlock the folder, just in case
-    snakemake "$RULE" -s pipeline.smk --latency-wait 60 --cluster "$OPT --parsable" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT --cluster-status "$CLUSTER_STATUS_SCRIPT" --retries 5
+    SBATCH_snakemake "$RULE" "$SNAKEMAKE_OPT" --cluster "$SBATCH_OPT --parsable" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT --cluster-status "$CLUSTER_STATUS_SCRIPT"
 fi
