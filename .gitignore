@@ -71,3 +71,7 @@ wbfm/notebooks/*.ipynb
 *.nwb
 *.gv
 *.gv.pdf
+docs/images/workflow_diagrams.pdf
+docs/workflow_diagrams-Tracking_workflow_version2.pdf
+docs/computational_methods_section.drawio
+.gitignore
