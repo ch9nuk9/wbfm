@@ -3,7 +3,8 @@
 # Add help function
 function usage {
     echo "Usage: $0 [-s rule] [-n] [-c] [-h]"
-    echo "  -s: snakemake rule to run (default: traces_and_behavior; other options: traces, behavior)"
+    echo "  -s: snakemake rule to run until, i.e. target rule (default: traces_and_behavior; other options: traces, behavior)"
+    echo "  -R: snakemake rule to restart from (default: None)"
     echo "  -n: dry run (default: false)"
     echo "  -c: do NOT use cluster (default: false, i.e. run on cluster)"
     echo "  -h: display help (this message)"
@@ -19,11 +20,13 @@ function usage {
 DRYRUN=""
 USE_CLUSTER="True"
 RULE="traces_and_behavior"
+RESTART_RULE=""
 
 while getopts :s:nch flag
 do
     case "${flag}" in
         s) RULE=${OPTARG};;
+        R) RESTART_RULE=${OPTARG};;
         n) DRYRUN="True";;
         c) USE_CLUSTER="";;
         h) usage;;
@@ -33,6 +36,9 @@ done
 
 # Package slurm options
 OPT="sbatch -t {cluster.time} --cpus-per-task {cluster.cpus_per_task} --mem {cluster.mem} --output {cluster.output} --gres {cluster.gres} --job-name={rule}"
+if [ -n "$RESTART_RULE" ]; then
+    OPT="$OPT -R $RESTART_RULE"
+fi
 NUM_JOBS_TO_SUBMIT=8
 
 # Slurm doesn't properly deal with TIMEOUT errors in subjobs, so we need to create a script to deal with them
