@@ -158,7 +158,7 @@ def convert_flavell_to_nwb(
 
     # Make single multi-channel data series
     # Flavell data is already TXYZ
-    green_red_dask = da.concatenate([green_dask, red_dask], axis=-1)
+    green_red_dask = da.stack([green_dask, red_dask], axis=-1)
 
     chunk_seg = (1,) + frame_shape  # chunk along time only
 
