@@ -313,18 +313,18 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
     CalcImagingVolume, order_optical_channels = build_optical_channel_objects(device, grid_spacing, calcium_video_dict)
     nwbfile.add_imaging_plane(CalcImagingVolume)
 
-    # Add the video data (optional)
-    if include_image_data:
-        convert_calcium_videos_to_nwb(nwbfile, calcium_video_dict, device, CalcImagingVolume, rate)
-        CalciumSegSeries = convert_segmentation_video_to_nwb(CalcImagingVolume, device, segmentation_video, physical_units_class=physical_units_class)
-        nwbfile.processing['CalciumActivity'].add(CalciumSegSeries)
-
     # Add the traces and tracking data
     nwbfile = convert_traces_and_tracking_to_nwb(
         nwbfile, segmentation_video, gce_quant_dict, CalcImagingVolume, physical_units_class, device=device
     )
     # Finish: metadata
     nwbfile.processing['CalciumActivity'].add(order_optical_channels)
+
+    # Add the video data (optional)
+    if include_image_data:
+        convert_calcium_videos_to_nwb(nwbfile, calcium_video_dict, device, CalcImagingVolume, rate)
+        CalciumSegSeries = convert_segmentation_video_to_nwb(CalcImagingVolume, device, segmentation_video, physical_units_class=physical_units_class)
+        nwbfile.processing['CalciumActivity'].add(CalciumSegSeries)
 
     # Add the behavior video and time series, if they exist
     if behavior_video is not None and include_image_data:
