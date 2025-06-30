@@ -163,7 +163,7 @@ def convert_flavell_to_nwb(
     chunk_seg = (1,) + frame_shape  # chunk along time only
     chunk_video = chunk_seg + (2,)  # chunk along time and channel
 
-    green_red_dask = H5DataIO(
+    green_red_data = H5DataIO(
         data=CustomDataChunkIterator(array=green_red_dask, chunk=chunk_video),
         compression="gzip"
     )
@@ -185,7 +185,7 @@ def convert_flavell_to_nwb(
         name="CalciumImageSeries",
         description="Series of calcium imaging data",
         comments="Calcium imaging data from Flavell lab",
-        data=green_red_dask,  # data here should be series of indexed masks
+        data=green_red_data,  # data here should be series of indexed masks
         # Elements below can be kept the same as the CalciumImageSeries defined above
         device=device,
         unit="Voxel gray counts",
