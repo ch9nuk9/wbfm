@@ -161,8 +161,10 @@ def convert_flavell_to_nwb(
     green_red_dask = da.concatenate([green_dask, red_dask], axis=-1)
 
     chunk_seg = (1,) + frame_shape  # chunk along time only
-    chunk_video = chunk_seg + (2,)  # chunk along time and channel
 
+    # Ensure chunk_video matches the number of dimensions in green_red_dask
+    chunk_video = (1,) + green_red_dask.shape[1:]
+    print(f"Creating NWB file with chunk size {chunk_video} and size {green_red_dask.shape} for green/red data")
     green_red_data = H5DataIO(
         data=CustomDataChunkIterator(array=green_red_dask, chunk_shape=chunk_video),
         compression="gzip"
@@ -171,7 +173,6 @@ def convert_flavell_to_nwb(
         data=CustomDataChunkIterator(array=seg_dask, chunk_shape=chunk_seg),
         compression="gzip"
     )
-    print(f"Creating NWB file with chunk size {chunk_video} and size {green_red_dask.shape} for green/red data")
 
     # Build metadata objects
     grid_spacing = (0.3, 0.3, 0.3)  # Flavell data is isotropic
