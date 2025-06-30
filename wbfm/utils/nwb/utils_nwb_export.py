@@ -447,7 +447,7 @@ def laser_properties(channel_str='red'):
 
 def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, CalcImagingVolume, rate, raw_videos=False):
     print("Initializing imaging channels...")
-
+    # TODO: Make sure this is a lazy load
     # Convert a dictionary of video data into a single multi-channel numpy array
     # With proper metadata
     video_list = list(video_dict.values())

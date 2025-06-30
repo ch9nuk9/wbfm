@@ -156,16 +156,16 @@ def convert_flavell_to_nwb(
     red_dask = dask_stack_volumes(iter_volumes(base_dir, n_frames, 2), n_frames, frame_shape)
     seg_dask = dask_stack_volumes(iter_segmentations(base_dir, n_frames), n_frames, frame_shape)
 
+    # Make single multi-channel data series
+    # Flavell data is already TXYZC 
+    green_red_dask = da.concatenate([green_dask, red_dask], axis=-1)
+
     print(f"Found {n_frames} frames for each channel with shape {frame_shape}")
 
-    chunk_shape = (1,) + frame_shape  # chunk along time, one volume at a time
+    chunk_shape = (1,) + frame_shape  # chunk along time and channel (only images)
 
-    green_data = H5DataIO(
-        data=CustomDataChunkIterator(array=green_dask, chunk_shape=chunk_shape),
-        compression="gzip"
-    )
-    red_data = H5DataIO(
-        data=CustomDataChunkIterator(array=red_dask, chunk_shape=chunk_shape),
+    green_red_dask = H5DataIO(
+        data=CustomDataChunkIterator(array=green_red_dask, chunk_shape=chunk_shape + (1,)),
         compression="gzip"
     )
     seg_data = H5DataIO(
@@ -185,31 +185,34 @@ def convert_flavell_to_nwb(
 
     # Add the actual data
     nwbfile.add_acquisition(MultiChannelVolumeSeries(
-        name='GFP',
-        data=green_data,
-        unit='a.u.',
-        format='raw',
-        rate=imaging_rate,
-        dimension=list(frame_shape),
-        imaging_volume=CalcImagingVolume
+        name="CalciumImageSeries",
+        description="Series of calcium imaging data",
+        comments="Calcium imaging data from Flavell lab",
+        data=green_red_dask,  # data here should be series of indexed masks
+        # Elements below can be kept the same as the CalciumImageSeries defined above
+        device=device,
+        unit="Voxel gray counts",
+        scan_line_rate=2995.,
+        # dimension=None, #  Gives a warning; what should this be?,
+        resolution=1.,
+        # smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
+        rate=imaging_rate,  # sampling rate in hz
+        imaging_volume=CalcImagingVolume,
     ))
     nwbfile.add_acquisition(MultiChannelVolumeSeries(
-        name='RFP',
-        data=red_data,
-        unit='a.u.',
-        format='raw',
-        rate=imaging_rate,
-        dimension=list(frame_shape),
-        imaging_volume=CalcImagingVolume
-    ))
-    nwbfile.add_acquisition(MultiChannelVolumeSeries(
-        name='Segmentation',
-        data=seg_data,
-        unit='label',
-        format='raw',
-        rate=imaging_rate,
-        dimension=list(frame_shape),
-        imaging_volume=CalcImagingVolume
+        name="CalciumSeriesSegmentation",
+        description="Series of indexed masks associated with calcium segmentation",
+        comments="Segmentation masks for calcium imaging data from Flavell lab",
+        data=seg_data,  # data here should be series of indexed masks
+        # Elements below can be kept the same as the CalciumImageSeries defined above
+        device=device,
+        unit="Voxel gray counts",
+        scan_line_rate=2995.,
+        # dimension=None, #  Gives a warning; what should this be?,
+        resolution=1.,
+        # smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
+        rate=imaging_rate,  # sampling rate in hz
+        imaging_volume=CalcImagingVolume,
     ))
 
     with NWBHDF5IO(output_path, 'w') as io:
