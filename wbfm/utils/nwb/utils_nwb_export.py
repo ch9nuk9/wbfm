@@ -310,7 +310,7 @@ def nwb_with_traces_from_components(calcium_video_dict, segmentation_video, gce_
     else:
         grid_spacing = physical_units_class.grid_spacing
         rate = physical_units_class.volumes_per_second
-    CalcImagingVolume, order_optical_channels = build_optical_channel_objects(device, grid_spacing, calcium_video_dict)
+    CalcImagingVolume, order_optical_channels = build_optical_channel_objects(device, grid_spacing, list(calcium_video_dict.keys()))
     nwbfile.add_imaging_plane(CalcImagingVolume)
 
     # Add the traces and tracking data
@@ -489,11 +489,11 @@ def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, CalcImaging
     nwbfile.add_acquisition(calcium_image_series)
 
 
-def build_optical_channel_objects(device, grid_spacing, video_dict):
+def build_optical_channel_objects(device, grid_spacing, video_keys: list):
     # The loop below takes the list of channels and converts it into a list of OpticalChannelPlus objects which hold the metadata
     # for the optical channels used in the experiment
     CalcChannels = []
-    for key in video_dict.keys():
+    for key in video_keys:
         laser_tuple = laser_properties(key)[-1]
         CalcChannels.append(laser_tuple)
     CalcOptChannels = []

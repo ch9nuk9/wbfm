@@ -9,6 +9,7 @@ from hdmf.backends.hdf5.h5_utils import H5DataIO
 import glob
 import argparse
 from wbfm.utils.nwb.utils_nwb_export import CustomDataChunkIterator
+from wbfm.utils.nwb.utils_nwb_export import build_optical_channel_objects, _zimmer_microscope_device
 import dask.array as da
 
 
@@ -169,6 +170,11 @@ def convert_flavell_to_nwb(
     # red_data = H5DataIO(np.stack([v for _, v in zip(range(n_frames), red_gen)]), compression="gzip")
     # seg_data = H5DataIO(np.stack([v for _, v in zip(range(n_frames), seg_gen)]), compression="gzip")
 
+    # Build metadata objects
+    grid_spacing = (0.3, 0.3, 0.3)  # Flavell data is isotropic
+    device = _zimmer_microscope_device(nwbfile)
+    CalcImagingVolume, order_optical_channels = build_optical_channel_objects(device, grid_spacing, ['red', 'green'])
+
     nwbfile.add_acquisition(MultiChannelVolumeSeries(
         name='GFP',
         data=green_data,
@@ -176,7 +182,7 @@ def convert_flavell_to_nwb(
         format='raw',
         rate=imaging_rate,
         dimension=list(frame_shape),
-        imaging_volume=imaging_plane
+        imaging_volume=CalcImagingVolume
     ))
     nwbfile.add_acquisition(MultiChannelVolumeSeries(
         name='RFP',
@@ -185,7 +191,7 @@ def convert_flavell_to_nwb(
         format='raw',
         rate=imaging_rate,
         dimension=list(frame_shape),
-        imaging_volume=imaging_plane
+        imaging_volume=CalcImagingVolume
     ))
     nwbfile.add_acquisition(MultiChannelVolumeSeries(
         name='Segmentation',
@@ -194,7 +200,7 @@ def convert_flavell_to_nwb(
         format='raw',
         rate=imaging_rate,
         dimension=list(frame_shape),
-        imaging_volume=imaging_plane
+        imaging_volume=CalcImagingVolume
     ))
 
     with NWBHDF5IO(output_path, 'w') as io:
