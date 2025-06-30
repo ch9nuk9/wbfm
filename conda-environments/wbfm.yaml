@@ -69,3 +69,4 @@ dependencies:
     - arviz
     - xlrd
     - submitit
+    - kaleido
