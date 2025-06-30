@@ -134,6 +134,7 @@ def convert_flavell_to_nwb(
     # Count valid frames for each channel
     if DEBUG:
         n_frames = 10
+        print("DEBUG mode: limiting to first 10 time points")
     else:
         n_green = find_max_timepoint_volumes(base_dir, 1)
         n_red = find_max_timepoint_volumes(base_dir, 2)
@@ -151,6 +152,8 @@ def convert_flavell_to_nwb(
     green_dask = dask_stack_volumes(iter_volumes(base_dir, n_frames, 1), n_frames, frame_shape)
     red_dask = dask_stack_volumes(iter_volumes(base_dir, n_frames, 2), n_frames, frame_shape)
     seg_dask = dask_stack_volumes(iter_segmentations(base_dir, n_frames), n_frames, frame_shape)
+
+    print(f"Found {n_frames} frames for each channel with shape {frame_shape}")
 
     chunk_shape = (1,) + frame_shape  # chunk along time, one volume at a time
 
