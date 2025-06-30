@@ -145,7 +145,10 @@ def convert_flavell_to_nwb(
 
     # Use the first valid green volume to get shape
     green_gen = iter_volumes(base_dir, n_frames, 1)
-    first_green = next(green_gen)
+    try:
+        first_green = next(green_gen)
+    except StopIteration:
+        raise RuntimeError("No green channel volumes found. Check your input data and n_frames value.")
     frame_shape = first_green.shape
 
     # Build dask arrays for each channel
