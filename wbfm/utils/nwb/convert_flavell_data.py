@@ -180,7 +180,10 @@ def convert_flavell_to_nwb(
     grid_spacing = (0.3, 0.3, 0.3)  # Flavell data is isotropic
     device = _zimmer_microscope_device(nwbfile)
     CalcImagingVolume, order_optical_channels = build_optical_channel_objects(device, grid_spacing, ['red', 'green'])
+    # Add directly to the file to prevent hdmf.build.errors.OrphanContainerBuildError
+    nwbfile.add_imaging_plane(CalcImagingVolume)
 
+    # Add the actual data
     nwbfile.add_acquisition(MultiChannelVolumeSeries(
         name='GFP',
         data=green_data,
