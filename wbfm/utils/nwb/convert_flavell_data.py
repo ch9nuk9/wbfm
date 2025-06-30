@@ -164,11 +164,11 @@ def convert_flavell_to_nwb(
     chunk_video = chunk_seg + (2,)  # chunk along time and channel
 
     green_red_data = H5DataIO(
-        data=CustomDataChunkIterator(array=green_red_dask, chunk=chunk_video),
+        data=CustomDataChunkIterator(array=green_red_dask, chunk_shape=chunk_video),
         compression="gzip"
     )
     seg_data = H5DataIO(
-        data=CustomDataChunkIterator(array=seg_dask, chunk=chunk_seg),
+        data=CustomDataChunkIterator(array=seg_dask, chunk_shape=chunk_seg),
         compression="gzip"
     )
     print(f"Creating NWB file with chunk size {chunk_video} and size {green_red_dask.shape} for green/red data")
