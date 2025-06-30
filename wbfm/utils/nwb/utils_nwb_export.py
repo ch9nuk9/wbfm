@@ -3,6 +3,7 @@ import os
 import re
 from pathlib import Path
 
+import dask.array as da
 import numpy as np
 import scipy
 # from hdmf_zarr import NWBZarrIO
@@ -447,14 +448,14 @@ def laser_properties(channel_str='red'):
 
 def convert_calcium_videos_to_nwb(nwbfile, video_dict: dict, device, CalcImagingVolume, rate, raw_videos=False):
     print("Initializing imaging channels...")
-    # TODO: Make sure this is a lazy load
     # Convert a dictionary of video data into a single multi-channel numpy array
     # With proper metadata
+    # Stack the dask arrays lazily along a new channel axis
     video_list = list(video_dict.values())
-    video_data = np.stack(video_list, axis=-1)
+    video_data = da.stack(video_list, axis=-1)
     # Reshape to be TXYZC from TZXYC
-    video_data = np.transpose(video_data, [0, 2, 3, 1, 4])
-    chunk_shape = list(video_data.shape[1:][:-1])  # Remove time point and channel
+    video_data = video_data.transpose(0, 2, 3, 1, 4)
+    chunk_shape = list(video_data.shape[1:-1])  # Remove time point and channel
     chunk_shape.append(1)  # Add the channel
     chunk_shape.insert(0, 1)  # Add the time point
 
