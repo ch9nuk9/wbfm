@@ -157,10 +157,8 @@ def convert_flavell_to_nwb(
     seg_dask = dask_stack_volumes(iter_segmentations(base_dir, n_frames), n_frames, frame_shape)
 
     # Make single multi-channel data series
-    # Flavell data is already TXYZC 
+    # Flavell data is already TXYZ
     green_red_dask = da.concatenate([green_dask, red_dask], axis=-1)
-
-    print(f"Found {n_frames} frames for each channel with shape {frame_shape}")
 
     chunk_seg = (1,) + frame_shape  # chunk along time only
     chunk_video = chunk_seg + (2,)  # chunk along time and channel
@@ -173,14 +171,12 @@ def convert_flavell_to_nwb(
         data=CustomDataChunkIterator(array=seg_dask, chunk=chunk_seg),
         compression="gzip"
     )
-    # green_data = H5DataIO(np.stack([v for _, v in zip(range(n_frames), green_gen)]), compression="gzip")
-    # red_data = H5DataIO(np.stack([v for _, v in zip(range(n_frames), red_gen)]), compression="gzip")
-    # seg_data = H5DataIO(np.stack([v for _, v in zip(range(n_frames), seg_gen)]), compression="gzip")
+    print(f"Creating NWB file with chunk size {chunk_video} and size {green_red_dask.shape} for green/red data")
 
     # Build metadata objects
     grid_spacing = (0.3, 0.3, 0.3)  # Flavell data is isotropic
     device = _zimmer_microscope_device(nwbfile)
-    CalcImagingVolume, order_optical_channels = build_optical_channel_objects(device, grid_spacing, ['red', 'green'])
+    CalcImagingVolume, _ = build_optical_channel_objects(device, grid_spacing, ['red', 'green'])
     # Add directly to the file to prevent hdmf.build.errors.OrphanContainerBuildError
     nwbfile.add_imaging_plane(CalcImagingVolume)
 
