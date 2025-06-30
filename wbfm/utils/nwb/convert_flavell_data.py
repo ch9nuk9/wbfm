@@ -162,14 +162,15 @@ def convert_flavell_to_nwb(
 
     print(f"Found {n_frames} frames for each channel with shape {frame_shape}")
 
-    chunk_shape = (1,) + frame_shape  # chunk along time and channel (only images)
+    chunk_seg = (1,) + frame_shape  # chunk along time only
+    chunk_video = chunk_seg + (2,)  # chunk along time and channel
 
     green_red_dask = H5DataIO(
-        data=CustomDataChunkIterator(array=green_red_dask, chunk_shape=chunk_shape + (1,)),
+        data=CustomDataChunkIterator(array=green_red_dask, chunk=chunk_video),
         compression="gzip"
     )
     seg_data = H5DataIO(
-        data=CustomDataChunkIterator(array=seg_dask, chunk_shape=chunk_shape),
+        data=CustomDataChunkIterator(array=seg_dask, chunk=chunk_seg),
         compression="gzip"
     )
     # green_data = H5DataIO(np.stack([v for _, v in zip(range(n_frames), green_gen)]), compression="gzip")
