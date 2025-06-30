@@ -81,13 +81,13 @@ chmod +x "$CLUSTER_STATUS_SCRIPT"
 # Actual command
 if [ "$DRYRUN" ]; then
     echo "DRYRUN of snakemake $RULE rule with options $SNAKEMAKE_OPT"
-    snakemake "$RULE" --debug-dag -n "$SNAKEMAKE_OPT"
+    snakemake "$RULE" --debug-dag -n $SNAKEMAKE_OPT
 elif [ -z "$USE_CLUSTER" ]; then
     echo "Running snakemake rule $RULE locally with options $SNAKEMAKE_OPT"
     snakemake -s pipeline.smk --unlock  # Unlock the folder, just in case
-    snakemake "$RULE" "$SNAKEMAKE_OPT"
+    snakemake "$RULE" $SNAKEMAKE_OPT
 else
     echo "Running snakemake rule $RULE on the cluster with options $SNAKEMAKE_OPT"
     snakemake -s pipeline.smk --unlock  # Unlock the folder, just in case
-    SBATCH_snakemake "$RULE" "$SNAKEMAKE_OPT" --cluster "$SBATCH_OPT --parsable" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT --cluster-status "$CLUSTER_STATUS_SCRIPT"
+    SBATCH_snakemake "$RULE" $SNAKEMAKE_OPT --cluster "$SBATCH_OPT --parsable" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT --cluster-status "$CLUSTER_STATUS_SCRIPT"
 fi
