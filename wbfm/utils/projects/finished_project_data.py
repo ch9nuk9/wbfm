@@ -816,6 +816,13 @@ class ProjectData:
         try:
             # Transpose data from TXYZ to TZXY
             obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
+            
+            if 'CalciumSeriesSegmentation' in nwb_obj.processing['CalciumActivity']:
+                # Load the raw segmentation as well
+                obj.raw_segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
+            else:
+                # If the raw segmentation is not available, use the final segmentation as a copy
+                obj.raw_segmentation = obj.segmentation
         except (KeyError, AttributeError) as e:
             obj.logger.warning(f"Could not load segmentation from NWB file: {e}")
 
