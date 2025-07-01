@@ -89,5 +89,5 @@ elif [ -z "$USE_CLUSTER" ]; then
 else
     echo "Running snakemake rule $RULE on the cluster with options $SNAKEMAKE_OPT"
     snakemake -s pipeline.smk --unlock  # Unlock the folder, just in case
-    SBATCH_snakemake "$RULE" $SNAKEMAKE_OPT --cluster "$SBATCH_OPT --parsable" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT --cluster-status "$CLUSTER_STATUS_SCRIPT"
+    snakemake "$RULE" $SNAKEMAKE_OPT --cluster "$SBATCH_OPT --parsable" --cluster-config cluster_config.yaml --jobs $NUM_JOBS_TO_SUBMIT --cluster-status "$CLUSTER_STATUS_SCRIPT"
 fi
