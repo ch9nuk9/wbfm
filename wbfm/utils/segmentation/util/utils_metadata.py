@@ -379,7 +379,7 @@ def recalculate_metadata_from_config(project_cfg, name_mode, DEBUG=False):
     from wbfm.utils.projects.finished_project_data import ProjectData
 
     project_data = ProjectData.load_final_project_data(project_cfg)
-    segment_cfg = project_data.get_segment_config()
+    segment_cfg = project_data.project_config.get_segmentation_config()
 
     # Load from the project directly instead of passing the config files
     masks_zarr = project_data.raw_segmentation
