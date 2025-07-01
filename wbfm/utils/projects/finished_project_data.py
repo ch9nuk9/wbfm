@@ -816,15 +816,16 @@ class ProjectData:
         try:
             # Transpose data from TXYZ to TZXY
             obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
-            
-            if 'RawCalciumSeriesSegmentation' in nwb_obj.processing['CalciumActivity']:
-                # Load the raw segmentation as well
-                obj.raw_segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['RawCalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
-            else:
-                # If the raw segmentation is not available, use the final segmentation as a copy
-                obj.raw_segmentation = obj.segmentation
         except (KeyError, AttributeError) as e:
             obj.logger.warning(f"Could not load segmentation from NWB file: {e}")
+
+        try:
+            # Transpose data from TXYZ to TZXY
+            obj.raw_segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['RawCalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
+        except (KeyError, AttributeError) as e:
+            # Set to be equal to the segmentation, if it exists
+            if obj.segmentation is not None:
+                obj.raw_segmentation = obj.segmentation
 
         p = PhysicalUnitConversion()
         if 'CalciumImageSeries' in nwb_obj.acquisition:
