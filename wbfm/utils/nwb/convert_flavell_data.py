@@ -181,8 +181,12 @@ def convert_flavell_to_nwb(
     # Add directly to the file to prevent hdmf.build.errors.OrphanContainerBuildError
     nwbfile.add_imaging_plane(CalcImagingVolume)
 
-    # Add the actual data
-    nwbfile.add_acquisition(MultiChannelVolumeSeries(
+    # Add data under the processed module
+    calcium_imaging_module = nwbfile.create_processing_module(
+        name='CalciumActivity',
+        description='Calcium time series metadata, segmentation, and fluorescence data'
+    )
+    calcium_imaging_module.add(MultiChannelVolumeSeries(
         name="CalciumImageSeries",
         description="Series of calcium imaging data",
         comments="Calcium imaging data from Flavell lab",
@@ -197,7 +201,7 @@ def convert_flavell_to_nwb(
         rate=imaging_rate,  # sampling rate in hz
         imaging_volume=CalcImagingVolume,
     ))
-    nwbfile.add_acquisition(MultiChannelVolumeSeries(
+    calcium_imaging_module.add(MultiChannelVolumeSeries(
         name="CalciumSeriesSegmentation",
         description="Series of indexed masks associated with calcium segmentation",
         comments="Segmentation masks for calcium imaging data from Flavell lab",
