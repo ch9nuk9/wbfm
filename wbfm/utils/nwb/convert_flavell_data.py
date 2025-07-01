@@ -13,12 +13,11 @@ from wbfm.utils.nwb.utils_nwb_export import build_optical_channel_objects, _zimm
 import dask.array as da
 
 
-def iter_volumes(base_dir, n_timepoints, channel):
+def iter_volumes(base_dir, n_start, n_timepoints, channel, segmentation=False):
     """Yield 3D volumes for a given channel. If a file is missing, yield an array of zeros with the correct shape."""
     zero_shape = None
-    for t in range(n_timepoints):
-        t_str = f"{t:04d}"
-        pattern = f'{base_dir}/NRRD_cropped/*_t{t_str}_ch{channel}.nrrd'
+    for t in range(n_start, n_timepoints):
+        pattern = get_flavell_timepoint_pattern(base_dir, t, channel, segmentation)
         matches = glob.glob(pattern)
         if matches:
             path = matches[0]
@@ -33,7 +32,7 @@ def iter_volumes(base_dir, n_timepoints, channel):
             yield np.zeros(zero_shape, dtype=np.float32)
         else:
             # Try to infer shape from the first available file in the directory
-            fallback_pattern = f'{base_dir}/NRRD_cropped/*_ch{channel}.nrrd'
+            fallback_pattern = get_flavell_channel_pattern(base_dir, channel, segmentation)
             fallback_matches = glob.glob(fallback_pattern)
             if fallback_matches:
                 fallback_data, _ = nrrd.read(fallback_matches[0])
@@ -43,21 +42,29 @@ def iter_volumes(base_dir, n_timepoints, channel):
                 raise RuntimeError(f"Cannot determine shape for channel {channel} at time {t}. No files found.")
 
 
-def iter_segmentations(base_dir, n_timepoints):
-    """Yield 3D segmentation volumes, skipping missing files."""
-    for t in range(n_timepoints):
-        path = f'{base_dir}/img_roi_watershed/{t}.nrrd'
-        if os.path.exists(path):
-            data, _ = nrrd.read(path)
-            yield data
-        else:
-            continue
+def get_flavell_channel_pattern(base_dir, channel=0, segmentation=False):
+    """Get the glob pattern for a specific channel in NRRD_cropped."""
+    if not segmentation:
+        return f'{base_dir}/NRRD_cropped/*_ch{channel}.nrrd'
+    else:
+        return f'{base_dir}/img_roi_watershed/*.nrrd'
 
 
-def find_max_timepoint_volumes(base_dir, channel):
-    """Find the maximum timepoint index for a given channel in NRRD_cropped."""
-    pattern = f'{base_dir}/NRRD_cropped/*_ch{channel}.nrrd'
+def get_flavell_timepoint_pattern(base_dir, t, channel=0, segmentation=False):
+    """Get the glob pattern for a specific timepoint and channel in NRRD_cropped."""
+    if not segmentation:
+        t_str = f"{t:04d}"
+        return f'{base_dir}/NRRD_cropped/*_t{t_str}_ch{channel}.nrrd'
+    else:
+        return f'{base_dir}/img_roi_watershed/{t}.nrrd'
+
+
+
+def find_min_max_timepoint(base_dir, channel, segmentation=False):
+    """Find the minimum and maximum timepoint index for a given channel in NRRD_cropped."""
+    pattern = get_flavell_channel_pattern(base_dir, channel, segmentation)
     matches = glob.glob(pattern)
+    min_t = None
     max_t = -1
     for path in matches:
         # Extract tXXXX from filename
@@ -66,24 +73,11 @@ def find_max_timepoint_volumes(base_dir, channel):
         for part in parts:
             if part.startswith('t') and part[1:5].isdigit():
                 t = int(part[1:5])
+                if min_t is None or t < min_t:
+                    min_t = t
                 if t > max_t:
                     max_t = t
-    return max_t
-
-
-def find_max_timepoint_segmentations(base_dir):
-    """Find the maximum timepoint index for segmentations in img_roi_watershed."""
-    pattern = f'{base_dir}/img_roi_watershed/*.nrrd'
-    matches = glob.glob(pattern)
-    max_t = -1
-    for path in matches:
-        basename = os.path.basename(path)
-        name, ext = os.path.splitext(basename)
-        if name.isdigit():
-            t = int(name)
-            if t > max_t:
-                max_t = t
-    return max_t
+    return min_t, max_t
 
 
 def count_valid_volumes(base_dir, channel):
@@ -148,30 +142,32 @@ def convert_flavell_to_nwb(
 
     # Count valid frames for each channel
     if DEBUG:
-        n_frames = 10
+        start_frame, end_frame = 1, 10
         print("DEBUG mode: limiting to first 10 time points")
     else:
-        n_green = find_max_timepoint_volumes(base_dir, 1)
-        n_red = find_max_timepoint_volumes(base_dir, 2)
-        n_seg = find_max_timepoint_segmentations(base_dir)
-        n_frames = max(n_green, n_red, n_seg)
-        if n_frames == 0:
+        min_green, n_green = find_min_max_timepoint(base_dir, 1, False)
+        min_red, n_red = find_min_max_timepoint(base_dir, 2, False)
+        min_seg, n_seg = find_min_max_timepoint(base_dir, segmentation=True)
+        # We know the last frame here actually exists, so add 1
+        end_frame = max(n_green, n_red, n_seg) + 1
+        start_frame = min(min_green, min_red, min_seg)
+        if end_frame == 0:
             raise RuntimeError("No valid frames found for all channels.")
 
     # Use the first valid green volume to get shape
-    green_gen = iter_volumes(base_dir, n_frames, 1)
+    green_gen = iter_volumes(base_dir, start_frame, end_frame, 1)
     try:
         first_green = next(green_gen)
     except StopIteration:
         raise RuntimeError("No green channel volumes found. Check your input data and n_frames value.")
     frame_shape = first_green.shape
-    print(f"Found {n_frames} frames for each channel with shape {frame_shape}")
+    print(f"Found {end_frame-start_frame} frames for each channel with shape {frame_shape}")
 
     # Build dask arrays for each channel
-    green_dask = dask_stack_volumes(iter_volumes(base_dir, n_frames, 1), frame_shape)
-    red_dask = dask_stack_volumes(iter_volumes(base_dir, n_frames, 2), frame_shape)
+    green_dask = dask_stack_volumes(iter_volumes(base_dir, start_frame, end_frame, 1), frame_shape)
+    red_dask = dask_stack_volumes(iter_volumes(base_dir, start_frame, end_frame, 2), frame_shape)
     print(f"Found red video with shape {red_dask.shape} and green video with shape {green_dask.shape}")
-    seg_dask = dask_stack_volumes(iter_segmentations(base_dir, n_frames), frame_shape)
+    seg_dask = dask_stack_volumes(iter_volumes(base_dir, start_frame, end_frame, segmentation=True), frame_shape)
     print(f"Found segmentation data with shape {seg_dask.shape}")
 
     # Make single multi-channel data series
