@@ -57,6 +57,7 @@ def find_max_timepoint_volumes(base_dir, channel):
                     max_t = t
     return max_t
 
+
 def find_max_timepoint_segmentations(base_dir):
     """Find the maximum timepoint index for segmentations in img_roi_watershed."""
     pattern = f'{base_dir}/img_roi_watershed/*.nrrd'
@@ -70,6 +71,7 @@ def find_max_timepoint_segmentations(base_dir):
             if t > max_t:
                 max_t = t
     return max_t
+
 
 def count_valid_volumes(base_dir, channel):
     """Count valid volumes for a channel."""
@@ -87,7 +89,7 @@ def count_valid_segmentations(base_dir, n_timepoints):
     return count
 
 
-def dask_stack_volumes(volume_iter, n_frames, frame_shape):
+def dask_stack_volumes(volume_iter, frame_shape):
     """Stack a generator of volumes into a dask array."""
     # Each block is a single volume (3D), stacked along axis=0 (time)
     return da.stack([da.from_array(vol, chunks=frame_shape) for vol in volume_iter], axis=0)
@@ -150,25 +152,29 @@ def convert_flavell_to_nwb(
     except StopIteration:
         raise RuntimeError("No green channel volumes found. Check your input data and n_frames value.")
     frame_shape = first_green.shape
+    print(f"Found {n_frames} frames for each channel with shape {frame_shape}")
 
     # Build dask arrays for each channel
-    green_dask = dask_stack_volumes(iter_volumes(base_dir, n_frames, 1), n_frames, frame_shape)
-    red_dask = dask_stack_volumes(iter_volumes(base_dir, n_frames, 2), n_frames, frame_shape)
-    seg_dask = dask_stack_volumes(iter_segmentations(base_dir, n_frames), n_frames, frame_shape)
+    green_dask = dask_stack_volumes(iter_volumes(base_dir, n_frames, 1), frame_shape)
+    red_dask = dask_stack_volumes(iter_volumes(base_dir, n_frames, 2), frame_shape)
+    print(f"Found red video with shape {red_dask.shape} and green video with shape {green_dask.shape}")
+    seg_dask = dask_stack_volumes(iter_segmentations(base_dir, n_frames), frame_shape)
+    print(f"Found segmentation data with shape {seg_dask.shape}")
 
     # Make single multi-channel data series
-    # Flavell data is already TXYZ
-    green_red_dask = da.stack([green_dask, red_dask], axis=-1)
+    # Flavell data is already TXYZ, so stack to make a 5D TXYZC array
+    red_green_dask = da.stack([red_dask, green_dask], axis=-1)
 
-    chunk_seg = (1,) + frame_shape  # chunk along time only
-
-    # Ensure chunk_video matches the number of dimensions in green_red_dask
-    chunk_video = (1,) + green_red_dask.shape[1:-1] + (1,)
-    print(f"Creating NWB file with chunk size {chunk_video} and size {green_red_dask.shape} for green/red data")
+    # Ensure chunk_video matches the number of dimensions in red_green_dask
+    chunk_video = (1,) + red_green_dask.shape[1:-1] + (1,)
+    print(f"Creating NWB file with chunk size {chunk_video} and size {red_green_dask.shape} for green/red data")
     green_red_data = H5DataIO(
-        data=CustomDataChunkIterator(array=green_red_dask, chunk_shape=chunk_video),
+        data=CustomDataChunkIterator(array=red_green_dask, chunk_shape=chunk_video),
         compression="gzip"
     )
+
+    chunk_seg = (1,) + frame_shape  # chunk along time only
+    print(f"Segmentations will be stored with chunk size {chunk_seg} and size {seg_dask.shape}")
     seg_data = H5DataIO(
         data=CustomDataChunkIterator(array=seg_dask, chunk_shape=chunk_seg),
         compression="gzip"
