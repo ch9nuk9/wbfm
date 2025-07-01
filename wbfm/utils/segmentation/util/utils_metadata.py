@@ -15,7 +15,6 @@ from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet,
 
 import numpy as np
 import pandas as pd
-from wbfm.utils.projects.finished_project_data import ProjectData
 import zarr
 from wbfm.utils.segmentation.util.utils_config_files import _unpack_config_file
 from skimage.measure import label, regionprops
@@ -377,6 +376,7 @@ def recalculate_metadata_from_config(project_cfg, name_mode, DEBUG=False):
         segment_video_using_config_3d
 
     """
+    from wbfm.utils.projects.finished_project_data import ProjectData
 
     project_data = ProjectData.load_final_project_data(project_cfg)
     segment_cfg = project_data.get_segment_config()
