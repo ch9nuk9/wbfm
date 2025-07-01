@@ -14,20 +14,33 @@ import dask.array as da
 
 
 def iter_volumes(base_dir, n_timepoints, channel):
-    """Yield 3D volumes for a given channel, skipping missing files."""
+    """Yield 3D volumes for a given channel. If a file is missing, yield an array of zeros with the correct shape."""
+    zero_shape = None
     for t in range(n_timepoints):
         t_str = f"{t:04d}"
         pattern = f'{base_dir}/NRRD_cropped/*_t{t_str}_ch{channel}.nrrd'
         matches = glob.glob(pattern)
         if matches:
             path = matches[0]
+            if os.path.exists(path):
+                data, _ = nrrd.read(path)
+                if zero_shape is None:
+                    zero_shape = data.shape
+                yield data
+                continue
+        # If file is missing, yield zeros
+        if zero_shape is not None:
+            yield np.zeros(zero_shape, dtype=np.float32)
         else:
-            continue
-        if os.path.exists(path):
-            data, _ = nrrd.read(path)
-            yield data
-        else:
-            continue
+            # Try to infer shape from the first available file in the directory
+            fallback_pattern = f'{base_dir}/NRRD_cropped/*_ch{channel}.nrrd'
+            fallback_matches = glob.glob(fallback_pattern)
+            if fallback_matches:
+                fallback_data, _ = nrrd.read(fallback_matches[0])
+                zero_shape = fallback_data.shape
+                yield np.zeros(zero_shape, dtype=np.float32)
+            else:
+                raise RuntimeError(f"Cannot determine shape for channel {channel} at time {t}. No files found.")
 
 
 def iter_segmentations(base_dir, n_timepoints):
