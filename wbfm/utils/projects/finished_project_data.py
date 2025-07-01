@@ -690,7 +690,7 @@ class ProjectData:
             cfg_nwb = project_data.project_config.get_nwb_config()
             nwb_filename = cfg_nwb.resolve_relative_path_from_config('nwb_filename')
             if nwb_filename is not None:
-                project_data.logger.info(f"Found nwb file at {nwb_filename}; attempting to additional data or analysis")
+                project_data.logger.info(f"Found nwb file at {nwb_filename}; attempting to load additional data or analysis")
                 initialization_kwargs = kwargs.get('initialization_kwargs', dict())
                 project_data_nwb = ProjectData.load_final_project_data_from_nwb(nwb_filename, **initialization_kwargs)
                 
