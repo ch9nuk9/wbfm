@@ -693,6 +693,7 @@ class ProjectData:
                 project_data.logger.info(f"Found nwb file at {nwb_filename}; attempting to additional data or analysis")
                 initialization_kwargs = kwargs.get('initialization_kwargs', dict())
                 project_data_nwb = ProjectData.load_final_project_data_from_nwb(nwb_filename, **initialization_kwargs)
+                
                 # First: raw data loaded from the nwb file
                 nwb_preprocessing_class = project_data_nwb.project_config.get_preprocessing_class()
                 preprocessing_class = project_data.project_config.get_preprocessing_class()
@@ -706,7 +707,16 @@ class ProjectData:
                         project_data.logger.info(f"Successfully imported raw data from nwb file")
                     else:
                         project_data.logger.info(f"Did not find raw data in nwb file, continuing")
-                # Second: load raw segmentation
+                # Second: load preprocessed data
+                if project_data.red_data is None:
+                    if project_data_nwb.red_data is not None:
+                        project_data.red_data = project_data_nwb.red_data
+                        project_data.green_data = project_data_nwb.green_data
+                        project_data.logger.info(f"Successfully loaded red and green data from nwb file (no metadata loaded)")
+                    else:
+                        project_data.logger.info(f"Did not find red and green data in nwb file, continuing")
+
+                # Third: load raw segmentation
                 if project_data.raw_segmentation is None:
                     if project_data_nwb.raw_segmentation is not None:
                         project_data.raw_segmentation = project_data_nwb.raw_segmentation
