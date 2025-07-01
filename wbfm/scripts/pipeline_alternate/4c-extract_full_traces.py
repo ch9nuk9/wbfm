@@ -13,7 +13,7 @@ from sacred import SETTINGS
 from sacred.observers import TinyDbObserver
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
 
-from wbfm.pipeline.traces import match_segmentation_and_tracks_using_config, extract_traces_using_config
+from wbfm.pipeline.traces import extract_traces_using_config
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
 from wbfm.utils.projects.utils_project import safe_cd

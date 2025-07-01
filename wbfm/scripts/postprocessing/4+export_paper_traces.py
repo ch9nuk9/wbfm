@@ -8,6 +8,7 @@ from sacred import Experiment
 from sacred import SETTINGS
 # main function
 from wbfm.utils.external.monkeypatch_json import using_monkeypatch
+from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
 from wbfm.pipeline.traces import calc_paper_traces_using_config
 from wbfm.utils.projects.project_config_classes import ModularProjectConfig
@@ -42,5 +43,5 @@ def main(_config, _run):
 
     DEBUG = _config['DEBUG']
     project_cfg = _config['cfg']
-
-    calc_paper_traces_using_config(project_cfg, DEBUG)
+    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
+    calc_paper_traces_using_config(project_data, DEBUG)
