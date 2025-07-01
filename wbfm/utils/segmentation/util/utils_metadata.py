@@ -15,6 +15,7 @@ from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet,
 
 import numpy as np
 import pandas as pd
+from wbfm.utils.projects.finished_project_data import ProjectData
 import zarr
 from wbfm.utils.segmentation.util.utils_config_files import _unpack_config_file
 from skimage.measure import label, regionprops
@@ -357,7 +358,7 @@ class DetectedNeurons:
         return f"DetectedNeurons object with {self.num_frames} frames"
 
 
-def recalculate_metadata_from_config(preprocessing_cfg, segment_cfg, project_cfg, name_mode, DEBUG=False):
+def recalculate_metadata_from_config(project_cfg, name_mode, DEBUG=False):
     """
 
     Given a project that contains a segmentation, recalculate the metadata
@@ -377,16 +378,25 @@ def recalculate_metadata_from_config(preprocessing_cfg, segment_cfg, project_cfg
 
     """
 
-    mask_fname, metadata_fname, _, _, video_path, _, _, _, _, _ = _unpack_config_file(
-        preprocessing_cfg, segment_cfg, project_cfg, DEBUG)
+    project_data = ProjectData.load_final_project_data(project_cfg)
+    segment_cfg = project_data.get_segment_config()
 
-    masks_zarr = zarr.open(mask_fname, synchronizer=zarr.ThreadSynchronizer())
-    video_dat = zarr.open(video_path, synchronizer=zarr.ThreadSynchronizer())
+    # Load from the project directly instead of passing the config files
+    masks_zarr = project_data.raw_segmentation
+    if masks_zarr is None:
+        raise ValueError("No segmentation masks found in the project data. "
+                         "Please run the segmentation pipeline first.")
+    video_dat = project_data.red_data
+    if video_dat is None:
+        raise ValueError("No video data found in the project data. "
+                         "Please run the preprocessing pipeline first.")
+
     frame_list = list(range(video_dat.shape[0]))
 
-    logging.info(f"Read zarr from: {mask_fname} with size {masks_zarr.shape}")
-    logging.info(f"Read video from: {video_path} with size {video_dat.shape}")
-    logging.info(f"Using frame mapping from masks to video: {frame_list[:5]}...")
+    metadata_fname = segment_cfg.config['output_metadata']
+
+    logging.info(f"Read zarr with size {masks_zarr.shape}")
+    logging.info(f"Read video with size {video_dat.shape}")
 
     if DEBUG:
         frame_list = frame_list[:2]
