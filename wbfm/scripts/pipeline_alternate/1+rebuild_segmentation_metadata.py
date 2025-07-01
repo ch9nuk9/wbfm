@@ -29,5 +29,4 @@ def cfg(project_path, DEBUG):
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
-    with safe_cd(_config['project_dir']):
-        recalculate_metadata_from_config(_config['project_config'], name_mode='neuron', DEBUG=_config['DEBUG'])
+    recalculate_metadata_from_config(_config['project_config'], name_mode='neuron', DEBUG=_config['DEBUG'])
