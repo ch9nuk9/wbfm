@@ -2273,7 +2273,11 @@ class ProjectData:
     def raw_data_dir(self):
         if self.project_config is None:
             return None
-        return self.project_config.get_folder_for_all_channels()
+        try:
+            return self.project_config.get_folder_for_all_channels()
+        except IncompleteConfigFileError:
+            self.logger.warning("No project config found; cannot load raw data directory")
+            return None
 
     @property
     def x_lim(self):
