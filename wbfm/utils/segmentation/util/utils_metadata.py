@@ -13,6 +13,8 @@ from wbfm.utils.general.postprocessing.utils_metadata import regionprops_one_vol
 from wbfm.utils.general.utils_filenames import pickle_load_binary
 from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet, int2name_neuron
 
+import dask
+from dask.diagnostics import ProgressBar
 import numpy as np
 import pandas as pd
 import zarr
@@ -429,19 +431,41 @@ def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat
     #         volume = _get_and_prepare_volume(i_abs, num_slices, preprocessing_settings, video_path=video_stream)
     #
     #         metadata[i_abs] = get_metadata_dictionary(masks, volume)
+    # Check if inputs are dask arrays
+    is_dask = hasattr(masks_zarr, "compute") and hasattr(video_dat, "compute")
 
-    with tqdm(total=len(frame_list)) as pbar:
-        def parallel_func(i_both):
-            i_mask, i_vol = i_both
+    if is_dask:
+        logging.info("Using Dask to parallelize metadata computation")
+        # If dask, use delayed to parallelize the computation
+        def process_metadata(masks, volume, i_vol):
+            return (i_vol, get_metadata_dictionary(masks, volume, name_mode=name_mode, props_to_save=props_to_save))
+
+        tasks = []
+        for i_mask, i_vol in enumerate(frame_list):
             masks = masks_zarr[i_mask, ...]
             volume = video_dat[i_vol, ...]
-            metadata[i_vol] = get_metadata_dictionary(masks, volume, name_mode=name_mode, props_to_save=props_to_save)
+            tasks.append(dask.delayed(process_metadata)(masks, volume, i_vol))
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
-            for future in concurrent.futures.as_completed(futures):
-                future.result()
-                pbar.update(1)
+        with ProgressBar():
+            results = dask.compute(*tasks)
+
+        for i_vol, meta in results:
+            metadata[i_vol] = meta
+    else:
+        logging.info("Using ThreadPoolExecutor to parallelize metadata computation")
+        # If not dask, use ThreadPoolExecutor to parallelize the computation
+        with tqdm(total=len(frame_list)) as pbar:
+            def parallel_func(i_both):
+                i_mask, i_vol = i_both
+                masks = masks_zarr[i_mask, ...]
+                volume = video_dat[i_vol, ...]
+                metadata[i_vol] = get_metadata_dictionary(masks, volume, name_mode=name_mode, props_to_save=props_to_save)
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+                futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+                    pbar.update(1)
 
     # saving metadata and settings
     if metadata_fname is not None:
