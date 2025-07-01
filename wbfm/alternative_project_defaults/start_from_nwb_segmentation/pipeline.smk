@@ -118,7 +118,7 @@ rule behavior:
 # Then modify the next rules to accept the .nwb as input
 nwb_cfg = project_config.get_nwb_config()
 nwb_path = nwb_cfg.resolve_relative_path_from_config('nwb_filename')
-if nwb_path is None or not os.path.exist(nwb_path):
+if nwb_path is None or not os.path.exists(nwb_path):
     raise FileNotFoundError(f"Could not find neurodata without borders file in the folder: {nwb_cfg.absolute_self_path}")
 
 
