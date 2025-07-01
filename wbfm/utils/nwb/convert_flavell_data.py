@@ -209,7 +209,7 @@ def convert_flavell_to_nwb(
         device=device,
         unit="Voxel gray counts",
         scan_line_rate=2995.,
-        # dimension=None, #  Gives a warning; what should this be?,
+        dimension=frame_shape,  # Gives a warning; what should this be?
         resolution=1.,
         # smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
         rate=imaging_rate,  # sampling rate in hz
@@ -229,7 +229,7 @@ def convert_flavell_to_nwb(
         device=device,
         unit="Voxel gray counts",
         scan_line_rate=2995.,
-        # dimension=None, #  Gives a warning; what should this be?,
+        dimension=frame_shape,  # Gives a warning; what should this be?
         resolution=1.,
         # smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
         rate=imaging_rate,  # sampling rate in hz
