@@ -18,7 +18,7 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
-ex.add_config(project_path=None, model_fname=None, results_subfolder=None, DEBUG=False)
+ex.add_config(project_path=None, model_fname=None, results_subfolder=None, allow_hybrid_loading=True, DEBUG=False)
 
 
 @ex.config
@@ -40,4 +40,6 @@ def main(_config, _run):
     model_fname = _config['model_fname']
     results_subfolder = _config['results_subfolder']
 
-    track_using_barlow_from_config(project_cfg, model_fname, results_subfolder)
+    track_using_barlow_from_config(project_cfg, model_fname, results_subfolder, 
+                                   allow_hybrid_loading=_config['allow_hybrid_loading'],
+                                   debug=DEBUG)
