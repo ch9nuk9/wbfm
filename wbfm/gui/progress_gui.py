@@ -208,7 +208,7 @@ class UiMainWindow(object):
             self.tracesProgress.setValue(0)
 
     def _load_config_files(self, project_path):
-        self.project_data = ProjectData.load_final_project_data(project_path)
+        self.project_data = ProjectData.load_final_project_data(project_path, allow_hybrid_loading=True)
         self.cfg = self.project_data.project_config
 
     def napari_for_masks(self):
