@@ -11,12 +11,13 @@ import argparse
 from wbfm.utils.nwb.utils_nwb_export import CustomDataChunkIterator
 from wbfm.utils.nwb.utils_nwb_export import build_optical_channel_objects, _zimmer_microscope_device
 import dask.array as da
+from tqdm import tqdm
 
 
 def iter_volumes(base_dir, n_start, n_timepoints, channel, segmentation=False):
     """Yield 3D volumes for a given channel. If a file is missing, yield an array of zeros with the correct shape."""
     zero_shape = None
-    for t in range(n_start, n_timepoints):
+    for t in tqdm(range(n_start, n_timepoints), leave=False):
         pattern = get_flavell_timepoint_pattern(base_dir, t, channel, segmentation)
         matches = glob.glob(pattern)
         if matches:
