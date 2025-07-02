@@ -133,7 +133,7 @@ def reindex_segmentation_using_config(project_data: ProjectData, DEBUG=False):
     """
     project_cfg = project_data.project_config
     traces_cfg = project_cfg.get_traces_config()
-    segment_cfg = project_cfg.get_segmentations_config()
+    segment_cfg = project_cfg.get_segmentation_config()
     all_matches, raw_seg_masks, new_masks, min_confidence, out_fname = _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg)
     reindex_segmentation(DEBUG, all_matches, raw_seg_masks, new_masks, min_confidence)
 
