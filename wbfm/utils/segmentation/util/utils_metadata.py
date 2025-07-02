@@ -396,7 +396,7 @@ def recalculate_metadata_from_config(project_cfg, name_mode, DEBUG=False,
 
     frame_list = list(range(video_dat.shape[0]))
 
-    metadata_fname = segment_cfg.config['output_metadata']
+    metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
 
     logging.info(f"Read zarr with size {masks_zarr.shape}")
     logging.info(f"Read video with size {video_dat.shape}")
