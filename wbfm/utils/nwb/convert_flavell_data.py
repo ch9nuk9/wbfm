@@ -14,7 +14,7 @@ import dask.array as da
 from tqdm import tqdm
 
 
-def iter_volumes(base_dir, n_start, n_timepoints, channel, segmentation=False):
+def iter_volumes(base_dir, n_start, n_timepoints, channel=None, segmentation=False):
     """Yield 3D volumes for a given channel. If a file is missing, yield an array of zeros with the correct shape."""
     zero_shape = None
     for t in tqdm(range(n_start, n_timepoints), leave=False):
@@ -60,8 +60,7 @@ def get_flavell_timepoint_pattern(base_dir, t, channel=0, segmentation=False):
         return f'{base_dir}/img_roi_watershed/{t}.nrrd'
 
 
-
-def find_min_max_timepoint(base_dir, channel=0, segmentation=False):
+def find_min_max_timepoint(base_dir, channel=None, segmentation=False):
     """Find the minimum and maximum timepoint index for a given channel in NRRD_cropped."""
     pattern = get_flavell_channel_pattern(base_dir, channel, segmentation)
     matches = glob.glob(pattern)
