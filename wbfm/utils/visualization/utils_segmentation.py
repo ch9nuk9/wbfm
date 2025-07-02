@@ -77,7 +77,7 @@ def _unpack_config_reindexing(traces_cfg, raw_seg_masks, project_cfg):
     try:
         # If it is a zarr or numpy array, then we can just open it like this
         new_masks = zarr.open_like(raw_seg_masks, path=str(out_fname))
-    except AttributeError:
+    except (AttributeError, TypeError):
         # Otherwise we need to copy the metadata manually
         project_cfg.logger.info(f"Raw segmentation masks are not zarr, but {type(raw_seg_masks)}; creating new zarr array")
         # This is the case for dask arrays
