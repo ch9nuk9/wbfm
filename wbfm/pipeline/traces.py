@@ -154,7 +154,7 @@ def full_step_4_make_traces_from_config(project_cfg, allow_only_global_tracker=F
                                                    DEBUG=DEBUG)
 
         # Creates segmentations indexed to tracking
-        project_data = ProjectData.load_final_project_data_from_config(project_cfg, **project_kwargs)
+        project_data = ProjectData.load_final_project_data(project_cfg, **project_kwargs)
         new_mask_fname = reindex_segmentation_using_config(project_data)
 
         # Zips the reindexed segmentations to shrink requirements
@@ -165,13 +165,13 @@ def full_step_4_make_traces_from_config(project_cfg, allow_only_global_tracker=F
         traces_cfg.update_self_on_disk()
 
         # Reads masks from disk, and writes traces
-        project_data = ProjectData.load_final_project_data_from_config(project_cfg, **project_kwargs)
+        project_data = ProjectData.load_final_project_data(project_cfg, **project_kwargs)
         extract_traces_using_config(project_data, name_mode='neuron', DEBUG=DEBUG)
 
         # Also produce the paper-style "final" traces, and copy them to the final traces folder
-        project_data = ProjectData.load_final_project_data_from_config(project_cfg, **project_kwargs)
+        project_data = ProjectData.load_final_project_data(project_cfg, **project_kwargs)
         calc_paper_traces_using_config(project_data)
 
         # By default make some visualizations
-        project_data = ProjectData.load_final_project_data_from_config(project_cfg, **project_kwargs)
+        project_data = ProjectData.load_final_project_data(project_cfg, **project_kwargs)
         make_default_summary_plots_using_config(project_data)
