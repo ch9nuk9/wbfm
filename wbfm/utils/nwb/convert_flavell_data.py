@@ -67,16 +67,27 @@ def find_min_max_timepoint(base_dir, channel=None, segmentation=False):
     min_t = None
     max_t = -1
     for path in matches:
-        # Extract tXXXX from filename
+        # Extract tXXXX from filename if it is a volume, otherwise use the filename directly
         basename = os.path.basename(path)
-        parts = basename.split('_')
-        for part in parts:
-            if part.startswith('t') and part[1:5].isdigit():
-                t = int(part[1:5])
-                if min_t is None or t < min_t:
-                    min_t = t
-                if t > max_t:
-                    max_t = t
+        if segmentation:
+            # Just the basename without the extension
+            parts = basename.split('.')
+            if len(parts) > 1 and parts[0].isdigit():
+                t = int(parts[0])
+            else:
+                continue
+        else:
+            parts = basename.split('_')
+            for part in parts:
+                if part.startswith('t') and part[1:5].isdigit():
+                    t = int(part[1:5])
+                    break
+            else:
+                continue
+        if min_t is None or t < min_t:
+            min_t = t
+        if t > max_t:
+            max_t = t
     return min_t, max_t
 
 
