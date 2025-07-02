@@ -1,8 +1,10 @@
 
 
 def int2name_neuron(i_neuron: int) -> str:
-    assert 0 < i_neuron <= 1000, f"Value {i_neuron} not supported"
-    return f"neuron_{i_neuron:03d}"
+    if 0 < i_neuron < 1000:
+        return f"neuron_{i_neuron:03d}"
+    else:
+        raise ValueError(f"Value {i_neuron} not supported. Neuron IDs should be between 1 and 999.")
 
 
 def int2name_tracklet(i_tracklet: int) -> str:
@@ -16,8 +18,10 @@ def int2name_tracklet(i_tracklet: int) -> str:
     -------
 
     """
-    assert 0 <= i_tracklet <= 1000000, f"Value {i_tracklet} not supported"
-    return f"tracklet_{i_tracklet:07d}"
+    if 0 <= i_tracklet < 1000000:
+        return f"tracklet_{i_tracklet:07d}"
+    else:
+        raise ValueError(f"Value {i_tracklet} not supported. Tracklet IDs should be between 0 and 999999.")
 
 
 def name2int_neuron_and_tracklet(name_neuron: str) -> int:

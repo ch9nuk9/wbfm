@@ -94,12 +94,6 @@ def get_metadata_dictionary(masks, original_vol, name_mode='neuron', props_to_sa
     # Convert back to old (Niklas) style
     dict_of_rows = defaultdict(list)
     for k, v in props.items():
-        if k[0] > 1000:
-            if raise_if_too_many_neurons:
-                raise ValueError(f"Too many neurons detected in volume {k[0]}: {k[1]}")
-            else:
-                logging.warning(f"Too many neurons detected in volume, skipping the rest {k[0]}: {k[1]}")
-                break
         idx = name2int_neuron_and_tracklet(k[0])
 
         # Assume the entries were originally added in regionprops order
