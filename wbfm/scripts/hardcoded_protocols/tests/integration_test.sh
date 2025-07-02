@@ -35,7 +35,7 @@ else
 fi
 
 # Define relevant subfolders
-SUBFOLDERS=("freely_moving" "immobilized" "barlow")
+SUBFOLDERS=("freely_moving" "immobilized" "barlow" "nwb")
 
 # For each subfolder, remove any project folders
 for f in "${SUBFOLDERS[@]}"; do
@@ -52,12 +52,20 @@ done
 
 # Initialize projects, again for each subfolder
 COMMAND=$CODE_DIR/"scripts/cluster/create_multiple_projects_from_data_parent_folder.sh"
+NWB_COMMAND=$CODE_DIR/"scripts/pipeline_alternate/0a-create_new_project_from_nwb.py"
 for f in "${SUBFOLDERS[@]}"; do
-    DATA_DIR=$PARENT_DATA_DIR/$f
+    
     PROJECT_PATH=$PARENT_PROJECT_DIR/$f
     echo "Creating new project in subfolder $PROJECT_PATH"
-    # If there are multiple data folders, create a project for each
-    bash $COMMAND -t "$DATA_DIR" -p "$PROJECT_PATH" -b False
+    # The nwb file is different; it is just the file, not the same project structure
+    if [ "$f" == "nwb" ]; then
+        NWB_FILE=$PARENT_DATA_DIR/$f/"test_data.nwb"
+        python $NWB_COMMAND with project_dir="$PROJECT_PATH" nwb_file="$DATA_DIR" copy_nwb_file=False
+    else
+        # If there are multiple data folders, create a project for each
+        DATA_DIR=$PARENT_DATA_DIR/$f
+        bash $COMMAND -t "$DATA_DIR" -p "$PROJECT_PATH" -b False
+    fi
 done
 
 # Sleep, waiting for the projects to be created
