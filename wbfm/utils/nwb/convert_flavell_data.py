@@ -60,7 +60,7 @@ def get_flavell_timepoint_pattern(base_dir, t, channel=0, segmentation=False):
 
 
 
-def find_min_max_timepoint(base_dir, channel, segmentation=False):
+def find_min_max_timepoint(base_dir, channel=0, segmentation=False):
     """Find the minimum and maximum timepoint index for a given channel in NRRD_cropped."""
     pattern = get_flavell_channel_pattern(base_dir, channel, segmentation)
     matches = glob.glob(pattern)
