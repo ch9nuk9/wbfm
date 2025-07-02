@@ -137,7 +137,11 @@ def reindex_segmentation_using_config(project_data: ProjectData, DEBUG=False):
     raw_seg_masks = project_data.raw_segmentation
 
     all_matches, new_masks, min_confidence, out_fname = _unpack_config_reindexing(traces_cfg, raw_seg_masks, project_cfg)
-    reindex_segmentation(DEBUG, all_matches, raw_seg_masks, new_masks, min_confidence)
+    try:
+        reindex_segmentation(DEBUG, all_matches, raw_seg_masks, new_masks, min_confidence)
+    except OSError as e:
+        project_cfg.logger.error(f"Error reindexing segmentation: {e}; retrying with no parallelization")
+        reindex_segmentation(DEBUG, all_matches, raw_seg_masks, new_masks, min_confidence, max_workers=1)
 
     return out_fname
 

@@ -23,27 +23,19 @@ from wbfm.utils.tracklets.training_data_from_tracklets import build_subset_df_fr
     get_or_recalculate_which_frames, _unpack_config_training_data_conversion
 
 
-def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks, min_confidence):
+def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks, min_confidence, max_workers=4):
     all_lut = all_matches_to_lookup_tables(all_matches, min_confidence=min_confidence)
     all_lut_keys = all_lut.keys()
     if DEBUG:
         all_lut_keys = [0, 1]
         print("DEBUG mode: only doing first 2 volumes")
     # Apply lookup tables to each volume
-    # Also see link for ways to speed this up:
-    # https://stackoverflow.com/questions/14448763/is-there-a-convenient-way-to-apply-a-lookup-table-to-a-large-array-in-numpy
-    # for i_volume, lut in tqdm(all_lut.items()):
-    #     new_masks[i_volume, ...] = lut[seg_masks[i_volume, ...]]
-    #     if DEBUG:
-    #         print("DEBUG mode; quitting after first volume")
-    #         break
     with tqdm(total=len(all_lut)) as pbar:
         def parallel_func(i):
             lut = all_lut[i]
             new_masks[i, ...] = lut[seg_masks[i, ...]]
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            # executor.map(parallel_func, range(len(all_lut)))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_results = {executor.submit(parallel_func, i): i for i in all_lut_keys}
             for future in concurrent.futures.as_completed(future_results):
                 # _ = future_results[future]
@@ -51,19 +43,6 @@ def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks, min_confidenc
                 pbar.update(1)
 
     return
-
-#     with tqdm(total=len(all_lut)) as pbar:
-#
-#         with concurrent.futures.ProcessPoolExecutor(max_workers=16) as executor:
-#             future_results = {executor.submit(_parallel_func, i, new_masks, seg_masks, all_lut): i for i in all_lut_keys}
-#             for future in concurrent.futures.as_completed(future_results):
-#                 _ = future.result()
-#                 pbar.update(1)
-#
-# def _parallel_func(i, new_masks, seg_masks, all_lut):
-#     lut = all_lut[i]
-#     new_masks[i, ...] = lut[seg_masks[i, ...]]
-
 
 def _unpack_config_reindexing(traces_cfg, raw_seg_masks, project_cfg):
 
