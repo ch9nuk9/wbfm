@@ -11,65 +11,85 @@ import argparse
 from wbfm.utils.nwb.utils_nwb_export import CustomDataChunkIterator
 from wbfm.utils.nwb.utils_nwb_export import build_optical_channel_objects, _zimmer_microscope_device
 import dask.array as da
+from tqdm import tqdm
 
 
-def iter_volumes(base_dir, n_timepoints, channel):
-    """Yield 3D volumes for a given channel, skipping missing files."""
-    for t in range(n_timepoints):
-        t_str = f"{t:04d}"
-        pattern = f'{base_dir}/NRRD_cropped/*_t{t_str}_ch{channel}.nrrd'
+def iter_volumes(base_dir, n_start, n_timepoints, channel=None, segmentation=False):
+    """Yield 3D volumes for a given channel. If a file is missing, yield an array of zeros with the correct shape."""
+    zero_shape = None
+    for t in tqdm(range(n_start, n_timepoints), leave=False):
+        pattern = get_flavell_timepoint_pattern(base_dir, t, channel, segmentation)
         matches = glob.glob(pattern)
         if matches:
             path = matches[0]
+            if os.path.exists(path):
+                data, _ = nrrd.read(path)
+                if zero_shape is None:
+                    zero_shape = data.shape
+                yield data
+                continue
+        # If file is missing, yield zeros
+        if zero_shape is not None:
+            yield np.zeros(zero_shape, dtype=np.float32)
         else:
-            continue
-        if os.path.exists(path):
-            data, _ = nrrd.read(path)
-            yield data
-        else:
-            continue
+            # Try to infer shape from the first available file in the directory
+            fallback_pattern = get_flavell_channel_pattern(base_dir, channel, segmentation)
+            fallback_matches = glob.glob(fallback_pattern)
+            if fallback_matches:
+                fallback_data, _ = nrrd.read(fallback_matches[0])
+                zero_shape = fallback_data.shape
+                yield np.zeros(zero_shape, dtype=np.float32)
+            else:
+                raise RuntimeError(f"Cannot determine shape for channel {channel} at time {t}. No files found.")
 
 
-def iter_segmentations(base_dir, n_timepoints):
-    """Yield 3D segmentation volumes, skipping missing files."""
-    for t in range(n_timepoints):
-        path = f'{base_dir}/img_roi_watershed/{t}.nrrd'
-        if os.path.exists(path):
-            data, _ = nrrd.read(path)
-            yield data
-        else:
-            continue
+def get_flavell_channel_pattern(base_dir, channel=0, segmentation=False):
+    """Get the glob pattern for a specific channel in NRRD_cropped."""
+    if not segmentation:
+        return f'{base_dir}/NRRD_cropped/*_ch{channel}.nrrd'
+    else:
+        return f'{base_dir}/img_roi_watershed/*.nrrd'
 
 
-def find_max_timepoint_volumes(base_dir, channel):
-    """Find the maximum timepoint index for a given channel in NRRD_cropped."""
-    pattern = f'{base_dir}/NRRD_cropped/*_ch{channel}.nrrd'
+def get_flavell_timepoint_pattern(base_dir, t, channel=0, segmentation=False):
+    """Get the glob pattern for a specific timepoint and channel in NRRD_cropped."""
+    if not segmentation:
+        t_str = f"{t:04d}"
+        return f'{base_dir}/NRRD_cropped/*_t{t_str}_ch{channel}.nrrd'
+    else:
+        return f'{base_dir}/img_roi_watershed/{t}.nrrd'
+
+
+def find_min_max_timepoint(base_dir, channel=None, segmentation=False):
+    """Find the minimum and maximum timepoint index for a given channel in NRRD_cropped."""
+    pattern = get_flavell_channel_pattern(base_dir, channel, segmentation)
     matches = glob.glob(pattern)
+    min_t = None
     max_t = -1
     for path in matches:
-        # Extract tXXXX from filename
+        # Extract tXXXX from filename if it is a volume, otherwise use the filename directly
         basename = os.path.basename(path)
-        parts = basename.split('_')
-        for part in parts:
-            if part.startswith('t') and part[1:5].isdigit():
-                t = int(part[1:5])
-                if t > max_t:
-                    max_t = t
-    return max_t
+        if segmentation:
+            # Just the basename without the extension
+            parts = basename.split('.')
+            if len(parts) > 1 and parts[0].isdigit():
+                t = int(parts[0])
+            else:
+                continue
+        else:
+            parts = basename.split('_')
+            for part in parts:
+                if part.startswith('t') and part[1:5].isdigit():
+                    t = int(part[1:5])
+                    break
+            else:
+                continue
+        if min_t is None or t < min_t:
+            min_t = t
+        if t > max_t:
+            max_t = t
+    return min_t, max_t
 
-def find_max_timepoint_segmentations(base_dir):
-    """Find the maximum timepoint index for segmentations in img_roi_watershed."""
-    pattern = f'{base_dir}/img_roi_watershed/*.nrrd'
-    matches = glob.glob(pattern)
-    max_t = -1
-    for path in matches:
-        basename = os.path.basename(path)
-        name, ext = os.path.splitext(basename)
-        if name.isdigit():
-            t = int(name)
-            if t > max_t:
-                max_t = t
-    return max_t
 
 def count_valid_volumes(base_dir, channel):
     """Count valid volumes for a channel."""
@@ -87,7 +107,7 @@ def count_valid_segmentations(base_dir, n_timepoints):
     return count
 
 
-def dask_stack_volumes(volume_iter, n_frames, frame_shape):
+def dask_stack_volumes(volume_iter, frame_shape):
     """Stack a generator of volumes into a dask array."""
     # Each block is a single volume (3D), stacked along axis=0 (time)
     return da.stack([da.from_array(vol, chunks=frame_shape) for vol in volume_iter], axis=0)
@@ -133,44 +153,50 @@ def convert_flavell_to_nwb(
 
     # Count valid frames for each channel
     if DEBUG:
-        n_frames = 10
+        start_frame, end_frame = 1, 10
         print("DEBUG mode: limiting to first 10 time points")
     else:
-        n_green = find_max_timepoint_volumes(base_dir, 1)
-        n_red = find_max_timepoint_volumes(base_dir, 2)
-        n_seg = find_max_timepoint_segmentations(base_dir)
-        n_frames = max(n_green, n_red, n_seg)
-        if n_frames == 0:
+        min_green, n_green = find_min_max_timepoint(base_dir, 1, False)
+        min_red, n_red = find_min_max_timepoint(base_dir, 2, False)
+        min_seg, n_seg = find_min_max_timepoint(base_dir, segmentation=True)
+        # We know the last frame here actually exists, so add 1
+        end_frame = max(n_green, n_red, n_seg) + 1
+        start_frame = min(min_green, min_red, min_seg)
+        if end_frame == 0:
             raise RuntimeError("No valid frames found for all channels.")
 
     # Use the first valid green volume to get shape
-    green_gen = iter_volumes(base_dir, n_frames, 1)
+    green_gen = iter_volumes(base_dir, start_frame, end_frame, 1)
     try:
         first_green = next(green_gen)
     except StopIteration:
         raise RuntimeError("No green channel volumes found. Check your input data and n_frames value.")
     frame_shape = first_green.shape
+    print(f"Found {end_frame-start_frame} frames for each channel with shape {frame_shape}")
 
     # Build dask arrays for each channel
-    green_dask = dask_stack_volumes(iter_volumes(base_dir, n_frames, 1), n_frames, frame_shape)
-    red_dask = dask_stack_volumes(iter_volumes(base_dir, n_frames, 2), n_frames, frame_shape)
-    seg_dask = dask_stack_volumes(iter_segmentations(base_dir, n_frames), n_frames, frame_shape)
+    green_dask = dask_stack_volumes(iter_volumes(base_dir, start_frame, end_frame, 1), frame_shape)
+    red_dask = dask_stack_volumes(iter_volumes(base_dir, start_frame, end_frame, 2), frame_shape)
+    print(f"Found red video with shape {red_dask.shape} and green video with shape {green_dask.shape}")
+    seg_dask = dask_stack_volumes(iter_volumes(base_dir, start_frame, end_frame, segmentation=True), frame_shape)
+    print(f"Found segmentation data with shape {seg_dask.shape}")
 
     # Make single multi-channel data series
-    # Flavell data is already TXYZ
-    green_red_dask = da.stack([green_dask, red_dask], axis=-1)
+    # Flavell data is already TXYZ, so stack to make a 5D TXYZC array
+    red_green_dask = da.stack([red_dask, green_dask], axis=-1)
 
-    chunk_seg = (1,) + frame_shape  # chunk along time only
-
-    # Ensure chunk_video matches the number of dimensions in green_red_dask
-    chunk_video = (1,) + green_red_dask.shape[1:-1] + (1,)
-    print(f"Creating NWB file with chunk size {chunk_video} and size {green_red_dask.shape} for green/red data")
+    # Ensure chunk_video matches the number of dimensions in red_green_dask
+    chunk_video = (1,) + red_green_dask.shape[1:-1] + (1,)
+    print(f"Creating NWB file with chunk size {chunk_video} and size {red_green_dask.shape} for green/red data")
     green_red_data = H5DataIO(
-        data=CustomDataChunkIterator(array=green_red_dask, chunk_shape=chunk_video),
+        data=CustomDataChunkIterator(array=red_green_dask, chunk_shape=chunk_video, display_progress=True),
         compression="gzip"
     )
+
+    chunk_seg = (1,) + frame_shape  # chunk along time only
+    print(f"Segmentations will be stored with chunk size {chunk_seg} and size {seg_dask.shape}")
     seg_data = H5DataIO(
-        data=CustomDataChunkIterator(array=seg_dask, chunk_shape=chunk_seg),
+        data=CustomDataChunkIterator(array=seg_dask, chunk_shape=chunk_seg, display_progress=True),
         compression="gzip"
     )
 
@@ -181,7 +207,6 @@ def convert_flavell_to_nwb(
     # Add directly to the file to prevent hdmf.build.errors.OrphanContainerBuildError
     nwbfile.add_imaging_plane(CalcImagingVolume)
 
-    # Add the actual data
     nwbfile.add_acquisition(MultiChannelVolumeSeries(
         name="CalciumImageSeries",
         description="Series of calcium imaging data",
@@ -191,13 +216,18 @@ def convert_flavell_to_nwb(
         device=device,
         unit="Voxel gray counts",
         scan_line_rate=2995.,
-        # dimension=None, #  Gives a warning; what should this be?,
+        dimension=frame_shape,  # Gives a warning; what should this be?
         resolution=1.,
         # smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
         rate=imaging_rate,  # sampling rate in hz
         imaging_volume=CalcImagingVolume,
     ))
-    nwbfile.add_acquisition(MultiChannelVolumeSeries(
+    # Add segmentation under the processed module
+    calcium_imaging_module = nwbfile.create_processing_module(
+        name='CalciumActivity',
+        description='Calcium time series metadata, segmentation, and fluorescence data'
+    )
+    calcium_imaging_module.add(MultiChannelVolumeSeries(
         name="CalciumSeriesSegmentation",
         description="Series of indexed masks associated with calcium segmentation",
         comments="Segmentation masks for calcium imaging data from Flavell lab",
@@ -206,7 +236,7 @@ def convert_flavell_to_nwb(
         device=device,
         unit="Voxel gray counts",
         scan_line_rate=2995.,
-        # dimension=None, #  Gives a warning; what should this be?,
+        dimension=frame_shape,  # Gives a warning; what should this be?
         resolution=1.,
         # smallest meaningful difference (in specified unit) between values in data: i.e. level of precision
         rate=imaging_rate,  # sampling rate in hz

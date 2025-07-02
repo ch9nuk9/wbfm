@@ -85,7 +85,7 @@ def region_props_one_volume(this_mask_volume,
     return red_neurons_one_volume, green_neurons_one_volume
 
 
-def regionprops_one_volume(mask, data, props_to_save, name_mode):
+def regionprops_one_volume(mask, data, props_to_save, name_mode, raise_if_too_many_neurons=False):
     neurons_one_volume = {}
     props = measure.regionprops(mask, intensity_image=data)
 
@@ -93,7 +93,14 @@ def regionprops_one_volume(mask, data, props_to_save, name_mode):
         seg_index = this_neuron['label']
         # final_index = mask2final_name[seg_index]
         # NOTE: This must be synchronized to the df_global_tracks naming and indexing scheme!
-        key_base = (int2name_using_mode(seg_index, name_mode),)
+        try:
+            key_base = (int2name_using_mode(seg_index, name_mode),)
+        except ValueError as e:
+            if raise_if_too_many_neurons:
+                raise e
+            else:
+                print(f"Skipping {name_mode} {seg_index} due to error: {e}")
+                continue
 
         for this_prop in props_to_save:
             key = key_base + (this_prop,)

@@ -13,6 +13,8 @@ from wbfm.utils.general.postprocessing.utils_metadata import regionprops_one_vol
 from wbfm.utils.general.utils_filenames import pickle_load_binary
 from wbfm.utils.external.utils_neuron_names import name2int_neuron_and_tracklet, int2name_neuron
 
+import dask
+from dask.diagnostics import ProgressBar
 import numpy as np
 import pandas as pd
 import zarr
@@ -83,7 +85,8 @@ def OLD_get_metadata_dictionary(masks, original_vol):
     return df
 
 
-def get_metadata_dictionary(masks, original_vol, name_mode='neuron', props_to_save=None):
+def get_metadata_dictionary(masks, original_vol, name_mode='neuron', props_to_save=None,
+                            raise_if_too_many_neurons=False):
     if props_to_save is None:
         props_to_save = ['area', 'weighted_centroid', 'intensity_image', 'label', 'bbox', 'intensity_mean']
     props = regionprops_one_volume(masks, original_vol, props_to_save, name_mode=name_mode)
@@ -92,7 +95,6 @@ def get_metadata_dictionary(masks, original_vol, name_mode='neuron', props_to_sa
     dict_of_rows = defaultdict(list)
     for k, v in props.items():
         idx = name2int_neuron_and_tracklet(k[0])
-        # column_name = k[1]
 
         # Assume the entries were originally added in regionprops order
         dict_of_rows[idx].append(v)
@@ -357,7 +359,8 @@ class DetectedNeurons:
         return f"DetectedNeurons object with {self.num_frames} frames"
 
 
-def recalculate_metadata_from_config(project_cfg, name_mode, DEBUG=False):
+def recalculate_metadata_from_config(project_cfg, name_mode, DEBUG=False,
+                                     **project_kwargs):
     """
 
     Given a project that contains a segmentation, recalculate the metadata
@@ -378,8 +381,8 @@ def recalculate_metadata_from_config(project_cfg, name_mode, DEBUG=False):
     """
     from wbfm.utils.projects.finished_project_data import ProjectData
 
-    project_data = ProjectData.load_final_project_data(project_cfg)
-    segment_cfg = project_data.get_segment_config()
+    project_data = ProjectData.load_final_project_data(project_cfg, **project_kwargs)
+    segment_cfg = project_data.project_config.get_segmentation_config()
 
     # Load from the project directly instead of passing the config files
     masks_zarr = project_data.raw_segmentation
@@ -393,7 +396,7 @@ def recalculate_metadata_from_config(project_cfg, name_mode, DEBUG=False):
 
     frame_list = list(range(video_dat.shape[0]))
 
-    metadata_fname = segment_cfg.config['output_metadata']
+    metadata_fname = segment_cfg.resolve_relative_path_from_config('output_metadata')
 
     logging.info(f"Read zarr with size {masks_zarr.shape}")
     logging.info(f"Read video with size {video_dat.shape}")
@@ -421,27 +424,41 @@ def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat
     """
     metadata = dict()
 
-    # Loop again in order to calculate metadata and possibly postprocess
-    # with tifffile.TiffFile(video_path) as video_stream:
-    #     for i_rel, i_abs in tqdm(enumerate(frame_list), total=len(frame_list)):
-    #         masks = masks_zarr[i_rel, :, :, :]
-    #         # TODO: Use a disk-saved preprocessing artifact instead of recalculating
-    #         volume = _get_and_prepare_volume(i_abs, num_slices, preprocessing_settings, video_path=video_stream)
-    #
-    #         metadata[i_abs] = get_metadata_dictionary(masks, volume)
+    # Check if inputs are dask arrays
+    is_dask = hasattr(masks_zarr, "compute") and hasattr(video_dat, "compute")
 
-    with tqdm(total=len(frame_list)) as pbar:
-        def parallel_func(i_both):
-            i_mask, i_vol = i_both
+    if is_dask:
+        logging.info("Using Dask to parallelize metadata computation")
+        # If dask, use delayed to parallelize the computation
+        def process_metadata(masks, volume, i_vol):
+            return (i_vol, get_metadata_dictionary(masks, volume, name_mode=name_mode, props_to_save=props_to_save))
+
+        tasks = []
+        for i_mask, i_vol in enumerate(frame_list):
             masks = masks_zarr[i_mask, ...]
             volume = video_dat[i_vol, ...]
-            metadata[i_vol] = get_metadata_dictionary(masks, volume, name_mode=name_mode, props_to_save=props_to_save)
+            tasks.append(dask.delayed(process_metadata)(masks, volume, i_vol))
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
-            for future in concurrent.futures.as_completed(futures):
-                future.result()
-                pbar.update(1)
+        with ProgressBar():
+            results = dask.compute(*tasks)
+
+        for i_vol, meta in results:
+            metadata[i_vol] = meta
+    else:
+        logging.info("Using ThreadPoolExecutor to parallelize metadata computation")
+        # If not dask, use ThreadPoolExecutor to parallelize the computation
+        with tqdm(total=len(frame_list)) as pbar:
+            def parallel_func(i_both):
+                i_mask, i_vol = i_both
+                masks = masks_zarr[i_mask, ...]
+                volume = video_dat[i_vol, ...]
+                metadata[i_vol] = get_metadata_dictionary(masks, volume, name_mode=name_mode, props_to_save=props_to_save)
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+                futures = {executor.submit(parallel_func, i): i for i in enumerate(frame_list)}
+                for future in concurrent.futures.as_completed(futures):
+                    future.result()
+                    pbar.update(1)
 
     # saving metadata and settings
     if metadata_fname is not None:

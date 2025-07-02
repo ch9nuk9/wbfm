@@ -913,9 +913,8 @@ def make_heatmap_using_project(project_data: ProjectData, to_save=True, plot_kwa
     return fig
 
 
-def make_default_summary_plots_using_config(project_cfg):
+def make_default_summary_plots_using_config(proj_dat: ProjectData):
     # Note: reloads the project data to properly read the new trace h5 files
-    proj_dat = ProjectData.load_final_project_data_from_config(project_cfg)
     logger = proj_dat.logger
     logger.info("Making default grid plots")
     grid_opt = dict(channel_mode='all', calculation_mode='integration', min_nonnan=0.5)

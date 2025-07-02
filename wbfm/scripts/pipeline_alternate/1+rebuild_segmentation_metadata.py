@@ -17,7 +17,7 @@ SETTINGS.CONFIG.READ_ONLY_CONFIG = False
 
 # Initialize sacred experiment
 ex = Experiment(save_git_info=False)
-ex.add_config(project_path=None, out_fname=None, DEBUG=False)
+ex.add_config(project_path=None, out_fname=None, allow_hybrid_loading=True, DEBUG=False)
 
 
 @ex.config
@@ -29,4 +29,6 @@ def cfg(project_path, DEBUG):
 def main(_config, _run):
     sacred.commands.print_config(_run)
 
-    recalculate_metadata_from_config(_config['project_config'], name_mode='neuron', DEBUG=_config['DEBUG'])
+    recalculate_metadata_from_config(_config['project_config'], name_mode='neuron',
+                                     allow_hybrid_loading=_config['allow_hybrid_loading'], 
+                                     DEBUG=_config['DEBUG'])

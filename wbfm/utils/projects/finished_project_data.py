@@ -686,28 +686,43 @@ class ProjectData:
 
         # Hybrid loading using both styles:
         #   If the project was loaded via a config file path, but has steps missing, then try to also load the nwb
-        preprocessing_class = project_data.project_config.get_preprocessing_class()
-        has_raw_data = preprocessing_class.has_raw_data
-        if not loaded_via_nwb and allow_hybrid_loading and not has_raw_data:
-            project_data.logger.info("Missing raw data when loading from project config, "
-                                     "attempting to load remaining steps from nwb file")
+        if not loaded_via_nwb and allow_hybrid_loading:
             cfg_nwb = project_data.project_config.get_nwb_config()
             nwb_filename = cfg_nwb.resolve_relative_path_from_config('nwb_filename')
             if nwb_filename is not None:
-                project_data.logger.info(f"Found nwb file at {nwb_filename}")
+                project_data.logger.info(f"Found nwb file at {nwb_filename}; attempting to load additional data or analysis")
                 initialization_kwargs = kwargs.get('initialization_kwargs', dict())
                 project_data_nwb = ProjectData.load_final_project_data_from_nwb(nwb_filename, **initialization_kwargs)
-                # For now, only allow raw data to be loaded from the nwb file
+                
+                # First: raw data loaded from the nwb file
                 nwb_preprocessing_class = project_data_nwb.project_config.get_preprocessing_class()
-                if nwb_preprocessing_class.has_raw_data:
-                    # Merge the classes (data from nwb, proper config file links from project)
-                    nwb_preprocessing_class.cfg_preprocessing = preprocessing_class.cfg_preprocessing
-                    nwb_preprocessing_class.cfg_project = preprocessing_class.cfg_project
-                    project_data.project_config._preprocessing_class = nwb_preprocessing_class
-                    project_data._nwb_io = project_data_nwb._nwb_io
-                    project_data.logger.info(f"Successfully imported raw data from nwb file")
-                else:
-                    project_data.logger.info(f"Did not find raw data in nwb file, continuing")
+                preprocessing_class = project_data.project_config.get_preprocessing_class()
+                if not preprocessing_class.has_raw_data:
+                    if nwb_preprocessing_class.has_raw_data:
+                        # Merge the classes (data from nwb, proper config file links from project)
+                        nwb_preprocessing_class.cfg_preprocessing = preprocessing_class.cfg_preprocessing
+                        nwb_preprocessing_class.cfg_project = preprocessing_class.cfg_project
+                        project_data.project_config._preprocessing_class = nwb_preprocessing_class
+                        project_data._nwb_io = project_data_nwb._nwb_io
+                        project_data.logger.info(f"Successfully imported raw data from nwb file")
+                    else:
+                        project_data.logger.info(f"Did not find raw data in nwb file, continuing")
+                # Second: load preprocessed data
+                if project_data.red_data is None:
+                    if project_data_nwb.red_data is not None:
+                        project_data.red_data = project_data_nwb.red_data
+                        project_data.green_data = project_data_nwb.green_data
+                        project_data.logger.info(f"Successfully loaded red and green data from nwb file (no metadata loaded)")
+                    else:
+                        project_data.logger.info(f"Did not find red and green data in nwb file, continuing")
+
+                # Third: load raw segmentation
+                if project_data.raw_segmentation is None:
+                    if project_data_nwb.raw_segmentation is not None:
+                        project_data.raw_segmentation = project_data_nwb.raw_segmentation
+                        project_data.logger.info(f"Successfully loaded raw segmentation from nwb file (no metadata loaded)")
+                    else:
+                        project_data.logger.info(f"Did not find raw segmentation in nwb file, continuing")
             else:
                 project_data.logger.info(f"Found no nwb file, continuing")
 
@@ -813,6 +828,14 @@ class ProjectData:
             obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
         except (KeyError, AttributeError) as e:
             obj.logger.warning(f"Could not load segmentation from NWB file: {e}")
+
+        try:
+            # Transpose data from TXYZ to TZXY
+            obj.raw_segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['RawCalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
+        except (KeyError, AttributeError) as e:
+            # Set to be equal to the segmentation, if it exists
+            if obj.segmentation is not None:
+                obj.raw_segmentation = obj.segmentation
 
         p = PhysicalUnitConversion()
         if 'CalciumImageSeries' in nwb_obj.acquisition:
@@ -2268,7 +2291,11 @@ class ProjectData:
     def raw_data_dir(self):
         if self.project_config is None:
             return None
-        return self.project_config.get_folder_for_all_channels()
+        try:
+            return self.project_config.get_folder_for_all_channels()
+        except IncompleteConfigFileError:
+            self.logger.warning("No project config found; cannot load raw data directory")
+            return None
 
     @property
     def x_lim(self):

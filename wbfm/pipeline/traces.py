@@ -3,6 +3,7 @@ from collections import defaultdict
 
 import numpy as np
 
+from wbfm.utils import traces
 from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
 from wbfm.utils.general.postprocessing.utils_metadata import region_props_all_volumes, \
     _convert_nested_dict_to_dataframe
@@ -16,10 +17,7 @@ from wbfm.utils.visualization.plot_traces import make_default_summary_plots_usin
 from wbfm.utils.visualization.utils_segmentation import _unpack_config_reindexing, reindex_segmentation
 
 
-def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
-                                               track_cfg: SubfolderConfigFile,
-                                               traces_cfg: SubfolderConfigFile,
-                                               project_cfg: ModularProjectConfig,
+def match_segmentation_and_tracks_using_config(project_data: ProjectData,
                                                allow_only_global_tracker: bool = False,
                                                match_using_indices: bool = False,
                                                DEBUG: bool = False) -> None:
@@ -46,9 +44,10 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
     -------
 
     """
+    project_cfg = project_data.project_config
+    track_cfg = project_cfg.get_tracking_config()
+    traces_cfg = project_cfg.get_traces_config()
     max_dist, params_start_volume, num_frames = _unpack_configs_for_traces(project_cfg, track_cfg)
-
-    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     final_tracks = project_data.final_tracks
 
     # Sanity check: make sure that this is not just the global tracker, unless that is explicitly allowed
@@ -91,16 +90,16 @@ def match_segmentation_and_tracks_using_config(segment_cfg: SubfolderConfigFile,
     project_cfg.pickle_data_in_local_project(all_matches, relative_fname)
 
 
-def extract_traces_using_config(project_cfg: SubfolderConfigFile,
-                                traces_cfg: SubfolderConfigFile,
+def extract_traces_using_config(project_data: ProjectData,
                                 name_mode='neuron',
                                 DEBUG=False):
     """
     Final step that loops through original data and extracts traces using labeled masks
     """
+    project_cfg = project_data.project_config
+    traces_cfg = project_cfg.get_traces_config()
     coords, reindexed_masks, frame_list, params_start_volume = \
         _unpack_configs_for_extraction(project_cfg, traces_cfg)
-    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
 
     red_all_neurons, green_all_neurons = region_props_all_volumes(
         reindexed_masks,
@@ -119,60 +118,60 @@ def extract_traces_using_config(project_cfg: SubfolderConfigFile,
     _save_traces_as_hdf_and_update_configs(final_neuron_names, df_green, df_red, traces_cfg)
 
 
-def calc_paper_traces_using_config(project_cfg: ModularProjectConfig,
-                                  DEBUG=False):
+def calc_paper_traces_using_config(project_data: ProjectData,
+                                   DEBUG=False):
     """
     Calculate paper traces using the traces config
     """
     # Also produce the paper-style "final" traces, and copy them to the final traces folder
-    project_data = ProjectData.load_final_project_data_from_config(project_cfg)
     project_data.calc_all_paper_traces()
     project_data.copy_paper_traces_to_main_folder()
 
-def reindex_segmentation_using_config(traces_cfg: SubfolderConfigFile,
-                                      segment_cfg: SubfolderConfigFile,
-                                      project_cfg: ModularProjectConfig,
-                                      DEBUG=False):
+def reindex_segmentation_using_config(project_data: ProjectData, DEBUG=False):
     """
     Reindexes segmentation, which originally has arbitrary numbers, to reflect tracking
     """
+    project_cfg = project_data.project_config
+    traces_cfg = project_cfg.get_traces_config()
+    segment_cfg = project_cfg.get_segmentations_config()
     all_matches, raw_seg_masks, new_masks, min_confidence, out_fname = _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg)
     reindex_segmentation(DEBUG, all_matches, raw_seg_masks, new_masks, min_confidence)
 
     return out_fname
 
 
-def full_step_4_make_traces_from_config(project_cfg, allow_only_global_tracker=False, DEBUG=False):
+def full_step_4_make_traces_from_config(project_cfg, allow_only_global_tracker=False, 
+                                        DEBUG=False, **project_kwargs):
     project_dir = project_cfg.project_dir
-    seg_cfg = project_cfg.get_segmentation_config()
-    track_cfg = project_cfg.get_tracking_config()
-    traces_cfg = project_cfg.get_traces_config()
+    project_data = ProjectData.load_final_project_data(project_cfg, **project_kwargs)
     # Set environment variables to (try to) deal with rare blosc decompression errors
     os.environ["BLOSC_NOLOCK"] = "1"
     os.environ["BLOSC_NTHREADS"] = "1"
     with safe_cd(project_dir):
         # Overwrites matching pickle object; nothing needs to be reloaded
-        match_segmentation_and_tracks_using_config(seg_cfg,
-                                                   track_cfg,
-                                                   traces_cfg,
-                                                   project_cfg,
+        match_segmentation_and_tracks_using_config(project_data,
                                                    allow_only_global_tracker=allow_only_global_tracker,
                                                    DEBUG=DEBUG)
 
         # Creates segmentations indexed to tracking
-        new_mask_fname = reindex_segmentation_using_config(traces_cfg, seg_cfg, project_cfg)
+        project_data = ProjectData.load_final_project_data_from_config(project_cfg, **project_kwargs)
+        new_mask_fname = reindex_segmentation_using_config(project_data)
 
         # Zips the reindexed segmentations to shrink requirements
         out_fname_zip = str(zip_raw_data_zarr(new_mask_fname))
+        traces_cfg = project_data.project_config.get_traces_config()
         relative_fname = traces_cfg.unresolve_absolute_path(out_fname_zip)
         traces_cfg.config['reindexed_masks'] = relative_fname
         traces_cfg.update_self_on_disk()
 
         # Reads masks from disk, and writes traces
-        extract_traces_using_config(project_cfg, traces_cfg, name_mode='neuron', DEBUG=DEBUG)
+        project_data = ProjectData.load_final_project_data_from_config(project_cfg, **project_kwargs)
+        extract_traces_using_config(project_data, name_mode='neuron', DEBUG=DEBUG)
 
         # Also produce the paper-style "final" traces, and copy them to the final traces folder
-        calc_paper_traces_using_config(project_cfg)
+        project_data = ProjectData.load_final_project_data_from_config(project_cfg, **project_kwargs)
+        calc_paper_traces_using_config(project_data)
 
         # By default make some visualizations
-        make_default_summary_plots_using_config(project_cfg)
+        project_data = ProjectData.load_final_project_data_from_config(project_cfg, **project_kwargs)
+        make_default_summary_plots_using_config(project_data)
