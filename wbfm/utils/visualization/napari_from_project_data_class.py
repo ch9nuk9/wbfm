@@ -194,8 +194,7 @@ class NapariLayerInitializer:
         if 'Raw segmentation' in which_layers:
             if project_data.raw_segmentation is not None:
                 layer_name = 'Raw segmentation'
-                seg_array = zarr.array(project_data.raw_segmentation)
-                viewer.add_labels(seg_array, name=layer_name,
+                viewer.add_labels(project_data.raw_segmentation, name=layer_name,
                                   scale=scale, opacity=0.8, visible=force_all_visible,
                                   rendering='translucent')
                 layers_actually_added.append(layer_name)
