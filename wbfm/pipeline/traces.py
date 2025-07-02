@@ -102,14 +102,17 @@ def extract_traces_using_config(project_data: ProjectData,
     coords, reindexed_masks, frame_list, params_start_volume = \
         _unpack_configs_for_extraction(project_cfg, traces_cfg)
 
-    red_all_neurons, green_all_neurons = region_props_all_volumes(
-        reindexed_masks,
-        project_data.red_data,
-        project_data.green_data,
-        frame_list,
-        params_start_volume,
-        name_mode
-    )
+    opt = dict(name_mode=name_mode, reindexed_masks=reindexed_masks,
+               frame_list=frame_list, params_start_volume=params_start_volume,
+               red_video=project_data.red_data,
+               green_video=project_data.green_data)
+    try:
+        red_all_neurons, green_all_neurons = region_props_all_volumes(**opt)
+    except OSError as e:
+        project_cfg.logger.error(f"Error extracting traces: {e}; retrying with no parallelization")
+        # Retry without parallelization
+        opt['max_workers'] = 1
+        red_all_neurons, green_all_neurons = region_props_all_volumes(**opt)
 
     df_green = _convert_nested_dict_to_dataframe(coords, frame_list, green_all_neurons)
     df_red = _convert_nested_dict_to_dataframe(coords, frame_list, red_all_neurons)
