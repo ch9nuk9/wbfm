@@ -106,7 +106,7 @@ fi
 
 # NWB, which is also barlow but needs a special snakemake file as well
 PROJECT_PATH=$PARENT_PROJECT_DIR/"nwb"
-NEW_NWB_CONFIG=$CODE_DIR/"alternative_project_defaults/nwb/pipeline.smk"
+NEW_NWB_CONFIG=$CODE_DIR/"alternative_project_defaults/start_from_nwb_segmentation/pipeline.smk"
 
 PROJECT_PATH=$PARENT_PROJECT_DIR/"nwb"
 bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
