@@ -457,6 +457,9 @@ class ModularProjectConfig(ConfigFileWithProjectContext):
                     cfg = dict()
                 else:
                     raise e
+            except OSError as e:
+                logging.error(f"Could not load config file {subconfig_path} in project {project_dir}: {e}")
+                raise e
         subfolder = subconfig_path.parent
 
         args = dict(_self_path=str(subconfig_path),
