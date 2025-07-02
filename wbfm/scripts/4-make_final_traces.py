@@ -29,7 +29,7 @@ def cfg(project_path, allow_only_global_tracker, DEBUG):
     cfg = ModularProjectConfig(project_path)
     cfg.setup_logger('step_4.log')
 
-    check_all_needed_data_for_step(cfg, 4, training_data_required=False)
+    # check_all_needed_data_for_step(cfg, 4, training_data_required=False)
 
     if not DEBUG:
         using_monkeypatch()
