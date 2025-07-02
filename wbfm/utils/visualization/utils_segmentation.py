@@ -3,6 +3,7 @@ import logging
 import os
 from collections import defaultdict
 from pathlib import Path
+from re import A
 
 import numpy as np
 import pandas as pd
@@ -73,11 +74,12 @@ def _unpack_config_reindexing(traces_cfg, raw_seg_masks, project_cfg):
         out_fname = str(Path(out_fname).with_suffix(''))
     project_cfg.logger.info(f"Saving masks at {out_fname}")
     # Check if the raw_seg_masks are zarr or dask
-    if isinstance(raw_seg_masks, zarr.core.Array):
-        # If it is a zarr array, then we can just open it like this
+    try:
+        # If it is a zarr or numpy array, then we can just open it like this
         new_masks = zarr.open_like(raw_seg_masks, path=str(out_fname))
-    else:
+    except AttributeError:
         # Otherwise we need to copy the metadata manually
+        project_cfg.logger.info(f"Raw segmentation masks are not zarr, but {type(raw_seg_masks)}; creating new zarr array")
         # This is the case for dask arrays
         chunks = list(raw_seg_masks.chunksize)
         # Replace the first element with 1, i.e. one chunk per time slice
