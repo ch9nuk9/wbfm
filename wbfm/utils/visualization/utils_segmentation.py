@@ -64,10 +64,7 @@ def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks, min_confidenc
 #     new_masks[i, ...] = lut[seg_masks[i, ...]]
 
 
-def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
-    # Get original segmentation
-    seg_fname = segment_cfg.resolve_relative_path_from_config('output_masks')
-    raw_seg_masks = zarr.open(seg_fname)
+def _unpack_config_reindexing(traces_cfg, raw_seg_masks, project_cfg):
 
     relative_path = traces_cfg.config['reindexed_masks']
     out_fname = project_cfg.resolve_relative_path(relative_path)
@@ -75,7 +72,20 @@ def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
         # Then it was already zipped, and should be written normally for this first step
         out_fname = str(Path(out_fname).with_suffix(''))
     project_cfg.logger.info(f"Saving masks at {out_fname}")
-    new_masks = zarr.open_like(raw_seg_masks, path=str(out_fname))
+    # Check if the raw_seg_masks are zarr or dask
+    if isinstance(raw_seg_masks, zarr.core.Array):
+        # If it is a zarr array, then we can just open it like this
+        new_masks = zarr.open_like(raw_seg_masks, path=str(out_fname))
+    else:
+        # Otherwise we need to copy the metadata manually
+        # This is the case for dask arrays
+        new_masks = zarr.open(
+            str(out_fname),
+            shape=raw_seg_masks.shape,
+            dtype=raw_seg_masks.dtype,
+            chunks=raw_seg_masks.chunks,
+            mode='w'
+        )
 
     # Get tracking (dataframe) with neuron names
     matches_fname = traces_cfg.resolve_relative_path_from_config('all_matches')
@@ -84,7 +94,7 @@ def _unpack_config_reindexing(traces_cfg, segment_cfg, project_cfg):
 
     min_confidence = traces_cfg.config['traces']['min_confidence']
 
-    return all_matches, raw_seg_masks, new_masks, min_confidence, out_fname
+    return all_matches, new_masks, min_confidence, out_fname
 
 
 def create_spherical_segmentation(this_config, sphere_radius, DEBUG=False):
