@@ -42,4 +42,4 @@ def main(_config, _run):
 
     track_using_barlow_from_config(project_cfg, model_fname, results_subfolder, 
                                    allow_hybrid_loading=_config['allow_hybrid_loading'],
-                                   debug=DEBUG)
+                                   DEBUG=DEBUG)
