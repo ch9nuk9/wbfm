@@ -60,7 +60,7 @@ for f in "${SUBFOLDERS[@]}"; do
     # The nwb file is different; it is just the file, not the same project structure
     if [ "$f" == "nwb" ]; then
         NWB_FILE=$PARENT_DATA_DIR/$f/"test_data.nwb"
-        python $NWB_COMMAND with project_dir="$PROJECT_PATH" nwb_file="$DATA_DIR" copy_nwb_file=True
+        python $NWB_COMMAND with project_dir="$PROJECT_PATH" nwb_file="$NWB_FILE" copy_nwb_file=True
     else
         # If there are multiple data folders, create a project for each
         DATA_DIR=$PARENT_DATA_DIR/$f
