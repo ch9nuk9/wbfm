@@ -103,3 +103,15 @@ if [ -z "$USE_CLUSTER" ]; then
 else
   bash $COMMAND -t "$PROJECT_PATH" -s traces_and_behavior $RUNME_ARGS
 fi
+
+# NWB, which is also barlow but needs a special snakemake file as well
+PROJECT_PATH=$PARENT_PROJECT_DIR/"nwb"
+NEW_NWB_CONFIG=$CODE_DIR/"alternative_project_defaults/nwb/pipeline.smk"
+
+PROJECT_PATH=$PARENT_PROJECT_DIR/"nwb"
+bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_CONFIG"
+bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_BARLOW_CONFIG"
+bash $SLURM_UPDATE_COMMAND -t "$PROJECT_PATH" -c "$NEW_NWB_CONFIG"
+
+bash $COMMAND -t "$PROJECT_PATH" -s traces $RUNME_ARGS
+
