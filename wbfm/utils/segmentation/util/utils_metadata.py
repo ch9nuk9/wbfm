@@ -85,7 +85,8 @@ def OLD_get_metadata_dictionary(masks, original_vol):
     return df
 
 
-def get_metadata_dictionary(masks, original_vol, name_mode='neuron', props_to_save=None):
+def get_metadata_dictionary(masks, original_vol, name_mode='neuron', props_to_save=None,
+                            raise_if_too_many_neurons=False):
     if props_to_save is None:
         props_to_save = ['area', 'weighted_centroid', 'intensity_image', 'label', 'bbox', 'intensity_mean']
     props = regionprops_one_volume(masks, original_vol, props_to_save, name_mode=name_mode)
@@ -93,8 +94,13 @@ def get_metadata_dictionary(masks, original_vol, name_mode='neuron', props_to_sa
     # Convert back to old (Niklas) style
     dict_of_rows = defaultdict(list)
     for k, v in props.items():
+        if k[0] > 1000:
+            if raise_if_too_many_neurons:
+                raise ValueError(f"Too many neurons detected in volume {k[0]}: {k[1]}")
+            else:
+                logging.warning(f"Too many neurons detected in volume, skipping the rest {k[0]}: {k[1]}")
+                break
         idx = name2int_neuron_and_tracklet(k[0])
-        # column_name = k[1]
 
         # Assume the entries were originally added in regionprops order
         dict_of_rows[idx].append(v)
@@ -424,14 +430,6 @@ def calc_metadata_full_video(frame_list: list, masks_zarr: zarr.Array, video_dat
     """
     metadata = dict()
 
-    # Loop again in order to calculate metadata and possibly postprocess
-    # with tifffile.TiffFile(video_path) as video_stream:
-    #     for i_rel, i_abs in tqdm(enumerate(frame_list), total=len(frame_list)):
-    #         masks = masks_zarr[i_rel, :, :, :]
-    #         # TODO: Use a disk-saved preprocessing artifact instead of recalculating
-    #         volume = _get_and_prepare_volume(i_abs, num_slices, preprocessing_settings, video_path=video_stream)
-    #
-    #         metadata[i_abs] = get_metadata_dictionary(masks, volume)
     # Check if inputs are dask arrays
     is_dask = hasattr(masks_zarr, "compute") and hasattr(video_dat, "compute")
 
