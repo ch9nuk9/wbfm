@@ -79,11 +79,14 @@ def _unpack_config_reindexing(traces_cfg, raw_seg_masks, project_cfg):
     else:
         # Otherwise we need to copy the metadata manually
         # This is the case for dask arrays
+        chunks = list(raw_seg_masks.chunksize)
+        # Replace the first element with 1, i.e. one chunk per time slice
+        chunks = tuple([1] + chunks[1:])
         new_masks = zarr.open(
             str(out_fname),
             shape=raw_seg_masks.shape,
             dtype=raw_seg_masks.dtype,
-            chunks=raw_seg_masks.chunks,
+            chunks=chunks,
             mode='w'
         )
 
