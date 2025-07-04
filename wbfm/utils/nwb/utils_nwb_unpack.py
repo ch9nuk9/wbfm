@@ -101,4 +101,6 @@ def unpack_nwb_to_project_structure(project_dir, nwb_path=None):
     #     meta_path = seg_dir / "segmentation_metadata.pkl"
     #     project_data.segmentation_metadata.save(meta_path)
 
-    print(f"Project structure populated from NWB at {project_dir}")
+    # Reload the project data to ensure all paths are updated
+    project_data.logger.info("NWB unpacking complete. See project structure below for details.")
+    project_data = ProjectData.load_final_project_data_from_config(project_dir)
