@@ -131,6 +131,7 @@ def calc_paper_traces_using_config(project_data: ProjectData,
     project_data.calc_all_paper_traces()
     project_data.copy_paper_traces_to_main_folder()
 
+
 def reindex_segmentation_using_config(project_data: ProjectData, DEBUG=False):
     """
     Reindexes segmentation, which originally has arbitrary numbers, to reflect tracking
