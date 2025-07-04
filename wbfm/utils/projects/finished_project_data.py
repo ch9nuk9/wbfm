@@ -697,13 +697,18 @@ class ProjectData:
                 # First: raw data loaded from the nwb file
                 nwb_preprocessing_class = project_data_nwb.project_config.get_preprocessing_class()
                 preprocessing_class = project_data.project_config.get_preprocessing_class()
+
+                def _update_project_with_nwb_file_handles():
+                    project_data._nwb_io = project_data_nwb._nwb_io
+                    project_data._nwb_obj = project_data_nwb._nwb_obj
+
                 if not preprocessing_class.has_raw_data:
                     if nwb_preprocessing_class.has_raw_data:
                         # Merge the classes (data from nwb, proper config file links from project)
                         nwb_preprocessing_class.cfg_preprocessing = preprocessing_class.cfg_preprocessing
                         nwb_preprocessing_class.cfg_project = preprocessing_class.cfg_project
                         project_data.project_config._preprocessing_class = nwb_preprocessing_class
-                        project_data._nwb_io = project_data_nwb._nwb_io
+                        _update_project_with_nwb_file_handles()
                         project_data.logger.info(f"Successfully imported raw data from nwb file")
                     else:
                         project_data.logger.info(f"Did not find raw data in nwb file, continuing")
@@ -712,6 +717,7 @@ class ProjectData:
                     if project_data_nwb.red_data is not None:
                         project_data.red_data = project_data_nwb.red_data
                         project_data.green_data = project_data_nwb.green_data
+                        _update_project_with_nwb_file_handles()
                         project_data.logger.info(f"Successfully loaded red and green data from nwb file (no metadata loaded)")
                     else:
                         project_data.logger.info(f"Did not find red and green data in nwb file, continuing")
@@ -720,6 +726,7 @@ class ProjectData:
                 if project_data.raw_segmentation is None:
                     if project_data_nwb.raw_segmentation is not None:
                         project_data.raw_segmentation = project_data_nwb.raw_segmentation
+                        _update_project_with_nwb_file_handles()
                         project_data.logger.info(f"Successfully loaded raw segmentation from nwb file (no metadata loaded)")
                     else:
                         project_data.logger.info(f"Did not find raw segmentation in nwb file, continuing")
@@ -798,17 +805,19 @@ class ProjectData:
         obj.project_config._preprocessing_class = preprocessing_settings
         if 'CalciumImageSeries' in nwb_obj.acquisition:
             # Transpose data from TXYZC to TZXY (splitting the channel)
-            obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
-            obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 1].transpose((0, 3, 1, 2))
+            obj.red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data, lock=True)[..., 0].transpose((0, 3, 1, 2))
+            obj.green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data, lock=True)[..., 1].transpose((0, 3, 1, 2))
+            print(f"Loaded red and green data from NWB file: {obj.red_data.shape}")
+
             # Load this into the raw data as well; needed for certain steps
-            preprocessing_settings._raw_red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
-            preprocessing_settings._raw_green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data)[..., 1].transpose(
+            preprocessing_settings._raw_red_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data, lock=True)[..., 0].transpose((0, 3, 1, 2))
+            preprocessing_settings._raw_green_data = da.from_array(nwb_obj.acquisition['CalciumImageSeries'].data, lock=True)[..., 1].transpose(
                 (0, 3, 1, 2))
         if 'RawCalciumImageSeries' in nwb_obj.acquisition:
             # Load this, but it's not actually part of the main ProjectData class
             # Transpose data from TXYZC to TZXY (splitting the channel)
-            preprocessing_settings._raw_red_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data)[..., 0].transpose((0, 3, 1, 2))
-            preprocessing_settings._raw_green_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data)[..., 1].transpose(
+            preprocessing_settings._raw_red_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data, lock=True)[..., 0].transpose((0, 3, 1, 2))
+            preprocessing_settings._raw_green_data = da.from_array(nwb_obj.acquisition['RawCalciumImageSeries'].data, lock=True)[..., 1].transpose(
                 (0, 3, 1, 2))
 
         # Note that there should always be 'CalciumActivity' but it may be a stub
@@ -848,6 +857,7 @@ class ProjectData:
 
         # Save the raw object
         obj._nwb_io = nwb_io
+        obj._nwb_obj = nwb_obj
 
         return obj
 

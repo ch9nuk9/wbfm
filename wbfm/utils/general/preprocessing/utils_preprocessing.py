@@ -6,8 +6,6 @@ import pickle
 import threading
 from dataclasses import dataclass, field
 from typing import List, Optional
-
-from skimage import img_as_uint
 from skimage.transform import resize
 
 from imutils import MicroscopeDataReader
@@ -506,7 +504,7 @@ class PreprocessingSettings(RawFluorescenceData):
             if actually_open:
                 try:
                     dat = MicroscopeDataReader(fname, as_raw_tiff=False, verbose=0)
-                except KeyError:
+                except (KeyError, tifffile.TiffFileError):
                     logging.warning(f"Could not open {fname} as a MicroscopeDataReader; "
                                     f"possibly it is not a valid ndtiff folder")
                     dat = None

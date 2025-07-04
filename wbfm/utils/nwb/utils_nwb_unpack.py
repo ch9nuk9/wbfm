@@ -29,8 +29,10 @@ def unpack_nwb_to_project_structure(project_dir, nwb_path=None):
         if nwb_path is None or not os.path.exists(nwb_path):
             raise FileNotFoundError(f"Expected NWB file at {nwb_path}; otherwise, please provide the nwb_path argument.")
     else:
+        raise NotImplementedError("This method won't find the proper subfolder config files")
         # This should be within a project already
         project_data = ProjectData.load_final_project_data_from_nwb(nwb_path)
+        cfg = project_data.project_config
 
     # Write preprocessed videos as zarr
     if project_data.red_data is not None and project_data.green_data is not None:
@@ -50,8 +52,8 @@ def unpack_nwb_to_project_structure(project_dir, nwb_path=None):
         chunks = (1,) + project_data.red_data.shape[1:]  # Assuming the first dimension is time or frames
         if isinstance(project_data.red_data, da.Array):
             project_data.logger.info("Data is a dask array; saving as zarr using dask's save functionality.")
-            da.to_zarr(project_data.red_data, red_zarr_path, overwrite=True)
-            da.to_zarr(project_data.green_data, green_zarr_path, overwrite=True)
+            project_data.red_data.to_zarr(red_zarr_path, overwrite=True, compute=True)
+            project_data.green_data.to_zarr(green_zarr_path, overwrite=True, compute=True)
         else:
             project_data.logger.info("Data is not a dask array; saving as zarr using zarr's save_array.")   
             zarr.save_array(red_zarr_path, project_data.red_data, chunks=chunks)
@@ -60,11 +62,12 @@ def unpack_nwb_to_project_structure(project_dir, nwb_path=None):
         red_zarr_zip_path = zip_raw_data_zarr(red_zarr_path)
         green_zarr_zip_path = zip_raw_data_zarr(green_zarr_path)
         # Update the config file with these paths; this is actually the main config
-        cfg.config['red_fname'] = str(red_zarr_zip_path)
-        cfg.config['green_fname'] = str(green_zarr_zip_path)
+        cfg.config['red_fname'] = str(cfg.unresolve_absolute_path(red_zarr_zip_path))
+        cfg.config['green_fname'] = str(cfg.unresolve_absolute_path(green_zarr_zip_path))
         cfg.update_self_on_disk()
     else:
         project_data.logger.info("No preprocessed video data found in the NWB file.")
+
 
     # Write segmentation as zarr
     if project_data.raw_segmentation is not None:
@@ -74,7 +77,7 @@ def unpack_nwb_to_project_structure(project_dir, nwb_path=None):
             raise FileNotFoundError(f"Expected segmentation directory at {seg_dir}")
         
         seg_zarr_path = segment_cfg.resolve_relative_path_from_config("output_masks")
-        os.mkdir(seg_zarr_path, exist_ok=True)
+        os.makedirs(os.path.dirname(seg_zarr_path), exist_ok=True)
         # Save the raw segmentation as zarr, but check for dask
         if isinstance(project_data.raw_segmentation, da.Array):
             project_data.logger.info("Raw segmentation is a dask array; saving as zarr using dask's save functionality.")
@@ -101,7 +104,7 @@ def unpack_nwb_to_project_structure(project_dir, nwb_path=None):
         zarr.save_array(reindexed_masks_path, project_data.segmentation, chunks=(1,)+project_data.segmentation.shape[1:])
         reindexed_masks_path_zip = zip_raw_data_zarr(reindexed_masks_path)
         # Update the config with the reindexed masks path
-        traces_cfg.config['reindexed_masks'] = str(reindexed_masks_path_zip)
+        traces_cfg.config['reindexed_masks'] = str(cfg.unresolve_absolute_path(reindexed_masks_path_zip))
         traces_cfg.update_self_on_disk()
     else:
         project_data.logger.info("No final segmentation data found in the NWB file.")
