@@ -33,7 +33,12 @@ def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks, min_confidenc
     with tqdm(total=len(all_lut)) as pbar:
         def parallel_func(i):
             lut = all_lut[i]
-            new_masks[i, ...] = lut[seg_masks[i, ...]]
+            try:
+                new_masks[i, ...] = lut[seg_masks[i, ...]]
+            except IndexError as e:
+                logging.error(f"IndexError for volume {i}: {e}")
+                # If the index is out of bounds, then probably the image is corrupted
+                new_masks[i, ...] = 0
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_results = {executor.submit(parallel_func, i): i for i in all_lut_keys}
