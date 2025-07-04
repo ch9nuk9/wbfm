@@ -228,7 +228,7 @@ def convert_flavell_to_nwb(
         description='Calcium time series metadata, segmentation, and fluorescence data'
     )
     calcium_imaging_module.add(MultiChannelVolumeSeries(
-        name="CalciumSeriesSegmentation",
+        name="RawCalciumSeriesSegmentation",
         description="Series of indexed masks associated with calcium segmentation",
         comments="Segmentation masks for calcium imaging data from Flavell lab",
         data=seg_data,  # data here should be series of indexed masks
