@@ -1377,8 +1377,7 @@ class CustomDataChunkIterator(GenericDataChunkIterator):
         return self.array.dtype
 
 
-def df_to_nwb_tracking(df, table_name="seg_ids", spatial_name="centroids",
-                       timestamps=None, reference_frame="unknown", unit="pixels"):
+def df_to_nwb_tracking(df, timestamps=None, reference_frame="unknown", unit="pixels"):
     """
     Converts a MultiIndex DataFrame to NWB SpatialSeries + object-ID table.
 
@@ -1392,21 +1391,21 @@ def df_to_nwb_tracking(df, table_name="seg_ids", spatial_name="centroids",
     neuron_ids = df.columns.get_level_values(0).unique()
     coord_names = ['x', 'y', 'z']  # or whatever coordinates you have
     if not all(c in df.columns.get_level_values(1) for c in coord_names):
-        coord_names is None
+        coord_names = None
     if timestamps is None:
-        timestamps = df.index.values
+        timestamps = np.arange(len(df.index))
 
     # Build DynamicTable of neurons with correct raw segmentation IDs for all time points
-    dt = DynamicTable(name=table_name, description="Segmentation IDs per neuron", id=df.index.to_numpy())
-    for nid in neuron_ids:
+    dt = DynamicTable(name="seg_ids", description="Segmentation IDs per neuron", id=timestamps)
+    for nid in tqdm(neuron_ids, desc="Adding neuron IDs to DynamicTable"):
         seg_ids = df.loc[:, (nid, 'raw_segmentation_id')].values
         # col = VectorData(name=str(nid), description=f"Raw Seg ID for {nid}", data=)
         dt.add_column(str(nid), description=f"Raw Seg ID for {nid}", data=seg_ids)
 
     if coord_names is not None:
-        position = Position(name="Neuron centroid positions")
+        position = Position(name="centroids")
 
-        for neuron in neuron_ids:
+        for neuron in tqdm(neuron_ids, desc="Adding centroids to Position"):
             # Extract (T, C) data for this neuron
             neuron_df = df[neuron]
             data = neuron_df[coord_names].to_numpy()
@@ -1421,7 +1420,7 @@ def df_to_nwb_tracking(df, table_name="seg_ids", spatial_name="centroids",
 
             position.add_spatial_series(ss)
     else:
-        ss = None
+        position = None
 
     return position, dt
 

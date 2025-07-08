@@ -8,8 +8,7 @@ from datetime import datetime
 from hdmf.backends.hdf5.h5_utils import H5DataIO
 import glob
 import argparse
-from wbfm.utils.nwb.utils_nwb_export import CustomDataChunkIterator
-from wbfm.utils.nwb.utils_nwb_export import build_optical_channel_objects, _zimmer_microscope_device
+from wbfm.utils.nwb.utils_nwb_export import CustomDataChunkIterator, build_optical_channel_objects, _zimmer_microscope_device, df_to_nwb_tracking
 import dask.array as da
 from tqdm import tqdm
 import json
@@ -272,11 +271,13 @@ def convert_flavell_to_nwb(
 
     # Add tracking information
     tracking_df = convert_flavell_tracking_to_df(base_dir)
+    position, dt = df_to_nwb_tracking(tracking_df)
+    if position is not None:
+        calcium_imaging_module.add(position)
+    calcium_imaging_module.add(dt)
+
     if tracking_df.empty:
         raise RuntimeError("No tracking data found in the specified base directory.")
-    # Add tracking data as a table in the NWB file
-    
-    calcium_imaging_module.add_acquisition(tracking_df)
 
     with NWBHDF5IO(output_path, 'w') as io:
         io.write(nwbfile)
