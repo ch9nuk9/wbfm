@@ -12,6 +12,8 @@ from wbfm.utils.nwb.utils_nwb_export import CustomDataChunkIterator
 from wbfm.utils.nwb.utils_nwb_export import build_optical_channel_objects, _zimmer_microscope_device
 import dask.array as da
 from tqdm import tqdm
+import json
+import pandas as pd
 
 
 def iter_volumes(base_dir, n_start, n_timepoints, channel=None, segmentation=False):
@@ -58,6 +60,31 @@ def get_flavell_timepoint_pattern(base_dir, t, channel=0, segmentation=False):
         return f'{base_dir}/NRRD_cropped/*_t{t_str}_ch{channel}.nrrd'
     else:
         return f'{base_dir}/img_roi_watershed/{t}.nrrd'
+
+
+def get_flavell_tracking_file(base_dir):
+    """Get the glob pattern for tracking data in NRRD_cropped."""
+    tracking_pattern = f'{base_dir}/*inv_map.json'
+    tracking_files = glob.glob(tracking_pattern)
+    if not tracking_files:
+        raise FileNotFoundError(f"No tracking files found in {base_dir} with pattern {tracking_pattern}")
+    if len(tracking_files) > 1:
+        raise RuntimeError(f"Multiple tracking files found in {base_dir}: {tracking_files}. Please ensure only one exists.")    
+    return tracking_files[0]
+
+
+def convert_flavell_tracking_to_df(base_dir):
+    """Convert Flavell tracking data to DataFrame format."""
+    tracking_file = get_flavell_tracking_file(base_dir)
+    with open(tracking_file, 'r') as f:
+        tracking_data = json.load(f)
+        # Build DataFrame: rows=time, columns=UIDs (i.e. neuron names), values=segmentation id (of the raw segmentation)
+        df = pd.DataFrame.from_dict(tracking_data, orient='index').T
+        df.index.name = 'time'
+
+        # Add MultiIndex columns if desired
+        df.columns = pd.MultiIndex.from_product([df.columns, ['raw_segmentation_id']])
+    return df
 
 
 def find_min_max_timepoint(base_dir, channel=None, segmentation=False):
@@ -200,6 +227,13 @@ def convert_flavell_to_nwb(
         compression="gzip"
     )
 
+    # Add tracking information
+    tracking_df = convert_flavell_tracking_to_df(base_dir)
+    if tracking_df.empty:
+        raise RuntimeError("No tracking data found in the specified base directory.")
+    # Add tracking data as a table in the NWB file
+    nwbfile.add_acquisition(tracking_df)
+
     # Build metadata objects
     grid_spacing = (0.3, 0.3, 0.3)  # Flavell data is isotropic
     device = _zimmer_microscope_device(nwbfile)
@@ -251,7 +285,8 @@ def convert_flavell_to_nwb(
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Convert Flavell data to NWB format.")
-    parser.add_argument('--base_dir', type=str, required=True, help='Base directory containing input data')
+    parser.add_argument('--base_dir', type=str, required=True, help='Base directory containing input data, including: NRRD_cropped and img_roi_watershed folders and' \
+        '.json files with tracking data')
     parser.add_argument('--output_path', type=str, required=False, help='Output NWB file path')
     parser.add_argument('--session_description', type=str, default='Flavell Lab Data', help='Session description')
     parser.add_argument('--identifier', type=str, default='flavell_001', help='NWB file identifier')
