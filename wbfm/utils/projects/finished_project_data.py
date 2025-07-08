@@ -840,7 +840,7 @@ class ProjectData:
 
         try:
             # Transpose data from TXYZ to TZXY
-            obj.raw_segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['RawCalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))
+            obj.raw_segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentationUntracked'].data).transpose((0, 3, 1, 2))
         except (KeyError, AttributeError) as e:
             # Set to be equal to the segmentation, if it exists
             if obj.segmentation is not None:

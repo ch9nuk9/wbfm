@@ -111,7 +111,7 @@ class TestNWB:
                         # if 'Seg_tpoint_0' in activity['CalciumSeriesSegmentation']:
                         #     calc_seg = activity['CalciumSeriesSegmentation']['Seg_tpoint_0'].voxel_mask[:]
                         #     has_segmentation = True
-                    except TypeError:
+                    except (TypeError, AttributeError):
                         if 'SegmentationVol0' in activity.data_interfaces:
                             calc_seg = activity['CalciumSeriesSegmentation']['SegmentationVol0'].voxel_mask[:]
                             has_segmentation = True
