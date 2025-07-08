@@ -1399,8 +1399,10 @@ def df_to_nwb_tracking(df, timestamps=None, reference_frame="unknown", unit="pix
     dt = DynamicTable(name="seg_ids", description="Segmentation IDs per neuron", id=timestamps)
     for nid in tqdm(neuron_ids, desc="Adding neuron IDs to DynamicTable"):
         seg_ids = df.loc[:, (nid, 'raw_segmentation_id')].values
-        # col = VectorData(name=str(nid), description=f"Raw Seg ID for {nid}", data=)
-        dt.add_column(str(nid), description=f"Raw Seg ID for {nid}", data=seg_ids)
+        # Replace nan values with dummy -1
+        # print(seg_ids)
+        # seg_ids = np.where(np.isnan(seg_ids), -1, seg_ids)
+        dt.add_column(name=str(nid), description=f"Raw Seg ID for {nid}; -1 means no ID", data=seg_ids)
 
     if coord_names is not None:
         position = Position(name="centroids")

@@ -72,14 +72,25 @@ def get_flavell_tracking_file(base_dir):
     return tracking_files[0]
 
 
-def convert_flavell_tracking_to_df(base_dir):
+def convert_flavell_tracking_to_df(base_dir, tracking_fraction_threshold=0.5):
     """Convert Flavell tracking data to DataFrame format."""
     tracking_file = get_flavell_tracking_file(base_dir)
     with open(tracking_file, 'r') as f:
         tracking_data = json.load(f)
         # Build DataFrame: rows=time, columns=UIDs (i.e. neuron names), values=segmentation id (of the raw segmentation)
         df = pd.DataFrame.from_dict(tracking_data, orient='index').T
+        # Flatten any list values in the DataFrame; Some UIDs may have multiple segmentation IDs... not sure why
+        # but we take the first one for now
+        df = df.applymap(lambda x: x[0] if isinstance(x, list) else x)
+        # Remove objects with too few tracking points
+        df = df.loc[:, df.notna().sum() >= tracking_fraction_threshold * len(df)]
+
+        # Convert datatypes
         df.index.name = 'time'
+        df.index = [int(i) for i in df.index]
+        df.sort_index(inplace=True)
+        
+        df.columns = df.columns.astype(str)
 
         # Add MultiIndex columns if desired
         df.columns = pd.MultiIndex.from_product([df.columns, ['raw_segmentation_id']])
