@@ -9,7 +9,8 @@ import scipy
 # from hdmf_zarr import NWBZarrIO
 from matplotlib import pyplot as plt
 from pynwb import NWBFile, NWBHDF5IO, TimeSeries
-from pynwb.behavior import BehavioralTimeSeries
+from hdmf.common import DynamicTable, VectorData
+from pynwb.behavior import BehavioralTimeSeries, SpatialSeries, Position
 from pynwb.image import ImageSeries
 from pynwb.ophys import ImageSegmentation, PlaneSegmentation, RoiResponseSeries, Fluorescence, DfOverF
 from hdmf.data_utils import GenericDataChunkIterator
@@ -24,6 +25,7 @@ from tifffile import tifffile
 from tqdm.auto import tqdm
 from wbfm.utils.external.utils_pandas import convert_binary_columns_to_one_hot
 
+from wbfm.utils.general.postprocessing.utils_imputation import df_of_only_locations
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.external.utils_neuron_names import int2name_neuron
 from wbfm.utils.projects.utils_project_status import check_all_needed_data_for_step
@@ -1373,3 +1375,70 @@ class CustomDataChunkIterator(GenericDataChunkIterator):
 
     def _get_dtype(self):
         return self.array.dtype
+
+
+def df_to_nwb_tracking(df, table_name="seg_ids", spatial_name="centroids",
+                       timestamps=None, reference_frame="unknown", unit="pixels"):
+    """
+    Converts a MultiIndex DataFrame to NWB SpatialSeries + object-ID table.
+
+    df: pandas DataFrame indexed by, e.g., time and object_id, with cols x,y,z,raw_segmentation_id
+    timestamps: array of timestamps aligned to df.index (first level should be time)
+
+    """
+    if not isinstance(df.columns, pd.MultiIndex):
+        raise ValueError("Expected df.columns to be a MultiIndex of (neuron_id, coord)")
+
+    neuron_ids = df.columns.get_level_values(0).unique()
+    coord_names = ['x', 'y', 'z']  # or whatever coordinates you have
+    if not all(c in df.columns.get_level_values(1) for c in coord_names):
+        coord_names is None
+    if timestamps is None:
+        timestamps = df.index.values
+
+    # Build DynamicTable of neurons with correct raw segmentation IDs for all time points
+    dt = DynamicTable(name=table_name, description="Segmentation IDs per neuron", id=df.index.to_numpy())
+    for nid in neuron_ids:
+        seg_ids = df.loc[:, (nid, 'raw_segmentation_id')].values
+        # col = VectorData(name=str(nid), description=f"Raw Seg ID for {nid}", data=)
+        dt.add_column(str(nid), description=f"Raw Seg ID for {nid}", data=seg_ids)
+
+    if coord_names is not None:
+        position = Position(name="Neuron centroid positions")
+
+        for neuron in neuron_ids:
+            # Extract (T, C) data for this neuron
+            neuron_df = df[neuron]
+            data = neuron_df[coord_names].to_numpy()
+
+            ss = SpatialSeries(
+                name=neuron,
+                data=data,
+                unit=unit,
+                reference_frame=reference_frame,
+                timestamps=timestamps
+            )
+
+            position.add_spatial_series(ss)
+    else:
+        ss = None
+
+    return position, dt
+
+
+def load_per_neuron_position(nwbfile_module):
+    data_dict = {}
+    timestamps = None
+
+    for series in nwbfile_module.spatial_series.values():
+        data = series.data[:]
+        neuron = series.name
+        coords = ['x', 'y', 'z'][:data.shape[1]]
+        for i, coord in enumerate(coords):
+            data_dict[(neuron, coord)] = data[:, i]
+        if timestamps is None:
+            timestamps = series.timestamps[:]
+
+    df = pd.DataFrame(data_dict, index=timestamps)
+    df.columns = pd.MultiIndex.from_tuples(df.columns)
+    return df

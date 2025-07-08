@@ -227,13 +227,6 @@ def convert_flavell_to_nwb(
         compression="gzip"
     )
 
-    # Add tracking information
-    tracking_df = convert_flavell_tracking_to_df(base_dir)
-    if tracking_df.empty:
-        raise RuntimeError("No tracking data found in the specified base directory.")
-    # Add tracking data as a table in the NWB file
-    nwbfile.add_acquisition(tracking_df)
-
     # Build metadata objects
     grid_spacing = (0.3, 0.3, 0.3)  # Flavell data is isotropic
     device = _zimmer_microscope_device(nwbfile)
@@ -276,6 +269,14 @@ def convert_flavell_to_nwb(
         rate=imaging_rate,  # sampling rate in hz
         imaging_volume=CalcImagingVolume,
     ))
+
+    # Add tracking information
+    tracking_df = convert_flavell_tracking_to_df(base_dir)
+    if tracking_df.empty:
+        raise RuntimeError("No tracking data found in the specified base directory.")
+    # Add tracking data as a table in the NWB file
+    
+    calcium_imaging_module.add_acquisition(tracking_df)
 
     with NWBHDF5IO(output_path, 'w') as io:
         io.write(nwbfile)
