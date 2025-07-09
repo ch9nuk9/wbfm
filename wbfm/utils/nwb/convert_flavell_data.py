@@ -343,7 +343,10 @@ def convert_flavell_to_nwb(
     # Note that df_tracking is 1-indexed, so the index will have to be fixed later
     for t, these_centroids in tqdm(centroids_dict.items(), desc="Mapping centroids to segmentation"):
         for neuron in all_neurons:
-            raw_seg = df_tracking.loc[t+1, (neuron, 'raw_segmentation_id')]
+            try:
+                raw_seg = df_tracking.loc[t+1, (neuron, 'raw_segmentation_id')]
+            except KeyError:
+                raw_seg = np.nan
             if np.isnan(raw_seg):
                 continue
             try:
