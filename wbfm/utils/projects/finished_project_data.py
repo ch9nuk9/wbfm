@@ -2,10 +2,6 @@ import concurrent
 import logging
 import shutil
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
-
-from imutils import MicroscopeDataReader
-
 from wbfm.utils.external.utils_pandas import combine_columns_with_suffix
 
 import tables
@@ -821,8 +817,8 @@ class ProjectData:
                 (0, 3, 1, 2))
 
         # Note that there should always be 'CalciumActivity' but it may be a stub
+        # Load the traces, and copy to the tracks using the same dataframes (they should all have xyz info)
         try:
-            # Load the traces, and the tracks using the same dataframes (they should all have xyz info)
             both_df_traces = convert_nwb_to_trace_dataframe(nwb_obj)
             # There may not be a reference, but there is always the signal
             obj.green_traces = both_df_traces['Signal']
@@ -830,8 +826,39 @@ class ProjectData:
             obj.final_tracks = obj.red_traces.copy()
 
         except KeyError as e:
+            obj.final_tracks = None
             obj.logger.warning(f"Could not load traces from NWB file: {e}")
 
+        # If the traces aren't found, try to load the tracks alone
+        if obj.final_tracks is None:
+            try:
+                from wbfm.utils.nwb.utils_nwb_export import load_per_neuron_position
+
+                activity = nwb_obj.processing['CalciumActivity']
+                centroids = load_per_neuron_position(activity['NeuronCentroids'])
+                seg_ids = activity['NeuronSegmentationID'].to_dataframe()
+                # Add a second layer to the columns to match format
+                seg_ids.columns = pd.MultiIndex.from_product([seg_ids.columns, ['raw_segmentation_id']])
+                # If the top level column names are integers, make them neuron_XYZ like my code expects
+                df_tracking = pd.concat([centroids, seg_ids], axis=1)
+
+                new_cols = []
+                for col in df_tracking.columns:
+                    if isinstance(col[0], int) or (isinstance(col[0], str) and 'neuron' not in col[0]):
+                        new_col = (int2name_neuron(int(col[0]), ignore_error=True), col[1])
+                    else:
+                        new_col = col
+                    new_cols.append(new_col)
+                df_tracking.columns = pd.MultiIndex.from_tuples(new_cols)
+                
+                obj.final_tracks = df_tracking
+                obj.intermediate_global_tracks = df_tracking
+                obj.logger.warning("Loaded both final tracks and intermediate tracks as the same dataframe")
+
+            except KeyError as e:
+                obj.logger.warning(f"Could not load tracks from NWB file: {e}")
+
+        # Segmentation
         try:
             # Transpose data from TXYZ to TZXY
             obj.segmentation = da.from_array(nwb_obj.processing['CalciumActivity']['CalciumSeriesSegmentation'].data).transpose((0, 3, 1, 2))

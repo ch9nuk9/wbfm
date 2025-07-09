@@ -1,8 +1,11 @@
 
 
-def int2name_neuron(i_neuron: int) -> str:
+def int2name_neuron(i_neuron: int, ignore_error=False) -> str:
     if 0 < i_neuron < 1000:
         return f"neuron_{i_neuron:03d}"
+    elif ignore_error:
+        # No way to know how big the number is
+        return f"neuron_{i_neuron}"
     else:
         raise ValueError(f"Value {i_neuron} not supported. Neuron IDs should be between 1 and 999.")
 

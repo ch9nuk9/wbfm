@@ -218,7 +218,7 @@ class NapariLayerInitializer:
                 options['visible'] = force_all_visible
                 viewer.add_points(**options)
                 layers_actually_added.append(options['name'])
-            except KeyError:
+            except (KeyError, AttributeError):
                 # Some nwb files may not have xyz information
                 project_data.logger.warning("Could not add neuron IDs; no xyz information available")
 
@@ -239,7 +239,7 @@ class NapariLayerInitializer:
                 options['name'] = 'Manual IDs'
                 viewer.add_points(**options)
                 layers_actually_added.append(options['name'])
-            except KeyError:
+            except (KeyError, AttributeError):
                 # Some nwb files may not have xyz information
                 project_data.logger.warning("Could not add neuron IDs; no xyz information available")
 
@@ -259,12 +259,15 @@ class NapariLayerInitializer:
 
         if 'Intermediate global IDs' in which_layers and project_data.intermediate_global_tracks is not None:
             df = project_data.intermediate_global_tracks
-            options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio, label_using_column_name=True)
-            options['name'] = 'Intermediate global IDs'
-            options['text']['color'] = 'green'
-            options['visible'] = force_all_visible
-            viewer.add_points(**options)
-            layers_actually_added.append(options['name'])
+            try:
+                options = napari_labels_from_traces_dataframe(df, z_to_xy_ratio=z_to_xy_ratio, label_using_column_name=True)
+                options['name'] = 'Intermediate global IDs'
+                options['text']['color'] = 'green'
+                options['visible'] = force_all_visible
+                viewer.add_points(**options)
+                layers_actually_added.append(options['name'])
+            except (KeyError, AttributeError):
+                project_data.logger.warning("Could not add Intermediate global IDs; no xyz information available")
 
         if 'Neuropal' in which_layers and project_data.neuropal_manager.data is not None:
             z_np = project_data.physical_unit_conversion.zimmer_um_per_pixel_z_neuropal
