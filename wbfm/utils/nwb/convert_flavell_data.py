@@ -249,7 +249,6 @@ def convert_flavell_to_nwb(
     except StopIteration:
         raise RuntimeError("No green channel volumes found. Check your input data and n_frames value.")
     frame_shape = first_green.shape
-    # print(f"Found {end_frame-start_frame} frames for each channel with shape {frame_shape}")
 
     # Build dask arrays for each channel
     green_dask = dask_stack_volumes(iter_volumes(base_dir, start_frame, end_frame, 1), frame_shape)
@@ -330,7 +329,6 @@ def convert_flavell_to_nwb(
     centroids_dict = compute_centroids_parallel(seg_dask)
     # Based on the segmentation ids in tracking_df, create the xyz columns that should be added
     all_neurons = list(df_tracking.columns.get_level_values(0).unique())
-    print("df_tracking ", df_tracking)
     # A dict with 3 entries per neuron: (neuron, x), (neuron, y), (neuron, z) -> (respective array)
     coord_names = ['x', 'y', 'z']
     all_keys = itertools.product(all_neurons, coord_names)
@@ -358,7 +356,6 @@ def convert_flavell_to_nwb(
     # Convert to dataframe, then combine with original tracking dataframe
     df_centroids = pd.DataFrame(mapped_centroids_dict, index=df_tracking.index)
     df_tracking = pd.concat([df_centroids, df_tracking], axis=1)
-    print("Shape of tracking df ", df_tracking.shape)
     
     position, dt = df_to_nwb_tracking(df_tracking)
     if position is not None:
