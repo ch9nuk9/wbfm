@@ -564,9 +564,8 @@ def convert_traces_and_tracking_to_nwb(nwbfile, segmentation_video, gce_quant_di
     rate = physical_units_class.volumes_per_second
 
     # Extract the blobs (with time series) from red and green
-    print("Extracting segmentation ids...")
     blobquant_red, blobquant_green, blobquant_ratio = None, None, None
-    for idx in tqdm(gce_quant_red['blob_ix'].unique(), leave=False, disable=not DEBUG):
+    for idx in tqdm(gce_quant_red['blob_ix'].unique(), leave=False, disable=not DEBUG, desc="Extracting segmentation ids..."):
         blob_red = gce_quant_red[gce_quant_red['blob_ix'] == idx]
         blobquant_red = _add_blob(blob_red, blobquant_red)
 
@@ -1396,13 +1395,13 @@ def df_to_nwb_tracking(df, timestamps=None, reference_frame="unknown", unit="pix
         timestamps = np.arange(len(df.index))
 
     # Build DynamicTable of neurons with correct raw segmentation IDs for all time points
-    dt = DynamicTable(name="seg_ids", description="Segmentation IDs per neuron", id=timestamps)
+    dt = DynamicTable(name="NeuronSegmentationID", description="Segmentation IDs per neuron", id=timestamps)
     for nid in tqdm(neuron_ids, desc="Adding neuron IDs to DynamicTable"):
         seg_ids = df.loc[:, (nid, 'raw_segmentation_id')].values
         dt.add_column(name=str(nid), description=f"Raw Seg ID for {nid}", data=seg_ids)
 
     if coord_names is not None:
-        position = Position(name="centroids")
+        position = Position(name="NeuronCentroids")
         for neuron in tqdm(neuron_ids, desc="Adding centroids to Position"):
             neuron_df = df[neuron]
             data = neuron_df[coord_names].to_numpy()

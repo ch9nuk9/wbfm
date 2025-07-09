@@ -95,6 +95,8 @@ class TestNWB:
                     fluor = activity['SignalFluorescence']['SignalCalciumImResponseSeries'].data
                 elif 'SignalRawFluor' in activity.data_interfaces:
                     fluor = activity['SignalRawFluor']['SignalCalciumImResponseSeries'].data
+                else:
+                    raise KeyError
                 print(f"Size of calcium imaging traces: {fluor.shape}")
                 has_calcium_traces = True
 

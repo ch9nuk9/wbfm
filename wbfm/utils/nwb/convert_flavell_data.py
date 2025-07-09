@@ -15,14 +15,14 @@ import json
 import pandas as pd
 from skimage.measure import regionprops
 from dask import delayed, compute
-from collections import defaultdict
+import logging
 import itertools
 
 
 def iter_volumes(base_dir, n_start, n_timepoints, channel=None, segmentation=False):
     """Yield 3D volumes for a given channel. If a file is missing, yield an array of zeros with the correct shape."""
     zero_shape = None
-    for t in tqdm(range(n_start, n_timepoints), leave=False):
+    for t in tqdm(range(n_start, n_timepoints), leave=False, desc=f"Iterating through volumes from video: channel={channel}, segmentation={segmentation}"):
         pattern = get_flavell_timepoint_pattern(base_dir, t, channel, segmentation)
         matches = glob.glob(pattern)
         if matches:
@@ -230,8 +230,8 @@ def convert_flavell_to_nwb(
 
     # Count valid frames for each channel
     if DEBUG:
-        start_frame, end_frame = 1, 10
-        print("DEBUG mode: limiting to first 10 time points")
+        start_frame, end_frame = 1, 20
+        print(f"DEBUG mode: limiting to frames {start_frame} to {end_frame}")
     else:
         min_green, n_green = find_min_max_timepoint(base_dir, 1, False)
         min_red, n_red = find_min_max_timepoint(base_dir, 2, False)
@@ -249,15 +249,16 @@ def convert_flavell_to_nwb(
     except StopIteration:
         raise RuntimeError("No green channel volumes found. Check your input data and n_frames value.")
     frame_shape = first_green.shape
-    print(f"Found {end_frame-start_frame} frames for each channel with shape {frame_shape}")
+    # print(f"Found {end_frame-start_frame} frames for each channel with shape {frame_shape}")
 
     # Build dask arrays for each channel
     green_dask = dask_stack_volumes(iter_volumes(base_dir, start_frame, end_frame, 1), frame_shape)
     red_dask = dask_stack_volumes(iter_volumes(base_dir, start_frame, end_frame, 2), frame_shape)
-    print(f"Found red video with shape {red_dask.shape} and green video with shape {green_dask.shape}")
     seg_dask = dask_stack_volumes(iter_volumes(base_dir, start_frame, end_frame, segmentation=True), frame_shape)
+    
+    print(f"Found red video with shape {red_dask.shape} and green video with shape {green_dask.shape}")
     print(f"Found segmentation data with shape {seg_dask.shape}")
-
+    
     # Make single multi-channel data series
     # Flavell data is already TXYZ, so stack to make a 5D TXYZC array
     red_green_dask = da.stack([red_dask, green_dask], axis=-1)
@@ -328,7 +329,8 @@ def convert_flavell_to_nwb(
     # This doesn't have centroid information, so add it in
     centroids_dict = compute_centroids_parallel(seg_dask)
     # Based on the segmentation ids in tracking_df, create the xyz columns that should be added
-    all_neurons = df_tracking.columns.get_level_values(0).unique()
+    all_neurons = list(df_tracking.columns.get_level_values(0).unique())
+    print("df_tracking ", df_tracking)
     # A dict with 3 entries per neuron: (neuron, x), (neuron, y), (neuron, z) -> (respective array)
     coord_names = ['x', 'y', 'z']
     all_keys = itertools.product(all_neurons, coord_names)
@@ -344,13 +346,16 @@ def convert_flavell_to_nwb(
             raw_seg = df_tracking.loc[t+1, (neuron, 'raw_segmentation_id')]
             if np.isnan(raw_seg):
                 continue
-            this_centroid = these_centroids[int(raw_seg)]
+            try:
+                this_centroid = these_centroids[int(raw_seg)]
+            except KeyError:
+                logging.error(f"Ground truth was annotated as {int(raw_seg)} at t={t}, but it doesn't exist in the image")
             for _name, _c in zip(coord_names, this_centroid):
                 mapped_centroids_dict[(neuron, _name)][t] = _c
     # Convert to dataframe, then combine with original tracking dataframe
     df_centroids = pd.DataFrame(mapped_centroids_dict, index=df_tracking.index)
-    df_tracking = pd.concat([df_centroids, df_tracking], axis=0)
-    print(df_tracking.shape)
+    df_tracking = pd.concat([df_centroids, df_tracking], axis=1)
+    print("Shape of tracking df ", df_tracking.shape)
     
     position, dt = df_to_nwb_tracking(df_tracking)
     if position is not None:
