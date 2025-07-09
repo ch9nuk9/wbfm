@@ -37,6 +37,7 @@ dependencies:
   - plotly
   - pip:
     - tifffile==2023.7.10
+    - simpleitk==2.2.1
     - opencv-contrib-python-headless
     - tables
     - networkx
