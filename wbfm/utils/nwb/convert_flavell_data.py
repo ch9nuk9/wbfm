@@ -13,6 +13,10 @@ import dask.array as da
 from tqdm import tqdm
 import json
 import pandas as pd
+from skimage.measure import regionprops
+from dask import delayed, compute
+from collections import defaultdict
+import itertools
 
 
 def iter_volumes(base_dir, n_start, n_timepoints, channel=None, segmentation=False):
@@ -79,8 +83,7 @@ def convert_flavell_tracking_to_df(base_dir, tracking_fraction_threshold=0.5):
         tracking_data = json.load(f)
         # Build DataFrame: rows=time, columns=UIDs (i.e. neuron names), values=segmentation id (of the raw segmentation)
         df = pd.DataFrame.from_dict(tracking_data, orient='index').T
-        # Flatten any list values in the DataFrame; Some UIDs may have multiple segmentation IDs... not sure why
-        # but we take the first one for now
+        # Flatten any list values in the DataFrame; Some UIDs may have multiple segmentation IDs... technically should be the union of the two
         df = df.applymap(lambda x: x[0] if isinstance(x, list) else x)
         # Remove objects with too few tracking points
         df = df.loc[:, df.notna().sum() >= tracking_fraction_threshold * len(df)]
@@ -148,6 +151,43 @@ def dask_stack_volumes(volume_iter, frame_shape):
     """Stack a generator of volumes into a dask array."""
     # Each block is a single volume (3D), stacked along axis=0 (time)
     return da.stack([da.from_array(vol, chunks=frame_shape) for vol in volume_iter], axis=0)
+
+
+def compute_centroids_parallel(seg_dask, intensity_dask=None):
+    """
+    Compute centroids for each label in each timepoint using dask.delayed for parallelism.
+    Args:
+        seg_dask: dask array (T, X, Y, Z), integer labels
+        intensity_dask (optional): dask array (T, X, Y, Z), intensity values
+    Returns:
+        centroids: dict {time: {raw_segmentation_index: (x, y, z)}}
+    """
+    def process_timepoint(seg, intensity, t):
+        props = regionprops(seg.astype(int), intensity_image=intensity)
+        centroids_t = {}
+        for prop in props:
+            if intensity is not None:
+                centroid = tuple(float(c) for c in prop.weighted_centroid)
+            else:
+                centroid = tuple(float(c) for c in prop.centroid)
+            label = int(prop.label)
+            centroids_t[label] = centroid
+        return t, centroids_t
+
+    tasks = []
+    n_timepoints = seg_dask.shape[0]
+    for t in range(n_timepoints):
+        seg = seg_dask[t]
+        if intensity_dask is not None:
+            intensity = intensity_dask[t]
+        else:
+            intensity = None
+        tasks.append(delayed(process_timepoint)(seg, intensity, t))
+
+    results = compute(*tasks, scheduler='threads')  # or 'processes'
+    # Assemble into dict
+    centroids = {t: centroids_t for t, centroids_t in results}
+    return centroids
 
 
 def create_nwb_file_only_images(session_description, identifier, session_start_time, device_name, imaging_rate):
@@ -281,14 +321,44 @@ def convert_flavell_to_nwb(
     ))
 
     # Add tracking information
-    tracking_df = convert_flavell_tracking_to_df(base_dir)
-    position, dt = df_to_nwb_tracking(tracking_df)
+    df_tracking = convert_flavell_tracking_to_df(base_dir)
+    if df_tracking.empty:
+        raise RuntimeError("No tracking data found in the specified base directory.")
+    
+    # This doesn't have centroid information, so add it in
+    centroids_dict = compute_centroids_parallel(seg_dask)
+    # Based on the segmentation ids in tracking_df, create the xyz columns that should be added
+    all_neurons = df_tracking.columns.get_level_values(0).unique()
+    # A dict with 3 entries per neuron: (neuron, x), (neuron, y), (neuron, z) -> (respective array)
+    coord_names = ['x', 'y', 'z']
+    all_keys = itertools.product(all_neurons, coord_names)
+    def _init_nan_numpy():
+        _array = np.empty(df_tracking.shape[0])
+        _array[:] = np.nan
+        return _array
+    mapped_centroids_dict = {k: _init_nan_numpy() for k in all_keys}
+    
+    # Note that df_tracking is 1-indexed, so the index will have to be fixed later
+    for t, these_centroids in tqdm(centroids_dict.items(), desc="Mapping centroids to segmentation"):
+        for neuron in all_neurons:
+            raw_seg = df_tracking.loc[t+1, (neuron, 'raw_segmentation_id')]
+            if np.isnan(raw_seg):
+                continue
+            this_centroid = these_centroids[int(raw_seg)]
+            for _name, _c in zip(coord_names, this_centroid):
+                mapped_centroids_dict[(neuron, _name)][t] = _c
+    # Convert to dataframe, then combine with original tracking dataframe
+    df_centroids = pd.DataFrame(mapped_centroids_dict, index=df_tracking.index)
+    df_tracking = pd.concat([df_centroids, df_tracking], axis=0)
+    print(df_tracking.shape)
+    
+    position, dt = df_to_nwb_tracking(df_tracking)
     if position is not None:
         calcium_imaging_module.add(position)
-    calcium_imaging_module.add(dt)
+    else:
+        raise ValueError("Position should be created")
 
-    if tracking_df.empty:
-        raise RuntimeError("No tracking data found in the specified base directory.")
+    calcium_imaging_module.add(dt)
 
     with NWBHDF5IO(output_path, 'w') as io:
         io.write(nwbfile)
