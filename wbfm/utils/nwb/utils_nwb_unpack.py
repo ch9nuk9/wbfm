@@ -63,9 +63,9 @@ def unpack_nwb_to_project_structure(project_dir, nwb_path=None):
         red_zarr_zip_path = zip_raw_data_zarr(red_zarr_path)
         green_zarr_zip_path = zip_raw_data_zarr(green_zarr_path)
         # Update the config file with these paths; this is actually the main config
-        cfg.config['red_fname'] = str(cfg.unresolve_absolute_path(red_zarr_zip_path))
-        cfg.config['green_fname'] = str(cfg.unresolve_absolute_path(green_zarr_zip_path))
-        cfg.update_self_on_disk()
+        preproc_cfg.config['preprocessed_red_fname'] = str(preproc_cfg.unresolve_absolute_path(red_zarr_zip_path))
+        preproc_cfg.config['preprocessed_green_fname'] = str(preproc_cfg.unresolve_absolute_path(green_zarr_zip_path))
+        preproc_cfg.update_self_on_disk()
     else:
         project_data.logger.info("No preprocessed video data found in the NWB file.")
 
