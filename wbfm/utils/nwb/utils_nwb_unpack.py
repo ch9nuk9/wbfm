@@ -3,6 +3,7 @@ import zarr
 from wbfm.utils.projects.finished_project_data import ProjectData
 from wbfm.utils.external.utils_zarr import zip_raw_data_zarr
 import dask.array as da
+import argparse
 
 
 def unpack_nwb_to_project_structure(project_dir, nwb_path=None):
@@ -125,3 +126,17 @@ def unpack_nwb_to_project_structure(project_dir, nwb_path=None):
     # Reload the project data to ensure all paths are updated
     project_data.logger.info("NWB unpacking complete. See project structure below for details.")
     project_data = ProjectData.load_final_project_data_from_config(project_dir)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Convert Flavell data to NWB format.")
+    parser.add_argument('--project_dir', type=str, required=True, help='Base directory containing project')
+    parser.add_argument('--nwb_path', type=str, required=False, help='NWB file path')
+    parser.add_argument('--debug', action='store_true', help='')
+
+    args = parser.parse_args()
+
+    unpack_nwb_to_project_structure(
+        project_dir=args.project_dir,
+        nwb_path=args.nwb_path,
+    )
