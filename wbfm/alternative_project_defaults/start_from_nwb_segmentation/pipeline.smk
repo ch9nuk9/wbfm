@@ -227,7 +227,11 @@ rule extract_full_traces:
         masks=os.path.join(project_dir, "4-traces/reindexed_masks.zarr.zip")
     threads: 56
     run:
-        shell("ml p7zip")  # Needed as of May 2025
+        try:
+            shell("ml p7zip")  # Needed on the cluster as of May 2025
+        except:
+            # Then we are running locally, so ignore
+            pass
         _run_helper("4-make_final_traces", str(input.cfg))
 
 

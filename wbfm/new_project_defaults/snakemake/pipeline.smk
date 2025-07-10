@@ -120,7 +120,11 @@ rule preprocessing:
     output:
         os.path.join(project_dir, "dat/bounding_boxes.pickle")
     run:
-        shell("ml p7zip")  # Needed as of May 2025
+        try:
+            shell("ml p7zip")  # Needed on the cluster as of May 2025
+        except:
+            # Then we are running locally, so ignore
+            pass
         _run_helper("0b-preprocess_working_copy_of_data", str(input.cfg))
 
 #
