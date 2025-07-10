@@ -333,7 +333,7 @@ def convert_flavell_to_nwb(
     coord_names = ['x', 'y', 'z']
     all_keys = itertools.product(all_neurons, coord_names)
     def _init_nan_numpy():
-        _array = np.empty(df_tracking.shape[0])
+        _array = np.empty(np.max(df_tracking.index.values))  # Should not be the shape of df_tracking, which might have empty rows
         _array[:] = np.nan
         return _array
     mapped_centroids_dict = {k: _init_nan_numpy() for k in all_keys}
@@ -354,7 +354,7 @@ def convert_flavell_to_nwb(
             for _name, _c in zip(coord_names, this_centroid):
                 mapped_centroids_dict[(neuron, _name)][t] = _c
     # Convert to dataframe, then combine with original tracking dataframe
-    df_centroids = pd.DataFrame(mapped_centroids_dict, index=df_tracking.index)
+    df_centroids = pd.DataFrame(mapped_centroids_dict)
     df_tracking = pd.concat([df_centroids, df_tracking], axis=1)
     
     position, dt = df_to_nwb_tracking(df_tracking)
