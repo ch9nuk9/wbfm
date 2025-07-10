@@ -96,7 +96,7 @@ def unpack_nwb_to_project_structure(project_dir, nwb_path=None):
     if project_data.segmentation is not None:
         traces_cfg = cfg.get_traces_config()
         final_seg_dir = traces_cfg.absolute_subfolder
-        if os.path.exists(final_seg_dir):
+        if not os.path.exists(final_seg_dir):
             raise FileNotFoundError(f"Expected final segmentation directory at {final_seg_dir}")
         reindexed_masks_path = traces_cfg.resolve_relative_path_from_config("reindexed_masks")
         # Ensure the directory exists
