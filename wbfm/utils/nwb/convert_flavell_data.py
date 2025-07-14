@@ -8,13 +8,11 @@ from datetime import datetime
 from hdmf.backends.hdf5.h5_utils import H5DataIO
 import glob
 import argparse
-from wbfm.utils.nwb.utils_nwb_export import CustomDataChunkIterator, build_optical_channel_objects, _zimmer_microscope_device, df_to_nwb_tracking
+from wbfm.utils.nwb.utils_nwb_export import CustomDataChunkIterator, build_optical_channel_objects, _zimmer_microscope_device, compute_centroids_parallel, df_to_nwb_tracking
 import dask.array as da
 from tqdm import tqdm
 import json
 import pandas as pd
-from skimage.measure import regionprops
-from dask import delayed, compute
 import logging
 import itertools
 
@@ -151,43 +149,6 @@ def dask_stack_volumes(volume_iter, frame_shape):
     """Stack a generator of volumes into a dask array."""
     # Each block is a single volume (3D), stacked along axis=0 (time)
     return da.stack([da.from_array(vol, chunks=frame_shape) for vol in volume_iter], axis=0)
-
-
-def compute_centroids_parallel(seg_dask, intensity_dask=None):
-    """
-    Compute centroids for each label in each timepoint using dask.delayed for parallelism.
-    Args:
-        seg_dask: dask array (T, X, Y, Z), integer labels
-        intensity_dask (optional): dask array (T, X, Y, Z), intensity values
-    Returns:
-        centroids: dict {time: {raw_segmentation_index: (x, y, z)}}
-    """
-    def process_timepoint(seg, intensity, t):
-        props = regionprops(seg.astype(int), intensity_image=intensity)
-        centroids_t = {}
-        for prop in props:
-            if intensity is not None:
-                centroid = tuple(float(c) for c in prop.weighted_centroid)
-            else:
-                centroid = tuple(float(c) for c in prop.centroid)
-            label = int(prop.label)
-            centroids_t[label] = centroid
-        return t, centroids_t
-
-    tasks = []
-    n_timepoints = seg_dask.shape[0]
-    for t in range(n_timepoints):
-        seg = seg_dask[t]
-        if intensity_dask is not None:
-            intensity = intensity_dask[t]
-        else:
-            intensity = None
-        tasks.append(delayed(process_timepoint)(seg, intensity, t))
-
-    results = compute(*tasks, scheduler='threads')  # or 'processes'
-    # Assemble into dict
-    centroids = {t: centroids_t for t, centroids_t in results}
-    return centroids
 
 
 def create_nwb_file_only_images(session_description, identifier, session_start_time, device_name, imaging_rate):

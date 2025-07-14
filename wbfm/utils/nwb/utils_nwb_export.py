@@ -3,6 +3,7 @@ import os
 import re
 from pathlib import Path
 
+from dask import compute, delayed
 import dask.array as da
 import numpy as np
 import scipy
@@ -21,6 +22,7 @@ from hdmf.backends.hdf5.h5_utils import H5DataIO
 # ndx_mulitchannel_volume is the novel NWB extension for multichannel optophysiology in C. elegans
 from ndx_multichannel_volume import CElegansSubject, OpticalChannelReferences, OpticalChannelPlus, ImagingVolume, \
     MultiChannelVolume, MultiChannelVolumeSeries, SegmentationLabels
+from skimage.measure import regionprops
 from tifffile import tifffile
 from tqdm.auto import tqdm
 from wbfm.utils.external.utils_pandas import convert_binary_columns_to_one_hot
@@ -1436,3 +1438,41 @@ def load_per_neuron_position(nwbfile_module):
     df = pd.DataFrame(data_dict, index=timestamps)
     df.columns = pd.MultiIndex.from_tuples(df.columns)
     return df
+
+
+def compute_centroids_parallel(seg_dask, intensity_dask=None):
+    """
+    Compute centroids for each label in each timepoint using dask.delayed
+    
+    Args:
+        seg_dask: dask array (T, X, Y, Z), integer labels
+        intensity_dask (optional): dask array (T, X, Y, Z), intensity values
+    Returns:
+        centroids: dict {time: {raw_segmentation_index: (x, y, z)}}
+    """
+    def process_timepoint(seg, intensity, t):
+        props = regionprops(seg.astype(int), intensity_image=intensity)
+        centroids_t = {}
+        for prop in props:
+            if intensity is not None:
+                centroid = tuple(float(c) for c in prop.weighted_centroid)
+            else:
+                centroid = tuple(float(c) for c in prop.centroid)
+            label = int(prop.label)
+            centroids_t[label] = centroid
+        return t, centroids_t
+
+    tasks = []
+    n_timepoints = seg_dask.shape[0]
+    for t in range(n_timepoints):
+        seg = seg_dask[t]
+        if intensity_dask is not None:
+            intensity = intensity_dask[t]
+        else:
+            intensity = None
+        tasks.append(delayed(process_timepoint)(seg, intensity, t))
+
+    results = compute(*tasks, scheduler='threads')  # or 'processes'
+    # Assemble into dict
+    centroids = {t: centroids_t for t, centroids_t in results}
+    return centroids
