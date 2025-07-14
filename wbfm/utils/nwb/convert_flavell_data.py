@@ -148,7 +148,7 @@ def count_valid_segmentations(base_dir, n_timepoints):
 def dask_stack_volumes(volume_iter, frame_shape):
     """Stack a generator of volumes into a dask array."""
     # Each block is a single volume (3D), stacked along axis=0 (time)
-    return da.stack([da.from_array(vol, chunks=frame_shape) for vol in volume_iter], axis=0)
+    return da.stack(volume_iter, axis=0)
 
 
 def create_nwb_file_only_images(session_description, identifier, session_start_time, device_name, imaging_rate):
