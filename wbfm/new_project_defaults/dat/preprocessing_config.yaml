@@ -10,12 +10,6 @@ starting_plane: 0
 # Replace with target number; our segmentation and tracking networks were trained on z=24-30 (1.5um spacing)
 rescale_to_target_z:
 
-# Filtering
-do_filtering: false
-filter_opt:
-  high_freq: 2.0
-  low_freq: 5000.0
-
 # Mini-max projections
 do_mini_max_projection : false
 mini_max_size: 3
