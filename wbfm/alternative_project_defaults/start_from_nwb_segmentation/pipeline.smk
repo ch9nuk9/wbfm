@@ -122,6 +122,18 @@ if nwb_path is None or not os.path.exists(nwb_path):
     raise FileNotFoundError(f"Could not find neurodata without borders file in the folder: {nwb_cfg.absolute_self_path}")
 
 
+# Start out by unpacking the data, assuming segmentation is there; improves parallel access to some files
+rule unpacking:
+    input:
+        cfg=project_cfg_fname,
+        nwb_path=nwb_path
+    output:
+        masks=directory(os.path.join(project_dir, "1-segmentation/masks.zarr"))
+    threads: 56
+    run:
+        _run_helper("pipeline_alternate.0+unpack_nwb_to_project", str(input.cfg))
+
+
 # New rule to produce the segmentation metadata
 rule build_segmentation_metadata:
     input:
