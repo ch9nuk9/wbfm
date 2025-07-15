@@ -30,13 +30,13 @@ def reindex_segmentation(DEBUG, all_matches, seg_masks, new_masks, min_confidenc
         all_lut_keys = [0, 1]
         print("DEBUG mode: only doing first 2 volumes")
     # Apply lookup tables to each volume
-    with tqdm(total=len(all_lut)) as pbar:
+    with tqdm(total=len(all_lut), desc="Reindexing segmentation") as pbar:
         def parallel_func(i):
             lut = all_lut[i]
             try:
                 new_masks[i, ...] = lut[seg_masks[i, ...]]
             except IndexError as e:
-                logging.error(f"IndexError for volume {i}: {e}")
+                logging.error(f"IndexError for volume {i}: {e}; removing segmentation for that image")
                 # If the index is out of bounds, then probably the image is corrupted
                 new_masks[i, ...] = 0
 
