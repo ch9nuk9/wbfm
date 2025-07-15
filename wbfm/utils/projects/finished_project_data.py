@@ -1164,7 +1164,7 @@ class ProjectData:
             print(f"Dropped {df.shape[1] - df_drop.shape[1]} neurons with threshold {min_nonnan}/{df.shape[0]}")
 
         if df_drop.shape[1] == 0:
-            msg = f"All neurons were dropped with a threshold of {min_nonnan}; check project.num_frames."\
+            msg = f"All neurons were dropped with a threshold of {min_nonnan} ({df.shape[1]} neurons were found initially); check project.num_frames. "\
                   f"If a video has very large gaps, num_frames should be set lower. For now, returning all"
             if raise_error_on_empty:
                 raise NoNeuronsError(msg)
